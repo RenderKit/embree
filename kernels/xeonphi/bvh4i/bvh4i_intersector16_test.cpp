@@ -136,6 +136,7 @@ namespace embree
 							  min_dist_xyz,
 							  max_dist_xyz,
 							  ray16,
+							  precalculations,
 							  accel,
 							  (Scene*)bvh->geometry);
 									   
@@ -318,6 +319,7 @@ namespace embree
 							 min_dist_xyz,
 							 max_dist_xyz,
 							 ray16,
+							 precalculations,
 							 terminated,
 							 accel,
 							 (Scene*)bvh->geometry);

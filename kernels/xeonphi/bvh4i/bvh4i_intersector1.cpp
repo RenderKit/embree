@@ -86,6 +86,7 @@ namespace embree
 						min_dist_xyz,
 						max_dist_xyz,
 						ray,
+						precalculations,
 						accel,
 						(Scene*)bvh->geometry);
 	  if (hit)
@@ -150,6 +151,7 @@ namespace embree
 					       min_dist_xyz,
 					       max_dist_xyz,
 					       ray,
+					       precalculations,
 					       accel,
 					       (Scene*)bvh->geometry);
 

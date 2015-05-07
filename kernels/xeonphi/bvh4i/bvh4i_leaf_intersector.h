@@ -49,6 +49,7 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray& ray, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
@@ -70,6 +71,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 Ray& ray,
+					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -95,6 +97,7 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray16& ray16, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
@@ -121,6 +124,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 const Ray16& ray16, 
+					 const Precalculations &pre,
 					 mic_m &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
@@ -191,6 +195,7 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray& ray, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
@@ -215,6 +220,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 Ray& ray,
+					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -243,6 +249,7 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray16& ray16, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
@@ -270,6 +277,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 const Ray16& ray16, 
+					 const Precalculations &pre,
 					 mic_m &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
@@ -326,11 +334,11 @@ namespace embree
     };
 
 
-    // ============================================================================================
-    // ============================================================================================
-    // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
+  // ============================================================================================
 
-    template<bool ENABLE_INTERSECTION_FILTER>
+  template<bool ENABLE_INTERSECTION_FILTER>
     struct VirtualLeafIntersector
     {
       typedef typename VirtualAccelIntersector16::Primitive Primitive;
@@ -344,6 +352,7 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray& ray, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
@@ -361,6 +370,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 Ray& ray,
+					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -423,19 +433,21 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray& ray, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
-											    org_xyz,
-											    min_dist_xyz,
-											    max_dist_xyz,
-											    and_mask,
-											    ray,
-											    geometry,
-											    tptr);	
+												  org_xyz,
+												  min_dist_xyz,
+												  max_dist_xyz,
+												  and_mask,
+												  ray,
+												  pre,
+												  geometry,
+												  tptr);	
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
@@ -444,19 +456,21 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 Ray& ray,
+					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
 	return any(Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
-											       org_xyz,
-											       min_dist_xyz,
-											       max_dist_xyz,
-											       and_mask,
-											       ray,
-											       geometry,
-											       tptr));	
+												     org_xyz,
+												     min_dist_xyz,
+												     max_dist_xyz,
+												     and_mask,
+												     ray,
+												     pre,
+												     geometry,
+												     tptr));	
       }
 
       // ============================================
@@ -469,21 +483,23 @@ namespace embree
 					  const mic_f &min_dist_xyz,
 					  mic_f &max_dist_xyz,
 					  Ray16& ray16, 
+					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(curNode,
-											     rayIndex,
-											     dir_xyz,
-											     org_xyz,
-											     min_dist_xyz,
-											     max_dist_xyz,
-											     and_mask,
-											     ray16,
-											     geometry,
-											     tptr);	
+												   rayIndex,
+												   dir_xyz,
+												   org_xyz,
+												   min_dist_xyz,
+												   max_dist_xyz,
+												   and_mask,
+												   ray16,
+												   pre,
+												   geometry,
+												   tptr);	
       }
 
 
@@ -495,6 +511,7 @@ namespace embree
 					 const mic_f &min_dist_xyz,
 					 const mic_f &max_dist_xyz,
 					 const Ray16& ray16, 
+					 const Precalculations &pre,
 					 mic_m &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
@@ -502,16 +519,17 @@ namespace embree
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
 	const mic_i and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(curNode,
-											    rayIndex,
-											    dir_xyz,
-											    org_xyz,
-											    min_dist_xyz,
-											    max_dist_xyz,
-											    and_mask,
-											    ray16,
-											    m_terminated,
-											    geometry,
-											    tptr);	
+												  rayIndex,
+												  dir_xyz,
+												  org_xyz,
+												  min_dist_xyz,
+												  max_dist_xyz,
+												  and_mask,
+												  ray16,
+												  pre,
+												  m_terminated,
+												  geometry,
+												  tptr);	
       }
 
       // ========================

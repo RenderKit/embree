@@ -209,7 +209,7 @@ namespace embree
       //////////////////////////////
     }
 
-    void subdivide(array_t<CatmullClarkPatch,4>& patch) const
+    __noinline void subdivide(array_t<CatmullClarkPatch,4>& patch) const
     {
       ring[0].subdivide(patch[0].ring[0]);
       ring[1].subdivide(patch[1].ring[1]);
@@ -434,6 +434,24 @@ namespace embree
       dest1.crease_weight[0] = dest0.crease_weight[3] = p1.crease_weight[1];
       dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
+
+      //////////////////////////////
+      if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
+        {
+          dest0.eval_start_index = 3;
+          dest1.eval_start_index = 0;
+          dest0.eval_unique_identifier = p0.eval_unique_identifier;
+          dest1.eval_unique_identifier = p0.eval_unique_identifier;
+        }
+      else
+        {
+          dest0.eval_start_index = 1;
+          dest1.eval_start_index = 2;
+          dest0.eval_unique_identifier = p1.eval_unique_identifier;
+          dest1.eval_unique_identifier = p1.eval_unique_identifier;
+        }
+      //////////////////////////////
+      
     }
 
 
@@ -461,6 +479,23 @@ namespace embree
       dest1.crease_weight[1] = dest0.crease_weight[0] = 0.0f;
       dest1.crease_weight[0] = dest0.crease_weight[2] = p1.crease_weight[1];
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
+
+      //////////////////////////////
+      if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
+        {
+          dest0.eval_start_index = 1;
+          dest1.eval_start_index = 2;
+          dest0.eval_unique_identifier = p0.eval_unique_identifier;
+          dest1.eval_unique_identifier = p0.eval_unique_identifier;
+        }
+      else
+        {
+          dest0.eval_start_index = 2;
+          dest1.eval_start_index = 0;
+          dest0.eval_unique_identifier = p1.eval_unique_identifier;
+          dest1.eval_unique_identifier = p1.eval_unique_identifier;
+        }
+      //////////////////////////////      
     }
 
     static __forceinline void init_regular(const Vec3fa_t &center, const array_t<Vec3fa_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring &dest)
@@ -483,6 +518,13 @@ namespace embree
 	}
       for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
+
+      //////////////////////////////
+      dest.eval_start_index       = (8-offset)>>1;
+      if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
+      assert( dest.eval_start_index < dest.face_valence );
+      dest.eval_unique_identifier = 0;
+      //////////////////////////////
     }
  
     __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const

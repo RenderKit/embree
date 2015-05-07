@@ -89,6 +89,7 @@ namespace embree
 						const mic_f &dir_xyz,
 						const mic_f &org_xyz,
 						Ray16& ray16,
+						const Precalculations &pre,
 						const unsigned int subdiv_patch_index) const
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
@@ -193,7 +194,8 @@ namespace embree
     __forceinline bool occluded1_tri16_precise(const size_t rayIndex, 
 					       const mic_f &dir_xyz,
 					       const mic_f &org_xyz,
-					       Ray16& ray16)
+					       Ray16& ray16,
+					       const Precalculations &pre)
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
       const mic_i perm_v1 = load16i(tri_permute_v1);
@@ -249,6 +251,7 @@ namespace embree
     __forceinline void intersect1_tri16_precise(const mic_f &dir_xyz,
 						const mic_f &org_xyz,
 						Ray& ray,
+						const Precalculations &pre,
 						const unsigned int subdiv_patch_index) const
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
@@ -344,7 +347,8 @@ namespace embree
 
     __forceinline bool occluded1_tri16_precise(const mic_f &dir_xyz,
 					       const mic_f &org_xyz,
-					       Ray& ray)
+					       Ray& ray,
+					       const Precalculations &pre)
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
       const mic_i perm_v1 = load16i(tri_permute_v1);

@@ -624,7 +624,7 @@ namespace embree
 
 		  Quad3x5 quad3x5;
 		  quad3x5.init( curNode.offsetIndex(), patch, lazyCachePtr);
-		  quad3x5.intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,patchIndex);		  
+		  quad3x5.intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,precalculations,patchIndex);		  
 		}
 
 	      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
@@ -786,7 +786,8 @@ namespace embree
 		    if (unlikely(quad3x5.occluded1_tri16_precise(rayIndex,
 								 dir_xyz,
 								 org_xyz,
-								 ray16)))
+								 ray16,
+								 precalculations)))
 		      {
 			terminated |= (mic_m)((unsigned int)1 << rayIndex);
 			break;
@@ -919,7 +920,7 @@ namespace embree
 
 	      Quad3x5 quad3x5;
 	      quad3x5.init( curNode.offsetIndex(), patch, lazyCachePtr);
-	      quad3x5.intersect1_tri16_precise(dir_xyz,org_xyz,ray,patchIndex);		  
+	      quad3x5.intersect1_tri16_precise(dir_xyz,org_xyz,ray,precalculations,patchIndex);		  
 	    }
 
 	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
@@ -1064,7 +1065,8 @@ namespace embree
 	      quad3x5.init( curNode.offsetIndex(), patch, lazyCachePtr);
 	      if (unlikely(quad3x5.occluded1_tri16_precise(dir_xyz,
 							   org_xyz,
-							   ray)))
+							   ray,
+							   precalculations)))
 		{
 		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 		  ray.geomID = 0;
