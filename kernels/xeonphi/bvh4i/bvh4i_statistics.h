@@ -21,8 +21,6 @@
 
 namespace embree
 {
-  using std::isfinite;
-
   template<typename NodeType>
   class BVH4iStatistics 
   {
@@ -104,7 +102,7 @@ namespace embree
     {
       float A = bounds.empty() ? 0.0f : halfArea(bounds);
     
-      if (!isfinite(A))
+      if (!std::isfinite(A))
 	{
 	  PRINT(node);
 	  PRINT(bounds);
@@ -126,10 +124,10 @@ namespace embree
 	    numValidBoxes++;
 
 	    BBox3fa b = n->bounds(i);
-	    if (!(isfinite(b.lower.x) && isfinite(b.lower.y) && isfinite(b.lower.z)))
+	    if (!(std::isfinite(b.lower.x) && std::isfinite(b.lower.y) && std::isfinite(b.lower.z)))
 	      THROW_RUNTIME_ERROR("lower");
 
-	    if (!(isfinite(b.upper.x) && isfinite(b.upper.y) && isfinite(b.upper.z)))
+	    if (!(std::isfinite(b.upper.x) && std::isfinite(b.upper.y) && std::isfinite(b.upper.z)))
 	      THROW_RUNTIME_ERROR("upper");
 
 	    statistics(n->child(i),n->bounds(i),cdepth); 

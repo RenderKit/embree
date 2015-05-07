@@ -1057,13 +1057,13 @@ PRINT(CORRECT_numPrims);
       b.upper.a = 0.0f;
 
 #if defined(DEBUG)
-      isfinite(b.lower.x);
-      isfinite(b.lower.y);
-      isfinite(b.lower.z);
+      std::isfinite(b.lower.x);
+      std::isfinite(b.lower.y);
+      std::isfinite(b.lower.z);
 
-      isfinite(b.upper.x);
-      isfinite(b.upper.y);
-      isfinite(b.upper.z);
+      std::isfinite(b.upper.x);
+      std::isfinite(b.upper.y);
+      std::isfinite(b.upper.z);
 #endif
 
 #else
