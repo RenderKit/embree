@@ -697,7 +697,7 @@ namespace embree
       edge_level = vertex_level = p->edge_level;
       do 
       {
-        faces[f].crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+        const float crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
 
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
@@ -708,10 +708,9 @@ namespace embree
           e++;
 	  vn++;
 	}
-	faces[f].size = vn;
+	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
 	p = p_prev;
-        f++;
 	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
@@ -723,11 +722,8 @@ namespace embree
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
-	  faces[f].size = 2;
-          faces[f++].crease_weight = inf; 
-          ring[e] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-          *(unsigned int*)&ring[e].a = p->getStartVertexIndex();
-          e++;
+	  faces[f++] = Face(2,inf); 
+          ring[e++] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
           ring[e++] = vtx; // dummy vertex
 	  
           /*! goto other side of border */
