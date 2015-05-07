@@ -39,6 +39,11 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
   DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle8vIntersector1Pluecker);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8vIntersector4HybridPluecker);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8vIntersector4HybridPlueckerNoFilter);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8vIntersector8HybridPluecker);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8vIntersector8HybridPlueckerNoFilter);
+
   DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs8Intersector1Moeller);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
@@ -209,12 +214,12 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8Triangle4Intersector1Moeller;
-    intersectors.intersector4_filter = BVH8Triangle4Intersector4HybridMoeller;
-    intersectors.intersector4_nofilter = BVH8Triangle4Intersector4HybridMoellerNoFilter;
-    intersectors.intersector8_filter = BVH8Triangle4Intersector8HybridMoeller;
-    intersectors.intersector8_nofilter = BVH8Triangle4Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16 = nullptr;
+    intersectors.intersector1           = BVH8Triangle4Intersector1Moeller;
+    intersectors.intersector4_filter    = BVH8Triangle4Intersector4HybridMoeller;
+    intersectors.intersector4_nofilter  = BVH8Triangle4Intersector4HybridMoellerNoFilter;
+    intersectors.intersector8_filter    = BVH8Triangle4Intersector8HybridMoeller;
+    intersectors.intersector8_nofilter  = BVH8Triangle4Intersector8HybridMoellerNoFilter;
+    intersectors.intersector16          = nullptr;
     return intersectors;
   }
 
@@ -222,10 +227,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8Triangle8Intersector1Moeller;
-    intersectors.intersector4_filter = BVH8Triangle8Intersector4HybridMoeller;
+    intersectors.intersector1          = BVH8Triangle8Intersector1Moeller;
+    intersectors.intersector4_filter   = BVH8Triangle8Intersector4HybridMoeller;
     intersectors.intersector4_nofilter = BVH8Triangle8Intersector4HybridMoellerNoFilter;
-    intersectors.intersector8_filter = BVH8Triangle8Intersector8HybridMoeller;
+    intersectors.intersector8_filter   = BVH8Triangle8Intersector8HybridMoeller;
     intersectors.intersector8_nofilter = BVH8Triangle8Intersector8HybridMoellerNoFilter;
     intersectors.intersector16 = nullptr;
     return intersectors;
@@ -235,11 +240,11 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1          = BVH8Triangle8Intersector1Moeller;
-    intersectors.intersector4_filter   = nullptr;
-    intersectors.intersector4_nofilter = nullptr;
-    intersectors.intersector8_filter   = nullptr;
-    intersectors.intersector8_nofilter = nullptr;
+    intersectors.intersector1          = BVH8Triangle8vIntersector1Pluecker;
+    intersectors.intersector4_filter   = BVH8Triangle8vIntersector4HybridPluecker;
+    intersectors.intersector4_nofilter = BVH8Triangle8vIntersector4HybridPlueckerNoFilter;
+    intersectors.intersector8_filter   = BVH8Triangle8vIntersector8HybridPluecker;
+    intersectors.intersector8_nofilter = BVH8Triangle8vIntersector8HybridPlueckerNoFilter;
     intersectors.intersector16         = nullptr;
     return intersectors;
   }
@@ -248,7 +253,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1 = BVH8Triangle8Intersector1Moeller;
+    intersectors.intersector1          = BVH8Triangle8Intersector1Moeller;
     intersectors.intersector4_filter   = nullptr;
     intersectors.intersector4_nofilter = nullptr;
     intersectors.intersector8_filter   = nullptr;
