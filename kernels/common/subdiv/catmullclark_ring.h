@@ -111,11 +111,13 @@ namespace embree
       unsigned int min_val = (unsigned int)-1;      
       eval_start_index     = (unsigned int)-1;
 
-      for (unsigned int i=0;i<face_valence;i+=2)
+      for (unsigned int i=0; i<face_valence; i+=2) 
+      {
         if (*(unsigned int*)&ring[i].a < min_val) { 
           min_val = *(unsigned int*)&ring[i].a; 
           eval_start_index = i>>1; 
         }
+      }
       eval_unique_identifier = min_val;
     }
 
@@ -132,7 +134,7 @@ namespace embree
       crease_weight[i/2] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
       if (!p->hasOpposite()) crease_weight[i/2] = inf;
-  
+
       do
       {
         /* store first two vertices of face */
@@ -169,13 +171,13 @@ namespace embree
           while (p->hasOpposite()) 
             p = p->opposite()->next();
         }
-	
-      } while (p != h); 
 
-      updateEvalStartIndex();
+      } while (p != h); 
 
       edge_valence = i;
       face_valence = i >> 1;
+
+      updateEvalStartIndex();
 
       assert( hasValidPositions() );
 
@@ -662,14 +664,14 @@ namespace embree
       eval_start_vertex_index = (unsigned int)-1;
 
       for (size_t f=0, v=0; f<face_valence; v+=face_size[f++])
-        {
-          assert(v < edge_valence);
-          if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
-            eval_unique_identifier = *(unsigned int*)&ring[v].a; 
-            eval_start_face_index   = f;
-            eval_start_vertex_index = v; 
-          }
+      {
+        assert(v < edge_valence);
+        if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
+          eval_unique_identifier = *(unsigned int*)&ring[v].a; 
+          eval_start_face_index   = f;
+          eval_start_vertex_index = v; 
         }
+      }
     }
     
     __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)

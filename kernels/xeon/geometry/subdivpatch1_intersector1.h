@@ -251,7 +251,7 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        
+#if 0
         if (subdiv_patch.isRegular())
 	{
 	  BSplinePatch regular_patch;
@@ -266,6 +266,7 @@ namespace embree
 #endif
 	}
         else
+#endif
 	{
 	  CatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );
@@ -278,6 +279,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         
+#if 0
         if (subdiv_patch.isRegular())
 	{
 	  BSplinePatch regular_patch;
@@ -285,6 +287,7 @@ namespace embree
 	  return subdivide_occluded1(pre, ray,regular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
 	}
         else
+#endif
 	{
 	  CatmullClarkPatch irregular_patch;
 	  subdiv_patch.init( irregular_patch );

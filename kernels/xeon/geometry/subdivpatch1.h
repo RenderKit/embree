@@ -58,11 +58,10 @@ namespace embree
       if (first_half_edge->isRegularFace()) 
       {
         flags |= REGULAR_PATCH;
-#if 1
+/*#if 1
         BSplinePatch patch;
-        
         init( patch );
-#endif
+        #endif*/
       }     
     }
     
@@ -114,7 +113,7 @@ namespace embree
     /*! builder interface to fill primitive */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
-      const PrimRef& prim = prims[i];
+        const PrimRef& prim = prims[i];
       i++;
       
       const unsigned int last = list && i >= end;
@@ -131,14 +130,15 @@ namespace embree
     
     __forceinline void init( CatmullClarkPatch& patch) const
     {
-      for (size_t i=0; i<4; i++)
-        patch.ring[i].init(first_half_edge + i,vertices);
+        new (&patch) CatmullClarkPatch(first_half_edge,vertices);
+        //for (size_t i=0; i<4; i++)
+        //patch.ring[i].init(first_half_edge + i,vertices);
     }
     
-    __forceinline void init( BSplinePatch& cc_patch) const
+    /*__forceinline void init( BSplinePatch& cc_patch) const
     {
-      cc_patch.init(first_half_edge,vertices);
-    }
+        cc_patch.init(first_half_edge,vertices);
+        }*/
     
   public:
     const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
