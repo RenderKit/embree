@@ -306,8 +306,8 @@ namespace embree
 
   Accel* BVH8::BVH8Triangle8v(Scene* scene)
   { 
-    BVH8* accel = new BVH8(Triangle8::type,scene);
-    Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
+    BVH8* accel = new BVH8(Triangle8v::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle8vIntersectors(accel);
     
     Builder* builder = nullptr;
     if      (State::instance()->tri_builder == "default"     ) 
