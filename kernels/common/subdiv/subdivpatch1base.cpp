@@ -141,7 +141,7 @@ namespace embree
     // 	exit(0);
     //   }
 
-    if (ipatch.isRegularOrFinal(0) && mesh->displFunc == nullptr)
+    if (ipatch.isRegular() && mesh->displFunc == nullptr && 0) /* deactivated b-spline for now */
       {
         flags |= REGULAR_PATCH;
         patch.init( ipatch );
