@@ -620,10 +620,20 @@ namespace embree
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
+    /*struct Face 
+    {
+      __forceinline Face (int size, float crease_weight)
+        : size(size), crease_weight(crease_weight) {}
+
+      int size;              // number of vertices-2 of nth face in ring
+      float crease_weight;
+      };*/
+
     Vec3fa vtx;
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
+    //array_t<Face,MAX_FACE_VALENCE> face;
     array_t<int   ,MAX_FACE_VALENCE> face_size;     // number of vertices-2 of nth face in ring
-    array_t<float ,MAX_FACE_VALENCE> crease_weight; // FIXME: move into 4th component of ring entries
+    array_t<float ,MAX_FACE_VALENCE> crease_weight; 
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -683,22 +693,19 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
       size_t e=0, f=0;
-      crease_weight[f] = p->edge_crease_weight;
       edge_level = vertex_level = p->edge_level;
-      if (!p->hasOpposite()) crease_weight[f] = inf;
+      crease_weight[f] = p->hasOpposite() ? p->edge_crease_weight : float(inf);
       do 
       {
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
         for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
-          assert(e < MAX_EDGE_VALENCE);
           ring[e] = (Vec3fa_t) vertices[ v->getStartVertexIndex() ];
           *(unsigned int*)&ring[e].a = v->getStartVertexIndex();
           e++;
 	  vn++;
 	}
-	assert(f < MAX_FACE_VALENCE);
 	face_size[f] = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
@@ -714,15 +721,12 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-	  assert(f+1 < MAX_FACE_VALENCE);
           border_face = f;
 	  face_size[f] = 2;
           crease_weight[f] = inf; 
-	  assert(e < MAX_EDGE_VALENCE);
           ring[e] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
           *(unsigned int*)&ring[e].a = p->getStartVertexIndex();
           e++;
-	  assert(e < MAX_EDGE_VALENCE);
           ring[e++] = vtx; // dummy vertex
 	  if (f+1 < MAX_FACE_VALENCE) //FIXME: is this right?
 	    crease_weight[++f] = inf;
