@@ -18,6 +18,7 @@
 #include "tutorial/obj_loader.h"
 #include "tutorial/xml_loader.h"
 #include "image/image.h"
+#include "tutorial/tutorial_device.h"
 
 namespace embree
 {
@@ -41,6 +42,7 @@ namespace embree
   static bool g_anim_mode = false;
   static bool g_loop_mode = false;
   static FileName keyframeList = "";
+  static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -107,6 +109,17 @@ namespace embree
 
       else if (tag == "-anim") 
 	g_anim_mode = true;
+
+      else if (tag == "-shader") {
+        std::string mode = cin->getString();
+        if      (mode == "default" ) g_shader = SHADER_DEFAULT;
+        else if (mode == "eyelight") g_shader = SHADER_EYELIGHT;
+        else if (mode == "uv"      ) g_shader = SHADER_UV;
+        else if (mode == "Ng"      ) g_shader = SHADER_NG;
+        else if (mode == "geomID"  ) g_shader = SHADER_GEOMID;
+        else if (mode == "primID"  ) g_shader = SHADER_GEOMID_PRIMID;
+        else throw std::runtime_error("invalid shader:" +mode);
+      }
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
@@ -307,6 +320,15 @@ namespace embree
     
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
+
+    /* set shader mode */
+    switch (g_shader) {
+    case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
+    case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
+    case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
+    case SHADER_GEOMID  : key_pressed(GLUT_KEY_F6); break;
+    case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
+    };
     
     /* convert triangle meshes to subdiv meshes */
     if (g_only_subdivs)

@@ -55,6 +55,15 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
 
+enum Shader { 
+  SHADER_DEFAULT = 0, 
+  SHADER_EYELIGHT = 1,
+  SHADER_UV = 2,
+  SHADER_NG = 3,
+  SHADER_GEOMID = 4,
+  SHADER_GEOMID_PRIMID = 5
+};
+
 /* standard shading function */
 typedef Vec3fa (* renderPixelFunc)(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
