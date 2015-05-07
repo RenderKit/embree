@@ -3013,7 +3013,6 @@ namespace embree
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //exit(1);
 
-
 #if 1
 
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));

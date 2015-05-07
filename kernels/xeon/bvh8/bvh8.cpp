@@ -353,5 +353,22 @@ namespace embree
     Builder* builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
+
+  Accel* BVH8::BVH8Triangle8vObjectSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle8v::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle8vIntersectors(accel);
+    Builder* builder = BVH8Triangle8vSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8::BVH8Triangle8vSpatialSplit(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle8v::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle8vIntersectors(accel);
+    Builder* builder = BVH8Triangle8vSceneBuilderSpatialSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
 }
 

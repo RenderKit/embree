@@ -186,7 +186,7 @@ namespace embree
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 
-    Builder* BVH8Triangle8vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { PING; return new BVH8BuilderSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH8Triangle8vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 
     Builder* BVH8TrianglePairs8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 

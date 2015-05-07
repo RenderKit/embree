@@ -25,7 +25,7 @@
  *  Pluecker coordinate calculation simplifies. The edge equations
  *  are watertight along the edge for neighboring triangles. */
 
-#define ENABLE_NORMALIZED_TRIANGLE_INTERSECTION 0
+#define ENABLE_NORMALIZED_TRIANGLE_INTERSECTION 1
 
 namespace embree
 {
