@@ -131,23 +131,22 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
       size_t i=0;
-      crease_weight[i/2] = p->edge_crease_weight;
-      edge_level = vertex_level = p->edge_level;
-      if (!p->hasOpposite()) crease_weight[i/2] = inf;
+      edge_level = p->edge_level;
+      vertex_level = 0.0f;
 
       do
       {
+        vertex_level = max(vertex_level,p->edge_level);
+        crease_weight[i/2] = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+
         /* store first two vertices of face */
         p = p->next();
-        ring[i] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
-        i++;
+        ring[i++] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
         p = p->next();
-        ring[i] = Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
-        i++;
+        ring[i++] = Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
-	vertex_level = max(vertex_level,p->edge_level);
-	
+       
         /* continue with next face */
         if (likely(p->hasOpposite())) 
           p = p->opposite();
@@ -158,11 +157,9 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
-          i++;
+          ring[i++] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           ring[i++] = vtx; // dummy vertex
-          crease_weight[i/2] = inf;
-	  
+          	  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
           while (p->hasOpposite()) 
@@ -700,15 +697,14 @@ namespace embree
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
-        for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
-          ring[e++] = Vec3fa (vertices[ v->getStartVertexIndex() ], v->getStartVertexIndex());
+        for (p = p->next(); p!=p_prev; p=p->next()) {
+          ring[e++] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           vn++;
 	}
 	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
 	
         /* continue with next face */
-        p = p_prev;
         if (likely(p->hasOpposite())) 
           p = p->opposite();
         
