@@ -80,6 +80,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoellerNoFilter);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoellerNoFilter);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector4HybridPluecker);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector4HybridPlueckerNoFilter);
 
     /* select intersectors8 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector8ChunkMoeller);
@@ -88,6 +90,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector8HybridPluecker);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector8HybridPlueckerNoFilter);
   }
 
   BVH8::BVH8 (const PrimitiveType& primTy, Scene* scene)

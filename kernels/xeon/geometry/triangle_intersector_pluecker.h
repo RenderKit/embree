@@ -25,7 +25,7 @@
  *  Pluecker coordinate calculation simplifies. The edge equations
  *  are watertight along the edge for neighboring triangles. */
 
-#define ENABLE_NORMALIZED_TRIANGLE_INTERSECTION 1
+#define ENABLE_NORMALIZED_TRIANGLE_INTERSECTION 0
 
 namespace embree
 {
@@ -891,7 +891,21 @@ namespace embree
         typedef Vec3<rsimdf> rsimd3f;
         
         struct Precalculations {
+
+#if ENABLE_NORMALIZED_TRIANGLE_INTERSECTION == 1
+	  rsimd3f ray_rdir;
+	  rsimd3f ray_org_rdir;
+	  rsimd3f ray_dir_scale;
+
+          __forceinline Precalculations (const rsimdb& valid, const RayM& ray) 
+	  {
+	    ray_rdir              = rcp_safe(ray.dir);
+	    ray_org_rdir          = ray.org*ray_rdir;
+	    ray_dir_scale         = rsimd3f(ray.dir.y*ray.dir.z,ray.dir.z*ray.dir.x,ray.dir.x*ray.dir.y);
+	  }
+#else
           __forceinline Precalculations (const rsimdb& valid, const RayM& ray) {}
+#endif
         };
         
         /*! Intersects a M rays with N triangles. */
