@@ -92,15 +92,18 @@ namespace embree
           const avxf tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
 
+        const float round_down = 1.0f-2.0f*float(ulp);
+        const float round_up   = 1.0f+2.0f*float(ulp);
+
 #if defined(__AVX2__)
           const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
           const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-          const avxb vmask = cast(tNear) > cast(tFar);
+          const avxb vmask = robust ?  (round_down*tNear > round_up*tFar) : cast(tNear) > cast(tFar);
           size_t mask = movemask(vmask)^0xff;
 #else
           const avxf tNear = max(tNearX,tNearY,tNearZ,ray_near);
           const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-          const avxb vmask = tNear <= tFar;
+          const avxb vmask = robust ?  (round_down*tNear > round_up*tFar) : tNear <= tFar;
           size_t mask = movemask(vmask);
 #endif
           

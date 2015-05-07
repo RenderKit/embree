@@ -24,6 +24,7 @@
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+#include "geometry/triangle8v.h"
 #include "geometry/trianglepairs8.h"
 
 #define PROFILE 0
@@ -419,6 +420,9 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
+    Builder* BVH8Triangle8vSceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
 
 
   }
