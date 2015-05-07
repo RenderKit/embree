@@ -53,6 +53,7 @@ namespace embree
 
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8vSceneBuilderSpatialSAH);
 
   void BVH8Register () 
   {
@@ -61,10 +62,12 @@ namespace embree
     /* select builders */
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSAH);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_AVX(features,BVH8Triangle8vSceneBuilderSAH);
     SELECT_SYMBOL_AVX(features,BVH8TrianglePairs8SceneBuilderSAH);
     
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
+    SELECT_SYMBOL_AVX(features,BVH8Triangle8vSceneBuilderSpatialSAH);
  
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
@@ -268,9 +271,9 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
     
     Builder* builder = nullptr;
-    if      (State::instance()->tri_builder == "default"     ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->tri_builder == "binned_sah2" ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    if      (State::instance()->tri_builder == "default"     )          builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2" )          builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle4>");
     
@@ -299,9 +302,9 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     
     Builder* builder = nullptr;
-    if      (State::instance()->tri_builder == "default"     ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->tri_builder == "binned_sah2" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (State::instance()->tri_builder == "binned_sah2_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    if      (State::instance()->tri_builder == "default"     )          builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2" )          builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     else if (State::instance()->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle8>");
     
@@ -313,11 +316,13 @@ namespace embree
   { 
     BVH8* accel = new BVH8(Triangle8v::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8vIntersectors(accel);
-    
     Builder* builder = nullptr;
-    if      (State::instance()->tri_builder == "default"     ) 
-      builder = BVH8Triangle8vSceneBuilderSAH(accel,scene,0);    
-    else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle8v>");    
+    if      (State::instance()->tri_builder == "default"     )          builder = BVH8Triangle8vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2" )          builder = BVH8Triangle8vSceneBuilderSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle8vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (State::instance()->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else 
+      THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH8<Triangle8v>");    
     return new AccelInstance(accel,builder,intersectors);
   }
 

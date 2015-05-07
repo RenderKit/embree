@@ -134,7 +134,7 @@ namespace embree
   Triangle8v::Type Triangle8v::type;
 
   Triangle8v::Type::Type () 
-    : PrimitiveType("triangle8v",2*sizeof(Triangle4),8) {}
+    : PrimitiveType("triangle8v",11*32,8) {}
 #else
   size_t Triangle8v::Type::size(const char* This) const {
     return ((Triangle8v*)This)->size();
@@ -149,7 +149,7 @@ namespace embree
   TrianglePairs8::Type TrianglePairs8::type;
 
   TrianglePairs8::Type::Type () 
-    : PrimitiveType("trianglepairs8",2*sizeof(Triangle4),8) {}
+    : PrimitiveType("trianglepairs8",11*32,8) {}
 #else
   size_t TrianglePairs8::Type::size(const char* This) const {
     return ((TrianglePairs8*)This)->size();
