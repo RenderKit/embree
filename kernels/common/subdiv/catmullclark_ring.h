@@ -694,10 +694,12 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
       size_t e=0, f=0;
-      edge_level = vertex_level = p->edge_level;
+      edge_level = p->edge_level;
+      vertex_level = 0.0f;
       do 
       {
         const float crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+        vertex_level = max(vertex_level,p->edge_level);
 
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
@@ -710,10 +712,9 @@ namespace embree
 	}
 	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
-	p = p_prev;
-	vertex_level = max(vertex_level,p->edge_level);
 	
         /* continue with next face */
+        p = p_prev;
         if (likely(p->hasOpposite())) 
           p = p->opposite();
         
