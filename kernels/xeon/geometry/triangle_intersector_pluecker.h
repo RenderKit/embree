@@ -219,7 +219,7 @@ namespace embree
     }
     
     
-    /*! Intersects a M rays with N triangles. */
+    /*! Intersects M rays with N triangles. */
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayM>
       __forceinline void triangle_intersect_pluecker(const typename RayM::simdb& valid0, RayM& ray, 
                                                      const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 

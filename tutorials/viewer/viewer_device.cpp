@@ -140,7 +140,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_mesh = new void_ptr[numGeometries];
   geomID_to_type = new int[numGeometries];
 
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;

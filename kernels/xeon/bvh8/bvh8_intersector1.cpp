@@ -17,16 +17,18 @@
 #include "bvh8_intersector1.h"
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+#include "geometry/triangle8v.h"
 #include "geometry/trianglepairs8.h"
 #include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
+#include "geometry/triangle_intersector_pluecker.h"
 
 namespace embree
 { 
   namespace isa
   {
-    template<typename PrimitiveIntersector>
-    void BVH8Intersector1<PrimitiveIntersector>::intersect(const BVH8* bvh, Ray& ray)
+    template<bool robust, typename PrimitiveIntersector>
+    void BVH8Intersector1<robust,PrimitiveIntersector>::intersect(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -183,8 +185,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<typename PrimitiveIntersector>
-    void BVH8Intersector1<PrimitiveIntersector>::occluded(const BVH8* bvh, Ray& ray)
+    template<bool robust, typename PrimitiveIntersector>
+    void BVH8Intersector1<robust,PrimitiveIntersector>::occluded(const BVH8* bvh, Ray& ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -319,9 +321,12 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
-    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
-    DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
+
+    DEFINE_INTERSECTOR1(BVH8Triangle8vIntersector1Pluecker,BVH8Intersector1<true COMMA ArrayIntersector1<TriangleNvIntersector1Pluecker<Triangle8v COMMA true> > >);
+
 
   }
 }
