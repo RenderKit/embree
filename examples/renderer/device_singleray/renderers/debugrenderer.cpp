@@ -97,22 +97,23 @@ namespace embree
           size_t ix = x0+dx; float fx = ix*rcpWidth;
           if (ix >= framebuffer->getWidth()) continue;
 
-	  for (size_t i=0; i<renderer->spp; i++)
-	  {
+	  //for (size_t i=0; i<renderer->spp; i++)
+	  //{
 	    /*! create primary ray */
-	    Ray ray; camera->ray(Vec2f(fx,fy), Vec2f(rand.getFloat(),rand.getFloat()), ray);
+            //Ray ray; camera->ray(Vec2f(fx,fy), Vec2f(rand.getFloat(),rand.getFloat()), ray);
+          Ray ray; camera->ray(Vec2f(fx,fy), Vec2f(zero), ray);
 	    
-	    for (size_t depth=0; depth<renderer->maxDepth; depth++)
+          //for (size_t depth=0; depth<renderer->maxDepth; depth++)
 	    {
 	      /*! shoot current ray */
               scene->intersector->intersect(ray);
               numRays++;
-	      if (!ray) break;
+	      //if (!ray) break;
 	      
 	      /*! compute new ray through diffuse bounce */
-	      Vector3f Nf = normalize(ray.Ng);
-	      if (dot(-ray.dir,Nf) < 0) Nf = -Nf;
-	      if (depth+1<renderer->maxDepth) new (&ray) Ray(ray.org+0.999f*ray.tfar*ray.dir,cosineSampleHemisphere(rand.getFloat(),rand.getFloat(),Nf),4.0f*float(ulp)/**hit.error*/);
+	      //Vector3f Nf = normalize(ray.Ng);
+	      //if (dot(-ray.dir,Nf) < 0) Nf = -Nf;
+	      //if (depth+1<renderer->maxDepth) new (&ray) Ray(ray.org+0.999f*ray.tfar*ray.dir,cosineSampleHemisphere(rand.getFloat(),rand.getFloat(),Nf),4.0f*float(ulp)/**hit.error*/);
 	    }  
 
 	    /*! update framebuffer */
@@ -123,15 +124,15 @@ namespace embree
               framebuffer->set(ix,iy,Color(abs(hit.Ng.x),abs(hit.Ng.y),abs(hit.Ng.z)));
               }*/
 	    //else      framebuffer->set(ix,iy,Color(clamp(dot(ray.dir,normalize(hit.Ng))),0,0));
-	    //else      framebuffer->set(ix,iy,Color(hit.u,hit.v,1.0f-hit.u-hit.v));
+	    else      framebuffer->set(ix,iy,Color(ray.u,ray.v,1.0f-ray.u-ray.v));
 	    //else      framebuffer->get(ix,iy) = Vec4f(hit.st.x,hit.st.y,1.0f-hit.st.x-hit.st.y,1.0f);
 	    //else      framebuffer->get(ix,iy) = Vec4f(hit.st.x,0,0,1.0f);
 	    //else      framebuffer->get(ix,iy) = Vec4f(abs(dot(ray.dir,normalize(hit.dPds))),0,0,1.0f);
-	    else framebuffer->set(ix,iy,Color(((3434553*((unsigned)(ray.id0+ray.id1+3243)))%255)/255.0f,
-                                              ((7342453*((unsigned)(ray.id0+ray.id1+8237)))%255)/255.0f,
-                                              ((9234454*((unsigned)(ray.id0+ray.id1+2343)))%255)/255.0f));
+	    //else framebuffer->set(ix,iy,Color(((3434553*((unsigned)(ray.id0+ray.id1+3243)))%255)/255.0f,
+            //                                  ((7342453*((unsigned)(ray.id0+ray.id1+8237)))%255)/255.0f,
+            //                                  ((9234454*((unsigned)(ray.id0+ray.id1+2343)))%255)/255.0f));
 	  }
-        }
+        //}
       }
       framebuffer->finishTile();
     }

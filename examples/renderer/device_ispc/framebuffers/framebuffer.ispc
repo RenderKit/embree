@@ -32,8 +32,8 @@ void FrameBuffer__Constructor(uniform FrameBuffer* uniform this,
   RefCount__Constructor(&this->base,destructor);
   this->size.x = width;
   this->size.y = height;
-  this->invSize.x = rcp(width);
-  this->invSize.y = rcp(height);
+  this->invSize.x = rcp((uniform float)width);
+  this->invSize.y = rcp((uniform float)height);
   this->set = set;
   this->map = map;
 }

@@ -107,11 +107,11 @@ void rtcSetVirtualGeometryBounds (uniform RTCGeometry* uniform geom, const unifo
 
 void rtcSetVirtualGeometryIntersector (uniform RTCGeometry* uniform geom, const uniform int i, const uniform Intersector* uniform intersector) {
 #if defined (__SSE4__)
-  rtcISPCSetVirtualGeometryIntersector4(geom, i, intersector);
+  rtcISPCSetVirtualGeometryIntersector4((void* uniform)geom, i, (void* uniform)intersector);
 #elif defined (__AVX__)
-  rtcISPCSetVirtualGeometryIntersector8(geom, i, intersector);
+  rtcISPCSetVirtualGeometryIntersector8((void* uniform)geom, i, (void* uniform) intersector);
 #elif defined(__MIC__) 
-  rtcISPCSetVirtualGeometryIntersector16(geom, i, intersector);
+  rtcISPCSetVirtualGeometryIntersector16((void* uniform)geom, i, (void* uniform)intersector);
 #else
 #  error "Unsupported SIMD configuration."
 #endif

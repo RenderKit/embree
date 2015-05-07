@@ -104,16 +104,18 @@ void TriangleMesh__extract(const uniform Shape* uniform _this,
 
   vec3f lower = make_vec3f(+inf);
   vec3f upper = make_vec3f(-inf);
-  foreach(j=0 ... this->numTriangles) {
-    const vec4i tri = this->triangle[j];
+  //foreach(j=0 ... this->numTriangles) {
+  for(uniform int j=0; j<this->numTriangles; j++) {
+    const uniform vec4i tri = this->triangle[j];
     triangles[numTriangles+j].v0 = numVertices+tri.x;
     triangles[numTriangles+j].v1 = numVertices+tri.y;
     triangles[numTriangles+j].v2 = numVertices+tri.z;
     triangles[numTriangles+j].id0 = id0;
     triangles[numTriangles+j].id1 = j;
   }
-  foreach(j=0 ... this->numPositions) {
-    const vec3f p = make_vec3f(this->position[j]);
+  //foreach(j=0 ... this->numPositions) {
+  for(uniform int j=0; j<this->numPositions; j++) {
+    const uniform vec3f p = make_vec3f(this->position[j]);
     vertices[numVertices+j].x = p.x;
     vertices[numVertices+j].y = p.y;
     vertices[numVertices+j].z = p.z;
@@ -162,32 +164,37 @@ void* uniform TriangleMesh__transform(const uniform Shape* uniform _this,  const
 
   if (this->position) {
     mesh->position = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       mesh->position[i] = make_vec3fa(xfmPoint(xfm,make_vec3f(this->position[i])));
   }
 
   if (this->motion) {
     mesh->motion = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       mesh->motion[i] = make_vec3fa(xfmVector(xfm,make_vec3f(this->motion[i])));
   }
 
   if (this->normal) {
     uniform LinearSpace3f normal2world = transposed(rcp(xfm.l));
     mesh->normal = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       mesh->normal[i] = make_vec3fa(xfmVector(normal2world,make_vec3f(this->normal[i])));
   }
   
   if (this->texcoord) {
     mesh->texcoord = uniform new uniform vec2f[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       mesh->texcoord[i] = this->texcoord[i];
   }
 
   if (this->triangle) {
     mesh->triangle = uniform new uniform vec4i[numTriangles];
-    foreach(i=0 ... numTriangles)
+    //foreach(i=0 ... numTriangles)
+    for(uniform int i=0; i<numTriangles; i++)
       mesh->triangle[i] = this->triangle[i];
   }    
   return mesh;
@@ -220,31 +227,36 @@ void TriangleMesh__Constructor(uniform TriangleMesh* uniform this,
 
   if (position) {
     this->position = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       this->position[i] = position[i];
   }
 
   if (motion) {
     this->motion = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       this->motion[i] = motion[i];
   }
 
   if (normal) {
     this->normal = uniform new uniform vec3fa[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       this->normal[i] = normal[i];
   }
   
   if (texcoord) {
     this->texcoord = uniform new uniform vec2f[numVertices];
-    foreach(i=0 ... numVertices)
+    //foreach(i=0 ... numVertices)
+    for(uniform int i=0; i<numVertices; i++)
       this->texcoord[i] = texcoord[i];
   }
 
   if (triangle) {
     this->triangle = uniform new uniform vec4i[numTriangles];
-    foreach(i=0 ... numTriangles)
+    //foreach(i=0 ... numTriangles)
+    for(uniform int i=0; i<numTriangles; i++)
       this->triangle[i] = triangle[i];
   }    
 }

@@ -288,7 +288,7 @@ inline vec3f PathTracer__renderPixel(const uniform PathTracer* uniform this,
     LightPath lightPath; init_LightPath(lightPath,ray);
     L = add(L, PathTraceIntegrator_Li(this,screenSample,lightPath,scene,sample,numRays));
   }
-  return mul(L, rcp(this->spp));
+  return mul(L, rcp((float)this->spp));
 } 
 
 task void PathTracer__renderTile(uniform PathTracer* uniform this,
