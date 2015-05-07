@@ -620,20 +620,21 @@ namespace embree
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
-    /*struct Face 
+    struct Face 
     {
+      __forceinline Face() {}
       __forceinline Face (int size, float crease_weight)
         : size(size), crease_weight(crease_weight) {}
 
       int size;              // number of vertices-2 of nth face in ring
       float crease_weight;
-      };*/
+    };
 
     Vec3fa vtx;
     array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
-    //array_t<Face,MAX_FACE_VALENCE> face;
-    array_t<int   ,MAX_FACE_VALENCE> face_size;     // number of vertices-2 of nth face in ring
-    array_t<float ,MAX_FACE_VALENCE> crease_weight; 
+    array_t<Face,MAX_FACE_VALENCE> faces;
+    //array_t<int   ,MAX_FACE_VALENCE> face_size;     // number of vertices-2 of nth face in ring
+    //array_t<float ,MAX_FACE_VALENCE> crease_weight; 
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -673,7 +674,7 @@ namespace embree
       eval_start_face_index   = (unsigned int)-1;
       eval_start_vertex_index = (unsigned int)-1;
 
-      for (size_t f=0, v=0; f<face_valence; v+=face_size[f++])
+      for (size_t f=0, v=0; f<face_valence; v+=faces[f++].size)
       {
         assert(v < edge_valence);
         if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
@@ -696,7 +697,7 @@ namespace embree
       edge_level = vertex_level = p->edge_level;
       do 
       {
-        crease_weight[f] = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+        faces[f].crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
 
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
@@ -707,7 +708,7 @@ namespace embree
           e++;
 	  vn++;
 	}
-	face_size[f] = vn;
+	faces[f].size = vn;
 	only_quads &= (vn == 2);
 	p = p_prev;
         f++;
@@ -722,8 +723,8 @@ namespace embree
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
-	  face_size[f] = 2;
-          crease_weight[f++] = inf; 
+	  faces[f].size = 2;
+          faces[f++].crease_weight = inf; 
           ring[e] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
           *(unsigned int*)&ring[e].a = p->getStartVertexIndex();
           e++;
@@ -767,9 +768,9 @@ namespace embree
         ////////////////////////////////////////////////
 
         Vec3fa_t F = vtx;
-        for (size_t k=v; k<=v+face_size[f]; k++) F += ring[k%edge_valence]; // FIXME: optimize
-        S += dest.ring[2*f+1] = F/float(face_size[f]+2);
-        v+=face_size[f];
+        for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; // FIXME: optimize
+        S += dest.ring[2*f+1] = F/float(faces[f].size+2);
+        v+=faces[f].size;
         ////////////////////////////////////////////////        
         v%=edge_valence;
         ////////////////////////////////////////////////
@@ -790,10 +791,10 @@ namespace embree
         if (i == 0) f += dest.ring[dest.edge_valence-1]; 
         else        f += dest.ring[2*i-1];
         S += ring[j];
-        dest.crease_weight[i] = max(crease_weight[i]-1.0f,0.0f);
+        dest.crease_weight[i] = max(faces[i].crease_weight-1.0f,0.0f);
         
         /* fast path for regular edge points */
-        if (likely(crease_weight[i] <= 0.0f)) {
+        if (likely(faces[i].crease_weight <= 0.0f)) {
           dest.ring[2*i] = (v+f) * 0.25f;
         }
         
@@ -803,12 +804,12 @@ namespace embree
           dest.ring[2*i] = v*0.5f;
 	  
           /* even slower path for blended edge rule */
-          if (unlikely(crease_weight[i] < 1.0f)) {
-            const float w0 = crease_weight[i], w1 = 1.0f-w0;
+          if (unlikely(faces[i].crease_weight < 1.0f)) {
+            const float w0 = faces[i].crease_weight, w1 = 1.0f-w0;
             dest.ring[2*i] = w1*((v+f)*0.25f) + w0*(v*0.5f);
           }
         }
-        j+=face_size[i];
+        j+=faces[i].size;
         ////////////////////////////////////////////////                
         j%=edge_valence;
         ////////////////////////////////////////////////                
@@ -837,16 +838,12 @@ namespace embree
       /* compute new vertex using crease rule */
       if (likely(num_creases == 2)) {
         const Vec3fa_t v_sharp = (Vec3fa_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
-        const float crease_weight0 = crease_weight[crease_id[0]];
-        const float crease_weight1 = crease_weight[crease_id[1]];
+        const float crease_weight0 = faces[crease_id[0]].crease_weight;
+        const float crease_weight1 = faces[crease_id[1]].crease_weight;
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-        //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
-        //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
-        //dest.crease_weight[crease_id[0]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
-        //dest.crease_weight[crease_id[1]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
         if (unlikely(t0 < 1.0f)) {
           dest.vtx = t0*v_sharp + t1*v_smooth;
         }
@@ -861,7 +858,7 @@ namespace embree
     void convert(CatmullClark1Ring& dst) const
     {
       assert(only_quads);
-      assert(std::all_of(&face_size[0],&face_size[face_valence],[](int i) { return i == 2; }));
+      assert(std::all_of(&faces[0].size,&faces[face_valence].size,[](int i) { return i == 2; }));
       
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
@@ -870,7 +867,7 @@ namespace embree
       dst.edge_valence = 2*face_valence;
       dst.border_index = border_face == -1 ? -1 : 2*border_face;
       for (size_t i=0; i<face_valence; i++) 
-	dst.crease_weight[i] = crease_weight[i];
+	dst.crease_weight[i] = faces[i].crease_weight;
       dst.vertex_crease_weight = vertex_crease_weight;
       dst.noForcedSubdivision = true;
       for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
@@ -884,10 +881,10 @@ namespace embree
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
-      for (size_t v=0, f=0; f<c.face_valence; v+=c.face_size[f++]) {
-        for (size_t i=v; i<v+c.face_size[f]; i++) {
+      for (size_t v=0, f=0; f<c.face_valence; v+=c.faces[f++].size) {
+        for (size_t i=v; i<v+c.faces[f].size; i++) {
           o << i << " -> " << c.ring[i];
-          if (i == v) o << " crease = " << c.crease_weight[f];
+          if (i == v) o << " crease = " << c.faces[f].crease_weight;
           o << std::endl;
         }
       }
