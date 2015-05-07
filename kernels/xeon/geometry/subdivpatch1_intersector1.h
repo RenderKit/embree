@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa
   {
-    const size_t g_subdivision_level = 3;
+    const size_t g_subdivision_level = 5;
     
     struct SubdivPatch1Intersector1
     {
