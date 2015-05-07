@@ -144,7 +144,8 @@ namespace embree
       : tessellator(tessellator)
     {
       int neighborSubdiv[GeneralCatmullClarkPatch::SIZE]; // FIXME: use array_t
-      const GeneralCatmullClarkPatch patch(h,vertices);
+      GeneralCatmullClarkPatch patch;
+      patch.init(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }

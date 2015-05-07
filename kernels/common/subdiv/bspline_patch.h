@@ -380,7 +380,8 @@ namespace embree
 
     __forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vec3fa>& vertices)
     {
-      CatmullClarkPatch ipatch( first_half_edge, vertices );
+      CatmullClarkPatch ipatch;
+      ipatch.init( first_half_edge, vertices );
       init( ipatch );
     }
 

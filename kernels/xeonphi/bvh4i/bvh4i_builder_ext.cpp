@@ -1284,8 +1284,9 @@ PRINT(CORRECT_numPrims);
 
 	    prefetch<PFHINT_L2EX>(&prims[currentID]);
 
-	    const CatmullClarkPatch ipatch ( subdiv_mesh->getHalfEdge(i),
-					     subdiv_mesh->getVertexBuffer() );
+	    CatmullClarkPatch ipatch;
+            ipatch.init( subdiv_mesh->getHalfEdge(i),
+                         subdiv_mesh->getVertexBuffer() );
 	    
             Vec2f uv[4];
             uv[0] = Vec2f(0.0f,0.0f);

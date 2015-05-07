@@ -27,10 +27,17 @@ namespace embree
 
     __forceinline CatmullClarkPatch () {}
 
-    __forceinline CatmullClarkPatch (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    {
+      init2(first_half_edge,
+            [&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+    }
+    
+    template<typename Loader>
+      __forceinline void init2 (const SubdivMesh::HalfEdge* first_half_edge, const Loader& load) 
     {
       for (size_t i=0; i<4; i++)
-        ring[i].init(first_half_edge+i,vertices);
+        ring[i].init(first_half_edge+i,load);
 
       checkPositions();
     }
@@ -395,12 +402,19 @@ namespace embree
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
-    __forceinline GeneralCatmullClarkPatch (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices) 
+    __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    {
+      init2(first_half_edge,
+            [&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+    }
+
+    template<typename Loader>
+      __forceinline void init2 (const SubdivMesh::HalfEdge* h, const Loader& load) 
     {
       size_t i = 0;
       const SubdivMesh::HalfEdge* edge = h; 
       do {
-	ring[i].init(edge,vertices);
+	ring[i].init(edge,load);
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));

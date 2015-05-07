@@ -121,11 +121,12 @@ namespace embree
       eval_unique_identifier = min_val;
     }
 
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices) 
+    template<typename LoadVertex>
+      __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load) 
     {
       noForcedSubdivision = true;
       border_index = -1;
-      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vtx = load(h); //(Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
       
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
@@ -141,9 +142,9 @@ namespace embree
 
         /* store first two vertices of face */
         p = p->next();
-        ring[i++] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
+        ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
         p = p->next();
-        ring[i++] = Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
+        ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
        
@@ -157,7 +158,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
+          ring[i++] = load(p); //Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
@@ -678,11 +679,12 @@ namespace embree
       }
     }
     
-    __forceinline void init(const SubdivMesh::HalfEdge* const h, const BufferT<Vec3fa>& vertices)
+    template<typename LoadVertex>
+      __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load)
     {
       only_quads = true;
       border_face = -1;
-      vtx = (Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vtx = load(h); //(Vec3fa_t)vertices[ h->getStartVertexIndex() ];
       vertex_crease_weight = h->vertex_crease_weight;
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
@@ -698,7 +700,7 @@ namespace embree
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
         for (p = p->next(); p!=p_prev; p=p->next()) {
-          ring[e++] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
+          ring[e++] = load(p); //Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           vn++;
 	}
 	faces[f++] = Face(vn,crease_weight);
@@ -714,7 +716,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
 	  faces[f++] = Face(2,inf); 
-          ring[e++] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
+          ring[e++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
           ring[e++] = vtx; // dummy vertex
 	  
           /*! goto other side of border */
