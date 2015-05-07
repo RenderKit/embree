@@ -25,6 +25,8 @@
  *  Pluecker coordinate calculation simplifies. The edge equations
  *  are watertight along the edge for neighboring triangles. */
 
+#define ENABLE_NORMALIZED_INTERSECTION 0
+
 namespace embree
 {
   namespace isa
@@ -75,11 +77,12 @@ namespace embree
       valid &= den != tsimdf(zero);
       if (unlikely(none(valid))) return;
 #endif
-      
-      /* calculate hit information */
-      const tsimdf u = U / absDen;
-      const tsimdf v = V / absDen;
-      const tsimdf t = T / absDen;
+
+      const tsimdf rcpAbsDen = rcp(absDen);
+      const tsimdf t = T * rcpAbsDen;
+      const tsimdf u = U * rcpAbsDen;
+      const tsimdf v = V * rcpAbsDen;
+
       size_t i = select_min(valid,t);
       int geomID = tri_geomIDs[i];
       
@@ -219,7 +222,7 @@ namespace embree
     }
     
     
-    /*! Intersects a M rays with N triangles. */
+    /*! Intersects M rays with N triangles. */
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayM>
       __forceinline void triangle_intersect_pluecker(const typename RayM::simdb& valid0, RayM& ray, 
                                                      const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
@@ -278,9 +281,9 @@ namespace embree
       
       /* calculate hit information */
       const rsimdf rcpAbsDen = rcp(absDen);
-      const rsimdf u = U / absDen;
-      const rsimdf v = V / absDen;
-      const rsimdf t = T / absDen;
+      const rsimdf u = U * rcpAbsDen;
+      const rsimdf v = V * rcpAbsDen;
+      const rsimdf t = T * rcpAbsDen;
       const int geomID = tri_geomIDs[i];
       const int primID = tri_primIDs[i];
       Geometry* geometry = scene->get(geomID);
@@ -383,9 +386,9 @@ namespace embree
         if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
         {
           const rsimdf rcpAbsDen = rcp(absDen);
-          const rsimdf u = U / absDen;
-          const rsimdf v = V / absDen;
-          const rsimdf t = T / absDen;
+          const rsimdf u = U * rcpAbsDen;
+          const rsimdf v = V * rcpAbsDen;
+          const rsimdf t = T * rcpAbsDen;
           const int primID = tri_primIDs[i];
           valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
         }
@@ -448,9 +451,11 @@ namespace embree
 #endif
       
       /* calculate hit information */
-      const tsimdf u = U / absDen;
-      const tsimdf v = V / absDen;
-      const tsimdf t = T / absDen;
+      const tsimdf rcpAbsDen = rcp(absDen);
+      const tsimdf t = T * rcpAbsDen;
+      const tsimdf u = U * rcpAbsDen;
+      const tsimdf v = V * rcpAbsDen;
+
       size_t i = select_min(valid,t);
       int geomID = tri_geomIDs[i];
       
@@ -576,9 +581,9 @@ namespace embree
           if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
           {
             const tsimdf rcpAbsDen = rcp(absDen);
-            const tsimdf u = U / absDen;
-            const tsimdf v = V / absDen;
-            const tsimdf t = T / absDen;
+	    const tsimdf t = T * rcpAbsDen;
+	    const tsimdf u = U * rcpAbsDen;
+	    const tsimdf v = V * rcpAbsDen;
             const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
             if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
             m=__btc(m,i);

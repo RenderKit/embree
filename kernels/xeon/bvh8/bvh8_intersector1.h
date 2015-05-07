@@ -25,7 +25,7 @@ namespace embree
   namespace isa
   {
     /*! BVH8 single ray traversal implementation. */
-    template<typename PrimitiveIntersector>
+    template<bool robust, typename PrimitiveIntersector>
       class BVH8Intersector1 
     {
       /* shortcuts for frequently used types */

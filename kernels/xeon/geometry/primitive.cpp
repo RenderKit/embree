@@ -22,6 +22,7 @@
 #include "triangle4i.h"
 #include "triangle4v_mb.h"
 #include "triangle8.h"
+#include "triangle8v.h"
 #include "trianglepairs8.h"
 #include "subdivpatch1.h"
 #include "subdivpatch1cached.h"
@@ -126,6 +127,21 @@ namespace embree
 #endif
 #endif
 
+  /********************** Triangle8v **************************/
+
+#if defined(__TARGET_AVX__)
+#if !defined(__AVX__)
+  Triangle8v::Type Triangle8v::type;
+
+  Triangle8v::Type::Type () 
+    : PrimitiveType("triangle8v",11*32,8) {}
+#else
+  size_t Triangle8v::Type::size(const char* This) const {
+    return ((Triangle8v*)This)->size();
+  }
+#endif
+#endif
+
   /********************** TrianglePairs8 **************************/
 
 #if defined(__TARGET_AVX__)
@@ -133,7 +149,7 @@ namespace embree
   TrianglePairs8::Type TrianglePairs8::type;
 
   TrianglePairs8::Type::Type () 
-    : PrimitiveType("trianglepairs8",2*sizeof(Triangle4),8) {}
+    : PrimitiveType("trianglepairs8",11*32,8) {}
 #else
   size_t TrianglePairs8::Type::size(const char* This) const {
     return ((TrianglePairs8*)This)->size();
