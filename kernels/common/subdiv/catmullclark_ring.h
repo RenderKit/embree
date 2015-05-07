@@ -631,10 +631,8 @@ namespace embree
     };
 
     Vec3fa vtx;
-    array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
-    array_t<Face,MAX_FACE_VALENCE> faces;
-    unsigned int face_valence;
-    unsigned int edge_valence;
+    darray_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
+    darray_t<Face,MAX_FACE_VALENCE> faces;
     int border_face;
     float vertex_crease_weight;
     float vertex_level;                      //!< maximal level of adjacent edges
@@ -649,7 +647,7 @@ namespace embree
       : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
     
     __forceinline bool has_last_face() const {
-      return border_face != face_valence-1;
+      return border_face != faces.size()-1;
     }
     
     __forceinline bool has_second_face() const {
@@ -658,7 +656,7 @@ namespace embree
 
     bool hasValidPositions() const
     {
-      for (size_t i=0; i<edge_valence; i++) {
+      for (size_t i=0; i<ring.size(); i++) {
 	if ( !isvalid(ring[i].x) ) return false;
 	if ( !isvalid(ring[i].y) ) return false;
 	if ( !isvalid(ring[i].z) ) return false;
@@ -673,9 +671,9 @@ namespace embree
       eval_start_face_index   = (unsigned int)-1;
       eval_start_vertex_index = (unsigned int)-1;
 
-      for (size_t f=0, v=0; f<face_valence; v+=faces[f++].size)
+      for (size_t f=0, v=0; f<faces.size(); v+=faces[f++].size)
       {
-        assert(v < edge_valence);
+        assert(v < ring.size());
         if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
           eval_unique_identifier = *(unsigned int*)&ring[v].a; 
           eval_start_face_index   = f;
@@ -692,7 +690,6 @@ namespace embree
       vertex_crease_weight = h->vertex_crease_weight;
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
-      size_t e=0, f=0;
       edge_level = p->edge_level;
       vertex_level = 0.0f;
       do 
@@ -704,10 +701,10 @@ namespace embree
 	size_t vn = 0;
 	SubdivMesh::HalfEdge* p_prev = p->prev();
         for (SubdivMesh::HalfEdge* v = p->next(); v!=p_prev; v=v->next()) {
-          ring[e++] = Vec3fa (vertices[ v->getStartVertexIndex() ], v->getStartVertexIndex());
+          ring.push_back(Vec3fa (vertices[ v->getStartVertexIndex() ], v->getStartVertexIndex()));
           vn++;
 	}
-	faces[f++] = Face(vn,crease_weight);
+	faces.push_back(Face(vn,crease_weight));
 	only_quads &= (vn == 2);
 	
         /* continue with next face */
@@ -719,10 +716,10 @@ namespace embree
         else
         {
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-          border_face = f;
-	  faces[f++] = Face(2,inf); 
-          ring[e++] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
-          ring[e++] = vtx; // dummy vertex
+          border_face = faces.size();
+	  faces.push_back(Face(2,inf)); 
+          ring.push_back(Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()));
+          ring.push_back(vtx); // dummy vertex
 	  
           /*! goto other side of border */
           p = (SubdivMesh::HalfEdge*) h;
@@ -731,10 +728,6 @@ namespace embree
         }
 	
       } while (p != h); 
-      
- 
-      edge_valence = e;
-      face_valence = f;
 
       updateEvalStartIndex();
      
@@ -746,8 +739,8 @@ namespace embree
       dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
-      dest.face_valence = face_valence;
-      dest.edge_valence = 2*face_valence;
+      dest.face_valence = faces.size();
+      dest.edge_valence = 2*faces.size();
       dest.border_index = border_face == -1 ? -1 : 2*border_face; // FIXME:
       dest.vertex_crease_weight    = max(0.0f,vertex_crease_weight-1.0f);
       dest.eval_start_index        = eval_start_face_index;
@@ -756,17 +749,17 @@ namespace embree
 
       /* calculate face points */
       Vec3fa_t S = Vec3fa_t(0.0f);
-      for (size_t face=0, v=eval_start_vertex_index; face<face_valence; face++) {
+      for (size_t face=0, v=eval_start_vertex_index; face<faces.size(); face++) {
         ////////////////////////////////////////////////
-        size_t f = (face + eval_start_face_index)%face_valence;
+        size_t f = (face + eval_start_face_index)%faces.size();
         ////////////////////////////////////////////////
 
         Vec3fa_t F = vtx;
-        for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; // FIXME: optimize
+        for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%ring.size()]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(faces[f].size+2);
         v+=faces[f].size;
         ////////////////////////////////////////////////        
-        v%=edge_valence;
+        v%=ring.size();
         ////////////////////////////////////////////////
       }
       
@@ -774,10 +767,10 @@ namespace embree
       size_t num_creases = 0;
       array_t<size_t,MAX_FACE_VALENCE> crease_id;
       Vec3fa_t C = Vec3fa_t(0.0f);
-      for (size_t face=0, j=eval_start_vertex_index; face<face_valence; face++)
+      for (size_t face=0, j=eval_start_vertex_index; face<faces.size(); face++)
       {
         ////////////////////////////////////////////////
-        size_t i = (face + eval_start_face_index)%face_valence;
+        size_t i = (face + eval_start_face_index)%faces.size();
         ////////////////////////////////////////////////
         
         const Vec3fa_t v = vtx + ring[j];
@@ -805,13 +798,13 @@ namespace embree
         }
         j+=faces[i].size;
         ////////////////////////////////////////////////                
-        j%=edge_valence;
+        j%=ring.size();
         ////////////////////////////////////////////////                
       }
       
       /* compute new vertex using smooth rule */
-      const float inv_face_valence = 1.0f / (float)face_valence;
-      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
+      const float inv_face_valence = 1.0f / (float)faces.size();
+      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(faces.size())-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -852,19 +845,19 @@ namespace embree
     void convert(CatmullClark1Ring& dst) const
     {
       assert(only_quads);
-      assert(std::all_of(&faces[0].size,&faces[face_valence].size,[](int i) { return i == 2; }));
+      assert(std::all_of(&faces[0].size,&faces[faces.size()].size,[](int i) { return i == 2; }));
       
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
       dst.vtx = vtx;
-      dst.face_valence = face_valence;
-      dst.edge_valence = 2*face_valence;
+      dst.face_valence = faces.size();
+      dst.edge_valence = 2*faces.size();
       dst.border_index = border_face == -1 ? -1 : 2*border_face;
-      for (size_t i=0; i<face_valence; i++) 
+      for (size_t i=0; i<faces.size(); i++) 
 	dst.crease_weight[i] = faces[i].crease_weight;
       dst.vertex_crease_weight = vertex_crease_weight;
       dst.noForcedSubdivision = true;
-      for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
+      for (size_t i=0; i<ring.size(); i++) dst.ring[i] = ring[i];
 
       dst.updateEvalStartIndex();
 
@@ -873,9 +866,9 @@ namespace embree
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
     {
-      o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
+      o << "vtx " << c.vtx << " size = " << c.ring.size() << ", border_face = " << c.border_face << ", " << " face_valence = " << c.faces.size() << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
-      for (size_t v=0, f=0; f<c.face_valence; v+=c.faces[f++].size) {
+      for (size_t v=0, f=0; f<c.faces.size(); v+=c.faces[f++].size) {
         for (size_t i=v; i<v+c.faces[f].size; i++) {
           o << i << " -> " << c.ring[i];
           if (i == v) o << " crease = " << c.faces[f].crease_weight;

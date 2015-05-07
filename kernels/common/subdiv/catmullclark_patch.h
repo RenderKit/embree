@@ -549,7 +549,7 @@ namespace embree
       {
         size_t ip1 = (i+1)%N; // FIXME: %
         size_t im1 = (i+N-1)%N; // FIXME: %
-        bool regular = ring[i].has_last_face() && ring[ip1].face_valence > 2;
+        bool regular = ring[i].has_last_face() && ring[ip1].faces.size() > 2;
         if (likely(regular)) init_regular(patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]); 
         else                 init_border (patch[i].ring[0],patch[ip1].ring[0],patch[i].ring[1],patch[ip1].ring[3]);
 
