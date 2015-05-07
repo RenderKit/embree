@@ -113,8 +113,8 @@ namespace embree
 
       for (unsigned int i=0; i<face_valence; i+=2) 
       {
-        if (*(unsigned int*)&ring[i].a < min_val) { 
-          min_val = *(unsigned int*)&ring[i].a; 
+        if (ring[i].u < min_val) { 
+          min_val = ring[i].u; 
           eval_start_index = i>>1; 
         }
       }
@@ -670,8 +670,8 @@ namespace embree
       for (size_t f=0, v=0; f<face_valence; v+=faces[f++].size)
       {
         assert(v < edge_valence);
-        if (*(unsigned int*)&ring[v].a < eval_unique_identifier) { 
-          eval_unique_identifier = *(unsigned int*)&ring[v].a; 
+        if (ring[v].u < eval_unique_identifier) { 
+          eval_unique_identifier = ring[v].u; 
           eval_start_face_index   = f;
           eval_start_vertex_index = v; 
         }
