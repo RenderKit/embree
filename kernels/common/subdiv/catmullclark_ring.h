@@ -139,12 +139,10 @@ namespace embree
       {
         /* store first two vertices of face */
         p = p->next();
-        ring[i] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-        *(unsigned int*)&ring[i].a = p->getStartVertexIndex();
+        ring[i] = Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
         i++;
         p = p->next();
-        ring[i] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-        *(unsigned int*)&ring[i].a = p->getStartVertexIndex();
+        ring[i] = Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
         i++;
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
@@ -160,8 +158,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i] = (Vec3fa_t) vertices[ p->getStartVertexIndex() ];
-          *(unsigned int*)&ring[i].a = p->getStartVertexIndex();
+          ring[i] = Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           i++;
           ring[i++] = vtx; // dummy vertex
           crease_weight[i/2] = inf;
