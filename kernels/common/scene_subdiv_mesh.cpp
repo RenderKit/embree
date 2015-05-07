@@ -243,7 +243,7 @@ namespace embree
 
 	const size_t N = faceVertices[f];
 	const size_t e = faceStartEdge[f];
-	
+
 	for (size_t de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
