@@ -344,6 +344,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
+    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats);
 
   public:
 

@@ -252,7 +252,7 @@ RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType ty
  *  called, Embree will allocate and manage buffers of the default
  *  layout. */
 RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
-                             void* ptr, size_t offset, size_t stride);
+                             void* ptr, size_t byteOffset, size_t byteStride);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);
@@ -314,6 +314,27 @@ RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr);
 
 /*! Get pointer for user defined data per geometry based on geomID. */
 RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
+
+/*! Interpolates user data to some u/v location. The data array
+ *  pointed to by src has to contain numFloats floating point values
+ *  to interpolate for each vertex of the geometry. The byteStride
+ *  parameter specifies the stride to go from one set of per vertex
+ *  parameters to the next set. The dst array will get filled with the
+ *  interpolated data. */
+RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats);
+
+/*! Interpolates user data to an array of u/v locations. The valid
+ *  pointer points to an integer array that specified which entries in
+ *  the u/v arrays are valid (-1 denotes valid, and 0 invalid).If the
+ *  valid pointer is NULL all elements are considers valid. The data
+ *  array pointed to by src has to contain numFloats floating point
+ *  values to interpolate for each vertex of the geometry. The
+ *  byteStride parameter specifies the stride to go from one set of
+ *  per vertex parameters to the next set. The destination array is
+ *  filled in structure of array layout. */
+RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, unsigned primID,
+                                const void* valid, const float* u, const float* v, size_t numUVs, 
+                                const float* src, size_t byteStride, float* dst, size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

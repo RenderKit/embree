@@ -221,16 +221,18 @@ namespace embree
 
   void SubdivMesh::calculateHalfEdges()
   {
+#if defined(__MIC__)
+    size_t blockSize = 1;
+#else
+    size_t blockSize = 4096;
+#endif
+
     /* allocate temporary array */
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
     /* create all half edges */
-#if defined(__MIC__)
-    parallel_for( size_t(0), numFaces, [&](const range<size_t>& r)
-#else
-    parallel_for( size_t(0), numFaces, size_t(4096), [&](const range<size_t>& r) 
-#endif
+    parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
@@ -283,11 +285,7 @@ namespace embree
     radix_sort_u64(halfEdges1.data(),halfEdges0.data(),numHalfEdges);
 
     /* link all adjacent pairs of edges */
-#if defined(__MIC__)
-    parallel_for( size_t(0), numHalfEdges, [&](const range<size_t>& r) 
-#else
-    parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
-#endif
+    parallel_for( size_t(0), numHalfEdges, blockSize, [&](const range<size_t>& r) 
     {
       /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
@@ -479,5 +477,17 @@ namespace embree
       }
     }
     return true;
+  }
+
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
+  {
+#if 0
+    const float* src = (float*) src;
+    for (size_t i=0; i<numFloats; i+=4)
+    {
+      GeneralCatmullClarkPatch<ssef> patch;
+      patch.init(getHalfEdge(primID),[&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+    }
+#endif
   }
 }

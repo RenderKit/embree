@@ -117,6 +117,11 @@ namespace embree
       return userPtr;
     }
 
+    /*! interpolates user data to the specified u/v location */
+    virtual void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats) {
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 

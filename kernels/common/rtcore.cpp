@@ -1087,4 +1087,35 @@ namespace embree
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
     RTCORE_CATCH_END;
   }
+
+  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcInterpolate);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,src,byteStride,dst,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END;
+  }
+
+  RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, unsigned primID,
+                                  const void* valid_i, const float* u, const float* v, size_t numUVs, 
+                                  const float* src, size_t byteStride, float* dst, size_t numFloats)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcInterpolateN);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    const int* valid = (const int*) valid_i;
+    for (size_t i=0; i<numFloats; i++) // FIXME: implement fast path for packet queries
+    {
+      if (valid && !valid[i]) continue;
+      float dst1[256];
+      rtcInterpolate(scene,geomID,primID,u[i],v[i],src,byteStride,dst1,numFloats);
+      for (size_t j=0; j<numFloats; j++)
+        dst[j*numFloats+i] = dst1[j];
+    }
+    RTCORE_CATCH_END;
+  }
 }
