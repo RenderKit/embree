@@ -517,7 +517,7 @@ namespace embree
 			      const ssef &vv) const
     {
       if (likely(isRegular()))
-	return patch.eval4(uu,vv);
+	return patch.eval(uu,vv);
       else 
 	return GregoryPatch::eval4( patch.v, uu, vv );
     }
@@ -526,7 +526,7 @@ namespace embree
                                 const ssef &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal4(uu,vv);
+	return patch.normal(uu,vv);
       else
         return GregoryPatch::normal4( patch.v, uu, vv );
     }
@@ -537,7 +537,7 @@ namespace embree
 			      const avxf &vv) const
     {
       if (likely(isRegular()))
-	return patch.eval8(uu,vv);
+	return patch.eval(uu,vv);
       else 
 	return GregoryPatch::eval8( patch.v, uu, vv );
     }
@@ -545,7 +545,7 @@ namespace embree
                                 const avxf &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal8(uu,vv);
+	return patch.normal(uu,vv);
       else
         return GregoryPatch::normal8( patch.v, uu, vv );
     }

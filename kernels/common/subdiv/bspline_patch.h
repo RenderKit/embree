@@ -363,7 +363,6 @@ namespace embree
     }
 
     __noinline Vec3fa eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
-	//__forceinline Vec3fa eval(const float uu, const float vv) const
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
@@ -376,7 +375,6 @@ namespace embree
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
     }
-
 
     __forceinline Vec3fa tangentU(const float uu, const float vv) const
     {
@@ -413,35 +411,64 @@ namespace embree
       return cross(tv,tu);
     }   
 
-
     template<class T>
-      __forceinline Vec3<T> eval_t(const T &uu, 
-                                   const T &vv,
-                                   const Vec4<T> &u_n,
-                                   const Vec4<T> &v_n) const
-      {
-        const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
-        const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
-        const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
-        const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
-        const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
-
-
-        const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
-        const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
-        const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
-        const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
-        const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
+      __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
+    {
+      const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
+      const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
+      const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
+      const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
+      const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
       
+      
+      const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
+      const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
+      const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
+      const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
+      const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
+      
+      
+      const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
+      const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
+      const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
+      const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
+      const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
+      
+      return Vec3<T>(x,y,z);
+    }
 
-        const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
-        const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
-        const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
-        const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
-        const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
+    template<typename T>
+      __forceinline Vec3<T> eval(const T& uu, const T& vv) const
+    {
+      const Vec4<T> v_n = CubicBSplineCurve::eval(vv); // FIXME: precompute in table
+      const Vec4<T> u_n = CubicBSplineCurve::eval(uu); // FIXME: precompute in table
+      return eval(uu,vv,u_n,v_n);
+    }
 
-        return Vec3<T>(x,y,z);
-      }
+    template<typename T>
+      __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
+    {
+      const Vec4<T> v_n = CubicBSplineCurve::derivative(vv); 
+      const Vec4<T> u_n = CubicBSplineCurve::eval(uu); 
+      return eval(uu,vv,u_n,v_n);      
+    }
+    
+    template<typename T>
+      __forceinline Vec3<T> tangentV(const T& uu, const T& vv) const
+    {
+      const Vec4<T> v_n = CubicBSplineCurve::eval(vv); 
+      const Vec4<T> u_n = CubicBSplineCurve::derivative(uu); 
+      return eval(uu,vv,u_n,v_n);      
+    }
+
+    template<typename T>
+      __forceinline Vec3<T> normal(const T& uu, const T& vv) const
+    {
+      const Vec3<T> tU = tangentU(uu,vv);
+      const Vec3<T> tV = tangentV(uu,vv);
+      return cross(tU,tV);
+    }
+
 
 
 #if defined(__MIC__)
@@ -500,12 +527,12 @@ namespace embree
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
     }
 
-    __forceinline mic3f eval16(const mic_f &uu, 
-			       const mic_f &vv,
-			       const mic4f &u_n,
-			       const mic4f &v_n) const
+    __forceinline mic3f eval16(const mic_f& uu, 
+			       const mic_f& vv,
+			       const mic4f& u_n,
+			       const mic4f& v_n) const
     {
-      return eval_t(uu,vv,u_n,v_n);
+      return eval(uu,vv,u_n,v_n);
     }
     
     __forceinline mic3f eval16(const mic_f uu, const mic_f vv) const
@@ -537,88 +564,9 @@ namespace embree
       return cross(tU,tV);
     }
 
-#else
-
-
-#if defined(__AVX__)
-
-    __forceinline avx3f eval8(const avxf &uu, 
-                              const avxf &vv,
-                              const avx4f &u_n,
-                              const avx4f &v_n) const
-    {
-      return eval_t(uu,vv,u_n,v_n);
-    }
-
-    __forceinline avx3f eval8(const avxf &uu, const avxf &vv) const
-    {
-      const avx4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
-      const avx4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
-      return eval8(uu,vv,u_n,v_n);
-    }
-
-    __forceinline avx3f tangentU8(const avxf &uu, const avxf &vv) const
-    {
-      const avx4f v_n = CubicBSplineCurve::derivative(vv); 
-      const avx4f u_n = CubicBSplineCurve::eval(uu); 
-      return eval8(uu,vv,u_n,v_n);      
-    }
-
-    __forceinline avx3f tangentV8(const avxf &uu, const avxf &vv) const
-    {
-      const avx4f v_n = CubicBSplineCurve::eval(vv); 
-      const avx4f u_n = CubicBSplineCurve::derivative(uu); 
-      return eval8(uu,vv,u_n,v_n);      
-    }
-
-    __forceinline avx3f normal8(const avxf &uu, const avxf &vv) const
-    {
-      const avx3f tU = tangentU8(uu,vv);
-      const avx3f tV = tangentV8(uu,vv);
-      return cross(tU,tV);
-    }
 #endif
 
-    __forceinline sse3f eval4(const ssef &uu, 
-                              const ssef &vv,
-                              const sse4f &u_n,
-                              const sse4f &v_n) const
-    {
-      return eval_t(uu,vv,u_n,v_n);
-    }
-
-    __forceinline sse3f eval4(const ssef &uu, const ssef &vv) const
-    {
-      const sse4f v_n = CubicBSplineCurve::eval(vv); 
-      const sse4f u_n = CubicBSplineCurve::eval(uu); 
-      return eval4(uu,vv,u_n,v_n);
-    }
-
-    __forceinline sse3f tangentU4(const ssef &uu, const ssef &vv) const
-    {
-      const sse4f v_n = CubicBSplineCurve::derivative(vv); 
-      const sse4f u_n = CubicBSplineCurve::eval(uu); 
-      return eval4(uu,vv,u_n,v_n);      
-    }
-
-    __forceinline sse3f tangentV4(const ssef &uu, const ssef &vv) const
-    {
-      const sse4f v_n = CubicBSplineCurve::eval(vv); 
-      const sse4f u_n = CubicBSplineCurve::derivative(uu); 
-      return eval4(uu,vv,u_n,v_n);      
-    }
-
-    __forceinline sse3f normal4(const ssef &uu, const ssef &vv) const
-    {
-      const sse3f tU = tangentU4(uu,vv);
-      const sse3f tV = tangentV4(uu,vv);
-      return cross(tU,tV);
-    }
-
-
-#endif
-
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const BSplinePatch &p)
+    friend __forceinline std::ostream &operator<<(std::ostream& o, const BSplinePatch& p)
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)

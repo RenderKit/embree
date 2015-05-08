@@ -204,7 +204,7 @@ namespace embree
       {
         avxf uu = load8f(&grid_u[8*i]);
         avxf vv = load8f(&grid_v[8*i]);
-        avx3f normal = normalize(patch.normal8(uu,vv));
+        avx3f normal = normalize(patch.normal(uu,vv));
         *(avxf*)&grid_nx[8*i] = normal.x;
         *(avxf*)&grid_ny[8*i] = normal.y;
         *(avxf*)&grid_nz[8*i] = normal.z;        
@@ -214,7 +214,7 @@ namespace embree
       {
         ssef uu      = load4f(&grid_u[4*i]);
         ssef vv      = load4f(&grid_v[4*i]);
-        sse3f normal = normalize(patch.normal4(uu,vv));
+        sse3f normal = normalize(patch.normal(uu,vv));
         *(ssef*)&grid_nx[4*i] = normal.x;
         *(ssef*)&grid_ny[4*i] = normal.y;
         *(ssef*)&grid_nz[4*i] = normal.z;        
