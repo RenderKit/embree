@@ -25,60 +25,28 @@ namespace embree
   public:
 
     template<class T>
-      static __forceinline Vec4< T >  eval_t(const T &u)
-      {
-        const T t  = u;
-        const T s  = T(1.0f) - u;
-        const T n0 = s*s*s;
-        const T n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
-        const T n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
-        const T n3 = t*t*t;
-        return Vec4<T>(n0,n1,n2,n3);
-      }
-
-    template<class T>
-      static __forceinline Vec4< T>  derivative_t(const T &u)
-      {
-        const T t  =  u;
-        const T s  =  1.0f - u;
-        const T n0 = -s*s;
-        const T n1 = -t*t - 4.0f*t*s;
-        const T n2 =  s*s + 4.0f*s*t;
-        const T n3 =  t*t;
-        return Vec4<T>(n0,n1,n2,n3);
-      }
-
-
-      
-    static __forceinline Vec4f eval      (const float &u) { return eval_t(u); }    
-    static __forceinline Vec4f derivative(const float &u) { return derivative_t(u); }
-
-
-
-#if defined(__MIC__)
-
-    static __forceinline mic4f eval      (const mic_f &u) { return eval_t(u); }
-    static __forceinline mic4f derivative(const mic_f &u) { return derivative_t(u); }
-
-    static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
+      static __forceinline Vec4< T >  eval(const T &u)
     {
-      const mic4f e = eval(u);
-      const mic4f d = derivative(u);
-      return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
-    }    
-#else
-
-    static __forceinline sse4f eval4      (const ssef &u) { return eval_t(u); }
-    static __forceinline sse4f derivative4(const ssef &u) { return derivative_t(u); }
-
-#if defined(__AVX__)
-
-    static __forceinline avx4f eval8      (const avxf &u) { return eval_t(u); }
-    static __forceinline avx4f derivative8(const avxf &u) { return derivative_t(u); }
-
-#endif
-
-#endif
+      const T t  = u;
+      const T s  = T(1.0f) - u;
+      const T n0 = s*s*s;
+      const T n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
+      const T n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+      const T n3 = t*t*t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+    
+    template<class T>
+      static __forceinline Vec4< T>  derivative(const T &u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = -s*s;
+      const T n1 = -t*t - 4.0f*t*s;
+      const T n2 =  s*s + 4.0f*s*t;
+      const T n3 =  t*t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
   };
 
 
@@ -491,17 +459,23 @@ namespace embree
       prefetch<PFHINT_L1>(&v[3][0]);
     }
 
+    static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
+    {
+      const mic4f e = CubicBSplineCurve::eval(u);
+      const mic4f d = CubicBSplineCurve::derivative(u);
+      return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
+    }    
 
     __forceinline mic_f normal4(const float uu, const float vv) const
     {
-      const mic4f v_e_d = CubicBSplineCurve::eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
+      const mic4f v_e_d = eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
 
       const mic_f curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
       const mic_f curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
       const mic_f curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
       const mic_f curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
 
-      const mic4f u_e_d = CubicBSplineCurve::eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
+      const mic4f u_e_d = eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
 
       const mic_f tangentUV = (u_e_d[0] * curve0 + u_e_d[1] * curve1 + u_e_d[2] * curve2 + u_e_d[3] * curve3); // tu, tu, tv, tv
       
@@ -578,22 +552,22 @@ namespace embree
 
     __forceinline avx3f eval8(const avxf &uu, const avxf &vv) const
     {
-      const avx4f v_n = CubicBSplineCurve::eval8(vv); //FIXME: precompute in table
-      const avx4f u_n = CubicBSplineCurve::eval8(uu); //FIXME: precompute in table
+      const avx4f v_n = CubicBSplineCurve::eval(vv); //FIXME: precompute in table
+      const avx4f u_n = CubicBSplineCurve::eval(uu); //FIXME: precompute in table
       return eval8(uu,vv,u_n,v_n);
     }
 
     __forceinline avx3f tangentU8(const avxf &uu, const avxf &vv) const
     {
-      const avx4f v_n = CubicBSplineCurve::derivative8(vv); 
-      const avx4f u_n = CubicBSplineCurve::eval8(uu); 
+      const avx4f v_n = CubicBSplineCurve::derivative(vv); 
+      const avx4f u_n = CubicBSplineCurve::eval(uu); 
       return eval8(uu,vv,u_n,v_n);      
     }
 
     __forceinline avx3f tangentV8(const avxf &uu, const avxf &vv) const
     {
-      const avx4f v_n = CubicBSplineCurve::eval8(vv); 
-      const avx4f u_n = CubicBSplineCurve::derivative8(uu); 
+      const avx4f v_n = CubicBSplineCurve::eval(vv); 
+      const avx4f u_n = CubicBSplineCurve::derivative(uu); 
       return eval8(uu,vv,u_n,v_n);      
     }
 
@@ -615,22 +589,22 @@ namespace embree
 
     __forceinline sse3f eval4(const ssef &uu, const ssef &vv) const
     {
-      const sse4f v_n = CubicBSplineCurve::eval4(vv); 
-      const sse4f u_n = CubicBSplineCurve::eval4(uu); 
+      const sse4f v_n = CubicBSplineCurve::eval(vv); 
+      const sse4f u_n = CubicBSplineCurve::eval(uu); 
       return eval4(uu,vv,u_n,v_n);
     }
 
     __forceinline sse3f tangentU4(const ssef &uu, const ssef &vv) const
     {
-      const sse4f v_n = CubicBSplineCurve::derivative4(vv); 
-      const sse4f u_n = CubicBSplineCurve::eval4(uu); 
+      const sse4f v_n = CubicBSplineCurve::derivative(vv); 
+      const sse4f u_n = CubicBSplineCurve::eval(uu); 
       return eval4(uu,vv,u_n,v_n);      
     }
 
     __forceinline sse3f tangentV4(const ssef &uu, const ssef &vv) const
     {
-      const sse4f v_n = CubicBSplineCurve::eval4(vv); 
-      const sse4f u_n = CubicBSplineCurve::derivative4(uu); 
+      const sse4f v_n = CubicBSplineCurve::eval(vv); 
+      const sse4f u_n = CubicBSplineCurve::derivative(uu); 
       return eval4(uu,vv,u_n,v_n);      
     }
 
