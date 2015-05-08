@@ -569,20 +569,16 @@ namespace embree
 			       const mic_f &vv) const
     {
       if (likely(isRegular()))
-	{
-	  return patch.eval16(uu,vv);
-	}
+        return patch.eval(uu,vv);
       else 
-	{
-	  return GregoryPatch::eval16( patch.v, uu, vv );
-	}     
+        return GregoryPatch::eval16( patch.v, uu, vv );
     }
 
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal16(uu,vv);
+	return patch.normal(uu,vv);
       else
         return GregoryPatch::normal16( patch.v, uu, vv );
     }
