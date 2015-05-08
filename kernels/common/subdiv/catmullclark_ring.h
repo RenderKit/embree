@@ -847,8 +847,6 @@ namespace embree
     void convert(CatmullClark1Ring& dst) const
     {
       assert(only_quads);
-      assert(std::all_of(&faces[0].size,&faces[face_valence].size,[](int i) { return i == 2; }));
-      
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
       dst.vtx = vtx;
