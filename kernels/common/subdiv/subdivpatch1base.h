@@ -721,7 +721,7 @@ namespace embree
     RWMutex mtx;
     volatile int64 root_ref;
 
-    __aligned(64) BSplinePatch patch;
+    __aligned(64) BSplinePatch3fa patch;
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Base &p)

@@ -251,11 +251,12 @@ namespace embree
     };
 
 
-  class __aligned(64) BSplinePatch : public BSplinePatchT<Vec3fa> 
+  template<typename Vertex, typename Vertex_t = Vertex>
+    class __aligned(64) BSplinePatchTT : public BSplinePatchT<Vertex> 
   {
   public:
 
-    BSplinePatch () {}
+    BSplinePatchTT () {}
 
     __forceinline void init( FinalQuad& quad ) const
     {
@@ -265,18 +266,18 @@ namespace embree
       quad.vtx[3] = v[2][1];
     };
 
-    __forceinline Vec3fa limitVtx0() const { return computeLimitVertex(1,1); }
-    __forceinline Vec3fa limitVtx1() const { return computeLimitVertex(1,2); }
-    __forceinline Vec3fa limitVtx2() const { return computeLimitVertex(2,2); }
-    __forceinline Vec3fa limitVtx3() const { return computeLimitVertex(2,1); }
+    __forceinline Vertex limitVtx0() const { return computeLimitVertex(1,1); }
+    __forceinline Vertex limitVtx1() const { return computeLimitVertex(1,2); }
+    __forceinline Vertex limitVtx2() const { return computeLimitVertex(2,2); }
+    __forceinline Vertex limitVtx3() const { return computeLimitVertex(2,1); }
 
     __forceinline void init_limit( FinalQuad& quad ) const
     {
 
-      const Vec3fa limit_v0 = computeLimitVertex(1,1);
-      const Vec3fa limit_v1 = computeLimitVertex(1,2);
-      const Vec3fa limit_v2 = computeLimitVertex(2,2);
-      const Vec3fa limit_v3 = computeLimitVertex(2,1);
+      const Vertex limit_v0 = computeLimitVertex(1,1);
+      const Vertex limit_v1 = computeLimitVertex(1,2);
+      const Vertex limit_v2 = computeLimitVertex(2,2);
+      const Vertex limit_v3 = computeLimitVertex(2,1);
       
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
@@ -295,58 +296,58 @@ namespace embree
 
       if (unlikely(patch.ring[0].hasBorder())) 
         {
-          v[1][1] = patch.ring[0].vtx;
-          v[0][1] = patch.ring[0].regular_border_vertex_6();
-          v[0][0] = patch.ring[0].regular_border_vertex_5();
-          v[1][0] = patch.ring[0].regular_border_vertex_4();
+          this->v[1][1] = patch.ring[0].vtx;
+          this->v[0][1] = patch.ring[0].regular_border_vertex_6();
+          this->v[0][0] = patch.ring[0].regular_border_vertex_5();
+          this->v[1][0] = patch.ring[0].regular_border_vertex_4();
         } else {
-	v[1][1] = patch.ring[0].vtx;
-	v[0][1] = patch.ring[0].ring[6];
-	v[0][0] = patch.ring[0].ring[5];
-	v[1][0] = patch.ring[0].ring[4];
+	this->v[1][1] = patch.ring[0].vtx;
+	this->v[0][1] = patch.ring[0].ring[6];
+	this->v[0][0] = patch.ring[0].ring[5];
+	this->v[1][0] = patch.ring[0].ring[4];
       }
 
       if (unlikely(patch.ring[1].hasBorder())) 
         {
-          v[1][2] = patch.ring[1].vtx;
-          v[1][3] = patch.ring[1].regular_border_vertex_6();
-          v[0][3] = patch.ring[1].regular_border_vertex_5();
-          v[0][2] = patch.ring[1].regular_border_vertex_4();
+          this->v[1][2] = patch.ring[1].vtx;
+          this->v[1][3] = patch.ring[1].regular_border_vertex_6();
+          this->v[0][3] = patch.ring[1].regular_border_vertex_5();
+          this->v[0][2] = patch.ring[1].regular_border_vertex_4();
         } else {
-	v[1][2] = patch.ring[1].vtx;
-	v[1][3] = patch.ring[1].ring[6];
-	v[0][3] = patch.ring[1].ring[5];
-	v[0][2] = patch.ring[1].ring[4];
+	this->v[1][2] = patch.ring[1].vtx;
+	this->v[1][3] = patch.ring[1].ring[6];
+	this->v[0][3] = patch.ring[1].ring[5];
+	this->v[0][2] = patch.ring[1].ring[4];
       }
 
       if (unlikely(patch.ring[2].hasBorder())) 
         {
-          v[2][2] = patch.ring[2].vtx;
-          v[3][2] = patch.ring[2].regular_border_vertex_6();
-          v[3][3] = patch.ring[2].regular_border_vertex_5();
-          v[2][3] = patch.ring[2].regular_border_vertex_4();
+          this->v[2][2] = patch.ring[2].vtx;
+          this->v[3][2] = patch.ring[2].regular_border_vertex_6();
+          this->v[3][3] = patch.ring[2].regular_border_vertex_5();
+          this->v[2][3] = patch.ring[2].regular_border_vertex_4();
         } else {
-	v[2][2] = patch.ring[2].vtx;
-	v[3][2] = patch.ring[2].ring[6];
-	v[3][3] = patch.ring[2].ring[5];
-	v[2][3] = patch.ring[2].ring[4];
+	this->v[2][2] = patch.ring[2].vtx;
+	this->v[3][2] = patch.ring[2].ring[6];
+	this->v[3][3] = patch.ring[2].ring[5];
+	this->v[2][3] = patch.ring[2].ring[4];
       }
 
       if (unlikely(patch.ring[3].hasBorder())) 
         {
-          v[2][1] = patch.ring[3].vtx;
-          v[2][0] = patch.ring[3].regular_border_vertex_6();
-          v[3][0] = patch.ring[3].regular_border_vertex_5();
-          v[3][1] = patch.ring[3].regular_border_vertex_4();
+          this->v[2][1] = patch.ring[3].vtx;
+          this->v[2][0] = patch.ring[3].regular_border_vertex_6();
+          this->v[3][0] = patch.ring[3].regular_border_vertex_5();
+          this->v[3][1] = patch.ring[3].regular_border_vertex_4();
         } else {
-	v[2][1] = patch.ring[3].vtx;
-	v[2][0] = patch.ring[3].ring[6];
-	v[3][0] = patch.ring[3].ring[5];      
-	v[3][1] = patch.ring[3].ring[4];
+	this->v[2][1] = patch.ring[3].vtx;
+	this->v[2][0] = patch.ring[3].ring[6];
+	this->v[3][0] = patch.ring[3].ring[5];      
+	this->v[3][1] = patch.ring[3].ring[4];
       }
     }
 
-    __forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vec3fa>& vertices)
+    __forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vertex>& vertices)
     {
       CatmullClarkPatch3fa ipatch;
       ipatch.init( first_half_edge, vertices );
@@ -355,83 +356,83 @@ namespace embree
 
     __forceinline BBox3fa bounds() const
     {
-      const Vec3fa* const cv = &v[0][0];
+      const Vertex* const cv = &this->v[0][0];
       BBox3fa bounds ( cv[0] );
       for (size_t i = 1; i<16 ; i++)
 	bounds.extend( cv[i] );
       return bounds;
     }
 
-    __noinline Vec3fa eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
+    __noinline Vertex eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
-      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
+      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
+      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
+      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
     }
 
-    __forceinline Vec3fa tangentU(const float uu, const float vv) const
+    __forceinline Vertex tangentU(const float uu, const float vv) const
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
-      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
+      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
+      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
+      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::derivative(uu);
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
-    __forceinline Vec3fa tangentV(const float uu, const float vv) const
+    __forceinline Vertex tangentV(const float uu, const float vv) const
     {
       const Vec4f v_n = CubicBSplineCurve::derivative(vv);
 
-      const Vec3fa_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
-      const Vec3fa_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
-      const Vec3fa_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
-      const Vec3fa_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
+      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
+      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
+      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
+      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
       return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
     }
 
-    __forceinline Vec3fa normal(const float uu, const float vv) const
+    __forceinline Vertex normal(const float uu, const float vv) const
     {
-      const Vec3fa tu = tangentU(uu,vv);
-      const Vec3fa tv = tangentV(uu,vv);
+      const Vertex tu = tangentU(uu,vv);
+      const Vertex tv = tangentV(uu,vv);
       return cross(tv,tu);
     }   
 
     template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
     {
-      const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
-      const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
-      const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
-      const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
+      const T curve0_x = v_n[0] * T(this->v[0][0].x) + v_n[1] * T(this->v[1][0].x) + v_n[2] * T(this->v[2][0].x) + v_n[3] * T(this->v[3][0].x);
+      const T curve1_x = v_n[0] * T(this->v[0][1].x) + v_n[1] * T(this->v[1][1].x) + v_n[2] * T(this->v[2][1].x) + v_n[3] * T(this->v[3][1].x);
+      const T curve2_x = v_n[0] * T(this->v[0][2].x) + v_n[1] * T(this->v[1][2].x) + v_n[2] * T(this->v[2][2].x) + v_n[3] * T(this->v[3][2].x);
+      const T curve3_x = v_n[0] * T(this->v[0][3].x) + v_n[1] * T(this->v[1][3].x) + v_n[2] * T(this->v[2][3].x) + v_n[3] * T(this->v[3][3].x);
       const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
       
       
-      const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
-      const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
-      const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
-      const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
+      const T curve0_y = v_n[0] * T(this->v[0][0].y) + v_n[1] * T(this->v[1][0].y) + v_n[2] * T(this->v[2][0].y) + v_n[3] * T(this->v[3][0].y);
+      const T curve1_y = v_n[0] * T(this->v[0][1].y) + v_n[1] * T(this->v[1][1].y) + v_n[2] * T(this->v[2][1].y) + v_n[3] * T(this->v[3][1].y);
+      const T curve2_y = v_n[0] * T(this->v[0][2].y) + v_n[1] * T(this->v[1][2].y) + v_n[2] * T(this->v[2][2].y) + v_n[3] * T(this->v[3][2].y);
+      const T curve3_y = v_n[0] * T(this->v[0][3].y) + v_n[1] * T(this->v[1][3].y) + v_n[2] * T(this->v[2][3].y) + v_n[3] * T(this->v[3][3].y);
       const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
       
       
-      const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
-      const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
-      const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
-      const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
+      const T curve0_z = v_n[0] * T(this->v[0][0].z) + v_n[1] * T(this->v[1][0].z) + v_n[2] * T(this->v[2][0].z) + v_n[3] * T(this->v[3][0].z);
+      const T curve1_z = v_n[0] * T(this->v[0][1].z) + v_n[1] * T(this->v[1][1].z) + v_n[2] * T(this->v[2][1].z) + v_n[3] * T(this->v[3][1].z);
+      const T curve2_z = v_n[0] * T(this->v[0][2].z) + v_n[1] * T(this->v[1][2].z) + v_n[2] * T(this->v[2][2].z) + v_n[3] * T(this->v[3][2].z);
+      const T curve3_z = v_n[0] * T(this->v[0][3].z) + v_n[1] * T(this->v[1][3].z) + v_n[2] * T(this->v[2][3].z) + v_n[3] * T(this->v[3][3].z);
       const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
       
       return Vec3<T>(x,y,z);
@@ -473,15 +474,15 @@ namespace embree
 
     __forceinline mic_f getRow(const size_t i) const
     {
-      return load16f(&v[i][0]);
+      return load16f(&this->v[i][0]);
     }
 
     __forceinline void prefetchData() const
     {
-      prefetch<PFHINT_L1>(&v[0][0]);
-      prefetch<PFHINT_L1>(&v[1][0]);
-      prefetch<PFHINT_L1>(&v[2][0]);
-      prefetch<PFHINT_L1>(&v[3][0]);
+      prefetch<PFHINT_L1>(&this->v[0][0]);
+      prefetch<PFHINT_L1>(&this->v[1][0]);
+      prefetch<PFHINT_L1>(&this->v[2][0]);
+      prefetch<PFHINT_L1>(&this->v[3][0]);
     }
 
     static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
@@ -495,10 +496,10 @@ namespace embree
     {
       const mic4f v_e_d = eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
 
-      const mic_f curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
-      const mic_f curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
-      const mic_f curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
-      const mic_f curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
+      const mic_f curve0 = v_e_d[0] * broadcast4to16f(&this->v[0][0]) + v_e_d[1] * broadcast4to16f(&this->v[1][0]) + v_e_d[2] * broadcast4to16f(&this->v[2][0]) + v_e_d[3] * broadcast4to16f(&this->v[3][0]);
+      const mic_f curve1 = v_e_d[0] * broadcast4to16f(&this->v[0][1]) + v_e_d[1] * broadcast4to16f(&this->v[1][1]) + v_e_d[2] * broadcast4to16f(&this->v[2][1]) + v_e_d[3] * broadcast4to16f(&this->v[3][1]);
+      const mic_f curve2 = v_e_d[0] * broadcast4to16f(&this->v[0][2]) + v_e_d[1] * broadcast4to16f(&this->v[1][2]) + v_e_d[2] * broadcast4to16f(&this->v[2][2]) + v_e_d[3] * broadcast4to16f(&this->v[3][2]);
+      const mic_f curve3 = v_e_d[0] * broadcast4to16f(&this->v[0][3]) + v_e_d[1] * broadcast4to16f(&this->v[1][3]) + v_e_d[2] * broadcast4to16f(&this->v[2][3]) + v_e_d[3] * broadcast4to16f(&this->v[3][3]);
 
       const mic4f u_e_d = eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
 
@@ -515,10 +516,10 @@ namespace embree
     {
       const mic4f v_n = CubicBSplineCurve::eval(vv); 
 
-      const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
-      const mic_f curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
-      const mic_f curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
-      const mic_f curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
+      const mic_f curve0 = v_n[0] * broadcast4to16f(&this->v[0][0]) + v_n[1] * broadcast4to16f(&this->v[1][0]) + v_n[2] * broadcast4to16f(&this->v[2][0]) + v_n[3] * broadcast4to16f(&this->v[3][0]);
+      const mic_f curve1 = v_n[0] * broadcast4to16f(&this->v[0][1]) + v_n[1] * broadcast4to16f(&this->v[1][1]) + v_n[2] * broadcast4to16f(&this->v[2][1]) + v_n[3] * broadcast4to16f(&this->v[3][1]);
+      const mic_f curve2 = v_n[0] * broadcast4to16f(&this->v[0][2]) + v_n[1] * broadcast4to16f(&this->v[1][2]) + v_n[2] * broadcast4to16f(&this->v[2][2]) + v_n[3] * broadcast4to16f(&this->v[3][2]);
+      const mic_f curve3 = v_n[0] * broadcast4to16f(&this->v[0][3]) + v_n[1] * broadcast4to16f(&this->v[1][3]) + v_n[2] * broadcast4to16f(&this->v[2][3]) + v_n[3] * broadcast4to16f(&this->v[3][3]);
 
       const mic4f u_n = CubicBSplineCurve::eval(uu); 
 
@@ -527,7 +528,7 @@ namespace embree
 
 #endif
 
-    friend __forceinline std::ostream &operator<<(std::ostream& o, const BSplinePatch& p)
+    friend __forceinline std::ostream &operator<<(std::ostream& o, const BSplinePatchTT& p)
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)
@@ -535,6 +536,8 @@ namespace embree
       return o;
     } 
   };
+
+  typedef BSplinePatchTT<Vec3fa,Vec3fa_t> BSplinePatch3fa;
 }
 
 

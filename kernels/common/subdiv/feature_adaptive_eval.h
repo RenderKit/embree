@@ -25,7 +25,7 @@ namespace embree
   template<typename Vertex>
     struct FeatureAdaptivePointEval
   {
-    //typedef BSplinePatch<Vertex> BSplinePatch;
+    //typedef BSplinePatchTT<Vertex> BSplinePatch;
     typedef CatmullClarkPatch<Vertex> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatch<Vertex> GeneralCatmullClarkPatch;
 
@@ -205,7 +205,7 @@ namespace embree
 
       if (patch.isRegular()) 
       {
-	BSplinePatch patcheval; patcheval.init(patch);
+	BSplinePatch3fa patcheval; patcheval.init(patch);
 	//GregoryPatch patcheval; patcheval.init(patch);
 	for (float y=ly0; y<ly1; y++) 
 	{
