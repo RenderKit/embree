@@ -21,6 +21,7 @@
 #include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
+#include "geometry/triangle_intersector_pluecker2.h"
 
 #define DBG(x) 
 

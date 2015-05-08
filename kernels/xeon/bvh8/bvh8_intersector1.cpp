@@ -22,6 +22,7 @@
 #include "geometry/intersector_iterators.h"
 #include "geometry/triangle_intersector_moeller.h"
 #include "geometry/triangle_intersector_pluecker.h"
+#include "geometry/triangle_intersector_pluecker2.h"
 
 namespace embree
 { 
@@ -328,7 +329,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
 
-    DEFINE_INTERSECTOR1(BVH8Triangle8vIntersector1Pluecker,BVH8Intersector1<true COMMA ArrayIntersector1<TriangleNvIntersector1Pluecker<Triangle8v COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8vIntersector1Pluecker,BVH8Intersector1<true COMMA ArrayIntersector1<TriangleNvIntersector1Pluecker2<Triangle8v COMMA true> > >);
 
 
   }
