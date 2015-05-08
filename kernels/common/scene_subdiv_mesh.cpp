@@ -21,6 +21,10 @@
 #include "algorithms/prefix.h"
 #include "algorithms/parallel_for.h"
 
+#if !defined(__MIC__)
+#include "subdiv/feature_adaptive_eval.h"
+#endif
+
 namespace embree
 {
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
@@ -481,17 +485,19 @@ namespace embree
 
   void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
   {
-#if 0
-    const float* src = (float*) src;
-    for (size_t i=0; i<numFloats; i+=4)
+#if !defined(__MIC__) // FIXME: not working on MIC yet
+    const char* src = (const char*) src_i;
+    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
       GeneralCatmullClarkPatch<ssef> patch;
-      auto load = [&](const SubdivMesh::HalfEdge* p) 
-      { 
+      auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
-        return Vec3fa(vertices[vtx], vtx); 
-      }
-      patch.init(getHalfEdge(primID),load);
+        return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
+      };
+      patch.init2(getHalfEdge(primID),load);
+      ssef out = feature_adaptive_point_eval(patch,u,v);
+      for (size_t j=i; j<min(i+4,numFloats); j++)
+        dst[j] = out[j-i];
     }
 #endif
   }

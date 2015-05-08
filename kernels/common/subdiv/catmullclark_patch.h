@@ -528,13 +528,10 @@ namespace embree
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
       dest.noForcedSubdivision = true;
-      for (size_t i=0; i<2*N; i++) 
-	{
-	  dest.ring[i] = (Vertex_t)center_ring[(2*N+offset+i-1)%(2*N)];
-	  assert( isvalid(dest.ring[i].x) );
-	  assert( isvalid(dest.ring[i].y) );
-	  assert( isvalid(dest.ring[i].z) );
-	}
+      for (size_t i=0; i<2*N; i++) {
+        dest.ring[i] = (Vertex_t)center_ring[(2*N+offset+i-1)%(2*N)];
+        assert(isvalid(dest.ring[i]));
+      }
       for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
 

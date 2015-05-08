@@ -22,6 +22,156 @@
 
 namespace embree
 {
+  template<typename Vertex>
+    struct FeatureAdaptivePointEval
+  {
+    //typedef BSplinePatch<Vertex> BSplinePatch;
+    typedef CatmullClarkPatch<Vertex> CatmullClarkPatch;
+    typedef GeneralCatmullClarkPatch<Vertex> GeneralCatmullClarkPatch;
+
+    const float u,v;
+    Vertex dst;
+        
+    __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
+      : u(u), v(v)
+    {
+      eval(patch,Vec2f(u,v),size_t(0));
+    }
+
+    void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth)
+    {
+      /* convert into standard quad patch if possible */
+      if (likely(patch.isQuadPatch())) 
+      {
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
+        CatmullClarkPatch qpatch; patch.init(qpatch);
+	eval(qpatch,uv,srange,depth);
+	return;
+      }
+
+      /* subdivide patch */
+      size_t N;
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+
+      /* check if subpatches need further subdivision */
+      array_t<bool,GeneralCatmullClarkPatch::SIZE> childSubdiv;
+      for (size_t i=0; i<N; i++)
+        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+
+      /* parametrization for triangles */
+      if (N == 3) {
+	const Vec2f uv_0(0.0f,0.0f);
+	const Vec2f uv01(0.5f,0.0f);
+	const Vec2f uv_1(1.0f,0.0f);
+	const Vec2f uv12(0.5f,0.5f);
+	const Vec2f uv_2(0.0f,1.0f);
+	const Vec2f uv20(0.0f,0.5f);
+	const Vec2f uvcc(1.0f/3.0f);
+	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
+	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
+	const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
+        const BBox2f srange0(uv_0,uvcc);
+        assert(conjoint(srange0,uv_0));
+        assert(conjoint(srange0,uv01));
+        assert(conjoint(srange0,uvcc));
+        assert(conjoint(srange0,uv20));
+        const BBox2f srange1(uv_1,uvcc);
+        assert(conjoint(srange1,uv_1));
+        assert(conjoint(srange1,uv12));
+        assert(conjoint(srange1,uvcc));
+        assert(conjoint(srange1,uv01));
+        const BBox2f srange2(uv_2,uvcc);
+        assert(conjoint(srange2,uv_2));
+        assert(conjoint(srange2,uv20));
+        assert(conjoint(srange2,uvcc));
+        assert(conjoint(srange2,uv12));
+        if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1); // FIXME: no recursion required!
+        else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
+        else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
+        else assert(false);
+      } 
+
+      /* parametrization for quads */
+      else if (N == 4) {
+	const Vec2f uv_0(0.0f,0.0f);
+	const Vec2f uv01(0.5f,0.0f);
+	const Vec2f uv_1(1.0f,0.0f);
+	const Vec2f uv12(1.0f,0.5f);
+	const Vec2f uv_2(1.0f,1.0f);
+	const Vec2f uv23(0.5f,1.0f);
+	const Vec2f uv_3(0.0f,1.0f);
+	const Vec2f uv30(0.0f,0.5f);
+	const Vec2f uvcc(0.5f,0.5f);
+	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv30 };
+	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
+	const Vec2f uv2[4] = { uv_2,uv23,uvcc,uv12 };
+	const Vec2f uv3[4] = { uv_3,uv30,uvcc,uv23 };
+        const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(0.5f,0.5f));
+        const BBox2f srange1(Vec2f(0.5f,0.0f),Vec2f(1.0f,0.5f));
+        const BBox2f srange2(Vec2f(0.5f,0.5f),Vec2f(1.0f,1.0f));
+        const BBox2f srange3(Vec2f(0.0f,0.5f),Vec2f(0.5f,1.0f));
+ 	if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1);
+	else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
+	else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
+	else if (conjoint(srange3,uv)) eval(patches[3],uv,srange3,depth+1);
+        else assert(false);
+      }
+
+      /* parametrization for arbitrary polygons */
+      else 
+      {
+        unsigned i = trunc(uv.x);
+        assert(i<N);
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
+        eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1);
+      }
+    }
+
+    void eval(const CatmullClarkPatch& patch, const Vec2f& uv, const BBox2f& srange, size_t depth)
+    {
+      if (patch.isRegularOrFinal2(depth)) 
+      {
+        if (patch.isRegular()) 
+        {
+          //BSplinePatch bspline; bspline.init(patch);
+          //const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
+          //const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+          //dst = bspline.eval(fx,fy);
+          dst = zero;
+        }
+        else 
+        {
+          const float sx1 = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
+          const float sy1 = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
+          const Vertex P0 = patch.ring[0].getLimitVertex();
+          const Vertex P1 = patch.ring[1].getLimitVertex();
+          const Vertex P2 = patch.ring[2].getLimitVertex();
+          const Vertex P3 = patch.ring[3].getLimitVertex();
+          dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+        }
+      }
+
+      array_t<CatmullClarkPatch,4> patches; 
+      patch.subdivide(patches); // FIXME: only have to generate one of the patches
+
+      const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(0.5f,0.5f));
+      const BBox2f srange1(Vec2f(0.5f,0.0f),Vec2f(1.0f,0.5f));
+      const BBox2f srange2(Vec2f(0.5f,0.5f),Vec2f(1.0f,1.0f));
+      const BBox2f srange3(Vec2f(0.0f,0.5f),Vec2f(0.5f,1.0f));
+      if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1);
+      else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
+      else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
+      else if (conjoint(srange3,uv)) eval(patches[3],uv,srange3,depth+1);
+      else assert(false);
+    }
+  };
+
+  template<typename Vertex>
+    __forceinline Vertex feature_adaptive_point_eval (const GeneralCatmullClarkPatch<Vertex>& patch, const float u, const float v) {
+    FeatureAdaptivePointEval<Vertex> eval(patch,u,v); return eval.dst;
+  }
+
   struct FeatureAdaptiveEval
   {
     const size_t x0,x1;
