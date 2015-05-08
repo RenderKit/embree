@@ -105,22 +105,6 @@ namespace embree
       return bounds;
     }
 
-    /* need unique starting index for limit/tangent eval to guarantee bit-wise identical results */
-    __forceinline void updateEvalStartIndex()
-    {
-      unsigned int min_val = (unsigned int)-1;      
-      eval_start_index     = (unsigned int)-1;
-
-      for (unsigned int i=0; i<face_valence; i+=2) 
-      {
-        if (ring[i].u < min_val) { 
-          min_val = ring[i].u; 
-          eval_start_index = i>>1; 
-        }
-      }
-      eval_unique_identifier = min_val;
-    }
-
     template<typename LoadVertex>
       __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load) 
     {
@@ -132,6 +116,8 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
       size_t i=0;
+      unsigned min_vertex_index = (unsigned)-1;
+      unsigned min_vertex_index_face = (unsigned)-1;
       edge_level = p->edge_level;
       vertex_level = 0.0f;
 
@@ -143,6 +129,11 @@ namespace embree
         /* store first two vertices of face */
         p = p->next();
         ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
+        
+        /* find minimal start vertex */
+        unsigned vertex_index = p->getStartVertexIndex();
+        if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
+
         p = p->next();
         ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
         p = p->next();
@@ -155,6 +146,10 @@ namespace embree
         /* if there is no opposite go the long way to the other side of the border */
         else
         {
+          /* find minimal start vertex */
+          unsigned vertex_index = p->getStartVertexIndex();
+          if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
+
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
@@ -171,8 +166,8 @@ namespace embree
 
       edge_valence = i;
       face_valence = i >> 1;
-
-      updateEvalStartIndex();
+      eval_unique_identifier = min_vertex_index;
+      eval_start_index = min_vertex_index_face;
 
       assert( hasValidPositions() );
 
@@ -660,25 +655,7 @@ namespace embree
       }	
       return true;
     }
-    
-    /* need unique starting index for limit/tangent eval to guarantee bit-wise identical results */
-    __forceinline void updateEvalStartIndex()
-    {
-      eval_unique_identifier  = (unsigned int)-1;      
-      eval_start_face_index   = (unsigned int)-1;
-      eval_start_vertex_index = (unsigned int)-1;
 
-      for (size_t f=0, v=0; f<face_valence; v+=faces[f++].size)
-      {
-        assert(v < edge_valence);
-        if (ring[v].u < eval_unique_identifier) { 
-          eval_unique_identifier = ring[v].u; 
-          eval_start_face_index   = f;
-          eval_start_vertex_index = v; 
-        }
-      }
-    }
-    
     template<typename LoadVertex>
       __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load)
     {
@@ -689,17 +666,25 @@ namespace embree
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
       size_t e=0, f=0;
+      unsigned min_vertex_index = (unsigned)-1;
+      unsigned min_vertex_index_face = (unsigned)-1;
+      unsigned min_vertex_index_vertex = (unsigned)-1;
       edge_level = p->edge_level;
       vertex_level = 0.0f;
       do 
       {
+        SubdivMesh::HalfEdge* p_prev = p->prev();
+        SubdivMesh::HalfEdge* p_next = p->next();
         const float crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
         vertex_level = max(vertex_level,p->edge_level);
 
+        /* find minimal start vertex */
+        unsigned vertex_index = p_next->getStartVertexIndex();
+        if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
+
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
-	SubdivMesh::HalfEdge* p_prev = p->prev();
-        for (p = p->next(); p!=p_prev; p=p->next()) {
+        for (p = p_next; p!=p_prev; p=p->next()) {
           ring[e++] = load(p); //Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
           vn++;
 	}
@@ -713,6 +698,10 @@ namespace embree
         /* if there is no opposite go the long way to the other side of the border */
         else
         {
+          /* find minimal start vertex */
+          unsigned vertex_index = p->getStartVertexIndex();
+          if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
+
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
 	  faces[f++] = Face(2,inf); 
@@ -727,11 +716,11 @@ namespace embree
 	
       } while (p != h); 
       
- 
       edge_valence = e;
       face_valence = f;
-
-      updateEvalStartIndex();
+      eval_unique_identifier = min_vertex_index;
+      eval_start_face_index = min_vertex_index_face;
+      eval_start_vertex_index = min_vertex_index_vertex;
      
       assert( hasValidPositions() );
     }
