@@ -486,7 +486,12 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       GeneralCatmullClarkPatch<ssef> patch;
-      patch.init(getHalfEdge(primID),[&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+      auto load = [&](const SubdivMesh::HalfEdge* p) 
+      { 
+        const unsigned vtx = p->getStartVertexIndex();
+        return Vec3fa(vertices[vtx], vtx); 
+      }
+      patch.init(getHalfEdge(primID),load);
     }
 #endif
   }

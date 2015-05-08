@@ -859,7 +859,9 @@ namespace embree
       dst.noForcedSubdivision = true;
       for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
 
-      dst.updateEvalStartIndex();
+      //dst.updateEvalStartIndex();
+      dst.eval_start_index = eval_start_face_index;
+      dst.eval_unique_identifier = eval_unique_identifier;
 
       assert( dst.hasValidPositions() );
     }
