@@ -113,7 +113,9 @@ namespace embree
     virtual void setUserData (void* ptr);
       
     /*! Get user data pointer. */
-    virtual void* getUserData ();
+    __forceinline void* getUserData() const {
+      return userPtr;
+    }
 
     /*! for triangle meshes and bezier curves only */
   public:
