@@ -26,18 +26,19 @@ namespace embree
   struct __aligned(64) FinalQuad {
     Vec3fa vtx[4];
   };
-  
-  struct __aligned(64) CatmullClark1Ring
+
+  template<typename Vertex, typename Vertex_t = Vertex>
+    struct __aligned(64) CatmullClark1Ring
   {
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     static const size_t MAX_DEPTH_SUBDIVISION = 10;
 
-    array_t<Vec3fa,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
+    array_t<Vertex,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
     array_t<float,MAX_FACE_VALENCE> crease_weight;
     
     int border_index;
-    Vec3fa vtx;
+    Vertex vtx;
     unsigned int face_valence;
     unsigned int edge_valence;
     float vertex_crease_weight;
@@ -54,12 +55,12 @@ namespace embree
       return border_index != -1;
     }
     
-    __forceinline const Vec3fa& front(size_t i) const {
+    __forceinline const Vertex& front(size_t i) const {
       assert(edge_valence>i);
       return ring[i];
     }
     
-    __forceinline const Vec3fa& back(size_t i) const {
+    __forceinline const Vertex& back(size_t i) const {
       assert(i>0 && edge_valence>=i);
       return ring[edge_valence-i];
     }
@@ -72,7 +73,7 @@ namespace embree
       return (border_index == -1) || (border_index >= 4);
     }
     
-    __forceinline Vec3fa regular_border_vertex_4() const 
+    __forceinline Vertex regular_border_vertex_4() const 
     {
       assert(border_index != -1);
       assert(face_valence == 2 || face_valence == 3);
@@ -80,7 +81,7 @@ namespace embree
       else return 2.0f*vtx-ring[0];
     }
 
-    __forceinline Vec3fa regular_border_vertex_5() const 
+    __forceinline Vertex regular_border_vertex_5() const 
     {
       assert(border_index != -1);
       assert(face_valence == 2 || face_valence == 3);
@@ -89,7 +90,7 @@ namespace embree
       else { assert(border_index == 4); return 2.0f*ring[4]-ring[3]; }
     }
 
-    __forceinline Vec3fa regular_border_vertex_6() const 
+    __forceinline Vertex regular_border_vertex_6() const 
     {
       assert(border_index != -1);
       assert(face_valence == 2 || face_valence == 3);
@@ -110,7 +111,7 @@ namespace embree
     {
       noForcedSubdivision = true;
       border_index = -1;
-      vtx = load(h); //(Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vtx = load(h);
       vertex_crease_weight = h->vertex_crease_weight;
       
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
@@ -128,14 +129,14 @@ namespace embree
 
         /* store first two vertices of face */
         p = p->next();
-        ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
+        ring[i++] = load(p);
         
         /* find minimal start vertex */
         unsigned vertex_index = p->getStartVertexIndex();
         if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
 
         p = p->next();
-        ring[i++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()],p->getStartVertexIndex());
+        ring[i++] = load(p);
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
        
@@ -153,7 +154,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = load(p); //Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
+          ring[i++] = load(p);
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
@@ -188,7 +189,7 @@ namespace embree
       assert(eval_start_index < edge_valence);
 
       /* calculate face points */
-      Vec3fa_t S = Vec3fa_t(0.0f);
+      Vertex_t S = Vertex_t(0.0f);
       for (size_t i=0; i<face_valence; i++) {
         ////////////////////////////////////////////////
         size_t face_index = i + eval_start_index;
@@ -210,7 +211,7 @@ namespace embree
       /* calculate new edge points */
       size_t num_creases = 0;
       array_t<size_t,MAX_FACE_VALENCE> crease_id;
-      Vec3fa_t C = Vec3fa_t(0.0f);
+      Vertex_t C = Vertex_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
         ////////////////////////////////////////////////
@@ -223,8 +224,8 @@ namespace embree
         size_t prev_index = face_index == 0 ? edge_valence-1 : 2*face_index-1;
         size_t next_index = 2*face_index+1;
 
-        const Vec3fa_t v = vtx + ring[index];
-        const Vec3fa_t f = dest.ring[prev_index] + dest.ring[next_index];
+        const Vertex_t v = vtx + ring[index];
+        const Vertex_t f = dest.ring[prev_index] + dest.ring[next_index];
         S += ring[index];
         dest.crease_weight[face_index] = max(crease_weight[face_index]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[face_index] < 1.0f ? 0.0f : 0.5f*crease_weight[face_index];
@@ -250,7 +251,7 @@ namespace embree
       
       /* compute new vertex using smooth rule */
       const float inv_face_valence = 1.0f / (float)face_valence;
-      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
+      const Vertex_t v_smooth = (Vertex_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -270,7 +271,7 @@ namespace embree
       
       /* compute new vertex using crease rule */
       if (likely(num_creases == 2)) {
-        const Vec3fa_t v_sharp = (Vec3fa_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
+        const Vertex_t v_sharp = (Vertex_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = crease_weight[crease_id[0]];
         const float crease_weight1 = crease_weight[crease_id[1]];
         dest.vtx = v_sharp;
@@ -396,16 +397,16 @@ namespace embree
       return true;
     }
     
-    __forceinline Vec3fa ksum(Vec3fa_t &sum, Vec3fa_t &c, const Vec3fa_t &i) const
+    __forceinline Vertex ksum(Vertex_t &sum, Vertex_t &c, const Vertex_t &i) const
     {
-      Vec3fa_t y = i - c;
-      Vec3fa_t t = sum + y;
+      Vertex_t y = i - c;
+      Vertex_t t = sum + y;
       c = (t - sum) - y;
       return t;
     }
 
     /* computes the limit vertex */
-    __forceinline Vec3fa getLimitVertex() const
+    __forceinline Vertex getLimitVertex() const
     {
       /* FIXME: is this correct ? */ 
       if (unlikely(std::isinf(vertex_crease_weight)))
@@ -421,12 +422,12 @@ namespace embree
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
       }
       
-      Vec3fa_t F( 0.0f );
-      Vec3fa_t E( 0.0f );
+      Vertex_t F( 0.0f );
+      Vertex_t E( 0.0f );
       
 
-      //Vec3fa_t c_F ( 0.0f );
-      //Vec3fa_t c_E ( 0.0f );
+      //Vertex_t c_F ( 0.0f );
+      //Vertex_t c_E ( 0.0f );
 
       //F = ksum(F,c_F,ring[2*i+1]);
       //E = ksum(E,c_E,ring[2*i]);
@@ -444,11 +445,11 @@ namespace embree
       }
 
       const float n = (float)face_valence;
-      return (Vec3fa_t)(n*n*vtx+4.0f*E+F) / ((n+5.0f)*n);      
+      return (Vertex_t)(n*n*vtx+4.0f*E+F) / ((n+5.0f)*n);      
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[0] */
-    __forceinline Vec3fa getLimitTangent() const 
+    __forceinline Vertex getLimitTangent() const 
     {
       if (unlikely(std::isinf(vertex_crease_weight)))
         return ring[0] - vtx;
@@ -469,8 +470,8 @@ namespace embree
 	}
       }
       
-      Vec3fa_t alpha( 0.0f );
-      Vec3fa_t beta ( 0.0f );
+      Vertex_t alpha( 0.0f );
+      Vertex_t beta ( 0.0f );
       
       const float n = (float)face_valence;
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
@@ -480,8 +481,8 @@ namespace embree
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
 
 
-      //Vec3fa_t c_alpha( 0.0f );
-      //Vec3fa_t c_beta ( 0.0f );
+      //Vertex_t c_alpha( 0.0f );
+      //Vertex_t c_beta ( 0.0f );
 
       assert(eval_start_index < face_valence);
 
@@ -504,7 +505,7 @@ namespace embree
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
-    __forceinline Vec3fa getSecondLimitTangent() const 
+    __forceinline Vertex getSecondLimitTangent() const 
     {
       if (unlikely(std::isinf(vertex_crease_weight)))
         return ring[2] - vtx;
@@ -525,8 +526,8 @@ namespace embree
         }
       }
       
-      Vec3fa_t alpha( 0.0f );
-      Vec3fa_t beta ( 0.0f );
+      Vertex_t alpha( 0.0f );
+      Vertex_t beta ( 0.0f );
       const float n = (float)face_valence;
       //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
       //const float c0 = 2.0f/n * delta;
@@ -534,8 +535,8 @@ namespace embree
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
 
-      //Vec3fa_t c_alpha( 0.0f );
-      //Vec3fa_t c_beta ( 0.0f );
+      //Vertex_t c_alpha( 0.0f );
+      //Vertex_t c_beta ( 0.0f );
 
       assert(eval_start_index < face_valence);
 
@@ -560,23 +561,23 @@ namespace embree
     }
 
     /* gets surface normal */
-    const Vec3fa getNormal() const  {
+    const Vertex getNormal() const  {
       return cross(getSecondLimitTangent(),getLimitTangent());
     }
     
     /* returns center of the n-th quad in the 1-ring */
-    __forceinline Vec3fa getQuadCenter(const size_t index) const
+    __forceinline Vertex getQuadCenter(const size_t index) const
     {
-      const Vec3fa_t &p0 = vtx;
-      const Vec3fa_t &p1 = ring[2*index+0];
-      const Vec3fa_t &p2 = ring[2*index+1];
-      const Vec3fa_t &p3 = index == face_valence-1 ? ring[0] : ring[2*index+2];
-      const Vec3fa p = (p0+p1+p2+p3) * 0.25f;
+      const Vertex_t &p0 = vtx;
+      const Vertex_t &p1 = ring[2*index+0];
+      const Vertex_t &p2 = ring[2*index+1];
+      const Vertex_t &p3 = index == face_valence-1 ? ring[0] : ring[2*index+2];
+      const Vertex p = (p0+p1+p2+p3) * 0.25f;
       return p;
     }
     
     /* returns center of the n-th edge in the 1-ring */
-    __forceinline Vec3fa getEdgeCenter(const size_t index) const {
+    __forceinline Vertex getEdgeCenter(const size_t index) const {
       return (vtx + ring[index*2]) * 0.5f;
     }
 
@@ -605,8 +606,10 @@ namespace embree
     } 
   };
   
-  struct __aligned(64) GeneralCatmullClark1Ring
+  template<typename Vertex, typename Vertex_t = Vertex>
+    struct __aligned(64) GeneralCatmullClark1Ring
   {
+    typedef CatmullClark1Ring<Vertex,Vertex_t> CatmullClark1Ring;
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
@@ -620,8 +623,8 @@ namespace embree
       float crease_weight;
     };
 
-    Vec3fa vtx;
-    array_t<Vec3fa,MAX_EDGE_VALENCE> ring; 
+    Vertex vtx;
+    array_t<Vertex,MAX_EDGE_VALENCE> ring; 
     array_t<Face,MAX_FACE_VALENCE> faces;
     unsigned int face_valence;
     unsigned int edge_valence;
@@ -661,7 +664,7 @@ namespace embree
     {
       only_quads = true;
       border_face = -1;
-      vtx = load(h); //(Vec3fa_t)vertices[ h->getStartVertexIndex() ];
+      vtx = load(h);
       vertex_crease_weight = h->vertex_crease_weight;
       SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
       
@@ -685,7 +688,7 @@ namespace embree
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
-          ring[e++] = load(p); //Vec3fa (vertices[ p->getStartVertexIndex() ], p->getStartVertexIndex());
+          ring[e++] = load(p);
           vn++;
 	}
 	faces[f++] = Face(vn,crease_weight);
@@ -705,7 +708,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
 	  faces[f++] = Face(2,inf); 
-          ring[e++] = load(p); //Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
+          ring[e++] = load(p);
           ring[e++] = vtx; // dummy vertex
 	  
           /*! goto other side of border */
@@ -739,13 +742,13 @@ namespace embree
       assert(dest.face_valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
 
       /* calculate face points */
-      Vec3fa_t S = Vec3fa_t(0.0f);
+      Vertex_t S = Vertex_t(0.0f);
       for (size_t face=0, v=eval_start_vertex_index; face<face_valence; face++) {
         ////////////////////////////////////////////////
         size_t f = (face + eval_start_face_index)%face_valence;
         ////////////////////////////////////////////////
 
-        Vec3fa_t F = vtx;
+        Vertex_t F = vtx;
         for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(faces[f].size+2);
         v+=faces[f].size;
@@ -757,15 +760,15 @@ namespace embree
       /* calculate new edge points */
       size_t num_creases = 0;
       array_t<size_t,MAX_FACE_VALENCE> crease_id;
-      Vec3fa_t C = Vec3fa_t(0.0f);
+      Vertex_t C = Vertex_t(0.0f);
       for (size_t face=0, j=eval_start_vertex_index; face<face_valence; face++)
       {
         ////////////////////////////////////////////////
         size_t i = (face + eval_start_face_index)%face_valence;
         ////////////////////////////////////////////////
         
-        const Vec3fa_t v = vtx + ring[j];
-        Vec3fa_t f = dest.ring[2*i+1];
+        const Vertex_t v = vtx + ring[j];
+        Vertex_t f = dest.ring[2*i+1];
         if (i == 0) f += dest.ring[dest.edge_valence-1]; 
         else        f += dest.ring[2*i-1];
         S += ring[j];
@@ -795,7 +798,7 @@ namespace embree
       
       /* compute new vertex using smooth rule */
       const float inv_face_valence = 1.0f / (float)face_valence;
-      const Vec3fa_t v_smooth = (Vec3fa_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
+      const Vertex_t v_smooth = (Vertex_t)(S*inv_face_valence + (float(face_valence)-2.0f)*vtx)*inv_face_valence;
       dest.vtx = v_smooth;
       
       /* compute new vertex using vertex_crease_weight rule */
@@ -815,7 +818,7 @@ namespace embree
       
       /* compute new vertex using crease rule */
       if (likely(num_creases == 2)) {
-        const Vec3fa_t v_sharp = (Vec3fa_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
+        const Vertex_t v_sharp = (Vertex_t)(C + 6.0f * vtx) * (1.0f / 8.0f);
         const float crease_weight0 = faces[crease_id[0]].crease_weight;
         const float crease_weight1 = faces[crease_id[1]].crease_weight;
         dest.vtx = v_sharp;
@@ -868,9 +871,8 @@ namespace embree
       }
       return o;
     } 
-  };
 
-  __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
+    friend __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
     {
       if (source.face_valence != dest.face_valence) return false;
       if (source.edge_valence != dest.edge_valence) return false;
@@ -895,5 +897,6 @@ namespace embree
         }
       return true;
     }
-    
+
+  };  
 }

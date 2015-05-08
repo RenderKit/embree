@@ -35,7 +35,7 @@ namespace embree
   public:
 
     /*! constructor for cached subdiv patch */
-    SubdivPatch1Cached (const CatmullClarkPatch& ipatch,
+    SubdivPatch1Cached (const CatmullClarkPatch3fa& ipatch,
                         const unsigned int gID,
                         const unsigned int pID,
                         const SubdivMesh *const mesh,

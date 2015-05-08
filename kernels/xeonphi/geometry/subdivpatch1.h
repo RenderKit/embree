@@ -29,7 +29,7 @@ namespace embree
 
   struct __aligned(64) SubdivPatch1 : public SubdivPatch1Base
   {
-    SubdivPatch1 (const CatmullClarkPatch &ipatch,
+    SubdivPatch1 (const CatmullClarkPatch3fa &ipatch,
 		  const unsigned int geomID,
 		  const unsigned int primID,
 		  const SubdivMesh *const mesh, 

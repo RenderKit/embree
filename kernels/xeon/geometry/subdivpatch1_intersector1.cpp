@@ -174,13 +174,13 @@ namespace embree
 
     void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
                                                         Ray& ray,
-                                                        const GeneralCatmullClarkPatch &patch,
+                                                        const GeneralCatmullClarkPatch3fa &patch,
                                                         const unsigned int geomID,
                                                         const unsigned int primID,
                                                         const unsigned int subdiv_level)
     {
       size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
 
       for (size_t i=0; i<N; i++)
@@ -190,7 +190,7 @@ namespace embree
 
     void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
                                                         Ray& ray,
-                                                        const CatmullClarkPatch &patch,
+                                                        const CatmullClarkPatch3fa& patch,
                                                         const unsigned int geomID,
                                                         const unsigned int primID,
                                                         const unsigned int subdiv_level)
@@ -204,7 +204,7 @@ namespace embree
       }
       else
       {
-        array_t<CatmullClarkPatch,4> subpatches;
+        array_t<CatmullClarkPatch3fa,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))
@@ -214,13 +214,13 @@ namespace embree
 
     bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
                                                        Ray& ray,
-                                                       const GeneralCatmullClarkPatch &patch,
+                                                       const GeneralCatmullClarkPatch3fa& patch,
                                                        const unsigned int geomID,
                                                        const unsigned int primID,
                                                        const unsigned int subdiv_level)
     {
       size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
 
       for (size_t i=0; i<N; i++)
@@ -233,7 +233,7 @@ namespace embree
 
     bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
                                                        Ray& ray,
-                                                       const CatmullClarkPatch &patch,
+                                                       const CatmullClarkPatch3fa &patch,
                                                        const unsigned int geomID,
                                                        const unsigned int primID,						     
                                                        const unsigned int subdiv_level)
@@ -247,7 +247,7 @@ namespace embree
       }
       else
       {
-        array_t<CatmullClarkPatch,4> subpatches;
+        array_t<CatmullClarkPatch3fa,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))

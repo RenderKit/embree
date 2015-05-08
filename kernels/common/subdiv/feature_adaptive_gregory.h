@@ -32,16 +32,16 @@ namespace embree
 #if 0
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
       int neighborSubdiv[4];
-      const CatmullClarkPatch patch(h,vertices);
+      const CatmullClarkPatch3fa patch(h,vertices);
       for (size_t i=0; i<4; i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
       subdivide(patch,0,uv,neighborSubdiv);
 #else
-      int neighborSubdiv[GeneralCatmullClarkPatch::SIZE];
-      GeneralCatmullClarkPatch patch;
+      int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
+      GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
-      assert( patch.size() <= GeneralCatmullClarkPatch::SIZE);
+      assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
@@ -50,23 +50,23 @@ namespace embree
     }
 
 
-    void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
+    void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
 	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
-	CatmullClarkPatch qpatch; patch.init(qpatch);
+	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
       /* subdivide patch */
       size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
-      bool childSubdiv[GeneralCatmullClarkPatch::SIZE];
+      bool childSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       for (size_t i=0; i<N; i++) {
         assert( patches[i].checkPositions() );
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
@@ -131,14 +131,14 @@ namespace embree
     }
 
 
-    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
+    void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
       if (depth <= 1)
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
       
 
-      array_t<CatmullClarkPatch,4> patches; 
+      array_t<CatmullClarkPatch3fa,4> patches; 
       patch.subdivide(patches);
 
       const bool childSubdiv0 = !patches[0].isGregoryOrFinal(depth);

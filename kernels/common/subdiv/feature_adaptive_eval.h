@@ -31,7 +31,7 @@ namespace embree
     Vec3fa* const Ng;
     const size_t dwidth,dheight;
     
-    __forceinline FeatureAdaptiveEval (const CatmullClarkPatch& patch, 
+    __forceinline FeatureAdaptiveEval (const CatmullClarkPatch3fa& patch, 
 				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
@@ -42,7 +42,7 @@ namespace embree
       eval(patch, srange, erange, 0);
     }
 
-    void dice(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange)
+    void dice(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange)
     {
       float lx0 = ceilf (erange.lower.x);
       float lx1 = erange.upper.x + (erange.upper.x >= x1);
@@ -102,7 +102,7 @@ namespace embree
       }
     }
 
-    void eval(const CatmullClarkPatch& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
+    void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
       if (erange.empty())
 	return;
@@ -110,7 +110,7 @@ namespace embree
       if (patch.isRegularOrFinal2(depth))
 	return dice(patch,srange,erange);
 
-      array_t<CatmullClarkPatch,4> patches; 
+      array_t<CatmullClarkPatch3fa,4> patches; 
       patch.subdivide(patches);
 
       const Vec2f c = srange.center();
@@ -126,7 +126,7 @@ namespace embree
     }
   };
 
-  __forceinline void feature_adaptive_eval (const CatmullClarkPatch& patch, 
+  __forceinline void feature_adaptive_eval (const CatmullClarkPatch3fa& patch, 
 					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
   {
@@ -143,8 +143,8 @@ namespace embree
     __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-      int neighborSubdiv[GeneralCatmullClarkPatch::SIZE]; // FIXME: use array_t
-      GeneralCatmullClarkPatch patch;
+      int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t
+      GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
@@ -152,24 +152,24 @@ namespace embree
       subdivide(patch,0,neighborSubdiv);
     }
 
-    void subdivide(const GeneralCatmullClarkPatch& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch::SIZE])
+    void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
 	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
-	CatmullClarkPatch qpatch; patch.init(qpatch);
+	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv,0);
 	return;
       }
 
       /* subdivide patch */
       size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
 
       /* check if subpatches need further subdivision */
-      array_t<bool,GeneralCatmullClarkPatch::SIZE> childSubdiv;
+      array_t<bool,GeneralCatmullClarkPatch3fa::SIZE> childSubdiv;
       for (size_t i=0; i<N; i++)
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
 
@@ -230,7 +230,7 @@ namespace embree
       }
     }
     
-    void subdivide(const CatmullClarkPatch& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4], const int id) {
+    void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4], const int id) {
       return tessellator(patch,uv,neighborSubdiv,id);
     }
   };

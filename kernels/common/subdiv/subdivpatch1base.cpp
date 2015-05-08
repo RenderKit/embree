@@ -107,7 +107,7 @@ namespace embree
 
 
   /*! Construction from vertices and IDs. */
-  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch& ipatch,
+  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const unsigned int gID,
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh,

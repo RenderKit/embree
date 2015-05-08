@@ -89,27 +89,27 @@ namespace embree
     const Vec3fa& f3_m() const { return f[1][0]; }
     
     
-    Vec3fa initCornerVertex(const CatmullClarkPatch &irreg_patch, const size_t index)
+    Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index)
     {
       return irreg_patch.ring[index].getLimitVertex();
     }
     
     
-    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
+    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
       
       return 1.0f/3.0f * tangent + p_vtx;
     }
     
-    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch &irreg_patch, const size_t index, const Vec3fa &p_vtx)
+    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
     {
       const Vec3fa tangent = irreg_patch.ring[index].getSecondLimitTangent();
       return 1.0f/3.0f * tangent + p_vtx;
     }
     
     
-    void initFaceVertex(const CatmullClarkPatch &irreg_patch,
+    void initFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
 			const size_t index,
 			const Vec3fa &p_vtx,
 			const Vec3fa &e0_p_vtx,
@@ -174,7 +174,7 @@ namespace embree
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
-    __noinline void init(const CatmullClarkPatch& patch)
+    __noinline void init(const CatmullClarkPatch3fa& patch)
     {
       assert( patch.ring[0].hasValidPositions() );
       assert( patch.ring[1].hasValidPositions() );
@@ -209,10 +209,10 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
     
-    __noinline void init(const GeneralCatmullClarkPatch& patch)
+    __noinline void init(const GeneralCatmullClarkPatch3fa& patch)
     {
       assert(patch.size() == 4);
-      CatmullClarkPatch qpatch; patch.init(qpatch);
+      CatmullClarkPatch3fa qpatch; patch.init(qpatch);
       init(qpatch);
     }
     

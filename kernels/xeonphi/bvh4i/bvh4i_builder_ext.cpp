@@ -963,7 +963,7 @@ PRINT(CORRECT_numPrims);
 	{          
           if (!mesh->valid(f)) continue;
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+					       [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
 					       {
 						 s++;
 					       });	    
@@ -1170,7 +1170,7 @@ PRINT(CORRECT_numPrims);
 	    {
 	      feature_adaptive_subdivision_gregory(
 						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+						   [&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
 						   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
@@ -1284,7 +1284,7 @@ PRINT(CORRECT_numPrims);
 
 	    prefetch<PFHINT_L2EX>(&prims[currentID]);
 
-	    CatmullClarkPatch ipatch;
+	    CatmullClarkPatch3fa ipatch;
             ipatch.init( subdiv_mesh->getHalfEdge(i),
                          subdiv_mesh->getVertexBuffer() );
 	    

@@ -492,7 +492,7 @@ namespace embree
     __forceinline SubdivPatch1Base () {}
 
     /*! Construction from vertices and IDs. */
-    SubdivPatch1Base (const CatmullClarkPatch& ipatch,
+    SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                       const unsigned int gID,
                       const unsigned int pID,
                       const SubdivMesh *const mesh,

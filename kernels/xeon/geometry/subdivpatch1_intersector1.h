@@ -55,28 +55,28 @@ namespace embree
       
       static void subdivide_intersect1(const Precalculations& pre, 
                                        Ray& ray,
-                                       const GeneralCatmullClarkPatch &patch,
+                                       const GeneralCatmullClarkPatch3fa& patch,
                                        const unsigned int geomID,
                                        const unsigned int primID,
                                        const unsigned int subdiv_level = 0);
 
       static void subdivide_intersect1(const Precalculations& pre,
                                        Ray& ray,
-                                       const CatmullClarkPatch &patch,
+                                       const CatmullClarkPatch3fa& patch,
                                        const unsigned int geomID,
                                        const unsigned int primID,
                                        const unsigned int subdiv_level = 0);
       
       static bool subdivide_occluded1(const Precalculations& pre,
                                       Ray& ray,
-                                      const GeneralCatmullClarkPatch &patch,
+                                      const GeneralCatmullClarkPatch3fa& patch,
                                       const unsigned int geomID,
                                       const unsigned int primID,
                                       const unsigned int subdiv_level = 0);
 
       static bool subdivide_occluded1(const Precalculations& pre,
                                       Ray& ray,
-                                      const CatmullClarkPatch &patch,
+                                      const CatmullClarkPatch3fa& patch,
                                       const unsigned int geomID,
                                       const unsigned int primID,
                                       const unsigned int subdiv_level = 0);
@@ -86,7 +86,7 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
-        GeneralCatmullClarkPatch irregular_patch;
+        GeneralCatmullClarkPatch3fa irregular_patch;
         subdiv_patch.init( irregular_patch );
         subdivide_intersect1(pre, ray,irregular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
       }
@@ -95,7 +95,7 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        GeneralCatmullClarkPatch irregular_patch;
+        GeneralCatmullClarkPatch3fa irregular_patch;
         subdiv_patch.init( irregular_patch );
         return subdivide_occluded1(pre, ray,irregular_patch,subdiv_patch.geom,subdiv_patch.prim,g_subdivision_level);
       }

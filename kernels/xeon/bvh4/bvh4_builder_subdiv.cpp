@@ -153,7 +153,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
 	    {
               //if (!patch.isRegular()) { s++; return; }
               const float l0 = patch.ring[0].edge_level;
@@ -187,7 +187,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
             {
               /*if (!patch.isRegular())
                 {
@@ -290,7 +290,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+					    [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
             {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -323,7 +323,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
             {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -413,7 +413,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	    {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -446,7 +446,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	    {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -808,7 +808,7 @@ namespace embree
             {          
               if (!mesh->valid(f)) continue;
               feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                                   [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
                                                    {
                                                      s++;
                                                    });
@@ -859,7 +859,7 @@ namespace embree
 	  if (unlikely(fastUpdateMode == false))
             {
             
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
                                                    {
                                                      float edge_level[4] = {
                                                        ipatch.ring[0].edge_level,
