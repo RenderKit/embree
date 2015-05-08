@@ -25,7 +25,7 @@ namespace embree
   template<typename Vertex>
     struct FeatureAdaptivePointEval
   {
-    //typedef BSplinePatchTT<Vertex> BSplinePatch;
+    typedef BSplinePatchTT<Vertex> BSplinePatch;
     typedef CatmullClarkPatch<Vertex> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatch<Vertex> GeneralCatmullClarkPatch;
 
@@ -134,11 +134,10 @@ namespace embree
       {
         if (patch.isRegular()) 
         {
-          //BSplinePatch bspline; bspline.init(patch);
-          //const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
-          //const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
-          //dst = bspline.eval(fx,fy);
-          dst = zero;
+          BSplinePatch bspline; bspline.init(patch);
+          const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
+          const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+          dst = bspline.eval(fx,fy);
         }
         else 
         {

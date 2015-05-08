@@ -254,6 +254,7 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) BSplinePatchTT : public BSplinePatchT<Vertex> 
   {
+    typedef CatmullClarkPatch<Vertex,Vertex_t> CatmullClarkPatch;
   public:
 
     BSplinePatchTT () {}
@@ -286,7 +287,7 @@ namespace embree
     };
 
 
-    __forceinline void init(const CatmullClarkPatch3fa& patch)
+    __forceinline void init(const CatmullClarkPatch& patch)
     {
       assert( patch.isRegular() );
       assert( patch.ring[0].hasValidPositions() );
@@ -354,11 +355,11 @@ namespace embree
       init( ipatch );
     }
 
-    __forceinline BBox3fa bounds() const
+    __forceinline BBox<Vertex> bounds() const
     {
       const Vertex* const cv = &this->v[0][0];
-      BBox3fa bounds ( cv[0] );
-      for (size_t i = 1; i<16 ; i++)
+      BBox<Vertex> bounds (cv[0]);
+      for (size_t i=1; i<16 ; i++)
 	bounds.extend( cv[i] );
       return bounds;
     }
