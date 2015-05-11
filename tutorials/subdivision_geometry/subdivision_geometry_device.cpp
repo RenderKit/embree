@@ -236,7 +236,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
       //foreach(primID in ray.primID) {
-      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.v,ray.u,(const float*)&cube_colors,16,&c.x,3); diffuse = c;
+      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,3); diffuse = c;
       //}
     }
 

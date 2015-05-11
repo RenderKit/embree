@@ -35,8 +35,8 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
       : u(u), v(v)
     {
-      const float uu = clamp(u,0.0f,1.0f); // FIXME: remove clamps
-      const float vv = clamp(v,0.0f,1.0f);
+      const float vv = clamp(u,0.0f,1.0f); // FIXME: remove clamps
+      const float uu = clamp(v,0.0f,1.0f); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
       eval(patch,Vec2f(uu,vv),size_t(0));
     }
 
@@ -57,6 +57,7 @@ namespace embree
       patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
 
       /* parametrization for triangles */
+#if 0
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
@@ -88,40 +89,37 @@ namespace embree
         else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
         else assert(false);
       } 
+      else
+#endif
 
       /* parametrization for quads */
-      else if (N == 4) {
-	const Vec2f uv_0(0.0f,0.0f);
-	const Vec2f uv01(0.5f,0.0f);
-	const Vec2f uv_1(1.0f,0.0f);
-	const Vec2f uv12(1.0f,0.5f);
-	const Vec2f uv_2(1.0f,1.0f);
-	const Vec2f uv23(0.5f,1.0f);
-	const Vec2f uv_3(0.0f,1.0f);
-	const Vec2f uv30(0.0f,0.5f);
-	const Vec2f uvcc(0.5f,0.5f);
-	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv30 };
-	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
-	const Vec2f uv2[4] = { uv_2,uv23,uvcc,uv12 };
-	const Vec2f uv3[4] = { uv_3,uv30,uvcc,uv23 };
-        const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(0.5f,0.5f));
-        const BBox2f srange1(Vec2f(0.5f,0.0f),Vec2f(1.0f,0.5f));
-        const BBox2f srange2(Vec2f(0.5f,0.5f),Vec2f(1.0f,1.0f));
-        const BBox2f srange3(Vec2f(0.0f,0.5f),Vec2f(0.5f,1.0f));
- 	if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1);
-	else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
-	else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
-	else if (conjoint(srange3,uv)) eval(patches[3],uv,srange3,depth+1);
+      if (N == 4) 
+      {
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
+
+        const Vec2f c = srange.center();
+        const BBox2f srange0(srange.lower,c);
+        const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
+        const BBox2f srange2(c,srange.upper);
+        const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
+        bool hit0 = conjoint(srange0,uv); // FIXME: optimize
+        bool hit1 = conjoint(srange1,uv);
+        bool hit2 = conjoint(srange2,uv);
+        bool hit3 = conjoint(srange3,uv);
+        if      (hit0) eval(patches[0],uv,srange0,depth+1);
+        else if (hit1) eval(patches[1],uv,srange1,depth+1);
+        else if (hit2) eval(patches[2],uv,srange2,depth+1);
+        else if (hit3) eval(patches[3],uv,srange3,depth+1);
         else assert(false);
       }
 
       /* parametrization for arbitrary polygons */
       else 
       {
-        unsigned i = trunc(uv.x);
+        unsigned i = trunc(uv.y);
         assert(i<N);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-        eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1);
+        eval(patches[i],Vec2f(uv.x,floorf(uv.y)),srange,depth+1);
       }
     }
 
@@ -325,6 +323,7 @@ namespace embree
       for (size_t i=0; i<N; i++)
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
 
+#if 0
       /* parametrization for triangles */
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -344,9 +343,11 @@ namespace embree
 	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
 	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
       } 
+      else
+#endif
 
       /* parametrization for quads */
-      else if (N == 4) {
+      if (N == 4) {
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
 	const Vec2f uv_1(1.0f,0.0f);

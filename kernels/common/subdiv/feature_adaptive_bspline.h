@@ -70,6 +70,7 @@ namespace embree
       for (size_t i=0; i<N; i++)
         childSubdiv[i] = /*noleaf &&*/ !patches[i].isRegularOrFinal(depth);
 
+#if 0
       /* parametrization for triangles */
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -89,9 +90,11 @@ namespace embree
 	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
 	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
       } 
+      else
+#endif
 
       /* parametrization for quads */
-      else if (N == 4) {
+      if (N == 4) {
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
 	const Vec2f uv_1(1.0f,0.0f);
