@@ -26,7 +26,7 @@ namespace embree
   };
 
   template<typename Vertex, typename Vertex_t = Vertex>
-    struct __aligned(64) CatmullClark1Ring
+    struct __aligned(64) CatmullClark1RingT
   {
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
@@ -47,7 +47,7 @@ namespace embree
     bool noForcedSubdivision; // varying edge crease weight stitching fix
 
   public:
-    CatmullClark1Ring () : eval_start_index(0), eval_unique_identifier(0) {}
+    CatmullClark1RingT () : eval_start_index(0), eval_unique_identifier(0) {}
 
     __forceinline bool hasBorder() const {
       return border_index != -1;
@@ -172,7 +172,7 @@ namespace embree
 
     }
       
-    __forceinline void subdivide(CatmullClark1Ring& dest) const
+    __forceinline void subdivide(CatmullClark1RingT& dest) const
     {
       dest.noForcedSubdivision    = true;
       dest.edge_level             = 0.5f*edge_level;
@@ -588,7 +588,7 @@ namespace embree
       return true;
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1Ring &c)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
@@ -604,9 +604,9 @@ namespace embree
   };
   
   template<typename Vertex, typename Vertex_t = Vertex>
-    struct __aligned(64) GeneralCatmullClark1Ring
+    struct __aligned(64) GeneralCatmullClark1RingT
   {
-    typedef CatmullClark1Ring<Vertex,Vertex_t> CatmullClark1Ring;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
     static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
     static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
@@ -635,7 +635,7 @@ namespace embree
     unsigned int eval_unique_identifier;
 
 
-    GeneralCatmullClark1Ring() 
+    GeneralCatmullClark1RingT() 
       : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
     
     __forceinline bool has_last_face() const {
@@ -854,7 +854,7 @@ namespace embree
       assert( dst.hasValidPositions() );
     }
     
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1Ring &c)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;

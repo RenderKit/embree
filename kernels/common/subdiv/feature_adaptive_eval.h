@@ -26,8 +26,8 @@ namespace embree
     struct FeatureAdaptivePointEval
   {
     typedef BSplinePatchTT<Vertex> BSplinePatch;
-    typedef CatmullClarkPatch<Vertex> CatmullClarkPatch;
-    typedef GeneralCatmullClarkPatch<Vertex> GeneralCatmullClarkPatch;
+    typedef CatmullClarkPatchT<Vertex> CatmullClarkPatch;
+    typedef GeneralCatmullClarkPatchT<Vertex> GeneralCatmullClarkPatch;
 
     const float u,v;
     Vertex dst;
@@ -167,7 +167,7 @@ namespace embree
   };
 
   template<typename Vertex>
-    __forceinline Vertex feature_adaptive_point_eval (const GeneralCatmullClarkPatch<Vertex>& patch, const float u, const float v) {
+    __forceinline Vertex feature_adaptive_point_eval (const GeneralCatmullClarkPatchT<Vertex>& patch, const float u, const float v) {
     FeatureAdaptivePointEval<Vertex> eval(patch,u,v); return eval.dst;
   }
 

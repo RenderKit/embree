@@ -254,31 +254,31 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) BSplinePatchTT : public BSplinePatchT<Vertex> 
   {
-    typedef CatmullClarkPatch<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
   public:
 
     BSplinePatchTT () {}
 
     __forceinline void init( FinalQuad& quad ) const
     {
-      quad.vtx[0] = v[1][1];
-      quad.vtx[1] = v[1][2];
-      quad.vtx[2] = v[2][2];
-      quad.vtx[3] = v[2][1];
+      quad.vtx[0] = this->v[1][1];
+      quad.vtx[1] = this->v[1][2];
+      quad.vtx[2] = this->v[2][2];
+      quad.vtx[3] = this->v[2][1];
     };
 
-    __forceinline Vertex limitVtx0() const { return computeLimitVertex(1,1); }
-    __forceinline Vertex limitVtx1() const { return computeLimitVertex(1,2); }
-    __forceinline Vertex limitVtx2() const { return computeLimitVertex(2,2); }
-    __forceinline Vertex limitVtx3() const { return computeLimitVertex(2,1); }
+    __forceinline Vertex limitVtx0() const { return this->computeLimitVertex(1,1); } // FIXME: remove these
+    __forceinline Vertex limitVtx1() const { return this->computeLimitVertex(1,2); }
+    __forceinline Vertex limitVtx2() const { return this->computeLimitVertex(2,2); }
+    __forceinline Vertex limitVtx3() const { return this->computeLimitVertex(2,1); }
 
     __forceinline void init_limit( FinalQuad& quad ) const
     {
 
-      const Vertex limit_v0 = computeLimitVertex(1,1);
-      const Vertex limit_v1 = computeLimitVertex(1,2);
-      const Vertex limit_v2 = computeLimitVertex(2,2);
-      const Vertex limit_v3 = computeLimitVertex(2,1);
+      const Vertex limit_v0 = this->computeLimitVertex(1,1);
+      const Vertex limit_v1 = this->computeLimitVertex(1,2);
+      const Vertex limit_v2 = this->computeLimitVertex(2,2);
+      const Vertex limit_v3 = this->computeLimitVertex(2,1);
       
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
