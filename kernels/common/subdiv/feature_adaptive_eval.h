@@ -54,11 +54,6 @@ namespace embree
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
 
-      /* check if subpatches need further subdivision */
-      array_t<bool,GeneralCatmullClarkPatch::SIZE> childSubdiv;
-      for (size_t i=0; i<N; i++)
-        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
-
       /* parametrization for triangles */
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -149,15 +144,17 @@ namespace embree
           const Vertex P3 = patch.ring[3].getLimitVertex();
           dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
         }
+        return;
       }
 
       array_t<CatmullClarkPatch,4> patches; 
       patch.subdivide(patches); // FIXME: only have to generate one of the patches
 
-      const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(0.5f,0.5f));
-      const BBox2f srange1(Vec2f(0.5f,0.0f),Vec2f(1.0f,0.5f));
-      const BBox2f srange2(Vec2f(0.5f,0.5f),Vec2f(1.0f,1.0f));
-      const BBox2f srange3(Vec2f(0.0f,0.5f),Vec2f(0.5f,1.0f));
+      const Vec2f c = srange.center();
+      const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(c.x ,c.y ));
+      const BBox2f srange1(Vec2f(c.x ,0.0f),Vec2f(1.0f,c.y ));
+      const BBox2f srange2(Vec2f(c.x ,c.y ),Vec2f(1.0f,1.0f));
+      const BBox2f srange3(Vec2f(0.0f,c.y ),Vec2f(c.x, 1.0f));
       if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1);
       else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
       else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);

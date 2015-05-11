@@ -29,7 +29,7 @@ bool g_subdiv_mode = false;
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 3
+#define FIXED_EDGE_TESSELLATION_VALUE 1
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -140,7 +140,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_mesh = new void_ptr[numGeometries];
   geomID_to_type = new int[numGeometries];
 
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT| RTC_SCENE_ROBUST;
 
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;

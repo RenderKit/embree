@@ -70,6 +70,18 @@ __aligned(16) float cube_vertices[8][4] =
   { -1.0f,  1.0f,  1.0f, 0.0f }
 };
 
+__aligned(16) float cube_colors[8][4] = 
+{
+  {  0.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  0.0f,  1.0f, 0.0f },
+  {  0.0f,  0.0f,  1.0f, 0.0f },
+  {  0.0f,  1.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  1.0f, 0.0f },
+  {  0.0f,  1.0f,  1.0f, 0.0f }
+};
+
 #if 1
 
 #define NUM_INDICES 24
@@ -220,6 +232,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
+
+    /* interpolate color over geometry */
+    if (ray.geomID == 0) {
+      //foreach(primID in ray.primID) {
+      Vec3fa c; rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,3); diffuse = c;
+      //}
+    }
+
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
