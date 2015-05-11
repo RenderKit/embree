@@ -35,6 +35,7 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
       : u(u), v(v)
     {
+      //PING;
       eval(patch,Vec2f(u,v),size_t(0));
     }
 
@@ -125,17 +126,21 @@ namespace embree
 
     void eval(const CatmullClarkPatch& patch, const Vec2f& uv, const BBox2f& srange, size_t depth)
     {
+      //PRINT4(depth,uv,srange,patch);
       if (patch.isRegularOrFinal2(depth)) 
       {
         if (patch.isRegular()) 
         {
+          //PRINT("bspline");
           BSplinePatch bspline; bspline.init(patch);
           const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
           const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
           dst = bspline.eval(fx,fy);
+          //PRINT(dst);
         }
         else 
         {
+          //PRINT("irregular");
           const float sx1 = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
           const float sy1 = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
           const Vertex P0 = patch.ring[0].getLimitVertex();
@@ -143,6 +148,7 @@ namespace embree
           const Vertex P2 = patch.ring[2].getLimitVertex();
           const Vertex P3 = patch.ring[3].getLimitVertex();
           dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+          //PRINT(dst);
         }
         return;
       }
@@ -151,10 +157,10 @@ namespace embree
       patch.subdivide(patches); // FIXME: only have to generate one of the patches
 
       const Vec2f c = srange.center();
-      const BBox2f srange0(Vec2f(0.0f,0.0f),Vec2f(c.x ,c.y ));
-      const BBox2f srange1(Vec2f(c.x ,0.0f),Vec2f(1.0f,c.y ));
-      const BBox2f srange2(Vec2f(c.x ,c.y ),Vec2f(1.0f,1.0f));
-      const BBox2f srange3(Vec2f(0.0f,c.y ),Vec2f(c.x, 1.0f));
+      const BBox2f srange0(srange.lower,c);
+      const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
+      const BBox2f srange2(c,srange.upper);
+      const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
       if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1);
       else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
       else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
