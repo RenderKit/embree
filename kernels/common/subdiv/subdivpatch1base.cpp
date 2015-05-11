@@ -134,14 +134,7 @@ namespace embree
 
     /* determine whether patch is regular or not */
 
-    // if (!ipatch.checkPositions())
-    //   {
-    // 	PRINT(gID);
-    // 	PRINT(pID);
-    // 	exit(0);
-    //   }
-
-    if (ipatch.isRegular() && mesh->displFunc == nullptr && 0) /* deactivated b-spline for now */
+    if (ipatch.isRegular() && !ipatch.hasBorder() && mesh->displFunc == nullptr) /* deactivated b-spline for now */
       {
         flags |= REGULAR_PATCH;
         patch.init( ipatch );
@@ -155,8 +148,6 @@ namespace embree
 #if 0
     PRINT( grid_u_res );
     PRINT( grid_v_res );
-    PRINT( grid_size_16wide_blocks );
-    PRINT( grid_mask );
     PRINT( grid_subtree_size_64b_blocks );
 #endif
   }

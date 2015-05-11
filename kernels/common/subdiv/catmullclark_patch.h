@@ -86,6 +86,10 @@ namespace embree
       return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
 
+    __forceinline bool hasBorder() const {
+      return ring[0].hasBorder() || ring[1].hasBorder() || ring[2].hasBorder() || ring[3].hasBorder();
+    }
+
     /*! returns true if the patch is a B-spline patch or final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const {
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
