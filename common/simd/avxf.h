@@ -266,6 +266,14 @@ namespace embree
   }
 #endif
 
+  __forceinline bool is_finite ( const avxf& a ) { 
+    return all((a >= avxf(-FLT_MAX) & (a <= avxf(+FLT_MAX))));
+  }
+
+  __forceinline bool is_finite ( const avxb& valid, const avxf& a ) { 
+    return all(valid, (a >= avxf(-FLT_MAX) & (a <= avxf(+FLT_MAX))));
+  }
+      
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////

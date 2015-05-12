@@ -37,8 +37,12 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector4>
     void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::intersect(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const sseb valid0 = *valid_i;
+      assert(all(valid0,ray.tnear >= 0.0f));
+      assert(all(valid0,ray.tnear <= ray.tfar));
+
+      /* load ray */
       const sse3f rdir = rcp_safe(ray.dir);
       const sse3f org(ray.org), org_rdir = org * rdir;
       ssef ray_tnear = select(valid0,ray.tnear,ssef(pos_inf));
@@ -197,8 +201,12 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector4>
     void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::occluded(sseb* valid_i, BVH4* bvh, Ray4& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const sseb valid = *valid_i;
+      assert(all(valid,ray.tnear >= 0.0f));
+      assert(all(valid,ray.tnear <= ray.tfar));
+
+      /* load ray */
       sseb terminated = !valid;
       const sse3f rdir = rcp_safe(ray.dir);
       const sse3f org(ray.org), org_rdir = org * rdir;

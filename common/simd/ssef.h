@@ -285,6 +285,14 @@ namespace embree
   __forceinline bool isvalid ( const ssef& v ) {
     return all((v > ssef(-FLT_LARGE)) & (v < ssef(+FLT_LARGE)));
   }
+
+  __forceinline bool is_finite ( const ssef& a ) { 
+    return all((a >= ssef(-FLT_MAX) & (a <= ssef(+FLT_MAX))));
+  }
+
+  __forceinline bool is_finite ( const sseb valid, const ssef& a ) { 
+    return all(valid, a >= ssef(-FLT_MAX) & (a <= ssef(+FLT_MAX)));
+  }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions

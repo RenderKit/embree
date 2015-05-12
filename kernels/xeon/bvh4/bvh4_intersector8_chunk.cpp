@@ -37,8 +37,12 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Chunk<types, robust, PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const avxb valid0 = *valid_i;
+      assert(all(valid0,ray.tnear >= 0.0f));
+      assert(all(valid0,ray.tnear <= ray.tfar));
+
+      /* load ray */
       const avx3f rdir = rcp_safe(ray.dir);
       const avx3f org(ray.org), org_rdir = org * rdir;
       avxf ray_tnear = select(valid0,ray.tnear,pos_inf);
@@ -197,8 +201,12 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Chunk<types, robust, PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const avxb valid = *valid_i;
+      assert(all(valid,ray.tnear >= 0.0f));
+      assert(all(valid,ray.tnear <= ray.tfar));
+
+      /* load ray */
       avxb terminated = !valid;
       const avx3f rdir = rcp_safe(ray.dir);
       const avx3f org(ray.org), org_rdir = org * rdir;

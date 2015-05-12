@@ -40,6 +40,10 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
+      /* verify correct input */
+      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear <= ray.tfar);
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -175,6 +179,10 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
+      /* verify correct input */
+      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear <= ray.tfar);
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
