@@ -87,31 +87,23 @@ namespace embree
       } 
 
       /* parametrization for quads */
-      else if (N == 4) // FIXME: can this get reached?
+      else if (N == 4) 
       {
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-
         const Vec2f c = srange.center();
-        const BBox2f srange0(srange.lower,c);
-        const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
-        const BBox2f srange2(c,srange.upper);
-        const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
-        bool hit0 = conjoint(srange0,uv); // FIXME: optimize
-        bool hit1 = conjoint(srange1,uv);
-        bool hit2 = conjoint(srange2,uv);
-        bool hit3 = conjoint(srange3,uv);
-        if      (hit0) eval(patches[0],uv,srange0,depth+1);
-        else if (hit1) eval(patches[1],uv,srange1,depth+1);
-        else if (hit2) eval(patches[2],uv,srange2,depth+1);
-        else if (hit3) eval(patches[3],uv,srange3,depth+1);
-        else assert(false);
+        if (uv.y < c.y) {
+          if (uv.x < c.x) eval(patches[0],uv,BBox2f(srange.lower,c),depth+1);
+          else            eval(patches[1],uv,BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)),depth+1);
+        } else {
+          if (uv.x > c.x) eval(patches[2],uv,BBox2f(c,srange.upper),depth+1);
+          else            eval(patches[3],uv,BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)),depth+1);
+        }
       }
 
       /* parametrization for arbitrary polygons */
       else 
       {
-        unsigned i = trunc(uv.x);
-        assert(i<N);
+        const unsigned i = trunc(uv.x); assert(i<N);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
       }
@@ -145,19 +137,13 @@ namespace embree
       patch.subdivide(patches); // FIXME: only have to generate one of the patches
 
       const Vec2f c = srange.center();
-      const BBox2f srange0(srange.lower,c);
-      const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
-      const BBox2f srange2(c,srange.upper);
-      const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
-      bool hit0 = conjoint(srange0,uv); // FIXME: optimize
-      bool hit1 = conjoint(srange1,uv);
-      bool hit2 = conjoint(srange2,uv);
-      bool hit3 = conjoint(srange3,uv);
-      if      (hit0) eval(patches[0],uv,srange0,depth+1);
-      else if (hit1) eval(patches[1],uv,srange1,depth+1);
-      else if (hit2) eval(patches[2],uv,srange2,depth+1);
-      else if (hit3) eval(patches[3],uv,srange3,depth+1);
-      else assert(false);
+      if (uv.y < c.y) {
+        if (uv.x < c.x) eval(patches[0],uv,BBox2f(srange.lower,c),depth+1);
+        else            eval(patches[1],uv,BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)),depth+1);
+      } else {
+        if (uv.x > c.x) eval(patches[2],uv,BBox2f(c,srange.upper),depth+1);
+        else            eval(patches[3],uv,BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)),depth+1);
+      }
     }
   };
 
@@ -336,7 +322,7 @@ namespace embree
       } 
 
       /* parametrization for quads */
-      else if (N == 4) { // FIXME: can this get reached?
+      else if (N == 4) { 
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
 	const Vec2f uv_1(1.0f,0.0f);
