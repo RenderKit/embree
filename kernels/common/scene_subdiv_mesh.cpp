@@ -489,7 +489,7 @@ namespace embree
     const char* src = (const char*) src_i;
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
-      GeneralCatmullClarkPatch<ssef> patch;
+      GeneralCatmullClarkPatchT<ssef> patch;
       auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
         return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array

@@ -362,7 +362,7 @@ namespace embree
 						     const size_t i, Scene* scene)
     {
       /* ray SIMD type shortcuts */
-      //typedef typename RayM::simdb rsimdb;
+      typedef typename RayM::simdb rsimdb;
       //typedef typename RayM::simdf rsimdf;
       //typedef typename RayM::simdi rsimdi;
       typedef Vec3<rsimdf> rsimd3f;
@@ -609,7 +609,7 @@ namespace embree
       if (unlikely(none(valid))) return false;
 #endif
       
-      Ng = Ng * ray_dir_scale;
+      tsimd3f Ng = Ng * ray_dir_scale;
 
 /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)

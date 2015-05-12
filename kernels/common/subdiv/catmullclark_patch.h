@@ -21,12 +21,12 @@
 namespace embree
 {
   template<typename Vertex, typename Vertex_t = Vertex>
-    class __aligned(64) CatmullClarkPatch
+    class __aligned(64) CatmullClarkPatchT
   {
   public:
-    array_t<CatmullClark1Ring<Vertex,Vertex_t>,4> ring;
+    array_t<CatmullClark1RingT<Vertex,Vertex_t>,4> ring;
 
-    __forceinline CatmullClarkPatch () {}
+    __forceinline CatmullClarkPatchT () {}
 
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
@@ -86,6 +86,10 @@ namespace embree
       return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
 
+    __forceinline bool hasBorder() const {
+      return ring[0].hasBorder() || ring[1].hasBorder() || ring[2].hasBorder() || ring[3].hasBorder();
+    }
+
     /*! returns true if the patch is a B-spline patch or final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const {
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
@@ -105,10 +109,10 @@ namespace embree
       return ring0 && ring1 && ring2 && ring3;
     }
 
-    static __forceinline void init_regular(const CatmullClark1Ring<Vertex,Vertex_t>& p0,
-					   const CatmullClark1Ring<Vertex,Vertex_t>& p1,
-					   CatmullClark1Ring<Vertex,Vertex_t>& dest0,
-					   CatmullClark1Ring<Vertex,Vertex_t>& dest1) 
+    static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
+					   const CatmullClark1RingT<Vertex,Vertex_t>& p1,
+					   CatmullClark1RingT<Vertex,Vertex_t>& dest0,
+					   CatmullClark1RingT<Vertex,Vertex_t>& dest1) 
     {
       assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
@@ -152,10 +156,10 @@ namespace embree
     }
 
 
-    static __forceinline void init_border(const CatmullClark1Ring<Vertex,Vertex_t> &p0,
-                                          const CatmullClark1Ring<Vertex,Vertex_t> &p1,
-                                          CatmullClark1Ring<Vertex,Vertex_t> &dest0,
-                                          CatmullClark1Ring<Vertex,Vertex_t> &dest1) 
+    static __forceinline void init_border(const CatmullClark1RingT<Vertex,Vertex_t> &p0,
+                                          const CatmullClark1RingT<Vertex,Vertex_t> &p1,
+                                          CatmullClark1RingT<Vertex,Vertex_t> &dest0,
+                                          CatmullClark1RingT<Vertex,Vertex_t> &dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 3;
@@ -195,7 +199,7 @@ namespace embree
       //////////////////////////////
     }
 
-    static __forceinline void init_regular(const Vertex_t &center, const Vertex_t center_ring[8], const size_t offset, CatmullClark1Ring<Vertex,Vertex_t> &dest)
+    static __forceinline void init_regular(const Vertex_t &center, const Vertex_t center_ring[8], const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
     {
       dest.vertex_level = 0.0f;
       dest.face_valence = 4;
@@ -217,7 +221,7 @@ namespace embree
       //////////////////////////////
     }
 
-    __noinline void subdivide(array_t<CatmullClarkPatch,4>& patch) const
+    __noinline void subdivide(array_t<CatmullClarkPatchT,4>& patch) const
     {
       ring[0].subdivide(patch[0].ring[0]);
       ring[1].subdivide(patch[1].ring[1]);
@@ -375,7 +379,7 @@ namespace embree
       quad.vtx[3] = (Vertex_t)ring[3].vtx;
     };
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClarkPatch &p)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClarkPatchT &p)
     {
       o << "CatmullClarkPatch { " << std::endl;
       for (size_t i=0; i<4; i++)
@@ -385,18 +389,18 @@ namespace embree
     }
   };
 
-  typedef CatmullClarkPatch<Vec3fa,Vec3fa_t> CatmullClarkPatch3fa;
+  typedef CatmullClarkPatchT<Vec3fa,Vec3fa_t> CatmullClarkPatch3fa;
 
   template<typename Vertex, typename Vertex_t = Vertex>
-    class __aligned(64) GeneralCatmullClarkPatch
+    class __aligned(64) GeneralCatmullClarkPatchT
   {
   public:
-    typedef CatmullClarkPatch<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     static const size_t SIZE = SubdivMesh::MAX_VALENCE;
-    array_t<GeneralCatmullClark1Ring<Vertex,Vertex_t>,SIZE> ring;
+    array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
     size_t N;
 
-    __forceinline GeneralCatmullClarkPatch () 
+    __forceinline GeneralCatmullClarkPatchT () 
       : N(0) {}
 
     __forceinline size_t size() const { 
@@ -426,10 +430,10 @@ namespace embree
       N = i;
     }
 
-    static __forceinline void init_regular(const CatmullClark1Ring<Vertex,Vertex_t>& p0,
-					   const CatmullClark1Ring<Vertex,Vertex_t>& p1,
-					   CatmullClark1Ring<Vertex,Vertex_t>& dest0,
-					   CatmullClark1Ring<Vertex,Vertex_t>& dest1) 
+    static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
+					   const CatmullClark1RingT<Vertex,Vertex_t>& p1,
+					   CatmullClark1RingT<Vertex,Vertex_t>& dest0,
+					   CatmullClark1RingT<Vertex,Vertex_t>& dest1) 
     {
       assert(p1.face_valence > 2);
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
@@ -474,10 +478,10 @@ namespace embree
     }
 
 
-    static __forceinline void init_border(const CatmullClark1Ring<Vertex,Vertex_t> &p0,
-                                          const CatmullClark1Ring<Vertex,Vertex_t> &p1,
-                                          CatmullClark1Ring<Vertex,Vertex_t> &dest0,
-                                          CatmullClark1Ring<Vertex,Vertex_t> &dest1) 
+    static __forceinline void init_border(const CatmullClark1RingT<Vertex,Vertex_t> &p0,
+                                          const CatmullClark1RingT<Vertex,Vertex_t> &p1,
+                                          CatmullClark1RingT<Vertex,Vertex_t> &dest0,
+                                          CatmullClark1RingT<Vertex,Vertex_t> &dest1) 
     {
       dest1.vertex_level = dest0.vertex_level = p0.edge_level;
       dest1.face_valence = dest0.face_valence = 3;
@@ -517,10 +521,10 @@ namespace embree
       //////////////////////////////      
     }
 
-    static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1Ring<Vertex,Vertex_t> &dest)
+    static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
     {
-      assert(N<(CatmullClark1Ring<Vertex,Vertex_t>::MAX_FACE_VALENCE));
-      assert(2*N<(CatmullClark1Ring<Vertex,Vertex_t>::MAX_EDGE_VALENCE));
+      assert(N<(CatmullClark1RingT<Vertex,Vertex_t>::MAX_FACE_VALENCE));
+      assert(2*N<(CatmullClark1RingT<Vertex,Vertex_t>::MAX_EDGE_VALENCE));
       dest.vertex_level = vertex_level;
       dest.face_valence = N;
       dest.edge_valence = 2*N;
@@ -598,7 +602,7 @@ namespace embree
       ring[3].convert(patch.ring[3]);
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatch &p)
+    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
     {
       o << "GeneralCatmullClarkPatch { " << std::endl;
       for (size_t i=0; i<p.N; i++)
@@ -608,7 +612,7 @@ namespace embree
     }
   };
 
-  typedef GeneralCatmullClarkPatch<Vec3fa,Vec3fa_t> GeneralCatmullClarkPatch3fa;
+  typedef GeneralCatmullClarkPatchT<Vec3fa,Vec3fa_t> GeneralCatmullClarkPatch3fa;
 }
 
 

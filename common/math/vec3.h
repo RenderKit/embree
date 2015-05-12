@@ -70,8 +70,12 @@ namespace embree
   template<typename T> __forceinline Vec3<T> rcp       ( const Vec3<T>& a ) { return Vec3<T>(rcp  (a.x), rcp  (a.y), rcp  (a.z)); }
   template<typename T> __forceinline Vec3<T> rsqrt     ( const Vec3<T>& a ) { return Vec3<T>(rsqrt(a.x), rsqrt(a.y), rsqrt(a.z)); }
   template<typename T> __forceinline Vec3<T> sqrt      ( const Vec3<T>& a ) { return Vec3<T>(sqrt (a.x), sqrt (a.y), sqrt (a.z)); }
-  template<typename T> __forceinline Vec3<T> zero_fix( const Vec3<T>& a ) {
-    return Vec3<T>(select(a.x==0.0f,T(1E-10f),a.x),select(a.y==0.0f,T(1E-10f),a.y),select(a.z==0.0f,T(1E-10f),a.z));
+
+  template<typename T> __forceinline Vec3<T> zero_fix( const Vec3<T>& a ) 
+  {
+    return Vec3<T>(select(abs(a.x)<min_rcp_input,T(min_rcp_input),a.x),
+                   select(abs(a.y)<min_rcp_input,T(min_rcp_input),a.y),
+                   select(abs(a.z)<min_rcp_input,T(min_rcp_input),a.z));
   }
   template<typename T> __forceinline const Vec3<T> rcp_safe(const Vec3<T>& a) { return rcp(zero_fix(a)); }
 

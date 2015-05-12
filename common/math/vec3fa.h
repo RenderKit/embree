@@ -123,9 +123,12 @@ namespace embree
     __m128 r = _mm_rsqrt_ps(a.m128);
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
-  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { return blendv_ps(a, _mm_set1_ps(1E-10f), _mm_cmpeq_ps (a.m128, _mm_setzero_ps())); }
-  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { return rcp(zero_fix(a)); }
-
+  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { 
+    return blendv_ps(a, _mm_set1_ps(min_rcp_input), _mm_cmplt_ps (abs(a).m128, _mm_set1_ps(min_rcp_input))); 
+  }
+  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { 
+    return rcp(zero_fix(a)); 
+  }
   __forceinline Vec3fa log ( const Vec3fa& a ) { 
     return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
   }
