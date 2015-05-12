@@ -149,9 +149,14 @@ namespace embree
     }
   };
 
-  template<typename Vertex>
-    __forceinline Vertex feature_adaptive_point_eval (const GeneralCatmullClarkPatchT<Vertex>& patch, const float u, const float v) {
-    FeatureAdaptivePointEval<Vertex> eval(patch,u,v); return eval.dst;
+  template<typename Loader>
+    __forceinline auto feature_adaptive_point_eval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v) -> decltype(loader(0))
+  {
+    typedef decltype(loader(0)) Vertex;
+    GeneralCatmullClarkPatchT<Vertex> patch;
+    patch.init2(edge,loader);
+    FeatureAdaptivePointEval<Vertex> eval(patch,u,v); 
+    return eval.dst;
   }
 
   struct FeatureAdaptiveEval

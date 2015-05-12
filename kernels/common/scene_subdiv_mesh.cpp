@@ -489,13 +489,11 @@ namespace embree
     const char* src = (const char*) src_i;
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
-      GeneralCatmullClarkPatchT<ssef> patch;
       auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
         return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
       };
-      patch.init2(getHalfEdge(primID),load);
-      ssef out = feature_adaptive_point_eval(patch,u,v);
+      ssef out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
       for (size_t j=i; j<min(i+4,numFloats); j++)
         dst[j] = out[j-i];
     }
