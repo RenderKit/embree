@@ -29,7 +29,7 @@ namespace embree
       : tessellator(tessellator)
     {
 #if 0
-      const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
+      const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
       int neighborSubdiv[4];
       const CatmullClarkPatch3fa patch(h,vertices);
       for (size_t i=0; i<4; i++) {
@@ -53,7 +53,7 @@ namespace embree
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
-	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
+	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
 	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
@@ -120,10 +120,9 @@ namespace embree
       {
 	for (size_t i=0; i<N; i++) 
 	{
-	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
+	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+1.0f,0.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+0.0f,1.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
 	  subdivide(patches[i],depth+1,uv,neighborSubdiv);
-	  
 	}
       }
     }

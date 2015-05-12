@@ -478,7 +478,7 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     if (material->map_Kd) 
       {
 #if ENABLE_PTEX == 1
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
+        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.u, dg.v);
 #else
         brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif

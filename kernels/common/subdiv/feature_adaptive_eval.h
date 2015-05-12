@@ -59,8 +59,6 @@ namespace embree
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
-        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
-
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         CatmullClarkPatch qpatch; patch.init(qpatch);
 	eval(qpatch,uv,srange,depth); 
@@ -89,10 +87,8 @@ namespace embree
       } 
 
       /* parametrization for quads */
-      else if (N == 4) 
+      else if (N == 4) // FIXME: can this get reached?
       {
-        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
-
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const Vec2f c = srange.center();
@@ -114,12 +110,10 @@ namespace embree
       /* parametrization for arbitrary polygons */
       else 
       {
-        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
-
-        unsigned i = trunc(uv.y);
+        unsigned i = trunc(uv.x);
         assert(i<N);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-        eval(patches[i],Vec2f(uv.x,floorf(uv.y)),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,1) will refer to second quad
+        eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
       }
     }
 
@@ -280,9 +274,7 @@ namespace embree
 					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
   {
-    FeatureAdaptiveEval eval(patch,
-			     x0,x1,y0,y1,swidth,sheight,
-			     P,Ng,dwidth,dheight);
+    FeatureAdaptiveEval eval(patch,x0,x1,y0,y1,swidth,sheight,P,Ng,dwidth,dheight);
   }
 
   template<typename Tessellator>
@@ -307,7 +299,7 @@ namespace embree
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
-	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
+	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
 	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv,0);
 	return;
@@ -323,7 +315,6 @@ namespace embree
       for (size_t i=0; i<N; i++)
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
 
-#if 0
       /* parametrization for triangles */
       if (N == 3) {
 	const Vec2f uv_0(0.0f,0.0f);
@@ -343,11 +334,9 @@ namespace embree
 	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
 	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
       } 
-      else
-#endif
 
       /* parametrization for quads */
-      if (N == 4) {
+      else if (N == 4) { // FIXME: can this get reached?
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
 	const Vec2f uv_1(1.0f,0.0f);
@@ -376,7 +365,7 @@ namespace embree
       {
 	for (size_t i=0; i<N; i++) 
 	{
-	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
+	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+1.0f,0.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+0.0f,1.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
 	  subdivide(patches[i],depth+1,uv,neighborSubdiv, i);
 	}

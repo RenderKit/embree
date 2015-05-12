@@ -30,7 +30,7 @@ namespace embree
       : tessellator(tessellator)
     {
 #if 0
-      const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(0.0f,1.0f),Vec2f(1.0f,1.0f),Vec2f(1.0f,0.0f) };
+      const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
       int neighborSubdiv[4];
       const CatmullClarkPatch3fa patch(h,vertices);
       for (size_t i=0; i<4; i++) {
@@ -55,7 +55,7 @@ namespace embree
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
-	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(0.0f,1.0f), Vec2f(1.0f,1.0f), Vec2f(1.0f,0.0f) };
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
 	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
@@ -93,7 +93,7 @@ namespace embree
       } 
 
       /* parametrization for quads */
-      else if (N == 4) {
+      else if (N == 4) { // FIXME: can this get reached?
 	const Vec2f uv_0(0.0f,0.0f);
 	const Vec2f uv01(0.5f,0.0f);
 	const Vec2f uv_1(1.0f,0.0f);
@@ -122,22 +122,19 @@ namespace embree
       {
 	for (size_t i=0; i<N; i++) 
 	{
-	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+0.0f,1.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+1.0f,0.0f) };
+	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+1.0f,0.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+0.0f,1.0f) };
 	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
 	  subdivide(patches[i],depth+1,uv,neighborSubdiv);
-	  
 	}
       }
     }
-
 
     void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
       if (depth <= 1)
 	if (patch.isGregoryOrFinal(depth))
 	  return tessellator(patch,uv,neighborSubdiv);
-      
-
+       
       array_t<CatmullClarkPatch3fa,4> patches; 
       patch.subdivide(patches);
 
@@ -145,7 +142,6 @@ namespace embree
       const bool childSubdiv1 = !patches[1].isGregoryOrFinal(depth);
       const bool childSubdiv2 = !patches[2].isGregoryOrFinal(depth);
       const bool childSubdiv3 = !patches[3].isGregoryOrFinal(depth);
-
 
       const Vec2f uv01 = 0.5f*(uv[0]+uv[1]);
       const Vec2f uv12 = 0.5f*(uv[1]+uv[2]);
