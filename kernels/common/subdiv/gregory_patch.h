@@ -226,8 +226,83 @@ namespace embree
       CatmullClarkPatch3fa qpatch; patch.init(qpatch);
       init(qpatch);
     }
+
+    __noinline void init_bezier(const CatmullClarkPatch3fa& patch)
+    {
+      assert( patch.isRegular() );
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
+
+      Vec3fa vertex[4][4];
+
+      if (unlikely(patch.ring[0].hasBorder())) 
+        {
+          vertex[1][1] = patch.ring[0].vtx;
+          vertex[0][1] = patch.ring[0].regular_border_vertex_6();
+          vertex[0][0] = patch.ring[0].regular_border_vertex_5();
+          vertex[1][0] = patch.ring[0].regular_border_vertex_4();
+        } 
+      else 
+	{
+	  vertex[1][1] = patch.ring[0].vtx;
+	  vertex[0][1] = patch.ring[0].ring[6];
+	  vertex[0][0] = patch.ring[0].ring[5];
+	  vertex[1][0] = patch.ring[0].ring[4];
+	}
+
+      if (unlikely(patch.ring[1].hasBorder())) 
+        {
+          vertex[1][2] = patch.ring[1].vtx;
+          vertex[1][3] = patch.ring[1].regular_border_vertex_6();
+          vertex[0][3] = patch.ring[1].regular_border_vertex_5();
+          vertex[0][2] = patch.ring[1].regular_border_vertex_4();
+        } 
+      else 
+	{
+	  vertex[1][2] = patch.ring[1].vtx;
+	  vertex[1][3] = patch.ring[1].ring[6];
+	  vertex[0][3] = patch.ring[1].ring[5];
+	  vertex[0][2] = patch.ring[1].ring[4];
+	}
+
+      if (unlikely(patch.ring[2].hasBorder())) 
+        {
+          vertex[2][2] = patch.ring[2].vtx;
+          vertex[3][2] = patch.ring[2].regular_border_vertex_6();
+          vertex[3][3] = patch.ring[2].regular_border_vertex_5();
+          vertex[2][3] = patch.ring[2].regular_border_vertex_4();
+        } 
+      else 
+	{
+	  vertex[2][2] = patch.ring[2].vtx;
+	  vertex[3][2] = patch.ring[2].ring[6];
+	  vertex[3][3] = patch.ring[2].ring[5];
+	  vertex[2][3] = patch.ring[2].ring[4];
+	}
+
+      if (unlikely(patch.ring[3].hasBorder())) 
+        {
+          vertex[2][1] = patch.ring[3].vtx;
+          vertex[2][0] = patch.ring[3].regular_border_vertex_6();
+          vertex[3][0] = patch.ring[3].regular_border_vertex_5();
+          vertex[3][1] = patch.ring[3].regular_border_vertex_4();
+        } 
+      else 
+	{
+	  vertex[2][1] = patch.ring[3].vtx;
+	  vertex[2][0] = patch.ring[3].ring[6];
+	  vertex[3][0] = patch.ring[3].ring[5];      
+	  vertex[3][1] = patch.ring[3].ring[4];
+	}
+
+      /* convert b-spline to bezier */
+
+    }
+
     
-    __forceinline void exportConrolPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
+    __forceinline void exportControlPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)
