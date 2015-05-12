@@ -1108,13 +1108,13 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
-    for (size_t i=0; i<numFloats; i++) // FIXME: implement fast path for packet queries
+    for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
     {
       if (valid && !valid[i]) continue;
       float dst1[256];
       rtcInterpolate(scene,geomID,primID,u[i],v[i],src,byteStride,dst1,numFloats);
       for (size_t j=0; j<numFloats; j++)
-        dst[j*numFloats+i] = dst1[j];
+        dst[j*numUVs+i] = dst1[j];
     }
     RTCORE_CATCH_END;
   }
