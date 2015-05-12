@@ -806,9 +806,9 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-	  const tsimd3f ray_rdir      = broadcast<rsimdf>(pre.ray_rdir,k);
-	  const tsimd3f ray_org_rdir  = broadcast<rsimdf>(pre.ray_org_rdir,k);
-	  const tsimd3f ray_dir_scale = broadcast<rsimdf>(pre.ray_dir_scale,k);
+	  const tsimd3f ray_rdir      = broadcast<tsimdf>(pre.ray_rdir,k);
+	  const tsimd3f ray_org_rdir  = broadcast<tsimdf>(pre.ray_org_rdir,k);
+	  const tsimd3f ray_dir_scale = broadcast<tsimdf>(pre.ray_dir_scale,k);
           triangle_intersect_pluecker2<enableIntersectionFilter>(ray_rdir,
 								 ray_org_rdir,
 								 ray_dir_scale,
@@ -826,9 +826,9 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-	  const rsimd3f ray_rdir      = broadcast<rsimdf>(pre.ray_rdir,k);
-	  const rsimd3f ray_org_rdir  = broadcast<rsimdf>(pre.ray_org_rdir,k);
-	  const rsimd3f ray_dir_scale = broadcast<rsimdf>(pre.ray_dir_scale,k);
+	  const tsimd3f ray_rdir      = broadcast<tsimdf>(pre.ray_rdir,k);
+	  const tsimd3f ray_org_rdir  = broadcast<tsimdf>(pre.ray_org_rdir,k);
+	  const tsimd3f ray_dir_scale = broadcast<tsimdf>(pre.ray_dir_scale,k);
           return triangle_occluded_pluecker2<enableIntersectionFilter>(ray_rdir,
 								       ray_org_rdir,
 								       ray_dir_scale,
