@@ -255,16 +255,15 @@ namespace embree
 						      const size_t i, 
 						      Scene* scene)						      
     {
-#if 0
       /* ray SIMD type shortcuts */
-      //typedef typename RayM::simdb rsimdb;
-      //typedef typename RayM::simdf rsimdf;
-      //typedef typename RayM::simdi rsimdi;
+      typedef typename RayM::simdb rsimdb;
+      typedef typename RayM::simdf rsimdf;
+      typedef typename RayM::simdi rsimdi;
       typedef Vec3<rsimdf> rsimd3f;
       
       /* calculate vertices relative to ray origin */
       rsimdb valid = valid0;
-      const rsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
+      const rsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir; // FIXME: use fmadd intrinsic
       const rsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
       const rsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
       
@@ -281,13 +280,13 @@ namespace embree
       const rsimdf sgnDen = signmsk(den);
       
       /* perform edge tests */
-      const rsimdf U = reduce(rsimd3f(cross(v2+v0,e0))) ^ sgnDen;
+      const rsimdf U = reduce_add(rsimd3f(cross(v2+v0,e0))) ^ sgnDen;
       valid &= U >= 0.0f;
       if (likely(none(valid))) return;
-      const rsimdf V = reduce(rsimd3f(cross(v0+v1,e1))) ^ sgnDen;
+      const rsimdf V = reduce_add(rsimd3f(cross(v0+v1,e1))) ^ sgnDen;
       valid &= V >= 0.0f;
       if (likely(none(valid))) return;
-      const rsimdf W = reduce(rsimd3f(cross(v1+v2,e2))) ^ sgnDen;
+      const rsimdf W = reduce_add(rsimd3f(cross(v1+v2,e2))) ^ sgnDen;
       valid &= W >= 0.0f;
       if (likely(none(valid))) return;
       
@@ -343,7 +342,6 @@ namespace embree
       rsimdf::store(valid,&ray.Ng.x,Ng.x);
       rsimdf::store(valid,&ray.Ng.y,Ng.y);
       rsimdf::store(valid,&ray.Ng.z,Ng.z);
-#endif
     }
     
     
@@ -806,9 +804,9 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-	  const tsimd3f ray_rdir      = broadcast<rsimdf>(pre.ray_rdir,k);
-	  const tsimd3f ray_org_rdir  = broadcast<rsimdf>(pre.ray_org_rdir,k);
-	  const tsimd3f ray_dir_scale = broadcast<rsimdf>(pre.ray_dir_scale,k);
+	  const tsimd3f ray_rdir      = broadcast<tsimdf>(pre.ray_rdir,k);
+	  const tsimd3f ray_org_rdir  = broadcast<tsimdf>(pre.ray_org_rdir,k);
+	  const tsimd3f ray_dir_scale = broadcast<tsimdf>(pre.ray_dir_scale,k);
           triangle_intersect_pluecker2<enableIntersectionFilter>(ray_rdir,
 								 ray_org_rdir,
 								 ray_dir_scale,
@@ -826,9 +824,9 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-	  const rsimd3f ray_rdir      = broadcast<rsimdf>(pre.ray_rdir,k);
-	  const rsimd3f ray_org_rdir  = broadcast<rsimdf>(pre.ray_org_rdir,k);
-	  const rsimd3f ray_dir_scale = broadcast<rsimdf>(pre.ray_dir_scale,k);
+	  const tsimd3f ray_rdir      = broadcast<tsimdf>(pre.ray_rdir,k);
+	  const tsimd3f ray_org_rdir  = broadcast<tsimdf>(pre.ray_org_rdir,k);
+	  const tsimd3f ray_dir_scale = broadcast<tsimdf>(pre.ray_dir_scale,k);
           return triangle_occluded_pluecker2<enableIntersectionFilter>(ray_rdir,
 								       ray_org_rdir,
 								       ray_dir_scale,
