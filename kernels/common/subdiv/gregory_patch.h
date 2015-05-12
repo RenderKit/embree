@@ -185,6 +185,47 @@ namespace embree
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
+    void initRegularFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
+                               const size_t index,
+                               const Vec3fa &p_vtx,
+                               const Vec3fa &e0_p_vtx,
+                               const Vec3fa &e1_m_vtx,
+                               const Vec3fa &e0_m_vtx,
+                               const Vec3fa &e3_p_vtx,
+                               Vec3fa &final_vtx)
+    {
+      assert( irreg_patch.ring[index].face_valence == 4);
+      assert( irreg_patch.ring[index].edge_valence == 4);
+      const unsigned int face_valence = 4;
+      const unsigned int edge_valence = 4;
+      
+      const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
+      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
+      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
+
+      const Vec3fa c_i     = irreg_patch.ring[index].getQuadCenter( face_valence-1 );
+      const Vec3fa e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( face_valence-1 );
+      
+      const Vec3fa c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
+      const Vec3fa e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );	  
+      
+      const float d = 3.0f;
+      const float c     = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_p = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_m = cosf(2.0*M_PI/(float)face_valence);
+      
+      const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
+      
+      const Vec3fa f_p =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
+      
+      const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
+      
+      const Vec3fa f_m = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+
+      final_vtx =  (f_p + f_m) * 0.5f;
+    }
+
     __noinline void init(const CatmullClarkPatch3fa& patch)
     {
       assert( patch.ring[0].hasValidPositions() );
@@ -235,70 +276,31 @@ namespace embree
       assert( patch.ring[2].hasValidPositions() );
       assert( patch.ring[3].hasValidPositions() );
 
-      Vec3fa vertex[4][4];
+      p0() = initCornerVertex(patch,0);
+      p1() = initCornerVertex(patch,1);
+      p2() = initCornerVertex(patch,2);
+      p3() = initCornerVertex(patch,3);
 
-      if (unlikely(patch.ring[0].hasBorder())) 
-        {
-          vertex[1][1] = patch.ring[0].vtx;
-          vertex[0][1] = patch.ring[0].regular_border_vertex_6();
-          vertex[0][0] = patch.ring[0].regular_border_vertex_5();
-          vertex[1][0] = patch.ring[0].regular_border_vertex_4();
-        } 
-      else 
-	{
-	  vertex[1][1] = patch.ring[0].vtx;
-	  vertex[0][1] = patch.ring[0].ring[6];
-	  vertex[0][0] = patch.ring[0].ring[5];
-	  vertex[1][0] = patch.ring[0].ring[4];
-	}
+      e0_p() = initPositiveEdgeVertex(patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(patch,3, p3());
 
-      if (unlikely(patch.ring[1].hasBorder())) 
-        {
-          vertex[1][2] = patch.ring[1].vtx;
-          vertex[1][3] = patch.ring[1].regular_border_vertex_6();
-          vertex[0][3] = patch.ring[1].regular_border_vertex_5();
-          vertex[0][2] = patch.ring[1].regular_border_vertex_4();
-        } 
-      else 
-	{
-	  vertex[1][2] = patch.ring[1].vtx;
-	  vertex[1][3] = patch.ring[1].ring[6];
-	  vertex[0][3] = patch.ring[1].ring[5];
-	  vertex[0][2] = patch.ring[1].ring[4];
-	}
 
-      if (unlikely(patch.ring[2].hasBorder())) 
-        {
-          vertex[2][2] = patch.ring[2].vtx;
-          vertex[3][2] = patch.ring[2].regular_border_vertex_6();
-          vertex[3][3] = patch.ring[2].regular_border_vertex_5();
-          vertex[2][3] = patch.ring[2].regular_border_vertex_4();
-        } 
-      else 
-	{
-	  vertex[2][2] = patch.ring[2].vtx;
-	  vertex[3][2] = patch.ring[2].ring[6];
-	  vertex[3][3] = patch.ring[2].ring[5];
-	  vertex[2][3] = patch.ring[2].ring[4];
-	}
+      e0_m() = initNegativeEdgeVertex(patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(patch,3, p3());
 
-      if (unlikely(patch.ring[3].hasBorder())) 
-        {
-          vertex[2][1] = patch.ring[3].vtx;
-          vertex[2][0] = patch.ring[3].regular_border_vertex_6();
-          vertex[3][0] = patch.ring[3].regular_border_vertex_5();
-          vertex[3][1] = patch.ring[3].regular_border_vertex_4();
-        } 
-      else 
-	{
-	  vertex[2][1] = patch.ring[3].vtx;
-	  vertex[2][0] = patch.ring[3].ring[6];
-	  vertex[3][0] = patch.ring[3].ring[5];      
-	  vertex[3][1] = patch.ring[3].ring[4];
-	}
-
-      /* convert b-spline to bezier */
-
+      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
+      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
+      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
+      
+      initRegularFaceVertex(patch,0,p0(),e0_p(),e1_m(),e0_m(),e3_p(),f0_p() );
+      initRegularFaceVertex(patch,1,p1(),e1_p(),e2_m(),e1_m(),e0_p(),f1_p() );
+      initRegularFaceVertex(patch,2,p2(),e2_p(),e3_m(),e2_m(),e1_p(),f2_p() );
+      initRegularFaceVertex(patch,3,p3(),e3_p(),e0_m(),e3_m(),e2_p(),f3_p() );
     }
 
     
