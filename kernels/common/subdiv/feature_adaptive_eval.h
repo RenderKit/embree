@@ -109,40 +109,42 @@ namespace embree
       }
     }
 
-    void eval(const CatmullClarkPatch& patch, const Vec2f& uv, const BBox2f& srange, size_t depth)
+    void eval(CatmullClarkPatch& patch, const Vec2f& uv, BBox2f srange, size_t depth)
     {
-      if (patch.isRegularOrFinal2(depth)) 
+      /*! recursively subdivide */
+      while (!patch.isRegularOrFinal2(depth)) 
       {
-        if (patch.isRegular()) 
-        {
-          BSplinePatch bspline; bspline.init(patch);
-          const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
-          const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
-          dst = bspline.eval(fx,fy);
+        array_t<CatmullClarkPatch,4> patches; 
+        patch.subdivide(patches); // FIXME: only have to generate one of the patches
+        
+        const Vec2f c = srange.center();
+        if (uv.y < c.y) {
+          if (uv.x < c.x) { patch = patches[0]; srange = BBox2f(srange.lower,c); }
+          else            { patch = patches[1]; srange = BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)); }
+        } else {
+          if (uv.x > c.x) { patch = patches[2]; srange = BBox2f(c,srange.upper); }
+          else            { patch = patches[3]; srange = BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)); }
         }
-        else 
-        {
-          const float sx1 = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
-          const float sy1 = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
-          const Vertex P0 = patch.ring[0].getLimitVertex();
-          const Vertex P1 = patch.ring[1].getLimitVertex();
-          const Vertex P2 = patch.ring[2].getLimitVertex();
-          const Vertex P3 = patch.ring[3].getLimitVertex();
-          dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-        }
-        return;
+        depth++;
       }
 
-      array_t<CatmullClarkPatch,4> patches; 
-      patch.subdivide(patches); // FIXME: only have to generate one of the patches
-
-      const Vec2f c = srange.center();
-      if (uv.y < c.y) {
-        if (uv.x < c.x) eval(patches[0],uv,BBox2f(srange.lower,c),depth+1);
-        else            eval(patches[1],uv,BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)),depth+1);
-      } else {
-        if (uv.x > c.x) eval(patches[2],uv,BBox2f(c,srange.upper),depth+1);
-        else            eval(patches[3],uv,BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)),depth+1);
+      /*! use either B-spline or bilinear patch to interpolate */
+      if (patch.isRegular()) 
+      {
+        BSplinePatch bspline; bspline.init(patch);
+        const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
+        const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
+        dst = bspline.eval(fx,fy);
+      }
+      else 
+      {
+        const float sx1 = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
+        const float sy1 = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
+        const Vertex P0 = patch.ring[0].getLimitVertex();
+        const Vertex P1 = patch.ring[1].getLimitVertex();
+        const Vertex P2 = patch.ring[2].getLimitVertex();
+        const Vertex P3 = patch.ring[3].getLimitVertex();
+        dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
       }
     }
   };
