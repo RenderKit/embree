@@ -153,8 +153,8 @@ namespace embree
           }
           break;
 
-          //case /*0b01*/ 1: accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); break;
-        case /*0b01*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
+          case /*0b01*/ 1: accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); break;
+	  //case /*0b01*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }

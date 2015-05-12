@@ -44,9 +44,9 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
-      const tsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
-      const tsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const tsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+      const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
       
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -151,9 +151,9 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
-      const tsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
-      const tsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const tsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+      const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
       
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -263,9 +263,10 @@ namespace embree
       
       /* calculate vertices relative to ray origin */
       rsimdb valid = valid0;
-      const rsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir; // FIXME: use fmadd intrinsic
-      const rsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const rsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+
+      const rsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const rsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const rsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
       
       /* calculate triangle edges */
       const rsimd3f e0 = v2-v0;
@@ -367,9 +368,9 @@ namespace embree
       
       /* calculate vertices relative to ray origin */
       rsimdb valid = valid0;
-      const rsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
-      const rsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const rsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+      const rsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const rsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const rsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
       
       /* calculate triangle edges */
       const rsimd3f e0 = v2-v0;
@@ -457,9 +458,9 @@ namespace embree
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate vertices relative to ray origin */
-      const tsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
-      const tsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const tsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+      const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
 
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -570,9 +571,9 @@ namespace embree
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate vertices relative to ray origin */
-      const tsimd3f v0 = tri_v0*ray_rdir-ray_org_rdir;
-      const tsimd3f v1 = tri_v1*ray_rdir-ray_org_rdir;
-      const tsimd3f v2 = tri_v2*ray_rdir-ray_org_rdir;
+      const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
+      const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
+      const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
 
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
