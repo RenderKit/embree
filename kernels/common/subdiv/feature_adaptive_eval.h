@@ -35,40 +35,19 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
       : u(u), v(v)
     {
-      const float vv = clamp(uu,0.0f,1.0f); // FIXME: remove clamps
-      const float uu = clamp(vv,0.0f,1.0f); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
+      const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps
+      const float uu = clamp(u,0.0f,1.0f); 
       eval(patch,Vec2f(uu,vv),size_t(0));
     }
  
     __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
     {
-      //const Vec2f ab = 0.5f*(a+b);
-      //const Vec2f ac = 0.5f*(a+c);
-      //const Vec2f abc = (1.0f/3.0f)*(a+b+c);
-      //PRINT(a);
-      //PRINT(ab);
-      //PRINT(abc);
-      //PRINT(ac);
-      //PRINT(uv);
       const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-      //PRINT(A);
-      //PRINT(B);
-      //PRINT(C);
-      //PRINT(D);
       float uk = 0.5f, vk = 0.5f;
-      //PRINT(A+uk*B+vk*C+uk*vk*D);
-      //PRINT(((1.0f-uk)*a+uk*ab)*(1.0f-vk) + ((1.0f-uk)*ac+uk*abc)*vk);
       const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-      //PRINT(AA);
-      //PRINT(BB);
-      //PRINT(CC);
-      const float vv0 = (-BB-sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-      const float vv1 = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-      //PRINT(vv0);
-      //PRINT(vv1);
-      const float uu = (uv.x - A.x - vv1*C.x)/(B.x + vv1*D.x);
-      //PRINT(uu);
-      return Vec2f(uu,vv1);
+      const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+      const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
+      return Vec2f(uu,vv);
     }
 
     __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
@@ -80,9 +59,11 @@ namespace embree
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
+        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
+
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         CatmullClarkPatch qpatch; patch.init(qpatch);
-	eval(qpatch,uv,srange,depth);
+	eval(qpatch,uv,srange,depth); 
 	return;
       }
 
@@ -94,39 +75,24 @@ namespace embree
       /* parametrization for triangles */
       if (N == 3) 
       {
-        //uv = Vec2f(0.0f,0.0f);
-        //PRINT(uv);
         const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
         const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-        //uv = 0.5f*(c+ac); //0.25f*(b+ab+abc+ac);
-        //uv = Vec2f(0.75f,0.25f);
         const bool ab_abc = right_of_line(ab,abc,uv);
         const bool ac_abc = right_of_line(ac,abc,uv);
         const bool bc_abc = right_of_line(bc,abc,uv);
-        //PRINT(uv);
-        //PRINT(ab_abc);
-        //PRINT(ac_abc);
-        //PRINT(bc_abc);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-        if      (!ab_abc &&  ac_abc) {
-          //PRINT("tri0");
-          eval(patches[0],map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v)),srange,depth+1);
-        }
-        else if ( ab_abc && !bc_abc) {
-          //PRINT("tri1");
-          eval(patches[1],map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w)),srange,depth+1);
-        }
-        else {
-          //PRINT("tri2");
-          eval(patches[2],map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u)),srange,depth+1);
-        }
+        if      (!ab_abc &&  ac_abc) eval(patches[0],map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v)),srange,depth+1);
+        else if ( ab_abc && !bc_abc) eval(patches[1],map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w)),srange,depth+1);
+        else                         eval(patches[2],map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u)),srange,depth+1);
       } 
 
       /* parametrization for quads */
       else if (N == 4) 
       {
+        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
+
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const Vec2f c = srange.center();
@@ -148,10 +114,12 @@ namespace embree
       /* parametrization for arbitrary polygons */
       else 
       {
+        std::swap(uv.x,uv.y); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
+
         unsigned i = trunc(uv.y);
         assert(i<N);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-        eval(patches[i],Vec2f(uv.x,floorf(uv.y)),srange,depth+1);
+        eval(patches[i],Vec2f(uv.x,floorf(uv.y)),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,1) will refer to second quad
       }
     }
 
