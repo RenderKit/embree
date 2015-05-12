@@ -121,6 +121,7 @@ namespace embree
   template<typename T> __forceinline T       length   ( const Vec2<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec2<T> normalize( const Vec2<T>& a )                   { return a*rsqrt(dot(a,a)); }
   template<typename T> __forceinline T       distance ( const Vec2<T>& a, const Vec2<T>& b ) { return length(a-b); }
+  template<typename T> __forceinline T       det      ( const Vec2<T>& a, const Vec2<T>& b ) { return a.x*b.y - a.y*b.x; }
 
   template<typename T> __forceinline Vec2<T> normalize_safe( const Vec2<T>& a ) { 
     const T d = dot(a,a); return select(d == T( zero ),a, a*rsqrt(d) );

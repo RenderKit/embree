@@ -35,12 +35,47 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
       : u(u), v(v)
     {
-      const float vv = clamp(u,0.0f,1.0f); // FIXME: remove clamps
-      const float uu = clamp(v,0.0f,1.0f); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
+      const float vv = clamp(uu,0.0f,1.0f); // FIXME: remove clamps
+      const float uu = clamp(vv,0.0f,1.0f); // FIXME: swapping u/v because of wrong u/v order in other subdiv code
       eval(patch,Vec2f(uu,vv),size_t(0));
     }
+ 
+    __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
+    {
+      //const Vec2f ab = 0.5f*(a+b);
+      //const Vec2f ac = 0.5f*(a+c);
+      //const Vec2f abc = (1.0f/3.0f)*(a+b+c);
+      //PRINT(a);
+      //PRINT(ab);
+      //PRINT(abc);
+      //PRINT(ac);
+      //PRINT(uv);
+      const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
+      //PRINT(A);
+      //PRINT(B);
+      //PRINT(C);
+      //PRINT(D);
+      float uk = 0.5f, vk = 0.5f;
+      //PRINT(A+uk*B+vk*C+uk*vk*D);
+      //PRINT(((1.0f-uk)*a+uk*ab)*(1.0f-vk) + ((1.0f-uk)*ac+uk*abc)*vk);
+      const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
+      //PRINT(AA);
+      //PRINT(BB);
+      //PRINT(CC);
+      const float vv0 = (-BB-sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+      const float vv1 = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+      //PRINT(vv0);
+      //PRINT(vv1);
+      const float uu = (uv.x - A.x - vv1*C.x)/(B.x + vv1*D.x);
+      //PRINT(uu);
+      return Vec2f(uu,vv1);
+    }
 
-    void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth)
+    __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
+      return det(A-P,B-P) <= 0.0f;
+    }
+
+    void eval(const GeneralCatmullClarkPatch& patch, Vec2f uv, const size_t depth) // FIXME: no recursion required
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
@@ -57,43 +92,40 @@ namespace embree
       patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
 
       /* parametrization for triangles */
-#if 0
-      if (N == 3) {
-	const Vec2f uv_0(0.0f,0.0f);
-	const Vec2f uv01(0.5f,0.0f);
-	const Vec2f uv_1(1.0f,0.0f);
-	const Vec2f uv12(0.5f,0.5f);
-	const Vec2f uv_2(0.0f,1.0f);
-	const Vec2f uv20(0.0f,0.5f);
-	const Vec2f uvcc(1.0f/3.0f);
-	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
-	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
-	const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
-        const BBox2f srange0(uv_0,uvcc);
-        assert(conjoint(srange0,uv_0));
-        assert(conjoint(srange0,uv01));
-        assert(conjoint(srange0,uvcc));
-        assert(conjoint(srange0,uv20));
-        const BBox2f srange1(uv_1,uvcc);
-        assert(conjoint(srange1,uv_1));
-        assert(conjoint(srange1,uv12));
-        assert(conjoint(srange1,uvcc));
-        assert(conjoint(srange1,uv01));
-        const BBox2f srange2(uv_2,uvcc);
-        assert(conjoint(srange2,uv_2));
-        assert(conjoint(srange2,uv20));
-        assert(conjoint(srange2,uvcc));
-        assert(conjoint(srange2,uv12));
-        if      (conjoint(srange0,uv)) eval(patches[0],uv,srange0,depth+1); // FIXME: no recursion required!
-        else if (conjoint(srange1,uv)) eval(patches[1],uv,srange1,depth+1);
-        else if (conjoint(srange2,uv)) eval(patches[2],uv,srange2,depth+1);
-        else assert(false);
+      if (N == 3) 
+      {
+        //uv = Vec2f(0.0f,0.0f);
+        //PRINT(uv);
+        const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+        const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+        //uv = 0.5f*(c+ac); //0.25f*(b+ab+abc+ac);
+        //uv = Vec2f(0.75f,0.25f);
+        const bool ab_abc = right_of_line(ab,abc,uv);
+        const bool ac_abc = right_of_line(ac,abc,uv);
+        const bool bc_abc = right_of_line(bc,abc,uv);
+        //PRINT(uv);
+        //PRINT(ab_abc);
+        //PRINT(ac_abc);
+        //PRINT(bc_abc);
+        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
+
+        const float u = uv.x, v = uv.y, w = 1.0f-u-v;
+        if      (!ab_abc &&  ac_abc) {
+          //PRINT("tri0");
+          eval(patches[0],map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v)),srange,depth+1);
+        }
+        else if ( ab_abc && !bc_abc) {
+          //PRINT("tri1");
+          eval(patches[1],map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w)),srange,depth+1);
+        }
+        else {
+          //PRINT("tri2");
+          eval(patches[2],map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u)),srange,depth+1);
+        }
       } 
-      else
-#endif
 
       /* parametrization for quads */
-      if (N == 4) 
+      else if (N == 4) 
       {
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 

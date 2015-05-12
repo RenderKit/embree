@@ -82,7 +82,7 @@ __aligned(16) float cube_colors[8][4] =
   {  0.0f,  1.0f,  1.0f, 0.0f }
 };
 
-#if 1
+#if 0
 
 #define NUM_INDICES 24
 #define NUM_FACES 6
