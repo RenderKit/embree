@@ -332,8 +332,8 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID,
  *  byteStride parameter specifies the stride to go from one set of
  *  per vertex parameters to the next set. The destination array is
  *  filled in structure of array layout. */
-RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, unsigned primID,
-                                const void* valid, const float* u, const float* v, size_t numUVs, 
+RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
+                                const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 const float* src, size_t byteStride, float* dst, size_t numFloats);
 
 /*! \brief Deletes the geometry. */

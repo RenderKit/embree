@@ -1098,8 +1098,8 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
-  RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, unsigned primID,
-                                  const void* valid_i, const float* u, const float* v, size_t numUVs, 
+  RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
+                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                   const float* src, size_t byteStride, float* dst, size_t numFloats)
   {
     RTCORE_CATCH_BEGIN;
@@ -1112,7 +1112,7 @@ namespace embree
     {
       if (valid && !valid[i]) continue;
       float dst1[256];
-      rtcInterpolate(scene,geomID,primID,u[i],v[i],src,byteStride,dst1,numFloats);
+      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],src,byteStride,dst1,numFloats);
       for (size_t j=0; j<numFloats; j++)
         dst[j*numUVs+i] = dst1[j];
     }

@@ -276,7 +276,7 @@ void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
  *  byteStride parameter specifies the stride to go from one set of
  *  per vertex parameters to the next set. The dst array will get
  *  filled with the interpolated data in SOA layout. */
-void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, uniform unsigned int primID, 
+void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, 
                     varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, varying float* uniform dst, uniform size_t numFloats);
 
 /*! \brief Deletes the geometry. */
