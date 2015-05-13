@@ -234,9 +234,11 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
 
     /* interpolate color over geometry */
+#if 1
     if (ray.geomID == 0) {
       Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,3); diffuse = c;
     }
+#endif
 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -258,6 +260,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+
   }
   return color;
 }

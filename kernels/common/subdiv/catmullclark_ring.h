@@ -423,7 +423,6 @@ namespace embree
       Vertex_t F( 0.0f );
       Vertex_t E( 0.0f );
       
-
       //Vertex_t c_F ( 0.0f );
       //Vertex_t c_E ( 0.0f );
 

@@ -58,7 +58,7 @@ namespace embree
 
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular()  && !ipatch.hasBorder()  && mesh->displFunc == nullptr) /* deactivated b-spline for now */
+    if (ipatch.isRegular()) /* bezier vs. gregory */
       {
         flags |= REGULAR_PATCH;
         //patch.init( ipatch );
