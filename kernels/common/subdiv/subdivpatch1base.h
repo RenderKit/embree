@@ -537,14 +537,17 @@ namespace embree
 			      const avxf &vv) const
     {
       if (likely(isRegular()))
-	return patch.eval(uu,vv);
+	{
+	  return patch.eval(uu,vv);
+	  //return GregoryPatch::eval8_bezier( patch.v, uu, vv );
+	}
       else 
 	return GregoryPatch::eval8( patch.v, uu, vv );
     }
     __forceinline avx3f normal8(const avxf &uu,
                                 const avxf &vv) const
     {
-      if (likely(isRegular()))
+      if (likely(isRegular()))	
 	return patch.normal(uu,vv);
       else
         return GregoryPatch::normal8( patch.v, uu, vv );

@@ -30,6 +30,55 @@ namespace embree
     //     grid_mask = m_active;
     //   }
 
+  /*! Construction from vertices and IDs. */
+  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
+                                      const unsigned int gID,
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh,
+                                      const Vec2f uv[4],
+                                      const float edge_level[4]) 
+    : geom(gID),
+      prim(pID),  
+      flags(0),
+      root_ref(0)
+  {
+    assert(sizeof(SubdivPatch1Base) == 5 * 64);
+    mtx.reset();
+
+    for (size_t i=0;i<4;i++)
+      {
+        /* need to reverse input here */
+        u[i] = (unsigned short)(uv[i].x * 65535.0f);
+        v[i] = (unsigned short)(uv[i].y * 65535.0f);
+      }
+
+
+    updateEdgeLevels(edge_level,mesh);
+     
+
+    /* determine whether patch is regular or not */
+
+    if (ipatch.isRegular() && !ipatch.hasBorder() && mesh->displFunc == nullptr) /* deactivated b-spline for now */
+      {
+        flags |= REGULAR_PATCH;
+        patch.init( ipatch );
+        //GregoryPatch gpatch; 
+        //gpatch.init_bezier( ipatch ); 
+        //gpatch.exportDenseConrolPoints( patch.v );
+      }
+    else
+      {
+        GregoryPatch gpatch; 
+        gpatch.init( ipatch ); 
+        gpatch.exportDenseConrolPoints( patch.v );
+      }
+#if 0
+    PRINT( grid_u_res );
+    PRINT( grid_v_res );
+    PRINT( grid_subtree_size_64b_blocks );
+#endif
+  }
+
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
   {
     /* init discrete edge tessellation levels and grid resolution */
@@ -106,51 +155,6 @@ namespace embree
   }
 
 
-  /*! Construction from vertices and IDs. */
-  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
-                                      const unsigned int gID,
-                                      const unsigned int pID,
-                                      const SubdivMesh *const mesh,
-                                      const Vec2f uv[4],
-                                      const float edge_level[4]) 
-    : geom(gID),
-      prim(pID),  
-      flags(0),
-      root_ref(0)
-  {
-    assert(sizeof(SubdivPatch1Base) == 5 * 64);
-    mtx.reset();
-
-    for (size_t i=0;i<4;i++)
-      {
-        /* need to reverse input here */
-        u[i] = (unsigned short)(uv[i].x * 65535.0f);
-        v[i] = (unsigned short)(uv[i].y * 65535.0f);
-      }
-
-
-    updateEdgeLevels(edge_level,mesh);
-     
-
-    /* determine whether patch is regular or not */
-
-    if (ipatch.isRegular() && !ipatch.hasBorder() && mesh->displFunc == nullptr) /* deactivated b-spline for now */
-      {
-        flags |= REGULAR_PATCH;
-        patch.init( ipatch );
-      }
-    else
-      {
-        GregoryPatch gpatch; 
-        gpatch.init( ipatch ); 
-        gpatch.exportDenseConrolPoints( patch.v );
-      }
-#if 0
-    PRINT( grid_u_res );
-    PRINT( grid_v_res );
-    PRINT( grid_subtree_size_64b_blocks );
-#endif
-  }
 
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
   {
