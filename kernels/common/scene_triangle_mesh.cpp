@@ -143,6 +143,36 @@ namespace embree
     return true;
   }
 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
+  {
+#if !defined(__MIC__) // FIXME: not working on MIC yet
+    const char* src = (const char*) src_i;
+    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    {
+      if (i+4 > numFloats) 
+      {
+        const size_t n = numFloats-i;
+        const float w = 1.0f-u-v;
+        const Triangle& tri = triangle(primID);
+        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride],n);
+        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride],n);
+        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride],n);
+        const ssef p0123 = w*p0 + u*p1 + v*p2;
+        ssef::storeu(dst,p0123,n);
+      } 
+      else {
+        const float w = 1.0f-u-v;
+        const Triangle& tri = triangle(primID);
+        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride]);
+        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride]);
+        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride]);
+        const ssef p0123 = w*p0 + u*p1 + v*p2;
+        ssef::storeu(dst,p0123);
+      }
+    }
+#endif
+  }
+
   void TriangleMesh::write(std::ofstream& file)
   {
     int type = TRIANGLE_MESH;

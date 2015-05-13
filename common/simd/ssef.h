@@ -74,6 +74,15 @@ namespace embree
       return _mm_loadu_ps((float*)a); 
     }
 
+    static __forceinline ssef loadu( const float* const a, const size_t n) // FIXME: is there a better way of implementing this
+    {
+      const float x = n >= 1 ? a[0] : 0.0f; 
+      const float y = n >= 2 ? a[1] : 0.0f;
+      const float z = n >= 3 ? a[2] : 0.0f;
+      const float w = n >= 4 ? a[3] : 0.0f;
+      return ssef(x,y,z,w);
+    }
+
     static __forceinline ssef load_nt ( const float* ptr ) {
 #if defined (__SSE4_1__)
     return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));
@@ -99,6 +108,14 @@ namespace embree
 
     static __forceinline void storeu ( float* ptr, const ssef& v ) {
       _mm_storeu_ps(ptr,v);
+    }
+
+    static __forceinline void storeu ( float* ptr, const ssef& v, size_t n) // FIXME: is there a better way of implementing this
+    { 
+      if (n >= 1) ptr[0] = v[0];
+      if (n >= 2) ptr[1] = v[1];
+      if (n >= 3) ptr[2] = v[2];
+      if (n >= 4) ptr[3] = v[3];
     }
 
     static __forceinline void store_nt ( ssef* ptr, const ssef& v) 

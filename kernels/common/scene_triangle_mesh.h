@@ -56,6 +56,7 @@ namespace embree
     void unmap(RTCBufferType type);
     void immutable ();
     bool verify ();
+    void interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats);
 
   public:
 
