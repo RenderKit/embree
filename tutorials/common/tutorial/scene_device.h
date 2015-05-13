@@ -89,6 +89,7 @@ struct ISPCSubdivMesh
   int numHoles;
   int materialID;
   int geomID;
+  Vec3fa* colors; // FIXME: remove
 };
 
 struct ISPCAmbientLight
