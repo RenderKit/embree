@@ -46,6 +46,7 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
 sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
+sed -i.backup  's/new Vec3fa\[8\]/(Vec3fa\*) alignedMalloc(8\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
 
 sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*height\*sizeof(Vec3fa))/g' $2

@@ -241,9 +241,11 @@ namespace embree
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
-    bool needTriangles; 
+    bool needTriangleIndices; 
     bool needTriangleVertices; 
+    bool needBezierIndices;
     bool needBezierVertices;
+    bool needSubdivIndices;
     bool is_build;
     MutexSys buildMutex;
     AtomicMutex geometriesMutex;

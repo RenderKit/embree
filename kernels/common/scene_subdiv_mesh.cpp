@@ -206,7 +206,7 @@ namespace embree
   void SubdivMesh::immutable () 
   {
     faceVertices.free();
-    vertexIndices.free();
+    if (!parent->needSubdivIndices) vertexIndices.free();
     vertices[0].free();
     vertices[1].free();
     edge_creases.free();
@@ -508,6 +508,11 @@ namespace embree
 
   void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
   {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
 #if !defined(__MIC__) // FIXME: not working on MIC yet
     const char* src = (const char*) src_i;
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path

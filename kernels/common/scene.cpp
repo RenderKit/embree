@@ -36,7 +36,9 @@ namespace embree
 
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
-      needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
+      needTriangleIndices(false), needTriangleVertices(false), 
+      needBezierIndices(false), needBezierVertices(false),
+      needSubdivIndices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -58,6 +60,12 @@ namespace embree
 
     if (State::instance()->scene_flags != -1)
       flags = (RTCSceneFlags) State::instance()->scene_flags;
+
+    if (aflags & RTC_INTERPOLATE) {
+      needTriangleIndices = true;
+      needBezierIndices = true;
+      needSubdivIndices = true;
+    }
 
 #if defined(__MIC__)
     needBezierVertices = true;

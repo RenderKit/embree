@@ -46,6 +46,7 @@ enum RTCAlgorithmFlags
 {
   RTC_INTERSECT_UNIFORM = (1 << 0),    //!< enables the uniform rtcIntersect1 and uniform rtcOccluded1 functions for this scene
   RTC_INTERSECT_VARYING = (1 << 1),    //!< enables the varying rtcIntersect and varying rtcOccluded functions for this scene
+  RTC_INTERPOLATE       = (1 << 4)     //!< enables the rtcInterpolate function for this scene
 };
 
 /*! \brief Defines an opaque scene type */
