@@ -185,46 +185,6 @@ namespace embree
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
-    void initRegularFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
-                               const size_t index,
-                               const Vec3fa &p_vtx,
-                               const Vec3fa &e0_p_vtx,
-                               const Vec3fa &e1_m_vtx,
-                               const Vec3fa &e0_m_vtx,
-                               const Vec3fa &e3_p_vtx,
-                               Vec3fa &final_vtx)
-    {
-      assert( irreg_patch.ring[index].face_valence == 4);
-      assert( irreg_patch.ring[index].edge_valence == 4);
-      const unsigned int face_valence = 4;
-      const unsigned int edge_valence = 4;
-      
-      const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
-      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
-
-      const Vec3fa c_i     = irreg_patch.ring[index].getQuadCenter( face_valence-1 );
-      const Vec3fa e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( face_valence-1 );
-      
-      const Vec3fa c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-      const Vec3fa e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );	  
-      
-      const float d = 3.0f;
-      const float c     = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_m = cosf(2.0*M_PI/(float)face_valence);
-      
-      const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
-      
-      const Vec3fa f_p =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
-      
-      const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      
-      const Vec3fa f_m = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
-
-      final_vtx =  (f_p + f_m) * 0.5f;
-    }
 
     __noinline void init(const CatmullClarkPatch3fa& patch)
     {
@@ -271,36 +231,15 @@ namespace embree
     __noinline void init_bezier(const CatmullClarkPatch3fa& patch)
     {
       assert( patch.isRegular() );
-      assert( patch.ring[0].hasValidPositions() );
-      assert( patch.ring[1].hasValidPositions() );
-      assert( patch.ring[2].hasValidPositions() );
-      assert( patch.ring[3].hasValidPositions() );
-
-      p0() = initCornerVertex(patch,0);
-      p1() = initCornerVertex(patch,1);
-      p2() = initCornerVertex(patch,2);
-      p3() = initCornerVertex(patch,3);
-
-      e0_p() = initPositiveEdgeVertex(patch,0, p0());
-      e1_p() = initPositiveEdgeVertex(patch,1, p1());
-      e2_p() = initPositiveEdgeVertex(patch,2, p2());
-      e3_p() = initPositiveEdgeVertex(patch,3, p3());
-
-
-      e0_m() = initNegativeEdgeVertex(patch,0, p0());
-      e1_m() = initNegativeEdgeVertex(patch,1, p1());
-      e2_m() = initNegativeEdgeVertex(patch,2, p2());
-      e3_m() = initNegativeEdgeVertex(patch,3, p3());
-
-      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
-      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
-      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
-      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
-      
-      initRegularFaceVertex(patch,0,p0(),e0_p(),e1_m(),e0_m(),e3_p(),f0_p() );
-      initRegularFaceVertex(patch,1,p1(),e1_p(),e2_m(),e1_m(),e0_p(),f1_p() );
-      initRegularFaceVertex(patch,2,p2(),e2_p(),e3_m(),e2_m(),e1_p(),f2_p() );
-      initRegularFaceVertex(patch,3,p3(),e3_p(),e0_m(),e3_m(),e2_p(),f3_p() );
+      init( patch );
+      f0_p() = (f0_p() + f0_m()) * 0.5f;
+      f1_p() = (f1_p() + f1_m()) * 0.5f;
+      f2_p() = (f2_p() + f2_m()) * 0.5f;
+      f3_p() = (f3_p() + f3_m()) * 0.5f;
+      f0_m() = Vec3fa( zero );
+      f1_m() = Vec3fa( zero );
+      f2_m() = Vec3fa( zero );
+      f3_m() = Vec3fa( zero );      
     }
 
     
@@ -437,10 +376,37 @@ namespace embree
       
       return n;     
     }
-    
+   
     __forceinline Vec3fa normal( const float uu, const float vv) const
     {
       return normal(v,f,uu,vv);
+    }
+
+    static __forceinline Vec3fa normal_bezier(const Vec3fa matrix[4][4],
+                                              const float uu,
+                                              const float vv) 
+    {
+      
+      /* tangentU */
+      const Vec3fa_t col0 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
+      const Vec3fa_t col1 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[1][1], (Vec3fa_t)matrix[2][1], (Vec3fa_t)matrix[3][1]);
+      const Vec3fa_t col2 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[1][2], (Vec3fa_t)matrix[2][2], (Vec3fa_t)matrix[3][2]);
+      const Vec3fa_t col3 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
+      
+      const Vec3fa_t tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
+      
+      /* tangentV */
+      const Vec3fa_t row0 = deCasteljau_t(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
+      const Vec3fa_t row1 = deCasteljau_t(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[1][1], (Vec3fa_t)matrix[1][2], (Vec3fa_t)matrix[1][3]);
+      const Vec3fa_t row2 = deCasteljau_t(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[2][1], (Vec3fa_t)matrix[2][2], (Vec3fa_t)matrix[2][3]);
+      const Vec3fa_t row3 = deCasteljau_t(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
+      
+      const Vec3fa_t tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
+      
+      /* normal = tangentU x tangentV */
+      const Vec3fa_t n = cross(tangentV,tangentU);
+      
+      return n;     
     }
     
     static __forceinline float extract_f_m(const Vec3fa matrix[4][4],

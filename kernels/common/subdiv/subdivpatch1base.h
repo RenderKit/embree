@@ -507,7 +507,8 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isRegular()))
-	return patch.eval(uu,vv);
+	//return patch.eval(uu,vv);
+	return GregoryPatch::eval_bezier( patch.v, uu, vv );      
       else 
 	return GregoryPatch::eval( patch.v, uu, vv );
     }
@@ -517,7 +518,8 @@ namespace embree
 			      const ssef &vv) const
     {
       if (likely(isRegular()))
-	return patch.eval(uu,vv);
+	//return patch.eval(uu,vv);
+        return GregoryPatch::eval4_bezier( patch.v, uu, vv );      
       else 
 	return GregoryPatch::eval4( patch.v, uu, vv );
     }
@@ -526,7 +528,8 @@ namespace embree
                                 const ssef &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal(uu,vv);
+	//return patch.normal(uu,vv);
+        return GregoryPatch::normal4_bezier( patch.v, uu, vv );            
       else
         return GregoryPatch::normal4( patch.v, uu, vv );
     }
@@ -537,10 +540,8 @@ namespace embree
 			      const avxf &vv) const
     {
       if (likely(isRegular()))
-	{
-	  return patch.eval(uu,vv);
-	  //return GregoryPatch::eval8_bezier( patch.v, uu, vv );
-	}
+        //return patch.eval(uu,vv);
+        return GregoryPatch::eval8_bezier( patch.v, uu, vv );
       else 
 	return GregoryPatch::eval8( patch.v, uu, vv );
     }
@@ -548,7 +549,8 @@ namespace embree
                                 const avxf &vv) const
     {
       if (likely(isRegular()))	
-	return patch.normal(uu,vv);
+	//return patch.normal(uu,vv);
+        return GregoryPatch::normal8_bezier( patch.v, uu, vv );
       else
         return GregoryPatch::normal8( patch.v, uu, vv );
     }
@@ -591,7 +593,8 @@ namespace embree
 				const float &vv) const
     {
       if (likely(isRegular()))
-	return patch.normal(uu,vv);
+	//return patch.normal(uu,vv);
+	return GregoryPatch::normal_bezier(patch.v, uu,vv);      
       else 
 	return GregoryPatch::normal( patch.v, uu, vv );
     }

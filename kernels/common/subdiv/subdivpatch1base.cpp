@@ -58,13 +58,13 @@ namespace embree
 
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular() && !ipatch.hasBorder() && mesh->displFunc == nullptr) /* deactivated b-spline for now */
+    if (ipatch.isRegular()  && !ipatch.hasBorder()  && mesh->displFunc == nullptr) /* deactivated b-spline for now */
       {
         flags |= REGULAR_PATCH;
-        patch.init( ipatch );
-        //GregoryPatch gpatch; 
-        //gpatch.init_bezier( ipatch ); 
-        //gpatch.exportDenseConrolPoints( patch.v );
+        //patch.init( ipatch );
+        GregoryPatch gpatch; 
+        gpatch.init_bezier( ipatch ); 
+        gpatch.exportDenseConrolPoints( patch.v );
       }
     else
       {
