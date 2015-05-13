@@ -120,6 +120,26 @@ namespace embree
     return mesh;
   }
 
+  /* adds a hair to the scene */
+  unsigned int addHair(RTCScene scene_i)
+  {
+    unsigned int geomID = rtcNewHairGeometry (scene_i, RTC_GEOMETRY_STATIC, 1, 4, 1);
+
+    ssef* pos = (ssef*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
+    pos[0] = ssef(0.0f,0.0f,0.0f,0.1f);
+    pos[1] = ssef(0.0f,1.0f,0.0f,0.1f);
+    pos[2] = ssef(0.0f,2.0f,0.0f,0.1f);
+    pos[3] = ssef(0.0f,3.0f,0.0f,0.1f);
+    rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
+
+    int* index = (int*) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER);
+    index[0] = 0;
+    rtcUnmapBuffer(scene_i,geomID,RTC_INDEX_BUFFER);
+    
+    return geomID;
+  }
+
+  /* prints the bvh4.triangle4v data structure */
   void print_bvh4_triangle4v(BVH4::NodeRef node, size_t depth)
   {
     if (node.isNode())
@@ -165,6 +185,7 @@ namespace embree
     }
   }
 
+  /* prints the triangle BVH of a scene */
   void print_bvh(RTCScene scene)
   {
     /* if the scene contains only triangles, the BVH4 acceleration structure can be obtained this way */
@@ -179,7 +200,7 @@ namespace embree
         throw std::runtime_error("cannot access BVH4 acceleration structure"); // will not happen if you use this Embree version
       
       for (size_t i=0; i<accelN->accels.size() && bvh4 == nullptr; i++)
-        bvh4 = dynamic_cast<BVH4*>(accelN->accels[i]);
+        bvh4 = dynamic_cast<BVH4*>(accelN->accels[i]->intersectors.ptr);
     }
     if (bvh4 == nullptr)
       throw std::runtime_error("cannot access BVH4 acceleration structure"); // will not happen if you use this Embree version
@@ -207,6 +228,7 @@ namespace embree
     addCube(g_scene,Vec3fa(1,0,0));
     addCube(g_scene,Vec3fa(0,0,-1));
     addCube(g_scene,Vec3fa(0,0,1));
+    addHair(g_scene);
     addGroundPlane(g_scene);
     rtcCommit (g_scene);
 
