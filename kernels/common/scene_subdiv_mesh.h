@@ -35,6 +35,16 @@ namespace embree
     static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
+    enum PatchType { 
+      REGULAR_QUAD_PATCH,    //!< a regular quad patch can be represented as a B-Spline
+      IRREGULAR_QUAD_PATCH,  //!< an irregular quad patch can be represented as a Gregory patch
+      COMPLEX_PATCH          //!< these patches need subdivision and cannot be processed by the above fast code paths
+    };
+
+    __forceinline friend PatchType max( const PatchType& ty0, const PatchType& ty1) {
+      return (PatchType) max((int)ty0,(int)ty1);
+    }
+
     struct Edge 
     {
       /*! edge constructor */
@@ -60,7 +70,7 @@ namespace embree
 
       HalfEdge () 
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-          vertex_crease_weight(0), edge_level(0), align(0) 
+          vertex_crease_weight(0), edge_level(0), type(COMPLEX_PATCH) 
 	{
 	  static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
 	}
@@ -87,7 +97,6 @@ namespace embree
       __forceinline bool isRegularVertex() const 
       {
 	const HalfEdge* p = this;
-	if (p->hasCreases()) return false;
 	
         if (!p->hasOpposite()) return false;
         if ((p = p->rotate()) == this) return false;
@@ -110,37 +119,45 @@ namespace embree
 	const HalfEdge* p = this;
 
         if (!p->isRegularVertex()) return false;
+        if (p->hasCreases()      ) return false; // FIXME: should test for soft creases only?
         if ((p = p->next()) == this) return false;
 
         if (!p->isRegularVertex()) return false;
+        if (p->hasCreases()      ) return false;
         if ((p = p->next()) == this) return false;
 
         if (!p->isRegularVertex()) return false;
+        if (p->hasCreases()      ) return false;
         if ((p = p->next()) == this) return false;
         
         if (!p->isRegularVertex()) return false;
+        if (p->hasCreases()      ) return false;
         if ((p = p->next()) != this) return false;
 
 	return true;
       }
 
-      /*! tests if the face is not a regular b-spline face (0=regular, 1=irregular quad, 2=non-quad) */
-      __forceinline int noRegularFace() const 
+      /*! calculates the type of the patch */
+      __forceinline PatchType patchType() const 
       {
-	int ret = 0;
-	const HalfEdge* p = this;
+        const HalfEdge* p = this;
+	PatchType ret = REGULAR_QUAD_PATCH;
 
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
+        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
+        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
 
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
+        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
+        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
 
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
+        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
+        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
         
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) != this) return 2;
+        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
+        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        if ((p = p->next()) != this) return COMPLEX_PATCH;
 
 	return ret;
       }
@@ -302,7 +319,7 @@ namespace embree
       float edge_crease_weight;       //!< crease weight attached to edge
       float vertex_crease_weight;     //!< crease weight attached to start vertex
       float edge_level;               //!< subdivision factor for edge
-      float align;                    //!< aligns the structure to 32 bytes
+      PatchType type;                 //!< stores type of subdiv patch
     };
 
     /*! structure used to sort half edges using radix sort by their key */

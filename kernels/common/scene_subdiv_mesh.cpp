@@ -276,6 +276,7 @@ namespace embree
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = edge_level;
+          edge->type                   = COMPLEX_PATCH; // type gets updated below
 
 	  if (unlikely(holeSet.lookup(f))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
@@ -325,6 +326,18 @@ namespace embree
 	e+=N;
       }
     });
+
+    /* calculate type of each patch */
+    parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
+    {
+      for (size_t f=r.begin(); f<r.end(); f++) 
+      {
+        HalfEdge* edge = &halfEdges[faceStartEdge[f]];
+        PatchType type = edge->patchType();
+        for (size_t i=0; i<faceVertices[f]; i++)
+          edge[i].type = type;
+      }
+    });
   }
 
   void SubdivMesh::updateHalfEdges()
@@ -360,6 +373,10 @@ namespace embree
 
 	if (updateVertexCreases)
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+
+        if (updateEdgeCreases || updateVertexCreases) {
+          edge.type = edge.patchType();
+        }
       }
     });
   }
@@ -436,19 +453,25 @@ namespace embree
     /* print statistics in verbose mode */
     if (State::instance()->verbosity(2)) 
     {
-      size_t numRegularFaces = 0;
-      size_t numIrregularFaces = 0;
+      size_t numRegularQuadFaces = 0;
+      size_t numIrregularQuadFaces = 0;
+      size_t numComplexFaces = 0;
 
       for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
-        if (halfEdges[e].isRegularFace()) numRegularFaces++;
-        else                              numIrregularFaces++;
+        switch (halfEdges[e].type) {
+        case REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
+        case IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
+        case COMPLEX_PATCH       : numComplexFaces++;   break;
+        }
       }
     
       std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s" << std::endl;
       std::cout << "numFaces = " << numFaces << ", " 
-                << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
-                << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
+                << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces << "%), " 
+                << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces << "%) " 
+                << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces << "%) " 
+                << std::endl;
     }
   }
 
