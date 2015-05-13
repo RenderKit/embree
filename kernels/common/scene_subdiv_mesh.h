@@ -94,23 +94,47 @@ namespace embree
       __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
       /*! tests if the start vertex of the edge is regular */
-      __forceinline bool isRegularVertex() const // FIXME: properly handle borders
+      __forceinline bool isRegularVertex() const
       {
 	const HalfEdge* p = this;
-	
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
+        size_t face_valence = 0;
 
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
+        do
+        {
+          /* B-splines do not support vertex creases */
+          if (p->edge_crease_weight != 0.0f) 
+            return false;
 
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
+          /* test for quad */
+          face_valence++;
+          if (p->next()->next()->next()->next() != p)
+            return false;
 
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) != this) return false;
+          /* continue with next face */
+          p = p->prev();
+          if (likely(p->hasOpposite())) 
+            p = p->opposite();
+          
+          /* if there is no opposite go the long way to the other side of the border */
+          else
+          {
+            face_valence++;
+            p = this;
+            while (p->hasOpposite()) 
+              p = p->rotate();
+          }
+        } while (p != this); 
 
-        return true;
+        /* we support vertex_crease_weight = 0 and inf only at corners */
+        if (unlikely(!p->hasOpposite() && !p->prev()->hasOpposite())) {
+          if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
+            return false;
+        } else {
+          if (vertex_crease_weight != 0.0f)
+            return false;
+        }
+
+        return face_valence == 4;
       }
 
       /*! tests if the face is a regular b-spline face */
@@ -119,22 +143,64 @@ namespace embree
 	const HalfEdge* p = this;
 
         if (!p->isRegularVertex()) return false;
-        if (p->hasCreases()      ) return false; // FIXME: should test for soft creases only?
         if ((p = p->next()) == this) return false;
 
         if (!p->isRegularVertex()) return false;
-        if (p->hasCreases()      ) return false;
         if ((p = p->next()) == this) return false;
 
         if (!p->isRegularVertex()) return false;
-        if (p->hasCreases()      ) return false;
         if ((p = p->next()) == this) return false;
         
         if (!p->isRegularVertex()) return false;
-        if (p->hasCreases()      ) return false;
         if ((p = p->next()) != this) return false;
 
 	return true;
+      }
+
+      /*! tests if the start vertex of the edge is regular */
+      __forceinline PatchType vertexType() const
+      {
+	const HalfEdge* p = this;
+        size_t face_valence = 0;
+
+        do
+        {
+          /* we need subdivision to handle edge creases */
+          if (p->edge_crease_weight != 0.0f) 
+            return COMPLEX_PATCH;
+
+          /* test for quad */
+          face_valence++;
+          if (p->next()->next()->next()->next() != p)
+            return COMPLEX_PATCH;
+
+          /* continue with next face */
+          p = p->prev();
+          if (likely(p->hasOpposite())) 
+            p = p->opposite();
+          
+          /* if there is no opposite go the long way to the other side of the border */
+          else
+          {
+            face_valence++;
+            p = this;
+            while (p->hasOpposite()) 
+              p = p->rotate();
+          }
+        } while (p != this); 
+
+        /* we support vertex_crease_weight = 0 and inf at corners of bezier and gregory patches */
+        if (unlikely(!p->hasOpposite() && !p->prev()->hasOpposite())) {
+          if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
+            return COMPLEX_PATCH;
+        } else {
+          if (vertex_crease_weight != 0.0f)
+            return COMPLEX_PATCH;
+        }
+
+        /* test if vertex is regular */
+        if (face_valence == 4) return REGULAR_QUAD_PATCH;
+        else                   return IRREGULAR_QUAD_PATCH;
       }
 
       /*! calculates the type of the patch */
@@ -143,43 +209,24 @@ namespace embree
         const HalfEdge* p = this;
 	PatchType ret = REGULAR_QUAD_PATCH;
 
-        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
-        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
 
-        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
-        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
-        if ((p = p->next()) == this) return COMPLEX_PATCH;
-
-        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
-        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
         
-        if (!p->isRegularVertex()) ret = max(ret,IRREGULAR_QUAD_PATCH);
-        if (p->hasCreases()      ) ret = max(ret,COMPLEX_PATCH);
+        ret = max(ret,p->vertexType());
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
+        
+        ret = max(ret,p->vertexType());
         if ((p = p->next()) != this) return COMPLEX_PATCH;
 
 	return ret;
       }
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
-      __forceinline bool isGregoryFace() const 
-      {
-	const HalfEdge* p = this;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-        
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) != this) return false;
-
-	return true;
+      __forceinline bool isGregoryFace() const {
+        return patchType() == IRREGULAR_QUAD_PATCH;
       }
 
       /*! calculates conservative bounds of a catmull clark subdivision face */
@@ -305,9 +352,9 @@ namespace embree
       }
 
       /*! tests if the edge has creases */
-      __forceinline bool hasCreases() const {
-	return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
-      }
+      //__forceinline bool hasCreases() const {
+      //return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
+      //}
 
     private:
       unsigned int vtx_index;         //!< index of edge start vertex

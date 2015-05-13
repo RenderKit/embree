@@ -398,7 +398,10 @@ namespace embree
       } 
       else if (!opposite0) v00 = 2.0f*v10-v20;
       else if (!opposite3) v00 = 2.0f*v01-v02;
-      else                 v00 = 2.0f*v11-v22;
+      else {
+        if (edge0->vertex_crease_weight == 0.0f) v00 = 2.0f*v11-v22;
+        else                                     v00 = v11; // FIXME: does this create proper soft corners?
+      }
       
       /* hard vertex crease rule */
       //if (unlikely(edge0->vertex_crease_weight == float(inf))) 
