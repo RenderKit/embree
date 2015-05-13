@@ -239,7 +239,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
  else
   {
    materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID;    
-   //Vec3fa c; rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,(const float*)((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->colors,16,&c.x,3); return c; // FIXME: remove
+   Vec3fa c; rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,(const float*)((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->colors,16,&c.x,3); return c; // FIXME: remove
   }
 #else
 

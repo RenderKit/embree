@@ -348,11 +348,85 @@ namespace embree
       }
     }
 
-    __forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vertex>& vertices)
+    //__forceinline void init(const SubdivMesh::HalfEdge* const first_half_edge, const BufferT<Vertex>& vertices)
+    //{
+    //  CatmullClarkPatch3fa ipatch;
+    //  ipatch.init( first_half_edge, vertices );
+    //  init( ipatch );
+    //}
+
+    template<typename Loader>
+    __forceinline void init_border(const SubdivMesh::HalfEdge* edge0, Loader& load,
+                                   Vertex& v01, Vertex& v02,
+                                   const Vertex& v11, const Vertex& v12,
+                                   const Vertex& v21, const Vertex& v22)
     {
-      CatmullClarkPatch3fa ipatch;
-      ipatch.init( first_half_edge, vertices );
-      init( ipatch );
+      if (likely(edge0->hasOpposite())) 
+      {
+        const SubdivMesh::HalfEdge* e = edge0->opposite()->next()->next(); 
+        v01 = load(e); 
+        v02 = load(e->next());
+      } else {
+        v01 = 2.0f*v11-v21;
+        v02 = 2.0f*v12-v22;
+      }
+
+      /* hard vertex crease rule */
+      //if (unlikely(edge0->vertex_crease_weight == float(inf)))
+      //  v01 = 2.0f*v11-v21;
+      //if (unlikely(edge0->next()->vertex_crease_weight == float(inf)))
+      //  v02 = 2.0f*v12-v22;
+    }
+
+    template<typename Loader>
+    __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0, Loader& load, Vertex& v00, 
+                                   const Vertex& v01, const Vertex& v02, 
+                                   const Vertex& v11, const Vertex& v22, 
+                                   const Vertex& v10, const Vertex& v20)
+    {
+      const bool opposite0 = edge0->hasOpposite();
+      const bool opposite3 = edge0->prev()->hasOpposite();
+      if (likely(opposite0 && opposite3))
+      {
+        const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
+        if (likely(e->hasOpposite()))
+          v00 = load(e->opposite()->prev());
+        else {
+          assert(!edge0->prev()->opposite()->prev()->hasOpposite());
+          v00 = 2.0f*v11-v22;
+        }
+      } 
+      else if (!opposite0) v00 = 2.0f*v10-v20;
+      else if (!opposite3) v00 = 2.0f*v01-v02;
+      else                 v00 = 2.0f*v11-v22;
+      
+      /* hard vertex crease rule */
+      //if (unlikely(edge0->vertex_crease_weight == float(inf))) 
+      //  v00 = 2.0f*v11-v22;
+    }
+
+    template<typename Loader>
+      void init(const SubdivMesh::HalfEdge* edge0, Loader& load)
+    {
+      assert( edge0->isRegularFace() );
+
+      /* fill inner vertices */
+      const Vertex v11 = this->v[1][1] = load(edge0); const SubdivMesh::HalfEdge* edge1 = edge0->next();
+      const Vertex v12 = this->v[1][2] = load(edge1); const SubdivMesh::HalfEdge* edge2 = edge1->next();
+      const Vertex v22 = this->v[2][2] = load(edge2); const SubdivMesh::HalfEdge* edge3 = edge2->next();
+      const Vertex v21 = this->v[2][1] = load(edge3); assert(edge0  == edge3->next());
+
+      /* fill border vertices */
+      init_border(edge0,load,this->v[0][1],this->v[0][2],v11,v12,v21,v22);
+      init_border(edge1,load,this->v[1][3],this->v[2][3],v12,v22,v11,v21);
+      init_border(edge2,load,this->v[3][2],this->v[3][1],v22,v21,v12,v11);
+      init_border(edge3,load,this->v[2][0],this->v[1][0],v21,v11,v22,v12);
+
+      /* fill corner vertices */
+      init_corner(edge0,load,this->v[0][0],this->v[0][1],this->v[0][2],v11,v22,this->v[1][0],this->v[2][0]);
+      init_corner(edge1,load,this->v[0][3],this->v[1][3],this->v[2][3],v12,v21,this->v[0][2],this->v[0][1]);
+      init_corner(edge2,load,this->v[3][3],this->v[3][2],this->v[3][1],v22,v11,this->v[2][3],this->v[1][3]);
+      init_corner(edge3,load,this->v[3][0],this->v[2][0],this->v[1][0],v21,v12,this->v[3][1],this->v[3][2]);
     }
 
     __forceinline BBox<Vertex> bounds() const

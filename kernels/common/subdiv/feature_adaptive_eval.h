@@ -154,15 +154,19 @@ namespace embree
   {
     typedef decltype(loader(0)) Vertex;
 
-    switch (edge->type) {
-    case SubdivMesh::REGULAR_QUAD_PATCH: {
-      CatmullClarkPatchT<Vertex> patch;
-      patch.init2(edge,loader);
+    switch (edge->type) 
+    {
+    case SubdivMesh::REGULAR_QUAD_PATCH: 
+    {
+      //CatmullClarkPatchT<Vertex> patch;
+      //patch.init2(edge,loader);
       BSplinePatchTT<Vertex> bspline;
-      bspline.init(patch);
+      //bspline.init(patch);
+      bspline.init(edge,loader);
       return bspline.eval(u,v);
     }
-    default: {
+    default: 
+    {
       GeneralCatmullClarkPatchT<Vertex> patch;
       patch.init2(edge,loader);
       FeatureAdaptivePointEval<Vertex> eval(patch,u,v); 

@@ -94,7 +94,7 @@ namespace embree
       __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
       /*! tests if the start vertex of the edge is regular */
-      __forceinline bool isRegularVertex() const 
+      __forceinline bool isRegularVertex() const // FIXME: properly handle borders
       {
 	const HalfEdge* p = this;
 	
