@@ -94,74 +94,11 @@ namespace embree
       __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
       /*! tests if the start vertex of the edge is regular */
-      __forceinline bool isRegularVertex() const
-      {
-	const HalfEdge* p = this;
-        size_t face_valence = 0;
-
-        do
-        {
-          /* B-splines do not support vertex creases */
-          if (p->edge_crease_weight != 0.0f) 
-            return false;
-
-          /* test for quad */
-          face_valence++;
-          if (p->next()->next()->next()->next() != p)
-            return false;
-
-          /* continue with next face */
-          p = p->prev();
-          if (likely(p->hasOpposite())) 
-            p = p->opposite();
-          
-          /* if there is no opposite go the long way to the other side of the border */
-          else
-          {
-            face_valence++;
-            p = this;
-            while (p->hasOpposite()) 
-              p = p->rotate();
-          }
-        } while (p != this); 
-
-        /* we support vertex_crease_weight = 0 and inf only at corners */
-        if (unlikely(!p->hasOpposite() && !p->prev()->hasOpposite())) {
-          if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
-            return false;
-        } else {
-          if (vertex_crease_weight != 0.0f)
-            return false;
-        }
-
-        return face_valence == 4;
-      }
-
-      /*! tests if the face is a regular b-spline face */
-      __forceinline bool isRegularFace() const 
-      {
-	const HalfEdge* p = this;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
-        
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) != this) return false;
-
-	return true;
-      }
-
-      /*! tests if the start vertex of the edge is regular */
       __forceinline PatchType vertexType() const
       {
 	const HalfEdge* p = this;
         size_t face_valence = 0;
+        bool isBorder = false;
 
         do
         {
@@ -183,6 +120,7 @@ namespace embree
           else
           {
             face_valence++;
+            isBorder = true;
             p = this;
             while (p->hasOpposite()) 
               p = p->rotate();
@@ -190,7 +128,8 @@ namespace embree
         } while (p != this); 
 
         /* we support vertex_crease_weight = 0 and inf at corners of bezier and gregory patches */
-        if (unlikely(!p->hasOpposite() && !p->prev()->hasOpposite())) {
+        const bool isCorner = !p->hasOpposite() && !p->prev()->hasOpposite();
+        if (unlikely(isCorner)) {
           if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
             return COMPLEX_PATCH;
         } else {
@@ -199,8 +138,10 @@ namespace embree
         }
 
         /* test if vertex is regular */
-        if (face_valence == 4) return REGULAR_QUAD_PATCH;
-        else                   return IRREGULAR_QUAD_PATCH;
+        if      (face_valence == 2 && isCorner) return REGULAR_QUAD_PATCH;
+        else if (face_valence == 3 && isBorder) return REGULAR_QUAD_PATCH;
+        else if (face_valence == 4            ) return REGULAR_QUAD_PATCH;
+        else                                    return IRREGULAR_QUAD_PATCH;
       }
 
       /*! calculates the type of the patch */
@@ -222,6 +163,11 @@ namespace embree
         if ((p = p->next()) != this) return COMPLEX_PATCH;
 
 	return ret;
+      }
+
+      /*! tests if the face is a regular b-spline face */
+      __forceinline bool isRegularFace() const {
+        return patchType() == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
