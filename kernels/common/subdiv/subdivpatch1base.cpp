@@ -60,14 +60,19 @@ namespace embree
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
       {
-        flags |= REGULAR_PATCH;
-        //patch.init( ipatch );
+#if 1
+        flags |= BEZIER_PATCH;
         GregoryPatch gpatch; 
         gpatch.init_bezier( ipatch ); 
         gpatch.exportDenseConrolPoints( patch.v );
+#else
+        flags |= BSPLINE_PATCH;
+        patch.init( ipatch );
+#endif
       }
     else
       {
+        flags |= GREGORY_PATCH;
         GregoryPatch gpatch; 
         gpatch.init( ipatch ); 
         gpatch.exportDenseConrolPoints( patch.v );

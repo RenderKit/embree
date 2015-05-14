@@ -483,9 +483,11 @@ namespace embree
   public:
 
     enum {
-      REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
-      TRANSITION_PATCH  = 2,  // needs stiching?
-      HAS_DISPLACEMENT  = 4   // 0 => no displacments
+      BSPLINE_PATCH     = 1,  
+      BEZIER_PATCH      = 2,  
+      GREGORY_PATCH     = 4,
+      TRANSITION_PATCH  = 8,  // needs stiching?
+      HAS_DISPLACEMENT  = 16   // 0 => no displacments
     };
 
     /*! Default constructor. */
@@ -506,53 +508,76 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      if (likely(isRegular()))
-	//return patch.eval(uu,vv);
-	return GregoryPatch::eval_bezier( patch.v, uu, vv );      
-      else 
+      if (likely(isBezierPatch()))
+        return GregoryPatch::eval_bezier( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
 	return GregoryPatch::eval( patch.v, uu, vv );
+      return Vec3fa( zero );
+    }
+
+    __forceinline Vec3fa normal(const float &uu,
+				const float &vv) const
+    {
+      if (likely(isBezierPatch()))
+        return GregoryPatch::normal_bezier( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return GregoryPatch::normal( patch.v, uu, vv );
+      return Vec3fa( zero );
     }
 
 #if defined(__SSE__)
     __forceinline sse3f eval4(const ssef &uu,
 			      const ssef &vv) const
     {
-      if (likely(isRegular()))
-	//return patch.eval(uu,vv);
-        return GregoryPatch::eval4_bezier( patch.v, uu, vv );      
-      else 
+      if (likely(isBezierPatch()))
+        return GregoryPatch::eval4_bezier( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
 	return GregoryPatch::eval4( patch.v, uu, vv );
+      return sse3f( zero );
     }
 
     __forceinline sse3f normal4(const ssef &uu,
                                 const ssef &vv) const
     {
-      if (likely(isRegular()))
-	//return patch.normal(uu,vv);
-        return GregoryPatch::normal4_bezier( patch.v, uu, vv );            
-      else
-        return GregoryPatch::normal4( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return GregoryPatch::normal4_bezier( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return GregoryPatch::normal4( patch.v, uu, vv );
+      return sse3f( zero );
     }
+
 #endif
 
 #if defined(__AVX__)
     __forceinline avx3f eval8(const avxf &uu,
 			      const avxf &vv) const
     {
-      if (likely(isRegular()))
-        //return patch.eval(uu,vv);
+      if (likely(isBezierPatch()))
         return GregoryPatch::eval8_bezier( patch.v, uu, vv );
-      else 
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
 	return GregoryPatch::eval8( patch.v, uu, vv );
+      return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
                                 const avxf &vv) const
     {
-      if (likely(isRegular()))	
-	//return patch.normal(uu,vv);
+      if (likely(isBezierPatch()))
         return GregoryPatch::normal8_bezier( patch.v, uu, vv );
-      else
-        return GregoryPatch::normal8( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return GregoryPatch::normal8( patch.v, uu, vv );
+      return avx3f( zero );
     }
 #endif
 
@@ -560,7 +585,7 @@ namespace embree
     __forceinline mic_f eval4(const mic_f &uu,
 			      const mic_f &vv) const
     {
-      if (likely(isRegular()))
+      if (likely(isBSplinePatch()))
 	{
 	  return patch.eval4(uu,vv);
 	}
@@ -573,7 +598,7 @@ namespace embree
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
-      if (likely(isRegular()))
+      if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else 
         return GregoryPatch::eval16( patch.v, uu, vv );
@@ -582,31 +607,27 @@ namespace embree
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
-      if (likely(isRegular()))
+      if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
       else
         return GregoryPatch::normal16( patch.v, uu, vv );
     }
 #endif
 
-    __forceinline Vec3fa normal(const float &uu,
-				const float &vv) const
+
+    __forceinline bool isBSplinePatch() const
     {
-      if (likely(isRegular()))
-	//return patch.normal(uu,vv);
-	return GregoryPatch::normal_bezier(patch.v, uu,vv);      
-      else 
-	return GregoryPatch::normal( patch.v, uu, vv );
+      return (flags & BSPLINE_PATCH) == BSPLINE_PATCH;
     }
 
-    __forceinline bool isRegular() const
+    __forceinline bool isBezierPatch() const
     {
-      return (flags & REGULAR_PATCH) == REGULAR_PATCH;
+      return (flags & BEZIER_PATCH) == BEZIER_PATCH;
     }
 
     __forceinline bool isGregoryPatch() const
     {
-      return !isRegular();
+      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
     }
 
     __forceinline bool hasDisplacement() const
