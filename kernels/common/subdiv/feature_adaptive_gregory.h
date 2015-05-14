@@ -60,6 +60,7 @@ namespace embree
 	subdivide(qpatch,depth,uv,neighborSubdiv);
 	return;
       }
+
       /* subdivide patch */
       size_t N;
       array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 

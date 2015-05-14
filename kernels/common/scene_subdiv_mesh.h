@@ -172,7 +172,7 @@ namespace embree
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return patchType() == IRREGULAR_QUAD_PATCH;
+        return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH;
       }
 
       /*! calculates conservative bounds of a catmull clark subdivision face */

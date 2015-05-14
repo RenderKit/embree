@@ -72,11 +72,13 @@ namespace embree
         gpatch.init( ipatch ); 
         gpatch.exportDenseConrolPoints( patch.v );
       }
+
 #if 0
     PRINT( grid_u_res );
     PRINT( grid_v_res );
     PRINT( grid_subtree_size_64b_blocks );
 #endif
+
   }
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
