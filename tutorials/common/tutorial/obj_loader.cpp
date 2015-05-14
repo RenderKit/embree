@@ -23,7 +23,7 @@
 #include <vector>
 #include <string.h>
 
-#define FORCE_ONLY_QUADS 1
+#define FORCE_ONLY_QUADS 0
 
 namespace embree
 {
