@@ -390,7 +390,9 @@ namespace embree
     }
 
 
-  BVH4Hair(const PrimitiveType& primTy, void* geometry = nullptr) : primTy(primTy), 
+  BVH4Hair(const PrimitiveType& primTy, void* geometry = nullptr) 
+    : AccelData(AccelData::TY_UNKNOWN),
+      primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
       accel(nullptr),

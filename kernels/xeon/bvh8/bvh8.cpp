@@ -95,7 +95,7 @@ namespace embree
   }
 
   BVH8::BVH8 (const PrimitiveType& primTy, Scene* scene)
-    : primTy(primTy), scene(scene), root(emptyNode),
+    : AccelData(AccelData::TY_BVH8), primTy(primTy), scene(scene), root(emptyNode),
       numPrimitives(0), numVertices(0) {}
 
   BVH8::~BVH8 () {

@@ -261,7 +261,7 @@ namespace embree
   }
 
   BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)
-    : primTy(primTy), scene(scene), listMode(listMode),
+    : AccelData(AccelData::TY_BVH4), primTy(primTy), scene(scene), listMode(listMode),
       root(emptyNode), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
 
   BVH4::~BVH4 () 

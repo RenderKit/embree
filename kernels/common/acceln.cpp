@@ -21,7 +21,7 @@
 namespace embree
 {
   AccelN::AccelN () 
-    : accels(nullptr), validAccels(nullptr) {}
+    : Accel(AccelData::TY_ACCELN), accels(nullptr), validAccels(nullptr) {}
 
   AccelN::~AccelN() 
   {

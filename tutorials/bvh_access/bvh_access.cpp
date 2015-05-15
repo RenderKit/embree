@@ -189,19 +189,24 @@ namespace embree
   /* prints the triangle BVH of a scene */
   void print_bvh(RTCScene scene)
   {
+    BVH4* bvh4 = nullptr; 
+
     /* if the scene contains only triangles, the BVH4 acceleration structure can be obtained this way */
     AccelData* accel = ((Accel*)scene)->intersectors.ptr;
-    BVH4* bvh4 = dynamic_cast<BVH4*>(accel);
+    if (accel->type == AccelData::TY_BVH4) 
+      bvh4 = (BVH4*)accel;
 
     /* if there are also other geometry types, one has to iterate over the toplevel AccelN structure */
-    if (bvh4 == nullptr) 
+    else if (accel->type == AccelData::TY_ACCELN)
     {
-      AccelN* accelN = dynamic_cast<AccelN*>(accel);
-      if (accelN == nullptr)
-        throw std::runtime_error("cannot access BVH4 acceleration structure"); // will not happen if you use this Embree version
-      
-      for (size_t i=0; i<accelN->accels.size() && bvh4 == nullptr; i++)
-        bvh4 = dynamic_cast<BVH4*>(accelN->accels[i]->intersectors.ptr);
+      AccelN* accelN = (AccelN*)(accel);
+      for (size_t i=0; i<accelN->accels.size(); i++) {
+        if (accelN->accels[i]->intersectors.ptr->type == AccelData::TY_BVH4) {
+          bvh4 = (BVH4*)accelN->accels[i]->intersectors.ptr;
+          if (bvh4->primTy.name == "triangle4v") break;
+          bvh4 = nullptr;
+        }
+      }
     }
     if (bvh4 == nullptr)
       throw std::runtime_error("cannot access BVH4 acceleration structure"); // will not happen if you use this Embree version

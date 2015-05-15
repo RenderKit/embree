@@ -35,7 +35,8 @@ namespace embree
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
 
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+    : Accel(AccelData::TY_UNKNOWN),
+      flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
       needSubdivIndices(false),

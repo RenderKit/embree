@@ -21,16 +21,21 @@
 namespace embree
 {
   /*! Base class for the acceleration structure data. */
-  class AccelData : public RefCount {
+  class AccelData : public RefCount 
+  {
   public:
-    AccelData () 
-      : bounds(empty) {}
+    enum Type { TY_UNKNOWN = 0, TY_ACCELN = 1, TY_ACCEL_INSTANCE = 2, TY_BVH4 = 3, TY_BVH8 = 4 };
+
+  public:
+    AccelData (const Type type) 
+      : bounds(empty), type(type) {}
 
     /*! clears the acceleration structure data */
     virtual void clear() = 0;
 
   public:
     BBox3fa bounds;
+    Type type;
   };
 
   /*! Base class for all intersectable and buildable acceleration structures. */
@@ -209,10 +214,12 @@ namespace embree
   public:
 
     /*! Construction */
-    Accel () {}
-
+    Accel (const AccelData::Type type) 
+      : AccelData(type) {}
+    
     /*! Construction */
-    Accel (const Intersectors& intersectors) : intersectors(intersectors) {}
+    Accel (const AccelData::Type type, const Intersectors& intersectors) 
+      : AccelData(type), intersectors(intersectors) {}
 
     /*! Virtual destructor */
     virtual ~Accel() {}
