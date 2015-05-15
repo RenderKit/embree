@@ -876,8 +876,9 @@ namespace embree
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
 						     subdiv_patches[patchIndex].resetRootRef();
 
-						     subdiv_patches[patchIndex].prim = patchIndex;
+						     //subdiv_patches[patchIndex].prim = patchIndex;
 
+						     
                                                      /* compute patch bounds */
                                                      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
                                                      assert(bounds.lower.x <= bounds.upper.x);
