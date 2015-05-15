@@ -36,9 +36,9 @@ namespace embree
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
     enum PatchType { 
-      REGULAR_QUAD_PATCH,    //!< a regular quad patch can be represented as a B-Spline
-      IRREGULAR_QUAD_PATCH,  //!< an irregular quad patch can be represented as a Gregory patch
-      COMPLEX_PATCH          //!< these patches need subdivision and cannot be processed by the above fast code paths
+      REGULAR_QUAD_PATCH = 0,    //!< a regular quad patch can be represented as a B-Spline
+      IRREGULAR_QUAD_PATCH = 1,  //!< an irregular quad patch can be represented as a Gregory patch
+      COMPLEX_PATCH = 2          //!< these patches need subdivision and cannot be processed by the above fast code paths
     };
 
     __forceinline friend PatchType max( const PatchType& ty0, const PatchType& ty1) {

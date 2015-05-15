@@ -42,7 +42,7 @@ namespace embree
       patch.init(h,vertices);
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
       for (size_t i=0; i<patch.size(); i++) {
-	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->noRegularFace() : 0; h = h->next();
+	neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->patchType() : 0; h = h->next();
       }
       subdivide(patch,0,neighborSubdiv);
 #endif
