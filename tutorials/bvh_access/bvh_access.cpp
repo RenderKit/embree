@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "embree2/rtcore.h"
+#include "tutorial/tutorial.h"
 #include "kernels/xeon/bvh4/bvh4.h"
 #include "kernels/xeon/geometry/triangle4v.h"
 
