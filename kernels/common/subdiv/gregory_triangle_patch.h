@@ -47,8 +47,8 @@ namespace embree
     Vec3fa& f2_p() { return v[2][2]; }
     //Vec3fa& f3_p() { return v[2][1]; }
     Vec3fa& f0_m() { return v[3][0]; }
-    Vec3fa& f1_m() { return f[2][0]; }
-    Vec3fa& f2_m() { return f[1][0]; }
+    Vec3fa& f1_m() { return v[2][0]; }
+    Vec3fa& f2_m() { return v[1][0]; }
     //Vec3fa& f3_m() { return f[1][0]; }
     
     const Vec3fa& p0() const { return v[0][0]; }
@@ -67,9 +67,9 @@ namespace embree
     const Vec3fa& f1_p() const { return v[1][2]; }
     const Vec3fa& f2_p() const { return v[2][2]; }
 
-    const Vec3fa& f0_m() const { return f[0][0]; }
-    const Vec3fa& f1_m() const { return f[0][1]; }
-    const Vec3fa& f2_m() const { return f[1][1]; }
+    const Vec3fa& f0_m() const { return v[3][0]; }
+    const Vec3fa& f1_m() const { return v[2][0]; }
+    const Vec3fa& f2_m() const { return v[1][0]; }
     
     
     Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index)
@@ -154,7 +154,7 @@ namespace embree
         e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
       }      
       
-      const float d = 3.0f;
+      const float d = 4.0f;
       const float c     = cosf(2.0*M_PI/(float)face_valence);
       const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
@@ -237,300 +237,97 @@ namespace embree
       return v1_2 - v0_2;      
     }
     
-    static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4],
-						   const Vec3fa f_m[2][2],
-						   const float uu,
-						   const float vv,
-						   Vec3fa_t &matrix_11,
-						   Vec3fa_t &matrix_12,
-						   Vec3fa_t &matrix_22,
-						   Vec3fa_t &matrix_21)
-    {
-      if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
-      {
-	matrix_11 = matrix[1][1];
-	matrix_12 = matrix[1][2];
-	matrix_22 = matrix[2][2];
-	matrix_21 = matrix[2][1];	 
-      }
-      else
-      {
-	const Vec3fa_t f0_p = matrix[1][1];
-	const Vec3fa_t f1_p = matrix[1][2];
-	const Vec3fa_t f2_p = matrix[2][2];
-	const Vec3fa_t f3_p = matrix[2][1];
         
-	const Vec3fa_t f0_m = f_m[0][0];
-	const Vec3fa_t f1_m = f_m[0][1];
-	const Vec3fa_t f2_m = f_m[1][1];
-	const Vec3fa_t f3_m = f_m[1][0];
-        
-	const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv);
-	const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv);
-	const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv);
-	const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv);
-        
-	matrix_11 = F0;
-	matrix_12 = F1;
-	matrix_22 = F2;
-	matrix_21 = F3;     
-      }
-    } 
-    
-    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
-				       const Vec3fa f_m[2][2],
-				       const float uu,
-				       const float vv) 
-    {
-      
-      Vec3fa_t matrix_11, matrix_12, matrix_22, matrix_21;
-      computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
-      
-      /* tangentU */
-      const Vec3fa_t col0 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
-      const Vec3fa_t col1 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix[3][1]);
-      const Vec3fa_t col2 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[3][2]);
-      const Vec3fa_t col3 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
-      
-      const Vec3fa_t tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
-      
-      /* tangentV */
-      const Vec3fa_t row0 = deCasteljau_t(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
-      const Vec3fa_t row1 = deCasteljau_t(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix[1][3]);
-      const Vec3fa_t row2 = deCasteljau_t(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[2][3]);
-      const Vec3fa_t row3 = deCasteljau_t(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
-      
-      const Vec3fa_t tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
-      
-      /* normal = tangentU x tangentV */
-      const Vec3fa_t n = cross(tangentV,tangentU);
-      
-      return n;     
-    }
-   
-    __forceinline Vec3fa normal( const float uu, const float vv) const
-    {
-      return normal(v,f,uu,vv);
-    }
-        
-    
-    
-    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4],
-                                     const float &uu,
-                                     const float &vv) 
-    {
-      Vec3fa f[2][2];
-      f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
-      f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
-      f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
-      f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
-      
-      Vec3fa_t v_11, v_12, v_22, v_21;
-      computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
-      
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
-
-
-      const Vec3fa_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
-      
-      return res;
-    }
-    
     template<class M, class T>
-      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4],
-                                          const T &uu,
-                                          const T &vv) 
+      static __forceinline Vec3<T> eval_t(const GregoryTrianglePatch &tpatch,
+				   const T &uu,
+				   const T &vv)
     {
-      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+      const T ww = T(1.0f) - uu - vv;
+      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f) | (ww == 0.0f) | (ww == 1.0f);
       
-      const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
+      const Vec3<T> f0_p = Vec3<T>(tpatch.f0_p().x,tpatch.f0_p().y,tpatch.f0_p().z);
+      const Vec3<T> f1_p = Vec3<T>(tpatch.f1_p().x,tpatch.f1_p().y,tpatch.f1_p().z);
+      const Vec3<T> f2_p = Vec3<T>(tpatch.f2_p().x,tpatch.f2_p().y,tpatch.f2_p().z);
+
+      const Vec3<T> f0_m = Vec3<T>(tpatch.f0_m().x,tpatch.f0_m().y,tpatch.f0_m().z);
+      const Vec3<T> f1_m = Vec3<T>(tpatch.f1_m().x,tpatch.f1_m().y,tpatch.f1_m().z);
+      const Vec3<T> f2_m = Vec3<T>(tpatch.f2_m().x,tpatch.f2_m().y,tpatch.f2_m().z);
       
-      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
       
-      const T one_minus_uu = T(1.0f) - uu;
-      const T one_minus_vv = T(1.0f) - vv;      
       
-#if 1
-      const T inv0 = rcp(uu+vv);
-      const T inv1 = rcp(one_minus_uu+vv);
-      const T inv2 = rcp(one_minus_uu+one_minus_vv);
-      const T inv3 = rcp(uu+one_minus_vv);
-#else
-      const T inv0 = 1.0f/(uu+vv);
-      const T inv1 = 1.0f/(one_minus_uu+vv);
-      const T inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const T inv3 = 1.0f/(uu+one_minus_vv);
-#endif
+      const T inv_uu_vv = rcp(uu+vv);
+      const T inv_vv_ww = rcp(vv+ww);
+      const T inv_ww_uu = rcp(ww+uu);
       
-      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      const Vec3<T> f0_i = (ww * f0_m + vv * f0_p) * inv_vv_ww;
+      const Vec3<T> f1_i = (uu * f1_m + ww * f1_p) * inv_ww_uu;
+      const Vec3<T> f2_i = (vv * f2_m + uu * f2_p) * inv_uu_vv;
+
       
-      const Vec3<T> F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const Vec3<T> F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const Vec3<T> F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const Vec3<T> F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-      
-      const T B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const T B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const T B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const T B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const T B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const T B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const T B3_u = uu * uu * uu;
-      const T B3_v = vv * vv * vv;
+      const Vec3<T> F0( select(m_border,T(zero),f0_i.x), select(m_border,T(zero),f0_i.y), select(m_border,T(zero),f0_i.z) );
+      const Vec3<T> F1( select(m_border,T(zero),f1_i.x), select(m_border,T(zero),f1_i.y), select(m_border,T(zero),f1_i.z) );
+      const Vec3<T> F2( select(m_border,T(zero),f2_i.x), select(m_border,T(zero),f2_i.y), select(m_border,T(zero),f2_i.z) );
+
+      const T uu3     = uu*uu*uu;
+      const T vv3     = vv*vv*vv;
+      const T ww3     = ww*ww*ww;
+      const T e0e1   = 3.0f * (uu * vv) * (uu + vv);
+      const T e1e2   = 3.0f * (vv * ww) * (vv + ww);
+      const T e2e0   = 3.0f * (ww * uu) * (ww + uu);
+      const T f0f1f2 = 12.0f * (uu * vv * ww);
       
       const T x = 
-	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
-	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
-	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
-	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-      
+	(uu3 * tpatch.p0().x + vv3 * tpatch.p1().x + ww3 * tpatch.p2().x) +
+	(e0e1 * (uu * tpatch.e0_p().x + vv * tpatch.e1_m().x)) +
+	(e1e2 * (vv * tpatch.e1_p().x + ww * tpatch.e2_m().x)) +
+	(e2e0 * (ww * tpatch.e2_p().x + uu * tpatch.e0_m().x)) +
+	(f0f1f2 * (uu * F0.x + vv * F1.x + ww * F2.x));
+
       const T y = 
-	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
-	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 
-	(B0_u * matrix[2][0].y + B1_u * F3.y           + B2_u * F2.y           + B3_u * matrix[2][3].y) * B2_v + 
-	(B0_u * matrix[3][0].y + B1_u * matrix[3][1].y + B2_u * matrix[3][2].y + B3_u * matrix[3][3].y) * B3_v; 
-      
+	(uu3 * tpatch.p0().y + vv3 * tpatch.p1().y + ww3 * tpatch.p2().y) +
+	(e0e1 * (uu * tpatch.e0_p().y + vv * tpatch.e1_m().y)) +
+	(e1e2 * (vv * tpatch.e1_p().y + ww * tpatch.e2_m().y)) +
+	(e2e0 * (ww * tpatch.e2_p().y + uu * tpatch.e0_m().y)) +
+	(f0f1f2 * (uu * F0.y + vv * F1.y + ww * F2.y));
+
       const T z = 
-	(B0_u * matrix[0][0].z + B1_u * matrix[0][1].z + B2_u * matrix[0][2].z + B3_u * matrix[0][3].z) * B0_v + 
-	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
-	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
-	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-      
-      
+	(uu3 * tpatch.p0().z + vv3 * tpatch.p1().z + ww3 * tpatch.p2().z) +
+	(e0e1 * (uu * tpatch.e0_p().z + vv * tpatch.e1_m().z)) +
+	(e1e2 * (vv * tpatch.e1_p().z + ww * tpatch.e2_m().z)) +
+	(e2e0 * (ww * tpatch.e2_p().z + uu * tpatch.e0_m().z)) +
+	(f0f1f2 * (uu * F0.z + vv * F1.z + ww * F2.z));
+
       return Vec3<T>(x,y,z);
     }
     
     
-    template<class M, class T>
-      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
-                                            const T &uu,
-                                            const T &vv) 
-    {
-      const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
-      const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
-      const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
-      const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
-      const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-      
-      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-      
-      const T one_minus_uu = T(1.0f) - uu;
-      const T one_minus_vv = T(1.0f) - vv;      
-      
-      const T inv0 = rcp(uu+vv);
-      const T inv1 = rcp(one_minus_uu+vv);
-      const T inv2 = rcp(one_minus_uu+one_minus_vv);
-      const T inv3 = rcp(uu+one_minus_vv);
-      
-      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
-
-#if 1
-      const M m_border0 = (uu == 0.0f) & (vv == 0.0f);
-      const M m_border1 = (uu == 1.0f) & (vv == 0.0f);
-      const M m_border2 = (uu == 1.0f) & (vv == 1.0f);
-      const M m_border3 = (uu == 0.0f) & (vv == 1.0f);
-      
-      const Vec3<T> matrix_11( select(m_border0,f0_p.x,f0_i.x), select(m_border0,f0_p.y,f0_i.y), select(m_border0,f0_p.z,f0_i.z) );
-      const Vec3<T> matrix_12( select(m_border1,f1_p.x,f1_i.x), select(m_border1,f1_p.y,f1_i.y), select(m_border1,f1_p.z,f1_i.z) );
-      const Vec3<T> matrix_22( select(m_border2,f2_p.x,f2_i.x), select(m_border2,f2_p.y,f2_i.y), select(m_border2,f2_p.z,f2_i.z) );
-      const Vec3<T> matrix_21( select(m_border3,f3_p.x,f3_i.x), select(m_border3,f3_p.y,f3_i.y), select(m_border3,f3_p.z,f3_i.z) );
-#else
-      const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
-      const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
-      const Vec3<T> matrix_22( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
-      const Vec3<T> matrix_21( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-#endif
-      
-      const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
-      const Vec3<T> matrix_10 = Vec3<T>(matrix[1][0].x,matrix[1][0].y,matrix[1][0].z);
-      const Vec3<T> matrix_20 = Vec3<T>(matrix[2][0].x,matrix[2][0].y,matrix[2][0].z);
-      const Vec3<T> matrix_30 = Vec3<T>(matrix[3][0].x,matrix[3][0].y,matrix[3][0].z);
-      
-      const Vec3<T> matrix_01 = Vec3<T>(matrix[0][1].x,matrix[0][1].y,matrix[0][1].z);
-      const Vec3<T> matrix_02 = Vec3<T>(matrix[0][2].x,matrix[0][2].y,matrix[0][2].z);
-      const Vec3<T> matrix_03 = Vec3<T>(matrix[0][3].x,matrix[0][3].y,matrix[0][3].z);
-      
-      const Vec3<T> matrix_31 = Vec3<T>(matrix[3][1].x,matrix[3][1].y,matrix[3][1].z);
-      const Vec3<T> matrix_32 = Vec3<T>(matrix[3][2].x,matrix[3][2].y,matrix[3][2].z);
-      const Vec3<T> matrix_33 = Vec3<T>(matrix[3][3].x,matrix[3][3].y,matrix[3][3].z);
-      
-      const Vec3<T> matrix_13 = Vec3<T>(matrix[1][3].x,matrix[1][3].y,matrix[1][3].z);
-      const Vec3<T> matrix_23 = Vec3<T>(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
-      
-      /* tangentU */
-      const Vec3<T> col0 = deCasteljau_t(vv, matrix_00, matrix_10, matrix_20, matrix_30);
-      const Vec3<T> col1 = deCasteljau_t(vv, matrix_01, matrix_11, matrix_21, matrix_31);
-      const Vec3<T> col2 = deCasteljau_t(vv, matrix_02, matrix_12, matrix_22, matrix_32);
-      const Vec3<T> col3 = deCasteljau_t(vv, matrix_03, matrix_13, matrix_23, matrix_33);
-      
-      const Vec3<T> tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
-      
-      /* tangentV */
-      const Vec3<T> row0 = deCasteljau_t(uu, matrix_00, matrix_01, matrix_02, matrix_03);
-      const Vec3<T> row1 = deCasteljau_t(uu, matrix_10, matrix_11, matrix_12, matrix_13);
-      const Vec3<T> row2 = deCasteljau_t(uu, matrix_20, matrix_21, matrix_22, matrix_23);
-      const Vec3<T> row3 = deCasteljau_t(uu, matrix_30, matrix_31, matrix_32, matrix_33);
-      
-      const Vec3<T> tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
-      
-      /* normal = tangentU x tangentV */
-      const Vec3<T> n = cross(tangentV,tangentU);
-      return n;
-    }
 
 
-    
-    
+       
 #if !defined(__MIC__)
     
 #if defined(__AVX__)    
     
-    static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t<avxb,avxf>(matrix,uu,vv); }
-    static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
-
-    static __forceinline avx3f eval8_bezier  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t_bezier<avxb,avxf>(matrix,uu,vv); }
-    static __forceinline avx3f normal8_bezier(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t_bezier<avxb,avxf>(matrix,uu,vv); }
+    static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) 
+    {
+      const GregoryTrianglePatch &tpatch = *(GregoryTrianglePatch*)matrix;
+      return eval_t<avxb,avxf>(tpatch,uu,vv); 
+    }
+    //static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
     
 #endif
     
-    static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t<sseb,ssef>(matrix,uu,vv); }
-    static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
-
-    static __forceinline sse3f eval4_bezier  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t_bezier<sseb,ssef>(matrix,uu,vv); }
-    static __forceinline sse3f normal4_bezier(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t_bezier<sseb,ssef>(matrix,uu,vv); }
+    static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) 
+    {
+      const GregoryTrianglePatch &tpatch = *(GregoryTrianglePatch*)matrix;
+      return eval_t<sseb,ssef>(tpatch,uu,vv); 
+    }
+    //static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
     
 #else    
     
+#endif
            
     static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
 				       const float uu,
@@ -546,22 +343,51 @@ namespace embree
     
     __forceinline BBox3fa bounds() const
     {
-      const Vec3fa *const cv = &v[0][0];
-      BBox3fa bounds ( cv[0] );
-      for (size_t i = 1; i<16 ; i++)
-	bounds.extend( cv[i] );
-      bounds.extend(f[0][0]);
-      bounds.extend(f[1][0]);
-      bounds.extend(f[1][1]);
-      bounds.extend(f[1][1]);
+      BBox3fa bounds ( empty );
+      bounds.extend(p0());
+      bounds.extend(p1());
+      bounds.extend(p2());
+
+      bounds.extend(e0_p());
+      bounds.extend(e0_m());
+      bounds.extend(e1_p());
+      bounds.extend(e1_m());
+      bounds.extend(e2_p());
+      bounds.extend(e2_m());
+
+      bounds.extend(f0_p());
+      bounds.extend(f0_m());
+      bounds.extend(f1_p());
+      bounds.extend(f1_m());
+      bounds.extend(f2_p());
+      bounds.extend(f2_m());
       return bounds;
     }
     
-    friend std::ostream &operator<<(std::ostream &o, const GregoryTrianglePatch&p)
+    friend std::ostream &operator<<(std::ostream &o, const GregoryTrianglePatch&g)
     {
-      for (size_t y=0;y<4;y++)
-	for (size_t x=0;x<4;x++)
-	  o << "v[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
+      o << "p0 " << g.p0() << std::endl;
+      o << "p1 " << g.p1() << std::endl;
+      o << "p2 " << g.p2() << std::endl;
+
+      o << "e0_p " << g.e0_p() << std::endl;
+      o << "e0_m " << g.e0_m() << std::endl;
+
+      o << "e1_p " << g.e1_p() << std::endl;
+      o << "e1_m " << g.e1_m() << std::endl;
+
+      o << "e2_p " << g.e2_p() << std::endl;
+      o << "e2_m " << g.e2_m() << std::endl;
+
+      o << "f0_p " << g.f0_p() << std::endl;
+      o << "f0_m " << g.f0_m() << std::endl;
+
+      o << "f1_p " << g.f1_p() << std::endl;
+      o << "f1_m " << g.f1_m() << std::endl;
+
+      o << "f2_p " << g.f2_p() << std::endl;
+      o << "f2_m " << g.f2_m() << std::endl;
+
       return o;
     } 
   };

@@ -19,6 +19,7 @@
 #include <cmath>
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/gregory_patch.h"
+#include "common/subdiv/gregory_triangle_patch.h"
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
