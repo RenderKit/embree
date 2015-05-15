@@ -29,24 +29,20 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-#if 0
-      const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-      int neighborSubdiv[4];
-      const CatmullClarkPatch3fa patch(h,vertices);
-      for (size_t i=0; i<4; i++) {
-	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-      }
-      subdivide(patch,0,uv,neighborSubdiv);
-#else
+
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
+
+      int needAdaptiveSubdivision = 0;
       for (size_t i=0; i<patch.size(); i++) {
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+	needAdaptiveSubdivision += neighborSubdiv[i];
       }
+
       subdivide(patch,0,neighborSubdiv);
-#endif
+
     }
 
 
@@ -179,5 +175,20 @@ namespace embree
      inline void feature_adaptive_subdivision_gregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
    {
      FeatureAdaptiveSubdivisionGregory<Tessellator>(primID,h,vertices,tessellator);
+   }
+
+   inline bool needsAdaptiveSubdivision(int primID, const SubdivMesh::HalfEdge* h_start, const BufferT<Vec3fa>& vertices)
+   {
+     int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
+     int subdiv = 0;
+     const SubdivMesh::HalfEdge* h = h_start;
+     size_t valence = 0;
+     do {
+       neighborSubdiv[valence] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+       subdiv += neighborSubdiv[valence];
+       valence++;
+
+     } while( h != h_start );
+     return (subdiv != 0 || valence > 4);
    }
 }

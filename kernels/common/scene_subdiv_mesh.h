@@ -36,9 +36,10 @@ namespace embree
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
     enum PatchType { 
-      REGULAR_QUAD_PATCH = 0,    //!< a regular quad patch can be represented as a B-Spline
-      IRREGULAR_QUAD_PATCH = 1,  //!< an irregular quad patch can be represented as a Gregory patch
-      COMPLEX_PATCH = 2          //!< these patches need subdivision and cannot be processed by the above fast code paths
+      REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
+      IRREGULAR_QUAD_PATCH     = 1, //!< an irregular quad patch can be represented as a Gregory patch
+      IRREGULAR_TRIANGLE_PATCH = 2, //!< an irregular triangle patch can be represented as a Gregory patch
+      COMPLEX_PATCH            = 3  //!< these patches need subdivision and cannot be processed by the above fast code paths
     };
 
     __forceinline friend PatchType max( const PatchType& ty0, const PatchType& ty1) {
@@ -106,8 +107,14 @@ namespace embree
           if (p->edge_crease_weight != 0.0f) 
             return COMPLEX_PATCH;
 
-          /* test for quad */
           face_valence++;
+
+          /* test for triangle */
+          //if (p->next()->next()->next() == p)
+	  //;
+          //else 
+
+          /* test for quad */
           if (p->next()->next()->next()->next() != p)
             return COMPLEX_PATCH;
 
@@ -152,12 +159,20 @@ namespace embree
 
         ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
+	
 
         ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
         
         ret = max(ret,p->vertexType());
-        if ((p = p->next()) == this) return COMPLEX_PATCH;
+        if ((p = p->next()) == this) 
+	  {
+	    /* if (ret == REGULAR_QUAD_PATCH || ret == IRREGULAR_QUAD_PATCH) */
+	    /*   { */
+	    /* 	return IRREGULAR_TRIANGLE_PATCH; */
+	    /*   } */
+	    return COMPLEX_PATCH;
+	  }
         
         ret = max(ret,p->vertexType());
         if ((p = p->next()) != this) return COMPLEX_PATCH;
@@ -172,7 +187,7 @@ namespace embree
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH;
+        return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH /* || patchType() == IRREGULAR_TRIANGLE_PATCH */;
       }
 
       /*! calculates conservative bounds of a catmull clark subdivision face */

@@ -807,11 +807,11 @@ namespace embree
             for (size_t f=r.begin(); f!=r.end(); ++f) 
             {          
               if (!mesh->valid(f)) continue;
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                   [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
-                                                   {
-                                                     s++;
-                                                   });
+	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+						     [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+						     {
+						       s++;
+						     });
             }
             return PrimInfo(s,empty,empty);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
