@@ -422,17 +422,13 @@ namespace embree
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
     
-    
-    
-    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4],
-                                     const float &uu,
-                                     const float &vv) 
+    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const Vec3fa f[2][2], const float &uu, const float &vv) 
     {
-      Vec3fa f[2][2];
-      f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
-      f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
-      f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
-      f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
+      //Vec3fa f[2][2];
+      //f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
+      //f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
+      //f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
+      //f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
       
       Vec3fa_t v_11, v_12, v_22, v_21;
       computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
@@ -457,6 +453,20 @@ namespace embree
 	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
       
       return res;
+    }
+
+     static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const float &uu, const float &vv) 
+    {
+      Vec3fa f[2][2];
+      f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
+      f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
+      f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
+      f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
+      return eval(matrix,f,uu,vv);
+    }
+
+    __forceinline Vec3fa eval(const float &uu, const float &vv) {
+      return eval(v,f,uu,vv);
     }
     
     template<class M, class T>
