@@ -21,6 +21,9 @@
 ./displacement_geometry
 ./displacement_geometry_ispc
 
+./motion_blur_geometry
+./motion_blur_geometry_ispc
+
 ./dynamic_scene
 ./dynamic_scene_ispc
 
