@@ -20,6 +20,17 @@
 RTCScene g_scene = nullptr;
 Vec3fa* face_colors = nullptr;
 
+/* accumulation buffer */
+Vec3fa* g_accu = nullptr;
+unsigned int g_accu_width = 0;
+unsigned int g_accu_height = 0;
+unsigned int g_accu_count = 0;
+Vec3fa g_accu_vx;
+Vec3fa g_accu_vy;
+Vec3fa g_accu_vz;
+Vec3fa g_accu_p;
+extern "C" bool g_changed;
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -78,7 +89,12 @@ unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER0, cube_vertices, 0, 4*sizeof(float));
 
   Vec3fa* vertex1 = (Vec3fa*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
-  for (int i=0; i<8; i++) vertex1[i] = Vec3fa(cube_vertices[i][0]+1.0f,cube_vertices[i][1]+1.0f,cube_vertices[i][2]+1.0f);
+  LinearSpace3fa rotation = LinearSpace3fa::rotate(Vec3fa(0,1,0),0.34f);
+  for (int i=0; i<8; i++) {
+    Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+    v = rotation * v;
+    vertex1[i] = Vec3fa(v);
+  }
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
   
   /* create face color array */
@@ -125,6 +141,12 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (int8* cfg)
 {
+  /* initialize last seen camera */
+  g_accu_vx = Vec3fa(0.0f);
+  g_accu_vy = Vec3fa(0.0f);
+  g_accu_vz = Vec3fa(0.0f);
+  g_accu_p  = Vec3fa(0.0f);
+
   /* initialize ray tracing core */
   rtcInit(cfg);
 
@@ -222,10 +244,13 @@ void renderTile(int taskIndex, int* pixels,
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+    Vec3fa* dst = &g_accu[y*width+x];
+    *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    float f = rcp(max(0.001f,dst->w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
@@ -239,6 +264,30 @@ extern "C" void device_render (int* pixels,
                     const Vec3fa& vz, 
                     const Vec3fa& p)
 {
+  Vec3fa cam_org = Vec3fa(p.x,p.y,p.z);
+
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    alignedFree(g_accu);
+    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa));
+    g_accu_width = width;
+    g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
+
+  /* reset accumulator */
+  bool camera_changed = g_changed; g_changed = false;
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+  if (camera_changed) {
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(Vec3fa));
+  }
+  
+  /* render next frame */
   frameID++;
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -248,6 +297,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
+  alignedFree(g_accu);
   rtcDeleteScene (g_scene);
   delete[] face_colors;
   rtcExit();

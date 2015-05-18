@@ -44,6 +44,16 @@ inline LinearSpace3f make_LinearSpace3f_identity()
                             make_Vec3f(0.f,0.f,1.f));
 }
 
+ /*! return matrix for rotation around arbitrary axis */
+inline uniform LinearSpace3f make_LinearSpace3f_rotate(const uniform Vec3f& _u, const uniform float& r) 
+{
+  uniform Vec3f u = normalize(_u);
+  uniform float s = sin(r), c = cos(r);
+  return make_LinearSpace3f(make_Vec3f(u.x*u.x+(1-u.x*u.x)*c, u.x*u.y*(1-c)+u.z*s,  u.x*u.z*(1-c)-u.y*s),
+                            make_Vec3f(u.x*u.y*(1-c)-u.z*s, u.y*u.y+(1-u.y*u.y)*c, u.y*u.z*(1-c)+u.x*s),
+                            make_Vec3f(u.x*u.z*(1-c)+u.y*s, u.y*u.z*(1-c)-u.x*s, u.z*u.z+(1-u.z*u.z)*c));
+}
+  
 ////////////////////////////////////////////////////////////////////////////////
 // Unary Operators
 ////////////////////////////////////////////////////////////////////////////////

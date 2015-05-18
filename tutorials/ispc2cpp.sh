@@ -63,3 +63,6 @@ sed -i.backup  's/make_Ray/RTCRay/g' $2
 sed -i.backup 's/\#define PARALLEL_COMMIT//g' $2
 sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2 
 sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
+
+sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
+sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2

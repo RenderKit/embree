@@ -20,6 +20,17 @@
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform face_colors = NULL;
 
+/* accumulation buffer */
+uniform Vec3fa* uniform g_accu = NULL;
+uniform unsigned int g_accu_width = 0;
+uniform unsigned int g_accu_height = 0;
+uniform unsigned int g_accu_count = 0;
+uniform Vec3f g_accu_vx;
+uniform Vec3f g_accu_vy;
+uniform Vec3f g_accu_vz;
+uniform Vec3f g_accu_p;
+extern uniform bool g_changed;
+
 /* render function to use */
 renderPixelFunc renderPixel;
 
@@ -78,7 +89,12 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER0, cube_vertices, 0, 4*sizeof(uniform float));
 
   uniform Vec3fa* uniform vertex1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
-  for (uniform int i=0; i<8; i++) vertex1[i] = make_Vec3fa(cube_vertices[i][0]+1.0f,cube_vertices[i][1]+1.0f,cube_vertices[i][2]+1.0f);
+  uniform LinearSpace3f rotation = make_LinearSpace3f_rotate(make_Vec3f(0,1,0),0.34f);
+  for (uniform int i=0; i<8; i++) {
+    uniform Vec3f v = make_Vec3f(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
+    v = rotation * v;
+    vertex1[i] = make_Vec3fa(v);
+  }
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
   
   /* create face color array */
@@ -125,6 +141,12 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  /* initialize last seen camera */
+  g_accu_vx = make_Vec3f(0.0f);
+  g_accu_vy = make_Vec3f(0.0f);
+  g_accu_vz = make_Vec3f(0.0f);
+  g_accu_p  = make_Vec3f(0.0f);
+
   /* initialize ray tracing core */
   rtcInit(cfg);
 
@@ -222,10 +244,13 @@ task void renderTile(uniform int* uniform pixels,
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+    Vec3fa* dst = &g_accu[y*width+x];
+    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    float f = rcp(max(0.001f,dst->w));
+    unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
 
@@ -239,6 +264,30 @@ export void device_render (uniform int* uniform pixels,
                     const uniform Vec3f& vz, 
                     const uniform Vec3f& p)
 {
+  uniform Vec3fa cam_org = make_Vec3fa(p.x,p.y,p.z);
+
+  /* create accumulator */
+  if (g_accu_width != width || g_accu_height != height) {
+    delete[] g_accu;
+    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu_width = width;
+    g_accu_height = height;
+    memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+  }
+
+  /* reset accumulator */
+  uniform bool camera_changed = g_changed; g_changed = false;
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+
+  if (camera_changed) {
+    g_accu_count=0;
+    memset(g_accu,0,width*height*sizeof(uniform Vec3fa));
+  }
+  
+  /* render next frame */
   frameID++;
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -248,6 +297,7 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  delete[] g_accu;
   rtcDeleteScene (g_scene);
   delete[] face_colors;
   rtcExit();
