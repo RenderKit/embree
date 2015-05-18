@@ -852,6 +852,19 @@ namespace embree
 
       assert( dst.hasValidPositions() );
     }
+
+    void exportEdgeMidpointsFaceCentroidsRing(Vertex *dest)
+    {
+      /* calculate face centroids and edge midpoints */
+      for (size_t f=0; v=0; f<face_valence; f++) {
+        Vertex_t F = vtx;
+        for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; 
+        dest[2*f+1] = F/float(faces[f].size+2);
+	dest[2*f] = 0.5f*(vtx+ring[v]);
+        v+=faces[f].size;
+        assert( v < edge_valence);
+      }
+    }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {
