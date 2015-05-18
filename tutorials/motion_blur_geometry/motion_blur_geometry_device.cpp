@@ -215,7 +215,7 @@ int frameID = 0;
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  float time = (int)(0.01f*frameID) - 0.01f*frameID;
+  float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
 
   /* initialize ray */
   RTCRay ray;

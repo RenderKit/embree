@@ -215,7 +215,7 @@ uniform int frameID = 0;
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  uniform float time = (uniform int)(0.01f*frameID) - 0.01f*frameID;
+  uniform float time = abs((uniform int)(0.01f*frameID) - 0.01f*frameID);
 
   /* initialize ray */
   RTCRay ray;

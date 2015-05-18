@@ -30,6 +30,8 @@ extern "C" int64 get_tsc() {
   return read_tsc();
 }
 
+float g_debug = 0.0f;
+
 namespace embree
 {
   /* ISPC compatible mesh */

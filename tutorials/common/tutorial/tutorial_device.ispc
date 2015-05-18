@@ -25,6 +25,8 @@ uniform unsigned int g_numThreads = 0;
 uniform float scale = 1.0f / 1000000.0f;
 uniform bool g_changed = false;
 
+extern uniform float g_debug;
+
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
 
@@ -43,7 +45,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const unifo
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -66,7 +68,7 @@ Vec3f renderPixelWireframe(float x, float y, const uniform Vec3f& vx, const unif
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -97,7 +99,7 @@ Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -119,7 +121,7 @@ Vec3f renderPixelNg(float x, float y, const uniform Vec3f& vx, const uniform Vec
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -150,7 +152,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform Vec3f& vx, const uniform
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -172,7 +174,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform Vec3f& vx, const u
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -194,7 +196,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform Vec3f& vx, const uniform
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   uniform int64 c0 = get_tsc();
@@ -217,7 +219,7 @@ Vec3f renderPixelUV16(float x, float y, const uniform Vec3f& vx, const uniform V
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   for (uniform int i=0; i<16; i++) {
@@ -242,7 +244,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -280,7 +282,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
       shadow.mask = -1;
-      shadow.time = 0;
+      shadow.time = g_debug;
     
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
@@ -313,7 +315,7 @@ export uniform bool device_pick(const uniform float x,
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,ray);
