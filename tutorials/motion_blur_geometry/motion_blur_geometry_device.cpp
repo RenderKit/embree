@@ -138,8 +138,8 @@ unsigned int addHair (RTCScene scene)
     vertices0[4*i+3] = Vec3fa(p3,0.02f);
     vertices1[4*i+0] = Vec3fa(xfmPoint(rotation,p0),0.02f);
     vertices1[4*i+1] = Vec3fa(xfmPoint(rotation,p1),0.02f);
-    vertices1[4*i+2] = Vec3fa(xfmPoint(rotation,p2),0.02f);
-    vertices1[4*i+3] = Vec3fa(xfmPoint(rotation,p3),0.02f);
+    vertices1[4*i+2] = Vec3fa(p2,0.02f);
+    vertices1[4*i+3] = Vec3fa(p3,0.02f);
   }
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
@@ -212,9 +212,12 @@ extern "C" void device_init (int8* cfg)
 
 int frameID = 0;
 
+//extern "C" float g_debug;
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
+  //float time = g_debug;
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
 
   /* initialize ray */
@@ -238,7 +241,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa diffuse;
     if (ray.geomID == 0) diffuse = face_colors[ray.primID];
     else if (ray.geomID == 1) diffuse = Vec3fa(0.0f,1.0f,0.0f);
-    else diffuse = Vec3fa(1.0f,0.0f,0.0f);
+    else diffuse = Vec3fa(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
     
