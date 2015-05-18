@@ -119,15 +119,25 @@ namespace embree
   template<typename T> __forceinline LinearSpace3<T> operator +( const LinearSpace3<T>& a ) { return LinearSpace3<T>(+a.vx,+a.vy,+a.vz); }
   template<typename T> __forceinline LinearSpace3<T> rcp       ( const LinearSpace3<T>& a ) { return a.inverse(); }
 
-  /* constructs a coordinate frame form a normal */
-  template<typename T> __forceinline LinearSpace3<T> frame(const T& N) {
-    T dx0 = cross(T(one,zero,zero),N);
-    T dx1 = cross(T(zero,one,zero),N);
-    T dx = normalize(select(dot(dx0,dx0) > dot(dx1,dx1),dx0,dx1));
-    T dy = normalize(cross(N,dx));
+  /* constructs a coordinate frame form a normalized normal */
+  template<typename T> __forceinline LinearSpace3<T> frame(const T& N) 
+  {
+    const T dx0 = cross(T(one,zero,zero),N);
+    const T dx1 = cross(T(zero,one,zero),N);
+    const T dx = normalize(select(dot(dx0,dx0) > dot(dx1,dx1),dx0,dx1));
+    const T dy = normalize(cross(N,dx));
     return LinearSpace3<T>(dx,dy,N);
   }
 
+  /* constructs a coordinate frame from a normal and approximate x-direction */
+  template<typename T> __forceinline LinearSpace3<T> frame(const T& N, const T& dxi)
+  {
+    if (abs(dot(dxi,N)) > 0.99f) return frame(N); // fallback in case N and dxi are very parallel
+    const T dx = normalize(cross(dxi,N));
+    const T dy = normalize(cross(N,dx));
+    return LinearSpace3<T>(dx,dy,N);
+  }
+  
   /* clamps linear space to range -1 to +1 */
   template<typename T> __forceinline LinearSpace3<T> clamp(const LinearSpace3<T>& space) {
     return LinearSpace3<T>(clamp(space.vx,T(-1.0f),T(1.0f)),
