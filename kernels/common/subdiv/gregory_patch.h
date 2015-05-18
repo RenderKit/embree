@@ -479,10 +479,10 @@ namespace embree
       const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
       const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
       
-      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
+      const Vec3<T> f0_m = f[0][0];
+      const Vec3<T> f1_m = f[0][1];
+      const Vec3<T> f2_m = f[1][1];
+      const Vec3<T> f3_m = f[1][0];
       
       const T one_minus_uu = T(1.0f) - uu;
       const T one_minus_vv = T(1.0f) - vv;      
@@ -552,9 +552,7 @@ namespace embree
     }
     
     template<class M, class T>
-      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
-                                            const T &uu,
-                                            const T &vv) 
+      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T &uu, const T &vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -562,11 +560,11 @@ namespace embree
       const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
       const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
       const Vec3<T> f3_p = Vec3<T>(matrix[2][1].x,matrix[2][1].y,matrix[2][1].z);
-      
-      const Vec3<T> f0_m = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      const Vec3<T> f1_m = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      const Vec3<T> f2_m = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      const Vec3<T> f3_m = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
+
+      const Vec3<T> f0_m = f[0][0];
+      const Vec3<T> f1_m = f[0][1];
+      const Vec3<T> f2_m = f[1][1];
+      const Vec3<T> f3_m = f[1][0];
       
       const T one_minus_uu = T(1.0f) - uu;
       const T one_minus_vv = T(1.0f) - vv;      
@@ -635,10 +633,18 @@ namespace embree
       return n;
     }
 
+     template<class M, class T>
+      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4], const T &uu, const T &vv) 
+    {
+      Vec3<T> f[2][2];
+      f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
+      f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
+      f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
+      f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
+      return normal_t<M>(matrix,f,uu,vv);
+    }
 
-    static __forceinline Vec3fa eval_bezier(const Vec3fa matrix[4][4],
-					    const float &uu,
-					    const float &vv) 
+     static __forceinline Vec3fa eval_bezier(const Vec3fa matrix[4][4], const float &uu, const float &vv) 
     {      
       const float one_minus_uu = 1.0f - uu;
       const float one_minus_vv = 1.0f - vv;      
