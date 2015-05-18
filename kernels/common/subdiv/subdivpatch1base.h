@@ -18,6 +18,7 @@
 
 #include <cmath>
 #include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/bezier_patch.h"
 #include "common/subdiv/gregory_patch.h"
 #include "common/subdiv/gregory_triangle_patch.h"
 #include "common/subdiv/tessellation.h"
@@ -510,7 +511,7 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::eval_bezier( patch.v, uu, vv );
+        return BezierPatch::eval_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -522,7 +523,7 @@ namespace embree
 				const float &vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::normal_bezier( patch.v, uu, vv );
+        return BezierPatch::normal_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -535,7 +536,7 @@ namespace embree
 			      const ssef &vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::eval4_bezier( patch.v, uu, vv );
+        return BezierPatch::eval4_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -547,7 +548,7 @@ namespace embree
                                 const ssef &vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::normal4_bezier( patch.v, uu, vv );
+        return BezierPatch::normal4_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -562,7 +563,7 @@ namespace embree
 			      const avxf &vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::eval8_bezier( patch.v, uu, vv );
+        return BezierPatch::eval8_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -573,7 +574,7 @@ namespace embree
                                 const avxf &vv) const
     {
       if (likely(isBezierPatch()))
-        return GregoryPatch::normal8_bezier( patch.v, uu, vv );
+        return BezierPatch::normal8_bezier( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
