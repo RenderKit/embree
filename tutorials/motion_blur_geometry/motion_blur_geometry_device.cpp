@@ -70,7 +70,7 @@ __aligned(16) float cube_vertices[8][4] =
 unsigned int cube_indices[36] = { 
   0, 2, 1,  1, 2, 3,
   4, 5, 6,  5, 7, 6,
-  0, 1, 4,  1, 6, 4,
+  0, 1, 4,  1, 5, 4,
   2, 6, 3,  3, 6, 7, 
   0, 4, 2,  2, 4, 6, 
   1, 3, 5,  3, 7, 5
@@ -81,21 +81,23 @@ unsigned int cube_faces[12] = {
 };
 
 /* adds a cube to the scene */
-unsigned int addCube (RTCScene scene_i)
+unsigned int addCube (RTCScene scene)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  unsigned int geomID = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8, 2);
-  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER0, cube_vertices, 0, 4*sizeof(float));
+  unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 2);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
 
-  Vec3fa* vertex1 = (Vec3fa*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
-  LinearSpace3fa rotation = LinearSpace3fa::rotate(Vec3fa(0,1,0),0.34f);
-  for (int i=0; i<8; i++) {
-    Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2]);
-    v = rotation * v;
-    vertex1[i] = Vec3fa(v);
+  AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,3,0),Vec3fa(1,1,0),0.44f);
+  Vec3fa* vertex0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  Vec3fa* vertex1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+  for (int i=0; i<8; i++) 
+  {
+    Vec3fa v = Vec3fa(cube_vertices[i][0],cube_vertices[i][1],cube_vertices[i][2])+Vec3fa(0,3,0);
+    vertex0[i] = Vec3fa(v);
+    vertex1[i] = Vec3fa(xfmPoint(rotation,v));
   }
-  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
   
   /* create face color array */
   face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
@@ -115,25 +117,61 @@ unsigned int addCube (RTCScene scene_i)
   return geomID;
 }
 
+/* add hair geometry */
+unsigned int addHair (RTCScene scene)
+{
+  unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 16, 4*16, 2);
+
+  AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,3,0),Vec3fa(1,1,0),0.44f);
+  Vec3fa* vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  Vec3fa* vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+  for (size_t i=0; i<16; i++) 
+  {
+    Vec3fa org = Vec3fa((i%4+0.5f)*0.5f-1.0f,2.0f,(i/4+0.5f)*0.5f-1.0f);
+    Vec3fa p0 = org + Vec3fa(0.0f,+0.0f,0.0f);
+    Vec3fa p1 = org + Vec3fa(0.3f,+0.0f,0.0f);
+    Vec3fa p2 = org + Vec3fa(0.3f,-3.0f,0.3f);
+    Vec3fa p3 = org + Vec3fa(0.0f,-3.0f,0.0f);
+    vertices0[4*i+0] = Vec3fa(p0,0.02f);
+    vertices0[4*i+1] = Vec3fa(p1,0.02f);
+    vertices0[4*i+2] = Vec3fa(p2,0.02f);
+    vertices0[4*i+3] = Vec3fa(p3,0.02f);
+    vertices1[4*i+0] = Vec3fa(xfmPoint(rotation,p0),0.02f);
+    vertices1[4*i+1] = Vec3fa(xfmPoint(rotation,p1),0.02f);
+    vertices1[4*i+2] = Vec3fa(xfmPoint(rotation,p2),0.02f);
+    vertices1[4*i+3] = Vec3fa(xfmPoint(rotation,p3),0.02f);
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
+  
+  int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+  for (size_t i=0; i<16; i++) {
+    indices[i] = 4*i;
+  }
+  rtcUnmapBuffer(scene,geomID,RTC_INDEX_BUFFER);
+
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
-unsigned int addGroundPlane (RTCScene scene_i)
+unsigned int addGroundPlane (RTCScene scene)
 {
   /* create a triangulated plane with 2 triangles and 4 vertices */
-  unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 2, 4);
+  unsigned int mesh = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 2, 4);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  Vertex* vertices = (Vertex*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10; 
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10; 
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10; 
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+  rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
   triangles[0].v0 = 0; triangles[0].v1 = 2; triangles[0].v2 = 1;
   triangles[1].v0 = 1; triangles[1].v1 = 2; triangles[1].v2 = 3;
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
   return mesh;
 }
@@ -159,6 +197,9 @@ extern "C" void device_init (int8* cfg)
   /* add cube */
   addCube(g_scene);
 
+  /* add hair */
+  addHair(g_scene);
+
   /* add ground plane */
   addGroundPlane(g_scene);
 
@@ -174,7 +215,7 @@ int frameID = 0;
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  float time = 0.5f+0.5f*sinf(0.05f*frameID);
+  float time = (int)(0.01f*frameID) - 0.01f*frameID;
 
   /* initialize ray */
   RTCRay ray;
@@ -194,9 +235,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3fa diffuse = face_colors[ray.primID];
+    Vec3fa diffuse;
+    if (ray.geomID == 0) diffuse = face_colors[ray.primID];
+    else if (ray.geomID == 1) diffuse = Vec3fa(0.0f,1.0f,0.0f);
+    else diffuse = Vec3fa(1.0f,0.0f,0.0f);
     color = color + diffuse*0.5f; // FIXME: +=
-    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+    Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -281,7 +325,7 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
-
+  //camera_changed = true;
   if (camera_changed) {
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));

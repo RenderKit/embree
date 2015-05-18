@@ -66,3 +66,6 @@ sed -i.backup 's/memory_barrier/__memory_barrier/g' $2
 
 sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
 sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
+
+sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
+sed -i.backup 's/AffineSpace3f/AffineSpace3fa/g' $2

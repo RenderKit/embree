@@ -28,6 +28,9 @@ struct AffineSpace3f
 /// Constructors
 ////////////////////////////////////////////////////////////////////////////////
 
+inline uniform AffineSpace3f make_AffineSpace3f(const uniform LinearSpace3f l) {
+  uniform AffineSpace3f xfm; xfm.l = l; xfm.p = make_Vec3f(0,0,0); return xfm;
+}
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform LinearSpace3f l, const uniform Vec3f p) {
   uniform AffineSpace3f xfm; xfm.l = l; xfm.p = p; return xfm;
 }
@@ -93,3 +96,12 @@ inline varying bool eq(const varying AffineSpace3f a, const varying AffineSpace3
 
 inline uniform bool ne(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 inline varying bool ne(const varying AffineSpace3f a, const varying AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
+
+/*! return matrix for rotation around arbitrary axis and point */
+inline uniform AffineSpace3f make_AffineSpace3f_translate(const uniform Vec3f& p) { 
+  return make_AffineSpace3f(make_Vec3f(1,0,0),make_Vec3f(0,1,0),make_Vec3f(0,0,1),p); 
+}
+
+inline uniform AffineSpace3f make_AffineSpace3f_rotate   (const uniform Vec3f& p, const uniform Vec3f& u, const uniform float& r) { 
+  return (make_AffineSpace3f_translate(+p) * make_AffineSpace3f(make_LinearSpace3f_rotate(u,r))) * make_AffineSpace3f_translate(neg(p));  
+}

@@ -108,8 +108,8 @@ namespace embree
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     
     /* set default camera */
-    g_camera.from = Vec3fa(1.5f,1.5f,-1.501f);
-    g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
+    g_camera.from = Vec3fa(2.863559246f,2.610507727f,-2.664560795f);
+    g_camera.to   = Vec3fa(0.562128067f,1.999999762f,-0.3622088432f);
 
     /* create stream for parsing */
     Ref<ParseStream> stream = new ParseStream(new CommandLineStream(argc, argv));
