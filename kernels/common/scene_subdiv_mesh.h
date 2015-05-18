@@ -210,6 +210,14 @@ namespace embree
         return N >= 3 && N <= MAX_VALENCE;
       }
 
+      /*! counts number of polygon edges  */
+      __forceinline size_t numEdges() const
+      {
+        size_t N = 1;
+        for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++);
+        return N;
+      }
+
       /*! stream output */
       friend __forceinline std::ostream &operator<<(std::ostream &o, const SubdivMesh::HalfEdge &h)
       {

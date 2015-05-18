@@ -70,6 +70,48 @@ namespace embree
                                       const SubdivMesh *const mesh) 
     : geom(gID),prim(pID),flags(0),root_ref(0)
   {
+    int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
+
+    const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
+
+    const size_t numEdges = h_start->numEdges();
+
+
+    const SubdivMesh::HalfEdge* h       = h_start;
+
+    int needAdaptiveSubdivision = 0;   
+    for (size_t i=0; i<numEdges; i++) {
+      neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+      needAdaptiveSubdivision += neighborSubdiv[i];
+    }
+    //assert(needAdaptiveSubdivision == 0);
+
+    PRINT(numEdges);
+
+    if (numEdges == 4)
+      {
+	PRINT("QUAD");
+	CatmullClarkPatch3fa gpatch;
+	gpatch.init(h_start,mesh->getVertexBuffer());
+	float edge_level[4] = {
+	  gpatch.ring[0].edge_level,
+	  gpatch.ring[1].edge_level,
+	  gpatch.ring[2].edge_level,
+	  gpatch.ring[3].edge_level
+	};
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+	
+	new (this) SubdivPatch1Base(gpatch,gID,pID,mesh,uv,edge_level);
+
+      }
+    else if (numEdges == 3)
+      {
+	PRINT("TRIANGLE");
+	GeneralCatmullClarkPatch3fa gpatch;
+	gpatch.init(h_start,mesh->getVertexBuffer());
+
+      }
+
   }
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
