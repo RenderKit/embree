@@ -19,7 +19,6 @@
 /* scene data */
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform face_colors = NULL;
-uniform Vec3fa* uniform vertex_colors = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -45,59 +44,59 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+__aligned(16) uniform float cube_vertices[8][4] = 
+{
+  { -1.0f, -1.0f, -1.0f, 0.0f },
+  { -1.0f, -1.0f, +1.0f, 0.0f },
+  { -1.0f, +1.0f, -1.0f, 0.0f },
+  { -1.0f, +1.0f, +1.0f, 0.0f },
+  { +1.0f, -1.0f, -1.0f, 0.0f },
+  { +1.0f, -1.0f, +1.0f, 0.0f },
+  { +1.0f, +1.0f, -1.0f, 0.0f },
+  { +1.0f, +1.0f, +1.0f, 0.0f }
+};
+
+uniform unsigned int cube_indices[36] = { 
+  0, 2, 1,  1, 2, 3,
+  4, 5, 6,  5, 7, 6,
+  0, 1, 4,  1, 6, 4,
+  2, 6, 3,  3, 6, 7, 
+  0, 4, 2,  2, 4, 6, 
+  1, 3, 5,  3, 7, 5
+};
+
+uniform unsigned int cube_faces[12] = { 
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+};
+
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8);
+  uniform unsigned int geomID = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8, 2);
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER0, cube_vertices, 0, 4*sizeof(uniform float));
 
-  /* create face and vertex color arrays */
-  face_colors = uniform new uniform Vec3f[12];
-  vertex_colors = uniform new uniform Vec3fa[8];
-
-  /* set vertices and vertex colors */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertex_colors[0] = make_Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1; 
-  vertex_colors[1] = make_Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1; 
-  vertex_colors[2] = make_Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1; 
-  vertex_colors[3] = make_Vec3fa(0,1,1); vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1; 
-  vertex_colors[4] = make_Vec3fa(1,0,0); vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1; 
-  vertex_colors[5] = make_Vec3fa(1,0,1); vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1; 
-  vertex_colors[6] = make_Vec3fa(1,1,0); vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1; 
-  vertex_colors[7] = make_Vec3fa(1,1,1); vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1; 
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-  /* set triangles and face colors */
-  uniform int tri = 0;
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  uniform Vec3fa* uniform vertex1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
+  for (uniform i=0; i<8; i++) vertex1[i] = make_Vec3fa(cube_vertices[i][0]+1.0f,cube_vertices[i][1]+1.0f,cube_vertices[i][2]+1.0f);
+  rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
   
-  // left side
-  face_colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-  face_colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
+  /* create face color array */
+  face_colors = uniform new uniform Vec3f[12];
+  face_colors[0] = make_Vec3f(1,0,0);
+  face_colors[1] = make_Vec3f(1,0,0);
+  face_colors[2] = make_Vec3f(0,1,0);
+  face_colors[3] = make_Vec3f(0,1,0);
+  face_colors[4] = make_Vec3f(0.5f);
+  face_colors[5] = make_Vec3f(0.5f);
+  face_colors[6] = make_Vec3f(1.0f);
+  face_colors[7] = make_Vec3f(1.0f);
+  face_colors[8] = make_Vec3f(0,0,1);
+  face_colors[9] = make_Vec3f(0,0,1);
+  face_colors[10] = make_Vec3f(1,1,0);
+  face_colors[11] = make_Vec3f(1,1,0);
 
-  // right side
-  face_colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-  face_colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
-
-  // bottom side
-  face_colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-  face_colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
-
-  // top side
-  face_colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-  face_colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
-
-  // front side
-  face_colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-  face_colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
-
-  // back side
-  face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-  face_colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-
-  return mesh;
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -133,7 +132,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
+  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
   addCube(g_scene);
@@ -148,9 +147,13 @@ export void device_init (uniform int8* uniform cfg)
   renderPixel = renderPixelStandard;
 }
 
+uniform int frameID = 0;
+
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
+  uniform float time = 0.5f+0.5f*sinf(0.05f*frameID);
+
   /* initialize ray */
   RTCRay ray;
   ray.org = p;
@@ -160,7 +163,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = time;
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -170,7 +173,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3f diffuse = face_colors[ray.primID];
-    if (ray.geomID == 0) rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const uniform float*)vertex_colors,16,&diffuse.x,3); 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
@@ -183,7 +185,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     shadow.geomID = 1;
     shadow.primID = 0;
     shadow.mask = -1;
-    shadow.time = 0;
+    shadow.time = time;
     
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
@@ -237,6 +239,7 @@ export void device_render (uniform int* uniform pixels,
                     const uniform Vec3f& vz, 
                     const uniform Vec3f& p)
 {
+  frameID++;
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
@@ -247,7 +250,6 @@ export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
   delete[] face_colors;
-  delete[] vertex_colors;
   rtcExit();
 }
 
