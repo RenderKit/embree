@@ -503,6 +503,10 @@ namespace embree
                       const Vec2f uv[4],
                       const float edge_level[4]);
 
+    SubdivPatch1Base (const unsigned int gID,
+                      const unsigned int pID,
+                      const SubdivMesh *const mesh);
+
     __forceinline bool needsStitching() const
     {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      

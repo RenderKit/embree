@@ -21,15 +21,6 @@
 namespace embree
 {
 
-    // if (grid_size_simd_blocks == 1)
-    //   {
-    //     mic_m m_active = 0xffff;
-    //     for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
-    //       m_active ^= (unsigned int)1 << i;
-    //     m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
-    //     grid_mask = m_active;
-    //   }
-
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const unsigned int gID,
@@ -37,10 +28,7 @@ namespace embree
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4]) 
-    : geom(gID),
-      prim(pID),  
-      flags(0),
-      root_ref(0)
+    : geom(gID),prim(pID),flags(0),root_ref(0)
   {
     assert(sizeof(SubdivPatch1Base) == 5 * 64);
     mtx.reset();
@@ -52,10 +40,8 @@ namespace embree
         v[i] = (unsigned short)(uv[i].y * 65535.0f);
       }
 
-
     updateEdgeLevels(edge_level,mesh);
      
-
     /* determine whether patch is regular or not */
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
@@ -77,13 +63,13 @@ namespace embree
         gpatch.init( ipatch ); 
         gpatch.exportDenseConrolPoints( patch.v );
       }
+  }
 
-#if 0
-    PRINT( grid_u_res );
-    PRINT( grid_v_res );
-    PRINT( grid_subtree_size_64b_blocks );
-#endif
-
+  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh) 
+    : geom(gID),prim(pID),flags(0),root_ref(0)
+  {
   }
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)

@@ -41,5 +41,10 @@ namespace embree
                         const SubdivMesh *const mesh,
                         const Vec2f uv[4],
                         const float edge_level[4]) : SubdivPatch1Base(ipatch,gID,pID,mesh,uv,edge_level) {}
+
+    SubdivPatch1Cached (const unsigned int gID,
+                        const unsigned int pID,
+                        const SubdivMesh *const mesh) : SubdivPatch1Base(gID,pID,mesh) {}
+
   };
 }
