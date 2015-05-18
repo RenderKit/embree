@@ -212,12 +212,9 @@ export void device_init (uniform int8* uniform cfg)
 
 uniform int frameID = 0;
 
-//extern uniform float g_debug;
-
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  //uniform float time = g_debug;
   uniform float time = abs((uniform int)(0.01f*frameID) - 0.01f*frameID);
 
   /* initialize ray */

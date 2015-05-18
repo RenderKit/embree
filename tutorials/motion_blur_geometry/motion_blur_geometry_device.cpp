@@ -212,12 +212,9 @@ extern "C" void device_init (int8* cfg)
 
 int frameID = 0;
 
-//extern "C" float g_debug;
-
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  //float time = g_debug;
   float time = abs((int)(0.01f*frameID) - 0.01f*frameID);
 
   /* initialize ray */
