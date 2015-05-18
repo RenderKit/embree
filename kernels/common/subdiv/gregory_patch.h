@@ -468,11 +468,9 @@ namespace embree
     __forceinline Vec3fa eval(const float &uu, const float &vv) {
       return eval(v,f,uu,vv);
     }
-    
+
     template<class M, class T>
-      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4],
-                                          const T &uu,
-                                          const T &vv) 
+      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T &uu, const T &vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -542,6 +540,16 @@ namespace embree
       return Vec3<T>(x,y,z);
     }
     
+    template<class M, class T>
+      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const T &uu, const T &vv) 
+    {
+      Vec3<T> f[2][2];
+      f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
+      f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
+      f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
+      f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
+      return eval_t<M>(matrix,f,uu,vv);
+    }
     
     template<class M, class T>
       static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4],
