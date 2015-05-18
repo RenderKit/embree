@@ -78,7 +78,7 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER0, cube_vertices, 0, 4*sizeof(uniform float));
 
   uniform Vec3fa* uniform vertex1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
-  for (uniform i=0; i<8; i++) vertex1[i] = make_Vec3fa(cube_vertices[i][0]+1.0f,cube_vertices[i][1]+1.0f,cube_vertices[i][2]+1.0f);
+  for (uniform int i=0; i<8; i++) vertex1[i] = make_Vec3fa(cube_vertices[i][0]+1.0f,cube_vertices[i][1]+1.0f,cube_vertices[i][2]+1.0f);
   rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER1);
   
   /* create face color array */
