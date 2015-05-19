@@ -49,11 +49,13 @@ namespace embree
     }
   };
 
+  template<typename Vertex, typename Vertex_t = Vertex>
+    class __aligned(64) BSplinePatchTT
+  {
+    typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef Vertex T;
 
-  template<typename T>
-    class BSplinePatchT
-    {
-    public:
+  public:
       T v[4][4];
 
       __forceinline T computeFaceVertex(const unsigned int y,const unsigned int x) const
@@ -121,12 +123,12 @@ namespace embree
       __forceinline void initSubPatches(const T edge[12],
 					const T face[3][3],
 					const T newQuadVertex[2][2],
-					BSplinePatchT child[4]) const
+					BSplinePatchTT child[4]) const
       {
-	BSplinePatchT &subTL = child[0];
-	BSplinePatchT &subTR = child[1];
-	BSplinePatchT &subBR = child[2];
-	BSplinePatchT &subBL = child[3];
+	BSplinePatchTT &subTL = child[0];
+	BSplinePatchTT &subTR = child[1];
+	BSplinePatchTT &subBR = child[2];
+	BSplinePatchTT &subBL = child[3];
 
 	// top-left
 	subTL.v[0][0] = face[0][0];
@@ -213,7 +215,7 @@ namespace embree
 	subBL.v[3][3] = edge[11];
       }
 
-      __forceinline void subdivide(BSplinePatchT child[4]) const
+      __forceinline void subdivide(BSplinePatchTT child[4]) const
       {
 	T face[3][3];
 	face[0][0] = computeFaceVertex(0,0);
@@ -248,13 +250,6 @@ namespace embree
 
 	initSubPatches(edge,face,newQuadVertex,child);
       }
-    };
-
-
-  template<typename Vertex, typename Vertex_t = Vertex>
-    class __aligned(64) BSplinePatchTT : public BSplinePatchT<Vertex> 
-  {
-    typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
   public:
 
     BSplinePatchTT () {}
