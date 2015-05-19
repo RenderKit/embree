@@ -71,7 +71,7 @@ namespace embree
 	return res;
       }
       
-      __forceinline Vertex computeLimitVertex(const int y, const int x) const
+      __forceinline Vertex computeLimitVertex(const int y, const int x) const // FIXME: 
       {
 	const Vertex P = v[y][x];
 	const Vertex Q = v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1];
@@ -80,7 +80,7 @@ namespace embree
 	return res;
       }
       
-      __forceinline Vertex computeLimitTangentX(const int y, const int x) const
+      __forceinline Vertex computeLimitTangentX(const int y, const int x) const // FIXME:
       {
 	/* --- tangent X --- */
 	const Vertex Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
@@ -89,8 +89,7 @@ namespace embree
         return tangentX;
       };
       
-      __forceinline Vertex computeLimitTangentY(const int y,
-                                                const int x) const
+      __forceinline Vertex computeLimitTangentY(const int y, const int x) const // FIXME:
       {
 	const Vertex Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
 	const Vertex Ry = v[y-1][x] - v[y+1][x];
@@ -99,8 +98,7 @@ namespace embree
 	return tangentY;
       }
       
-      __forceinline Vertex computeLimitNormal(const int y,
-                                              const int x) const
+      __forceinline Vertex computeLimitNormal(const int y, const int x) const // FIXME:
       {
 	/* --- tangent X --- */
 	const Vertex Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
@@ -256,11 +254,6 @@ namespace embree
         quad.vtx[2] = v[2][2];
         quad.vtx[3] = v[2][1];
       };
-      
-      __forceinline Vertex limitVtx0() const { return computeLimitVertex(1,1); } // FIXME: remove these
-      __forceinline Vertex limitVtx1() const { return computeLimitVertex(1,2); }
-      __forceinline Vertex limitVtx2() const { return computeLimitVertex(2,2); }
-      __forceinline Vertex limitVtx3() const { return computeLimitVertex(2,1); }
       
       __forceinline void init_limit( FinalQuad& quad ) const
       {

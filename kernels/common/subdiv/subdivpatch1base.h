@@ -26,7 +26,7 @@
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRITIZED_UV 1 // FIXME: typo
+#define DISCRETIZED_UV 1
 
 namespace embree
 {
@@ -74,7 +74,7 @@ namespace embree
     float vtx_x[12];
     float vtx_y[12];
     float vtx_z[12];
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
     unsigned short vtx_u[12];
     unsigned short vtx_v[12];
 #else
@@ -145,7 +145,7 @@ namespace embree
       storeu4f(&dest[6], row1_a);
     }
 
-    __forceinline void initFrom3x3Grid_discritized( const ssef source[3],
+    __forceinline void initFrom3x3Grid_discretized( const ssef source[3],
                                                     unsigned short *const dest)
     {
       const ssef row0_a = unpacklo(source[0],source[1]); 
@@ -165,7 +165,7 @@ namespace embree
 
     }
 
-    __forceinline void initFrom3x3Grid_discritized( const float *const source,
+    __forceinline void initFrom3x3Grid_discretized( const float *const source,
                                                     unsigned short *const dest,
                                                     const size_t offset_line0,
                                                     const size_t offset_line1,
@@ -210,9 +210,9 @@ namespace embree
       initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
-#if DISCRITIZED_UV == 1
-      initFrom3x3Grid_discritized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid_discritized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#if DISCRETIZED_UV == 1
+      initFrom3x3Grid_discretized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid_discretized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
 #else
       initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
@@ -229,10 +229,10 @@ namespace embree
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
       initFrom3x3Grid( grid_z, vtx_z);
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
       
-      initFrom3x3Grid_discritized( grid_u, vtx_u);
-      initFrom3x3Grid_discritized( grid_v, vtx_v);
+      initFrom3x3Grid_discretized( grid_u, vtx_u);
+      initFrom3x3Grid_discretized( grid_v, vtx_v);
 #else
       initFrom3x3Grid( grid_u, vtx_u );
       initFrom3x3Grid( grid_v, vtx_v );
@@ -256,7 +256,7 @@ namespace embree
       return avxf( ssef::loadu(&source[0+offset]), ssef::loadu(&source[6+offset]) ); // FIXME: unaligned loads
     }
 
-    __forceinline avxi combine_discritized( const unsigned short *const source, const size_t offset) const {
+    __forceinline avxi combine_discretized( const unsigned short *const source, const size_t offset) const {
       
       return avxi( u16_to_ssei(&source[0+offset]), u16_to_ssei(&source[6+offset]) );            
     }
@@ -266,8 +266,8 @@ namespace embree
     }
 
     __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRITIZED_UV == 1
-      return avx2f(  avxf(combine_discritized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discritized(vtx_v,offset)) * 1.0f/65535.0f )  ;
+#if DISCRETIZED_UV == 1
+      return avx2f(  avxf(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
 #else
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif
@@ -280,7 +280,7 @@ namespace embree
     }
 
     __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
       return sse2f( u16_to_ssef(&vtx_u[offset+delta]), u16_to_ssef(&vtx_v[offset+delta]) );
 #else
       return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
@@ -724,7 +724,7 @@ namespace embree
     }
 
 
-    // 16bit discritized u,v coordinates
+    // 16bit discretized u,v coordinates
 
     unsigned short u[4]; 
     unsigned short v[4];
