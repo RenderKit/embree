@@ -109,15 +109,13 @@ namespace embree
 
           face_valence++;
 
-          /* test for triangle */
-          //if (p->next()->next()->next() == p)
-	  //;
-          //else 
-
           /* test for quad */
-          if (p->next()->next()->next()->next() != p) // FIXME: this test is wrong!
-            return COMPLEX_PATCH;
-
+          const HalfEdge* pp = p;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp != p) return COMPLEX_PATCH;
+          
           /* continue with next face */
           p = p->prev();
           if (likely(p->hasOpposite())) 
