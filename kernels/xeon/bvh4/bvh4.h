@@ -81,6 +81,15 @@ namespace embree
     static const int travCostUnaligned = 3; // FIXME: find best cost
     static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
+    /*! flags used to enable specific node types in intersectors */
+    enum NodeFlags {  // FIXME: use these flags also in intersector implementations, currently hardcoded constants are used
+      FLAG_ALIGNED_NODE = 0x0001,
+      FLAG_ALIGNED_NODE_MB = 0x0010,
+      FLAG_UNALIGNED_NODE = 0x0100,
+      FLAG_UNALIGNED_NODE_MB = 0x1000,
+      FLAG_NODE_MB = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB
+    };
+
     /*! Builder interface to create allocator */
     struct CreateAlloc
     {      

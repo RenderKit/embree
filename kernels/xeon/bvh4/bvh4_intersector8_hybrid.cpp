@@ -39,6 +39,7 @@ namespace embree
       const avxb valid0 = *valid_i;
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(all(valid0,ray.tnear <= ray.tfar));
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
       
       /* load ray */
       avx3f ray_org = ray.org;
@@ -244,6 +245,7 @@ namespace embree
       const avxb valid = *valid_i;
       assert(all(valid,ray.tnear >= 0.0f));
       assert(all(valid,ray.tnear <= ray.tfar));
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
       avxb terminated = !valid;

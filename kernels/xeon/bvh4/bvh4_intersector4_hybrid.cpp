@@ -39,6 +39,7 @@ namespace embree
       const sseb valid0 = *valid_i;
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(all(valid0,ray.tnear <= ray.tfar));
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
       sse3f ray_org = ray.org;
@@ -244,7 +245,7 @@ namespace embree
       const sseb valid = *valid_i;
       assert(all(valid,ray.tnear >= 0.0f));
       assert(all(valid,ray.tnear <= ray.tfar));
-
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
       /* load ray */
       sseb terminated = !valid;
       sse3f ray_org = ray.org, ray_dir = ray.dir;

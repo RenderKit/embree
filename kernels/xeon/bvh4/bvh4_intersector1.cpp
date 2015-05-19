@@ -43,6 +43,7 @@ namespace embree
       /* verify correct input */
       assert(ray.tnear >= 0.0f);
       assert(ray.tnear <= ray.tfar);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -183,6 +184,7 @@ namespace embree
       /* verify correct input */
       assert(ray.tnear >= 0.0f);
       assert(ray.tnear <= ray.tfar);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
