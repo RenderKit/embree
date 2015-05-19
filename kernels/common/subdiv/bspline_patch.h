@@ -53,76 +53,75 @@ namespace embree
     class __aligned(64) BSplinePatchTT
   {
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
-    typedef Vertex T;
 
   public:
-      T v[4][4];
+      Vertex v[4][4];
 
-      __forceinline T computeFaceVertex(const unsigned int y,const unsigned int x) const
+      __forceinline Vertex computeFaceVertex(const unsigned int y,const unsigned int x) const
       {
 	return (v[y][x] + v[y][x+1] + v[y+1][x+1] + v[y+1][x]) * 0.25f;
       }
 
-      __forceinline T computeQuadVertex(const unsigned int y,
+      __forceinline Vertex computeQuadVertex(const unsigned int y,
 					const unsigned int x,
-					const T face[3][3]) const
+					const Vertex face[3][3]) const
       {
-	const T P = v[y][x]; 
-	const T Q = face[y-1][x-1] + face[y-1][x] + face[y][x] + face[y][x-1];
-	const T R = v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1];
-	const T res = (Q + R) * 0.0625f + P * 0.5f;
+	const Vertex P = v[y][x]; 
+	const Vertex Q = face[y-1][x-1] + face[y-1][x] + face[y][x] + face[y][x-1];
+	const Vertex R = v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1];
+	const Vertex res = (Q + R) * 0.0625f + P * 0.5f;
 	return res;
       }
 
-      __forceinline T computeLimitVertex(const int y,
+      __forceinline Vertex computeLimitVertex(const int y,
 					 const int x) const
       {
-	const T P = v[y][x];
-	const T Q = v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1];
-	const T R = v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1];
-	const T res = (P * 16.0f + R * 4.0f + Q) * 1.0f / 36.0f;
+	const Vertex P = v[y][x];
+	const Vertex Q = v[y-1][x-1] + v[y-1][x+1] + v[y+1][x-1] + v[y+1][x+1];
+	const Vertex R = v[y-1][x] + v[y+1][x] + v[y][x-1] + v[y][x+1];
+	const Vertex res = (P * 16.0f + R * 4.0f + Q) * 1.0f / 36.0f;
 	return res;
       }
 
-      __forceinline T computeLimitTangentX(const int y,
+      __forceinline Vertex computeLimitTangentX(const int y,
                                            const int x) const
       {
 	/* --- tangent X --- */
-	const T Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
-	const T Rx = v[y][x-1] - v[y][x+1];
-	const T tangentX = (Rx * 4.0f + Qx) * 1.0f / 12.0f;
+	const Vertex Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
+	const Vertex Rx = v[y][x-1] - v[y][x+1];
+	const Vertex tangentX = (Rx * 4.0f + Qx) * 1.0f / 12.0f;
         return tangentX;
       };
 
-      __forceinline T computeLimitTangentY(const int y,
+      __forceinline Vertex computeLimitTangentY(const int y,
                                            const int x) const
       {
-	const T Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
-	const T Ry = v[y-1][x] - v[y+1][x];
-	const T tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
+	const Vertex Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
+	const Vertex Ry = v[y-1][x] - v[y+1][x];
+	const Vertex tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
     
 	return tangentY;
       }
 
-      __forceinline T computeLimitNormal(const int y,
+      __forceinline Vertex computeLimitNormal(const int y,
 					 const int x) const
       {
 	/* --- tangent X --- */
-	const T Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
-	const T Rx = v[y][x-1] - v[y][x+1];
-	const T tangentX = (Rx * 4.0f + Qx) * 1.0f / 12.0f;
+	const Vertex Qx = v[y-1][x+1] - v[y-1][x-1] + v[y+1][x+1] - v[y+1][x-1];
+	const Vertex Rx = v[y][x-1] - v[y][x+1];
+	const Vertex tangentX = (Rx * 4.0f + Qx) * 1.0f / 12.0f;
 
 	/* --- tangent Y --- */
-	const T Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
-	const T Ry = v[y-1][x] - v[y+1][x];
-	const T tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
+	const Vertex Qy = v[y-1][x-1] - v[y+1][x-1] + v[y-1][x+1] - v[y+1][x+1];
+	const Vertex Ry = v[y-1][x] - v[y+1][x];
+	const Vertex tangentY = (Ry * 4.0f + Qy) * 1.0f / 12.0f;
     
 	return cross(tangentY,tangentX);
       }
 
-      __forceinline void initSubPatches(const T edge[12],
-					const T face[3][3],
-					const T newQuadVertex[2][2],
+      __forceinline void initSubPatches(const Vertex edge[12],
+					const Vertex face[3][3],
+					const Vertex newQuadVertex[2][2],
 					BSplinePatchTT child[4]) const
       {
 	BSplinePatchTT &subTL = child[0];
@@ -217,7 +216,7 @@ namespace embree
 
       __forceinline void subdivide(BSplinePatchTT child[4]) const
       {
-	T face[3][3];
+	Vertex face[3][3];
 	face[0][0] = computeFaceVertex(0,0);
 	face[0][1] = computeFaceVertex(0,1);
 	face[0][2] = computeFaceVertex(0,2);
@@ -228,7 +227,7 @@ namespace embree
 	face[2][1] = computeFaceVertex(2,1);
 	face[2][2] = computeFaceVertex(2,2);
 
-	T edge[12];
+	Vertex edge[12];
 	edge[0]  = 0.25f * (v[0][1] + v[1][1] + face[0][0] + face[0][1]);
 	edge[1]  = 0.25f * (v[0][2] + v[1][2] + face[0][1] + face[0][2]);
 	edge[2]  = 0.25f * (v[1][0] + v[1][1] + face[0][0] + face[1][0]);
@@ -242,7 +241,7 @@ namespace embree
 	edge[10] = 0.25f * (v[2][1] + v[3][1] + face[2][0] + face[2][1]);
 	edge[11] = 0.25f * (v[2][2] + v[3][2] + face[2][1] + face[2][2]);
 
-	T newQuadVertex[2][2];
+	Vertex newQuadVertex[2][2];
 	newQuadVertex[0][0] = computeQuadVertex(1,1,face);
 	newQuadVertex[0][1] = computeQuadVertex(1,2,face);
 	newQuadVertex[1][1] = computeQuadVertex(2,2,face);
@@ -256,24 +255,24 @@ namespace embree
 
     __forceinline void init( FinalQuad& quad ) const
     {
-      quad.vtx[0] = this->v[1][1];
-      quad.vtx[1] = this->v[1][2];
-      quad.vtx[2] = this->v[2][2];
-      quad.vtx[3] = this->v[2][1];
+      quad.vtx[0] = v[1][1];
+      quad.vtx[1] = v[1][2];
+      quad.vtx[2] = v[2][2];
+      quad.vtx[3] = v[2][1];
     };
 
-    __forceinline Vertex limitVtx0() const { return this->computeLimitVertex(1,1); } // FIXME: remove these
-    __forceinline Vertex limitVtx1() const { return this->computeLimitVertex(1,2); }
-    __forceinline Vertex limitVtx2() const { return this->computeLimitVertex(2,2); }
-    __forceinline Vertex limitVtx3() const { return this->computeLimitVertex(2,1); }
+    __forceinline Vertex limitVtx0() const { return computeLimitVertex(1,1); } // FIXME: remove these
+    __forceinline Vertex limitVtx1() const { return computeLimitVertex(1,2); }
+    __forceinline Vertex limitVtx2() const { return computeLimitVertex(2,2); }
+    __forceinline Vertex limitVtx3() const { return computeLimitVertex(2,1); }
 
     __forceinline void init_limit( FinalQuad& quad ) const
     {
 
-      const Vertex limit_v0 = this->computeLimitVertex(1,1);
-      const Vertex limit_v1 = this->computeLimitVertex(1,2);
-      const Vertex limit_v2 = this->computeLimitVertex(2,2);
-      const Vertex limit_v3 = this->computeLimitVertex(2,1);
+      const Vertex limit_v0 = computeLimitVertex(1,1);
+      const Vertex limit_v1 = computeLimitVertex(1,2);
+      const Vertex limit_v2 = computeLimitVertex(2,2);
+      const Vertex limit_v3 = computeLimitVertex(2,1);
       
       quad.vtx[0] = limit_v0;
       quad.vtx[1] = limit_v1;
@@ -292,54 +291,54 @@ namespace embree
 
       if (unlikely(patch.ring[0].hasBorder())) 
         {
-          this->v[1][1] = patch.ring[0].vtx;
-          this->v[0][1] = patch.ring[0].regular_border_vertex_6();
-          this->v[0][0] = patch.ring[0].regular_border_vertex_5();
-          this->v[1][0] = patch.ring[0].regular_border_vertex_4();
+          v[1][1] = patch.ring[0].vtx;
+          v[0][1] = patch.ring[0].regular_border_vertex_6();
+          v[0][0] = patch.ring[0].regular_border_vertex_5();
+          v[1][0] = patch.ring[0].regular_border_vertex_4();
         } else {
-	this->v[1][1] = patch.ring[0].vtx;
-	this->v[0][1] = patch.ring[0].ring[6];
-	this->v[0][0] = patch.ring[0].ring[5];
-	this->v[1][0] = patch.ring[0].ring[4];
+	v[1][1] = patch.ring[0].vtx;
+	v[0][1] = patch.ring[0].ring[6];
+	v[0][0] = patch.ring[0].ring[5];
+	v[1][0] = patch.ring[0].ring[4];
       }
 
       if (unlikely(patch.ring[1].hasBorder())) 
         {
-          this->v[1][2] = patch.ring[1].vtx;
-          this->v[1][3] = patch.ring[1].regular_border_vertex_6();
-          this->v[0][3] = patch.ring[1].regular_border_vertex_5();
-          this->v[0][2] = patch.ring[1].regular_border_vertex_4();
+          v[1][2] = patch.ring[1].vtx;
+          v[1][3] = patch.ring[1].regular_border_vertex_6();
+          v[0][3] = patch.ring[1].regular_border_vertex_5();
+          v[0][2] = patch.ring[1].regular_border_vertex_4();
         } else {
-	this->v[1][2] = patch.ring[1].vtx;
-	this->v[1][3] = patch.ring[1].ring[6];
-	this->v[0][3] = patch.ring[1].ring[5];
-	this->v[0][2] = patch.ring[1].ring[4];
+	v[1][2] = patch.ring[1].vtx;
+	v[1][3] = patch.ring[1].ring[6];
+	v[0][3] = patch.ring[1].ring[5];
+	v[0][2] = patch.ring[1].ring[4];
       }
 
       if (unlikely(patch.ring[2].hasBorder())) 
         {
-          this->v[2][2] = patch.ring[2].vtx;
-          this->v[3][2] = patch.ring[2].regular_border_vertex_6();
-          this->v[3][3] = patch.ring[2].regular_border_vertex_5();
-          this->v[2][3] = patch.ring[2].regular_border_vertex_4();
+          v[2][2] = patch.ring[2].vtx;
+          v[3][2] = patch.ring[2].regular_border_vertex_6();
+          v[3][3] = patch.ring[2].regular_border_vertex_5();
+          v[2][3] = patch.ring[2].regular_border_vertex_4();
         } else {
-	this->v[2][2] = patch.ring[2].vtx;
-	this->v[3][2] = patch.ring[2].ring[6];
-	this->v[3][3] = patch.ring[2].ring[5];
-	this->v[2][3] = patch.ring[2].ring[4];
+	v[2][2] = patch.ring[2].vtx;
+	v[3][2] = patch.ring[2].ring[6];
+	v[3][3] = patch.ring[2].ring[5];
+	v[2][3] = patch.ring[2].ring[4];
       }
 
       if (unlikely(patch.ring[3].hasBorder())) 
         {
-          this->v[2][1] = patch.ring[3].vtx;
-          this->v[2][0] = patch.ring[3].regular_border_vertex_6();
-          this->v[3][0] = patch.ring[3].regular_border_vertex_5();
-          this->v[3][1] = patch.ring[3].regular_border_vertex_4();
+          v[2][1] = patch.ring[3].vtx;
+          v[2][0] = patch.ring[3].regular_border_vertex_6();
+          v[3][0] = patch.ring[3].regular_border_vertex_5();
+          v[3][1] = patch.ring[3].regular_border_vertex_4();
         } else {
-	this->v[2][1] = patch.ring[3].vtx;
-	this->v[2][0] = patch.ring[3].ring[6];
-	this->v[3][0] = patch.ring[3].ring[5];      
-	this->v[3][1] = patch.ring[3].ring[4];
+	v[2][1] = patch.ring[3].vtx;
+	v[2][0] = patch.ring[3].ring[6];
+	v[3][0] = patch.ring[3].ring[5];      
+	v[3][1] = patch.ring[3].ring[4];
       }
     }
 
@@ -409,27 +408,27 @@ namespace embree
       assert( edge0->isRegularFace() );
 
       /* fill inner vertices */
-      const Vertex v11 = this->v[1][1] = load(edge0); const SubdivMesh::HalfEdge* edge1 = edge0->next();
-      const Vertex v12 = this->v[1][2] = load(edge1); const SubdivMesh::HalfEdge* edge2 = edge1->next();
-      const Vertex v22 = this->v[2][2] = load(edge2); const SubdivMesh::HalfEdge* edge3 = edge2->next();
-      const Vertex v21 = this->v[2][1] = load(edge3); assert(edge0  == edge3->next());
+      const Vertex v11 = v[1][1] = load(edge0); const SubdivMesh::HalfEdge* edge1 = edge0->next();
+      const Vertex v12 = v[1][2] = load(edge1); const SubdivMesh::HalfEdge* edge2 = edge1->next();
+      const Vertex v22 = v[2][2] = load(edge2); const SubdivMesh::HalfEdge* edge3 = edge2->next();
+      const Vertex v21 = v[2][1] = load(edge3); assert(edge0  == edge3->next());
 
       /* fill border vertices */
-      init_border(edge0,load,this->v[0][1],this->v[0][2],v11,v12,v21,v22);
-      init_border(edge1,load,this->v[1][3],this->v[2][3],v12,v22,v11,v21);
-      init_border(edge2,load,this->v[3][2],this->v[3][1],v22,v21,v12,v11);
-      init_border(edge3,load,this->v[2][0],this->v[1][0],v21,v11,v22,v12);
+      init_border(edge0,load,v[0][1],v[0][2],v11,v12,v21,v22);
+      init_border(edge1,load,v[1][3],v[2][3],v12,v22,v11,v21);
+      init_border(edge2,load,v[3][2],v[3][1],v22,v21,v12,v11);
+      init_border(edge3,load,v[2][0],v[1][0],v21,v11,v22,v12);
 
       /* fill corner vertices */
-      init_corner(edge0,load,this->v[0][0],this->v[0][1],this->v[0][2],v11,v22,this->v[1][0],this->v[2][0]);
-      init_corner(edge1,load,this->v[0][3],this->v[1][3],this->v[2][3],v12,v21,this->v[0][2],this->v[0][1]);
-      init_corner(edge2,load,this->v[3][3],this->v[3][2],this->v[3][1],v22,v11,this->v[2][3],this->v[1][3]);
-      init_corner(edge3,load,this->v[3][0],this->v[2][0],this->v[1][0],v21,v12,this->v[3][1],this->v[3][2]);
+      init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v11,v22,v[1][0],v[2][0]);
+      init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v12,v21,v[0][2],v[0][1]);
+      init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v22,v11,v[2][3],v[1][3]);
+      init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v21,v12,v[3][1],v[3][2]);
     }
 
     __forceinline BBox<Vertex> bounds() const
     {
-      const Vertex* const cv = &this->v[0][0];
+      const Vertex* const cv = &v[0][0];
       BBox<Vertex> bounds (cv[0]);
       for (size_t i=1; i<16 ; i++)
 	bounds.extend( cv[i] );
@@ -440,10 +439,10 @@ namespace embree
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
-      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
-      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
-      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
-      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
+      const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
@@ -454,10 +453,10 @@ namespace embree
     {
       const Vec4f v_n = CubicBSplineCurve::eval(vv);
 
-      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
-      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
-      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
-      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
+      const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::derivative(uu);
 
@@ -468,10 +467,10 @@ namespace embree
     {
       const Vec4f v_n = CubicBSplineCurve::derivative(vv);
 
-      const Vertex_t curve0 = v_n[0] * this->v[0][0] + v_n[1] * this->v[1][0] + v_n[2] * this->v[2][0] + v_n[3] * this->v[3][0];
-      const Vertex_t curve1 = v_n[0] * this->v[0][1] + v_n[1] * this->v[1][1] + v_n[2] * this->v[2][1] + v_n[3] * this->v[3][1];
-      const Vertex_t curve2 = v_n[0] * this->v[0][2] + v_n[1] * this->v[1][2] + v_n[2] * this->v[2][2] + v_n[3] * this->v[3][2];
-      const Vertex_t curve3 = v_n[0] * this->v[0][3] + v_n[1] * this->v[1][3] + v_n[2] * this->v[2][3] + v_n[3] * this->v[3][3];
+      const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
+      const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
+      const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
+      const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
 
       const Vec4f u_n = CubicBSplineCurve::eval(uu);
 
@@ -488,24 +487,24 @@ namespace embree
     template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
     {
-      const T curve0_x = v_n[0] * T(this->v[0][0].x) + v_n[1] * T(this->v[1][0].x) + v_n[2] * T(this->v[2][0].x) + v_n[3] * T(this->v[3][0].x);
-      const T curve1_x = v_n[0] * T(this->v[0][1].x) + v_n[1] * T(this->v[1][1].x) + v_n[2] * T(this->v[2][1].x) + v_n[3] * T(this->v[3][1].x);
-      const T curve2_x = v_n[0] * T(this->v[0][2].x) + v_n[1] * T(this->v[1][2].x) + v_n[2] * T(this->v[2][2].x) + v_n[3] * T(this->v[3][2].x);
-      const T curve3_x = v_n[0] * T(this->v[0][3].x) + v_n[1] * T(this->v[1][3].x) + v_n[2] * T(this->v[2][3].x) + v_n[3] * T(this->v[3][3].x);
+      const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
+      const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
+      const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
+      const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
       const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
       
       
-      const T curve0_y = v_n[0] * T(this->v[0][0].y) + v_n[1] * T(this->v[1][0].y) + v_n[2] * T(this->v[2][0].y) + v_n[3] * T(this->v[3][0].y);
-      const T curve1_y = v_n[0] * T(this->v[0][1].y) + v_n[1] * T(this->v[1][1].y) + v_n[2] * T(this->v[2][1].y) + v_n[3] * T(this->v[3][1].y);
-      const T curve2_y = v_n[0] * T(this->v[0][2].y) + v_n[1] * T(this->v[1][2].y) + v_n[2] * T(this->v[2][2].y) + v_n[3] * T(this->v[3][2].y);
-      const T curve3_y = v_n[0] * T(this->v[0][3].y) + v_n[1] * T(this->v[1][3].y) + v_n[2] * T(this->v[2][3].y) + v_n[3] * T(this->v[3][3].y);
+      const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
+      const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
+      const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
+      const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
       const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
       
       
-      const T curve0_z = v_n[0] * T(this->v[0][0].z) + v_n[1] * T(this->v[1][0].z) + v_n[2] * T(this->v[2][0].z) + v_n[3] * T(this->v[3][0].z);
-      const T curve1_z = v_n[0] * T(this->v[0][1].z) + v_n[1] * T(this->v[1][1].z) + v_n[2] * T(this->v[2][1].z) + v_n[3] * T(this->v[3][1].z);
-      const T curve2_z = v_n[0] * T(this->v[0][2].z) + v_n[1] * T(this->v[1][2].z) + v_n[2] * T(this->v[2][2].z) + v_n[3] * T(this->v[3][2].z);
-      const T curve3_z = v_n[0] * T(this->v[0][3].z) + v_n[1] * T(this->v[1][3].z) + v_n[2] * T(this->v[2][3].z) + v_n[3] * T(this->v[3][3].z);
+      const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
+      const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
+      const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
+      const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
       const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
       
       return Vec3<T>(x,y,z);
@@ -547,15 +546,15 @@ namespace embree
 
     __forceinline mic_f getRow(const size_t i) const
     {
-      return load16f(&this->v[i][0]);
+      return load16f(&v[i][0]);
     }
 
     __forceinline void prefetchData() const
     {
-      prefetch<PFHINT_L1>(&this->v[0][0]);
-      prefetch<PFHINT_L1>(&this->v[1][0]);
-      prefetch<PFHINT_L1>(&this->v[2][0]);
-      prefetch<PFHINT_L1>(&this->v[3][0]);
+      prefetch<PFHINT_L1>(&v[0][0]);
+      prefetch<PFHINT_L1>(&v[1][0]);
+      prefetch<PFHINT_L1>(&v[2][0]);
+      prefetch<PFHINT_L1>(&v[3][0]);
     }
 
     static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
@@ -569,10 +568,10 @@ namespace embree
     {
       const mic4f v_e_d = eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
 
-      const mic_f curve0 = v_e_d[0] * broadcast4to16f(&this->v[0][0]) + v_e_d[1] * broadcast4to16f(&this->v[1][0]) + v_e_d[2] * broadcast4to16f(&this->v[2][0]) + v_e_d[3] * broadcast4to16f(&this->v[3][0]);
-      const mic_f curve1 = v_e_d[0] * broadcast4to16f(&this->v[0][1]) + v_e_d[1] * broadcast4to16f(&this->v[1][1]) + v_e_d[2] * broadcast4to16f(&this->v[2][1]) + v_e_d[3] * broadcast4to16f(&this->v[3][1]);
-      const mic_f curve2 = v_e_d[0] * broadcast4to16f(&this->v[0][2]) + v_e_d[1] * broadcast4to16f(&this->v[1][2]) + v_e_d[2] * broadcast4to16f(&this->v[2][2]) + v_e_d[3] * broadcast4to16f(&this->v[3][2]);
-      const mic_f curve3 = v_e_d[0] * broadcast4to16f(&this->v[0][3]) + v_e_d[1] * broadcast4to16f(&this->v[1][3]) + v_e_d[2] * broadcast4to16f(&this->v[2][3]) + v_e_d[3] * broadcast4to16f(&this->v[3][3]);
+      const mic_f curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
+      const mic_f curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
+      const mic_f curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
+      const mic_f curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
 
       const mic4f u_e_d = eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
 
@@ -589,10 +588,10 @@ namespace embree
     {
       const mic4f v_n = CubicBSplineCurve::eval(vv); 
 
-      const mic_f curve0 = v_n[0] * broadcast4to16f(&this->v[0][0]) + v_n[1] * broadcast4to16f(&this->v[1][0]) + v_n[2] * broadcast4to16f(&this->v[2][0]) + v_n[3] * broadcast4to16f(&this->v[3][0]);
-      const mic_f curve1 = v_n[0] * broadcast4to16f(&this->v[0][1]) + v_n[1] * broadcast4to16f(&this->v[1][1]) + v_n[2] * broadcast4to16f(&this->v[2][1]) + v_n[3] * broadcast4to16f(&this->v[3][1]);
-      const mic_f curve2 = v_n[0] * broadcast4to16f(&this->v[0][2]) + v_n[1] * broadcast4to16f(&this->v[1][2]) + v_n[2] * broadcast4to16f(&this->v[2][2]) + v_n[3] * broadcast4to16f(&this->v[3][2]);
-      const mic_f curve3 = v_n[0] * broadcast4to16f(&this->v[0][3]) + v_n[1] * broadcast4to16f(&this->v[1][3]) + v_n[2] * broadcast4to16f(&this->v[2][3]) + v_n[3] * broadcast4to16f(&this->v[3][3]);
+      const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
+      const mic_f curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
+      const mic_f curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
+      const mic_f curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
 
       const mic4f u_n = CubicBSplineCurve::eval(uu); 
 
