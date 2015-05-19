@@ -212,7 +212,7 @@ namespace embree
               const int nx = pattern_x.size();
               const int ny = pattern_y.size();
               
-              GregoryPatch patcheval; patcheval.init(patch);
+              GregoryPatch3fa patcheval; patcheval.init(patch);
               //BSplinePatch patcheval; patcheval.init(patch);
               size_t N = Grid::createEager(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
               assert(N == Grid::getNumEagerLeaves(nx,ny));
@@ -504,7 +504,7 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
-    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
+    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh) // FIXME: remove
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -620,7 +620,7 @@ namespace embree
       return b;
     }
 
-        void debugGridBorders1(const SubdivPatch1Base &patch,
+    void debugGridBorders1(const SubdivPatch1Base &patch, // FIXME: remove
                           const SubdivMesh* const geom)
     {
       assert( patch.grid_size_simd_blocks >= 1 );

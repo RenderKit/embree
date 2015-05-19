@@ -508,7 +508,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::eval( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -520,7 +520,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::normal( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -533,7 +533,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::eval_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -545,7 +545,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::normal_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -560,7 +560,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::eval_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
@@ -571,7 +571,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch::normal_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
 #endif
@@ -586,7 +586,7 @@ namespace embree
 	}
       else 
 	{	  
-	  return DenseGregoryPatch::eval4( patch.v, uu, vv );
+	  return DenseGregoryPatch3fa::eval4( patch.v, uu, vv );
 	}     
     }
 
@@ -596,7 +596,7 @@ namespace embree
       if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else 
-        return DenseGregoryPatch::eval16( patch.v, uu, vv );
+        return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
     }
 
     __forceinline mic3f normal16(const mic_f &uu,
@@ -605,7 +605,7 @@ namespace embree
       if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
       else
-        return DenseGregoryPatch::normal16( patch.v, uu, vv );
+        return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
     }
 #endif
 

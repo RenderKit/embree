@@ -46,7 +46,7 @@ namespace embree
     {
 #if 1
       flags |= BEZIER_PATCH;
-      GregoryPatch gpatch; 
+      GregoryPatch3fa gpatch; 
       gpatch.init_bezier( ipatch ); 
       gpatch.exportDenseConrolPoints( patch.v );
 #else
@@ -57,7 +57,7 @@ namespace embree
     else
     {
       flags |= GREGORY_PATCH;
-      GregoryPatch gpatch; 
+      GregoryPatch3fa gpatch; 
       gpatch.init( ipatch ); 
       gpatch.exportDenseConrolPoints( patch.v );
     }

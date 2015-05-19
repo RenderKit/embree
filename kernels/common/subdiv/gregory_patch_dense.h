@@ -20,7 +20,7 @@
 
 namespace embree
 {  
-  class __aligned(64) DenseGregoryPatch
+  class __aligned(64) DenseGregoryPatch3fa
   {
   public:
     Vec3fa v[4][4]; // f_p/m points are stored in 4th component
@@ -40,7 +40,7 @@ namespace embree
       f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
       f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
       f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
-      return GregoryPatch::eval(matrix,f,uu,vv);
+      return GregoryPatch3fa::eval(matrix,f,uu,vv);
     }
 
     template<class M, class T>
@@ -51,7 +51,7 @@ namespace embree
       f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
       f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
       f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-      return GregoryPatch::eval_t<M>(matrix,f,uu,vv);
+      return GregoryPatch3fa::eval_t<M>(matrix,f,uu,vv);
     }
     
      template<class M, class T>
@@ -62,7 +62,7 @@ namespace embree
        f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
        f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
        f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-       return GregoryPatch::normal_t<M>(matrix,f,uu,vv);
+       return GregoryPatch3fa::normal_t<M>(matrix,f,uu,vv);
     }
      
 #if defined(__MIC__)
@@ -165,7 +165,7 @@ namespace embree
       f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
       f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
 #endif      
-      return GregoryPatch::normal(matrix,f_m,uu,vv);
+      return GregoryPatch3fa::normal(matrix,f_m,uu,vv);
     }
   };
 }
