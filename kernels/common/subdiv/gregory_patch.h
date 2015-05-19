@@ -20,11 +20,11 @@
 
 namespace embree
 {  
-  class __aligned(64) GregoryPatch : public BSplinePatchT<Vec3fa> 
+  class __aligned(64) GregoryPatch
   {
   public:
-    
-    Vec3fa f[2][2]; // need 16 + 4 = 20 control points
+    Vec3fa v[4][4];
+    Vec3fa f[2][2];
     
     GregoryPatch() {
       memset(this,0,sizeof(GregoryPatch));
