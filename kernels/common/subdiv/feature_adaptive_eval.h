@@ -158,12 +158,17 @@ namespace embree
     {
     case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
-      //CatmullClarkPatchT<Vertex> patch;
-      //patch.init2(edge,loader);
       BSplinePatchT<Vertex> bspline;
-      //bspline.init(patch);
       bspline.init(edge,loader);
       return bspline.eval(u,v);
+    }
+    case SubdivMesh::IRREGULAR_QUAD_PATCH:
+    {
+      CatmullClarkPatchT<Vertex> patch;
+      patch.init2(edge,loader);
+      GregoryPatchT<Vertex> gregory;
+      gregory.init(patch);
+      return gregory.eval(u,v);
     }
     default: 
     {

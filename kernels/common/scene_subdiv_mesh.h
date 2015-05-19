@@ -115,7 +115,7 @@ namespace embree
           //else 
 
           /* test for quad */
-          if (p->next()->next()->next()->next() != p)
+          if (p->next()->next()->next()->next() != p) // FIXME: this test is wrong!
             return COMPLEX_PATCH;
 
           /* continue with next face */
@@ -160,7 +160,6 @@ namespace embree
         ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
 	
-
         ret = max(ret,p->vertexType());
         if ((p = p->next()) == this) return COMPLEX_PATCH;
         
