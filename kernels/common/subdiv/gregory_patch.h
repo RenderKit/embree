@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_patch.h"
 
 namespace embree
 {  
@@ -233,14 +234,8 @@ namespace embree
     }
    
     
-    static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4],
-						   const Vec3fa f_m[2][2],
-						   const float uu,
-						   const float vv,
-						   Vec3fa_t& matrix_11,
-						   Vec3fa_t& matrix_12,
-						   Vec3fa_t& matrix_22,
-						   Vec3fa_t& matrix_21)
+    static __forceinline void computeInnerVertices(const Vec3fa matrix[4][4], const Vec3fa f_m[2][2], const float uu, const float vv,
+						   Vec3fa_t& matrix_11, Vec3fa_t& matrix_12, Vec3fa_t& matrix_22, Vec3fa_t& matrix_21)
     {
       if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
@@ -261,42 +256,12 @@ namespace embree
 	const Vec3fa_t f2_m = f_m[1][1];
 	const Vec3fa_t f3_m = f_m[1][0];
         
-	const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m)/(uu+vv);
-	const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p)/(1.0f-uu+vv);
-	const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m)/(2.0f-uu-vv);
-	const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p)/(1.0f+uu-vv);
-        
-	matrix_11 = F0;
-	matrix_12 = F1;
-	matrix_22 = F2;
-	matrix_21 = F3;     
+	matrix_11 = (      uu  * f0_p +       vv  * f0_m)*rcp(uu+vv);
+	matrix_12 = ((1.0f-uu) * f1_m +       vv  * f1_p)*rcp(1.0f-uu+vv);
+	matrix_22 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m)*rcp(2.0f-uu-vv);
+	matrix_21 = (      uu  * f3_m + (1.0f-vv) * f3_p)*rcp(1.0f+uu-vv);
       }
     } 
-
-    template<class T, class S>
-      static __forceinline T deCasteljau_t(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-    {
-      const S one_minus_uu = 1.0f - uu;      
-      const T v0_1 = one_minus_uu * v0   + uu * v1;
-      const T v1_1 = one_minus_uu * v1   + uu * v2;
-      const T v2_1 = one_minus_uu * v2   + uu * v3;      
-      const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-      const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-      const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-      return v0_3;
-    }
-    
-    template<class T, class S>
-      static __forceinline T deCasteljau_tangent_t(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-    {
-      const S one_minus_uu = 1.0f - uu;      
-      const T v0_1         = one_minus_uu * v0   + uu * v1;
-      const T v1_1         = one_minus_uu * v1   + uu * v2;
-      const T v2_1         = one_minus_uu * v2   + uu * v3;      
-      const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-      const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
-      return v1_2 - v0_2;      
-    }
 
     static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const Vec3fa f[2][2], const float& uu, const float& vv) 
     {
@@ -335,20 +300,20 @@ namespace embree
       computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
       
       /* tangentU */
-      const Vec3fa_t col0 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
-      const Vec3fa_t col1 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix[3][1]);
-      const Vec3fa_t col2 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[3][2]);
-      const Vec3fa_t col3 = deCasteljau_t(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
+      const Vec3fa_t col0 = deCasteljau(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
+      const Vec3fa_t col1 = deCasteljau(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix[3][1]);
+      const Vec3fa_t col2 = deCasteljau(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[3][2]);
+      const Vec3fa_t col3 = deCasteljau(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
       
-      const Vec3fa_t tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
+      const Vec3fa_t tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
       
       /* tangentV */
-      const Vec3fa_t row0 = deCasteljau_t(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
-      const Vec3fa_t row1 = deCasteljau_t(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix[1][3]);
-      const Vec3fa_t row2 = deCasteljau_t(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[2][3]);
-      const Vec3fa_t row3 = deCasteljau_t(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
+      const Vec3fa_t row0 = deCasteljau(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
+      const Vec3fa_t row1 = deCasteljau(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix_11   , (Vec3fa_t)matrix_12   , (Vec3fa_t)matrix[1][3]);
+      const Vec3fa_t row2 = deCasteljau(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix_21   , (Vec3fa_t)matrix_22   , (Vec3fa_t)matrix[2][3]);
+      const Vec3fa_t row3 = deCasteljau(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
       
-      const Vec3fa_t tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
+      const Vec3fa_t tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
       const Vec3fa_t n = cross(tangentV,tangentU);
@@ -378,17 +343,10 @@ namespace embree
       const T one_minus_uu = T(1.0f) - uu;
       const T one_minus_vv = T(1.0f) - vv;      
       
-#if 1
       const T inv0 = rcp(uu+vv);
       const T inv1 = rcp(one_minus_uu+vv);
       const T inv2 = rcp(one_minus_uu+one_minus_vv);
       const T inv3 = rcp(uu+one_minus_vv);
-#else
-      const T inv0 = 1.0f/(uu+vv);
-      const T inv1 = 1.0f/(one_minus_uu+vv);
-      const T inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const T inv3 = 1.0f/(uu+one_minus_vv);
-#endif
       
       const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
       const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
@@ -493,20 +451,20 @@ namespace embree
       const Vec3<T> matrix_23 = Vec3<T>(matrix[2][3].x,matrix[2][3].y,matrix[2][3].z);
       
       /* tangentU */
-      const Vec3<T> col0 = deCasteljau_t(vv, matrix_00, matrix_10, matrix_20, matrix_30);
-      const Vec3<T> col1 = deCasteljau_t(vv, matrix_01, matrix_11, matrix_21, matrix_31);
-      const Vec3<T> col2 = deCasteljau_t(vv, matrix_02, matrix_12, matrix_22, matrix_32);
-      const Vec3<T> col3 = deCasteljau_t(vv, matrix_03, matrix_13, matrix_23, matrix_33);
+      const Vec3<T> col0 = deCasteljau(vv, matrix_00, matrix_10, matrix_20, matrix_30);
+      const Vec3<T> col1 = deCasteljau(vv, matrix_01, matrix_11, matrix_21, matrix_31);
+      const Vec3<T> col2 = deCasteljau(vv, matrix_02, matrix_12, matrix_22, matrix_32);
+      const Vec3<T> col3 = deCasteljau(vv, matrix_03, matrix_13, matrix_23, matrix_33);
       
-      const Vec3<T> tangentU = deCasteljau_tangent_t(uu, col0, col1, col2, col3);
+      const Vec3<T> tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
       
       /* tangentV */
-      const Vec3<T> row0 = deCasteljau_t(uu, matrix_00, matrix_01, matrix_02, matrix_03);
-      const Vec3<T> row1 = deCasteljau_t(uu, matrix_10, matrix_11, matrix_12, matrix_13);
-      const Vec3<T> row2 = deCasteljau_t(uu, matrix_20, matrix_21, matrix_22, matrix_23);
-      const Vec3<T> row3 = deCasteljau_t(uu, matrix_30, matrix_31, matrix_32, matrix_33);
+      const Vec3<T> row0 = deCasteljau(uu, matrix_00, matrix_01, matrix_02, matrix_03);
+      const Vec3<T> row1 = deCasteljau(uu, matrix_10, matrix_11, matrix_12, matrix_13);
+      const Vec3<T> row2 = deCasteljau(uu, matrix_20, matrix_21, matrix_22, matrix_23);
+      const Vec3<T> row3 = deCasteljau(uu, matrix_30, matrix_31, matrix_32, matrix_33);
       
-      const Vec3<T> tangentV = deCasteljau_tangent_t(vv, row0, row1, row2, row3);
+      const Vec3<T> tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
       
       /* normal = tangentU x tangentV */
       const Vec3<T> n = cross(tangentV,tangentU);
