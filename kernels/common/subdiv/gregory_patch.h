@@ -26,20 +26,6 @@ namespace embree
     Vec3fa v[4][4];
     Vec3fa f[2][2];
     
-    __forceinline GregoryPatch () {
-    }
-    
-    __forceinline GregoryPatch (const Vec3fa matrix[4][4], const Vec3fa f_m[2][2]) 
-    {
-      for (size_t y=0;y<4;y++)
-	for (size_t x=0;x<4;x++)
-	  v[y][x] = (Vec3fa_t)matrix[y][x];
-      
-      for (size_t y=0;y<2;y++)
-	for (size_t x=0;x<2;x++)
-	  f[y][x] = (Vec3fa_t)f_m[y][x];
-    }
-    
     __forceinline Vec3fa& p0() { return v[0][0]; }
     __forceinline Vec3fa& p1() { return v[0][3]; }
     __forceinline Vec3fa& p2() { return v[3][3]; }
@@ -179,7 +165,6 @@ namespace embree
       e1_p() = initPositiveEdgeVertex(patch,1, p1());
       e2_p() = initPositiveEdgeVertex(patch,2, p2());
       e3_p() = initPositiveEdgeVertex(patch,3, p3());
-
 
       e0_m() = initNegativeEdgeVertex(patch,0, p0());
       e1_m() = initNegativeEdgeVertex(patch,1, p1());
