@@ -239,7 +239,7 @@ namespace embree
     {
       if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
-	matrix_11 = matrix[1][1];
+	matrix_11 = matrix[1][1]; // FIXME: this is wrong, should select between f0_p and f0_m
 	matrix_12 = matrix[1][2];
 	matrix_22 = matrix[2][2];
 	matrix_21 = matrix[2][1];	 
@@ -343,15 +343,10 @@ namespace embree
       const T one_minus_uu = T(1.0f) - uu;
       const T one_minus_vv = T(1.0f) - vv;      
       
-      const T inv0 = rcp(uu+vv);
-      const T inv1 = rcp(one_minus_uu+vv);
-      const T inv2 = rcp(one_minus_uu+one_minus_vv);
-      const T inv3 = rcp(uu+one_minus_vv);
-      
-      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * rcp(uu+vv);
+      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * rcp(one_minus_uu+vv);
+      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * rcp(one_minus_uu+one_minus_vv);
+      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
       
       const Vec3<T> F0( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
       const Vec3<T> F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
@@ -407,18 +402,13 @@ namespace embree
       const T one_minus_uu = T(1.0f) - uu;
       const T one_minus_vv = T(1.0f) - vv;      
       
-      const T inv0 = rcp(uu+vv);
-      const T inv1 = rcp(one_minus_uu+vv);
-      const T inv2 = rcp(one_minus_uu+one_minus_vv);
-      const T inv3 = rcp(uu+one_minus_vv);
-      
-      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * inv0;
-      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * inv1;
-      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2;
-      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * inv3;
+      const Vec3<T> f0_i = (          uu * f0_p +           vv * f0_m) * rcp(uu+vv);
+      const Vec3<T> f1_i = (one_minus_uu * f1_m +           vv * f1_p) * rcp(one_minus_uu+vv);
+      const Vec3<T> f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * rcp(one_minus_uu+one_minus_vv);
+      const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
 
 #if 1
-      const M m_border0 = (uu == 0.0f) & (vv == 0.0f);
+      const M m_border0 = (uu == 0.0f) & (vv == 0.0f); // FIXME: why is eval different?
       const M m_border1 = (uu == 1.0f) & (vv == 0.0f);
       const M m_border2 = (uu == 1.0f) & (vv == 1.0f);
       const M m_border3 = (uu == 0.0f) & (vv == 1.0f);
@@ -474,9 +464,9 @@ namespace embree
     __forceinline BBox3fa bounds() const
     {
       const Vec3fa *const cv = &v[0][0];
-      BBox3fa bounds ( cv[0] );
-      for (size_t i = 1; i<16 ; i++)
-	bounds.extend( cv[i] );
+      BBox3fa bounds (cv[0]);
+      for (size_t i=1; i<16; i++) 
+        bounds.extend( cv[i] );
       bounds.extend(f[0][0]);
       bounds.extend(f[1][0]);
       bounds.extend(f[1][1]);
