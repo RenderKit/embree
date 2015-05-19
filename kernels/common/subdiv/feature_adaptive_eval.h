@@ -25,7 +25,7 @@ namespace embree
   template<typename Vertex>
     struct FeatureAdaptivePointEval
   {
-    typedef BSplinePatchTT<Vertex> BSplinePatch;
+    typedef BSplinePatchT<Vertex> BSplinePatch;
     typedef CatmullClarkPatchT<Vertex> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatchT<Vertex> GeneralCatmullClarkPatch;
 
@@ -35,7 +35,7 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
       : u(u), v(v)
     {
-      const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps
+      const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps, add assertions
       const float uu = clamp(u,0.0f,1.0f); 
       eval(patch,Vec2f(uu,vv),size_t(0));
     }
@@ -160,7 +160,7 @@ namespace embree
     {
       //CatmullClarkPatchT<Vertex> patch;
       //patch.init2(edge,loader);
-      BSplinePatchTT<Vertex> bspline;
+      BSplinePatchT<Vertex> bspline;
       //bspline.init(patch);
       bspline.init(edge,loader);
       return bspline.eval(u,v);
