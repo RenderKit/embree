@@ -27,7 +27,6 @@ namespace embree
     Vec3fa f[2][2];
     
     __forceinline GregoryPatch () {
-      memset(this,0,sizeof(GregoryPatch));
     }
     
     __forceinline GregoryPatch (const Vec3fa matrix[4][4], const Vec3fa f_m[2][2]) 
