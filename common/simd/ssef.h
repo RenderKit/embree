@@ -74,13 +74,16 @@ namespace embree
       return _mm_loadu_ps((float*)a); 
     }
 
-    static __forceinline ssef loadu( const float* const a, const size_t n) // FIXME: is there a better way of implementing this
+    static __forceinline ssef loadu( const float* const a, const size_t n) // FIXME: optimize
     {
-      const float x = n >= 1 ? a[0] : 0.0f; 
-      const float y = n >= 2 ? a[1] : 0.0f;
-      const float z = n >= 3 ? a[2] : 0.0f;
-      const float w = n >= 4 ? a[3] : 0.0f;
-      return ssef(x,y,z,w);
+      assert(n<=4);
+      if (likely(n==4)) return loadu(a);
+      else switch (n) {
+        case 3: return ssef(a[0],a[1],a[2],0.0f);
+        case 2: return ssef(a[0],a[1],0.0f,0.0f);
+        case 1: return ssef(a[0]);
+        default: return ssef(0.0f);
+        }
     }
 
     static __forceinline ssef load_nt ( const float* ptr ) {

@@ -305,8 +305,15 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
-    
-    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+
+    Geometry* geom = nullptr;
+#if defined(__TARGET_AVX__)
+    if (hasISA(AVX))
+      geom = new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    else 
+#endif
+      geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+
     return geom->id;
   }
 

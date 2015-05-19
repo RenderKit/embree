@@ -141,6 +141,8 @@ ENDIF ()
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
 
+    ../common/scene_subdiv_mesh_avx.cpp
+
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp

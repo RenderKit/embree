@@ -492,4 +492,10 @@ namespace embree
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
   };
+
+  class SubdivMeshAVX : public SubdivMesh
+  {
+    using SubdivMesh::SubdivMesh; // inherit all constructors
+    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats);
+  };
 };

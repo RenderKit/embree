@@ -87,9 +87,21 @@ namespace embree
     static __forceinline void store(avxf* ptr, const avxf& f ) { 
       return _mm256_store_ps((float*)ptr,f);
     }
+
+    static __forceinline avxf loadu( const float* const a) { 
+      return _mm256_loadu_ps(a); 
+    }
     
     static __forceinline void storeu(float* ptr, const avxf& f ) { 
       return _mm256_storeu_ps(ptr,f);
+    }
+
+    static __forceinline avxf loadu( const float* const a, const size_t n) 
+    { 
+      assert(n<=8);
+      if (likely(n==8)) return loadu(a);
+      else if (n>4) return avxf(ssef::loadu(a),ssef::loadu(a+4,n-4));
+      else return avxf(ssef::loadu(a,n));
     }
     
     static __forceinline void store( const avxb& mask, avxf* ptr, const avxf& f ) { 
@@ -258,13 +270,17 @@ namespace embree
 
 #if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
   __forceinline const avxf select(const int m, const avxf& t, const avxf& f) {
-	  return select(avxb(m), t, f); // workaround for clang and Microsoft compiler bugs
+    return select(avxb(m), t, f); // workaround for clang and Microsoft compiler bugs
   }
 #else
   __forceinline const avxf select( const int m, const avxf& t, const avxf& f ) { 
-	  return _mm256_blend_ps(f, t, m);
+    return _mm256_blend_ps(f, t, m);
   }
 #endif
+
+  __forceinline bool isvalid ( const avxf& v ) {
+    return all((v > avxf(-FLT_LARGE)) & (v < avxf(+FLT_LARGE)));
+  }
 
   __forceinline bool is_finite ( const avxf& a ) { 
     return all((a >= avxf(-FLT_MAX) & (a <= avxf(+FLT_MAX))));
