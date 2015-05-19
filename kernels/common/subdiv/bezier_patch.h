@@ -49,7 +49,7 @@ namespace embree
   {
   public:
 
-    static __forceinline Vec3fa eval_bezier(const Vec3fa matrix[4][4], const float &uu, const float &vv) 
+    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const float& uu, const float& vv) 
     {      
       const float one_minus_uu = 1.0f - uu;
       const float one_minus_vv = 1.0f - vv;      
@@ -73,11 +73,8 @@ namespace embree
       return res;
     }
 
-    static __forceinline Vec3fa normal_bezier(const Vec3fa matrix[4][4],
-                                              const float uu,
-                                              const float vv) 
+    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4], const float uu, const float vv) 
     {
-      
       /* tangentU */
       const Vec3fa_t col0 = deCasteljau(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
       const Vec3fa_t col1 = deCasteljau(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[1][1], (Vec3fa_t)matrix[2][1], (Vec3fa_t)matrix[3][1]);
@@ -101,9 +98,7 @@ namespace embree
     }
     
     template<class M, class T>
-      static __forceinline Vec3<T> eval_t_bezier(const Vec3fa matrix[4][4],
-						 const T &uu,
-						 const T &vv) 
+      static __forceinline Vec3<T> eval(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
     {      
       const T one_minus_uu = 1.0f - uu;
       const T one_minus_vv = 1.0f - vv;      
@@ -139,9 +134,7 @@ namespace embree
     }
 
     template<class M, class T>
-      static __forceinline Vec3<T> normal_t_bezier(const Vec3fa matrix[4][4],
-						   const T &uu,
-						   const T &vv) 
+      static __forceinline Vec3<T> normal(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
     {
       
       const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
@@ -184,21 +177,5 @@ namespace embree
       const Vec3<T> n = cross(tangentV,tangentU);
       return n;
     }
-    
-    
-#if !defined(__MIC__)
-    
-#if defined(__AVX__)    
-    
-    static __forceinline avx3f eval8_bezier  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t_bezier<avxb,avxf>(matrix,uu,vv); }
-    static __forceinline avx3f normal8_bezier(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t_bezier<avxb,avxf>(matrix,uu,vv); }
-    
-#endif
-    
-    static __forceinline sse3f eval4_bezier  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t_bezier<sseb,ssef>(matrix,uu,vv); }
-    static __forceinline sse3f normal4_bezier(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t_bezier<sseb,ssef>(matrix,uu,vv); }
-    
-#endif
-    
   };
 }

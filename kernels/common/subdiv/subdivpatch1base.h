@@ -69,10 +69,7 @@ namespace embree
     /* v00 - v10 - v01 - v11 - v02 - v12 */
     /* v10 - v20 - v11 - v21 - v12 - v22 */
    
-    Quad2x2() 
-      {
-      }
-
+    Quad2x2() {}
 
     float vtx_x[12];
     float vtx_y[12];
@@ -85,7 +82,7 @@ namespace embree
     float vtx_v[12];
 #endif
 
-    static __forceinline ssei u16_to_ssei(const unsigned short *const source) // FIXME: move to ssei header
+    static __forceinline ssei u16_to_ssei(const unsigned short* const source) // FIXME: move to ssei header
     {
 #if defined (__SSE4_1__)
       return _mm_cvtepu16_epi32(loadu4i(source));
@@ -94,22 +91,13 @@ namespace embree
 #endif
     } 
 
-    static __forceinline ssef u16_to_ssef(const unsigned short *const source)
-    {
-      const ssei t = u16_to_ssei(source);
-      return ssef(t) * 1.0f/65535.0f;
+    static __forceinline ssef u16_to_ssef(const unsigned short* const source) {
+      return ssef(u16_to_ssei(source)) * 1.0f/65535.0f;
     } 
 
-    static __forceinline float u16_to_float(const unsigned short source)
-    {
-      return (float)source * 1.0f/65535.0f;
-    } 
-
-
+    static __forceinline float u16_to_float(const unsigned short source) { return (float)source * 1.0f/65535.0f; } 
     static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
     static __forceinline ssei float_to_u16(const ssef &f) { return (ssei)(f*65535.0f); }
- 
-
 
     __forceinline void initFrom3x3Grid( const float *const source,
                                         float *const dest,
@@ -516,7 +504,7 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval_bezier( patch.v, uu, vv );
+        return BezierPatch::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -528,7 +516,7 @@ namespace embree
 				const float &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal_bezier( patch.v, uu, vv );
+        return BezierPatch::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -541,7 +529,7 @@ namespace embree
 			      const ssef &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval4_bezier( patch.v, uu, vv );
+        return BezierPatch::eval<sseb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -553,7 +541,7 @@ namespace embree
                                 const ssef &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal4_bezier( patch.v, uu, vv );
+        return BezierPatch::normal<sseb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -568,7 +556,7 @@ namespace embree
 			      const avxf &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval8_bezier( patch.v, uu, vv );
+        return BezierPatch::eval<avxb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -579,7 +567,7 @@ namespace embree
                                 const avxf &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal8_bezier( patch.v, uu, vv );
+        return BezierPatch::normal<avxb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
