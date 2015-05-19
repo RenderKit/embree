@@ -20,12 +20,13 @@
 #include "common/subdiv/bspline_patch.h"
 #include "common/subdiv/bezier_patch.h"
 #include "common/subdiv/gregory_patch.h"
+#include "common/subdiv/gregory_patch_dense.h"
 #include "common/subdiv/gregory_triangle_patch.h"
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRITIZED_UV 1
+#define DISCRITIZED_UV 1 // FIXME: typo
 
 namespace embree
 {
@@ -38,7 +39,7 @@ namespace embree
 
 
   template<class T>
-    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64)
+    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64) // FIXME: move to different place
     {
       void *ptr = alloca(elements * sizeof(T) + alignment);
       return (T*)ALIGN_PTR(ptr,alignment);
@@ -519,7 +520,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::eval( patch.v, uu, vv );
+	return DenseGregoryPatch::eval( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -531,7 +532,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::normal( patch.v, uu, vv );
+	return DenseGregoryPatch::normal( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -544,7 +545,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::eval_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch::eval_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -556,7 +557,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::normal_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch::normal_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -571,7 +572,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::eval_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch::eval_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
@@ -582,7 +583,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::normal_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch::normal_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
 #endif
@@ -597,7 +598,7 @@ namespace embree
 	}
       else 
 	{	  
-	  return GregoryPatch::eval4( patch.v, uu, vv );
+	  return DenseGregoryPatch::eval4( patch.v, uu, vv );
 	}     
     }
 
@@ -607,7 +608,7 @@ namespace embree
       if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else 
-        return GregoryPatch::eval16( patch.v, uu, vv );
+        return DenseGregoryPatch::eval16( patch.v, uu, vv );
     }
 
     __forceinline mic3f normal16(const mic_f &uu,
@@ -616,7 +617,7 @@ namespace embree
       if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
       else
-        return GregoryPatch::normal16( patch.v, uu, vv );
+        return DenseGregoryPatch::normal16( patch.v, uu, vv );
     }
 #endif
 
