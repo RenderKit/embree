@@ -261,10 +261,10 @@ namespace embree
 	const Vec3fa_t f2_m = f_m[1][1];
 	const Vec3fa_t f3_m = f_m[1][0];
         
-	const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m) * 1.0f/(uu+vv);
-	const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p) * 1.0f/(1.0f-uu+vv);
-	const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m) * 1.0f/(2.0f-uu-vv);
-	const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p) * 1.0f/(1.0f+uu-vv);
+	const Vec3fa_t F0 = (      uu  * f0_p +       vv  * f0_m)/(uu+vv);
+	const Vec3fa_t F1 = ((1.0f-uu) * f1_m +       vv  * f1_p)/(1.0f-uu+vv);
+	const Vec3fa_t F2 = ((1.0f-uu) * f2_p + (1.0f-vv) * f2_m)/(2.0f-uu-vv);
+	const Vec3fa_t F3 = (      uu  * f3_m + (1.0f-vv) * f3_p)/(1.0f+uu-vv);
         
 	matrix_11 = F0;
 	matrix_12 = F1;
