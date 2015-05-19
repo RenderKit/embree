@@ -20,9 +20,11 @@
 
 namespace embree
 {  
-  class __aligned(64) GregoryTrianglePatch : public BSplinePatchT<Vec3fa> 
+  class __aligned(64) GregoryTrianglePatch 
   {
   public:
+
+    Vec3fa v[4][4];
         
     GregoryTrianglePatch() {
       memset(this,0,sizeof(GregoryTrianglePatch));
