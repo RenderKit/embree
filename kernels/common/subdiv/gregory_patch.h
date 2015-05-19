@@ -87,35 +87,35 @@ namespace embree
     __forceinline const Vec3fa& f2_m() const { return f[1][1]; }
     __forceinline const Vec3fa& f3_m() const { return f[1][0]; }
     
-    __forceinline Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index) {
+    __forceinline Vec3fa initCornerVertex(const CatmullClarkPatch3fa& irreg_patch, const size_t index) {
       return irreg_patch.ring[index].getLimitVertex();
     }
     
-    __forceinline Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx) {
+    __forceinline Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa& irreg_patch, const size_t index, const Vec3fa& p_vtx) {
       return 1.0f/3.0f * irreg_patch.ring[index].getLimitTangent() + p_vtx;
     }
     
-    __forceinline Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx) {
+    __forceinline Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa& irreg_patch, const size_t index, const Vec3fa& p_vtx) {
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
     
-    void initFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
+    void initFaceVertex(const CatmullClarkPatch3fa& irreg_patch,
 			const size_t index,
-			const Vec3fa &p_vtx,
-			const Vec3fa &e0_p_vtx,
-			const Vec3fa &e1_m_vtx,
+			const Vec3fa& p_vtx,
+			const Vec3fa& e0_p_vtx,
+			const Vec3fa& e1_m_vtx,
 			const unsigned int face_valence_p1,
-			const Vec3fa &e0_m_vtx,
-			const Vec3fa &e3_p_vtx,
+			const Vec3fa& e0_m_vtx,
+			const Vec3fa& e3_p_vtx,
 			const unsigned int face_valence_p3,
-			Vec3fa &f_p_vtx,
-			Vec3fa &f_m_vtx)
+			Vec3fa& f_p_vtx,
+			Vec3fa& f_m_vtx)
     {
       const unsigned int face_valence = irreg_patch.ring[index].face_valence;
       const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
       const unsigned int border_index = irreg_patch.ring[index].border_index;
       
-      const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
+      const Vec3fa& vtx     = irreg_patch.ring[index].vtx;
       const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
       const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
       const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
@@ -262,10 +262,10 @@ namespace embree
 						   const Vec3fa f_m[2][2],
 						   const float uu,
 						   const float vv,
-						   Vec3fa_t &matrix_11,
-						   Vec3fa_t &matrix_12,
-						   Vec3fa_t &matrix_22,
-						   Vec3fa_t &matrix_21)
+						   Vec3fa_t& matrix_11,
+						   Vec3fa_t& matrix_12,
+						   Vec3fa_t& matrix_22,
+						   Vec3fa_t& matrix_21)
     {
       if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
@@ -299,7 +299,7 @@ namespace embree
     } 
 
     template<class T, class S>
-      static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
+      static __forceinline T deCasteljau_t(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
     {
       const S one_minus_uu = 1.0f - uu;      
       const T v0_1 = one_minus_uu * v0   + uu * v1;
@@ -312,7 +312,7 @@ namespace embree
     }
     
     template<class T, class S>
-      static __forceinline T deCasteljau_tangent_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
+      static __forceinline T deCasteljau_tangent_t(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
     {
       const S one_minus_uu = 1.0f - uu;      
       const T v0_1         = one_minus_uu * v0   + uu * v1;
@@ -322,13 +322,40 @@ namespace embree
       const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
       return v1_2 - v0_2;      
     }
-    
-    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
-				       const Vec3fa f_m[2][2],
-				       const float uu,
-				       const float vv) 
+
+    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const Vec3fa f[2][2], const float& uu, const float& vv) 
     {
+      Vec3fa_t v_11, v_12, v_22, v_21;
+      computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
       
+      const float one_minus_uu = 1.0f - uu;
+      const float one_minus_vv = 1.0f - vv;      
+      
+      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
+      const float B3_u = uu * uu * uu;
+      const float B3_v = vv * vv * vv;
+      
+      const Vec3fa_t res = 
+	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
+	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
+	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
+	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+      
+      return res;
+    }
+
+    __forceinline Vec3fa eval(const float uu, const float vv) const {
+      return eval(v,f,uu,vv);
+    }
+
+    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4], const Vec3fa f_m[2][2], const float uu, const float vv) 
+    {
+      /* interpolate inner vertices */
       Vec3fa_t matrix_11, matrix_12, matrix_22, matrix_21;
       computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
       
@@ -358,45 +385,8 @@ namespace embree
       return normal(v,f,uu,vv);
     }
 
-    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const Vec3fa f[2][2], const float &uu, const float &vv) 
-    {
-      //Vec3fa f[2][2];
-      //f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
-      //f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
-      //f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
-      //f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
-      
-      Vec3fa_t v_11, v_12, v_22, v_21;
-      computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
-      
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
-
-
-      const Vec3fa_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
-      
-      return res;
-    }
-
-    __forceinline Vec3fa eval(const float &uu, const float &vv) {
-      return eval(v,f,uu,vv);
-    }
-
     template<class M, class T>
-      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T &uu, const T &vv) 
+      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -467,7 +457,7 @@ namespace embree
     }
     
     template<class M, class T>
-      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T &uu, const T &vv) 
+      static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
@@ -548,33 +538,6 @@ namespace embree
       return n;
     }
     
-    __forceinline Vec3fa eval(const float uu, const float vv) const
-    {
-      Vec3fa_t v_11, v_12, v_22, v_21;
-      computeInnerVertices(v,f,uu,vv,v_11, v_12, v_22, v_21);
-      
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
-      
-      const Vec3fa_t res = 
-	(B0_u * v[0][0] + B1_u * v[0][1] + B2_u * v[0][2] + B3_u * v[0][3]) * B0_v + 
-	(B0_u * v[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * v[1][3]) * B1_v + 
-	(B0_u * v[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * v[2][3]) * B2_v + 
-	(B0_u * v[3][0] + B1_u * v[3][1] + B2_u * v[3][2] + B3_u * v[3][3]) * B3_v; 
-      
-      return res;
-      
-    }
-    
     __forceinline BBox3fa bounds() const
     {
       const Vec3fa *const cv = &v[0][0];
@@ -588,14 +551,14 @@ namespace embree
       return bounds;
     }
     
-    friend std::ostream &operator<<(std::ostream &o, const GregoryPatch &p)
+    friend std::ostream& operator<<(std::ostream& o, const GregoryPatch& p)
     {
-      for (size_t y=0;y<4;y++)
-	for (size_t x=0;x<4;x++)
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
 	  o << "v[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
       
-      for (size_t y=0;y<2;y++)
-	for (size_t x=0;x<2;x++)
+      for (size_t y=0; y<2; y++)
+	for (size_t x=0; x<2; x++)
 	  o << "f[" << y << "][" << x << "] " << p.f[y][x] << std::endl;
       return o;
     } 
