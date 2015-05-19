@@ -544,7 +544,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::eval4( patch.v, uu, vv );
+	return GregoryPatch::eval_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -556,7 +556,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::normal4( patch.v, uu, vv );
+	return GregoryPatch::normal_t<sseb>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -571,7 +571,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::eval8( patch.v, uu, vv );
+	return GregoryPatch::eval_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
@@ -582,7 +582,7 @@ namespace embree
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return GregoryPatch::normal8( patch.v, uu, vv );
+	return GregoryPatch::normal_t<avxb>( patch.v, uu, vv );
       return avx3f( zero );
     }
 #endif

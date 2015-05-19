@@ -30,42 +30,40 @@ namespace embree
                                       const float edge_level[4]) 
     : geom(gID),prim(pID),flags(0),root_ref(0)
   {
-    assert(sizeof(SubdivPatch1Base) == 5 * 64);
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
-    for (size_t i=0;i<4;i++)
-      {
-        /* need to reverse input here */
-        u[i] = (unsigned short)(uv[i].x * 65535.0f);
-        v[i] = (unsigned short)(uv[i].y * 65535.0f);
-      }
+    for (size_t i=0; i<4; i++) {
+      u[i] = (unsigned short)(uv[i].x * 65535.0f);
+      v[i] = (unsigned short)(uv[i].y * 65535.0f);
+    }
 
     updateEdgeLevels(edge_level,mesh);
      
     /* determine whether patch is regular or not */
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
-      {
+    {
 #if 1
-        flags |= BEZIER_PATCH;
-        GregoryPatch gpatch; 
-        gpatch.init_bezier( ipatch ); 
-        gpatch.exportDenseConrolPoints( patch.v );
+      flags |= BEZIER_PATCH;
+      GregoryPatch gpatch; 
+      gpatch.init_bezier( ipatch ); 
+      gpatch.exportDenseConrolPoints( patch.v );
 #else
-        flags |= BSPLINE_PATCH;
-        patch.init( ipatch );
+      flags |= BSPLINE_PATCH;
+      patch.init( ipatch );
 #endif
-      }
+    }
     else
-      {
-        flags |= GREGORY_PATCH;
-        GregoryPatch gpatch; 
-        gpatch.init( ipatch ); 
-        gpatch.exportDenseConrolPoints( patch.v );
-      }
+    {
+      flags |= GREGORY_PATCH;
+      GregoryPatch gpatch; 
+      gpatch.init( ipatch ); 
+      gpatch.exportDenseConrolPoints( patch.v );
+    }
   }
 
-  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
+  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh) 
     : geom(gID),prim(pID),flags(0),root_ref(0)

@@ -26,12 +26,11 @@ namespace embree
     Vec3fa v[4][4];
     Vec3fa f[2][2];
     
-    GregoryPatch() {
+    __forceinline GregoryPatch () {
       memset(this,0,sizeof(GregoryPatch));
     }
     
-    GregoryPatch(const Vec3fa matrix[4][4],
-		 const Vec3fa f_m[2][2]) 
+    __forceinline GregoryPatch (const Vec3fa matrix[4][4], const Vec3fa f_m[2][2]) 
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)
@@ -42,83 +41,63 @@ namespace embree
 	  f[y][x] = (Vec3fa_t)f_m[y][x];
     }
     
-    Vec3fa& p0() { return v[0][0]; }
-    Vec3fa& p1() { return v[0][3]; }
-    Vec3fa& p2() { return v[3][3]; }
-    Vec3fa& p3() { return v[3][0]; }
+    __forceinline Vec3fa& p0() { return v[0][0]; }
+    __forceinline Vec3fa& p1() { return v[0][3]; }
+    __forceinline Vec3fa& p2() { return v[3][3]; }
+    __forceinline Vec3fa& p3() { return v[3][0]; }
     
-    Vec3fa& e0_p() { return v[0][1]; }
-    Vec3fa& e0_m() { return v[1][0]; }
-    Vec3fa& e1_p() { return v[1][3]; }
-    Vec3fa& e1_m() { return v[0][2]; }
-    Vec3fa& e2_p() { return v[3][2]; }
-    Vec3fa& e2_m() { return v[2][3]; }
-    Vec3fa& e3_p() { return v[2][0]; }
-    Vec3fa& e3_m() { return v[3][1]; }
+    __forceinline Vec3fa& e0_p() { return v[0][1]; }
+    __forceinline Vec3fa& e0_m() { return v[1][0]; }
+    __forceinline Vec3fa& e1_p() { return v[1][3]; }
+    __forceinline Vec3fa& e1_m() { return v[0][2]; }
+    __forceinline Vec3fa& e2_p() { return v[3][2]; }
+    __forceinline Vec3fa& e2_m() { return v[2][3]; }
+    __forceinline Vec3fa& e3_p() { return v[2][0]; }
+    __forceinline Vec3fa& e3_m() { return v[3][1]; }
     
-    Vec3fa& f0_p() { return v[1][1]; }
-    Vec3fa& f1_p() { return v[1][2]; }
-    Vec3fa& f2_p() { return v[2][2]; }
-    Vec3fa& f3_p() { return v[2][1]; }
-    Vec3fa& f0_m() { return f[0][0]; }
-    Vec3fa& f1_m() { return f[0][1]; }
-    Vec3fa& f2_m() { return f[1][1]; }
-    Vec3fa& f3_m() { return f[1][0]; }
+    __forceinline Vec3fa& f0_p() { return v[1][1]; }
+    __forceinline Vec3fa& f1_p() { return v[1][2]; }
+    __forceinline Vec3fa& f2_p() { return v[2][2]; }
+    __forceinline Vec3fa& f3_p() { return v[2][1]; }
+    __forceinline Vec3fa& f0_m() { return f[0][0]; }
+    __forceinline Vec3fa& f1_m() { return f[0][1]; }
+    __forceinline Vec3fa& f2_m() { return f[1][1]; }
+    __forceinline Vec3fa& f3_m() { return f[1][0]; }
     
-    const Vec3fa& p0() const { return v[0][0]; }
-    const Vec3fa& p1() const { return v[0][3]; }
-    const Vec3fa& p2() const { return v[3][3]; }
-    const Vec3fa& p3() const { return v[3][0]; }
+    __forceinline const Vec3fa& p0() const { return v[0][0]; }
+    __forceinline const Vec3fa& p1() const { return v[0][3]; }
+    __forceinline const Vec3fa& p2() const { return v[3][3]; }
+    __forceinline const Vec3fa& p3() const { return v[3][0]; }
     
-    const Vec3fa& e0_p() const { return v[0][1]; }
-    const Vec3fa& e0_m() const { return v[1][0]; }
-    const Vec3fa& e1_p() const { return v[1][3]; }
-    const Vec3fa& e1_m() const { return v[0][2]; }
-    const Vec3fa& e2_p() const { return v[3][2]; }
-    const Vec3fa& e2_m() const { return v[2][3]; }
-    const Vec3fa& e3_p() const { return v[2][0]; }
-    const Vec3fa& e3_m() const { return v[3][1]; }
+    __forceinline const Vec3fa& e0_p() const { return v[0][1]; }
+    __forceinline const Vec3fa& e0_m() const { return v[1][0]; }
+    __forceinline const Vec3fa& e1_p() const { return v[1][3]; }
+    __forceinline const Vec3fa& e1_m() const { return v[0][2]; }
+    __forceinline const Vec3fa& e2_p() const { return v[3][2]; }
+    __forceinline const Vec3fa& e2_m() const { return v[2][3]; }
+    __forceinline const Vec3fa& e3_p() const { return v[2][0]; }
+    __forceinline const Vec3fa& e3_m() const { return v[3][1]; }
     
-    const Vec3fa& f0_p() const { return v[1][1]; }
-    const Vec3fa& f1_p() const { return v[1][2]; }
-    const Vec3fa& f2_p() const { return v[2][2]; }
-    const Vec3fa& f3_p() const { return v[2][1]; }
-    const Vec3fa& f0_m() const { return f[0][0]; }
-    const Vec3fa& f1_m() const { return f[0][1]; }
-    const Vec3fa& f2_m() const { return f[1][1]; }
-    const Vec3fa& f3_m() const { return f[1][0]; }
+    __forceinline const Vec3fa& f0_p() const { return v[1][1]; }
+    __forceinline const Vec3fa& f1_p() const { return v[1][2]; }
+    __forceinline const Vec3fa& f2_p() const { return v[2][2]; }
+    __forceinline const Vec3fa& f3_p() const { return v[2][1]; }
+    __forceinline const Vec3fa& f0_m() const { return f[0][0]; }
+    __forceinline const Vec3fa& f1_m() const { return f[0][1]; }
+    __forceinline const Vec3fa& f2_m() const { return f[1][1]; }
+    __forceinline const Vec3fa& f3_m() const { return f[1][0]; }
     
-    
-    Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index)
-    {
+    __forceinline Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index) {
       return irreg_patch.ring[index].getLimitVertex();
     }
     
-    
-    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
-    {
-      const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
-#if 0
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * tangent + p_vtx;
-#else
-      return 1.0f/3.0f * tangent + p_vtx;
-#endif
+    __forceinline Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx) {
+      return 1.0f/3.0f * irreg_patch.ring[index].getLimitTangent() + p_vtx;
     }
     
-    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
-    {
-      const Vec3fa tangent = irreg_patch.ring[index].getSecondLimitTangent();
-#if 0
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * tangent + p_vtx;
-#else
-      return 1.0f/3.0f * tangent + p_vtx;
-#endif
+    __forceinline Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx) {
+      return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
-    
     
     void initFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
 			const size_t index,
@@ -185,7 +164,6 @@ namespace embree
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
-
     __noinline void init(const CatmullClarkPatch3fa& patch)
     {
       assert( patch.ring[0].hasValidPositions() );
@@ -193,7 +171,6 @@ namespace embree
       assert( patch.ring[2].hasValidPositions() );
       assert( patch.ring[3].hasValidPositions() );
       
-
       p0() = initCornerVertex(patch,0);
       p1() = initCornerVertex(patch,1);
       p2() = initCornerVertex(patch,2);
@@ -228,7 +205,7 @@ namespace embree
       init(qpatch);
     }
 
-    __noinline void init_bezier(const CatmullClarkPatch3fa& patch)
+    __noinline void init_bezier(const CatmullClarkPatch3fa& patch) // FIXME: this should go to bezier class, initialization is not correct
     {
       assert( patch.isRegular() );
       init( patch );
@@ -241,7 +218,6 @@ namespace embree
       f2_m() = Vec3fa( zero );
       f3_m() = Vec3fa( zero );      
     }
-
     
     __forceinline void exportControlPoints( Vec3fa matrix[4][4], Vec3fa f_m[2][2] ) const
     {
@@ -378,21 +354,15 @@ namespace embree
       return n;     
     }
    
-    __forceinline Vec3fa normal( const float uu, const float vv) const
-    {
+    __forceinline Vec3fa normal( const float uu, const float vv) const {
       return normal(v,f,uu,vv);
     }
 
-    static __forceinline float extract_f_m(const Vec3fa matrix[4][4],
-					   const size_t y,
-					   const size_t x)
-    {
+    static __forceinline float extract_f_m(const Vec3fa matrix[4][4], const size_t y, const size_t x) {
       return matrix[y][x].w;
     }
     
-    static __forceinline Vec3fa extract_f_m_Vec3fa(const Vec3fa matrix[4][4],
-						   const size_t n)
-    {
+    static __forceinline Vec3fa extract_f_m_Vec3fa(const Vec3fa matrix[4][4], const size_t n) {
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
     
@@ -622,13 +592,13 @@ namespace embree
     
 #if defined(__AVX__)    
     
-    static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t<avxb,avxf>(matrix,uu,vv); }
-    static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
+     //static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return eval_t<avxb,avxf>(matrix,uu,vv); }
+     //static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
 
 #endif
     
-    static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t<sseb,ssef>(matrix,uu,vv); }
-    static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
+     //static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return eval_t<sseb,ssef>(matrix,uu,vv); }
+     //static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
 
 #else    
     
