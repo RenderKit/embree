@@ -84,29 +84,22 @@ namespace embree
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
     
-    void initFaceVertex(const CatmullClarkPatch3fa& irreg_patch,
-			const size_t index,
-			const Vec3fa& p_vtx,
-			const Vec3fa& e0_p_vtx,
-			const Vec3fa& e1_m_vtx,
-			const unsigned int face_valence_p1,
-			const Vec3fa& e0_m_vtx,
-			const Vec3fa& e3_p_vtx,
-			const unsigned int face_valence_p3,
-			Vec3fa& f_p_vtx,
-			Vec3fa& f_m_vtx)
+    void initFaceVertex(const CatmullClarkPatch3fa& irreg_patch, const size_t index, const Vec3fa& p_vtx, 
+                        const Vec3fa& e0_p_vtx, const Vec3fa& e1_m_vtx, const unsigned int face_valence_p1,
+ 			const Vec3fa& e0_m_vtx,	const Vec3fa& e3_p_vtx,	const unsigned int face_valence_p3,
+			Vec3fa& f_p_vtx, Vec3fa& f_m_vtx)
     {
       const unsigned int face_valence = irreg_patch.ring[index].face_valence;
       const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
       const unsigned int border_index = irreg_patch.ring[index].border_index;
       
       const Vec3fa& vtx     = irreg_patch.ring[index].vtx;
-      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
+      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter(0);
+      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter(0);
+      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter(1);
       
       Vec3fa c_i, e_i_p_1;
-      const bool hasHardEdge = \
+      const bool hasHardEdge =
         std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
         std::isinf(irreg_patch.ring[index].crease_weight[0]);
                 
@@ -141,11 +134,9 @@ namespace embree
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
       
       const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
-      
       f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
       
       const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
     }
 
