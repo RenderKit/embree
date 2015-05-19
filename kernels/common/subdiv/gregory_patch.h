@@ -206,10 +206,10 @@ namespace embree
 	  f_m[y][x] = (Vec3fa_t)f[y][x];
     }
     
-    __forceinline void exportDenseConrolPoints( Vec3fa matrix[4][4] ) const //store all f_m into 4th component of Vec3fa matrix
+    __forceinline void exportDenseConrolPoints( Vec3fa matrix[4][4] ) const 
     {
-      for (size_t y=0;y<4;y++)
-	for (size_t x=0;x<4;x++)
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
 	  matrix[y][x] = (Vec3fa_t)v[y][x];
       
       matrix[0][0].w = f[0][0].x;
