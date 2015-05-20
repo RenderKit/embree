@@ -25,6 +25,13 @@
 #include "scene.h"
 #include "raystream_log.h"
 
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#define _MM_DENORMALS_ZERO_ON   (0x0040)
+#define _MM_DENORMALS_ZERO_OFF  (0x0000)
+#define _MM_DENORMALS_ZERO_MASK (0x0040)
+#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
+#endif
+
 #if defined(TASKING_LOCKSTEP)
 #  include "tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
@@ -60,7 +67,7 @@ namespace embree
   class TBBAffinity: public tbb::task_scheduler_observer
   {
     void on_scheduler_entry( bool ) {
-      setAffinity(tbb::task_arena::current_thread_index());
+      setAffinity(TaskSchedulerTBB::threadIndex());
     }
   } tbb_affinity;
 #endif
@@ -140,6 +147,88 @@ namespace embree
   }
 #endif
 
+  void print_info()
+  {
+    std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
+    std::cout << "  Compiler : " << getCompilerName() << std::endl;
+    std::cout << "  Platform : " << getPlatformName() << std::endl;
+    std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+#if !defined(__MIC__)
+    const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
+    const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
+    std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
+#endif
+    std::cout << "  Config   : ";
+#if defined(TASKING_TBB)
+    std::cout << "TBB ";
+#endif
+#if defined(__TARGET_SSE41__)
+    std::cout << "SSE4.1 ";
+#endif
+#if defined(__TARGET_SSE42__)
+    std::cout << "SSE4.2 ";
+#endif
+#if defined(__TARGET_AVX__)
+    std::cout << "AVX ";
+#endif
+#if defined(__TARGET_AVX2__)
+    std::cout << "AVX2 ";
+#endif
+#if defined(__TARGET_AVX512__)
+    std::cout << "AVX512 ";
+#endif
+#if defined(TASKING_TBB_INTERNAL)
+    std::cout << "internal_tasking_system ";
+#endif
+#if defined(TASKING_LOCKSTEP)
+    std::cout << "internal_tasking_system ";
+#endif
+#if defined(RTCORE_RAY_MASK)
+    std::cout << "raymasks ";
+#endif
+#if defined (RTCORE_BACKFACE_CULLING)
+    std::cout << "backfaceculling ";
+#endif
+#if defined(RTCORE_INTERSECTION_FILTER)
+    std::cout << "intersection_filter ";
+#endif
+#if defined(RTCORE_BUFFER_STRIDE)
+    std::cout << "bufferstride ";
+#endif
+    std::cout << std::endl;
+
+    /* check of FTZ and DAZ flags are set in CSR */
+#if !defined(__MIC__)
+    if (!hasFTZ || !hasDAZ) {
+#if !defined(_DEBUG)
+      if (State::instance()->verbosity(1)) 
+#endif
+      {
+        std::cout << std::endl;
+        std::cout << "================================================================================" << std::endl;
+        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled " << std::endl 
+                  << "         in the MXCSR control and status register. This can have a severe " << std::endl
+                  << "         performance impact. Please enable these modes for each application " << std::endl
+                  << "         thread the following way:" << std::endl
+                  << std::endl 
+                  << "           #include \"xmmintrin.h\"" << std::endl 
+                  << "           #include \"pmmintrin.h\"" << std::endl 
+                  << std::endl 
+                  << "           _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);" << std::endl 
+                  << "           _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);" << std::endl;
+        std::cout << "================================================================================" << std::endl;
+        std::cout << std::endl;
+      }
+    }
+#endif
+
+#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
+    if (State::instance()->verbosity(1))
+      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
+#endif
+  }
+
   RTCORE_API void rtcInit(const char* cfg) 
   {
     RTCORE_CATCH_BEGIN;
@@ -162,51 +251,27 @@ namespace embree
     if (State::instance()->tessellation_cache_size)
       resizeTessellationCache( State::instance()->tessellation_cache_size );
 
+    /*! enable some floating point exceptions to catch bugs */
+    if (State::instance()->float_exceptions)
+    {
+      int exceptions = _MM_MASK_MASK;
+      //exceptions &= ~_MM_MASK_INVALID;
+      exceptions &= ~_MM_MASK_DENORM;
+      exceptions &= ~_MM_MASK_DIV_ZERO;
+      //exceptions &= ~_MM_MASK_OVERFLOW;
+      //exceptions &= ~_MM_MASK_UNDERFLOW;
+      //exceptions &= ~_MM_MASK_INEXACT;
+      _MM_SET_EXCEPTION_MASK(exceptions);
+    }
+
 #if defined(__MIC__) // FIXME: put into State::verify function
     if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
 
+    /* print info header */
     if (State::instance()->verbosity(1))
-    {
-      std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
-      std::cout << "  Compiler : " << getCompilerName() << std::endl;
-      std::cout << "  Platform : " << getPlatformName() << std::endl;
-      std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-      std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-#if !defined(__MIC__)
-      const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
-      const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
-      std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
-#endif
-      std::cout << "  Config   : ";
-#if defined(TASKING_TBB)
-      std::cout << "TBB ";
-#endif
-#if defined(TASKING_TBB_INTERNAL)
-      std::cout << "internal_tasking_system ";
-#endif
-#if defined(TASKING_LOCKSTEP)
-      std::cout << "internal_tasking_system ";
-#endif
-#if defined(RTCORE_RAY_MASK)
-      std::cout << "raymasks ";
-#endif
-#if defined (RTCORE_BACKFACE_CULLING)
-      std::cout << "backfaceculling ";
-#endif
-#if defined(RTCORE_INTERSECTION_FILTER)
-      std::cout << "intersection_filter ";
-#endif
-#if defined(RTCORE_BUFFER_STRIDE)
-      std::cout << "bufferstride ";
-#endif
-      std::cout << std::endl;
-
-#if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
-      std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
-#endif
-    }
+      print_info();
 
     /* CPU has to support at least SSE2 */
 #if !defined (__MIC__)
@@ -232,23 +297,6 @@ namespace embree
 
     if (State::instance()->verbosity(2)) 
       State::instance()->print();
-
-    /* check of FTZ and DAZ flags are set in CSR */
-#if !defined(__MIC__)
-    const bool hasFTZ = _mm_getcsr() & /*FTZ*/ (1<<15);
-    const bool hasDAZ = _mm_getcsr() & /*DAZ*/ (1<<6);
-    if (!hasFTZ || !hasDAZ) {
-#if !defined(_DEBUG)
-      if (State::instance()->verbosity(1)) 
-#endif
-      {
-        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled in the MXCSR control and status register. " << std::endl
-                  << "         This can have a severe performance impact. Please enable these modes for each application thread the following:" << std::endl
-                  << "           #include \"xmmintrin.h\"" << std::endl 
-                  << "           _mm_setcsr(_mm_getcsr() | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));" << std::endl;
-      }
-    }
-#endif
 
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads);
@@ -405,7 +453,8 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
 #if !defined(__MIC__)
     unsigned int mxcsr = _mm_getcsr();
-    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 #endif
     
      /* perform scene build */
@@ -1036,6 +1085,47 @@ namespace embree
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
     ((Scene*)scene)->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
+    RTCORE_CATCH_END;
+  }
+
+  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, 
+                                 float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcInterpolate);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,src,byteStride,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
+    RTCORE_CATCH_END;
+  }
+
+  RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
+                                  const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                  const float* src, size_t byteStride, 
+                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcInterpolateN);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    const int* valid = (const int*) valid_i;
+
+    __aligned(64) float P_tmp[256];
+    __aligned(64) float dPdu_tmp[256];
+    __aligned(64) float dPdv_tmp[256];
+    float* Pt = P ? P_tmp : nullptr;
+    float* dPdut = dPdu ? dPdu_tmp : nullptr;
+    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
+    
+    for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
+    {
+      if (valid && !valid[i]) continue;
+      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],src,byteStride,Pt,dPdut,dPdvt,numFloats);
+      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
+      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
+      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
+    }
     RTCORE_CATCH_END;
   }
 }

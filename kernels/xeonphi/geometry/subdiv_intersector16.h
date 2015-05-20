@@ -89,6 +89,7 @@ namespace embree
 						const mic_f &dir_xyz,
 						const mic_f &org_xyz,
 						Ray16& ray16,
+						const Precalculations &pre,
 						const unsigned int subdiv_patch_index) const
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
@@ -173,9 +174,10 @@ namespace embree
 	  prefetch<PFHINT_L1EX>(&ray16.geomID);
 	  prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	  const mic_f gnormalx(Ng.x[index]);
-	  const mic_f gnormaly(Ng.y[index]);
-	  const mic_f gnormalz(Ng.z[index]);
+	  const mic_m m_neg = 0b0101010101010101;
+	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -192,7 +194,8 @@ namespace embree
     __forceinline bool occluded1_tri16_precise(const size_t rayIndex, 
 					       const mic_f &dir_xyz,
 					       const mic_f &org_xyz,
-					       Ray16& ray16)
+					       Ray16& ray16,
+					       const Precalculations &pre)
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
       const mic_i perm_v1 = load16i(tri_permute_v1);
@@ -248,6 +251,7 @@ namespace embree
     __forceinline void intersect1_tri16_precise(const mic_f &dir_xyz,
 						const mic_f &org_xyz,
 						Ray& ray,
+						const Precalculations &pre,
 						const unsigned int subdiv_patch_index) const
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
@@ -324,9 +328,10 @@ namespace embree
                 
 	  assert( countbits(m_tri) == 1);
 
-	  const mic_f gnormalx(Ng.x[index]);
-	  const mic_f gnormaly(Ng.y[index]);
-	  const mic_f gnormalz(Ng.z[index]);
+	  const mic_m m_neg = 0b0101010101010101;
+	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray.tfar,min_dist);
 	  compactustore16f_low(m_tri,&ray.u,u_final); 
@@ -342,7 +347,8 @@ namespace embree
 
     __forceinline bool occluded1_tri16_precise(const mic_f &dir_xyz,
 					       const mic_f &org_xyz,
-					       Ray& ray)
+					       Ray& ray,
+					       const Precalculations &pre)
     {
       const mic_i perm_v0 = load16i(tri_permute_v0);
       const mic_i perm_v1 = load16i(tri_permute_v1);
@@ -481,9 +487,11 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_f gnormalx(normal.x[index]);
-	const mic_f gnormaly(normal.y[index]);
-	const mic_f gnormalz(normal.z[index]);
+	const mic_m m_neg = 0b0101010101010101;
+	const mic_f gnormalx(select(m_neg,mic_f(-normal.x),mic_f(normal.x)));
+	const mic_f gnormaly(select(m_neg,mic_f(-normal.y),mic_f(normal.y)));
+	const mic_f gnormalz(select(m_neg,mic_f(-normal.z),mic_f(normal.z)));
+
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -586,9 +594,10 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_f gnormalx(Ng.x[index]);
-	const mic_f gnormaly(Ng.y[index]);
-	const mic_f gnormalz(Ng.z[index]);
+	const mic_m m_neg = 0b0101010101010101;
+	const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
+	const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
+	const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 

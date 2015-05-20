@@ -23,20 +23,17 @@
 //#include "tasking/taskscheduler.h"
 #include "../../kernels/algorithms/range.h"
 
+#include <list>
+
 #if !defined(TASKING_TBB_INTERNAL)
 #define NOMINMAX
 #define __TBB_NO_IMPLICIT_LINKAGE 1
+#define TBB_PREVIEW_TASK_ARENA 1
 #include "tbb/tbb.h"
 #endif
 
 #include "sys/mutex.h"
 #include "sys/condition.h"
-
-#if defined(__MIC__)
-#define TASKSCHEDULER_STATIC_LOAD_BALANCING 1
-#else
-#define TASKSCHEDULER_STATIC_LOAD_BALANCING 0
-#endif
 
 namespace embree
 {
@@ -56,9 +53,9 @@ namespace embree
   {
     ALIGNED_STRUCT;
 
-    static const size_t MAX_THREADS = 1024;
-    static const size_t TASK_STACK_SIZE = 1024;
-    static const size_t CLOSURE_STACK_SIZE = 256*1024;
+    static const size_t MAX_THREADS = 1024;               // FIXME: there should be no maximal number of threads
+    static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
+    static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
     struct Thread;
     
@@ -216,87 +213,103 @@ namespace embree
       Task* task;                      //!< current active task
       TaskSchedulerTBB* scheduler;     //!< pointer to task scheduler
     };
-    
-    TaskSchedulerTBB (size_t numThreads = 0, bool spinning = false);
+
+    /*! pool of worker threads */
+    struct ThreadPool
+    {
+      ThreadPool (size_t numThreads = 0);
+      ~ThreadPool ();
+
+      /*! starts the threads */
+      __dllexport void startThreads();
+
+      /*! adds a task scheduler object for scheduling */
+      __dllexport void add(TaskSchedulerTBB* scheduler);
+
+      /*! remove the task scheduler object again */
+      __dllexport void remove(TaskSchedulerTBB* scheduler);
+
+      /*! returns number of threads of the thread pool */
+      size_t size() const { return numThreads; }
+
+      /*! main loop for all threads */
+      void thread_loop();
+      
+    private:
+      size_t numThreads;
+      bool running;
+      volatile bool terminate;
+      std::vector<thread_t> threads;
+
+    private:
+      MutexSys mutex;
+      ConditionSys condition;
+      std::list<TaskSchedulerTBB*> schedulers;
+    };
+
+    TaskSchedulerTBB ();
     ~TaskSchedulerTBB ();
 
+    /*! initializes the task scheduler */
     static void create(size_t numThreads);
+
+    /*! destroys the task scheduler again */
     static void destroy();
     
     /*! lets new worker threads join the tasking system */
     void join();
+    void reset();
+
+    /*! let a worker thread allocate a thread index */
+    ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
 
-    __dllexport void startThreads();
-    void terminateThreadLoop();
-    void destroyThreads();
-
+    /*! thread loop for all worker threads */
     void thread_loop(size_t threadIndex);
+
+    /*! steals a task from a different thread */
     bool steal_from_other_threads(Thread& thread);
-    __dllexport bool executeTaskSet(Thread& thread);
 
     template<typename Predicate, typename Body>
       static void steal_loop(Thread& thread, const Predicate& pred, const Body& body);
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1) // important: has to be noinline as it allocates thread structure on stack
+    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (createThreads)
-	startThreads();
-
-      assert(!active);
-      active = true;
+      if (useThreadPool) threadPool->startThreads();
+      
       Thread thread(0,this);
+      assert(threadLocal[0] == nullptr);
       threadLocal[0] = &thread;
-      setThread(&thread);
+      Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
-	//std::unique_lock<std::mutex> lock(mutex);
         Lock<MutexSys> lock(mutex);
+        atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);
+        hasRootTask = true;
+        condition.notify_all();
       }
-      //if (!spinning) condition.notify_all();
-      if (!spinning) condition.notify_all();
+      
+      if (useThreadPool) threadPool->add(this);
+
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
-
-      threadLocal[0] = nullptr;
-      setThread(nullptr);
-      active = false;
-    }
-
-    /* spawn a new task at the top of the threads task stack */
-    template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t begin, size_t end, size_t blockSize) // important: has to be noinline as it allocates thread structure on stack
-    {
-      if (createThreads)
-	startThreads();
-
-      assert(!active);
-      active = true;
-      Thread thread(0,this);
-      threadLocal[0] = &thread;
-      setThread(&thread);
-
-      ClosureTaskSetFunction<Closure> func(closure,begin,end,blockSize);
-      task_set_function = &func;
-      __memory_barrier();
+      if (useThreadPool) threadPool->remove(this);
       
-      {
-	//std::unique_lock<std::mutex> lock(mutex);
-        Lock<MutexSys> lock(mutex);
-	atomic_add(&anyTasksRunning,+1);
-      }
-      if (!spinning) condition.notify_all();
-      executeTaskSet(thread);
-      //atomic_add(&anyTasksRunning,-1);
-
       threadLocal[0] = nullptr;
-      setThread(nullptr);
-      active = false;
+      swapThread(oldThread);
+
+      /* wait for all threads to terminate */
+      atomic_add(&threadCounter,-1);
+      while (threadCounter > 0)
+        yield();
+
+      //assert(anyTasksRunning == -1);
+      //anyTasksRunning = 0;
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -305,7 +318,7 @@ namespace embree
     {
       Thread* thread = TaskSchedulerTBB::thread();
       if (likely(thread != nullptr)) thread->tasks.push_right(*thread,size,closure);
-      else                           global_instance()->spawn_root(closure,size);
+      else                           instance()->spawn_root(closure,size);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -318,14 +331,6 @@ namespace embree
     template<typename Closure>
     static void spawn(const size_t begin, const size_t end, const size_t blockSize, const Closure& closure) 
     {
-#if TASKSCHEDULER_STATIC_LOAD_BALANCING
-      Thread* thread = TaskSchedulerTBB::thread();
-      if (thread == nullptr) {
-        global_instance()->spawn_root(closure,begin,end,blockSize);
-        return;
-      }
-#endif
-
       spawn(end-begin, [=,&closure]() 
         {
 	  if (end-begin <= blockSize) {
@@ -341,47 +346,35 @@ namespace embree
     /* work on spawned subtasks and wait until all have finished */
     __dllexport static void wait();
 
-    /* work on spawned subtasks and wait until all have finished */
+    /* returns the index of the current thread */
+    __dllexport static size_t threadIndex();
+
+    /* returns the total number of threads */
     __dllexport static size_t threadCount();
 
-    __dllexport static Thread* thread();
-    __dllexport static void setThread(Thread* thread);
+  private:
 
-    __forceinline static TaskSchedulerTBB* instance() {
-      return thread()->scheduler;
-    }
+    /* returns the thread local task list of this worker thread */
+    __dllexport static Thread* thread();
+
+    /* sets the thread local task list of this worker thread */
+    __dllexport static Thread* swapThread(Thread* thread);
+
+    /*! returns the taskscheduler object to be used by the master thread */
+    __dllexport static TaskSchedulerTBB* instance();
 
   private:
-    //std::vector<std::thread> threads;
-    std::vector<thread_t> threads;
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
-    volatile bool terminate;
     volatile atomic_t anyTasksRunning;
-    volatile bool active;
-    bool createThreads;
-    bool spinning;
-
-    //std::mutex mutex;        
-    //std::condition_variable condition;
+    volatile bool hasRootTask;
     MutexSys mutex;
     ConditionSys condition;
 
-    /* special toplevel taskset optimization */
   private:
-#if defined(__MIC__)
-    __aligned(64) QuadTreeBarrier task_set_barrier;
-#else
-    __aligned(64) LinearBarrierActive task_set_barrier;
-#endif
-    TaskSetFunction* volatile task_set_function;
-
-    __dllexport static TaskSchedulerTBB* global_instance();
-
-  private:
-	  static TaskSchedulerTBB* g_instance;
-	  static __thread Thread* thread_local_thread;
-
+    static __thread TaskSchedulerTBB* g_instance;
+    static __thread Thread* thread_local_thread;
+    __dllexport static ThreadPool* threadPool;
   };
 };
 

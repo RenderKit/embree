@@ -119,10 +119,6 @@ namespace embree
     userPtr = ptr;
   }
   
-  void* Geometry::getUserData() {
-    return userPtr;
-  }
-
   void Geometry::setIntersectionFilterFunction (RTCFilterFunc filter, bool ispc) 
   {
     if (parent->isStatic() && parent->isBuild())

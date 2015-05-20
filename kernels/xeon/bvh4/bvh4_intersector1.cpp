@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_intersector1.h"
+#include "bvh4_intersector_node.h"
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
@@ -39,9 +40,13 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
+      /* verify correct input */
+      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear <= ray.tfar);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
-      BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
       StackItemT<NodeRef> stack[stackSize];            //!< stack of nodes 
@@ -89,19 +94,19 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+	    mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode(types)))
-            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
+            mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = cur.unalignedNodeMB()->intersect(pre1,org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time,tNear);
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
@@ -139,6 +144,7 @@ namespace embree
           assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+
           assert(c != BVH4::emptyNode);
           if (likely(mask == 0)) {
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
@@ -175,9 +181,13 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
+      /* verify correct input */
+      assert(ray.tnear >= 0.0f);
+      assert(ray.tnear <= ray.tfar);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
-      BVH4::UnalignedNodeMB::Precalculations pre1(ray);
 
       /*! stack state */
       NodeRef stack[stackSize];  //!< stack of nodes that still need to get traversed
@@ -220,19 +230,19 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = cur.node()->intersect<robust>(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	    mask = cur.nodeMB()->intersect(nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+	    mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode(types)))
-            mask = cur.unalignedNode()->intersect(org,dir,ray_near,ray_far,tNear);
+            mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = cur.unalignedNodeMB()->intersect(pre1,org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time,tNear);
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);

@@ -28,6 +28,13 @@
 #include "../kernels/common/default.h"
 #include <vector>
 
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#define _MM_DENORMALS_ZERO_ON   (0x0040)
+#define _MM_DENORMALS_ZERO_OFF  (0x0000)
+#define _MM_DENORMALS_ZERO_MASK (0x0040)
+#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
+#endif
+
 #define DEFAULT_STACK_SIZE 4*1024*1024
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024
@@ -2983,6 +2990,12 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
+
+    /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
     /* parse command line */  
     parseCommandLine(argc,argv);
 
@@ -3029,7 +3042,6 @@ namespace embree
 
     rtcore_build();
 
-    const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
@@ -3091,18 +3103,17 @@ namespace embree
 #endif
 #endif
 
+#endif
+
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
-
-#endif
 
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
     POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
 #endif
 
-
-#if defined(TASKING_TBB)
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
     POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
 #endif

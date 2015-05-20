@@ -524,12 +524,14 @@ namespace embree
           if (!mesh->displBounds.empty() && !inside(mesh->displBounds,P1-P0))
             THROW_RUNTIME_ERROR("displacement out of bounds");
 #endif
-          P[y*width+x] = P1;
+          P[y*width+x].x = P1.x;
+          P[y*width+x].y = P1.y;
+          P[y*width+x].z = P1.z;
         }
       }
     }
 
-    __forceinline bool stitch_x(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
+    __forceinline bool stitch_x(const CatmullClarkPatch3fa& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
 				Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
@@ -555,7 +557,7 @@ namespace embree
       return true;
     }
 
-    __forceinline bool stitch_y(const CatmullClarkPatch& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
+    __forceinline bool stitch_y(const CatmullClarkPatch3fa& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
 				Vec2f luv[17*17], Vec3fa Ng[17*17])
     {
@@ -754,7 +756,7 @@ namespace embree
 	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
-    __forceinline void build(Scene* scene, const CatmullClarkPatch& patch,
+    __forceinline void build(Scene* scene, const CatmullClarkPatch3fa& patch,
 			     const size_t x0, const size_t x1,
 			     const size_t y0, const size_t y1,
 			     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
@@ -783,7 +785,7 @@ namespace embree
 	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
-    __forceinline BBox3fa buildLazyBounds(Scene* scene, const CatmullClarkPatch& patch,
+    __forceinline BBox3fa buildLazyBounds(Scene* scene, const CatmullClarkPatch3fa& patch,
 					  const size_t x0, const size_t x1,
 					  const size_t y0, const size_t y1,
 					  const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
@@ -936,7 +938,7 @@ namespace embree
 	BVH4::NodeRef node = BVH4::emptyNode;
 
 	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
-					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+					  [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID) return;
 
@@ -981,7 +983,7 @@ namespace embree
 	FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
 	
 	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
-					  [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+					  [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID || node != BVH4::emptyNode) return;
 	  

@@ -25,10 +25,6 @@
 
 #define FORCE_ONLY_QUADS 0
 
-#if defined(USE_PTEX)
-#include "Ptexture.h"
-#endif
-
 namespace embree
 {
   /*! Three-index vertex, indexing start at 0, -1 means invalid vertex. */
@@ -273,26 +269,6 @@ namespace embree
 
   OBJLoader::~OBJLoader() {
   }
-
-#if defined(USE_PTEX)
-  PtexFilter* loadPtex(const FileName& fname)
-  {
-    Ptex::String error;
-    std::cout << "loading " << fname.str() << " ... " << std::flush;
-    PtexTexture* tex = PtexTexture::open(fname.c_str(),error);
-    if (tex)
-      std::cout << "[DONE]" << std::endl;
-    else {
-      std::cout << "[FAILED]" << std::endl;
-      THROW_RUNTIME_ERROR("cannot open ptex file: "+fname.str());
-    }
-    PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
-    //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
-    return PtexFilter::getFilter(tex, opts);
-  }
-#else
-  void* loadPtex(const FileName& fname) { return nullptr; }
-#endif
   
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
@@ -343,35 +319,15 @@ namespace embree
       if (!strncmp(token, "Ka_map", 6)) { continue; }
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);
-        //model.materials[cur].obj().map_Kd = loadPtex(path + FileName(token));
         model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
         continue;
       }
-
-#if defined(USE_PTEX)
-	  // need to convert ptex to linear textures
-	  if (!strncmp(token, "Kd_ptex", 7) || !strncmp(token, "ptex_Kd", 7)) {
-	    parseSep(token += 7);
-	    model.materials[cur].obj().ptex_Kd = loadPtexFile(path + FileName(token));
-	    continue;
-	  }
-#endif
-
-#if defined(USE_PTEX)
-	  // need to convert ptex to linear textures
-	  if (!strncmp(token, "displ_ptex", 10) || !strncmp(token, "ptex_displ", 10)) {
-	    parseSep(token += 10);
-	    model.materials[cur].obj().ptex_displ = loadPtexFile(path + FileName(token));
-	    continue;
-	  }
-#endif
 
 
       if (!strncmp(token, "Ks_map", 6)) { continue; }
       if (!strncmp(token, "Tf_map", 6)) { continue; }
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
         parseSep(token += 9);
-        //model.materials[cur].obj().map_Displ = loadPtex(path + FileName(token));
         model.materials[cur].obj().map_Displ = loadTexture(path + FileName(token));
         continue;
       }

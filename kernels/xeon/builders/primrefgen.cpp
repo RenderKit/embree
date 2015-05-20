@@ -39,12 +39,12 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->id,j);
-          pinfo.add(prim.bounds(),prim.center2());
+          pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
         return pinfo;
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-
+      
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != prims.size())
       {
@@ -58,7 +58,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->valid(j,&bounds)) continue;
             const PrimRef prim(bounds,mesh->id,j);
-            pinfo.add(prim.bounds(),prim.center2());
+            pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
           return pinfo;
@@ -84,7 +84,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->id,j);
-          pinfo.add(prim.bounds(),prim.center2());
+          pinfo.add(bounds,bounds.center2());
           prims[k++] = prim;
         }
         return pinfo;
@@ -103,7 +103,7 @@ namespace embree
             BBox3fa bounds = empty;
             if (!mesh->valid(j,&bounds)) continue;
             const PrimRef prim(bounds,mesh->id,j);
-            pinfo.add(prim.bounds(),prim.center2());
+            pinfo.add(bounds,bounds.center2());
             prims[k++] = prim;
           }
           return pinfo;
@@ -126,7 +126,7 @@ namespace embree
           BBox3fa bounds = empty;
           if (!mesh->valid(j,&bounds)) continue;
           const PrimRef prim(bounds,mesh->id,j);
-          pinfo.add(prim.bounds(),prim.center2());
+          pinfo.add(bounds,bounds.center2());
           if (likely(block->insert(prim))) continue; 
           block = prims_o.insert(new PrimRefList::item);
           block->insert(prim);

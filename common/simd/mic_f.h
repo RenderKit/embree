@@ -801,6 +801,14 @@ __forceinline mic_f lcross_zxy(const mic_f &ao, const mic_f &bo) {
     return vv;        
   }
 
+  __forceinline mic_f lsum3_xyz(const mic_f &v) 
+  {
+    mic_f vv = v;
+    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_CDAB));
+    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_BADC));
+    return vv;        
+  }
+
   __forceinline mic_f ldot3_xyz(const mic_m &m_mask, const mic_f &ao, const mic_f &normal) 
   {
     mic_f vv = _mm512_mask_mul_ps(ao,m_mask,ao,normal);

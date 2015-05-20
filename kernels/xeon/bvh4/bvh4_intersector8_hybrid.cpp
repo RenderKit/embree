@@ -16,6 +16,8 @@
 
 #include "bvh4_intersector8_hybrid.h"
 #include "bvh4_intersector8_single.h"
+#include "bvh4_intersector_node.h"
+
 #include "geometry/triangle4.h"
 #include "geometry/triangle4v.h"
 #include "geometry/triangle8.h"
@@ -33,8 +35,13 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const avxb valid0 = *valid_i;
+      assert(all(valid0,ray.tnear >= 0.0f));
+      assert(all(valid0,ray.tnear <= ray.tfar));
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+      
+      /* load ray */
       avx3f ray_org = ray.org;
       avx3f ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -113,7 +120,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      avxf lnearP; const avxb lhit = node->intersect8<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      avxf lnearP; const avxb lhit = intersect8_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -171,7 +178,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      avxf lnearP; const avxb lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -234,8 +241,13 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
     {
-      /* load ray */
+      /* verify correct input */
       const avxb valid = *valid_i;
+      assert(all(valid,ray.tnear >= 0.0f));
+      assert(all(valid,ray.tnear <= ray.tfar));
+      assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
+
+      /* load ray */
       avxb terminated = !valid;
       avx3f ray_org = ray.org, ray_dir = ray.dir;
       avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -316,7 +328,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      avxf lnearP; const avxb lhit = node->intersect8<robust>(i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      avxf lnearP; const avxb lhit = intersect8_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -374,7 +386,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      avxf lnearP; const avxb lhit = node->intersect(i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      avxf lnearP; const avxb lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */

@@ -19,13 +19,6 @@
 #include "sys/sysinfo.h"
 #include "scene_device.h"
 
-#if defined(USE_PTEX)
-#include "Ptexture.h"
-#endif
-// #if defined(USE_PTEX)
-// #include "Ptexture.h"
-// #endif
-
 /* the scene to render */
 extern RTCScene g_scene;
 
@@ -204,7 +197,7 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa&
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return randomColor(ray.geomID ^ ray.primID);
+  else return randomColor(ray.geomID ^ ray.primID)*Vec3fa(embree::abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* vizualizes the traversal cost of a pixel */
@@ -281,7 +274,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const Vec3fa& vx, const Vec
   float intensity = 0;
   Vec3fa hitPos = ray.org + ray.tfar * ray.dir;
 
-#define AMBIENT_OCCLUSION_SAMPLES 16
+#define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
   for (int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
@@ -341,6 +334,7 @@ extern "C" bool device_pick(const float x,
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  PRINT2(x,y);
   PRINT(ray.geomID);
   PRINT(ray.primID);
 
@@ -654,46 +648,28 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-/*
-#endif
-float getPtexTexel1f(void* filter, int faceId, float u, float v)
+Vec3f getPtexTexel3f(void* _texture, const int faceId, const float u, const float v)
 {
-  float result = zero;
-#if USE_PTEX
-  ((PtexFilter*)filter)->eval((float*)&result, 0, 1, faceId, v, u, 0, 0, 0, 0);
-#endif
-  return result;
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == PTEX_RGBA8)
+    {
+      assert(faceId < texture->faceTextures);
+      Texture **face_texture = (Texture **)texture->data;
+      return getTextureTexel3f(face_texture[faceId],u,v);
+    }
+  return zero;
 }
 
-Vec3fa getPtexTexel3f(void* filter, int faceId, float u, float v)
+float getPtexTexel1f(void* _texture, const int faceId, const float u, const float v)
 {
-  Vec3fa result = zero;
-#if USE_PTEX
-  ((PtexFilter*)filter)->eval((float*)&result, 0, 3, faceId, v, u, 0, 0, 0, 0);
-#endif
-  return result;
-}
-#ifdef ./
-*/
-
-Vec3fa getPtexTexel3f(void* data, int faceId, float u, float v)
-{
-  Vec3fa result = zero;
-#if defined(USE_PTEX)
-  if (data) 
-    result = ((ptex_file*)data)->getNearest3f(faceId, u, v);
-#endif
-  return result;
-}
-
-float getPtexTexel1f(void* data, int faceId, float u, float v)
-{
-  float result = 0.0f;
-#if defined(USE_PTEX)
-  if (data) 
-    result = ((ptex_file*)data)->getNearest1f(faceId, u, v);
-#endif
-  return result;
+  Texture *texture = (Texture*)_texture;
+  if (texture->format == PTEX_FLOAT32)
+    {
+      assert(faceId < texture->faceTextures);
+      Texture **face_texture = (Texture **)texture->data;
+      return getTextureTexel1f(face_texture[faceId],u,v);
+    }
+  return 0.0f;
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
@@ -702,7 +678,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   Vec2f st;
   st.x = u;
   st.y = v;
-  if (mesh && mesh->texcoord_indices)
+  if (mesh && mesh->texcoord_indices && mesh->texcoords)
     {
       assert(primID < mesh->numFaces);
       const size_t face_offset = mesh->face_offsets[primID];
@@ -741,10 +717,25 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
-Vec3fa getTextureTexel3f(void *_texture,float s, float t)
+float getTextureTexel1f(void *_texture, const float s, const float t)
 {
   Texture *texture = (Texture*)_texture;
-  if (texture->format == RGBA8)
+  if (likely(texture && texture->format == FLOAT32))
+    {
+      const float u = min(max(s,0.0f),1.0f);
+      const float v = min(max(t,0.0f),1.0f);
+      const int ui  = min((int)floorf((texture->width-1)*u),texture->width-1);
+      const int vi  = min((int)floorf((texture->height-1)*v),texture->height-1);
+      float *data   = (float *)texture->data;
+      return data[vi*texture->width + ui];
+    }
+  return 0.0f;
+}
+
+Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
+{
+  Texture *texture = (Texture*)_texture;
+  if (likely(texture && texture->format == RGBA8))
     {
       //u = max(min(u,1.0f),0.0f);
       //v = max(min(v,1.0f),0.0f);
@@ -760,9 +751,7 @@ Vec3fa getTextureTexel3f(void *_texture,float s, float t)
       else
 	iv = min(iv,texture->height-1);
       unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
-      return Vec3fa(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
-    }
-  
-  Vec3fa color(1.0f);
-  return color;
+      return Vec3f(  (float)t[0] * 1.0f/255.0f, (float)t[1] * 1.0f/255.0f, (float)t[2] * 1.0f/255.0f );
+    }  
+  return Vec3f(0.0f);;
 }

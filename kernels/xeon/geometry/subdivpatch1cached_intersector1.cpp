@@ -205,6 +205,8 @@ namespace embree
 #else                
 		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
+		void *test = (void*)new_root_ref;
+
 		new_root_ref -= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
 		assert( new_root_ref <= 0xffffffff );
 		assert( !(new_root_ref & REF_TAG) );
@@ -212,7 +214,7 @@ namespace embree
 		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
 
-#if DEBUG
+#if _DEBUG
 		const size_t patchIndex = subdiv_patch - pre.array;
 		assert(patchIndex < pre.numPrimitives);
 		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
@@ -291,12 +293,6 @@ namespace embree
       assert( std::isfinite(bounds.upper.x) );
       assert( std::isfinite(bounds.upper.y) );
       assert( std::isfinite(bounds.upper.z) );
-
-      //PRINT(subtree_root);
-      
-      // for (size_t y=0;y<patch.grid_v_res;y++)
-      // 	for (size_t x=0;x<patch.grid_u_res;x++)
-      // 	  std::cout << "y " << y << " x " << x << " " << grid_x[y*patch.grid_u_res+x] << std::endl;
       
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
 
@@ -381,9 +377,10 @@ namespace embree
 
 
 	  size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          size_t value = (offset_bytes << 4) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+	  assert(offset_bytes < 0xffffffff);
+	  assert((offset_bytes & 3) == 0);
+          size_t value = (offset_bytes << 2) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           assert( (value & 2) == 0 );
-          //value -= (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
 	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
 
 	  assert( std::isfinite(bounds.lower.x) );

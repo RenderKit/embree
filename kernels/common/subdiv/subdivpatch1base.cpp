@@ -21,14 +21,96 @@
 namespace embree
 {
 
-    // if (grid_size_simd_blocks == 1)
-    //   {
-    //     mic_m m_active = 0xffff;
-    //     for (unsigned int i=grid_u_res-1;i<16;i+=grid_u_res)
-    //       m_active ^= (unsigned int)1 << i;
-    //     m_active &= ((unsigned int)1 << (grid_u_res * (grid_v_res-1)))-1;
-    //     grid_mask = m_active;
-    //   }
+  /*! Construction from vertices and IDs. */
+  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
+                                      const unsigned int gID,
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh,
+                                      const Vec2f uv[4],
+                                      const float edge_level[4]) 
+    : geom(gID),prim(pID),flags(0),root_ref(0)
+  {
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    mtx.reset();
+
+    for (size_t i=0; i<4; i++) {
+      u[i] = (unsigned short)(uv[i].x * 65535.0f);
+      v[i] = (unsigned short)(uv[i].y * 65535.0f);
+    }
+
+    updateEdgeLevels(edge_level,mesh);
+     
+    /* determine whether patch is regular or not */
+
+    if (ipatch.isRegular()) /* bezier vs. gregory */
+    {
+#if 1
+      flags |= BEZIER_PATCH;
+      GregoryPatch3fa gpatch; 
+      gpatch.init_bezier( ipatch ); 
+      gpatch.exportDenseConrolPoints( patch.v );
+#else
+      flags |= BSPLINE_PATCH;
+      patch.init( ipatch );
+#endif
+    }
+    else
+    {
+      flags |= GREGORY_PATCH;
+      GregoryPatch3fa gpatch; 
+      gpatch.init( ipatch ); 
+      gpatch.exportDenseConrolPoints( patch.v );
+    }
+  }
+
+  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
+                                      const unsigned int pID,
+                                      const SubdivMesh *const mesh) 
+    : geom(gID),prim(pID),flags(0),root_ref(0)
+  {
+    int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
+
+    const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
+
+    const size_t numEdges = h_start->numEdges();
+
+
+    const SubdivMesh::HalfEdge* h       = h_start;
+
+    int needAdaptiveSubdivision = 0;   
+    for (size_t i=0; i<numEdges; i++) {
+      neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+      needAdaptiveSubdivision += neighborSubdiv[i];
+    }
+    //assert(needAdaptiveSubdivision == 0);
+
+    PRINT(numEdges);
+
+    if (numEdges == 4)
+      {
+	PRINT("QUAD");
+	CatmullClarkPatch3fa gpatch;
+	gpatch.init(h_start,mesh->getVertexBuffer());
+	float edge_level[4] = {
+	  gpatch.ring[0].edge_level,
+	  gpatch.ring[1].edge_level,
+	  gpatch.ring[2].edge_level,
+	  gpatch.ring[3].edge_level
+	};
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+	
+	new (this) SubdivPatch1Base(gpatch,gID,pID,mesh,uv,edge_level);
+
+      }
+    else if (numEdges == 3)
+      {
+	PRINT("TRIANGLE");
+	GeneralCatmullClarkPatch3fa gpatch;
+	gpatch.init(h_start,mesh->getVertexBuffer());
+
+      }
+
+  }
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
   {
@@ -52,7 +134,6 @@ namespace embree
 
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
-
     
 #if defined(__MIC__)
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
@@ -107,60 +188,6 @@ namespace embree
   }
 
 
-  /*! Construction from vertices and IDs. */
-  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch& ipatch,
-                                      const unsigned int gID,
-                                      const unsigned int pID,
-                                      const SubdivMesh *const mesh,
-                                      const Vec2f uv[4],
-                                      const float edge_level[4]) 
-    : geom(gID),
-      prim(pID),  
-      flags(0),
-      root_ref(0)
-  {
-    assert(sizeof(SubdivPatch1Base) == 5 * 64);
-    mtx.reset();
-
-    for (size_t i=0;i<4;i++)
-      {
-        /* need to reverse input here */
-        u[i] = (unsigned short)(uv[i].x * 65535.0f);
-        v[i] = (unsigned short)(uv[i].y * 65535.0f);
-      }
-
-
-    updateEdgeLevels(edge_level,mesh);
-     
-
-    /* determine whether patch is regular or not */
-
-    // if (!ipatch.checkPositions())
-    //   {
-    // 	PRINT(gID);
-    // 	PRINT(pID);
-    // 	exit(0);
-    //   }
-
-    if (ipatch.isRegularOrFinal(0) && mesh->displFunc == nullptr)
-      {
-        flags |= REGULAR_PATCH;
-        patch.init( ipatch );
-      }
-    else
-      {
-        GregoryPatch gpatch; 
-        gpatch.init( ipatch ); 
-        gpatch.exportDenseConrolPoints( patch.v );
-      }
-#if 0
-    PRINT( grid_u_res );
-    PRINT( grid_v_res );
-    PRINT( grid_size_16wide_blocks );
-    PRINT( grid_mask );
-    PRINT( grid_subtree_size_64b_blocks );
-#endif
-  }
 
   void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
   {
@@ -205,7 +232,7 @@ namespace embree
       {
         avxf uu = load8f(&grid_u[8*i]);
         avxf vv = load8f(&grid_v[8*i]);
-        avx3f normal = normalize(patch.normal8(uu,vv));
+        avx3f normal = normalize(patch.normal(uu,vv));
         *(avxf*)&grid_nx[8*i] = normal.x;
         *(avxf*)&grid_ny[8*i] = normal.y;
         *(avxf*)&grid_nz[8*i] = normal.z;        
@@ -215,7 +242,7 @@ namespace embree
       {
         ssef uu      = load4f(&grid_u[4*i]);
         ssef vv      = load4f(&grid_v[4*i]);
-        sse3f normal = normalize(patch.normal4(uu,vv));
+        sse3f normal = normalize(patch.normal(uu,vv));
         *(ssef*)&grid_nx[4*i] = normal.x;
         *(ssef*)&grid_ny[4*i] = normal.y;
         *(ssef*)&grid_nz[4*i] = normal.z;        

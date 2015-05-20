@@ -69,6 +69,18 @@ namespace embree
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
+    /// Loads and Stores
+    ////////////////////////////////////////////////////////////////////////////////
+
+     static __forceinline Vec3fa load( const float* const a ) {
+       return Vec3fa(_mm_and_ps(_mm_load_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
+     }
+     
+     static __forceinline Vec3fa loadu( const float* const a ) {
+       return Vec3fa(_mm_and_ps(_mm_loadu_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
+     }
+
+    ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -111,9 +123,12 @@ namespace embree
     __m128 r = _mm_rsqrt_ps(a.m128);
     return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f),r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
   }
-  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { return blendv_ps(a, _mm_set1_ps(1E-10f), _mm_cmpeq_ps (a.m128, _mm_setzero_ps())); }
-  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { return rcp(zero_fix(a)); }
-
+  __forceinline const Vec3fa zero_fix(const Vec3fa& a) { 
+    return blendv_ps(a, _mm_set1_ps(min_rcp_input), _mm_cmplt_ps (abs(a).m128, _mm_set1_ps(min_rcp_input))); 
+  }
+  __forceinline const Vec3fa rcp_safe(const Vec3fa& a) { 
+    return rcp(zero_fix(a)); 
+  }
   __forceinline Vec3fa log ( const Vec3fa& a ) { 
     return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
   }
@@ -214,6 +229,10 @@ namespace embree
     return all(gt_mask(v,Vec3fa(-FLT_LARGE)) & lt_mask(v,Vec3fa(+FLT_LARGE)));
   }
 
+  __forceinline bool is_finite ( const Vec3fa& a ) { 
+    return all(ge_mask(a,Vec3fa(-FLT_MAX)) & le_mask(a,Vec3fa(+FLT_MAX)));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -237,6 +256,7 @@ namespace embree
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 
+  __forceinline float  sqr_length( const Vec3fa& a )                 { return dot(a,a); }
   __forceinline float  length   ( const Vec3fa& a )                  { return sqrt(dot(a,a)); }
   __forceinline Vec3fa normalize( const Vec3fa& a )                  { return a*rsqrt(dot(a,a)); }
   __forceinline float  distance ( const Vec3fa& a, const Vec3fa& b ) { return length(a-b); }

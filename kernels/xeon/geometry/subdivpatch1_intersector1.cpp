@@ -15,61 +15,182 @@
 // ======================================================================== //
 
 #include "subdivpatch1_intersector1.h"
-//#include "bicubic_bezier_patch.h"
 
 namespace embree
 {
   namespace isa
   {  
-    void SubdivPatch1Intersector1::subdivide_intersect1_bspline(const Precalculations& pre,
-                                                                Ray& ray,
-                                                                const BSplinePatch &patch,
-                                                                const unsigned int geomID,
-                                                                const unsigned int primID,
-                                                                const Vec2f &s,
-                                                                const Vec2f &t,
-                                                                const unsigned int subdiv_level)
+    static __forceinline void intersectTri(const Vec3fa& tri_v0,
+                                           const Vec3fa& tri_v1,
+                                           const Vec3fa& tri_v2,
+                                           Ray& ray, 
+                                           const unsigned int geomID,
+                                           const unsigned int primID,
+                                           Scene* scene)
     {
-      if (subdiv_level == 0)
-      {
-        Vec3fa vtx[4];
-        vtx[0] = patch.eval(s[0],t[0]);
-        
-        vtx[1] = patch.eval(s[1],t[0]);
-        vtx[2] = patch.eval(s[1],t[1]);
-        vtx[3] = patch.eval(s[0],t[1]);
-        intersectTri(vtx[0],
-                     vtx[1],
-                     vtx[2],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
-        
-        intersectTri(vtx[2],
-                     vtx[3],
-                     vtx[0],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
+      /* load triangle */
+      STAT3(normal.trav_prims,1,1,1);
+      
+      /* calculate vertices relative to ray origin */
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa v0 = tri_v0-O;
+      const Vec3fa v1 = tri_v1-O;
+      const Vec3fa v2 = tri_v2-O;
+      
+      /* calculate triangle edges */
+      const Vec3fa e0 = v2-v0;
+      const Vec3fa e1 = v0-v1;
+      const Vec3fa e2 = v1-v2;
+      
+      /* calculate geometry normal and denominator */
+      const Vec3fa Ng1 = cross(e1,e0);
+      const Vec3fa Ng = Ng1+Ng1;
+      const float den = dot(Ng,D);
+      const float absDen = abs(den);
+      const float sgnDen = signmsk(den);
+      
+      /* perform edge tests */
+      const float U = xorf(dot(cross(v2+v0,e0),D),sgnDen);
+      if (unlikely(U < 0.0f)) return;
+      const float V = xorf(dot(cross(v0+v1,e1),D),sgnDen);
+      if (unlikely(V < 0.0f)) return;
+      const float W = xorf(dot(cross(v1+v2,e2),D),sgnDen);
+      if (unlikely(W < 0.0f)) return;
+      
+      /* perform depth test */
+      const float T = xorf(dot(v0,Ng),sgnDen);
+      if (unlikely(absDen*float(ray.tfar) < T)) return;
+      if (unlikely(T < absDen*float(ray.tnear))) return;
+      
+      /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+      if (unlikely(den <= 0.0f)) return;
+#else
+      if (unlikely(den == 0.0f)) return;
+#endif
+      
+      /* ray masking test */
+#if 0 && defined(RTCORE_RAY_MASK) // FIXME: enable
+      if (unlikely((tri.mask() & ray.mask) == 0)) return;
+#endif
+      
+      /* calculate hit information */
+      const float rcpAbsDen = rcp(absDen);
+      const float u = U * rcpAbsDen;
+      const float v = V * rcpAbsDen;
+      const float t = T * rcpAbsDen;
+      
+      /* intersection filter test */
+#if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
+      Geometry* geometry = scene->get(geomID);
+      if (unlikely(geometry->hasIntersectionFilter1())) {
+        runIntersectionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
+        return;
       }
-      else
-      {
-        const float mid_s = 0.5f * (s[0]+s[1]);
-        const float mid_t = 0.5f * (t[0]+t[1]);
-        Vec2f s_left(s[0],mid_s);
-        Vec2f s_right(mid_s,s[1]);
-        Vec2f t_left(t[0],mid_t);
-        Vec2f t_right(mid_t,t[1]);
-        subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_left ,t_left,subdiv_level - 1);
-        subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_right,t_left,subdiv_level - 1);
-        subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_right,t_right,subdiv_level - 1);
-        subdivide_intersect1_bspline(pre,ray,patch,geomID,primID,s_left ,t_right,subdiv_level - 1);
-      }
+#endif
+      
+      /* update hit information */
+      ray.u = u;
+      ray.v = v;
+      ray.tfar = t;
+      ray.Ng  = Ng;
+      ray.geomID = geomID;
+      ray.primID = primID;
     }
     
+    static __forceinline bool occludedTri(const Vec3fa& tri_v0,
+                                          const Vec3fa& tri_v1,
+                                          const Vec3fa& tri_v2,
+                                          Ray& ray, 
+                                          const unsigned int geomID,
+                                          const unsigned int primID,
+                                          Scene* scene)
+    {
+      /* load triangle */
+      STAT3(normal.trav_prims,1,1,1);
+      
+      /* calculate vertices relative to ray origin */
+      const Vec3fa O = ray.org;
+      const Vec3fa D = ray.dir;
+      const Vec3fa v0 = tri_v0-O;
+      const Vec3fa v1 = tri_v1-O;
+      const Vec3fa v2 = tri_v2-O;
+      
+      /* calculate triangle edges */
+      const Vec3fa e0 = v2-v0;
+      const Vec3fa e1 = v0-v1;
+      const Vec3fa e2 = v1-v2;
+      
+      /* calculate geometry normal and denominator */
+      const Vec3fa Ng1 = cross(e1,e0);
+      const Vec3fa Ng = Ng1+Ng1;
+      const float den = dot(Ng,D);
+      const float absDen = abs(den);
+      const float sgnDen = signmsk(den);
+      
+      /* perform edge tests */
+      const float U = xorf(dot(cross(v2+v0,e0),D),sgnDen);
+      if (unlikely(U < 0.0f)) return false;
+      const float V = xorf(dot(cross(v0+v1,e1),D),sgnDen);
+      if (unlikely(V < 0.0f)) return false;
+      const float W = xorf(dot(cross(v1+v2,e2),D),sgnDen);
+      if (unlikely(W < 0.0f)) return false;
+      
+      /* perform depth test */
+      const float T = xorf(dot(v0,Ng),sgnDen);
+      if (unlikely(absDen*float(ray.tfar) < T)) return false;
+      if (unlikely(T < absDen*float(ray.tnear))) return false;
+      
+      /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+      if (unlikely(den <= 0.0f)) return false;
+#else
+      if (unlikely(den == 0.0f)) return false;
+#endif
+      
+      /* ray masking test */
+#if 0 && defined(RTCORE_RAY_MASK) // FIXME: enable
+      if (unlikely((tri.mask() & ray.mask) == 0)) return false;
+#endif
+      
+      /* intersection filter test */
+#if 0 && defined(RTCORE_INTERSECTION_FILTER) // FIXME: enable
+      const int geomID = tri.geomID<list>();
+      Geometry* geometry = scene->get(geomID);
+      if (unlikely(geometry->hasOcclusionFilter1()))
+      {
+        /* calculate hit information */
+        const float rcpAbsDen = rcp(absDen);
+        const float u = U*rcpAbsDen;
+        const float v = V*rcpAbsDen;
+        const float t = T*rcpAbsDen;
+        const int primID = tri.primID<list>();
+        return runOcclusionFilter1(geometry,ray,u,v,t,Ng,geomID,primID);
+      }
+#endif
+      return true;
+    }
+
     void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
                                                         Ray& ray,
-                                                        const CatmullClarkPatch &patch,
+                                                        const GeneralCatmullClarkPatch3fa &patch,
+                                                        const unsigned int geomID,
+                                                        const unsigned int primID,
+                                                        const unsigned int subdiv_level)
+    {
+      size_t N;
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
+      patch.subdivide(patches,N);
+
+      for (size_t i=0; i<N; i++)
+        if (intersectBounds(pre,ray,patches[i].bounds()))
+          subdivide_intersect1(pre,ray,patches[i],geomID,primID,subdiv_level - 1);	    
+    }
+
+    void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
+                                                        Ray& ray,
+                                                        const CatmullClarkPatch3fa& patch,
                                                         const unsigned int geomID,
                                                         const unsigned int primID,
                                                         const unsigned int subdiv_level)
@@ -78,39 +199,41 @@ namespace embree
       {
         __aligned(64) FinalQuad finalQuad;
         patch.init( finalQuad );
-        
-        intersectTri(finalQuad.vtx[0],
-                     finalQuad.vtx[1],
-                     finalQuad.vtx[2],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
-        
-        intersectTri(finalQuad.vtx[2],
-                     finalQuad.vtx[3],
-                     finalQuad.vtx[0],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
+        intersectTri(finalQuad.vtx[0],finalQuad.vtx[1],finalQuad.vtx[2],ray,geomID,primID,nullptr); 
+        intersectTri(finalQuad.vtx[2],finalQuad.vtx[3],finalQuad.vtx[0],ray,geomID,primID,nullptr); 
       }
       else
       {
-        array_t<CatmullClarkPatch,4> subpatches;
+        array_t<CatmullClarkPatch3fa,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))
-            subdivide_intersect1(pre,
-                                 ray,
-                                 subpatches[i],
-                                 geomID,
-                                 primID,
-                                 subdiv_level - 1);	    
+            subdivide_intersect1(pre,ray,subpatches[i],geomID,primID,subdiv_level - 1);
       }   
     }
-    
+
     bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
                                                        Ray& ray,
-                                                       const CatmullClarkPatch &patch,
+                                                       const GeneralCatmullClarkPatch3fa& patch,
+                                                       const unsigned int geomID,
+                                                       const unsigned int primID,
+                                                       const unsigned int subdiv_level)
+    {
+      size_t N;
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
+      patch.subdivide(patches,N);
+
+      for (size_t i=0; i<N; i++)
+        if (intersectBounds(pre,ray,patches[i].bounds()))
+          if (subdivide_occluded1(pre,ray,patches[i],geomID,primID,subdiv_level - 1))
+            return true;
+
+      return false;
+    }
+
+    bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
+                                                       Ray& ray,
+                                                       const CatmullClarkPatch3fa &patch,
                                                        const unsigned int geomID,
                                                        const unsigned int primID,						     
                                                        const unsigned int subdiv_level)
@@ -119,121 +242,19 @@ namespace embree
       {
         __aligned(64) FinalQuad finalQuad;
         patch.init( finalQuad );
-        
-        if (occludedTri(finalQuad.vtx[0],
-                        finalQuad.vtx[1],
-                        finalQuad.vtx[2],
-                        ray,
-                        geomID,
-                        primID,nullptr)) return true; 
-        
-        if (occludedTri(finalQuad.vtx[2],
-                        finalQuad.vtx[3],
-                        finalQuad.vtx[0],
-                        ray,
-                        geomID,
-                        primID,nullptr)) return false;
+        if (occludedTri(finalQuad.vtx[0],finalQuad.vtx[1],finalQuad.vtx[2],ray,geomID,primID,nullptr)) return true; 
+        if (occludedTri(finalQuad.vtx[2],finalQuad.vtx[3],finalQuad.vtx[0],ray,geomID,primID,nullptr)) return false;
       }
       else
       {
-        array_t<CatmullClarkPatch,4> subpatches;
+        array_t<CatmullClarkPatch3fa,4> subpatches;
         patch.subdivide(subpatches);
         for (size_t i=0;i<4;i++)
           if (intersectBounds(pre,ray,subpatches[i].bounds()))
-            if (subdivide_occluded1(pre,
-                                    ray,
-                                    subpatches[i],
-                                    geomID,
-                                    primID,
-                                    subdiv_level - 1)) return true;
+            if (subdivide_occluded1(pre,ray,subpatches[i],geomID,primID,subdiv_level - 1)) 
+              return true;
       }   
       return false;
     }
-    
-    
-    
-    void SubdivPatch1Intersector1::subdivide_intersect1(const Precalculations& pre,
-                                                        Ray& ray,
-                                                        const BSplinePatch &patch,
-                                                        const unsigned int geomID,
-                                                        const unsigned int primID,
-                                                        const unsigned int subdiv_level)
-    {
-      if (subdiv_level == 0)
-      {
-        __aligned(64) FinalQuad finalQuad;
-        patch.init( finalQuad );
-        
-        intersectTri(finalQuad.vtx[0],
-                     finalQuad.vtx[1],
-                     finalQuad.vtx[2],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
-        
-        intersectTri(finalQuad.vtx[2],
-                     finalQuad.vtx[3],
-                     finalQuad.vtx[0],
-                     ray,
-                     geomID,
-                     primID,nullptr); 
-      }
-      else
-      {
-        BSplinePatch subpatches[4];
-        patch.subdivide(subpatches);
-        for (size_t i=0;i<4;i++)
-          if (intersectBounds(pre,ray,subpatches[i].bounds()))
-            subdivide_intersect1(pre,
-                                 ray,
-                                 subpatches[i],
-                                 geomID,
-                                 primID,
-                                 subdiv_level - 1);	    
-        
-      } 
-    }
-    
-    bool SubdivPatch1Intersector1::subdivide_occluded1(const Precalculations& pre,
-                                                       Ray& ray,
-                                                       const BSplinePatch &patch,
-                                                       const unsigned int geomID,
-                                                       const unsigned int primID,
-                                                       const unsigned int subdiv_level)
-    {
-      if (subdiv_level == 0)
-      {
-        __aligned(64) FinalQuad finalQuad;
-        patch.init( finalQuad );
-        
-        if (occludedTri(finalQuad.vtx[0],
-                        finalQuad.vtx[1],
-                        finalQuad.vtx[2],
-                        ray,
-                        geomID,
-                        primID,nullptr)) return true; 
-        
-        if (occludedTri(finalQuad.vtx[2],
-                        finalQuad.vtx[3],
-                        finalQuad.vtx[0],
-                        ray,
-                        geomID,
-                        primID,nullptr)) return false;
-      }
-      else
-      {
-        BSplinePatch subpatches[4];
-        patch.subdivide(subpatches);
-        for (size_t i=0;i<4;i++)
-          if (intersectBounds(pre,ray,subpatches[i].bounds()))
-            if (subdivide_occluded1(pre,
-                                    ray,
-                                    subpatches[i],
-                                    geomID,
-                                    primID,
-                                    subdiv_level - 1)) return true;
-      }   
-      return false;
-    }
-  };
+  }
 }

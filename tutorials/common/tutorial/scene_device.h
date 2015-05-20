@@ -89,6 +89,7 @@ struct ISPCSubdivMesh
   int numHoles;
   int materialID;
   int geomID;
+  Vec3fa* colors; // FIXME: remove
 };
 
 struct ISPCAmbientLight
@@ -141,16 +142,21 @@ struct MirrorMaterial
 };
 
 enum TEXTURE_FORMAT {
-  RGBA8  = 1,
-  RGB8   = 2,
-  ALPHA8 = 4
+  RGBA8        = 1,
+  RGB8         = 2,
+  FLOAT32      = 3,
+  PTEX_RGBA8   = 4,
+  PTEX_FLOAT32 = 5
 };
 
 struct Texture {      
   int width;
   int height;    
   int format;
-  int bytesPerTexel;
+  union {
+    int bytesPerTexel;
+    int faceTextures;
+  };
   int width_mask;
   int height_mask;
   void *data;
@@ -174,10 +180,6 @@ struct OBJMaterial
 
   Texture* map_Kd;       /*< dummy */
   Texture* map_Displ;       /*< dummy */
-#ifdef USE_PTEX
-  ptex_file *ptex_Kd;
-  ptex_file* ptex_displ;
-#endif
 };
 
 struct MetalMaterial

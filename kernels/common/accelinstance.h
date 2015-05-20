@@ -25,7 +25,7 @@ namespace embree
   {
   public:
     AccelInstance (AccelData* accel, Builder* builder, Intersectors& intersectors)
-      : accel(accel), builder(builder), Accel(intersectors) {}
+      : accel(accel), builder(builder), Accel(AccelData::TY_ACCEL_INSTANCE,intersectors) {}
 
     void immutable () {
       delete builder; builder = nullptr;

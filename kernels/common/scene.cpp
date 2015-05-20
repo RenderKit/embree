@@ -27,9 +27,19 @@
 
 namespace embree
 {
+  /* error raising rtcIntersect and rtcOccluded functions */
+  void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
+  void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
+  void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
+  void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
+  void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
-      needTriangles(false), needTriangleVertices(false), needBezierVertices(false),
+    : Accel(AccelData::TY_UNKNOWN),
+      flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
+      needTriangleIndices(false), needTriangleVertices(false), 
+      needBezierIndices(false), needBezierVertices(false),
+      needSubdivIndices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -41,13 +51,22 @@ namespace embree
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
-    scheduler = nullptr;
+    //scheduler = nullptr;
+    scheduler = new TaskSchedulerTBB; // FIXME: should not be created for every scene
 #else
     group = new tbb::task_group;
 #endif
 
+    intersectors = Accel::Intersectors(missing_rtcCommit);
+
     if (State::instance()->scene_flags != -1)
       flags = (RTCSceneFlags) State::instance()->scene_flags;
+
+    if (aflags & RTC_INTERPOLATE) {
+      needTriangleIndices = true;
+      needBezierIndices = true;
+      needSubdivIndices = true;
+    }
 
 #if defined(__MIC__)
     needBezierVertices = true;
@@ -143,7 +162,15 @@ namespace embree
           }
           break;
 
-        case /*0b01*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
+          case /*0b01*/ 1: 
+#if defined (__TARGET_AVX2__)
+            if (hasISA(AVX2))
+              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
+            else
+#endif
+              accels.add(BVH4::BVH4Triangle4vObjectSplit(this));
+
+            break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
@@ -170,6 +197,9 @@ namespace embree
     else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
+    else if (State::instance()->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
+    else if (State::instance()->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
+
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+State::instance()->tri_accel);
   }
@@ -275,8 +305,15 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
       return -1;
     }
-    
-    Geometry* geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+
+    Geometry* geom = nullptr;
+#if defined(__TARGET_AVX__)
+    if (hasISA(AVX))
+      geom = new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+    else 
+#endif
+      geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
+
     return geom->id;
   }
 
@@ -328,22 +365,10 @@ namespace embree
     intersectors = accels.intersectors;
 
     /* enable only algorithms choosen by application */
-    if ((aflags & RTC_INTERSECT1) == 0) {
-      intersectors.intersector1.intersect = nullptr;
-      intersectors.intersector1.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT4) == 0) {
-      intersectors.intersector4.intersect = nullptr;
-      intersectors.intersector4.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT8) == 0) {
-      intersectors.intersector8.intersect = nullptr;
-      intersectors.intersector8.occluded = nullptr;
-    }
-    if ((aflags & RTC_INTERSECT16) == 0) {
-      intersectors.intersector16.intersect = nullptr;
-      intersectors.intersector16.occluded = nullptr;
-    }
+    if ((aflags & RTC_INTERSECT1) == 0) intersectors.intersector1 = Accel::Intersector1(&invalid_rtcIntersect1);
+    if ((aflags & RTC_INTERSECT4) == 0) intersectors.intersector4 = Accel::Intersector4(&invalid_rtcIntersect4);
+    if ((aflags & RTC_INTERSECT8) == 0) intersectors.intersector8 = Accel::Intersector8(&invalid_rtcIntersect8);
+    if ((aflags & RTC_INTERSECT16) == 0) intersectors.intersector16 = Accel::Intersector16(&invalid_rtcIntersect16);
 
     /* update commit counter */
     commitCounter++;
@@ -384,7 +409,7 @@ namespace embree
       std::cout << "selected scene intersector" << std::endl;
       intersectors.print(2);
     }
-
+    
     setModified(false);
   }
 
@@ -466,12 +491,13 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+    //{
+    //  Lock<MutexSys> lock(buildMutex);
+      //if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(threadCount != 0);
+    //}
+
     if (threadCount != 0) 
     {
-      {
-        Lock<MutexSys> lock(buildMutex);
-        if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(-1);
-      }
       if (threadIndex > 0) {
         scheduler->join();
         return;
@@ -479,8 +505,23 @@ namespace embree
         scheduler->wait_for_threads(threadCount);
     }
 
-    /* allow only one build at a time */
-    Lock<MutexSys> lock(buildMutex);
+    ///* allow only one build at a time */
+    //Lock<MutexSys> lock(buildMutex);
+
+    /* try to obtain build lock */
+    TryLock<MutexSys> lock(buildMutex);
+
+    /* join hierarchy build */
+    if (!lock.isLocked()) {
+      scheduler->join();
+      //buildMutex.lock();
+      //buildMutex.unlock();
+      return;
+    }
+
+    if (!isModified()) {
+      return;
+    }
 
     progress_monitor_counter = 0;
 
@@ -494,13 +535,13 @@ namespace embree
       return;
     }
 
-    if (threadCount) {
-      scheduler->spawn_root  ([&]() { build_task(); });
-      delete scheduler; scheduler = nullptr;
-    }
-    else {
-      TaskSchedulerTBB::spawn([&]() { build_task(); });
-    }
+    //if (threadCount) {
+    scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
+      //delete scheduler; scheduler = nullptr;
+      //}
+      //else {
+      //TaskSchedulerTBB::spawn([&]() { build_task(); });
+      //}
   }
 
 #endif

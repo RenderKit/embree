@@ -132,12 +132,12 @@ namespace embree
 
     size_t positionBytes = max(size_t(16),hairset->v.size()*sizeof(Vec3fa));
     void* positionPtr = hairset->v.size() ? &hairset->v.front() : nullptr;
-    result = COIBufferCreate(positionBytes,COI_BUFFER_STREAMING_TO_SINK,0,positionPtr,1,&process,&buffers.position);
+    result = COIBufferCreate(positionBytes,COI_BUFFER_NORMAL,0,positionPtr,1,&process,&buffers.position);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     size_t hairsBytes = max(size_t(16),hairset->hairs.size()*sizeof(OBJScene::Hair));
     void* hairsPtr = hairset->hairs.size() ? &hairset->hairs.front() : nullptr;
-    result = COIBufferCreate(hairsBytes,COI_BUFFER_STREAMING_TO_SINK,0,hairsPtr,1,&process,&buffers.hairs);
+    result = COIBufferCreate(hairsBytes,COI_BUFFER_NORMAL,0,hairsPtr,1,&process,&buffers.hairs);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     CreateHairSetData parms;
@@ -427,35 +427,35 @@ namespace embree
     /* send materials */
     size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(OBJScene::Material));
     void* materialPtr = scene->materials.size() ? &scene->materials.front() : nullptr;
-    result = COIBufferCreate(materialBytes,COI_BUFFER_STREAMING_TO_SINK,0,materialPtr,1,&process,&buffers[0]);
+    result = COIBufferCreate(materialBytes,COI_BUFFER_NORMAL,0,materialPtr,1,&process,&buffers[0]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send ambient lights */
     COIBUFFER ambientLightsBuffer;
     size_t ambientLightsBytes = max(size_t(16),scene->ambientLights.size()*sizeof(OBJScene::AmbientLight));
     void* ambientLightsPtr = scene->ambientLights.size() ? &scene->ambientLights.front() : nullptr;
-    result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,ambientLightsPtr,1,&process,&buffers[1]);
+    result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_NORMAL,0,ambientLightsPtr,1,&process,&buffers[1]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send point lights */
     COIBUFFER pointLightsBuffer;
     size_t pointLightsBytes = max(size_t(16),scene->pointLights.size()*sizeof(OBJScene::PointLight));
     void* pointLightsPtr = scene->pointLights.size() ? &scene->pointLights.front() : nullptr;
-    result = COIBufferCreate(pointLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,pointLightsPtr,1,&process,&buffers[2]);
+    result = COIBufferCreate(pointLightsBytes,COI_BUFFER_NORMAL,0,pointLightsPtr,1,&process,&buffers[2]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send directional lights */
     COIBUFFER directionalLightsBuffer;
     size_t directionalLightsBytes = max(size_t(16),scene->directionalLights.size()*sizeof(OBJScene::DirectionalLight));
     void* directionalLightsPtr = scene->directionalLights.size() ? &scene->directionalLights.front() : nullptr;
-    result = COIBufferCreate(directionalLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,directionalLightsPtr,1,&process,&buffers[3]);
+    result = COIBufferCreate(directionalLightsBytes,COI_BUFFER_NORMAL,0,directionalLightsPtr,1,&process,&buffers[3]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send distant lights */
     COIBUFFER distantLightsBuffer;
     size_t distantLightsBytes = max(size_t(16),scene->distantLights.size()*sizeof(OBJScene::DistantLight));
     void* distantLightsPtr = scene->distantLights.size() ? &scene->distantLights.front() : nullptr;
-    result = COIBufferCreate(distantLightsBytes,COI_BUFFER_STREAMING_TO_SINK,0,distantLightsPtr,1,&process,&buffers[4]);
+    result = COIBufferCreate(distantLightsBytes,COI_BUFFER_NORMAL,0,distantLightsPtr,1,&process,&buffers[4]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
     
     CreateSceneData parms;

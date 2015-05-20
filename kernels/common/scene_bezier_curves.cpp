@@ -104,7 +104,7 @@ namespace embree
 
   void BezierCurves::immutable () 
   {
-    curves.free();
+    if (!parent->needBezierIndices) curves.free();
     bool freeVertices  = !parent->needBezierVertices;
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();

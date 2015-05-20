@@ -36,32 +36,6 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    struct CreateBVH4SubdivAlloc
-    {
-      __forceinline CreateBVH4SubdivAlloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator* operator() () const { return bvh->alloc.threadLocal2();  }
-
-      BVH4* bvh;
-    };
-
-    struct CreateBVH4SubdivNode
-    {
-      __forceinline CreateBVH4SubdivNode (BVH4* bvh) : bvh(bvh) {}
-      
-      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
-      {
-        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-        for (size_t i=0; i<N; i++) {
-          node->set(i,children[i].pinfo.geomBounds);
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return 0;
-      }
-
-      BVH4* bvh;
-    };
-
     template<typename Primitive>
     struct CreateBVH4SubdivLeaf
     {
@@ -119,8 +93,8 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
         BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
-          (root,CreateBVH4SubdivAlloc(bvh),CreateBVH4SubdivNode(bvh),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
+        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -179,7 +153,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
 	    {
               //if (!patch.isRegular()) { s++; return; }
               const float l0 = patch.ring[0].edge_level;
@@ -213,7 +187,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
             {
               /*if (!patch.isRegular())
                 {
@@ -238,7 +212,7 @@ namespace embree
               const int nx = pattern_x.size();
               const int ny = pattern_y.size();
               
-              GregoryPatch patcheval; patcheval.init(patch);
+              GregoryPatch3fa patcheval; patcheval.init(patch);
               //BSplinePatch patcheval; patcheval.init(patch);
               size_t N = Grid::createEager(mesh->id,f,scene,patcheval,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
               assert(N == Grid::getNumEagerLeaves(nx,ny));
@@ -250,8 +224,8 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
-          (root,CreateBVH4SubdivAlloc(bvh),CreateBVH4SubdivNode(bvh),
+        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
             *current.parent = (size_t) prims[current.prims.begin()].ID();
@@ -316,7 +290,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					    [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+					    [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
             {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -349,7 +323,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
             {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -373,8 +347,8 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
-          (root,CreateBVH4SubdivAlloc(bvh),CreateBVH4SubdivNode(bvh),
+        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
              if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
              *current.parent = (size_t) prims[current.prims.begin()].ID();
@@ -439,7 +413,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	    {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -472,7 +446,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_eval(mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                              [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4], const int id)
+                                              [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	    {
               const float l0 = patch.ring[0].edge_level;
               const float l1 = patch.ring[1].edge_level;
@@ -496,8 +470,8 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         
         BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
-          (root,CreateBVH4SubdivAlloc(bvh),CreateBVH4SubdivNode(bvh),
+        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
             assert(current.pinfo.size() == 1);
             BVH4::NodeRef node = prims[current.prims.begin()].ID();
@@ -530,7 +504,7 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
-    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
+    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh) // FIXME: remove
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -646,7 +620,7 @@ namespace embree
       return b;
     }
 
-        void debugGridBorders1(const SubdivPatch1Base &patch,
+    void debugGridBorders1(const SubdivPatch1Base &patch, // FIXME: remove
                           const SubdivMesh* const geom)
     {
       assert( patch.grid_size_simd_blocks >= 1 );
@@ -833,11 +807,18 @@ namespace embree
             for (size_t f=r.begin(); f!=r.end(); ++f) 
             {          
               if (!mesh->valid(f)) continue;
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                   [&](const CatmullClarkPatch& patch, const Vec2f uv[4], const int subdiv[4])
-                                                   {
-                                                     s++;
-                                                   });
+#define ENABLE_FEATURE_ADAPTIVE 1
+
+#if ENABLE_FEATURE_ADAPTIVE == 1
+	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+						     [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+						     {
+						       s++;
+						     });
+#else
+	      s++;
+#endif
+
             }
             return PrimInfo(s,empty,empty);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -884,8 +865,8 @@ namespace embree
 
 	  if (unlikely(fastUpdateMode == false))
             {
-            
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch& ipatch, const Vec2f uv[4], const int subdiv[4])
+#if ENABLE_FEATURE_ADAPTIVE == 1            
+              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
                                                    {
                                                      float edge_level[4] = {
                                                        ipatch.ring[0].edge_level,
@@ -893,16 +874,23 @@ namespace embree
                                                        ipatch.ring[2].edge_level,
                                                        ipatch.ring[3].edge_level
                                                      };
-              
+
                                                      for (size_t i=0;i<4;i++)
-                                                       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+						     edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
               
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
-						     subdiv_patches[patchIndex].resetRootRef();
+#else
+						     const unsigned int patchIndex = base.size()+s.size();
+                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id, f, mesh);
+#endif
 
-              
+						     subdiv_patches[patchIndex].resetRootRef();
+						     
+						     //subdiv_patches[patchIndex].prim = patchIndex;
+
+						     
                                                      /* compute patch bounds */
                                                      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
                                                      assert(bounds.lower.x <= bounds.upper.x);
@@ -919,7 +907,9 @@ namespace embree
 
                                                      prims[patchIndex] = PrimRef(bounds,patchIndex);
                                                      s.add(bounds);
-                                                   });
+#if ENABLE_FEATURE_ADAPTIVE == 1            
+						   });
+#endif
             }
 	  else
             {
@@ -977,7 +967,7 @@ namespace embree
           std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
           std::cout << "# " << numTotalTriangles << " numTotalTriangles" << std::endl;
  
-          exit(0);
+          //exit(0);
         }
 
 #endif
@@ -994,8 +984,8 @@ namespace embree
 	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
 
 	    BVH4::NodeRef root;
-            BVHBuilderBinnedSAH::build<BVH4::NodeRef>
-	      (root,CreateBVH4SubdivAlloc(bvh),CreateBVH4SubdivNode(bvh),
+            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
 	       [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
 		size_t items = current.pinfo.size();
 		assert(items == 1);

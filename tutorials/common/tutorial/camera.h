@@ -84,6 +84,8 @@ namespace embree
       Vec3fa view = normalize(xfmVector(world2camera(),to - from));
       float theta = atan2f(view.x, view.z); theta += dtheta;
       float phi   = asinf (view.y);         phi   += dphi;
+      assert(isfinite(theta));
+      assert(isfinite(phi));
       float x = cosf(phi)*sinf(theta);
       float y = sinf(phi);
       float z = cosf(phi)*cosf(theta);

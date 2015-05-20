@@ -56,6 +56,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 namespace embree
 {

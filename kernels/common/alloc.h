@@ -27,7 +27,8 @@ namespace embree
     static const size_t maxAlignment = 64;
 
     /*! maximal allocation size */
-    static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
+    //static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
+    static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
 
   public:
 
@@ -159,8 +160,12 @@ namespace embree
     };
 
     FastAllocator () 
-      : growSize(4096), usedBlocks(nullptr), freeBlocks(nullptr), 
-        thread_local_allocators(this), thread_local_allocators2(this) {}
+      : growSize(4096), usedBlocks(nullptr), freeBlocks(nullptr), slotMask(0),
+        thread_local_allocators(this), thread_local_allocators2(this) 
+    {
+      for (size_t i=0; i<4; i++)
+        threadUsedBlocks[i] = nullptr;
+    }
 
     ~FastAllocator () { 
       clear();
@@ -171,6 +176,7 @@ namespace embree
       cleanup();
       if (usedBlocks) usedBlocks->~Block(); usedBlocks = nullptr;
       if (freeBlocks) freeBlocks->~Block(); freeBlocks = nullptr;
+      for (size_t i=0; i<4; i++) threadUsedBlocks[i] = nullptr;
     }
 
     /*! returns a fast thread local allocator */
@@ -194,7 +200,16 @@ namespace embree
       if (usedBlocks || freeBlocks) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(bytesAllocate,bytesReserve);
-      growSize = max(size_t(256),bytesReserve);
+      growSize = max(size_t(4096),bytesReserve);
+    }
+
+    /*! initializes the allocator */
+    void init_estimate(size_t bytesAllocate) 
+    {
+      if (usedBlocks || freeBlocks) { reset(); return; }
+      growSize = max(size_t(4096),bytesAllocate);
+      if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
+      if (bytesAllocate > 16*maxAllocationSize) slotMask = 0x3;
     }
 
     /*! resets the allocator, memory blocks get reused */
@@ -210,7 +225,9 @@ namespace embree
         freeBlocks = usedBlocks;
         usedBlocks = nextUsedBlock;
       }
-      
+      for (size_t i=0; i<4; i++) 
+        threadUsedBlocks[i] = nullptr;
+     
       /* reset all thread local allocators */
       thread_local_allocators.reset();
       thread_local_allocators2.reset();
@@ -230,9 +247,16 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-	Block* myUsedBlocks = usedBlocks;
+	// FIXME: MIC
+#if defined(__MIC__)
+        size_t threadIndex = 0;
+#else
+        size_t threadIndex = TaskSchedulerTBB::threadIndex();
+#endif
+        size_t slot = threadIndex & slotMask;
+	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
-          void* ptr = usedBlocks->malloc(bytes,align);
+          void* ptr = myUsedBlocks->malloc(bytes,align); 
           if (ptr) return ptr;
         }
 
@@ -243,17 +267,18 @@ namespace embree
         /* if this fails allocate new block */
         {
           Lock<AtomicMutex> lock(mutex);
-	  if (myUsedBlocks == usedBlocks)
+	  if (myUsedBlocks == threadUsedBlocks[slot])
 	  {
 	    if (freeBlocks) {
 	      Block* nextFreeBlock = freeBlocks->next;
 	      freeBlocks->next = usedBlocks;
 	      __memory_barrier();
 	      usedBlocks = freeBlocks;
+              threadUsedBlocks[slot] = freeBlocks;
 	      freeBlocks = nextFreeBlock;
 	    } else {
 	      growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
-	      usedBlocks = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
+	      usedBlocks = threadUsedBlocks[slot] = Block::create(growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
 	    }
 	  }
         }
@@ -326,11 +351,22 @@ namespace embree
       size_t bytesReserved = getReservedBytes();
       size_t bytesUsed = getUsedBytes();
       size_t bytesWasted = getWastedBytes();
-      printf("allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
+      printf("  allocated = %3.2fMB, reserved = %3.2fMB, used = %3.2fMB (%3.2f%%), wasted = %3.2fMB (%3.2f%%), free = %3.2fMB (%3.2f%%)\n",
 	     1E-6f*bytesAllocated, 1E-6f*bytesReserved,
 	     1E-6f*bytesUsed, 100.0f*bytesUsed/bytesAllocated,
 	     1E-6f*bytesWasted, 100.0f*bytesWasted/bytesAllocated,
 	     1E-6f*bytesFree, 100.0f*bytesFree/bytesAllocated);
+      
+      if (State::instance()->verbosity(3)) 
+      {
+        std::cout << "  used blocks = ";
+        if (usedBlocks) usedBlocks->print();
+        std::cout << "[END]" << std::endl;
+        
+        std::cout << "  free blocks = ";
+        if (freeBlocks) freeBlocks->print();
+        std::cout << "[END]" << std::endl;
+      }
     }
 
   private:
@@ -424,6 +460,11 @@ namespace embree
 	return max(allocEnd,size_t(cur))-cur;
       }
 
+      void print() const {
+        std::cout << "[" << cur << ", " << max(size_t(cur),allocEnd) << ", " << reserveEnd << "] ";
+        if (next) next->print();
+      }
+
     public:
       atomic_t cur;              //!< current location of the allocator
       size_t allocEnd;           //!< end of the allocated memory region
@@ -435,6 +476,8 @@ namespace embree
 
   private:
     AtomicMutex mutex;
+    size_t slotMask;
+    Block* volatile threadUsedBlocks[4];
     Block* volatile usedBlocks;
     Block* volatile freeBlocks;
     size_t growSize;

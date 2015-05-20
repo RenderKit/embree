@@ -41,17 +41,25 @@ IF (TARGET_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
+IF (TARGET_AVX512)
+ ADD_DEFINITIONS(-D__TARGET_AVX512__)
+ENDIF()
+
 IF (TASKING_INTERNAL)
   ADD_DEFINITIONS(-DTASKING_TBB_INTERNAL)
 ENDIF()
 
 IF (TASKING_TBB)
   ADD_DEFINITIONS(-DTASKING_TBB)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
 
   embree.rc
+
+  ../../common/tasking/taskscheduler_tbb.cpp
+  ../../common/tasking/tasksys.cpp
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
@@ -132,6 +140,8 @@ ENDIF ()
 
 IF (TARGET_AVX)
   ADD_LIBRARY(embree_avx STATIC
+
+    ../common/scene_subdiv_mesh_avx.cpp
 
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
@@ -224,7 +234,7 @@ IF (TARGET_AVX512)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd tasking lexers)
+TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
 
 IF (WIN32 AND ENABLE_ISPC_SUPPORT)
   LIST(GET ISPC_TARGETS -1 MAX_ISA)
@@ -243,10 +253,6 @@ ELSE()
   INSTALL(TARGETS embree DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries NAMELINK_SKIP)
 ENDIF()
 
-IF (NOT ENABLE_INSTALLER OR NOT APPLE)
-  IF (WIN32)
+IF (WIN32)
     INSTALL(TARGETS embree DESTINATION bin COMPONENT tutorials)
-  ELSE()
-    INSTALL(TARGETS embree DESTINATION bin LIBRARY DESTINATION bin COMPONENT tutorials NAMELINK_SKIP)
-  ENDIF()
 ENDIF()

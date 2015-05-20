@@ -88,6 +88,9 @@ namespace embree
     out->numHoles = in->holes.size();
     out->materialID = in->materialID;
     out->geomID = -1;
+    out->colors = new Vec3fa[in->positions.size()];
+    for (size_t i=0; i<in->positions.size(); i++)
+      out->colors[i] = Vec3fa(drand48(),drand48(),drand48());
 
     size_t numEdges = in->position_indices.size();
     size_t numFaces = in->verticesPerFace.size();

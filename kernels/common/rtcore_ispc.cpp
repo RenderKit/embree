@@ -356,4 +356,12 @@ namespace embree
     ((Scene*)scene)->get_locked(geomID)->setDisplacementFunction((RTCDisplacementFunc)func,bounds);
     RTCORE_CATCH_END;
   }
+  
+  extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
+                                   const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
+                                   const float* src, size_t byteStride, 
+                                   float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+    rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,src,byteStride,P,dPdu,dPdv,numFloats);
+  }
 }

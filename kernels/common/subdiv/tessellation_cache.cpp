@@ -22,13 +22,13 @@ namespace embree
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
   void resizeTessellationCache(const size_t new_size)
-  {
+  {    
     if (new_size <= 1024 * 1024)
       THROW_RUNTIME_ERROR("tessellation cache size is too small");
 
-    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) {
-      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);
-    }
+    if (SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE >= new_size &&
+	SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
+      SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);    
   }
 
   void clearTessellationCache()
@@ -53,7 +53,12 @@ namespace embree
   SharedLazyTessellationCache::SharedLazyTessellationCache()
   {
     size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
+#if defined(_MSC_VER)
     data                   = (float*)os_malloc(size);
+#else
+    data                   = (float*)os_reserve(size);
+#endif
+
     maxBlocks              = size/64;
     index                  = 0; // 1
     next_block             = 0;

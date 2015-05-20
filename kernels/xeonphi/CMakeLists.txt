@@ -30,6 +30,10 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
+  ../../common/tasking/taskscheduler_tbb.cpp # FIXME: remove
+  ../../common/tasking/taskscheduler_mic.cpp
+  ../../common/tasking/tasksys.cpp
+
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/acceln.cpp
@@ -93,8 +97,12 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 
-TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi tasking_xeonphi lexers_xeonphi ${ADDITIONAL_LIBRARIES})
+TARGET_LINK_LIBRARIES(embree_xeonphi sys_xeonphi simd_xeonphi lexers_xeonphi ${ADDITIONAL_LIBRARIES})
 
-SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
+IF (ENABLE_INSTALLER)
+  SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
+ELSE()
+  SET_TARGET_PROPERTIES(embree_xeonphi PROPERTIES VERSION ${EMBREE_VERSION_MAJOR} SOVERSION ${EMBREE_VERSION_MAJOR})
+ENDIF()
 
 INSTALL(TARGETS embree_xeonphi LIBRARY DESTINATION lib COMPONENT libraries_xeonphi NAMELINK_SKIP)

@@ -278,6 +278,7 @@ namespace embree
           bx.extend(bounds[i][0]); rAreas[i][0] = halfArea(bx);
           by.extend(bounds[i][1]); rAreas[i][1] = halfArea(by);
           bz.extend(bounds[i][2]); rAreas[i][2] = halfArea(bz);
+          rAreas[i][3] = 0.0f;
         }
 	
 	/* sweep from left to right and compute SAH */

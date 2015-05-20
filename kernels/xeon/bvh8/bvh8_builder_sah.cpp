@@ -24,6 +24,8 @@
 
 #include "geometry/triangle4.h"
 #include "geometry/triangle8.h"
+#include "geometry/triangle8v.h"
+#include "geometry/trianglepairs8.h"
 
 #define PROFILE 0
 
@@ -137,7 +139,7 @@ namespace embree
           auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
           
-	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
+	    bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    prims.resize(numSplitPrimitives);
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
             if (presplitFactor > 1.0f)
@@ -183,6 +185,11 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
+    Builder* BVH8Triangle8vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
+    Builder* BVH8TrianglePairs8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
 
     /************************************************************************************/ 
     /************************************************************************************/
@@ -315,7 +322,7 @@ namespace embree
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-	    bvh->alloc2.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH8::Node));  // FIXME: better estimate
+	    bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
@@ -415,5 +422,10 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
+    Builder* BVH8Triangle8vSceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+
+
+
   }
 }

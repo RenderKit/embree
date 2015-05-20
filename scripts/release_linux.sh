@@ -7,6 +7,8 @@
 
 #destdir=`readlink -f "$1"`
 
+TBB_PATH=$PWD/tbb
+
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
@@ -14,6 +16,7 @@ rm CMakeCache.txt # make sure to use default settings
 # set release settings
 cmake \
 -D COMPILER=ICC \
+-D TBB_ROOT=$TBB_PATH \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
@@ -22,7 +25,9 @@ cmake \
 ..
 
 # make docu after cmake to have correct version.h
-make -C ../embree-doc docbin
+#make -C ../embree-doc doc
+#cp ../embree-doc/doc/* ..
+make -j 8 preinstall
 
 # create installers
 cmake -D ENABLE_INSTALLER=ON ..
@@ -38,10 +43,12 @@ make -j 8 package
 #cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
 #rm embree-*.rpm # remove stale RPM packages
 #make -j 8 package
-#for i in embree-*.rpm ; do # rename RPMs to have component name before version
-#  newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
-#  cp $i "$destdir"/$newname
-#done
+
+# rename RPMs
+for i in embree-*.rpm ; do # rename RPMs to have component name before version
+  newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
+  mv $i $newname
+done
 #umask $umask_org
 cd ..
 

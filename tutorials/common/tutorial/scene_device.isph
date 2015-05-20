@@ -50,20 +50,20 @@ struct ISPCMesh
 
 struct ISPCSubdivMesh
 {
-  Vec3fa* positions;       //!< vertex positions
-  Vec3fa* normals;         //!< face vertex normals
-  Vec2f* texcoords;        //!< face texture coordinates
-  int* position_indices;   //!< position indices for all faces
-  int* normal_indices;     //!< normal indices for all faces
-  int* texcoord_indices;   //!< texcoord indices for all faces
-  int* verticesPerFace;    //!< number of indices of each face
-  int* holes;              //!< face ID of holes
-  float* subdivlevel;      //!< subdivision level
-  Vec2i* edge_creases;          //!< crease index pairs
-  float* edge_crease_weights;   //!< weight for each crease
-  int* vertex_creases;          //!< indices of vertex creases
-  float* vertex_crease_weights; //!< weight for each vertex crease
-  int* face_offsets;
+  uniform Vec3fa* positions;       //!< vertex positions
+  uniform Vec3fa* normals;         //!< face vertex normals
+  uniform Vec2f* texcoords;        //!< face texture coordinates
+  uniform int* position_indices;   //!< position indices for all faces
+  uniform int* normal_indices;     //!< normal indices for all faces
+  uniform int* texcoord_indices;   //!< texcoord indices for all faces
+  uniform int* verticesPerFace;    //!< number of indices of each face
+  uniform int* holes;              //!< face ID of holes
+  uniform float* subdivlevel;      //!< subdivision level
+  uniform Vec2i* edge_creases;          //!< crease index pairs
+  uniform float* edge_crease_weights;   //!< weight for each crease
+  uniform int* vertex_creases;          //!< indices of vertex creases
+  uniform float* vertex_crease_weights; //!< weight for each vertex crease
+  uniform int* face_offsets;
   int numVertices;
   int numFaces;
   int numEdges;
@@ -140,19 +140,21 @@ struct MirrorMaterial
 };
 
 enum TEXTURE_FORMAT {
-  RGBA8  = 1,
-  RGB8   = 2,
-  ALPHA8 = 4
+  RGBA8        = 1,
+  RGB8         = 2,
+  FLOAT32      = 3,
+  PTEX_RGBA8   = 4,
+  PTEX_FLOAT32 = 5
 };
 
 struct Texture {      
-  int width;
-  int height;    
-  int format;
-  int bytesPerTexel;
-  int width_mask;
-  int height_mask;
-  void *data;
+  uniform int width;
+  uniform int height;    
+  uniform int format;
+  uniform int bytesPerTexel;
+  uniform int width_mask;
+  uniform int height_mask;
+  void *uniform data;
 };
 
 struct OBJMaterial

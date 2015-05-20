@@ -18,12 +18,15 @@
 
 #include <cmath>
 #include "common/subdiv/bspline_patch.h"
+#include "common/subdiv/bezier_patch.h"
 #include "common/subdiv/gregory_patch.h"
+#include "common/subdiv/gregory_patch_dense.h"
+#include "common/subdiv/gregory_triangle_patch.h"
 #include "common/subdiv/tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRITIZED_UV 1
+#define DISCRETIZED_UV 1
 
 namespace embree
 {
@@ -36,7 +39,7 @@ namespace embree
 
 
   template<class T>
-    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64)
+    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64) // FIXME: move to different place
     {
       void *ptr = alloca(elements * sizeof(T) + alignment);
       return (T*)ALIGN_PTR(ptr,alignment);
@@ -66,15 +69,12 @@ namespace embree
     /* v00 - v10 - v01 - v11 - v02 - v12 */
     /* v10 - v20 - v11 - v21 - v12 - v22 */
    
-    Quad2x2() 
-      {
-      }
-
+    Quad2x2() {}
 
     float vtx_x[12];
     float vtx_y[12];
     float vtx_z[12];
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
     unsigned short vtx_u[12];
     unsigned short vtx_v[12];
 #else
@@ -82,7 +82,7 @@ namespace embree
     float vtx_v[12];
 #endif
 
-    static __forceinline ssei u16_to_ssei(const unsigned short *const source) // FIXME: move to ssei header
+    static __forceinline ssei u16_to_ssei(const unsigned short* const source) // FIXME: move to ssei header
     {
 #if defined (__SSE4_1__)
       return _mm_cvtepu16_epi32(loadu4i(source));
@@ -91,22 +91,13 @@ namespace embree
 #endif
     } 
 
-    static __forceinline ssef u16_to_ssef(const unsigned short *const source)
-    {
-      const ssei t = u16_to_ssei(source);
-      return ssef(t) * 1.0f/65535.0f;
+    static __forceinline ssef u16_to_ssef(const unsigned short* const source) {
+      return ssef(u16_to_ssei(source)) * 1.0f/65535.0f;
     } 
 
-    static __forceinline float u16_to_float(const unsigned short source)
-    {
-      return (float)source * 1.0f/65535.0f;
-    } 
-
-
+    static __forceinline float u16_to_float(const unsigned short source) { return (float)source * 1.0f/65535.0f; } 
     static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
     static __forceinline ssei float_to_u16(const ssef &f) { return (ssei)(f*65535.0f); }
- 
-
 
     __forceinline void initFrom3x3Grid( const float *const source,
                                         float *const dest,
@@ -154,7 +145,7 @@ namespace embree
       storeu4f(&dest[6], row1_a);
     }
 
-    __forceinline void initFrom3x3Grid_discritized( const ssef source[3],
+    __forceinline void initFrom3x3Grid_discretized( const ssef source[3],
                                                     unsigned short *const dest)
     {
       const ssef row0_a = unpacklo(source[0],source[1]); 
@@ -174,7 +165,7 @@ namespace embree
 
     }
 
-    __forceinline void initFrom3x3Grid_discritized( const float *const source,
+    __forceinline void initFrom3x3Grid_discretized( const float *const source,
                                                     unsigned short *const dest,
                                                     const size_t offset_line0,
                                                     const size_t offset_line1,
@@ -219,9 +210,9 @@ namespace embree
       initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
-#if DISCRITIZED_UV == 1
-      initFrom3x3Grid_discritized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid_discritized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
+#if DISCRETIZED_UV == 1
+      initFrom3x3Grid_discretized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
+      initFrom3x3Grid_discretized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
 #else
       initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
       initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
@@ -238,10 +229,10 @@ namespace embree
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
       initFrom3x3Grid( grid_z, vtx_z);
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
       
-      initFrom3x3Grid_discritized( grid_u, vtx_u);
-      initFrom3x3Grid_discritized( grid_v, vtx_v);
+      initFrom3x3Grid_discretized( grid_u, vtx_u);
+      initFrom3x3Grid_discretized( grid_v, vtx_v);
 #else
       initFrom3x3Grid( grid_u, vtx_u );
       initFrom3x3Grid( grid_v, vtx_v );
@@ -265,7 +256,7 @@ namespace embree
       return avxf( ssef::loadu(&source[0+offset]), ssef::loadu(&source[6+offset]) ); // FIXME: unaligned loads
     }
 
-    __forceinline avxi combine_discritized( const unsigned short *const source, const size_t offset) const {
+    __forceinline avxi combine_discretized( const unsigned short *const source, const size_t offset) const {
       
       return avxi( u16_to_ssei(&source[0+offset]), u16_to_ssei(&source[6+offset]) );            
     }
@@ -275,8 +266,8 @@ namespace embree
     }
 
     __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRITIZED_UV == 1
-      return avx2f(  avxf(combine_discritized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discritized(vtx_v,offset)) * 1.0f/65535.0f )  ;
+#if DISCRETIZED_UV == 1
+      return avx2f(  avxf(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
 #else
       return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif
@@ -289,7 +280,7 @@ namespace embree
     }
 
     __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRITIZED_UV == 1
+#if DISCRETIZED_UV == 1
       return sse2f( u16_to_ssef(&vtx_u[offset+delta]), u16_to_ssef(&vtx_v[offset+delta]) );
 #else
       return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
@@ -483,21 +474,27 @@ namespace embree
   public:
 
     enum {
-      REGULAR_PATCH     = 1,  // 0 => Gregory Patch 
-      TRANSITION_PATCH  = 2,  // needs stiching?
-      HAS_DISPLACEMENT  = 4   // 0 => no displacments
+      BSPLINE_PATCH     = 1,  
+      BEZIER_PATCH      = 2,  
+      GREGORY_PATCH     = 4,
+      TRANSITION_PATCH  = 8,  // needs stiching?
+      HAS_DISPLACEMENT  = 16   // 0 => no displacments
     };
 
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
     /*! Construction from vertices and IDs. */
-    SubdivPatch1Base (const CatmullClarkPatch& ipatch,
+    SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                       const unsigned int gID,
                       const unsigned int pID,
                       const SubdivMesh *const mesh,
                       const Vec2f uv[4],
                       const float edge_level[4]);
+
+    SubdivPatch1Base (const unsigned int gID,
+                      const unsigned int pID,
+                      const SubdivMesh *const mesh);
 
     __forceinline bool needsStitching() const
     {
@@ -506,48 +503,76 @@ namespace embree
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      if (likely(isRegular()))
-	return patch.eval(uu,vv);
-      else 
-	return GregoryPatch::eval( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return BezierPatch::eval( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
+      return Vec3fa( zero );
+    }
+
+    __forceinline Vec3fa normal(const float &uu,
+				const float &vv) const
+    {
+      if (likely(isBezierPatch()))
+        return BezierPatch::normal( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
+      return Vec3fa( zero );
     }
 
 #if defined(__SSE__)
     __forceinline sse3f eval4(const ssef &uu,
 			      const ssef &vv) const
     {
-      if (likely(isRegular()))
-	return patch.eval4(uu,vv);
-      else 
-	return GregoryPatch::eval4( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return BezierPatch::eval<sseb>( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::eval_t<sseb>( patch.v, uu, vv );
+      return sse3f( zero );
     }
 
     __forceinline sse3f normal4(const ssef &uu,
                                 const ssef &vv) const
     {
-      if (likely(isRegular()))
-	return patch.normal4(uu,vv);
-      else
-        return GregoryPatch::normal4( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return BezierPatch::normal<sseb>( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::normal_t<sseb>( patch.v, uu, vv );
+      return sse3f( zero );
     }
+
 #endif
 
 #if defined(__AVX__)
     __forceinline avx3f eval8(const avxf &uu,
 			      const avxf &vv) const
     {
-      if (likely(isRegular()))
-	return patch.eval8(uu,vv);
-      else 
-	return GregoryPatch::eval8( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return BezierPatch::eval<avxb>( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::eval_t<avxb>( patch.v, uu, vv );
+      return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
                                 const avxf &vv) const
     {
-      if (likely(isRegular()))
-	return patch.normal8(uu,vv);
-      else
-        return GregoryPatch::normal8( patch.v, uu, vv );
+      if (likely(isBezierPatch()))
+        return BezierPatch::normal<avxb>( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
+        return patch.normal(uu,vv);
+      else if (likely(isGregoryPatch()))
+	return DenseGregoryPatch3fa::normal_t<avxb>( patch.v, uu, vv );
+      return avx3f( zero );
     }
 #endif
 
@@ -555,56 +580,49 @@ namespace embree
     __forceinline mic_f eval4(const mic_f &uu,
 			      const mic_f &vv) const
     {
-      if (likely(isRegular()))
+      if (likely(isBSplinePatch()))
 	{
 	  return patch.eval4(uu,vv);
 	}
       else 
 	{	  
-	  return GregoryPatch::eval4( patch.v, uu, vv );
+	  return DenseGregoryPatch3fa::eval4( patch.v, uu, vv );
 	}     
     }
 
     __forceinline mic3f eval16(const mic_f &uu,
 			       const mic_f &vv) const
     {
-      if (likely(isRegular()))
-	{
-	  return patch.eval16(uu,vv);
-	}
+      if (likely(isBSplinePatch()))
+        return patch.eval(uu,vv);
       else 
-	{
-	  return GregoryPatch::eval16( patch.v, uu, vv );
-	}     
+        return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
     }
 
     __forceinline mic3f normal16(const mic_f &uu,
 				 const mic_f &vv) const
     {
-      if (likely(isRegular()))
-	return patch.normal16(uu,vv);
+      if (likely(isBSplinePatch()))
+	return patch.normal(uu,vv);
       else
-        return GregoryPatch::normal16( patch.v, uu, vv );
+        return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
     }
 #endif
 
-    __forceinline Vec3fa normal(const float &uu,
-				const float &vv) const
+
+    __forceinline bool isBSplinePatch() const
     {
-      if (likely(isRegular()))
-	return patch.normal(uu,vv);
-      else 
-	return GregoryPatch::normal( patch.v, uu, vv );
+      return (flags & BSPLINE_PATCH) == BSPLINE_PATCH;
     }
 
-    __forceinline bool isRegular() const
+    __forceinline bool isBezierPatch() const
     {
-      return (flags & REGULAR_PATCH) == REGULAR_PATCH;
+      return (flags & BEZIER_PATCH) == BEZIER_PATCH;
     }
 
     __forceinline bool isGregoryPatch() const
     {
-      return !isRegular();
+      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
     }
 
     __forceinline bool hasDisplacement() const
@@ -706,7 +724,7 @@ namespace embree
     }
 
 
-    // 16bit discritized u,v coordinates
+    // 16bit discretized u,v coordinates
 
     unsigned short u[4]; 
     unsigned short v[4];
@@ -725,7 +743,7 @@ namespace embree
     RWMutex mtx;
     volatile int64 root_ref;
 
-    __aligned(64) BSplinePatch patch;
+    __aligned(64) BSplinePatch3fa patch;
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Base &p)

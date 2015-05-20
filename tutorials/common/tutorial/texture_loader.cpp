@@ -23,6 +23,7 @@
 
 #include <map>
 #include <string>
+#include "sys/string.h"
 
 namespace embree
 {
@@ -38,6 +39,9 @@ namespace embree
   {
     OBJScene::Texture *texture = new OBJScene::Texture();
     
+    std::string ext = strlwr(fileName.ext());
+    if (ext == "ptx" ) return loadPtexTexture(fileName);
+
     Ref<Image> img = loadImage(fileName);
 
     texture->width         = img.ptr->width;
@@ -51,31 +55,10 @@ namespace embree
     return texture;
   }
   
+  OBJScene::Texture *loadPtexTexture(const FileName& filename)
+  {
 #if defined(USE_PTEX)
-
-  static std::map<std::string, ptex_file*> ptex_files;
-
-  ptex_file::ptex_file(FileName filename, int faces) 
-  : faces(faces), diffuse(0)
-  {
-    diffuse = new face_texture<uchar3>[faces];
-    memset(diffuse,0,sizeof(face_texture<uchar3>)*faces);
-  }
-
-  ptex_file::~ptex_file() {
-	  delete [] diffuse; diffuse = 0;
-  }
-      
-  ptex_file* loadPtexFile(const FileName &filename)
-  {
     std::string fn = filename.str();
-    ptex_file *data = ptex_files[fn];
-    if (data) 
-      {
-	PRINT("FOUND");
-	return data;
-      }
-
     Ptex::String error;
     std::cout << "opening " << fn << " ... " << std::flush;
     PtexTexture* tex = PtexTexture::open(fn.c_str(),error);
@@ -83,86 +66,99 @@ namespace embree
       std::cout << "[FAILED]" << std::endl;
       THROW_RUNTIME_ERROR("cannot open ptex file: "+fn);
     }
-
+    
     PtexMetaData *metadata = tex->getMetaData();
-    const int32_t *vertices_per_face = 0;
+    const int32_t *vertices_per_face = nullptr;
     int geom_faces = 0;
     metadata->getValue("PtexFaceVertCounts", vertices_per_face, geom_faces);
-    //PRINT(geom_faces);
-    //PRINT(vertices_per_face);
-    //PRINT(tex->numFaces());
 
-    data = new ptex_file(filename, tex->numFaces());
-    //PRINT(data);
-    assert(sizeof(uchar3) == 4);
-    float px[3];
-    int ptex_face_id = 0;
-    int obj_face_id = 0;
-    int t = 0;
-    for (int geom_face_id = 0; geom_face_id < geom_faces; ++geom_face_id) {
-      const Ptex::FaceInfo &fi = tex->getFaceInfo(ptex_face_id);
-      int nchan = tex->numChannels();
-      if (nchan != 3 && nchan != 1) {
+    OBJScene::Texture **face_textures = new OBJScene::Texture *[geom_faces];
+    for (size_t i=0;i<geom_faces;i++)
+      face_textures[i] = nullptr;
+
+    OBJScene::Texture *texture = new OBJScene::Texture();
+    texture->width         = 0;
+    texture->height        = 0;    
+    texture->format        = OBJScene::Texture::PTEX_RGBA8;
+    texture->faceTextures  = geom_faces;
+    texture->data          = face_textures;
+    texture->width_mask    = 0;
+    texture->height_mask   = 0;
+
+    int nchan = tex->numChannels();
+    if (nchan != 3 && nchan != 1) 
+      {
 	std::cout << "[FAILED]" << std::endl;
 	THROW_RUNTIME_ERROR(fn+": ptex file with other than 1 or 3 channels found!");
       }
-      int n = vertices_per_face[geom_face_id];
-      if (n == 4) {
-	Ptex::Res res = fi.res;
+
+    if (nchan == 1)
+      texture->format = OBJScene::Texture::PTEX_FLOAT32;
+
+    float px[3];
+    int ptex_face_id = 0;
+
+    for (size_t geom_face_id=0;geom_face_id<geom_faces;geom_face_id++)
+      {
+	face_textures[geom_face_id] = nullptr;
+	const Ptex::FaceInfo &fi = tex->getFaceInfo(ptex_face_id);
+
+	int n = vertices_per_face[geom_face_id];
+	if (n == 4) /* ptex data only for quads */
+	  {
+	    Ptex::Res res = fi.res;
 			  
-	face_texture<uchar3> subtex(res.u(), res.v());
-	//PRINT(subtex.w);
-	//PRINT(subtex.h);
+	    OBJScene::Texture *face_txt = new OBJScene::Texture();
+	    face_txt->width         = res.u();
+	    face_txt->height        = res.v();    
+	    face_txt->width_mask    =  0;
+	    face_txt->height_mask   =  0;
+	    face_txt->data          = nullptr;
+	    face_textures[geom_face_id] = face_txt;
+	  
+	    if (nchan == 3) /* rgb color data */
+	      {
+		face_txt->format        = OBJScene::Texture::RGBA8;
+		face_txt->bytesPerTexel = 4;
+		unsigned char *data     = new unsigned char[face_txt->bytesPerTexel*face_txt->width*face_txt->height];
+		face_txt->data          = data;
 
-	if (nchan == 3)
-	  {
-	    for (int vi = 0; vi < subtex.h; vi++) {
-	      for (int ui = 0; ui < subtex.w; ui++) {
-		tex->getPixel(ptex_face_id, ui, vi, px, 0, nchan, res);
-		subtex.data[vi*subtex.w+ui].x = (unsigned char)(px[0]*255.0f);
-		subtex.data[vi*subtex.w+ui].y = (unsigned char)(px[1]*255.0f);
-		subtex.data[vi*subtex.w+ui].z = (unsigned char)(px[2]*255.0f);
-	      }
-	    }
-	  }
-	else if (nchan == 1)
-	  {
-	    for (int vi = 0; vi < subtex.h; vi++) {
-	      for (int ui = 0; ui < subtex.w; ui++) {
-		tex->getPixel(ptex_face_id, ui, vi, px, 0, nchan, res);
-		if (!isfinite(px[0]))
-		  {
-		    px[0] = 0.0f;
+		for (int vi = 0; vi < face_txt->height; vi++) {
+		  for (int ui = 0; ui < face_txt->width; ui++) {
+		    tex->getPixel(ptex_face_id, ui, vi, px, 0, nchan, res);
+		    data[(vi*face_txt->width+ui)*4+0] = (unsigned char)(px[0]*255.0f);
+		    data[(vi*face_txt->width+ui)*4+1] = (unsigned char)(px[1]*255.0f);
+		    data[(vi*face_txt->width+ui)*4+2] = (unsigned char)(px[2]*255.0f);
 		  }
-		assert( isfinite(px[0]));
-		//px[0] = 1.0f;
-		
-		*(float*)&subtex.data[vi*subtex.w+ui] = px[0];
+		}
 	      }
-	    }
+	    else if (nchan == 1) /* displacement data */
+	      {
+		face_txt->format        = OBJScene::Texture::FLOAT32;
+		face_txt->bytesPerTexel = 4;
+		float*data              = new float[face_txt->width*face_txt->height];
+		face_txt->data          = data;
+
+		for (int vi = 0; vi < face_txt->height; vi++) {
+		  for (int ui = 0; ui < face_txt->width; ui++) {
+		    tex->getPixel(ptex_face_id, ui, vi, px, 0, nchan, res);
+		    if (!isfinite(px[0]))
+		      px[0] = 0.0f;
+		    data[vi*face_txt->width+ui] = px[0];
+		  }
+		}
+	      }
+	    ptex_face_id++;
 	  }
-
-	assert(obj_face_id < tex->numFaces());
-	data->diffuse[obj_face_id].move_from(subtex);
-	ptex_face_id++;
-	obj_face_id++;
+	else 
+	    ptex_face_id += 3;
       }
-      else {
-	ptex_face_id += 3;
-	++t;
-      }
-    }
-    std::cout << "[DONE]" << std::endl;
-
-    /*
-      PtexFilter::Options opts(PtexFilter::f_point, 0, 1.0);
-      //PtexFilter::Options opts(PtexFilter::f_bicubic, 0, 1.0);
-      return PtexFilter::getFilter(tex, opts);
-    */
-
-    return data;
-  }
+    std::cout << "done" << std::endl << std::flush;
+    return texture;	
+#else
+    return nullptr;
 #endif
+  }
 
 }
 

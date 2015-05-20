@@ -77,9 +77,11 @@ namespace embree
 
  class __aligned(64) SharedLazyTessellationCache 
  {
- private:
-   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = 250*1024*1024; // 250 MB
+ public:
+   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
+   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 
+ private:
    struct __aligned(64) ThreadWorkState {
      AtomicCounter counter;
      ThreadWorkState() { counter = 0; }

@@ -26,6 +26,11 @@
 
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
+#define ENABLE_NORMALIZED_INTERSECTION 0
+
+#if FORCE_TRIANGLE_UV
+#  pragma message("WARNING: FORCE_TRIANGLE_UV is enabled")
+#endif
 
 namespace embree
 {
@@ -50,11 +55,14 @@ namespace embree
       public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	Vec3fa ray_dir_scale;
+#endif
         SubdivPatch1Cached   *current_patch;
         SubdivPatch1Cached   *hit_patch;
 	unsigned int threadID;
         Ray &r;
-#if DEBUG
+#if _DEBUG
 	size_t numPrimitives;
 	SubdivPatch1Cached *array;
 #endif
@@ -63,6 +71,10 @@ namespace embree
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	  ray_dir_scale = Vec3fa(ray.dir.y*ray.dir.z,ray.dir.z*ray.dir.x,ray.dir.x*ray.dir.y);
+#endif
+
           current_patch = nullptr;
           hit_patch     = nullptr;
 
@@ -70,7 +82,7 @@ namespace embree
             createLocalThreadInfo();
           threadID = localThreadInfo->id;
 
-#if DEBUG
+#if _DEBUG
 	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
 	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
 #endif
@@ -346,7 +358,8 @@ namespace embree
 	const avxf v    = (avxf)i_v * avxf(2.0f/65535.0f);
 	return Vec2<avxf>(u,v);
       }
-      
+     
+ 
       static __forceinline void intersect1_precise_3x3(Ray& ray,
 						       const float *const grid_x,
 						       const float *const grid_y,
@@ -368,17 +381,19 @@ namespace embree
 	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
+
+#if ENABLE_NORMALIZED_INTERSECTION == 0
 	const Vec3<avxf> O = ray.org;
 	const Vec3<avxf> D = ray.dir;
-        
+
 	const Vec3<avxf> v0 = v0_org - O;
 	const Vec3<avxf> v1 = v1_org - O;
 	const Vec3<avxf> v2 = v2_org - O;
-        
+
 	const Vec3<avxf> e0 = v2 - v0;
 	const Vec3<avxf> e1 = v0 - v1;	     
 	const Vec3<avxf> e2 = v1 - v2;	     
-        
+
 	/* calculate geometry normal and denominator */
 	const Vec3<avxf> Ng1 = cross(e1,e0);
 	const Vec3<avxf> Ng = Ng1+Ng1;
@@ -395,6 +410,38 @@ namespace embree
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
 	const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+
+#else
+        const Vec3<avxf> ray_rdir(pre.ray_rdir.x,pre.ray_rdir.y,pre.ray_rdir.z);
+        const Vec3<avxf> ray_org_rdir(pre.ray_org_rdir.x,pre.ray_org_rdir.y,pre.ray_org_rdir.z);
+
+	const Vec3<avxf> v0 = v0_org * ray_rdir - ray_org_rdir;
+	const Vec3<avxf> v1 = v1_org * ray_rdir - ray_org_rdir;
+	const Vec3<avxf> v2 = v2_org * ray_rdir - ray_org_rdir;
+
+	const Vec3<avxf> e0 = v2 - v0;
+	const Vec3<avxf> e1 = v0 - v1;	     
+	const Vec3<avxf> e2 = v1 - v2;	     
+
+	/* calculate geometry normal and denominator */
+	const Vec3<avxf> Ng1 = cross(e1,e0);
+	Vec3<avxf> Ng = Ng1+Ng1;
+	const avxf den = sum(Ng);
+	const avxf absDen = abs(den);
+	const avxf sgnDen = signmsk(den);
+        
+	avxb valid ( true );
+	/* perform edge tests */
+	const avxf U = sum(Vec3<avxf>(cross(v2+v0,e0))) ^ sgnDen;
+	valid &= U >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf V = sum(Vec3<avxf>(cross(v0+v1,e1))) ^ sgnDen;
+	valid &= V >= 0.0f;
+	if (likely(none(valid))) return;
+	const avxf W = sum(Vec3<avxf>(cross(v1+v2,e2))) ^ sgnDen;
+
+#endif        
+
 
 	valid &= W >= 0.0f;
 	if (likely(none(valid))) return;
@@ -434,13 +481,17 @@ namespace embree
         
 	size_t i = select_min(valid,t);
 
-        
+	
 	/* update hit information */
 	pre.hit_patch = pre.current_patch;
 
 	ray.u         = u_final[i];
 	ray.v         = v_final[i];
 	ray.tfar      = t[i];
+
+#if ENABLE_NORMALIZED_INTERSECTION == 1
+	Ng = Ng * Vec3<avxf>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
+#endif
 	if (i % 2)
 	  {
 	    ray.Ng.x      = Ng.x[i];
@@ -738,7 +789,7 @@ namespace embree
 #if COMPACT == 1          
           const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
           const size_t line_offset   = pre.current_patch->grid_u_res;
-          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
+          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
           const float *const grid_y  = grid_x + 1 * dim_offset;
           const float *const grid_z  = grid_x + 2 * dim_offset;
@@ -782,10 +833,9 @@ namespace embree
         {
 
 #if COMPACT == 1          
-
           const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
           const size_t line_offset   = pre.current_patch->grid_u_res;
-          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 4;   
+          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
           const float *const grid_y  = grid_x + 1 * dim_offset;
           const float *const grid_z  = grid_x + 2 * dim_offset;

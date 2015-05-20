@@ -35,6 +35,17 @@ namespace embree
     static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
+    enum PatchType { 
+      REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
+      IRREGULAR_QUAD_PATCH     = 1, //!< an irregular quad patch can be represented as a Gregory patch
+      IRREGULAR_TRIANGLE_PATCH = 2, //!< an irregular triangle patch can be represented as a Gregory patch
+      COMPLEX_PATCH            = 3  //!< these patches need subdivision and cannot be processed by the above fast code paths
+    };
+
+    __forceinline friend PatchType max( const PatchType& ty0, const PatchType& ty1) {
+      return (PatchType) max((int)ty0,(int)ty1);
+    }
+
     struct Edge 
     {
       /*! edge constructor */
@@ -60,7 +71,7 @@ namespace embree
 
       HalfEdge () 
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-          vertex_crease_weight(0), edge_level(0), align(0) 
+          vertex_crease_weight(0), edge_level(0), type(COMPLEX_PATCH) 
 	{
 	  static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
 	}
@@ -84,85 +95,96 @@ namespace embree
       __forceinline unsigned int getEndVertexIndex  () const { return next()->vtx_index; }
 
       /*! tests if the start vertex of the edge is regular */
-      __forceinline bool isRegularVertex() const 
+      __forceinline PatchType vertexType() const
       {
 	const HalfEdge* p = this;
-	if (p->hasCreases()) return false;
+        size_t face_valence = 0;
+        bool isBorder = false;
+
+        do
+        {
+          /* we need subdivision to handle edge creases */
+          if (p->edge_crease_weight != 0.0f) 
+            return COMPLEX_PATCH;
+
+          face_valence++;
+
+          /* test for quad */
+          const HalfEdge* pp = p;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp == p) return COMPLEX_PATCH;
+          pp = pp->next(); if (pp != p) return COMPLEX_PATCH;
+          
+          /* continue with next face */
+          p = p->prev();
+          if (likely(p->hasOpposite())) 
+            p = p->opposite();
+          
+          /* if there is no opposite go the long way to the other side of the border */
+          else
+          {
+            face_valence++;
+            isBorder = true;
+            p = this;
+            while (p->hasOpposite()) 
+              p = p->rotate();
+          }
+        } while (p != this); 
+
+        /* we support vertex_crease_weight = 0 and inf at corners of bezier and gregory patches */
+        const bool isCorner = !p->hasOpposite() && !p->prev()->hasOpposite();
+        if (unlikely(isCorner)) {
+          if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
+            return COMPLEX_PATCH;
+        } else {
+          if (vertex_crease_weight != 0.0f)
+            return COMPLEX_PATCH;
+        }
+
+        /* test if vertex is regular */
+        if      (face_valence == 2 && isCorner) return REGULAR_QUAD_PATCH;
+        else if (face_valence == 3 && isBorder) return REGULAR_QUAD_PATCH;
+        else if (face_valence == 4            ) return REGULAR_QUAD_PATCH;
+        else                                    return IRREGULAR_QUAD_PATCH;
+      }
+
+      /*! calculates the type of the patch */
+      __forceinline PatchType patchType() const 
+      {
+        const HalfEdge* p = this;
+	PatchType ret = REGULAR_QUAD_PATCH;
+
+        ret = max(ret,p->vertexType());
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
 	
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
-
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
-
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) == this) return false;
-
-        if (!p->hasOpposite()) return false;
-        if ((p = p->rotate()) != this) return false;
-
-        return true;
-      }
-
-      /*! tests if the face is a regular b-spline face */
-      __forceinline bool isRegularFace() const 
-      {
-	const HalfEdge* p = this;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) == this) return false;
+        ret = max(ret,p->vertexType());
+        if ((p = p->next()) == this) return COMPLEX_PATCH;
         
-        if (!p->isRegularVertex()) return false;
-        if ((p = p->next()) != this) return false;
-
-	return true;
-      }
-
-      /*! tests if the face is not a regular b-spline face (0=regular, 1=irregular quad, 2=non-quad) */
-      __forceinline int noRegularFace() const 
-      {
-	int ret = 0;
-	const HalfEdge* p = this;
-
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
-
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
-
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) == this) return 2;
+        ret = max(ret,p->vertexType());
+        if ((p = p->next()) == this) 
+	  {
+	    /* if (ret == REGULAR_QUAD_PATCH || ret == IRREGULAR_QUAD_PATCH) */
+	    /*   { */
+	    /* 	return IRREGULAR_TRIANGLE_PATCH; */
+	    /*   } */
+	    return COMPLEX_PATCH;
+	  }
         
-        if (!p->isRegularVertex()) ret = 1;
-        if ((p = p->next()) != this) return 2;
+        ret = max(ret,p->vertexType());
+        if ((p = p->next()) != this) return COMPLEX_PATCH;
 
 	return ret;
       }
 
+      /*! tests if the face is a regular b-spline face */
+      __forceinline bool isRegularFace() const {
+        return patchType() == REGULAR_QUAD_PATCH;
+      }
+
       /*! tests if the face can be diced (using bspline or gregory patch) */
-      __forceinline bool isGregoryFace() const 
-      {
-	const HalfEdge* p = this;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) == this) return false;
-        
-        if (p->hasCreases()) return false;
-        if ((p = p->next()) != this) return false;
-
-	return true;
+      __forceinline bool isGregoryFace() const {
+        return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH /* || patchType() == IRREGULAR_TRIANGLE_PATCH */;
       }
 
       /*! calculates conservative bounds of a catmull clark subdivision face */
@@ -183,6 +205,14 @@ namespace embree
           if (!p->validRing(vertices)) return false;
         }
         return N >= 3 && N <= MAX_VALENCE;
+      }
+
+      /*! counts number of polygon edges  */
+      __forceinline size_t numEdges() const
+      {
+        size_t N = 1;
+        for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++);
+        return N;
       }
 
       /*! stream output */
@@ -288,9 +318,9 @@ namespace embree
       }
 
       /*! tests if the edge has creases */
-      __forceinline bool hasCreases() const {
-	return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
-      }
+      //__forceinline bool hasCreases() const {
+      //return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
+      //}
 
     private:
       unsigned int vtx_index;         //!< index of edge start vertex
@@ -302,7 +332,7 @@ namespace embree
       float edge_crease_weight;       //!< crease weight attached to edge
       float vertex_crease_weight;     //!< crease weight attached to start vertex
       float edge_level;               //!< subdivision factor for edge
-      float align;                    //!< aligns the structure to 32 bytes
+      PatchType type;                 //!< stores type of subdiv patch
     };
 
     /*! structure used to sort half edges using radix sort by their key */
@@ -344,6 +374,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
+    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
 
   public:
 
@@ -460,5 +491,11 @@ namespace embree
 
     /*! map with all edge creases */
     pmap<uint64,float> edgeCreaseMap;
+  };
+
+  class SubdivMeshAVX : public SubdivMesh
+  {
+    using SubdivMesh::SubdivMesh; // inherit all constructors
+    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
   };
 };

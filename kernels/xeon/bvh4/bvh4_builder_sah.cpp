@@ -39,32 +39,6 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    struct CreateBVH4Alloc
-    {
-      __forceinline CreateBVH4Alloc (BVH4* bvh) : bvh(bvh) {}
-      __forceinline Allocator* operator() () const { return bvh->alloc.threadLocal2();  }
-
-      BVH4* bvh;
-    };
-
-    struct CreateBVH4Node
-    {
-      __forceinline CreateBVH4Node (BVH4* bvh) : bvh(bvh) {}
-      
-      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
-      {
-        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-        for (size_t i=0; i<N; i++) {
-          node->set(i,children[i].pinfo.geomBounds);
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH4* bvh;
-    };
-
     template<typename Primitive>
     struct CreateBVH4Leaf
     {
@@ -76,7 +50,7 @@ namespace embree
         size_t items = Primitive::blocks(n);
         size_t start = current.prims.begin();
         Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
-        BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
+        BVH4::NodeRef node = BVH4::encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
         }
@@ -154,8 +128,7 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-          //bvh->alloc.init(0,0); // FIXME: this improves initial build time significantly but reduces rendering performance slightly
-            bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+          bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    prims.resize(numSplitPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -167,7 +140,7 @@ namespace embree
 
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateBVH4Alloc(bvh),size_t(0),CreateBVH4Node(bvh),rotate,CreateBVH4Leaf<Primitive>(bvh,prims.data()),progress,
+	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,CreateBVH4Leaf<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 
@@ -220,24 +193,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
-
-    struct CreateListBVH4Node // FIXME: merge with above class
-    {
-      __forceinline CreateListBVH4Node (BVH4* bvh) : bvh(bvh) {}
-      
-      __forceinline BVH4::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
-      {
-        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-        for (size_t i=0; i<N; i++) {
-          node->set(i,children[i].pinfo.geomBounds);
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH4* bvh;
-    };
 
     template<typename Primitive>
     struct CreateBVH4ListLeaf
@@ -359,7 +314,7 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-	    bvh->alloc.init(numSplitPrimitives*sizeof(PrimRef),numSplitPrimitives*sizeof(BVH4::Node));  // FIXME: better estimate
+	    bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef)); 
 	    //prims.resize(numSplitPrimitives);
 	    //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
             PrimRefList prims;
@@ -405,7 +360,7 @@ namespace embree
 
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateBVH4Alloc(bvh),size_t(0),CreateListBVH4Node(bvh),rotate,CreateBVH4ListLeaf<Primitive>(bvh),
+	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,CreateBVH4ListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
                 TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
@@ -547,7 +502,7 @@ namespace embree
 	    
 	    if (State::instance()->verbosity(1)) t0 = getSeconds();
 	    
-	    bvh->alloc.init(numPrimitives*sizeof(PrimRef),numPrimitives*sizeof(BVH4::NodeMB));  // FIXME: better estimate
+	    bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 	    prims.resize(numPrimitives);
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -555,7 +510,7 @@ namespace embree
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,CreateBVH4Alloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),progress,
+	      (root,BVH4::CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
             

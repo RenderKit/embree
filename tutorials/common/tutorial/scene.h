@@ -16,7 +16,6 @@
 
 #pragma once
 
-//#include "sys/platform.h"
 #include "sys/vector.h"
 #include "math/vec2.h"
 #include "math/vec3.h"
@@ -28,10 +27,6 @@
 
 namespace embree
 {
-
-#if defined(USE_PTEX)
-  struct ptex_file;
-#endif
 
   /*! Scene representing the OBJ file */
   struct OBJScene  // FIXME: name Scene
@@ -123,16 +118,22 @@ namespace embree
     };
 
     struct Texture {
+
       enum {
-	RGBA8  = 1,
-	RGB8   = 2,
-	ALPHA8 = 4
+	RGBA8        = 1,
+	RGB8         = 2,
+	FLOAT32      = 3,
+	PTEX_RGBA8   = 4,
+	PTEX_FLOAT32 = 5
       };
       
       int width;
       int height;    
       int format;
-      int bytesPerTexel;
+      union {
+	int bytesPerTexel;
+	int faceTextures;
+      };
       int width_mask;
       int height_mask;
 
@@ -188,18 +189,10 @@ namespace embree
     public:
       OBJMaterial ()
       : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr)
-#if defined(USE_PTEX)
-	, ptex_Kd(nullptr)
-      , ptex_displ(nullptr) 
-#endif
       {};
 
       OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
       : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Tf(0.0f), map_Kd(nullptr), map_Displ(nullptr)
-#if defined(USE_PTEX)
-      , ptex_Kd(nullptr) 
-      , ptex_displ(nullptr) 
-#endif
       {};
 
       ~OBJMaterial() { // FIXME: destructor never called!
@@ -221,10 +214,6 @@ namespace embree
 
       Texture* map_Kd;       /*< dummy */
       Texture* map_Displ;       /*< dummy */
-#if defined(USE_PTEX)
-      ptex_file* ptex_Kd;
-      ptex_file* ptex_displ;
-#endif
     };
 
     struct MetalMaterial

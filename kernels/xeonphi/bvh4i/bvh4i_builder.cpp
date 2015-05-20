@@ -395,7 +395,7 @@ namespace embree
 
 #if DEBUG
 		for (size_t k=0;k<3;k++)
-		  if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+		  if (!(std::isfinite( mesh->vertex( tri.v[k] ).x) && std::isfinite( mesh->vertex( tri.v[k] ).y) && std::isfinite( mesh->vertex( tri.v[k] ).z)))
 		    THROW_RUNTIME_ERROR("!isfinite in vertex for tri.v[k]");
 
 #endif
@@ -466,7 +466,7 @@ namespace embree
 
 #if DEBUG
     for (size_t k=0;k<3;k++)
-      if (!(isfinite( mesh->vertex( tri.v[k] ).x) && isfinite( mesh->vertex( tri.v[k] ).y) && isfinite( mesh->vertex( tri.v[k] ).z)))
+      if (!(std::isfinite( mesh->vertex( tri.v[k] ).x) && std::isfinite( mesh->vertex( tri.v[k] ).y) && std::isfinite( mesh->vertex( tri.v[k] ).z)))
 	THROW_RUNTIME_ERROR("!isfinite in vertex for tri.v[k]");
 #endif
 
@@ -1121,13 +1121,13 @@ namespace embree
 
 
 #if DEBUG
-    assert( isfinite(bvh->bounds.lower.x) );
-    assert( isfinite(bvh->bounds.lower.y) );
-    assert( isfinite(bvh->bounds.lower.z) );
+    assert( std::isfinite(bvh->bounds.lower.x) );
+    assert( std::isfinite(bvh->bounds.lower.y) );
+    assert( std::isfinite(bvh->bounds.lower.z) );
 
-    assert( isfinite(bvh->bounds.upper.x) );
-    assert( isfinite(bvh->bounds.upper.y) );
-    assert( isfinite(bvh->bounds.upper.z) );
+    assert( std::isfinite(bvh->bounds.upper.x) );
+    assert( std::isfinite(bvh->bounds.upper.y) );
+    assert( std::isfinite(bvh->bounds.upper.z) );
 
 #endif
 

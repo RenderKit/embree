@@ -15,8 +15,8 @@
 ## ======================================================================== ##
 
 SET(EMBREE_VERSION_MAJOR 2)
-SET(EMBREE_VERSION_MINOR 5)
-SET(EMBREE_VERSION_PATCH 1)
+SET(EMBREE_VERSION_MINOR 6)
+SET(EMBREE_VERSION_PATCH 0)
 SET(EMBREE_VERSION_NOTE " (devel)")
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
@@ -198,8 +198,8 @@ ENDIF ()
 
 IF (ISA GREATER 8)
   SET(TARGET_AVX512  ON)
+  LIST(APPEND ISPC_TARGETS "knl-avx512")
 ENDIF ()
-
 
 SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
 
@@ -276,17 +276,6 @@ IF (ENABLE_TUTORIALS)
     ADD_SUBDIRECTORY(tests tests_xeonphi)
   ENDIF ()
 ENDIF()
-
-##############################################################
-# Documentation
-##############################################################
-
-FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
-INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-
-# currently CMake does not support solution folders without projects
-# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
 
 ##############################################################
 # Uninstall

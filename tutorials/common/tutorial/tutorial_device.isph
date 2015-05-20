@@ -29,6 +29,7 @@ struct Triangle { int v0, v1, v2; };
 #include "../math/vec.isph"
 #include "../math/affinespace.isph"
 #include "ray.isph"
+#include "scene_device.isph"
 
 /* include embree API */
 #include "../../../include/embree2/rtcore.isph"
@@ -93,3 +94,11 @@ Vec3fa noise3D(const Vec3fa& p);
 void progressStart();
 uniform bool progressMonitor(void* uniform ptr, const uniform double n);
 void progressEnd();
+
+Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
+
+float  getPtexTexel1f(void* uniform ptex, int faceId, float u, float v);
+Vec3f  getPtexTexel3f(void* uniform ptex, int faceId, float u, float v);
+
+float  getTextureTexel1f(void * uniform texture, float u, float v);
+Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);

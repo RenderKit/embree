@@ -23,12 +23,13 @@ namespace embree
   // ====================================================================================================================
   // ====================================================================================================================
   // ====================================================================================================================
-  struct Precalculations {
+  class Precalculations {
+  public:
     __forceinline Precalculations(const mic_f &org_xyz,
 				  const mic_f &rdir_xyz) :
-    rdir_xyz(rdir_xyz), org_rdir_xyz(rdir_xyz * org_xyz), org_xyz(org_xyz) {}
+    rdir_xyz(rdir_xyz), org_rdir_xyz(rdir_xyz * org_xyz) /*, org_xyz(org_xyz) */ {}
 				  
-    const mic_f org_xyz;
+    //const mic_f org_xyz;
     const mic_f rdir_xyz;
     const mic_f org_rdir_xyz;
   };
@@ -72,6 +73,7 @@ namespace embree
 
 	    if (ROBUST)
 	      {
+#if 0
 		const mic_f lower_org = load16f(plower) - calc.org_xyz;
 		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
 
@@ -79,6 +81,12 @@ namespace embree
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+#else
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+#endif
 	      }
 	    else
 	      {
@@ -102,6 +110,7 @@ namespace embree
 
 	    if (ROBUST)
 	      {
+#if 0
 		const mic_f lower_org = clower - calc.org_xyz;
 		const mic_f upper_org = cupper - calc.org_xyz;
 
@@ -109,6 +118,12 @@ namespace embree
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+#else
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);
+#endif
 
 	      }
 	    else
@@ -261,6 +276,7 @@ namespace embree
 
 	    if (ROBUST)
 	      {
+#if 0
 		const mic_f lower_org = load16f(plower) - calc.org_xyz;
 		const mic_f upper_org = load16f(pupper) - calc.org_xyz;
 
@@ -268,6 +284,12 @@ namespace embree
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+#else
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+#endif
 	      }
 	    else
 	      {
@@ -290,6 +312,7 @@ namespace embree
 
 	    if (ROBUST)
 	      {
+#if 0
 		const mic_f lower_org = clower - calc.org_xyz;
 		const mic_f upper_org = cupper - calc.org_xyz;
 
@@ -297,6 +320,13 @@ namespace embree
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
+#else
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,clower,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,clower,calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,cupper,calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,cupper,calc.org_rdir_xyz);
+#endif
+
 
 	      }
 	    else

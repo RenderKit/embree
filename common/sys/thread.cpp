@@ -259,20 +259,20 @@ namespace embree
     pthread_attr_init(&attr);
     if (stack_size > 0) pthread_attr_setstacksize (&attr, stack_size);
 
+    /* create thread */
+    pthread_t* tid = new pthread_t;
+    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0)
+      THROW_RUNTIME_ERROR("pthread_create");
+
     /* set affinity */
 #if defined(__LINUX__)
     if (threadID >= 0) {
       cpu_set_t cset;
       CPU_ZERO(&cset);
       CPU_SET(threadID, &cset);
-      pthread_attr_setaffinity_np(&attr,sizeof(cpu_set_t),&cset);
+      pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset);
     }
 #endif
-
-    /* create thread */
-    pthread_t* tid = new pthread_t;
-    if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0)
-      THROW_RUNTIME_ERROR("pthread_create");
 
     return thread_t(tid);
   }

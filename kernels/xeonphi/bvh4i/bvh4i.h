@@ -435,7 +435,7 @@ namespace embree
 
     /*! BVH4 default constructor. */
     BVH4i (const PrimitiveType& primTy, void* geometry = nullptr)
-      : primTy(primTy), 
+      : AccelData(AccelData::TY_UNKNOWN), primTy(primTy), 
       geometry(geometry), 
       root(emptyNode), 
       qbvh(nullptr), 

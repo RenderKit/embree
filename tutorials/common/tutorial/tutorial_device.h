@@ -29,7 +29,8 @@ struct Triangle { int v0, v1, v2; };
 #include "embree2/rtcore.h"
 #include "ray.h"
 
-#include "texture_loader.h"
+//FIXME:
+#include "texture_loader.h" 
 using namespace embree;
 
 /* returns time stamp counter */
@@ -53,6 +54,15 @@ __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng
 #define GLUT_KEY_F10 10
 #define GLUT_KEY_F11 11
 #define GLUT_KEY_F12 12
+
+enum Shader { 
+  SHADER_DEFAULT = 0, 
+  SHADER_EYELIGHT = 1,
+  SHADER_UV = 2,
+  SHADER_NG = 3,
+  SHADER_GEOMID = 4,
+  SHADER_GEOMID_PRIMID = 5
+};
 
 /* standard shading function */
 typedef Vec3fa (* renderPixelFunc)(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
@@ -110,8 +120,10 @@ void progressStart();
 bool progressMonitor(void* ptr, const double dn);
 void progressEnd();
 
-float  getPtexTexel1f(void* ptex, int faceId, float u, float v);
-Vec3fa getPtexTexel3f(void* ptex, int faceId, float u, float v);
-
 Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
-Vec3fa getTextureTexel3f(void *texture,float u, float v);
+
+float  getPtexTexel1f(void* ptex, const int faceId, const float u, const float v);
+Vec3f  getPtexTexel3f(void* ptex, const int faceId, const float u, const float v);
+
+float  getTextureTexel1f(void *texture,const float u, const float v);
+Vec3f  getTextureTexel3f(void *texture,const float u, const float v);

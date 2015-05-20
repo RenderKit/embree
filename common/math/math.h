@@ -35,6 +35,10 @@ namespace std
 
 namespace embree
 {
+  __forceinline bool isvalid ( const float& v ) {
+    return (v > -FLT_LARGE) & (v < +FLT_LARGE);
+  }
+
   __forceinline int cast_f2i(float f) {
     union { float f; int i; } v; v.f = f; return v.i;
   }

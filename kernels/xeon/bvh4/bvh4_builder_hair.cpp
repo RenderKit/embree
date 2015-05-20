@@ -53,7 +53,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
         
         /* create primref array */
-        bvh->alloc.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray<1>(scene,prims,virtualprogress);
         
@@ -145,7 +145,7 @@ namespace embree
         //profile(1,5,numPrimitives,[&] (ProfileTimer& timer) {
 
         /* create primref array */
-        bvh->alloc.init(numPrimitives*sizeof(Primitive));
+        bvh->alloc.init_estimate(numPrimitives*sizeof(Primitive));
         prims.resize(numPrimitives);
         const PrimInfo pinfo = createBezierRefArray<2>(scene,prims,virtualprogress);
         
@@ -169,9 +169,7 @@ namespace embree
               BVH4::UnalignedNodeMB* node = (BVH4::UnalignedNodeMB*) alloc->alloc0.malloc(sizeof(BVH4::UnalignedNodeMB),16); node->clear();
               for (size_t i=0; i<numChildren; i++) 
               {
-                std::pair<AffineSpace3fa,AffineSpace3fa> spaces = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
-                Vec3fa axis = normalize(spaces.first.l.row2()+spaces.second.l.row2());
-                AffineSpace3fa space = frame(axis).transposed();
+                const AffineSpace3fa space = unalignedHeuristic.computeAlignedSpaceMB(scene,children[i]); 
                 UnalignedHeuristicArrayBinningSAH<BezierPrim>::PrimInfoMB pinfo = unalignedHeuristic.computePrimInfoMB(scene,children[i],space);
                 node->set(i,space,pinfo.s0t0,pinfo.s1t1);
               }

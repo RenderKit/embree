@@ -26,6 +26,7 @@ namespace embree
   static __forceinline void intersect1_tri16_precise(const mic_f &dir_xyz,
 						     const mic_f &org_xyz,
 						     Ray& ray,
+
 						     const mic3f &v0_org,
 						     const mic3f &v1_org,
 						     const mic3f &v2_org,

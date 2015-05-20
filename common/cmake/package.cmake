@@ -16,8 +16,17 @@
 
 OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
 
-# never include rpath in our libraries when installing or creating packages
-SET(CMAKE_SKIP_INSTALL_RPATH ON)
+IF (ENABLE_INSTALLER AND APPLE)
+  #SET(CMAKE_MACOSX_RPATH ON)
+  #SET(CMAKE_SKIP_INSTALL_RPATH OFF)
+  #SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+  SET(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+  SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+  #SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  #SET(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+ELSE()
+  SET(CMAKE_SKIP_INSTALL_RPATH ON)
+ENDIF()
 
 IF (NOT ENABLE_INSTALLER)
   SET(DOC_INSTALL_DIR doc)
@@ -28,13 +37,14 @@ ELSEIF (WIN32)
   SET(TUTORIALS_INSTALL_DIR bin)
   SET(UTILITIES_INSTALL_DIR bin)
 ELSEIF (APPLE)
-  SET(DOC_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/documentation)
-  SET(TUTORIALS_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/tutorials)
-  SET(UTILITIES_INSTALL_DIR ../Applications/embree-${EMBREE_VERSION}/tutorials)
+  SET(DOC_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/documentation)
+  SET(APPLICATION_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION})
+  SET(TUTORIALS_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/tutorials)
+  SET(UTILITIES_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/tutorials)
 ELSE()
   SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
+  SET(TUTORIALS_INSTALL_DIR bin/embree-${EMBREE_VERSION})
+  SET(UTILITIES_INSTALL_DIR bin/embree-${EMBREE_VERSION})
 ENDIF()
 
 ##############################################################
@@ -43,12 +53,48 @@ ENDIF()
 INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
 
 ##############################################################
+# Install Models
+##############################################################
+INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT tutorials)
+
+##############################################################
+# Install Documentation
+##############################################################
+
+#FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
+#INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+
+# currently CMake does not support solution folders without projects
+# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
+
+##############################################################
+# Install scripts to set embree paths
+##############################################################
+
+IF (NOT ENABLE_INSTALLER)
+  IF (WIN32)
+  ELSEIF(APPLE)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT libraries)
+  ELSE()
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh DESTINATION "." COMPONENT libraries)
+  ENDIF()
+ENDIF()
+
+##############################################################
 # Install Embree CMake Configuration
 ##############################################################
 IF (WIN32)
   CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
 ELSEIF (APPLE)
   CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
+  IF (ENABLE_INSTALLER)
+    CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
+    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${APPLICATION_INSTALL_DIR} COMPONENT libraries)
+  ENDIF()
 ELSE()
   CONFIGURE_FILE(common/cmake/embree-config-linux.cmake embree-config.cmake @ONLY)
 ENDIF()
@@ -67,6 +113,7 @@ ENDIF()
 SET(CPACK_PACKAGE_NAME Embree)
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}")
 #SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png)
+#SET(CPACK_PACKAGE_RELOCATABLE TRUE)
 
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
@@ -134,21 +181,22 @@ IF(WIN32)
     SET(ARCH win32)
     SET(PROGRAMFILES "\$PROGRAMFILES")
   ENDIF()
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")
 
   # NSIS specific settings
   IF (ENABLE_INSTALLER)
     SET(CPACK_GENERATOR NSIS)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}")
     SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
     SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
     SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
     SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
     SET(CPACK_NSIS_URL_INFO_ABOUT http://embree.github.io/)
     #SET(CPACK_NSIS_HELP_LINK http://embree.github.io/downloads.html#windows)
-    SET(CPACK_NSIS_MUI_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon32.ico)
+    SET(CPACK_NSIS_MUI_ICON ${PROJECT_SOURCE_DIR}/scripts/install_windows/icon32.ico)
     SET(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
   ELSE()
     SET(CPACK_GENERATOR ZIP)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")
     SET(CPACK_MONOLITHIC_INSTALL 1)
   ENDIF()
 
@@ -157,27 +205,29 @@ ELSEIF(APPLE)
 
   CONFIGURE_FILE(README.md README.txt)
   SET(CPACK_RESOURCE_FILE_README ${PROJECT_BINARY_DIR}/README.txt)
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.macosx")
 
   IF (ENABLE_INSTALLER)
     SET(CPACK_GENERATOR PackageMaker)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64")
     #SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
     SET(CPACK_MONOLITHIC_INSTALL 1)
+    SET(CPACK_PACKAGE_NAME embree-${EMBREE_VERSION})
     SET(CPACK_PACKAGE_VENDOR "intel") # creates short name com.intel.embree2.xxx in pkgutil
     SET(CPACK_OSX_PACKAGE_VERSION 10.7)
   ELSE()
     SET(CPACK_GENERATOR TGZ)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.macosx")
     SET(CPACK_MONOLITHIC_INSTALL 1)
   ENDIF()
 
 # Linux specific settings
 ELSE()
 
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.linux")
 
   IF (ENABLE_INSTALLER)
 
     SET(CPACK_GENERATOR RPM)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
     SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities libraries_xeonphi tutorials_xeonphi utilities_xeonphi)
     SET(CPACK_RPM_COMPONENT_INSTALL ON)
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
@@ -194,6 +244,7 @@ ELSE()
   ELSE()
   
     SET(CPACK_GENERATOR TGZ)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.linux")
     SET(CPACK_MONOLITHIC_INSTALL 1)
   ENDIF()
   

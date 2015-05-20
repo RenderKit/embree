@@ -41,6 +41,8 @@ namespace embree
         __forceinline friend bool operator< (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() < b.pinfo.size(); }
 	__forceinline friend bool operator> (const GeneralBuildRecord& a, const GeneralBuildRecord& b) { return a.pinfo.size() > b.pinfo.size(); }
         
+        __forceinline BBox3fa bounds() const { return pinfo.geomBounds; }
+
         __forceinline size_t size() const { return this->pinfo.size(); }
         
       public:

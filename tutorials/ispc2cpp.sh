@@ -29,6 +29,7 @@ sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
+sed -i.backup  's/abort()/exit(1)/g' $2
 sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
 sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
 sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
@@ -45,6 +46,7 @@ sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
 sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
+sed -i.backup  's/new Vec3fa\[8\]/(Vec3fa\*) alignedMalloc(8\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
 
 sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*height\*sizeof(Vec3fa))/g' $2
@@ -59,4 +61,11 @@ sed -i.backup  's/__device__//g' $2
 sed -i.backup  's/make_Ray/RTCRay/g' $2
 
 sed -i.backup 's/\#define PARALLEL_COMMIT//g' $2
- 
+sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2 
+sed -i.backup 's/memory_barrier/__memory_barrier/g' $2 
+
+sed -i.backup 's/make_LinearSpace3f_rotate/LinearSpace3f::rotate/g' $2
+sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
+
+sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
+sed -i.backup 's/AffineSpace3f/AffineSpace3fa/g' $2

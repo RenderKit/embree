@@ -25,6 +25,8 @@ uniform unsigned int g_numThreads = 0;
 uniform float scale = 1.0f / 1000000.0f;
 uniform bool g_changed = false;
 
+extern uniform float g_debug;
+
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
 
@@ -43,7 +45,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const unifo
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -66,7 +68,7 @@ Vec3f renderPixelWireframe(float x, float y, const uniform Vec3f& vx, const unif
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -97,7 +99,7 @@ Vec3f renderPixelUV(float x, float y, const uniform Vec3f& vx, const uniform Vec
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -119,7 +121,7 @@ Vec3f renderPixelNg(float x, float y, const uniform Vec3f& vx, const uniform Vec
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -150,7 +152,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform Vec3f& vx, const uniform
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -172,14 +174,14 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform Vec3f& vx, const u
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return randomColor(ray.geomID ^ ray.primID);
+  else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
 /* vizualizes the traversal cost of a pixel */
@@ -194,7 +196,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform Vec3f& vx, const uniform
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   uniform int64 c0 = get_tsc();
@@ -217,7 +219,7 @@ Vec3f renderPixelUV16(float x, float y, const uniform Vec3f& vx, const uniform V
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   for (uniform int i=0; i<16; i++) {
@@ -242,7 +244,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
@@ -257,7 +259,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
   float intensity = 0;
   Vec3f hitPos = ray.org + ray.tfar * ray.dir;
 
-#define AMBIENT_OCCLUSION_SAMPLES 16
+#define AMBIENT_OCCLUSION_SAMPLES 64
   /* trace some ambient occlusion rays */
   int seed = 34*x+12*y;
   for (uniform int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++) 
@@ -280,7 +282,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
       shadow.geomID = RTC_INVALID_GEOMETRY_ID;
       shadow.primID = RTC_INVALID_GEOMETRY_ID;
       shadow.mask = -1;
-      shadow.time = 0;
+      shadow.time = g_debug;
     
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
@@ -313,7 +315,7 @@ export uniform bool device_pick(const uniform float x,
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = g_debug;
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,ray);
@@ -564,4 +566,125 @@ uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
 }
 
 void progressEnd() {
+}
+
+float  getPtexTexel1f(void* uniform _texture, int faceId, float u, float v)
+{
+  float value = 0.0f;
+  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
+  if (texture->format == PTEX_FLOAT32)
+    {
+     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
+     foreach_unique (id in faceId) {
+      value += getTextureTexel1f(face_texture[id],u,v);
+     }
+    }
+  return value;
+}
+
+Vec3f getPtexTexel3f(void* uniform _texture, int faceId, float u, float v)
+{
+ Vec3f value = make_Vec3f(0.0f,0.0f,0.0f);
+  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
+  if (texture->format == PTEX_RGBA8)
+    {
+     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
+     foreach_unique (id in faceId) {
+      value = value + getTextureTexel3f(face_texture[id],u,v);
+     }
+    }
+  return value;
+}
+
+Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
+{
+  uniform ISPCSubdivMesh *uniform mesh = (uniform ISPCSubdivMesh *uniform )_mesh;
+  Vec2f st;
+  st.x = u;
+  st.y = v;
+  if (mesh && mesh->texcoord_indices)
+    {
+      assert(primID < mesh->numFaces);
+      const size_t face_offset = mesh->face_offsets[primID];
+      if (mesh->verticesPerFace[primID] == 3)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const Vec2f txt0 = mesh->texcoords[t0];
+	  const Vec2f txt1 = mesh->texcoords[t1];
+	  const Vec2f txt2 = mesh->texcoords[t2];
+	  const float w = 1.0f - u - v;
+	  st = w * txt0 + u * txt1 + v * txt2;
+	}
+      else if (mesh->verticesPerFace[primID] == 4)
+	{
+	  const size_t t0 = mesh->texcoord_indices[face_offset+0];
+	  const size_t t1 = mesh->texcoord_indices[face_offset+1];
+	  const size_t t2 = mesh->texcoord_indices[face_offset+2];
+	  const size_t t3 = mesh->texcoord_indices[face_offset+3];
+	  const Vec2f txt0 = mesh->texcoords[t0];
+	  const Vec2f txt1 = mesh->texcoords[t1];
+	  const Vec2f txt2 = mesh->texcoords[t2];
+	  const Vec2f txt3 = mesh->texcoords[t3];
+	  const float u0 = u;
+	  const float v0 = v;
+	  const float u1 = 1.0f - u;
+	  const float v1 = 1.0f - v;
+	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;	  
+	}
+#if defined(_DEBUG)
+      else
+	PRINT("not supported");
+#endif
+    }
+  return st;
+}
+
+float getTextureTexel1f(void *uniform _texture, float s, float t)
+{
+  uniform Texture * uniform texture = (Texture*)_texture;
+  if (texture && texture->format == FLOAT32)
+    { 
+      const float u = min(max(s,0.0f),1.0f);
+      const float v = min(max(t,0.0f),1.0f);
+      const int ui  = min((int)floor((texture->width-1)*u),texture->width-1);
+      const int vi  = min((int)floor((texture->height-1)*v),texture->height-1);
+      uniform float *uniform data = (uniform float *uniform)texture->data;
+      return data[vi*texture->width + ui];
+    }
+ return 0.0f;
+}
+
+
+Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
+{
+  uniform Texture * uniform texture = (Texture*)_texture;
+  
+  if (texture && texture->format == RGBA8)
+    {
+      //u = max(min(u,1.0f),0.0f);
+      //v = max(min(v,1.0f),0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
+      const int offset = (iv * texture->width + iu) * 4;
+      uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
+
+      const unsigned int8  r = t[offset+0];
+      const unsigned int8  g = t[offset+1];
+      const unsigned int8  b = t[offset+2];
+
+      return make_Vec3f(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+    }
+  
+  return make_Vec3f(0.0f,0.0f,0.0f);
 }

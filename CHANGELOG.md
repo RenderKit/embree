@@ -1,24 +1,36 @@
 Version History
 ---------------
 
+### New Features in Embree 2.5.1
+
+-   On dual socket workstations, the initial BVH build performance
+    almost doubled through a better memory allocation scheme
+-   Reduced memory usage for subdivision surface objects with crease
+    features
+-   rtcCommit performance is robust against unset "flush to zero" and
+    "denormals are zero" flags. However, enabling these flags in your
+    application is still recommended.
+-   Internal cleanups and bugfixes
+
 ### New Features in Embree 2.5.0
 
-- Improved hierarchy build performance on both Intel® Xeon® and Intel®
-  Xeon Phi™
-- Vastly improved tessellation cache for ray tracing subdivision surfaces
-- Added `rtcGetUserData` API call to query per geometry user pointer set
-  through `rtcSetUserData`.
-- Added support for memory monitor callback functions to track and
-  limit memory consumption.
-- Added support for progress monitor callback functions to track build
-  progress and cancel long build operations.
-- BVH builders can be used to build user defined hierarchies inside
-  the application (see [tutorial11])
-- Switched to TBB as default tasking system on Xeon to get even faster
-  hierarchy build times and better integration for applications that also
-  use TBB.
-- `rtcCommit` can get called from multiple TBB threads to join the
-  hierarchy build operations
+-   Improved hierarchy build performance on both Intel® Xeon® and Intel®
+    Xeon Phi™
+-   Vastly improved tessellation cache for ray tracing subdivision
+    surfaces
+-   Added `rtcGetUserData` API call to query per geometry user pointer
+    set through `rtcSetUserData`
+-   Added support for memory monitor callback functions to track and
+    limit memory consumption
+-   Added support for progress monitor callback functions to track build
+    progress and cancel long build operations
+-   BVH builders can be used to build user defined hierarchies inside
+    the application (see tutorial [BVH Builder])
+-   Switched to TBB as default tasking system on Xeon to get even faster
+    hierarchy build times and better integration for applications that
+    also use TBB
+-   `rtcCommit` can get called from multiple TBB threads to join the
+    hierarchy build operations
 
 ### New Features in Embree 2.4
 

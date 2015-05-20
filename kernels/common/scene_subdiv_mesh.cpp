@@ -21,6 +21,10 @@
 #include "algorithms/prefix.h"
 #include "algorithms/parallel_for.h"
 
+#if !defined(__MIC__)
+#include "subdiv/feature_adaptive_eval.h"
+#endif
+
 namespace embree
 {
   SubdivMesh::SubdivMesh (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
@@ -202,7 +206,7 @@ namespace embree
   void SubdivMesh::immutable () 
   {
     faceVertices.free();
-    vertexIndices.free();
+    if (!parent->needSubdivIndices) vertexIndices.free();
     vertices[0].free();
     vertices[1].free();
     edge_creases.free();
@@ -221,16 +225,18 @@ namespace embree
 
   void SubdivMesh::calculateHalfEdges()
   {
+#if defined(__MIC__)
+    size_t blockSize = 1;
+#else
+    size_t blockSize = 4096;
+#endif
+
     /* allocate temporary array */
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
     /* create all half edges */
-#if defined(__MIC__)
-    parallel_for( size_t(0), numFaces, [&](const range<size_t>& r)
-#else
-    parallel_for( size_t(0), numFaces, size_t(4096), [&](const range<size_t>& r) 
-#endif
+    parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
@@ -243,7 +249,7 @@ namespace embree
 
 	const size_t N = faceVertices[f];
 	const size_t e = faceStartEdge[f];
-	
+
 	for (size_t de=0; de<N; de++)
 	{
 	  HalfEdge* edge = &halfEdges[e+de];
@@ -270,6 +276,7 @@ namespace embree
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = edge_level;
+          edge->type                   = COMPLEX_PATCH; // type gets updated below
 
 	  if (unlikely(holeSet.lookup(f))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
@@ -283,11 +290,7 @@ namespace embree
     radix_sort_u64(halfEdges1.data(),halfEdges0.data(),numHalfEdges);
 
     /* link all adjacent pairs of edges */
-#if defined(__MIC__)
-    parallel_for( size_t(0), numHalfEdges, [&](const range<size_t>& r) 
-#else
-    parallel_for( size_t(0), numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
-#endif
+    parallel_for( size_t(0), numHalfEdges, blockSize, [&](const range<size_t>& r) 
     {
       /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
@@ -321,6 +324,18 @@ namespace embree
 	  }
 	}
 	e+=N;
+      }
+    });
+
+    /* calculate type of each patch */
+    parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
+    {
+      for (size_t f=r.begin(); f<r.end(); f++) 
+      {
+        HalfEdge* edge = &halfEdges[faceStartEdge[f]];
+        PatchType type = edge->patchType();
+        for (size_t i=0; i<faceVertices[f]; i++)
+          edge[i].type = type;
       }
     });
   }
@@ -358,6 +373,10 @@ namespace embree
 
 	if (updateVertexCreases)
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+
+        if (updateEdgeCreases || updateVertexCreases) {
+          edge.type = edge.patchType();
+        }
       }
     });
   }
@@ -434,19 +453,25 @@ namespace embree
     /* print statistics in verbose mode */
     if (State::instance()->verbosity(2)) 
     {
-      size_t numRegularFaces = 0;
-      size_t numIrregularFaces = 0;
+      size_t numRegularQuadFaces = 0;
+      size_t numIrregularQuadFaces = 0;
+      size_t numComplexFaces = 0;
 
       for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
-        if (halfEdges[e].isRegularFace()) numRegularFaces++;
-        else                              numIrregularFaces++;
+        switch (halfEdges[e].type) {
+        case REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
+        case IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
+        case COMPLEX_PATCH       : numComplexFaces++;   break;
+        }
       }
     
       std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s" << std::endl;
       std::cout << "numFaces = " << numFaces << ", " 
-                << "numRegularFaces = " << numRegularFaces << " (" << 100.0f * numRegularFaces / numFaces << "%), " 
-                << "numIrregularFaces " << numIrregularFaces << " (" << 100.0f * numIrregularFaces / numFaces << "%) " << std::endl;
+                << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces << "%), " 
+                << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces << "%) " 
+                << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces << "%) " 
+                << std::endl;
     }
   }
 
@@ -479,5 +504,29 @@ namespace embree
       }
     }
     return true;
+  }
+
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
+#if !defined(__MIC__) // FIXME: not working on MIC yet
+    const char* src = (const char*) src_i;
+    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    {
+      auto load = [&](const SubdivMesh::HalfEdge* p) { 
+        const unsigned vtx = p->getStartVertexIndex();
+        return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
+      };
+      ssef Pt, dPdut, dPdvt; 
+      feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
+      if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
+      if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
+    }
+#endif
   }
 }
