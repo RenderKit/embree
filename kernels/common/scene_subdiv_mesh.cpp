@@ -521,9 +521,11 @@ namespace embree
         const unsigned vtx = p->getStartVertexIndex();
         return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
       };
-      ssef out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-      for (size_t j=i; j<min(i+4,numFloats); j++)
-        P[j] = out[j-i];
+      ssef Pt, dPdut, dPdvt; 
+      feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
+      if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
+      if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
 #endif
   }

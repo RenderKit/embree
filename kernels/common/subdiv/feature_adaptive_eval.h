@@ -149,33 +149,35 @@ namespace embree
     }
   };
 
-  template<typename Loader>
-    __forceinline auto feature_adaptive_point_eval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v) -> decltype(loader(0))
+  template<typename Ty, typename Loader>
+    __forceinline void feature_adaptive_point_eval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Ty* P, Ty* dPdu, Ty* dPdv) 
   {
-    typedef decltype(loader(0)) Vertex;
-
     switch (edge->type) 
     {
     case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
-      BSplinePatchT<Vertex> bspline;
+      BSplinePatchT<Ty> bspline;
       bspline.init(edge,loader);
-      return bspline.eval(u,v);
+      if (P   ) *P    = bspline.eval(u,v);
+      if (dPdu) *dPdu = bspline.tangentU(u,v);
+      if (dPdv) *dPdv = bspline.tangentV(u,v);
     }
     case SubdivMesh::IRREGULAR_QUAD_PATCH:
     {
-      CatmullClarkPatchT<Vertex> patch;
+      CatmullClarkPatchT<Ty> patch;
       patch.init2(edge,loader);
-      GregoryPatchT<Vertex> gregory;
+      GregoryPatchT<Ty> gregory;
       gregory.init(patch);
-      return gregory.eval(u,v);
+      if (P   ) *P    = gregory.eval(u,v);
+      if (dPdu) *dPdu = gregory.tangentU(u,v);
+      if (dPdv) *dPdv = gregory.tangentV(u,v);
     }
     default: 
     {
-      GeneralCatmullClarkPatchT<Vertex> patch;
+      GeneralCatmullClarkPatchT<Ty> patch;
       patch.init2(edge,loader);
-      FeatureAdaptivePointEval<Vertex> eval(patch,u,v); 
-      return eval.dst;
+      FeatureAdaptivePointEval<Ty> eval(patch,u,v); 
+      if (P) *P = eval.dst;
     }
     }
   }

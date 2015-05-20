@@ -42,9 +42,11 @@ namespace embree
           const unsigned vtx = p->getStartVertexIndex();
           return ssef::loadu((float*)&src[vtx*byteStride],n); 
         };
-        ssef out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<numFloats; j++)
-          P[j] = out[j-i];
+        ssef Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
       }
       else if (i+8 > numFloats) 
       {
@@ -53,9 +55,11 @@ namespace embree
           const unsigned vtx = p->getStartVertexIndex();
           return avxf::loadu((float*)&src[vtx*byteStride],n); 
         };
-        avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<numFloats; j++)
-          P[j] = out[j-i];
+        avxf Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<avxf>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
       } 
       else
       {
@@ -63,9 +67,11 @@ namespace embree
           const unsigned vtx = p->getStartVertexIndex();
           return avxf::loadu((float*)&src[vtx*byteStride]);
         };
-        avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<i+8; j++)
-          P[j] = out[j-i];
+        avxf Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<avxf>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<i+8; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<i+8; j++) dPdv[j] = dPdvt[j-i];
       }
     }
     AVX_ZERO_UPPER();
