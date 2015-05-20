@@ -20,9 +20,9 @@
 /// Constants
 ////////////////////////////////////////////////////////////////////////////////
 
-#define inf     floatbits(0x7F800000)
-#define pos_inf floatbits(0x7F800000)
-#define neg_inf floatbits(0xFF800000)
+#define inf     (1e100f)  //floatbits(0x7F800000)
+#define pos_inf (1e100f)  //floatbits(0x7F800000)
+#define neg_inf (-1e100f) //floatbits(0xFF800000)
 
 #define M_PI     3.14159265358979323846f
 #define pi       3.14159265358979323846f

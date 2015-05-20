@@ -82,6 +82,25 @@ __aligned(16) float cube_colors[8][4] =
   {  0.0f,  1.0f,  1.0f, 0.0f }
 };
 
+__aligned(16) float cube_vertex_crease_weights[8] = {
+  inf, inf,inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) unsigned int cube_vertex_crease_indices[8] = {
+  0,1,2,3,4,5,6,7
+};
+
+__aligned(16) float cube_edge_crease_weights[12] = {
+  inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
+};
+
+__aligned(16) unsigned int cube_edge_crease_indices[24] = 
+{
+  0,1, 1,2, 2,3, 3,0,
+  4,5, 5,6, 6,7, 7,4,
+  0,4, 1,5, 2,6, 3,7,
+};
+
 #if 1
 
 #define NUM_INDICES 24
@@ -126,11 +145,20 @@ unsigned int cube_faces[12] = {
 unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
+  //unsigned int geomID = rtcNewTriangleMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES/3);
   unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
+  //unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 12, 8, 0);
 
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int));
+  //rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_faces,    0, sizeof(unsigned int));
+
+  rtcSetBuffer(scene_i, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   cube_edge_crease_indices,  0, 2*sizeof(unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  cube_edge_crease_weights,  0, sizeof(float));
+
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(float));
 
   float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
@@ -235,7 +263,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
-      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,NULL,NULL,3); diffuse = c;
+      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
     }
 
     color = color + diffuse*0.5f; // FIXME: +=
