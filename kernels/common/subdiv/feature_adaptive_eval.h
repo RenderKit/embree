@@ -207,6 +207,7 @@ namespace embree
       if (P   ) *P    = bspline.eval(u,v);
       if (dPdu) *dPdu = bspline.tangentU(u,v);
       if (dPdv) *dPdv = bspline.tangentV(u,v);
+      break;
     }
     case SubdivMesh::IRREGULAR_QUAD_PATCH:
     {
@@ -217,12 +218,14 @@ namespace embree
       if (P   ) *P    = gregory.eval(u,v);
       if (dPdu) *dPdu = gregory.tangentU(u,v);
       if (dPdv) *dPdv = gregory.tangentV(u,v);
+      break;
     }
     default: 
     {
       GeneralCatmullClarkPatchT<Ty> patch;
       patch.init2(edge,loader);
       FeatureAdaptivePointEval<Ty> eval(patch,u,v,P,dPdu,dPdv); 
+      break;
     }
     }
   }
