@@ -100,7 +100,8 @@ extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned in
 
 extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_tt numUVs, 
-                                 const uniform float* uniform src, uniform size_tt byteStride, uniform float* uniform dst, uniform size_tt numFloats);
+                                 const uniform float* uniform src, uniform size_tt byteStride, 
+                                 uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform size_tt numFloats);
 
 void rtcInit(const uniform int8* uniform cfg) {
   ispcInit(cfg);
@@ -347,11 +348,14 @@ void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, un
 }
 
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, 
-                    varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, varying float* uniform dst, uniform size_t numFloats)
+                    varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, 
+                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats)
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
-  ispcInterpolateN(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,(const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,src,byteStride,(uniform float* uniform)dst,numFloats);
+  ispcInterpolateN(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
+                   (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,src,byteStride,
+                   (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,numFloats);
 }

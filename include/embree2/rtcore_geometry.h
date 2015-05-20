@@ -319,9 +319,12 @@ RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
  *  pointed to by src has to contain numFloats floating point values
  *  to interpolate for each vertex of the geometry. The byteStride
  *  parameter specifies the stride to go from one set of per vertex
- *  parameters to the next set. The dst array will get filled with the
- *  interpolated data. */
-RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats);
+ *  parameters to the next set. The dP array will get filled with the
+ *  interpolated data, and the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation. If one of the pointers dP, dPdu,
+ *  and dPdv is NULL, this value is not calculated. */
+RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, 
+                               float* dP, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
@@ -330,11 +333,16 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID,
  *  array pointed to by src has to contain numFloats floating point
  *  values to interpolate for each vertex of the geometry. The
  *  byteStride parameter specifies the stride to go from one set of
- *  per vertex parameters to the next set. The destination array is
- *  filled in structure of array layout. */
+ *  per vertex parameters to the next set. The dP array will get
+ *  filled with the interpolated data, and the dPdu and dPdv arrays
+ *  with the u and v derivative of the interpolation. If one of the
+ *  pointers dP, dPdu, and dPdv is NULL, this value is not
+ *  calculated. These destination arrays are filled in structure of
+ *  array (SoA) layout. */
 RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                const float* src, size_t byteStride, float* dst, size_t numFloats);
+                                const float* src, size_t byteStride, 
+                                float* dP, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

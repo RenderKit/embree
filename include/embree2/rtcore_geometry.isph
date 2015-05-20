@@ -274,10 +274,15 @@ void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
  *  array pointed to by src has to contain numFloats floating point
  *  values to interpolate for each vertex of the geometry. The
  *  byteStride parameter specifies the stride to go from one set of
- *  per vertex parameters to the next set. The dst array will get
- *  filled with the interpolated data in SOA layout. */
+ *  per vertex parameters to the next set. The dP array will get
+ *  filled with the interpolated data, and the dPdu and dPdv arrays
+ *  with the u and v derivative of the interpolation. If one of the
+ *  pointers dP, dPdu, and dPdv is NULL, this value is not
+ *  calculated. These destination arrays are filled in structure of
+ *  array (SoA) layout. */
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, 
-                    varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, varying float* uniform dst, uniform size_t numFloats);
+                    varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, 
+                    varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 void rtcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);

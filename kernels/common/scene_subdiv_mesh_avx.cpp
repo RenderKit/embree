@@ -23,7 +23,7 @@
 
 namespace embree
 {
-  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
+  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -44,7 +44,7 @@ namespace embree
         };
         ssef out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
         for (size_t j=i; j<numFloats; j++)
-          dst[j] = out[j-i];
+          P[j] = out[j-i];
       }
       else if (i+8 > numFloats) 
       {
@@ -55,7 +55,7 @@ namespace embree
         };
         avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
         for (size_t j=i; j<numFloats; j++)
-          dst[j] = out[j-i];
+          P[j] = out[j-i];
       } 
       else
       {
@@ -65,7 +65,7 @@ namespace embree
         };
         avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
         for (size_t j=i; j<i+8; j++)
-          dst[j] = out[j-i];
+          P[j] = out[j-i];
       }
     }
     AVX_ZERO_UPPER();

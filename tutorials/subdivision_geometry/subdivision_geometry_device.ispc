@@ -235,7 +235,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
-      Vec3f c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const uniform float*)&cube_colors,16,&c.x,3); diffuse = c;
+      Vec3f c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const uniform float*)&cube_colors,16,&c.x,NULL,NULL,3); diffuse = c;
     }
 
     color = color + diffuse*0.5f; // FIXME: +=
