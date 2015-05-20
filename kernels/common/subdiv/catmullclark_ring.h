@@ -854,12 +854,22 @@ namespace embree
     }
 
 
+    Vertex computeGregoryPatchFacePoints(const Vertex &v0,
+                                         const Vertex &e0_plus,
+                                         const Vertex &e1_minus,
+                                         const Vertex &r0,
+                                         const float c0,
+                                         const float c1,
+                                         const float d)
+    {
+      return 1.0f / d * (c1 * v0 + (d - 2.0f*c0 - c1) * e0_plus + 2.0f * c0 * e1_minus + r0);
+    }
     
-    void computeGregoryPatchPoints(Vertex &p0,
-                                   Vertex &e0_plus,
-                                   Vertex &e0_minus,
-                                   Vertex &r0_plus,
-                                   Vertex &r0_minus)
+    void computeGregoryPatchEdgePoints(Vertex &p0,
+                                       Vertex &e0_plus,
+                                       Vertex &e0_minus,
+                                       Vertex &r0_plus,
+                                       Vertex &r0_minus)
     {
       Vertex cm_ring[2*MAX_FACE_VALENCE];
       
