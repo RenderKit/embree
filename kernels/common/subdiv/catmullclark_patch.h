@@ -540,8 +540,10 @@ namespace embree
         dest.crease_weight[i] = 0.0f;
 
       //////////////////////////////
-      dest.eval_start_index       = (8-offset)>>1;
+      assert(offset <= 2*N);
+      dest.eval_start_index       = (2*N-offset)>>1;
       if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
+
       assert( dest.eval_start_index < dest.face_valence );
       dest.eval_unique_identifier = 0;
       //////////////////////////////
