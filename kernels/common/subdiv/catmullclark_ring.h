@@ -853,17 +853,108 @@ namespace embree
       assert( dst.hasValidPositions() );
     }
 
-    void exportEdgeMidpointsFaceCentroidsRing(Vertex *dest)
+
+    
+    void computeGregoryPatchPoints(Vertex &p0,
+                                   Vertex &e0_plus,
+                                   Vertex &e0_minus,
+                                   Vertex &r0_plus,
+                                   Vertex &r0_minus)
     {
+      Vertex cm_ring[2*MAX_FACE_VALENCE];
+      
+      const size_t border_index = border_face == -1 ? -1 : 2*border_face; 
+      
       /* calculate face centroids and edge midpoints */
       for (size_t f=0; v=0; f<face_valence; f++) {
         Vertex_t F = vtx;
-        for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; 
-        dest[2*f+1] = F/float(faces[f].size+2);
-	dest[2*f] = 0.5f*(vtx+ring[v]);
+        for (size_t k=v; k<=v+faces[f].size; k++)
+          F += ring[k%edge_valence];
+        cm_ring[2*f+1] = F/float(faces[f].size+2);
+	cm_ring[2*f] = 0.5f*(vtx+ring[v]);
         v+=faces[f].size;
         assert( v < edge_valence);
       }
+
+      const float N = face_valence;
+      /* limit Vertex p0 */
+      p0 = Vertex( zero );
+      for (size_t f=0; f<face_valence; f++)
+        p0 += cm_ring[2*f] + cm_ring[2*f+1];
+      p0 *= 4.0f / (N * (N - 5.0f));
+      p0 += (N - 3.0f) / (N - 5.0f) * vtx;
+
+      const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/N) * cosf(M_PI/N));  
+      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      /* tangent q0 */
+      Vertex q0( zero );
+      for (size_t f=0; f<face_valence; f++)
+        {
+          const size_t index = f;
+          const Vertex m_i = cm_ring[2*index+0];
+          const Vertex c_i = cm_ring[2*index+1];        
+          q0 += \
+            (1.0f - sigma * cosf(M_PI)) * cosf((2.0f*M_PI*f)/N) * m_i +
+            2.0f * sigma * cosf((2.0f*M_PI*f+M_PI)/N) * c_i;
+        }
+
+      /* tangent q1 */
+      Vertex q1( zero );
+      for (size_t f=0; f<face_valence; f++)
+        {
+          const size_t index = (f+2) % face_valence;
+          const Vertex m_i = cm_ring[2*index+0];
+          const Vertex c_i = cm_ring[2*index+1];        
+          q1 += \
+            (1.0f - sigma * cosf(M_PI)) * cosf((2.0f*M_PI*f)/N) * m_i +
+            2.0f * sigma * cosf((2.0f*M_PI*f+M_PI)/N) * c_i;
+        }
+      
+      /* e0_plus */
+      e0_plus  = p + 2.0f/3.0f * alpha * q0;
+
+      /* e0_minus */
+      e0_minus = p + 2.0f/3.0f * alpha * q1;
+
+      /* r0_plus, r0_minus */
+      const Vertex e_i      = cm_ring[0];
+      const Vertex c_i_m_1  = cm_ring[1];
+      const Vertex e_i_m_1  = cm_ring[2];
+      
+      Vertex c_i, e_i_p_1;
+      const bool hasHardEdge =
+      std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
+      std::isinf(irreg_patch.ring[index].crease_weight[0]);
+                
+      if (unlikely(border_index == edge_valence-2) || hasHardEdge)
+        {
+          /* mirror quad center and edge mid-point */
+          c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
+          e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
+        }
+      else
+        {
+          c_i     = cm_ring[2*(face_valence-1)+1];
+          e_i_p_1 = cm_ring[2*(face_valence-1)+0];
+        }
+      
+      Vertex c_i_m_2, e_i_m_2;
+      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
+      {
+        /* mirror quad center and edge mid-point */
+        c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
+        e_i_m_2  = e_i + 2 * (vtx - e_i);	  
+      }
+      else
+      {
+        c_i_m_2  = cm_ring[2*1+1];
+        e_i_m_2  = cm_ring[2*2+0];
+      }      
+      
+      r0_plus  = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);      
+      r0_minus = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
+            
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
