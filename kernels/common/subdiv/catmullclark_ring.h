@@ -853,30 +853,19 @@ namespace embree
       assert( dst.hasValidPositions() );
     }
 
-
-    Vertex computeGregoryPatchFacePoints(const Vertex &v0,
-                                         const Vertex &e0_plus,
-                                         const Vertex &e1_minus,
-                                         const Vertex &r0,
-                                         const float c0,
-                                         const float c1,
-                                         const float d)
-    {
-      return 1.0f / d * (c1 * v0 + (d - 2.0f*c0 - c1) * e0_plus + 2.0f * c0 * e1_minus + r0);
-    }
     
     void computeGregoryPatchEdgePoints(Vertex &p0,
                                        Vertex &e0_plus,
                                        Vertex &e0_minus,
                                        Vertex &r0_plus,
-                                       Vertex &r0_minus)
+                                       Vertex &r0_minus) const
     {
       Vertex cm_ring[2*MAX_FACE_VALENCE];
       
       const size_t border_index = border_face == -1 ? -1 : 2*border_face; 
       
       /* calculate face centroids and edge midpoints */
-      for (size_t f=0; v=0; f<face_valence; f++) {
+      for (size_t f=0, v=0; f<face_valence; f++) {
         Vertex_t F = vtx;
         for (size_t k=v; k<=v+faces[f].size; k++)
           F += ring[k%edge_valence];
@@ -895,7 +884,7 @@ namespace embree
       p0 += (N - 3.0f) / (N - 5.0f) * vtx;
 
       const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/N) * cosf(M_PI/N));  
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/N) + cosf(M_PI/N) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/N)));
 
       /* tangent q0 */
       Vertex q0( zero );
@@ -922,10 +911,10 @@ namespace embree
         }
       
       /* e0_plus */
-      e0_plus  = p + 2.0f/3.0f * alpha * q0;
+      e0_plus  = vtx + 2.0f/3.0f * alpha * q0;
 
       /* e0_minus */
-      e0_minus = p + 2.0f/3.0f * alpha * q1;
+      e0_minus = vtx + 2.0f/3.0f * alpha * q1;
 
       /* r0_plus, r0_minus */
       const Vertex e_i      = cm_ring[0];
@@ -934,8 +923,8 @@ namespace embree
       
       Vertex c_i, e_i_p_1;
       const bool hasHardEdge =
-      std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
-      std::isinf(irreg_patch.ring[index].crease_weight[0]);
+      std::isinf(vertex_crease_weight) &&
+      std::isinf(faces[0].crease_weight);
                 
       if (unlikely(border_index == edge_valence-2) || hasHardEdge)
         {
