@@ -101,7 +101,7 @@ __aligned(16) unsigned int cube_edge_crease_indices[24] =
   0,4, 1,5, 2,6, 3,7,
 };
 
-#if 1
+#if 0
 
 #define NUM_INDICES 24
 #define NUM_FACES 6
@@ -146,8 +146,8 @@ unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 6 quads and 8 vertices */
   //unsigned int geomID = rtcNewTriangleMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES/3);
-  unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
-  //unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 12, 8, 0);
+  //unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 0, 0, 0);
+  unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_FACES, NUM_INDICES, 8, 12, 8, 0);
 
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, sizeof(unsigned int));
@@ -170,6 +170,7 @@ unsigned int addCube (RTCScene scene_i)
 /*! updates the tessellation level for each edge */
 void updateEdgeLevelBuffer( RTCScene scene_i, unsigned geomID, const Vec3fa& cam_pos )
 {
+#if 1
   float*  level    = (float* ) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   int*    faces    = (int*   ) rtcMapBuffer(scene_i, geomID, RTC_INDEX_BUFFER);
   Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
@@ -188,6 +189,7 @@ void updateEdgeLevelBuffer( RTCScene scene_i, unsigned geomID, const Vec3fa& cam
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
   rtcUpdateBuffer(scene_i,geomID,RTC_LEVEL_BUFFER);
+#endif
 }
 
 /* adds a ground plane to the scene */
@@ -254,16 +256,26 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    return 1000.0f*normalize(ray.Ng);
     Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
 
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
-      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
+      //Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
+      //return c;
+      //PRINT(c);
+      //exit(1);
+
+      //Vec3fa c,dcdu,dcdv; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,&dcdu.x,&dcdv.x,3); diffuse = c;
+      /*PRINT(c);
+      PRINT(dcdu);
+      PRINT(dcdv);
+      exit(1);*/
     }
 
     color = color + diffuse*0.5f; // FIXME: +=
@@ -281,7 +293,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     shadow.time = 0;
     
     /* trace shadow ray */
-     rtcOccluded(g_scene,shadow);
+    rtcOccluded(g_scene,shadow);
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
@@ -311,6 +323,10 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
+    //if (x != 287 || y != 283) continue;
+    //if (x != 239 || y != 214) continue;
+    //if (x != 227 || y != 217) continue;
+
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 

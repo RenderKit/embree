@@ -334,6 +334,7 @@ extern "C" bool device_pick(const float x,
 
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
+  PRINT2(x,y);
   PRINT(ray.geomID);
   PRINT(ray.primID);
 
