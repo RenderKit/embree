@@ -101,6 +101,9 @@ namespace embree
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
             *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
             *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
           }
         }
         else if ( ab_abc && !bc_abc) {
@@ -113,6 +116,9 @@ namespace embree
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
             *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
             *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
           }
         }
         else {
@@ -125,6 +131,9 @@ namespace embree
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
             *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
             *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
           }
         }
       } 
@@ -156,6 +165,7 @@ namespace embree
     {
       /*! recursively subdivide */
       while (!patch.isRegularOrFinal2(depth)) 
+      //while (depth < 10)
       {
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
@@ -204,6 +214,7 @@ namespace embree
   {
     switch (edge->type) 
     {
+#if 0
     case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
       BSplinePatchT<Ty> bspline;
@@ -224,6 +235,7 @@ namespace embree
       if (dPdv) *dPdv = gregory.tangentV(u,v);
       break;
     }
+#endif
     default: 
     {
       GeneralCatmullClarkPatchT<Ty> patch;
