@@ -52,12 +52,12 @@ namespace embree
       return Vec2f(uu,vv);
     }
 
-    __forceinline Vec2f map_quad_to_tri_du(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv) {
-      return (1.0f-uv.y)*(ab-a) + uv.y*(abc-ac);
+    __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+      return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
     }
 
-    __forceinline Vec2f map_quad_to_tri_dv(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv) {
-      return (1.0f-uv.x)*(ac-a) + uv.x*(abc-ab);
+    __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+      return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
     }
 
     __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
@@ -92,36 +92,39 @@ namespace embree
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
         if  (!ab_abc &&  ac_abc) { // FIXME: simplify
-          eval(patches[0],map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v)),srange,depth+1);
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
+          eval(patches[0],xy,srange,depth+1);
           if (dPdu && dPdv) {
             const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_du(a,ab,abc,ac,Vec2f(u,v));
-            const Vec2f duvdy = map_quad_to_tri_dv(a,ab,abc,ac,Vec2f(u,v));
+            const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
-            *dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
           }
         }
         else if ( ab_abc && !bc_abc) {
-          eval(patches[1],map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w)),srange,depth+1);
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
+          eval(patches[1],xy,srange,depth+1);
           if (dPdu && dPdv) {
             const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_du(a,ab,abc,ac,Vec2f(v,w));
-            const Vec2f duvdy = map_quad_to_tri_dv(a,ab,abc,ac,Vec2f(v,w));
+            const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
-            *dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
           }
         }
         else {
-          eval(patches[2],map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u)),srange,depth+1);
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
+          eval(patches[2],xy,srange,depth+1);
           if (dPdu && dPdv) {
             const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_du(a,ab,abc,ac,Vec2f(w,u));
-            const Vec2f duvdy = map_quad_to_tri_dv(a,ab,abc,ac,Vec2f(w,u));
+            const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
             const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
-            *dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
           }
         }
       } 
@@ -167,6 +170,7 @@ namespace embree
         }
         depth++;
       }
+
       const float scaleU = rcp(srange.upper.x-srange.lower.x);
       const float scaleV = rcp(srange.upper.y-srange.lower.y);
 

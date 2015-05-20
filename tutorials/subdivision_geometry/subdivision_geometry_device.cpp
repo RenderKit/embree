@@ -123,11 +123,11 @@ unsigned int cube_faces[6] = {
 #else
 
 #define NUM_INDICES 36
-#define NUM_FACES 12
+#define NUM_FACES 1
 #define FACE_SIZE 3
 
 unsigned int cube_indices[36] = { 
-  1, 5, 4,  0, 1, 4,   
+0, 1, 4,    1, 5, 4,   
   2, 6, 5,  1, 2, 5,
   3, 7, 6,  2, 3, 6,  
   4, 7, 3,  0, 4, 3,
@@ -261,7 +261,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    return 1000.0f*normalize(ray.Ng);
+    //return 1000.0f*normalize(ray.Ng);
     Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
 
     /* interpolate color over geometry */
@@ -271,7 +271,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       //PRINT(c);
       //exit(1);
 
-      //Vec3fa c,dcdu,dcdv; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,&dcdu.x,&dcdv.x,3); diffuse = c;
+      Vec3fa c,dcdu,dcdv; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,&dcdu.x,&dcdv.x,3); diffuse = c;
+      //PRINT(dcdu);
+      return dcdu;
+      //return c;
       /*PRINT(c);
       PRINT(dcdu);
       PRINT(dcdv);
@@ -323,10 +326,6 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    //if (x != 287 || y != 283) continue;
-    //if (x != 239 || y != 214) continue;
-    //if (x != 227 || y != 217) continue;
-
     /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
