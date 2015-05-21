@@ -124,11 +124,15 @@ uniform unsigned int cube_tri_faces[12] = {
 };
 
 /* adds a subdiv cube to the scene */
-uniform unsigned int addTriangleSubdivCube (RTCScene scene_i)
+uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_TRI_FACES, NUM_TRI_INDICES, NUM_VERTICES, 0, 0, 0);
   
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_tri_faces,    0, sizeof(uniform unsigned int));
 
@@ -148,11 +152,15 @@ uniform unsigned int addTriangleSubdivCube (RTCScene scene_i)
 }
 
 /* adds a subdiv cube to the scene */
-uniform unsigned int addQuadSubdivCube (RTCScene scene_i)
+uniform unsigned int addQuadSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_QUAD_FACES, NUM_QUAD_INDICES, NUM_VERTICES, 0, 0, 0);
 
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(uniform unsigned int));
 
@@ -172,10 +180,15 @@ uniform unsigned int addQuadSubdivCube (RTCScene scene_i)
 }
 
 /* adds a cube to the scene */
-uniform unsigned int addTriangleCube (RTCScene scene_i)
+uniform unsigned int addTriangleCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
   uniform unsigned int geomID = rtcNewTriangleMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_TRI_INDICES/3, NUM_VERTICES);
-  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+
+  //rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices, 0, sizeof(uniform Vec3fa  ));
+  uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  for (uniform size_t i=0; i<NUM_VERTICES; i++) vtx[i] = make_Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
+  rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+
   rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_USER_VERTEX_BUFFER0, cube_vertex_colors, 0, sizeof(uniform Vec3fa));
   return geomID;
@@ -220,9 +233,9 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add cube */
-  //addTriangleCube(g_scene);
-  //addTriangleSubdivCube(g_scene);
-  addQuadSubdivCube(g_scene);
+  addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,6.0f));
+  addTriangleSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,3.0f));
+  addQuadSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,0.0f));
 
   /* commit changes to scene */
   rtcCommit (g_scene);
