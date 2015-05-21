@@ -16,6 +16,7 @@
 
 #include "scene_bezier_curves.h"
 #include "scene.h"
+#include "subdiv/bezier_curve.h"
 
 namespace embree
 {
@@ -165,17 +166,12 @@ namespace embree
         const ssef p2 = ssef::loadu((float*)&src[(curve+2)*stride],n);
         const ssef p3 = ssef::loadu((float*)&src[(curve+3)*stride],n);
 
-        /*BezierCurve3D (const Vec3fa& v0, 
-                                const Vec3fa& v1, 
-                                const Vec3fa& v2, 
-                                const Vec3fa& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)*/  // FIXME: implement
+        const BezierCurve<ssef> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        ssef Q, dQdu; bezier.eval(u,Q,dQdu);
 
-        /*if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2,n);
-        if (dPdu) ssef::storeu(dPdu+i,p1-p0,n);
-        if (dPdv) ssef::storeu(dPdv+i,p2-p0,n);*/
+        if (P   ) ssef::storeu(P+i,Q,n);
+        if (dPdu) ssef::storeu(dPdu+i,dQdu,n);
+
       } else {
         const size_t curve = curves[primID];
         const ssef p0 = ssef::loadu((float*)&src[(curve+0)*stride]);
@@ -183,17 +179,11 @@ namespace embree
         const ssef p2 = ssef::loadu((float*)&src[(curve+2)*stride]);
         const ssef p3 = ssef::loadu((float*)&src[(curve+3)*stride]);
 
-        /*BezierCurve3D (const Vec3fa& v0, 
-                                const Vec3fa& v1, 
-                                const Vec3fa& v2, 
-                                const Vec3fa& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)*/  // FIXME: implement
+        const BezierCurve<ssef> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        ssef Q, dQdu; bezier.eval(u,Q,dQdu);
 
-        /*if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2);
-        if (dPdu) ssef::storeu(dPdu+i,p1-p0);
-        if (dPdv) ssef::storeu(dPdv+i,p2-p0);*/
+        if (P   ) ssef::storeu(P+i,Q);
+        if (dPdu) ssef::storeu(dPdu+i,dQdu);
       }
     }
 #endif
