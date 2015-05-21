@@ -89,10 +89,17 @@ namespace embree
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
     
-    void initFaceVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx, 
-                        const Vertex& e0_p_vtx, const Vertex& e1_m_vtx, const unsigned int face_valence_p1,
- 			const Vertex& e0_m_vtx,	const Vertex& e3_p_vtx,	const unsigned int face_valence_p3,
-			Vertex& f_p_vtx, Vertex& f_m_vtx)
+    void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
+			const size_t index, 
+			const Vertex& p_vtx, 
+                        const Vertex& e0_p_vtx, 
+			const Vertex& e1_m_vtx, 
+			const unsigned int face_valence_p1,
+ 			const Vertex& e0_m_vtx,	
+			const Vertex& e3_p_vtx,	
+			const unsigned int face_valence_p3,
+			Vertex& f_p_vtx, 
+			Vertex& f_m_vtx)
     {
       const unsigned int face_valence = irreg_patch.ring[index].face_valence;
       const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
@@ -139,10 +146,10 @@ namespace embree
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
       
       const Vertex r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
-      f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
-      
-      const Vertex r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      const Vertex r_e_m = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
+
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);     
     }
 
     __noinline void init(const CatmullClarkPatch& patch)
@@ -178,24 +185,42 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
     
-    Vertex computeGregoryPatchFacePoints(const Vertex &v0,
-                                         const Vertex &e0_plus,
-                                         const Vertex &e1_minus,
-                                         const Vertex &r0,
-                                         const float c0,
-                                         const float c1,
-                                         const float d)
+    void computeGregoryPatchFacePoints(const unsigned int face_valence,
+				       const Vertex& r_e_p, 
+				       const Vertex& r_e_m, 					 
+				       const Vertex& p_vtx, 
+				       const Vertex& e0_p_vtx, 
+				       const Vertex& e1_m_vtx, 
+				       const unsigned int face_valence_p1,
+				       const Vertex& e0_m_vtx,	
+				       const Vertex& e3_p_vtx,	
+				       const unsigned int face_valence_p3,
+				       Vertex& f_p_vtx, 
+				       Vertex& f_m_vtx)
     {
-      return 1.0f / d * (c1 * v0 + (d - 2.0f*c0 - c1) * e0_plus + 2.0f * c0 * e1_minus + r0);
+      const float d = 3.0f;
+      const float c     = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
     }
 
     __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 4);
-#if 1
+#if 0
       CatmullClarkPatch qpatch; patch.init(qpatch);
       init(qpatch);
 #else
+      const float face_valence_p0 = patch.ring[0].face_valence;
+      const float face_valence_p1 = patch.ring[1].face_valence;
+      const float face_valence_p2 = patch.ring[2].face_valence;
+      const float face_valence_p3 = patch.ring[3].face_valence;
+
       Vertex p0_r_p, p0_r_m;
       patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
 
@@ -208,12 +233,11 @@ namespace embree
       Vertex p3_r_p, p3_r_m;
       patch.ring[3].computeGregoryPatchEdgePoints( p3(), e3_p(), e3_m(), p3_r_p, p3_r_m );
 
-      const float face_valence_p0 = patch.ring[0].face_valence;
-      const float face_valence_p1 = patch.ring[1].face_valence;
-      const float face_valence_p2 = patch.ring[2].face_valence;
-      const float face_valence_p3 = patch.ring[3].face_valence;
+      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e3_p(), face_valence_p3, f0_p(), f0_m() );
+      computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m() );
+      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e3_m(), face_valence_p3, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
+      computeGregoryPatchFacePoints(face_valence_p3, p3_r_p, p3_r_m, p3(), e3_p(), e0_m(), face_valence_p0, e3_m(), e2_p(), face_valence_p3, f3_p(), f3_m() );
 
-      //f0_p() = computeGregoryPatchFacePoints(p0(), e0_p(), e1_m(), 
 #endif
     }
 
