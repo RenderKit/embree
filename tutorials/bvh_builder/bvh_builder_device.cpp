@@ -202,8 +202,8 @@ void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
       [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
       {
         assert(current.size() == 1);
-        const size_t id = morton_src[current.begin].index;
-        const BBox3fa bounds = prims[id].bounds(); // FIXME: dont use morton_src, should be input
+        const size_t id = morton_src[current.begin].index; // FIXME: dont use morton_src, should be input
+        const BBox3fa bounds = prims[id].bounds(); 
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
         *current.parent = node;
         box_o = bounds;

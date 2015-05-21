@@ -615,6 +615,8 @@ namespace embree
       __forceinline Face (int size, float crease_weight)
         : size(size), crease_weight(crease_weight) {}
 
+      // FIXME: add member that returns total number of vertices
+
       int size;              // number of vertices-2 of nth face in ring
       float crease_weight;
     };

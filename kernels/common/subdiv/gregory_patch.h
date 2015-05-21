@@ -243,7 +243,7 @@ namespace embree
     {
       if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
-	matrix_11 = matrix[1][1]; // FIXME: this is wrong, should select between f0_p and f0_m
+	matrix_11 = matrix[1][1];
 	matrix_12 = matrix[1][2];
 	matrix_22 = matrix[2][2];
 	matrix_21 = matrix[2][1];	 
@@ -412,15 +412,15 @@ namespace embree
       const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
 
 #if 1
-      const M m_border0 = (uu == 0.0f) & (vv == 0.0f); // FIXME: why is eval different?
-      const M m_border1 = (uu == 1.0f) & (vv == 0.0f);
-      const M m_border2 = (uu == 1.0f) & (vv == 1.0f);
-      const M m_border3 = (uu == 0.0f) & (vv == 1.0f);
+      const M m_corner0 = (uu == 0.0f) & (vv == 0.0f);
+      const M m_corner1 = (uu == 1.0f) & (vv == 0.0f);
+      const M m_corner2 = (uu == 1.0f) & (vv == 1.0f);
+      const M m_corner3 = (uu == 0.0f) & (vv == 1.0f);
       
-      const Vec3<T> matrix_11( select(m_border0,f0_p.x,f0_i.x), select(m_border0,f0_p.y,f0_i.y), select(m_border0,f0_p.z,f0_i.z) );
-      const Vec3<T> matrix_12( select(m_border1,f1_p.x,f1_i.x), select(m_border1,f1_p.y,f1_i.y), select(m_border1,f1_p.z,f1_i.z) );
-      const Vec3<T> matrix_22( select(m_border2,f2_p.x,f2_i.x), select(m_border2,f2_p.y,f2_i.y), select(m_border2,f2_p.z,f2_i.z) );
-      const Vec3<T> matrix_21( select(m_border3,f3_p.x,f3_i.x), select(m_border3,f3_p.y,f3_i.y), select(m_border3,f3_p.z,f3_i.z) );
+      const Vec3<T> matrix_11( select(m_corner0,f0_p.x,f0_i.x), select(m_corner0,f0_p.y,f0_i.y), select(m_corner0,f0_p.z,f0_i.z) );
+      const Vec3<T> matrix_12( select(m_corner1,f1_p.x,f1_i.x), select(m_corner1,f1_p.y,f1_i.y), select(m_corner1,f1_p.z,f1_i.z) );
+      const Vec3<T> matrix_22( select(m_corner2,f2_p.x,f2_i.x), select(m_corner2,f2_p.y,f2_i.y), select(m_corner2,f2_p.z,f2_i.z) );
+      const Vec3<T> matrix_21( select(m_corner3,f3_p.x,f3_i.x), select(m_corner3,f3_p.y,f3_i.y), select(m_corner3,f3_p.z,f3_i.z) );
 #else
       const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
       const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
