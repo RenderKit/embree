@@ -266,20 +266,11 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
-      //Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
-      //return c;
-      //PRINT(c);
-      //exit(1);
-
-      Vec3fa c,dcdu,dcdv; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,&dcdu.x,&dcdv.x,3); diffuse = c;
+      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
+      //Vec3fa c,dcdu,dcdv; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,&dcdu.x,&dcdv.x,3); diffuse = c;
       //if (dcdu.x < -0.001f || dcdu.y < -0.001f || dcdu.z < -0.001f) return Vec3fa(0,0,0);
-      if (dcdu.x > 1.001f || dcdu.y > 1.001f || dcdu.z > 1.001f) return Vec3fa(1,1,1);
-      return abs(dcdu);
-      //return c;
-      /*PRINT(c);
-      PRINT(dcdu);
-      PRINT(dcdv);
-      exit(1);*/
+      //if (dcdu.x > 1.001f || dcdu.y > 1.001f || dcdu.z > 1.001f) return Vec3fa(1,1,1);
+      //return abs(dcdu);
     }
 
     color = color + diffuse*0.5f; // FIXME: +=
