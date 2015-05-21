@@ -87,9 +87,10 @@ namespace embree
     }
     //assert(needAdaptiveSubdivision == 0);
 
-
+    PING;
     if (numEdges == 4)
       {
+	PRINT("QUAD");
 	GeneralCatmullClarkPatch3fa cpatch;
 	cpatch.init(h_start,mesh->getVertexBuffer());
 	float edge_level[4] = {
@@ -116,6 +117,8 @@ namespace embree
       }
     else if (numEdges == 3)
       {
+	PRINT("TRIANGLE");
+
 	GeneralCatmullClarkPatch3fa gpatch;
 	gpatch.init(h_start,mesh->getVertexBuffer());
 
