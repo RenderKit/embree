@@ -42,6 +42,7 @@ ADD_SUBDIRECTORY(bvh_builder)
 ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
+ADD_SUBDIRECTORY(interpolation)
 
 IF (ENABLE_XEON_PHI_SUPPORT)
   SET (__XEON__ 0)

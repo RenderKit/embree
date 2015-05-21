@@ -19,6 +19,7 @@
 #include "catmullclark_patch.h"
 #include "bspline_patch.h"
 #include "gregory_patch.h"
+#include "common/math/linearspace2.h"
 
 namespace embree
 {
@@ -30,10 +31,12 @@ namespace embree
     typedef GeneralCatmullClarkPatchT<Vertex> GeneralCatmullClarkPatch;
 
     const float u,v;
-    Vertex dst;
-        
-    __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v)
-      : u(u), v(v)
+    Vertex* P;
+    Vertex* dPdu;
+    Vertex* dPdv;
+    
+    __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      : u(u), v(v), P(P), dPdu(dPdu), dPdv(dPdv)
     {
       const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps, add assertions
       const float uu = clamp(u,0.0f,1.0f); 
@@ -43,11 +46,18 @@ namespace embree
     __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
     {
       const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-      float uk = 0.5f, vk = 0.5f;
       const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
       const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
       const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
       return Vec2f(uu,vv);
+    }
+
+    __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+      return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
+    }
+
+    __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+      return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
     }
 
     __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
@@ -81,9 +91,51 @@ namespace embree
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-        if      (!ab_abc &&  ac_abc) eval(patches[0],map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v)),srange,depth+1);
-        else if ( ab_abc && !bc_abc) eval(patches[1],map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w)),srange,depth+1);
-        else                         eval(patches[2],map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u)),srange,depth+1);
+        if  (!ab_abc &&  ac_abc) { // FIXME: simplify
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
+          eval(patches[0],xy,srange,depth+1);
+          if (dPdu && dPdv) {
+            const Vertex dpdx = *dPdu, dpdy = *dPdv;
+            const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
+            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
+          }
+        }
+        else if ( ab_abc && !bc_abc) {
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
+          eval(patches[1],xy,srange,depth+1);
+          if (dPdu && dPdv) {
+            const Vertex dpdx = *dPdu, dpdy = *dPdv;
+            const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
+            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
+          }
+        }
+        else {
+          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
+          eval(patches[2],xy,srange,depth+1);
+          if (dPdu && dPdv) {
+            const Vertex dpdx = *dPdu, dpdy = *dPdv;
+            const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
+            const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
+            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+            //*dPdu = dpdx*J.vx.x + dpdy*J.vy.x;
+            //*dPdv = dpdx*J.vx.y + dpdy*J.vy.y;
+            //*dPdu = dpdx; *dPdv = dpdy;
+          }
+        }
       } 
 
       /* parametrization for quads */
@@ -113,6 +165,7 @@ namespace embree
     {
       /*! recursively subdivide */
       while (!patch.isRegularOrFinal2(depth)) 
+      //while (depth < 10)
       {
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
@@ -128,54 +181,65 @@ namespace embree
         depth++;
       }
 
+      const float scaleU = rcp(srange.upper.x-srange.lower.x);
+      const float scaleV = rcp(srange.upper.y-srange.lower.y);
+
       /*! use either B-spline or bilinear patch to interpolate */
       if (patch.isRegular()) 
       {
         BSplinePatch bspline; bspline.init(patch);
-        const float fx = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x);
-        const float fy = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y);
-        dst = bspline.eval(fx,fy);
+        const float fx = (uv.x-srange.lower.x)*scaleU;
+        const float fy = (uv.y-srange.lower.y)*scaleV;
+        if (P   ) *P    = bspline.eval(fx,fy);
+        if (dPdu) *dPdu = bspline.tangentU(fx,fy)*scaleU; 
+        if (dPdv) *dPdv = bspline.tangentV(fx,fy)*scaleV; 
       }
       else 
       {
-        const float sx1 = (uv.x-srange.lower.x)*rcp(srange.upper.x-srange.lower.x), sx0 = 1.0f-sx1;
-        const float sy1 = (uv.y-srange.lower.y)*rcp(srange.upper.y-srange.lower.y), sy0 = 1.0f-sy1;
+        const float sx1 = (uv.x-srange.lower.x)*scaleU, sx0 = 1.0f-sx1;
+        const float sy1 = (uv.y-srange.lower.y)*scaleV, sy0 = 1.0f-sy1;
         const Vertex P0 = patch.ring[0].getLimitVertex();
         const Vertex P1 = patch.ring[1].getLimitVertex();
         const Vertex P2 = patch.ring[2].getLimitVertex();
         const Vertex P3 = patch.ring[3].getLimitVertex();
-        dst = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+        if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+        if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*scaleU; 
+        if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*scaleV;
       }
     }
   };
 
-  template<typename Loader>
-    __forceinline auto feature_adaptive_point_eval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v) -> decltype(loader(0))
+  template<typename Ty, typename Loader>
+    __forceinline void feature_adaptive_point_eval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Ty* P, Ty* dPdu, Ty* dPdv) 
   {
-    typedef decltype(loader(0)) Vertex;
-
     switch (edge->type) 
     {
     case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
-      BSplinePatchT<Vertex> bspline;
+      BSplinePatchT<Ty> bspline;
       bspline.init(edge,loader);
-      return bspline.eval(u,v);
+      if (P   ) *P    = bspline.eval(u,v);
+      if (dPdu) *dPdu = bspline.tangentU(u,v);
+      if (dPdv) *dPdv = bspline.tangentV(u,v);
+      break;
     }
     case SubdivMesh::IRREGULAR_QUAD_PATCH:
     {
-      CatmullClarkPatchT<Vertex> patch;
+      CatmullClarkPatchT<Ty> patch;
       patch.init2(edge,loader);
-      GregoryPatchT<Vertex> gregory;
+      GregoryPatchT<Ty> gregory;
       gregory.init(patch);
-      return gregory.eval(u,v);
+      if (P   ) *P    = gregory.eval(u,v);
+      if (dPdu) *dPdu = gregory.tangentU(u,v);
+      if (dPdv) *dPdv = gregory.tangentV(u,v);
+      break;
     }
     default: 
     {
-      GeneralCatmullClarkPatchT<Vertex> patch;
+      GeneralCatmullClarkPatchT<Ty> patch;
       patch.init2(edge,loader);
-      FeatureAdaptivePointEval<Vertex> eval(patch,u,v); 
-      return eval.dst;
+      FeatureAdaptivePointEval<Ty> eval(patch,u,v,P,dPdu,dPdv); 
+      break;
     }
     }
   }

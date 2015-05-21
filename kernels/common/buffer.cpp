@@ -21,6 +21,10 @@ namespace embree
   Buffer::Buffer () 
     : initialized(false), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
   
+  Buffer::Buffer (size_t num_in, size_t stride_in) : Buffer() {
+    init(num_in,stride_in);
+  }
+  
   Buffer::~Buffer () {
     free();
   }

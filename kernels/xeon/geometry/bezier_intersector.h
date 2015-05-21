@@ -45,13 +45,13 @@ namespace embree
         Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
-        BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
         //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
@@ -71,8 +71,8 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
         //const sse4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
@@ -110,7 +110,7 @@ namespace embree
 #endif
           /* update hit information */
           const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
           ray.u = uu;
@@ -126,7 +126,7 @@ namespace embree
         while (true) 
         {
           const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
             if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID)) return;
@@ -148,13 +148,13 @@ namespace embree
         Vec3fa w1 = xfmVector(pre.ray_space,v1-ray.org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(pre.ray_space,v2-ray.org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
-        BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
         const avx4f v = p1-p0;
@@ -173,8 +173,8 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
         const sse4f v = p1-p0;
@@ -212,7 +212,7 @@ namespace embree
         {
           /* calculate hit information */
           const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
             if (runOcclusionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID)) break;
@@ -277,13 +277,13 @@ namespace embree
         Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
-        BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
         const avx4f v = p1-p0;
@@ -302,8 +302,8 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
         const sse4f v = p1-p0;
@@ -340,7 +340,7 @@ namespace embree
 #endif
           /* update hit information */
           const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
           STAT3(normal.trav_prim_hits,1,1,1);
@@ -359,7 +359,7 @@ namespace embree
         while (true) 
         {
           const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
             if (runIntersectionFilter(geometry,ray,k,uu,0.0f,t[i],T,geomID,primID)) return;
@@ -388,13 +388,13 @@ namespace embree
         Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
         Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
         Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
-        BezierCurve3D curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
+        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
         const avx4f v = p1-p0;
@@ -413,8 +413,8 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
         const sse4f v = p1-p0;
@@ -451,7 +451,7 @@ namespace embree
         {
           /* calculate hit information */
           const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3D curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
+          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
             if (runOcclusionFilter(geometry,ray,k,uu,0.0f,t[i],T,geomID,primID)) break;

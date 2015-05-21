@@ -26,9 +26,14 @@
 /*! \brief Specifies the type of buffers when mapping buffers */
 enum RTCBufferType {
   RTC_INDEX_BUFFER         = 0x01000000,
+  
   RTC_VERTEX_BUFFER        = 0x02000000,
   RTC_VERTEX_BUFFER0       = 0x02000000,
   RTC_VERTEX_BUFFER1       = 0x02000001,
+
+  RTC_USER_VERTEX_BUFFER   = 0x02100000,
+  RTC_USER_VERTEX_BUFFER0  = 0x02100000,
+  RTC_USER_VERTEX_BUFFER1  = 0x02100001,
 
   RTC_FACE_BUFFER          = 0x03000000,
   RTC_LEVEL_BUFFER         = 0x04000001,
@@ -315,26 +320,37 @@ RTCORE_API void rtcSetUserData (RTCScene scene, unsigned geomID, void* ptr);
 /*! Get pointer for user defined data per geometry based on geomID. */
 RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
 
-/*! Interpolates user data to some u/v location. The data array
- *  pointed to by src has to contain numFloats floating point values
- *  to interpolate for each vertex of the geometry. The byteStride
- *  parameter specifies the stride to go from one set of per vertex
- *  parameters to the next set. The dst array will get filled with the
- *  interpolated data. */
-RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats);
+/*! Interpolates user data to some u/v location. The data buffer
+ *  specifies per vertex data to interpolate and can be one of the
+ *  RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
+ *  numFloats floating point values to interpolate for each vertex of
+ *  the geometry. The dP array will get filled with the interpolated
+ *  data and the dPdu and dPdv arrays with the u and v derivative of
+ *  the interpolation. If the pointers dP is NULL, the value will not
+ *  get calculated. If dPdu and dPdv are NULL the derivatives will not
+ *  get calculated. Both dPdu and dPdv have to be either valid or
+ *  NULL. */
+RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
+                               float* dP, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
- *  the u/v arrays are valid (-1 denotes valid, and 0 invalid).If the
+ *  the u/v arrays are valid (-1 denotes valid, and 0 invalid). If the
  *  valid pointer is NULL all elements are considers valid. The data
- *  array pointed to by src has to contain numFloats floating point
- *  values to interpolate for each vertex of the geometry. The
- *  byteStride parameter specifies the stride to go from one set of
- *  per vertex parameters to the next set. The destination array is
- *  filled in structure of array layout. */
+ *  buffer specifies per vertex data to interpolate and can be one of
+ *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
+ *  numFloats floating point values to interpolate for each vertex of
+ *  the geometry. The dP array will get filled with the interpolated
+ *  data, and the dPdu and dPdv arrays with the u and v derivative of
+ *  the interpolation. If the pointers dP is NULL, the value will not
+ *  get calculated. If dPdu and dPdv are NULL the derivatives will not
+ *  get calculated. Both dPdu and dPdv have to be either valid or
+ *  NULL. These destination arrays are filled in structure of array
+ *  (SoA) layout. */
 RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                const float* src, size_t byteStride, float* dst, size_t numFloats);
+                                RTCBufferType buffer, 
+                                float* dP, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);

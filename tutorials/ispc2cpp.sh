@@ -53,6 +53,8 @@ sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*he
 sed -i.backup  's/delete\[\] g_accu/alignedFree(g_accu)/g' $2
 
 sed -i.backup  's/if (id < 0 || id >= numMaterials) continue;//g' $2
+sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2
+
 sed -i.backup  's/foreach_unique (id in materialID)//g' $2
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
 sed -i.backup  's/\#define __device__//g' $2

@@ -56,7 +56,7 @@ namespace embree
     void unmap(RTCBufferType type);
     void immutable ();
     bool verify ();
-    void interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
 
   public:
 
@@ -189,7 +189,8 @@ namespace embree
 #endif
     
   public:
-    BufferT<Triangle> triangles;          //!< array of triangles
-    array_t<BufferT<Vec3fa>,2> vertices;  //!< vertex array
+    BufferT<Triangle> triangles;                    //!< array of triangles
+    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
+    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
   };
 }

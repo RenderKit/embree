@@ -68,6 +68,9 @@ namespace embree
                                       const SubdivMesh *const mesh) 
     : geom(gID),prim(pID),flags(0),root_ref(0)
   {
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    mtx.reset();
+
     int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
 
     const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
@@ -84,22 +87,34 @@ namespace embree
     }
     //assert(needAdaptiveSubdivision == 0);
 
+
     PRINT(numEdges);
 
     if (numEdges == 4)
       {
 	PRINT("QUAD");
-	CatmullClarkPatch3fa gpatch;
-	gpatch.init(h_start,mesh->getVertexBuffer());
+	GeneralCatmullClarkPatch3fa cpatch;
+	cpatch.init(h_start,mesh->getVertexBuffer());
 	float edge_level[4] = {
-	  gpatch.ring[0].edge_level,
-	  gpatch.ring[1].edge_level,
-	  gpatch.ring[2].edge_level,
-	  gpatch.ring[3].edge_level
+	  cpatch.ring[0].edge_level,
+	  cpatch.ring[1].edge_level,
+	  cpatch.ring[2].edge_level,
+	  cpatch.ring[3].edge_level
 	};
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+
+	for (size_t i=0; i<4; i++) {
+	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
+	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
+	}
+
+	updateEdgeLevels(edge_level,mesh);
 	
-	new (this) SubdivPatch1Base(gpatch,gID,pID,mesh,uv,edge_level);
+	//new (this) SubdivPatch1Base(cpatch,gID,pID,mesh,uv,edge_level);
+	flags |= GREGORY_PATCH;
+	GregoryPatch3fa gpatch; 
+	gpatch.init( cpatch ); 
+	gpatch.exportDenseConrolPoints( patch.v );	
 
       }
     else if (numEdges == 3)

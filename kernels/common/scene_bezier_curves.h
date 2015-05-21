@@ -46,7 +46,8 @@ namespace embree
     void unmap(RTCBufferType type);
     void immutable ();
     bool verify ();
-    
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+
   public:
     
     /*! returns number of bezier curves */
@@ -168,7 +169,8 @@ namespace embree
 #endif
     
   public:
-    BufferT<int> curves;                 //!< array of curve indices
-    array_t<BufferT<Vec3fa>,2> vertices; //!< vertex array
+    BufferT<int> curves;                            //!< array of curve indices
+    array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
+    array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
   };
 }

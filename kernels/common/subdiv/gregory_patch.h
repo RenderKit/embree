@@ -178,11 +178,43 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
     
+    Vertex computeGregoryPatchFacePoints(const Vertex &v0,
+                                         const Vertex &e0_plus,
+                                         const Vertex &e1_minus,
+                                         const Vertex &r0,
+                                         const float c0,
+                                         const float c1,
+                                         const float d)
+    {
+      return 1.0f / d * (c1 * v0 + (d - 2.0f*c0 - c1) * e0_plus + 2.0f * c0 * e1_minus + r0);
+    }
+
     __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 4);
+#if 1
       CatmullClarkPatch qpatch; patch.init(qpatch);
       init(qpatch);
+#else
+      Vertex p0_r_p, p0_r_m;
+      patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
+
+      Vertex p1_r_p, p1_r_m;
+      patch.ring[1].computeGregoryPatchEdgePoints( p1(), e1_p(), e1_m(), p1_r_p, p1_r_m );
+      
+      Vertex p2_r_p, p2_r_m;
+      patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
+
+      Vertex p3_r_p, p3_r_m;
+      patch.ring[3].computeGregoryPatchEdgePoints( p3(), e3_p(), e3_m(), p3_r_p, p3_r_m );
+
+      const float face_valence_p0 = patch.ring[0].face_valence;
+      const float face_valence_p1 = patch.ring[1].face_valence;
+      const float face_valence_p2 = patch.ring[2].face_valence;
+      const float face_valence_p3 = patch.ring[3].face_valence;
+
+      //f0_p() = computeGregoryPatchFacePoints(p0(), e0_p(), e1_m(), 
+#endif
     }
 
     __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
@@ -297,7 +329,37 @@ namespace embree
       return eval(v,f,uu,vv);
     }
 
-    static __forceinline Vertex normal(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv) 
+    static __forceinline Vertex tangentU(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv)  // FIXME: why not using basis functions
+    {
+      /* interpolate inner vertices */
+      Vertex_t matrix_11, matrix_12, matrix_22, matrix_21;
+      computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
+      
+      /* tangentU */
+      const Vertex_t col0 = deCasteljau(vv, (Vertex_t)matrix[0][0], (Vertex_t)matrix[1][0], (Vertex_t)matrix[2][0], (Vertex_t)matrix[3][0]);
+      const Vertex_t col1 = deCasteljau(vv, (Vertex_t)matrix[0][1], (Vertex_t)matrix_11   , (Vertex_t)matrix_21   , (Vertex_t)matrix[3][1]);
+      const Vertex_t col2 = deCasteljau(vv, (Vertex_t)matrix[0][2], (Vertex_t)matrix_12   , (Vertex_t)matrix_22   , (Vertex_t)matrix[3][2]);
+      const Vertex_t col3 = deCasteljau(vv, (Vertex_t)matrix[0][3], (Vertex_t)matrix[1][3], (Vertex_t)matrix[2][3], (Vertex_t)matrix[3][3]);
+      
+      return deCasteljau_tangent(uu, col0, col1, col2, col3);
+    }
+
+    static __forceinline Vertex tangentV(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv) // FIXME: why not using basis functions
+    {
+      /* interpolate inner vertices */
+      Vertex_t matrix_11, matrix_12, matrix_22, matrix_21;
+      computeInnerVertices(matrix,f_m,uu,vv,matrix_11, matrix_12, matrix_22, matrix_21);
+      
+      /* tangentV */
+      const Vertex_t row0 = deCasteljau(uu, (Vertex_t)matrix[0][0], (Vertex_t)matrix[0][1], (Vertex_t)matrix[0][2], (Vertex_t)matrix[0][3]);
+      const Vertex_t row1 = deCasteljau(uu, (Vertex_t)matrix[1][0], (Vertex_t)matrix_11   , (Vertex_t)matrix_12   , (Vertex_t)matrix[1][3]);
+      const Vertex_t row2 = deCasteljau(uu, (Vertex_t)matrix[2][0], (Vertex_t)matrix_21   , (Vertex_t)matrix_22   , (Vertex_t)matrix[2][3]);
+      const Vertex_t row3 = deCasteljau(uu, (Vertex_t)matrix[3][0], (Vertex_t)matrix[3][1], (Vertex_t)matrix[3][2], (Vertex_t)matrix[3][3]);
+      
+      return deCasteljau_tangent(vv, row0, row1, row2, row3);
+    }
+
+    static __forceinline Vertex normal(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv)  // FIXME: why not using basis functions
     {
       /* interpolate inner vertices */
       Vertex_t matrix_11, matrix_12, matrix_22, matrix_21;
@@ -327,6 +389,14 @@ namespace embree
    
     __forceinline Vertex normal( const float uu, const float vv) const {
       return normal(v,f,uu,vv);
+    }
+
+    __forceinline Vertex tangentU( const float uu, const float vv) const {
+      return tangentU(v,f,uu,vv);
+    }
+
+    __forceinline Vertex tangentV( const float uu, const float vv) const {
+      return tangentV(v,f,uu,vv);
     }
 
     template<class M, class T>

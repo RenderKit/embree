@@ -27,6 +27,9 @@ namespace embree
 
     /*! Buffer construction */
     Buffer (); 
+
+    /*! Buffer construction */
+    Buffer (size_t num_in, size_t stride_in); 
     
     /*! Buffer destruction */
     ~Buffer ();
@@ -79,21 +82,26 @@ namespace embree
       return ptr; 
     }
 
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr() const {
+      return ptr_ofs;
+    }
+
+    /*! returns buffer stride */
+    __forceinline unsigned getStride() const {
+      return stride;
+    }
+
   protected:
     bool initialized;//!< true if buffer got initialized
-    char* ptr;       //!< pointer to buffer data
-    size_t bytes;    //!< size of buffer in bytes
-    char* ptr_ofs;   //!< base pointer plus offset
-
-#if defined(__MIC__)
-    unsigned int stride;
-#else
-    size_t stride;   //!< stride of the stream in bytes
-#endif
-    size_t num;      //!< number of elements in the stream
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
+    unsigned stride; //!< stride of the stream in bytes
+    char* ptr;       //!< pointer to buffer data
+    char* ptr_ofs;   //!< base pointer plus offset
+    size_t bytes;    //!< size of buffer in bytes
+    size_t num;      //!< number of elements in the stream
   };
 
   /*! Implements a data stream inside a data buffer. */

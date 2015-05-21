@@ -28,7 +28,7 @@ uniform bool g_subdiv_mode = false;
 
 #define SPP 1
 
-#define FORCE_FIXED_EDGE_TESSELLATION
+//#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 2
 
 #define MAX_EDGE_LEVEL 64.0f

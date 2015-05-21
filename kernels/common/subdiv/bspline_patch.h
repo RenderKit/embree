@@ -45,7 +45,11 @@ namespace embree
       const T n1 = -t*t - 4.0f*t*s;
       const T n2 =  s*s + 4.0f*s*t;
       const T n3 =  t*t;
-      return Vec4<T>(n0,n1,n2,n3);
+      /*const T n0 = -3.0f*s*s;
+      const T n1 = -3.0f*t*t - 12.0f*t*s;
+      const T n2 = +3.0f*s*s + 12.0f*t*s;
+      const T n3 = +3.0f*t*t;*/
+      return Vec4<T>(3.0f*n0,3.0f*n1,3.0f*n2,3.0f*n3);
     }
   };
 
@@ -442,7 +446,7 @@ namespace embree
         
         const Vec4f u_n = CubicBSplineCurve::derivative(uu);
         
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
+        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex tangentV(const float uu, const float vv) const
@@ -456,7 +460,7 @@ namespace embree
         
         const Vec4f u_n = CubicBSplineCurve::eval(uu);
         
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3); 
+        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex normal(const float uu, const float vv) const
@@ -481,8 +485,7 @@ namespace embree
         const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
         const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
         const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
-        
-        
+          
         const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
         const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
         const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);

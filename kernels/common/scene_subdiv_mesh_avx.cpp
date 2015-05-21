@@ -23,7 +23,7 @@
 
 namespace embree
 {
-  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* dst, size_t numFloats) 
+  void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -31,7 +31,19 @@ namespace embree
 #endif
 
 #if !defined(__MIC__) // FIXME: not working on MIC yet
-    const char* src = (const char*) src_i;
+    
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[buffer&0xFFFF]->getPtr();
+      stride = userbuffers[buffer&0xFFFF]->getStride();
+    } else {
+      src    = vertices[buffer&0xFFFF].getPtr();
+      stride = vertices[buffer&0xFFFF].getStride();
+    }
     
     for (size_t i=0; i<numFloats; i+=8)
     {
@@ -40,32 +52,38 @@ namespace embree
         const size_t n = numFloats-i;
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return ssef::loadu((float*)&src[vtx*byteStride],n); 
+          return ssef::loadu((float*)&src[vtx*stride],n); 
         };
-        ssef out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<numFloats; j++)
-          dst[j] = out[j-i];
+        ssef Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
       }
       else if (i+8 > numFloats) 
       {
         const size_t n = numFloats-i;
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return avxf::loadu((float*)&src[vtx*byteStride],n); 
+          return avxf::loadu((float*)&src[vtx*stride],n); 
         };
-        avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<numFloats; j++)
-          dst[j] = out[j-i];
+        avxf Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<avxf>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
       } 
       else
       {
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return avxf::loadu((float*)&src[vtx*byteStride]);
+          return avxf::loadu((float*)&src[vtx*stride]);
         };
-        avxf out = feature_adaptive_point_eval(getHalfEdge(primID),load,u,v);
-        for (size_t j=i; j<i+8; j++)
-          dst[j] = out[j-i];
+        avxf Pt, dPdut, dPdvt; 
+        feature_adaptive_point_eval<avxf>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<i+8; j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<i+8; j++) dPdv[j] = dPdvt[j-i];
       }
     }
     AVX_ZERO_UPPER();

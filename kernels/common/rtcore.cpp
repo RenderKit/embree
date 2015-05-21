@@ -1088,19 +1088,22 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
-  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, float* dst, size_t numFloats)
+  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, 
+                                 RTCBufferType buffer,
+                                 float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,src,byteStride,dst,numFloats); // this call is on purpose not thread safe
+    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                  const float* src, size_t byteStride, float* dst, size_t numFloats)
+                                  RTCBufferType buffer,
+                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolateN);
@@ -1108,13 +1111,21 @@ namespace embree
     RTCORE_VERIFY_GEOMID(geomID);
     if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
     const int* valid = (const int*) valid_i;
+
+    __aligned(64) float P_tmp[256];
+    __aligned(64) float dPdu_tmp[256];
+    __aligned(64) float dPdv_tmp[256];
+    float* Pt = P ? P_tmp : nullptr;
+    float* dPdut = dPdu ? dPdu_tmp : nullptr;
+    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
+    
     for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
     {
       if (valid && !valid[i]) continue;
-      float dst1[256];
-      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],src,byteStride,dst1,numFloats);
-      for (size_t j=0; j<numFloats; j++)
-        dst[j*numUVs+i] = dst1[j];
+      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
+      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
+      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
+      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
     }
     RTCORE_CATCH_END;
   }
