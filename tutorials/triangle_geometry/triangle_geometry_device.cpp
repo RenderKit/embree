@@ -135,7 +135,7 @@ extern "C" void device_init (int8* cfg)
   rtcSetErrorFunction(error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add cube */
   addCube(g_scene);
@@ -172,7 +172,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3fa diffuse = face_colors[ray.primID];
-    if (ray.geomID == 0) rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
