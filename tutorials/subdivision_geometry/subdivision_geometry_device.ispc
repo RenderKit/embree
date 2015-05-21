@@ -160,6 +160,8 @@ uniform unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(uniform float));
 
+  rtcSetBuffer(scene_i, geomID, RTC_USER_VERTEX_BUFFER0, cube_colors, 0, sizeof(uniform Vec3fa));
+
   uniform float* uniform level = (uniform float* uniform) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   for (uniform size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
@@ -263,7 +265,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 
     /* interpolate color over geometry */
     if (ray.geomID == 0) {
-      Vec3f c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const uniform float*)&cube_colors,16,&c.x,NULL,NULL,3); diffuse = c;
+      Vec3f c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&c.x,NULL,NULL,3); diffuse = c;
     }
 
     color = color + diffuse*0.5f; // FIXME: +=

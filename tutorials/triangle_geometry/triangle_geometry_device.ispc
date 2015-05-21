@@ -97,6 +97,8 @@ uniform unsigned int addCube (RTCScene scene_i)
 
   rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
 
+  rtcSetBuffer(scene_i,mesh,RTC_USER_VERTEX_BUFFER0,vertex_colors,0,sizeof(uniform Vec3fa));
+
   return mesh;
 }
 
@@ -170,7 +172,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     Vec3f diffuse = face_colors[ray.primID];
-    if (ray.geomID == 0) rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const uniform float*)vertex_colors,16,&diffuse.x,NULL,NULL,3); 
+    if (ray.geomID == 0) rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     

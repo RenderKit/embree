@@ -115,6 +115,9 @@ namespace embree
       }
       break;
 
+    case RTC_USER_VERTEX_BUFFER0: if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices,stride)); userbuffers[0]->set(ptr,offset,stride);  break;
+    case RTC_USER_VERTEX_BUFFER1: if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices,stride)); userbuffers[1]->set(ptr,offset,stride);  break;
+
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
     }
@@ -506,7 +509,7 @@ namespace embree
     return true;
   }
 
-  void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -514,12 +517,25 @@ namespace embree
 #endif
 
 #if !defined(__MIC__) // FIXME: not working on MIC yet
-    const char* src = (const char*) src_i;
+
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[buffer&0xFFFF]->getPtr();
+      stride = userbuffers[buffer&0xFFFF]->getStride();
+    } else {
+      src    = vertices[buffer&0xFFFF].getPtr();
+      stride = vertices[buffer&0xFFFF].getStride();
+    }
+
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
       auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
-        return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
+        return ssef::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
       };
       ssef Pt, dPdut, dPdvt; 
       feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);

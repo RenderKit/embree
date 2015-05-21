@@ -78,6 +78,10 @@ namespace embree
         volatile int w = *((int*)vertices[1].getPtr(vertices[1].size()-1)+3); // FIXME: is failing hard avoidable?
       
       break;
+
+    case RTC_USER_VERTEX_BUFFER0: if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); userbuffers[0]->set(ptr,offset,stride);  break;
+    case RTC_USER_VERTEX_BUFFER1: if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); userbuffers[1]->set(ptr,offset,stride);  break;
+
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
     }
@@ -143,7 +147,7 @@ namespace embree
     return true;
   }
 
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -151,7 +155,20 @@ namespace embree
 #endif
 
 #if !defined(__MIC__) // FIXME: not working on MIC yet
-    const char* src = (const char*) src_i;
+
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[buffer&0xFFFF]->getPtr();
+      stride = userbuffers[buffer&0xFFFF]->getStride();
+    } else {
+      src    = vertices[buffer&0xFFFF].getPtr();
+      stride = vertices[buffer&0xFFFF].getStride();
+    }
+
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
       if (i+4 > numFloats) 
@@ -159,18 +176,18 @@ namespace embree
         const size_t n = numFloats-i;
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride],n);
-        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride],n);
-        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride],n);
+        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*stride],n);
+        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*stride],n);
+        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*stride],n);
         if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2,n);
         if (dPdu) ssef::storeu(dPdu+i,p1-p0,n);
         if (dPdv) ssef::storeu(dPdv+i,p2-p0,n);
       } else {
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride]);
-        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride]);
-        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride]);
+        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*stride]);
+        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*stride]);
+        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*stride]);
         if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2);
         if (dPdu) ssef::storeu(dPdu+i,p1-p0);
         if (dPdv) ssef::storeu(dPdv+i,p2-p0);

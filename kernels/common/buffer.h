@@ -27,6 +27,9 @@ namespace embree
 
     /*! Buffer construction */
     Buffer (); 
+
+    /*! Buffer construction */
+    Buffer (size_t num_in, size_t stride_in); 
     
     /*! Buffer destruction */
     ~Buffer ();
@@ -77,6 +80,16 @@ namespace embree
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() { 
       return ptr; 
+    }
+
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr() const {
+      return ptr_ofs;
+    }
+
+    /*! returns buffer stride */
+    __forceinline unsigned getStride() const {
+      return stride;
     }
 
   protected:

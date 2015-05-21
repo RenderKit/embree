@@ -374,7 +374,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
-    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
 
   public:
 
@@ -430,7 +430,7 @@ namespace embree
     size_t numVertices;               //!< number of vertices
 
     /*! all buffers in this section are provided by the application */
-  private:
+  protected:
     
     /*! buffer containing the number of vertices for each face */
     BufferT<int> faceVertices;
@@ -439,7 +439,10 @@ namespace embree
     BufferT<unsigned> vertexIndices;
 
     /*! vertex buffer (one buffer for each time step) */
-    BufferT<Vec3fa> vertices[2];
+    array_t<BufferT<Vec3fa>,2> vertices;
+
+    /*! user data buffers */
+    array_t<std::unique_ptr<Buffer>,2> userbuffers;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     BufferT<Edge> edge_creases;
@@ -496,6 +499,6 @@ namespace embree
   class SubdivMeshAVX : public SubdivMesh
   {
     using SubdivMesh::SubdivMesh; // inherit all constructors
-    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
   };
 };
