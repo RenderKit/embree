@@ -214,7 +214,6 @@ namespace embree
   {
     switch (edge->type) 
     {
-#if 0
     case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
       BSplinePatchT<Ty> bspline;
@@ -235,7 +234,6 @@ namespace embree
       if (dPdv) *dPdv = gregory.tangentV(u,v);
       break;
     }
-#endif
     default: 
     {
       GeneralCatmullClarkPatchT<Ty> patch;
