@@ -108,7 +108,7 @@ namespace embree
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
     
     /* set default camera */
-    g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);
+    g_camera.from = Vec3fa(7.0f,2.0f,0.0f);
     g_camera.to   = Vec3fa(0.0f,0.0f,0.0f);
 
     /* create stream for parsing */

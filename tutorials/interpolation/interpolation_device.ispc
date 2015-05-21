@@ -123,6 +123,28 @@ uniform unsigned int cube_tri_faces[12] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 };
 
+#define NUM_HAIR_VERTICES 4
+
+__aligned(16) uniform float hair_vertices[4][4] = 
+{
+  { 0.0f, 0.0f, 0.0f, 0.1f },
+  { 0.5f, 1.0f, 0.0f, 0.1f },
+  { 0.0f, 2.0f, -0.5f, 0.1f },
+  { 0.0f, 3.0f, 0.0f, 0.1f }
+};
+
+__aligned(16) uniform float hair_vertex_colors[4][4] = 
+{
+  {  1.0f,  0.0f,  0.0f, 0.0f },
+  {  1.0f,  1.0f,  0.0f, 0.0f },
+  {  0.0f,  0.0f,  1.0f, 0.0f },
+  {  1.0f,  1.0f,  1.0f, 0.0f },
+};
+
+uniform unsigned int hair_indices[1] = {
+  0
+};
+
 /* adds a subdiv cube to the scene */
 uniform unsigned int addTriangleSubdivCube (RTCScene scene_i, const uniform Vec3f& pos)
 {
@@ -194,6 +216,26 @@ uniform unsigned int addTriangleCube (RTCScene scene_i, const uniform Vec3f& pos
   return geomID;
 }
 
+/* add hair geometry */
+uniform unsigned int addHair (RTCScene scene, const uniform Vec3f& pos)
+{
+  uniform unsigned int geomID = rtcNewHairGeometry (scene, RTC_GEOMETRY_STATIC, 1, 4);
+
+  //rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER, hair_vertices, 0, sizeof(uniform Vec3fa));
+   uniform Vec3fa* uniform vtx = (uniform Vec3fa* uniform) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+   for (uniform size_t i=0; i<NUM_HAIR_VERTICES; i++) {
+     vtx[i].x = hair_vertices[i][0]+pos.x;
+     vtx[i].y = hair_vertices[i][1]+pos.y;
+     vtx[i].z = hair_vertices[i][2]+pos.z;
+     vtx[i].w = hair_vertices[i][3];
+   }
+  rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  hair_indices , 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, hair_vertex_colors, 0, sizeof(uniform Vec3fa));
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene_i)
 {
@@ -233,9 +275,10 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add cube */
-  addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,6.0f));
-  addTriangleSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,3.0f));
-  addQuadSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,0.0f));
+  addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,4.5f));
+  addTriangleSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,1.5f));
+  addQuadSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,-1.5f));
+  addHair(g_scene,make_Vec3f(0.0f,-1.0f,-4.5f));
 
   /* commit changes to scene */
   rtcCommit (g_scene);
