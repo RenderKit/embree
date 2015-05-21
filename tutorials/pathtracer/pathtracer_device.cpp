@@ -1157,7 +1157,7 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
 
   Vec3fa Ns = Vec3fa(0.0f);
   int materialID = 0;
-  foreach_unique (geomID in ray.geomID) 
+  int geomID = ray.geomID;  
   {
     if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
 
@@ -1261,7 +1261,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     else
       materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
 #else 
-    foreach_unique (geomID in ray.geomID) {
+    int geomID = ray.geomID;  {
      //printf("geomID %\n",geomID);
      //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
      //printf("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);

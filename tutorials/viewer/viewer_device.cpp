@@ -242,7 +242,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   }
 #else
 
-  foreach_unique (geomID in ray.geomID) 
+  int geomID = ray.geomID;  
   {
     if (geomID_to_type[ray.geomID] == 0)
       {
