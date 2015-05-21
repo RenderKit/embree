@@ -246,6 +246,7 @@ namespace embree
     bool needBezierIndices;
     bool needBezierVertices;
     bool needSubdivIndices;
+    bool needSubdivVertices;
     bool is_build;
     MutexSys buildMutex;
     AtomicMutex geometriesMutex;

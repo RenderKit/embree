@@ -208,10 +208,12 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
+    const bool freeIndices = !parent->needSubdivIndices;
+    const bool freeVertices = !parent->needSubdivVertices;
     faceVertices.free();
-    if (!parent->needSubdivIndices) vertexIndices.free();
-    vertices[0].free();
-    vertices[1].free();
+    if (freeIndices) vertexIndices.free();
+    if (freeVertices) vertices[0].free();
+    if (freeVertices) vertices[1].free();
     edge_creases.free();
     edge_crease_weights.free();
     vertex_creases.free();

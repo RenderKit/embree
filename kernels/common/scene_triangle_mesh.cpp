@@ -115,8 +115,8 @@ namespace embree
 
   void TriangleMesh::immutable () 
   {
-    bool freeTriangles = !parent->needTriangleIndices;
-    bool freeVertices  = !parent->needTriangleVertices;
+    const bool freeTriangles = !parent->needTriangleIndices;
+    const bool freeVertices  = !parent->needTriangleVertices;
     if (freeTriangles) triangles.free(); 
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
