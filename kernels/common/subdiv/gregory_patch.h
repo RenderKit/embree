@@ -196,9 +196,9 @@ namespace embree
 				       const Vertex& e3_p_vtx,	
 				       const unsigned int face_valence_p3,
 				       Vertex& f_p_vtx, 
-				       Vertex& f_m_vtx)
+				       Vertex& f_m_vtx,
+                                       const float d = 3.0f)
     {
-      const float d = 3.0f;
       const float c     = cosf(2.0*M_PI/(float)face_valence);
       const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
@@ -240,7 +240,8 @@ namespace embree
 
 #endif
     }
-
+   
+    
     __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
     {
       assert( patch.isRegular() );
