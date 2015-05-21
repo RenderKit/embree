@@ -44,7 +44,8 @@ namespace embree
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
     {
-#if 1
+      PRINT("BEZIER");
+#if 0
       flags |= BEZIER_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_bezier( ipatch ); 
@@ -56,6 +57,8 @@ namespace embree
     }
     else
     {
+      PRINT("GREGORY");
+
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init( ipatch ); 
