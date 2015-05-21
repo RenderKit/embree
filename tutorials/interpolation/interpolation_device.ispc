@@ -324,6 +324,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       foreach_unique (geomID in ray.geomID) {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
       }
+      //return dPdu;
       Ng = cross(dPdv,dPdu);
     }
 
