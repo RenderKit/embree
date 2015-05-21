@@ -117,7 +117,7 @@ namespace embree
       ray.get(rays);
       size_t bits = movemask(*valid_i);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-	Intersector1::intersect(bvh,rays[i]);
+	Intersector1::occluded(bvh,rays[i]);
       }
       ray.set(rays);
       AVX_ZERO_UPPER();
