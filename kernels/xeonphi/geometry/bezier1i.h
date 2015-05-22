@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
+#include "../../common/default.h"
 #include "primitive.h"
 
 #define EVAL_BOUNDS 1

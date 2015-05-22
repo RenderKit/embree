@@ -17,10 +17,10 @@
 #pragma once
 
 #include "triangle4i.h"
-#include "common/ray.h"
+#include "../../common/ray.h"
 
 #include "triangle_intersector_pluecker.h"
-#include "common/scene_triangle_mesh.h"
+#include "../../common/scene_triangle_mesh.h"
 
 namespace embree
 {

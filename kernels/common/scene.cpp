@@ -17,12 +17,12 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/bvh4.h"
-#include "bvh8/bvh8.h"
+#include "../xeon/bvh4/bvh4.h"
+#include "../xeon/bvh8/bvh8.h"
 #else
-#include "xeonphi/bvh4i/bvh4i.h"
-#include "xeonphi/bvh4mb/bvh4mb.h"
-#include "xeonphi/bvh4hair/bvh4hair.h"
+#include "../xeonphi/bvh4i/bvh4i.h"
+#include "../xeonphi/bvh4mb/bvh4mb.h"
+#include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
 namespace embree

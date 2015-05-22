@@ -14,18 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sys/platform.h"
-#include "sys/ref.h"
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include "../kernels/common/raystream_log.h"
-#include "sys/intrinsics.h"
+/*#include "sys/intrinsics.h"
 #include "sys/thread.h"
 #include "sys/sysinfo.h"
 #include "sys/barrier.h"
 #include "sys/mutex.h"
-#include "sys/condition.h"
+#include "sys/condition.h"*/
 #include <vector>
 #include <iostream>
 #include <fstream>

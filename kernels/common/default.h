@@ -16,32 +16,33 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/thread.h"
-#include "sys/alloc.h"
-#include "sys/ref.h"
-#include "sys/intrinsics.h"
-#include "sys/atomic.h"
-#include "sys/mutex.h"
-#include "sys/vector.h"
-#include "sys/array.h"
-#include "sys/string.h"
-#include "sys/regression.h"
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+#include "../../common/sys/thread.h"
+#include "../../common/sys/alloc.h"
+#include "../../common/sys/ref.h"
+#include "../../common/sys/intrinsics.h"
+#include "../../common/sys/atomic.h"
+#include "../../common/sys/mutex.h"
+#include "../../common/sys/vector.h"
+#include "../../common/sys/array.h"
+#include "../../common/sys/string.h"
+#include "../../common/sys/regression.h"
 
-#include "math/math.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/vec4.h"
-#include "math/bbox.h"
-#include "math/obbox.h"
-#include "math/affinespace.h"
-#include "simd/simd.h"
+#include "../../common/math/math.h"
+#include "../../common/math/vec2.h"
+#include "../../common/math/vec3.h"
+#include "../../common/math/vec4.h"
+#include "../../common/math/bbox.h"
+#include "../../common/math/obbox.h"
+#include "../../common/math/affinespace.h"
+#include "../../common/simd/simd.h"
+#include "../../common/lexers/tokenstream.h"
 
 #if defined(TASKING_LOCKSTEP)
-#include "tasking/taskscheduler_mic.h"
+#include "../../common/tasking/taskscheduler_mic.h"
 #else // if defined(TASKING_TBB_INTERNAL) // FIXME
-#include "tasking/taskscheduler_tbb.h"
+#include "../../common/tasking/taskscheduler_tbb.h"
 #endif
 
 #define COMMA ,

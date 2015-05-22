@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/intrinsics.h"
-#include "math/constants.h"
+#include "../sys/platform.h"
+#include "../sys/intrinsics.h"
+#include "../math/constants.h"
 #include "sse_special.h"
 
 namespace embree 
@@ -48,6 +48,6 @@ namespace embree
 #endif
 }
 
-#include "simd/sseb.h"
-#include "simd/ssei.h"
-#include "simd/ssef.h"
+#include "sseb.h"
+#include "ssei.h"
+#include "ssef.h"

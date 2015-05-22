@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "texture_loader.h"
-#include "image/image.h"
+#include "../image/image.h"
 
 #if defined(USE_PTEX)
 #include "Ptexture.h"
@@ -23,7 +23,7 @@
 
 #include <map>
 #include <string>
-#include "sys/string.h"
+#include "../../../common/sys/string.h"
 
 namespace embree
 {

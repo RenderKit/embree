@@ -15,16 +15,10 @@
 // ======================================================================== //
 
 #include "taskscheduler_mic.h"
-#include "sys/mutex.h"
-
-//#include "taskscheduler.h"
-//#include "taskscheduler_sys.h"
-//#if defined(__MIC__)
-//#include "taskscheduler_mic.h"
-//#endif
-#include "sys/sysinfo.h"
-#include "sys/atomic.h"
-#include "math/math.h"
+#include "../sys/mutex.h"
+#include "../sys/sysinfo.h"
+#include "../sys/atomic.h"
+#include "../math/math.h"
 
 namespace embree
 {

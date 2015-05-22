@@ -17,8 +17,8 @@
 #pragma once
 
 #include "grid.h"
-#include "common/ray.h"
-#include "geometry/filter.h"
+#include "../../common/ray.h"
+#include "../geometry/filter.h"
 
 namespace embree
 {

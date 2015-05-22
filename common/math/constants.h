@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "../sys/platform.h"
+
 #include <limits>
 
 #define _USE_MATH_DEFINES

@@ -17,16 +17,16 @@
 #pragma once
 
 #include "bvh4i.h"
-#include "geometry/triangle1.h"
-#include "geometry/triangle1_intersector1_moeller.h"
-#include "geometry/triangle1mc_intersector1_moeller.h"
-#include "geometry/triangle1_intersector16_moeller.h"
-#include "geometry/triangle1mc_intersector16_moeller.h"
-#include "geometry/virtual_accel_intersector1.h"
-#include "geometry/virtual_accel_intersector16.h"
-#include "geometry/subdiv_intersector16.h"
-#include "geometry/subdiv_intersector1.h"
-#include "geometry/filter.h"
+#include "../geometry/triangle1.h"
+#include "../geometry/triangle1_intersector1_moeller.h"
+#include "../geometry/triangle1mc_intersector1_moeller.h"
+#include "../geometry/triangle1_intersector16_moeller.h"
+#include "../geometry/triangle1mc_intersector16_moeller.h"
+#include "../geometry/virtual_accel_intersector1.h"
+#include "../geometry/virtual_accel_intersector16.h"
+#include "../geometry/subdiv_intersector16.h"
+#include "../geometry/subdiv_intersector1.h"
+#include "../geometry/filter.h"
 
 
 namespace embree

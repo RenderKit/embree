@@ -15,20 +15,19 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "common/profile.h"
 
-#include "builders/primrefgen.h"
-#include "builders/bvh_builder_sah.h"
+#include "../builders/primrefgen.h"
+#include "../builders/bvh_builder_sah.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/parallel_for_for.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
-#include "common/subdiv/feature_adaptive_gregory.h"
-#include "common/subdiv/feature_adaptive_bspline.h"
+#include "../../common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/feature_adaptive_bspline.h"
 
-#include "geometry/grid.h"
-#include "geometry/subdivpatch1.h"
-#include "geometry/subdivpatch1cached.h"
+#include "../geometry/grid.h"
+#include "../geometry/subdivpatch1.h"
+#include "../geometry/subdivpatch1cached.h"
 
 namespace embree
 {

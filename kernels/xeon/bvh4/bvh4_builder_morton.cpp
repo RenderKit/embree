@@ -17,17 +17,17 @@
 #include "bvh4.h"
 #include "bvh4_rotate.h"
 #include "bvh4_statistics.h"
-#include "common/profile.h"
-#include "algorithms/parallel_prefix_sum.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../common/profile.h"
+#include "../../algorithms/parallel_prefix_sum.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
-#include "builders/primrefgen.h"
-#include "builders/bvh_builder_morton.h"
+#include "../builders/primrefgen.h"
+#include "../builders/bvh_builder_morton.h"
 
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle4v.h"
-#include "geometry/triangle4i.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle4v.h"
+#include "../geometry/triangle4i.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 #define PROFILE 0

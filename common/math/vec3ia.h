@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "simd/sse.h"
 #include "math.h"
+#include "../simd/sse.h"
 
 namespace embree
 {

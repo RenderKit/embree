@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/primref.h"
+#include "../../common/default.h"
+#include "../../common/primref.h"
 
 namespace embree
 {

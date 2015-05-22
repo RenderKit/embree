@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "sys/platform.h"
 #include "vec3.h"
 
 namespace embree

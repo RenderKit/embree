@@ -18,12 +18,12 @@
 #include "bvh4_intersector8_single.h"
 #include "bvh4_intersector_node.h"
 
-#include "geometry/triangle4.h"
-#include "geometry/triangle4v.h"
-#include "geometry/triangle8.h"
-#include "geometry/intersector_iterators.h"
-#include "geometry/triangle_intersector_moeller.h"
-#include "geometry/triangle_intersector_pluecker.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle4v.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/intersector_iterators.h"
+#include "../geometry/triangle_intersector_moeller.h"
+#include "../geometry/triangle_intersector_pluecker.h"
 
 #define SWITCH_THRESHOLD 5
 #define SWITCH_DURING_DOWN_TRAVERSAL 1

@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/barrier.h"
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+#include "../../common/sys/barrier.h"
 #include "parallel_for.h"
-#include "math/math.h"
+#include "../../common/math/math.h"
 #include <algorithm>
 
 #if defined(__MIC__)
- #include "simd/mic.h"
+ #include "../../common/simd/mic.h"
 #endif
 
 namespace embree

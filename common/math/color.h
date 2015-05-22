@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "../simd/sse.h"
-
 #include "constants.h"
 #include "col3.h"
 #include "col4.h"
+
+#include "../simd/sse.h"
 
 namespace embree
 {

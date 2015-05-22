@@ -16,7 +16,7 @@
 
 #ifdef USE_IMAGEMAGICK
 
-#include "image/image.h"
+#include "image.h"
 #include <iostream>
 
 /*! include Image Magick headers */

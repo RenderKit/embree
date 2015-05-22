@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/geometry.h"
+#include "../../common/default.h"
+#include "../../common/geometry.h"
 
 namespace embree
 {

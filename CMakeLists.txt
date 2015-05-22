@@ -247,9 +247,7 @@ INCLUDE (ispc)
 ##############################################################
 # Search paths
 ##############################################################
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/common)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include)
-INCLUDE_DIRECTORIES_ISPC(${PROJECT_SOURCE_DIR})
 
 ##############################################################
 # Output paths

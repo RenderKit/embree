@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_statistics.h"
-#include "geometry/triangle1.h"
+#include "../geometry/triangle1.h"
 
 namespace embree
 {

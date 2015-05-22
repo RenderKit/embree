@@ -17,8 +17,8 @@
 #pragma once
 
 #include "triangle1.h"
-#include "common/ray16.h"
-#include "geometry/filter.h"
+#include "../../common/ray16.h"
+#include "filter.h"
 
 #define COMPUTE_NORMAL
 //#define INTERSECT_TRIANGLE_PAIRS

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "heuristic_spatial.h"
-#include "builders/primrefblock.h"
+#include "primrefblock.h"
 
 namespace embree
 {

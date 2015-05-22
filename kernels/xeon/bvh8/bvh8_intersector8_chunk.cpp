@@ -15,10 +15,10 @@
 // ======================================================================== //
 
 #include "bvh8_intersector8_chunk.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/intersector_iterators.h"
-#include "geometry/triangle_intersector_moeller.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/intersector_iterators.h"
+#include "../geometry/triangle_intersector_moeller.h"
 
 #define DBG(x) 
 

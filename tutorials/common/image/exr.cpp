@@ -16,7 +16,7 @@
 
 #ifdef USE_OPENEXR
 
-#include "image/image.h"
+#include "image.h"
 
 /* include OpenEXR headers */
 #ifdef __WIN32__

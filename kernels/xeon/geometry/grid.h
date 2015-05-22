@@ -18,7 +18,7 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
-#include "common/subdiv/feature_adaptive_eval.h"
+#include "../../common/subdiv/feature_adaptive_eval.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 

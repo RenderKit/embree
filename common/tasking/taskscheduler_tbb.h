@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/alloc.h"
-#include "sys/barrier.h"
-#include "sys/thread.h"
-//#include "tasking/taskscheduler.h"
+#include "../sys/platform.h"
+#include "../sys/alloc.h"
+#include "../sys/barrier.h"
+#include "../sys/thread.h"
+#include "../sys/mutex.h"
+#include "../sys/condition.h"
 #include "../../kernels/algorithms/range.h"
 
 #include <list>
@@ -31,9 +32,6 @@
 #define TBB_PREVIEW_TASK_ARENA 1
 #include "tbb/tbb.h"
 #endif
-
-#include "sys/mutex.h"
-#include "sys/condition.h"
 
 namespace embree
 {

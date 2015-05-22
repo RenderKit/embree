@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "sys/vector.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/affinespace.h"
+#include "../../../common/sys/vector.h"
+#include "../../../common/math/vec2.h"
+#include "../../../common/math/vec3.h"
+#include "../../../common/math/affinespace.h"
 
 #include <vector>
 #include <memory>

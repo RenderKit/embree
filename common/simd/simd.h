@@ -16,22 +16,22 @@
 
 #pragma once
 
-#include "math/math.h"
+#include "../math/math.h"
 
 /* include SSE emulation for Xeon Phi */
 #if defined (__MIC__)
-//#  include "simd/sse_mic.h"
-#  include "simd/mic.h"
+//#  include "sse_mic.h"
+#  include "mic.h"
 #endif
 
 /* include SSE wrapper classes */
 #if defined(__SSE__)
-#  include "simd/sse.h"
+#  include "sse.h"
 #endif
 
 /* include AVX wrapper classes */
 #if defined(__AVX__)
-#include "simd/avx.h"
+#include "avx.h"
 #endif
 
 #if defined (__AVX__)

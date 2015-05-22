@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/scene.h"
-#include "builders/priminfo.h"
+#include "../../common/scene.h"
+#include "priminfo.h"
 
 namespace embree
 {

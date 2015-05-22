@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "builders/parallel_builder.h"
-#include "builders/builder_util.h"
-#include "builders/binning.h"
+#include "../builders/parallel_builder.h"
+#include "../builders/builder_util.h"
+#include "../builders/binning.h"
 
-#include "bvh4i/bvh4i_builder.h"
+#include "../bvh4i/bvh4i_builder.h"
 #include "bvh4hair.h"
-#include "geometry/bezier1i.h"
+#include "../geometry/bezier1i.h"
 
 
 namespace embree

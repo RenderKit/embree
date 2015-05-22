@@ -18,8 +18,8 @@
 #include "bvh4i_builder.h"
 #include "bvh4i_builder_morton.h"
 
-#include "common/accelinstance.h"
-#include "geometry/triangle1.h"
+#include "../../common/accelinstance.h"
+#include "../geometry/triangle1.h"
 
 namespace embree
 {

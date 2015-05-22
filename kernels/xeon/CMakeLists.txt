@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
 SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
 SOURCE_GROUP("Source Files\\bvh8" "/bvh8/" )
 SOURCE_GROUP("Source Files\\geometry" "/geometry/" )

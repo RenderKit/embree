@@ -17,7 +17,7 @@
 #pragma once
 
 #include "math.h"
-#include "simd/mic.h"
+#include "../simd/mic.h"
 
 namespace embree
 {

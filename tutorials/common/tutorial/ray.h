@@ -16,22 +16,22 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/ref.h"
-#include "sys/intrinsics.h"
-#include "sys/sysinfo.h"
-#include "sys/atomic.h"
-#include "sys/vector.h"
-#include "sys/string.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/ref.h"
+#include "../../../common/sys/intrinsics.h"
+#include "../../../common/sys/sysinfo.h"
+#include "../../../common/sys/atomic.h"
+#include "../../../common/sys/vector.h"
+#include "../../../common/sys/string.h"
 
-#include "math/math.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/vec4.h"
-#include "math/bbox.h"
-#include "math/affinespace.h"
+#include "../../../common/math/math.h"
+#include "../../../common/math/vec2.h"
+#include "../../../common/math/vec3.h"
+#include "../../../common/math/vec4.h"
+#include "../../../common/math/bbox.h"
+#include "../../../common/math/affinespace.h"
 
-#include "simd/simd.h"
+#include "../../../common/simd/simd.h"
 
   /*! Ray structure. Contains all information about a ray including
    *  precomputed reciprocal direction. */

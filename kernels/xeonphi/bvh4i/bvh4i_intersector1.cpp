@@ -16,8 +16,8 @@
 
 #include "bvh4i_intersector1.h"
 #include "bvh4i_leaf_intersector.h"
-#include "geometry/virtual_accel_intersector1.h"
-#include "geometry/subdiv_intersector16.h"
+#include "../geometry/virtual_accel_intersector1.h"
+#include "../geometry/subdiv_intersector16.h"
 
 namespace embree
 {

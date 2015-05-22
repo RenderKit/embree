@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "common/alloc.h"
-#include "common/accel.h"
-#include "common/scene.h"
-#include "geometry/primitive.h"
-#include "builders/builder_util.h"
-#include "builders/binning.h"
+#include "../../common/alloc.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
+#include "../geometry/primitive.h"
+#include "builder_util.h"
+#include "binning.h"
 
 namespace embree
 {

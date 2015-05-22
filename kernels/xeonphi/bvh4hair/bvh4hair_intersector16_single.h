@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "bvh4hair/bvh4hair.h"
-#include "common/ray16.h" 
-#include "common/accelset.h"
+#include "bvh4hair.h"
+#include "../../common/ray16.h" 
+#include "../../common/accelset.h"
 
 namespace embree
 {

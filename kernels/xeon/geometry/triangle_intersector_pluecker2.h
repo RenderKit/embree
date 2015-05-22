@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/ray.h"
-#include "geometry/filter.h"
+#include "../../common/ray.h"
+#include "filter.h"
 
 /*! Modified Pluecker ray/triangle intersector. The edge equations
  *  are watertight along the edge for neighboring triangles. */

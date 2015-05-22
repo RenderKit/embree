@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/thread.h"
-#include "sys/event.h"
-#include "sys/atomic.h"
-#include "sys/barrier.h"
-#include "sys/ref.h"
+#include "../sys/platform.h"
+#include "../sys/thread.h"
+#include "../sys/event.h"
+#include "../sys/atomic.h"
+#include "../sys/barrier.h"
+#include "../sys/ref.h"
 
 #include <vector>
 
@@ -448,9 +448,9 @@ namespace embree
   }
 }
 
-#include "sys/mutex.h"
-#include "sys/barrier.h"
-#include "sys/atomic.h"
+#include "../sys/mutex.h"
+#include "../sys/barrier.h"
+#include "../sys/atomic.h"
 
 namespace embree
 {

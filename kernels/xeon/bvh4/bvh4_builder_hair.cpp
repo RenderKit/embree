@@ -15,10 +15,10 @@
 // ======================================================================== //
 
 #include "bvh4_builder_hair.h"
-#include "builders/primrefgen.h"
+#include "../builders/primrefgen.h"
 
-#include "geometry/bezier1v.h"
-#include "geometry/bezier1i.h"
+#include "../geometry/bezier1v.h"
+#include "../geometry/bezier1i.h"
 
 namespace embree
 {

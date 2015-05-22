@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "triangle1.h"
-#include "common/scene.h"
 
 namespace embree
 {

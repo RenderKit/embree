@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/geometry.h"
-#include "common/scene_subdiv_mesh.h"
+#include "../geometry.h"
+#include "../scene_subdiv_mesh.h"
 
 namespace embree
 {
