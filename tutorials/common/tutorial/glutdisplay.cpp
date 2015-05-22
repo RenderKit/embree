@@ -19,7 +19,7 @@
 #include "sys/sysinfo.h"
 #include "lexers/streamfilters.h"
 #include "lexers/parsestream.h"
-#include "transport/transport_host.h"
+#include "../transport/transport_host.h"
 
 #include <map>
 #include <sstream>

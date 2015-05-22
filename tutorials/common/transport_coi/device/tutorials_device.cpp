@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tutorial/obj_loader.h"
-#include "transport/transport_host.h"
-#include "transport/transport_device.h"
-#include "transport_coi/common.h"
+#include "../../../common/tutorial/obj_loader.h"
+#include "../../transport/transport_host.h"
+#include "../../transport/transport_device.h"
+#include "../common.h"
 
 #include <sink/COIPipeline_sink.h>
 #include <sink/COIProcess_sink.h>

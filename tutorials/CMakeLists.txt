@@ -14,9 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES     (${CMAKE_CURRENT_SOURCE_DIR}/common)
-INCLUDE_DIRECTORIES_ISPC(${CMAKE_CURRENT_SOURCE_DIR}/common)
-
 #OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
 
 IF (TUTORIAL_USE_PTEX)

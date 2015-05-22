@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "transport/transport_host.h"
-#include "transport_coi/common.h"
-#include "tutorial/obj_loader.h"
+#include "../../transport/transport_host.h"
+#include "../common.h"
+#include "../../../common/tutorial/obj_loader.h"
 #include "sys/string.h"
 
 #include <source/COIProcess_source.h>

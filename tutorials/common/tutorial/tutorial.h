@@ -21,8 +21,8 @@
 #include "sys/ref.h"
 #include "lexers/streamfilters.h"
 #include "lexers/parsestream.h"
-#include "tutorial/glutdisplay.h"
-#include "transport/transport_host.h"
+#include "glutdisplay.h"
+#include "../transport/transport_host.h"
 
 #include <xmmintrin.h>
 

@@ -14,11 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tutorial/tutorial.h"
-#include "tutorial/obj_loader.h"
-#include "tutorial/hair_loader.h"
-#include "tutorial/cy_hair_loader.h"
-#include "image/image.h"
+#include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/obj_loader.h"
+#include "../common/tutorial/hair_loader.h"
+#include "../common/tutorial/cy_hair_loader.h"
+#include "../common/image/image.h"
 
 extern "C" embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
 extern "C" embree::Vec3fa g_dirlight_intensity = embree::Vec3fa(4.0f);
