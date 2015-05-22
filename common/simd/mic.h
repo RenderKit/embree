@@ -30,14 +30,14 @@
 
 namespace embree 
 {
-  class mic_m; 
-  class mic_i; 
-  class mic_f; 
+  class bool16; 
+  class int16; 
+  class float16; 
 }
 
-#include "mic_m.h"
-#include "mic_i.h"
-#include "mic_f.h"
+#include "bool16.h"
+#include "int16.h"
+#include "float16.h"
 
 namespace embree
 {
@@ -69,9 +69,9 @@ namespace embree
       _mm_prefetch((const char*)m,_MM_HINT_ENTA); 
   }
   
-  __forceinline void gather_prefetch(const mic_m &m_active,
+  __forceinline void gather_prefetch(const bool16 &m_active,
                                      const void *const ptr, 			     
-                                     const mic_i index, 
+                                     const int16 index, 
                                      const int mode = _MM_HINT_T2,
                                      const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                      const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
@@ -79,9 +79,9 @@ namespace embree
     _mm512_mask_prefetch_i32extgather_ps(index,m_active,ptr,up,scale,mode);
   }
   
-  __forceinline void scatter_prefetch(const mic_m &m_active,
+  __forceinline void scatter_prefetch(const bool16 &m_active,
                                       void *const ptr, 			     
-                                      const mic_i index, 
+                                      const int16 index, 
                                       const int mode = _MM_HINT_ET2,
                                       const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                       const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
@@ -96,36 +96,36 @@ namespace embree
 #endif
 
   template<const int D, const int C, const int B, const int A> 
-    __forceinline mic_f lshuf(const mic_f &in)
+    __forceinline float16 lshuf(const float16 &in)
   { 
     return _mm512_permute4f128_ps(in,(_MM_PERM_ENUM)_MM_SHUF_PERM(D,C,B,A));
   }
 
 
   template<const int D, const int C, const int B, const int A> 
-    __forceinline mic_f lshuf(const mic_m &mask, mic_f &dest, const mic_f &in)
+    __forceinline float16 lshuf(const bool16 &mask, float16 &dest, const float16 &in)
   { 
     return _mm512_mask_permute4f128_ps(dest,mask,in,(_MM_PERM_ENUM) _MM_SHUF_PERM(D,C,B,A));
   }
 
   template<const int lane> 
-    __forceinline mic_f lane_shuffle_gather(const mic_f &v0,const mic_f &v1,const mic_f &v2,const mic_f &v3)
+    __forceinline float16 lane_shuffle_gather(const float16 &v0,const float16 &v1,const float16 &v2,const float16 &v3)
     {
-      mic_f t = lshuf<lane,lane,lane,lane>(v0);
+      float16 t = lshuf<lane,lane,lane,lane>(v0);
       t = lshuf<lane,lane,lane,lane>(0xf0,t,v1);
       t = lshuf<lane,lane,lane,lane>(0xf00,t,v2);
       t = lshuf<lane,lane,lane,lane>(0xf000,t,v3);
       return t;
     }
 
-  /* __forceinline mic_f convert(const ssef &v) */
+  /* __forceinline float16 convert(const float4 &v) */
   /* { */
   /*   return broadcast4to16f(&v); */
   /* } */
 
-  __forceinline mic_i mul_uint64( const mic_i& a, const mic_i& b) { 
-    const mic_i low  = _mm512_mullo_epi32(a, b);
-    const mic_i high = _mm512_mulhi_epu32(a, b);
+  __forceinline int16 mul_uint64( const int16& a, const int16& b) { 
+    const int16 low  = _mm512_mullo_epi32(a, b);
+    const int16 high = _mm512_mulhi_epu32(a, b);
     return select(0x5555,low,high);
   }
 

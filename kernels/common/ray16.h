@@ -29,28 +29,28 @@ namespace embree
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray16(const mic3f& org, const mic3f& dir, 
-                        const mic_f& tnear = zero, const mic_f& tfar = inf, 
-                        const mic_f& time = zero, const mic_i& mask = -1)
+    __forceinline Ray16(const Vec3f16& org, const Vec3f16& dir, 
+                        const float16& tnear = zero, const float16& tfar = inf, 
+                        const float16& time = zero, const int16& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), mask(mask), time(time) {}
 
     /*! Tests if we hit something. */
-    __forceinline operator mic_m() const { return geomID != mic_i(-1); }
+    __forceinline operator bool16() const { return geomID != int16(-1); }
 
   public:
-    mic3f org;      //!< Ray origin
-    mic3f dir;      //!< Ray direction
-    mic_f tnear;    //!< Start of ray segment 
-    mic_f tfar;     //!< End of ray segment   
-    mic_f time;     //!< Time of this ray for motion blur.
-    mic_i mask;     //!< used to mask out objects during traversal
+    Vec3f16 org;      //!< Ray origin
+    Vec3f16 dir;      //!< Ray direction
+    float16 tnear;    //!< Start of ray segment 
+    float16 tfar;     //!< End of ray segment   
+    float16 time;     //!< Time of this ray for motion blur.
+    int16 mask;     //!< used to mask out objects during traversal
 
-    mic3f Ng;       //!< Geometry normal
-    mic_f u;        //!< Barycentric u coordinate of hit
-    mic_f v;        //!< Barycentric v coordinate of hit
-    mic_i geomID;   //!< geometry ID
-    mic_i primID;   //!< primitive ID
-    mic_i instID;   //!< instance ID
+    Vec3f16 Ng;       //!< Geometry normal
+    float16 u;        //!< Barycentric u coordinate of hit
+    float16 v;        //!< Barycentric v coordinate of hit
+    int16 geomID;   //!< geometry ID
+    int16 primID;   //!< primitive ID
+    int16 instID;   //!< instance ID
 
     template<int PFHINT>
     __forceinline void prefetchHitData() const
@@ -65,14 +65,14 @@ namespace embree
       prefetch<PFHINT>(&Ng.z);
     }
 
-    __forceinline void update(const mic_m &m_mask,
+    __forceinline void update(const bool16 &m_mask,
 			      const size_t rayIndex,
-			      const mic_f &new_t,
-			      const mic_f &new_u,
-			      const mic_f &new_v,
-			      const mic_f &new_gnormalx,
-			      const mic_f &new_gnormaly,
-			      const mic_f &new_gnormalz,
+			      const float16 &new_t,
+			      const float16 &new_u,
+			      const float16 &new_v,
+			      const float16 &new_gnormalx,
+			      const float16 &new_gnormaly,
+			      const float16 &new_gnormalz,
 			      const int new_geomID,
 			      const int new_primID)
     {
@@ -88,15 +88,15 @@ namespace embree
 
     }
 
-    __forceinline void update(const mic_m &m_mask,
-			      const mic_f &new_t,
-			      const mic_f &new_u,
-			      const mic_f &new_v,
-			      const mic_f &new_gnormalx,
-			      const mic_f &new_gnormaly,
-			      const mic_f &new_gnormalz,
-			      const mic_i &new_geomID,
-			      const mic_i &new_primID)
+    __forceinline void update(const bool16 &m_mask,
+			      const float16 &new_t,
+			      const float16 &new_u,
+			      const float16 &new_v,
+			      const float16 &new_gnormalx,
+			      const float16 &new_gnormaly,
+			      const float16 &new_gnormalz,
+			      const int16 &new_geomID,
+			      const int16 &new_primID)
     {
       store16f(m_mask,(float*)&tfar,new_t);
       store16f(m_mask,(float*)&u,new_u);

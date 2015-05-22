@@ -38,12 +38,12 @@ namespace embree
 
     public:
       static void intersect1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar);
+			     const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
       static bool occluded1 (const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, const ssef& ray_tnear, const ssef& ray_tfar);
+			     const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
 
-      static void intersect(sseb* valid, BVH8* bvh, Ray4& ray);
-      static void occluded (sseb* valid, BVH8* bvh, Ray4& ray);
+      static void intersect(bool4* valid, BVH8* bvh, Ray4& ray);
+      static void occluded (bool4* valid, BVH8* bvh, Ray4& ray);
     };
   }
 }

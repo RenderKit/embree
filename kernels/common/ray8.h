@@ -24,25 +24,25 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray8
   {
-    typedef avxb simdb;
-    typedef avxf simdf;
-    typedef avxi simdi;
+    typedef bool8 simdb;
+    typedef float8 simdf;
+    typedef int8 simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray8() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray8(const avx3f& org, const avx3f& dir, 
-                       const avxf& tnear = zero, const avxf& tfar = inf, 
-                       const avxf& time = zero, const avxi& mask = -1)
+    __forceinline Ray8(const Vec3f8& org, const Vec3f8& dir, 
+                       const float8& tnear = zero, const float8& tfar = inf, 
+                       const float8& time = zero, const int8& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time)  {}
 
     /*! returns the size of the ray */
     static __forceinline size_t size() { return 8; }
     
     /*! Tests if we hit something. */
-    __forceinline operator avxb() const { return geomID != avxi(-1); }
+    __forceinline operator bool8() const { return geomID != int8(-1); }
 
     /* converts ray packet to single rays */
     __forceinline void get(Ray ray[8]) const
@@ -73,20 +73,20 @@ namespace embree
     }
 
   public:
-    avx3f org;      //!< Ray origin
-    avx3f dir;      //!< Ray direction
-    avxf tnear;     //!< Start of ray segment 
-    avxf tfar;      //!< End of ray segment   
-    avxf time;      //!< Time of this ray for motion blur.
-    avxi mask;      //!< used to mask out objects during traversal
+    Vec3f8 org;      //!< Ray origin
+    Vec3f8 dir;      //!< Ray direction
+    float8 tnear;     //!< Start of ray segment 
+    float8 tfar;      //!< End of ray segment   
+    float8 time;      //!< Time of this ray for motion blur.
+    int8 mask;      //!< used to mask out objects during traversal
 
   public:
-    avx3f Ng;       //!< Geometry normal
-    avxf u;         //!< Barycentric u coordinate of hit
-    avxf v;         //!< Barycentric v coordinate of hit
-    avxi geomID;    //!< geometry ID
-    avxi primID;    //!< primitive ID
-    avxi instID;    //!< instance ID
+    Vec3f8 Ng;       //!< Geometry normal
+    float8 u;         //!< Barycentric u coordinate of hit
+    float8 v;         //!< Barycentric v coordinate of hit
+    int8 geomID;    //!< geometry ID
+    int8 primID;    //!< primitive ID
+    int8 instID;    //!< instance ID
   };
 
   /*! Outputs ray to stream. */

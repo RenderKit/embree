@@ -25,9 +25,9 @@ namespace embree
       speed up intersection calculations. */
   struct Triangle4
   {
-    typedef sseb simdb;
-    typedef ssef simdf;
-    typedef ssei simdi;
+    typedef bool4 simdb;
+    typedef float4 simdf;
+    typedef int4 simdi;
 
   public:
     struct Type : public PrimitiveType 
@@ -51,11 +51,11 @@ namespace embree
     __forceinline Triangle4 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4 (const sse3f& v0, const sse3f& v1, const sse3f& v2, const ssei& geomIDs, const ssei& primIDs)
+    __forceinline Triangle4 (const Vec3f4& v0, const Vec3f4& v1, const Vec3f4& v2, const int4& geomIDs, const int4& primIDs)
       : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline sseb valid() const { return geomIDs != ssei(-1); }
+    __forceinline bool4 valid() const { return geomIDs != int4(-1); }
 
     /*! Returns true if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { assert(i<4); return geomIDs[i] != -1; }
@@ -64,28 +64,28 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid()));  }
 
     /*! returns the geometry IDs */
-    __forceinline ssei geomID() const { return geomIDs;  }
+    __forceinline int4 geomID() const { return geomIDs;  }
     __forceinline int geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
 
     /*! returns the primitive IDs */
-    __forceinline ssei primID() const { return primIDs; }
+    __forceinline int4 primID() const { return primIDs; }
     __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i]; }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      sse3f p0 = v0;
-      sse3f p1 = v0-e1;
-      sse3f p2 = v0+e2;
-      sse3f lower = min(p0,p1,p2);
-      sse3f upper = max(p0,p1,p2);
-      sseb mask = valid();
-      lower.x = select(mask,lower.x,ssef(pos_inf));
-      lower.y = select(mask,lower.y,ssef(pos_inf));
-      lower.z = select(mask,lower.z,ssef(pos_inf));
-      upper.x = select(mask,upper.x,ssef(neg_inf));
-      upper.y = select(mask,upper.y,ssef(neg_inf));
-      upper.z = select(mask,upper.z,ssef(neg_inf));
+      Vec3f4 p0 = v0;
+      Vec3f4 p1 = v0-e1;
+      Vec3f4 p2 = v0+e2;
+      Vec3f4 lower = min(p0,p1,p2);
+      Vec3f4 upper = max(p0,p1,p2);
+      bool4 mask = valid();
+      lower.x = select(mask,lower.x,float4(pos_inf));
+      lower.y = select(mask,lower.y,float4(pos_inf));
+      lower.z = select(mask,lower.z,float4(pos_inf));
+      upper.x = select(mask,upper.x,float4(neg_inf));
+      upper.y = select(mask,upper.y,float4(neg_inf));
+      upper.z = select(mask,upper.z,float4(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
                      Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
@@ -112,8 +112,8 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
+      int4 vgeomID = -1, vprimID = -1;
+      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && prims; i++, prims++)
       {
@@ -137,8 +137,8 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      ssei vgeomID = -1, vprimID = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
+      int4 vgeomID = -1, vprimID = -1;
+      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && begin<end; i++, begin++)
       {
@@ -163,8 +163,8 @@ namespace embree
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      ssei vgeomID = -1, vprimID = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
+      int4 vgeomID = -1, vprimID = -1;
+      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<4; i++)
       {
@@ -187,11 +187,11 @@ namespace embree
     }
 
   public:
-    sse3f v0;      //!< Base vertex of the triangles
-    sse3f e1;      //!< 1st edge of the triangles (v0-v1)
-    sse3f e2;      //!< 2nd edge of the triangles (v2-v0)
-    sse3f Ng;      //!< Geometry normal of the triangles (cross(e1,e2))
-    ssei geomIDs;  //!< geometry IDs
-    ssei primIDs;  //!< primitive IDs
+    Vec3f4 v0;      //!< Base vertex of the triangles
+    Vec3f4 e1;      //!< 1st edge of the triangles (v0-v1)
+    Vec3f4 e2;      //!< 2nd edge of the triangles (v2-v0)
+    Vec3f4 Ng;      //!< Geometry normal of the triangles (cross(e1,e2))
+    int4 geomIDs;  //!< geometry IDs
+    int4 primIDs;  //!< primitive IDs
   };
 }

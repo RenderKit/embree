@@ -37,10 +37,10 @@ namespace embree
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
-          const ssef diag = (ssef) pinfo.centBounds.size();
-          //scale = select(diag > ssef(1E-19f),rcp(diag) * ssef(0.99f*num),ssef(0.0f));
-          scale = select(diag > ssef(1E-34f),ssef(0.99f*num)/diag,ssef(0.0f));
-          ofs  = (ssef) pinfo.centBounds.lower;
+          const float4 diag = (float4) pinfo.centBounds.size();
+          //scale = select(diag > float4(1E-19f),rcp(diag) * float4(0.99f*num),float4(0.0f));
+          scale = select(diag > float4(1E-34f),float4(0.99f*num)/diag,float4(0.0f));
+          ofs  = (float4) pinfo.centBounds.lower;
         }
         
         /*! returns number of bins */
@@ -49,20 +49,20 @@ namespace embree
         /*! slower but safe binning */
         __forceinline Vec3ia bin(const Vec3fa& p) const 
         {
-          const ssei i = floori((ssef(p)-ofs)*scale);
+          const int4 i = floori((float4(p)-ofs)*scale);
 #if 1
           assert(i[0] >=0 && i[0] < num); 
           assert(i[1] >=0 && i[1] < num);
           assert(i[2] >=0 && i[2] < num);
           return Vec3ia(i);
 #else
-          return Vec3ia(clamp(i,ssei(0),ssei(num-1)));
+          return Vec3ia(clamp(i,int4(0),int4(num-1)));
 #endif
         }
         
         /*! faster but unsafe binning */
         __forceinline Vec3ia bin_unsafe(const Vec3fa& p) const {
-          return Vec3ia(floori((ssef(p)-ofs)*scale));
+          return Vec3ia(floori((float4(p)-ofs)*scale));
         }
         
         /*! returns true if the mapping is invalid in some dimension */
@@ -77,7 +77,7 @@ namespace embree
         
       public:
         size_t num;
-        ssef ofs,scale;        //!< linear function that maps to bin ID
+        float4 ofs,scale;        //!< linear function that maps to bin ID
       };
     
     /*! stores all information to perform some split */
@@ -268,9 +268,9 @@ namespace embree
       __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift) const
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
-	ssef rAreas[BINS];
-	ssei rCounts[BINS];
-	ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+	float4 rAreas[BINS];
+	int4 rCounts[BINS];
+	int4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts[i];
@@ -282,8 +282,8 @@ namespace embree
         }
 	
 	/* sweep from left to right and compute SAH */
-	ssei blocks_add = (1 << blocks_shift)-1;
-	ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0; 
+	int4 blocks_add = (1 << blocks_shift)-1;
+	int4 ii = 1; float4 vbestSAH = pos_inf; int4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
@@ -291,11 +291,11 @@ namespace embree
           bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
           by.extend(bounds[i-1][1]); float Ay = halfArea(by);
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
-          const ssef lArea = ssef(Ax,Ay,Az,Az);
-          const ssef rArea = rAreas[i];
-          const ssei lCount = (count     +blocks_add) >> blocks_shift;
-          const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
-          const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
+          const float4 lArea = float4(Ax,Ay,Az,Az);
+          const float4 rArea = rAreas[i];
+          const int4 lCount = (count     +blocks_add) >> blocks_shift;
+          const int4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const float4 sah = lArea*float4(lCount) + rArea*float4(rCount);
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
         }
@@ -347,7 +347,7 @@ namespace embree
       
     private:
       BBox3fa bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
-      ssei    counts[BINS];    //!< counts number of primitives that map into the bins
+      int4    counts[BINS];    //!< counts number of primitives that map into the bins
     };
   }
 }

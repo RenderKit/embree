@@ -82,22 +82,22 @@ namespace embree
     float vtx_v[12];
 #endif
 
-    static __forceinline ssei u16_to_ssei(const unsigned short* const source) // FIXME: move to ssei header
+    static __forceinline int4 u16_to_int4(const unsigned short* const source) // FIXME: move to int4 header
     {
 #if defined (__SSE4_1__)
       return _mm_cvtepu16_epi32(loadu4i(source));
 #else
-      return ssei(source[0],source[1],source[2],source[3]);
+      return int4(source[0],source[1],source[2],source[3]);
 #endif
     } 
 
-    static __forceinline ssef u16_to_ssef(const unsigned short* const source) {
-      return ssef(u16_to_ssei(source)) * 1.0f/65535.0f;
+    static __forceinline float4 u16_to_float4(const unsigned short* const source) {
+      return float4(u16_to_int4(source)) * 1.0f/65535.0f;
     } 
 
     static __forceinline float u16_to_float(const unsigned short source) { return (float)source * 1.0f/65535.0f; } 
     static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
-    static __forceinline ssei float_to_u16(const ssef &f) { return (ssei)(f*65535.0f); }
+    static __forceinline int4 float_to_u16(const float4 &f) { return (int4)(f*65535.0f); }
 
     __forceinline void initFrom3x3Grid( const float *const source,
                                         float *const dest,
@@ -131,13 +131,13 @@ namespace embree
       dest[11] = v22;
     }
 
-    __forceinline void initFrom3x3Grid( const ssef source[3],
+    __forceinline void initFrom3x3Grid( const float4 source[3],
                                         float *const dest)
     {
-      const ssef row0_a = unpacklo(source[0],source[1]); 
-      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
-      const ssef row1_a = unpacklo(source[1],source[2]);
-      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+      const float4 row0_a = unpacklo(source[0],source[1]); 
+      const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const float4 row1_a = unpacklo(source[1],source[2]);
+      const float4 row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
 
       storeu4f(&dest[2], row0_b);
       storeu4f(&dest[8], row1_b);
@@ -145,13 +145,13 @@ namespace embree
       storeu4f(&dest[6], row1_a);
     }
 
-    __forceinline void initFrom3x3Grid_discretized( const ssef source[3],
+    __forceinline void initFrom3x3Grid_discretized( const float4 source[3],
                                                     unsigned short *const dest)
     {
-      const ssef row0_a = unpacklo(source[0],source[1]); 
-      const ssef row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
-      const ssef row1_a = unpacklo(source[1],source[2]);
-      const ssef row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
+      const float4 row0_a = unpacklo(source[0],source[1]); 
+      const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
+      const float4 row1_a = unpacklo(source[1],source[2]);
+      const float4 row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
 
       //FIXME: use intrinsics for conversion
       for (size_t i=0;i<4;i++)
@@ -220,11 +220,11 @@ namespace embree
     }
 
     /* init from 3x3 point grid */
-    void init( const ssef grid_x[3],
-               const ssef grid_y[3],
-               const ssef grid_z[3],
-               const ssef grid_u[3],
-               const ssef grid_v[3])
+    void init( const float4 grid_x[3],
+               const float4 grid_y[3],
+               const float4 grid_z[3],
+               const float4 grid_u[3],
+               const float4 grid_v[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
@@ -240,9 +240,9 @@ namespace embree
     }
 
         /* init from 3x3 point grid */
-    void init_xyz( const ssef grid_x[3],
-		   const ssef grid_y[3],
-		   const ssef grid_z[3])
+    void init_xyz( const float4 grid_x[3],
+		   const float4 grid_y[3],
+		   const float4 grid_z[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
@@ -252,38 +252,38 @@ namespace embree
 
 #if defined(__AVX__)
 
-    __forceinline avxf combine( const float *const source, const size_t offset) const {
-      return avxf( ssef::loadu(&source[0+offset]), ssef::loadu(&source[6+offset]) ); // FIXME: unaligned loads
+    __forceinline float8 combine( const float *const source, const size_t offset) const {
+      return float8( float4::loadu(&source[0+offset]), float4::loadu(&source[6+offset]) ); // FIXME: unaligned loads
     }
 
-    __forceinline avxi combine_discretized( const unsigned short *const source, const size_t offset) const {
+    __forceinline int8 combine_discretized( const unsigned short *const source, const size_t offset) const {
       
-      return avxi( u16_to_ssei(&source[0+offset]), u16_to_ssei(&source[6+offset]) );            
+      return int8( u16_to_int4(&source[0+offset]), u16_to_int4(&source[6+offset]) );            
     }
 
-    __forceinline avx3f getVtx( const size_t offset, const size_t delta = 0 ) const {
-      return avx3f(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
+    __forceinline Vec3f8 getVtx( const size_t offset, const size_t delta = 0 ) const {
+      return Vec3f8(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
     }
 
-    __forceinline avx2f getUV( const size_t offset, const size_t delta = 0 ) const {
+    __forceinline Vec2f8 getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRETIZED_UV == 1
-      return avx2f(  avxf(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, avxf(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
+      return Vec2f8(  float8(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, float8(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
 #else
-      return avx2f(  combine(vtx_u,offset), combine(vtx_v,offset) );
+      return Vec2f8(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif
     }
 
 #else
 
-    __forceinline sse3f getVtx( const size_t offset, const size_t delta = 0 ) const {
-      return sse3f( loadu4f(&vtx_x[offset+delta]), loadu4f(&vtx_y[offset+delta]), loadu4f(&vtx_z[offset+delta]) );
+    __forceinline Vec3f4 getVtx( const size_t offset, const size_t delta = 0 ) const {
+      return Vec3f4( loadu4f(&vtx_x[offset+delta]), loadu4f(&vtx_y[offset+delta]), loadu4f(&vtx_z[offset+delta]) );
     }
 
-    __forceinline sse2f getUV( const size_t offset, const size_t delta = 0 ) const {
+    __forceinline Vec2f4 getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRETIZED_UV == 1
-      return sse2f( u16_to_ssef(&vtx_u[offset+delta]), u16_to_ssef(&vtx_v[offset+delta]) );
+      return Vec2f4( u16_to_float4(&vtx_u[offset+delta]), u16_to_float4(&vtx_v[offset+delta]) );
 #else
-      return sse2f(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
+      return Vec2f4(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
 #endif
     }
     
@@ -318,7 +318,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-  __forceinline BBox3fa getBBox3fa(const avx3f &v)
+  __forceinline BBox3fa getBBox3fa(const Vec3f8 &v)
   {
     const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
     const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
@@ -327,7 +327,7 @@ namespace embree
 #endif
 
 #if defined(__SSE__)
-  __forceinline BBox3fa getBBox3fa(const sse3f &v)
+  __forceinline BBox3fa getBBox3fa(const Vec3f4 &v)
   {
     const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
     const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
@@ -336,15 +336,15 @@ namespace embree
 #endif
 
 #if defined(__MIC__)
-  __forceinline BBox3fa getBBox3fa(const mic3f &v, const mic_m m_valid = 0xffff)
+  __forceinline BBox3fa getBBox3fa(const Vec3f16 &v, const bool16 m_valid = 0xffff)
   {
-    const mic_f x_min = select(m_valid,v.x,mic_f::inf());
-    const mic_f y_min = select(m_valid,v.y,mic_f::inf());
-    const mic_f z_min = select(m_valid,v.z,mic_f::inf());
+    const float16 x_min = select(m_valid,v.x,float16::inf());
+    const float16 y_min = select(m_valid,v.y,float16::inf());
+    const float16 z_min = select(m_valid,v.z,float16::inf());
 
-    const mic_f x_max = select(m_valid,v.x,mic_f::minus_inf());
-    const mic_f y_max = select(m_valid,v.y,mic_f::minus_inf());
-    const mic_f z_max = select(m_valid,v.z,mic_f::minus_inf());
+    const float16 x_max = select(m_valid,v.x,float16::minus_inf());
+    const float16 y_max = select(m_valid,v.y,float16::minus_inf());
+    const float16 z_max = select(m_valid,v.z,float16::minus_inf());
     
     const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
     const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
@@ -530,68 +530,68 @@ namespace embree
     }
 
 #if defined(__SSE__)
-    __forceinline sse3f eval4(const ssef &uu,
-			      const ssef &vv) const
+    __forceinline Vec3f4 eval4(const float4 &uu,
+			      const float4 &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval<sseb>( patch.v, uu, vv );
+        return BezierPatch::eval<bool4>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<bool4>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::eval<sseb,ssef>( patch.v, uu, vv );
-      return sse3f( zero );
+	return GregoryTrianglePatch3fa::eval<bool4,float4>( patch.v, uu, vv );
+      return Vec3f4( zero );
     }
 
-    __forceinline sse3f normal4(const ssef &uu,
-                                const ssef &vv) const
+    __forceinline Vec3f4 normal4(const float4 &uu,
+                                const float4 &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal<sseb>( patch.v, uu, vv );
+        return BezierPatch::normal<bool4>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal_t<sseb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<bool4>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal<sseb,ssef>( patch.v, uu, vv );
-      return sse3f( zero );
+	return GregoryTrianglePatch3fa::normal<bool4,float4>( patch.v, uu, vv );
+      return Vec3f4( zero );
     }
 
 #endif
 
 #if defined(__AVX__)
-    __forceinline avx3f eval8(const avxf &uu,
-			      const avxf &vv) const
+    __forceinline Vec3f8 eval8(const float8 &uu,
+			      const float8 &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval<avxb>( patch.v, uu, vv );
+        return BezierPatch::eval<bool8>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<bool8>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::eval<avxb,avxf>( patch.v, uu, vv );
-      return avx3f( zero );
+	return GregoryTrianglePatch3fa::eval<bool8,float8>( patch.v, uu, vv );
+      return Vec3f8( zero );
     }
-    __forceinline avx3f normal8(const avxf &uu,
-                                const avxf &vv) const
+    __forceinline Vec3f8 normal8(const float8 &uu,
+                                const float8 &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal<avxb>( patch.v, uu, vv );
+        return BezierPatch::normal<bool8>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal_t<avxb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<bool8>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal<avxb,avxf>( patch.v, uu, vv );
-      return avx3f( zero );
+	return GregoryTrianglePatch3fa::normal<bool8,float8>( patch.v, uu, vv );
+      return Vec3f8( zero );
     }
 #endif
 
 #if defined(__MIC__)
-    __forceinline mic_f eval4(const mic_f &uu,
-			      const mic_f &vv) const
+    __forceinline float16 eval4(const float16 &uu,
+			      const float16 &vv) const
     {
       if (likely(isBSplinePatch()))
 	{
@@ -603,8 +603,8 @@ namespace embree
 	}     
     }
 
-    __forceinline mic3f eval16(const mic_f &uu,
-			       const mic_f &vv) const
+    __forceinline Vec3f16 eval16(const float16 &uu,
+			       const float16 &vv) const
     {
       if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
@@ -612,8 +612,8 @@ namespace embree
         return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
     }
 
-    __forceinline mic3f normal16(const mic_f &uu,
-				 const mic_f &vv) const
+    __forceinline Vec3f16 normal16(const float16 &uu,
+				 const float16 &vv) const
     {
       if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
@@ -668,9 +668,9 @@ namespace embree
 #if defined(__MIC__)
     __forceinline void store(void *mem)
     {
-      const mic_f *const src = (mic_f*)this;
+      const float16 *const src = (float16*)this;
       assert(sizeof(SubdivPatch1Base) % 64 == 0);
-      mic_f *const dst = (mic_f*)mem;
+      float16 *const dst = (float16*)mem;
 #pragma unroll
       for (size_t i=0;i<sizeof(SubdivPatch1Base) / 64;i++)
 	store16f_ngo(&dst[i],src[i]);
@@ -809,19 +809,19 @@ namespace embree
 
        for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
         {
-          const mic_f u = load16f(&grid_u[i * 16]);
-          const mic_f v = load16f(&grid_v[i * 16]);
+          const float16 u = load16f(&grid_u[i * 16]);
+          const float16 v = load16f(&grid_v[i * 16]);
 
 	  //prefetch<PFHINT_L2EX>(&grid_x[16*i]);
 	  //prefetch<PFHINT_L2EX>(&grid_y[16*i]);
 	  //prefetch<PFHINT_L2EX>(&grid_z[16*i]);
 
-          mic3f vtx = patch.eval16(u, v);
+          Vec3f16 vtx = patch.eval16(u, v);
 
           /* eval displacement function */
 	  if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
             {
-              mic3f normal = patch.normal16(u, v);
+              Vec3f16 normal = patch.normal16(u, v);
               normal = normalize(normal);
 
               const Vec2f uv0 = patch.getUV(0);
@@ -829,8 +829,8 @@ namespace embree
               const Vec2f uv2 = patch.getUV(2);
               const Vec2f uv3 = patch.getUV(3);
 
-              const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
 
               ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
 					     patch.geom,
@@ -859,9 +859,9 @@ namespace embree
 #if defined(__AVX__)
     for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
       {
-        avxf uu = load8f(&grid_u[8*i]);
-        avxf vv = load8f(&grid_v[8*i]);
-        avx3f vtx = patch.eval8(uu,vv);
+        float8 uu = load8f(&grid_u[8*i]);
+        float8 vv = load8f(&grid_v[8*i]);
+        Vec3f8 vtx = patch.eval8(uu,vv);
                  
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
           {
@@ -870,11 +870,11 @@ namespace embree
 	    const Vec2f uv2 = patch.getUV(2);
 	    const Vec2f uv3 = patch.getUV(3);
 
-            avx3f normal = patch.normal8(uu,vv);
+            Vec3f8 normal = patch.normal8(uu,vv);
             normal = normalize_safe(normal) ;
             
-            const avxf patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const avxf patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            const float8 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+            const float8 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
@@ -889,16 +889,16 @@ namespace embree
                                            (float*)&vtx.z,
                                            8);
           }
-        *(avxf*)&grid_x[8*i] = vtx.x;
-        *(avxf*)&grid_y[8*i] = vtx.y;
-        *(avxf*)&grid_z[8*i] = vtx.z;        
+        *(float8*)&grid_x[8*i] = vtx.x;
+        *(float8*)&grid_y[8*i] = vtx.y;
+        *(float8*)&grid_z[8*i] = vtx.z;        
       }
 #else
     for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
       {
-        ssef uu = load4f(&grid_u[4*i]);
-        ssef vv = load4f(&grid_v[4*i]);
-        sse3f vtx = patch.eval4(uu,vv);
+        float4 uu = load4f(&grid_u[4*i]);
+        float4 vv = load4f(&grid_v[4*i]);
+        Vec3f4 vtx = patch.eval4(uu,vv);
           
           
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
@@ -908,11 +908,11 @@ namespace embree
 	    const Vec2f uv2 = patch.getUV(2);
 	    const Vec2f uv3 = patch.getUV(3);
 
-            sse3f normal = patch.normal4(uu,vv);
+            Vec3f4 normal = patch.normal4(uu,vv);
             normal = normalize_safe(normal);
 
-            const ssef patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const ssef patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            const float4 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
+            const float4 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
@@ -928,9 +928,9 @@ namespace embree
                                            4);
           }
           
-        *(ssef*)&grid_x[4*i] = vtx.x;
-        *(ssef*)&grid_y[4*i] = vtx.y;
-        *(ssef*)&grid_z[4*i] = vtx.z;        
+        *(float4*)&grid_x[4*i] = vtx.x;
+        *(float4*)&grid_y[4*i] = vtx.y;
+        *(float4*)&grid_z[4*i] = vtx.z;        
       }
 #endif
 #endif        

@@ -78,14 +78,14 @@ namespace embree
       
       struct MortonCodeMapping
       {
-        ssef base;
-        ssef scale;
+        float4 base;
+        float4 scale;
         
         __forceinline MortonCodeMapping(const BBox3fa& bounds)
         {
-          base  = (ssef)bounds.lower;
-          const ssef diag  = (ssef)bounds.upper - (ssef)bounds.lower;
-          scale = select(diag > ssef(1E-19f), rcp(diag) * ssef(LATTICE_SIZE_PER_DIM * 0.99f),ssef(0.0f));
+          base  = (float4)bounds.lower;
+          const float4 diag  = (float4)bounds.upper - (float4)bounds.lower;
+          scale = select(diag > float4(1E-19f), rcp(diag) * float4(LATTICE_SIZE_PER_DIM * 0.99f),float4(0.0f));
         }
       };
       
@@ -99,7 +99,7 @@ namespace embree
       {
         if (slots != 0)
         {
-          const ssei code = bitInterleave(ax,ay,az);
+          const int4 code = bitInterleave(ax,ay,az);
           for (size_t i=0; i<slots; i++) {
             dest[currentID-slots+i].index = ai[i];
             dest[currentID-slots+i].code = code[i];
@@ -109,10 +109,10 @@ namespace embree
       
       __forceinline void operator() (const BBox3fa& b, const size_t index)
       {
-        const ssef lower = (ssef)b.lower;
-        const ssef upper = (ssef)b.upper;
-        const ssef centroid = lower+upper;
-        const ssei binID = ssei((centroid-mapping.base)*mapping.scale);
+        const float4 lower = (float4)b.lower;
+        const float4 upper = (float4)b.upper;
+        const float4 centroid = lower+upper;
+        const int4 binID = int4((centroid-mapping.base)*mapping.scale);
         
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
@@ -123,7 +123,7 @@ namespace embree
         
         if (slots == 4)
         {
-          const ssei code = bitInterleave(ax,ay,az);
+          const int4 code = bitInterleave(ax,ay,az);
           storeu4i(&dest[currentID-4],unpacklo(code,ai));
           storeu4i(&dest[currentID-2],unpackhi(code,ai));
           slots = 0;
@@ -133,11 +133,11 @@ namespace embree
     public:
       const MortonCodeMapping mapping;
       MortonID32Bit* dest;
-      const ssef base;
-      const ssef scale;
+      const float4 base;
+      const float4 scale;
       size_t currentID;
       size_t slots;
-      ssei ax, ay, az, ai;
+      int4 ax, ay, az, ai;
     };
     
     template<
@@ -261,10 +261,10 @@ namespace embree
         for (size_t i=current.begin; i<current.end; i++)
         {
           const BBox3fa b = calculateBounds(morton[i]);
-          const ssef lower = (ssef)b.lower;
-          const ssef upper = (ssef)b.upper;
-          const ssef centroid = lower+upper;
-          const ssei binID = ssei((centroid-mapping.base)*mapping.scale);
+          const float4 lower = (float4)b.lower;
+          const float4 upper = (float4)b.upper;
+          const float4 centroid = lower+upper;
+          const int4 binID = int4((centroid-mapping.base)*mapping.scale);
           const unsigned int bx = extract<0>(binID);
           const unsigned int by = extract<1>(binID);
           const unsigned int bz = extract<2>(binID);

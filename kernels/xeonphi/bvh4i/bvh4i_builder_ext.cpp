@@ -140,28 +140,28 @@ PRINT(CORRECT_numPrims);
     right_o = PrimRef(cright,prim.geomID(), prim.primID());
   }
 
-  __forceinline mic_f box_sah( const mic_f &b_min,
-			       const mic_f &b_max) 
+  __forceinline float16 box_sah( const float16 &b_min,
+			       const float16 &b_max) 
   { 
-    const mic_f d = b_max - b_min;
-    const mic_f d_x = swAAAA(d);
-    const mic_f d_y = swBBBB(d);
-    const mic_f d_z = swCCCC(d);
+    const float16 d = b_max - b_min;
+    const float16 d_x = swAAAA(d);
+    const float16 d_y = swBBBB(d);
+    const float16 d_z = swCCCC(d);
     return (d_x*(d_y+d_z)+d_y*d_z)*2.0f; 
   }
 
-  __forceinline mic_f box_sah( const PrimRef &r) 
+  __forceinline float16 box_sah( const PrimRef &r) 
   { 
-    const mic_f bmin = broadcast4to16f(&r.lower);
-    const mic_f bmax = broadcast4to16f(&r.upper);
+    const float16 bmin = broadcast4to16f(&r.lower);
+    const float16 bmax = broadcast4to16f(&r.upper);
     return box_sah(bmin,bmax);
   }
 
-  __forceinline mic_f tri_sah( const mic_f &v0,
-			       const mic_f &v1,
-			       const mic_f &v2) 
+  __forceinline float16 tri_sah( const float16 &v0,
+			       const float16 &v1,
+			       const float16 &v2) 
   {
-    const mic_f n = lcross_xyz(v1-v0,v2-v0);
+    const float16 n = lcross_xyz(v1-v0,v2-v0);
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
   
@@ -312,14 +312,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 		  
 		  sahBox += area_box[0];
 		  sahTri += area_tri[0];
@@ -357,10 +357,10 @@ PRINT(CORRECT_numPrims);
     }
 
     // === start with first group containing startID ===
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int numTrisNoPreSplit = 0;
     unsigned int numTrisPreSplit = 0;
@@ -389,14 +389,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -404,8 +404,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    numTrisPreSplit++;
@@ -414,7 +414,7 @@ PRINT(CORRECT_numPrims);
 
 		  bounds_scene_min = min(bounds_scene_min,bmin);
 		  bounds_scene_max = max(bounds_scene_max,bmax);
-		  const mic_f centroid2 = bmin+bmax;
+		  const float16 centroid2 = bmin+bmax;
 		  bounds_centroid_min = min(bounds_centroid_min,centroid2);
 		  bounds_centroid_max = max(bounds_centroid_max,centroid2);
 		}
@@ -469,14 +469,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -484,8 +484,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    {
@@ -545,12 +545,12 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  prefetch<PFHINT_L1EX>(prims);
 
-	  mic_f bmin = min(min(v[0],v[1]),v[2]);
-	  mic_f bmax = max(max(v[0],v[1]),v[2]);
+	  float16 bmin = min(min(v[0],v[1]),v[2]);
+	  float16 bmax = max(max(v[0],v[1]),v[2]);
 
 	  prefetch<PFHINT_L2EX>(prims + L2_PREFETCH_ITEMS);
 
@@ -587,14 +587,14 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  
-	  mic_f bmin = min(min(v[0],v[1]),v[2]);
-	  mic_f bmax = max(max(v[0],v[1]),v[2]);
+	  float16 bmin = min(min(v[0],v[1]),v[2]);
+	  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-	  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-	  const mic_f area_box = box_sah(bmin,bmax);
+	  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+	  const float16 area_box = box_sah(bmin,bmax);
 
 	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
@@ -676,10 +676,10 @@ PRINT(CORRECT_numPrims);
     }
 
     /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -697,12 +697,12 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 			    
 	    const BBox3fa bounds = virtual_geometry->bounds(i);
-	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	    const mic_f bmax = broadcast4to16f(&bounds.upper);
+	    const float16 bmin = broadcast4to16f(&bounds.lower); 
+	    const float16 bmax = broadcast4to16f(&bounds.upper);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const mic_f centroid2 = bmin+bmax;
+	    const float16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
@@ -1014,16 +1014,16 @@ PRINT(CORRECT_numPrims);
 
       for (size_t i = 0; i<p.grid_size_simd_blocks; i++)
         {
-          const mic_f u = load16f(&u_array[i * 16]);
-          const mic_f v = load16f(&v_array[i * 16]);
+          const float16 u = load16f(&u_array[i * 16]);
+          const float16 v = load16f(&v_array[i * 16]);
 
-          mic3f vtx = p.eval16(u, v);
+          Vec3f16 vtx = p.eval16(u, v);
 
 
           /* eval displacement function */
           if (unlikely(mesh->displFunc != nullptr))
             {
-              mic3f normal = p.normal16(u, v);
+              Vec3f16 normal = p.normal16(u, v);
               normal = normalize(normal);
 
               const Vec2f uv0 = p.getUV(0);
@@ -1031,8 +1031,8 @@ PRINT(CORRECT_numPrims);
               const Vec2f uv2 = p.getUV(2);
               const Vec2f uv3 = p.getUV(3);
 
-              const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
 
               mesh->displFunc(mesh->userPtr,
                               p.geom,
@@ -1091,10 +1091,10 @@ PRINT(CORRECT_numPrims);
     const size_t endID     = (threadID+1)*numPrimitives/numThreads; 
     SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
 
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     for (size_t i=startID;i<endID;i++)
       {
@@ -1123,12 +1123,12 @@ PRINT(CORRECT_numPrims);
 	assert(bounds.lower.y <= bounds.upper.y);
 	assert(bounds.lower.z <= bounds.upper.z);
 
-	const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	const mic_f bmax = broadcast4to16f(&bounds.upper);
+	const float16 bmin = broadcast4to16f(&bounds.lower); 
+	const float16 bmax = broadcast4to16f(&bounds.upper);
           
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
+	const float16 centroid2 = bmin+bmax;
 	bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
@@ -1258,10 +1258,10 @@ PRINT(CORRECT_numPrims);
     }
 
     /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -1314,12 +1314,12 @@ PRINT(CORRECT_numPrims);
 
 	    prefetch<PFHINT_L1EX>(&prims[currentID]);
 
-	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	    const mic_f bmax = broadcast4to16f(&bounds.upper);
+	    const float16 bmin = broadcast4to16f(&bounds.lower); 
+	    const float16 bmax = broadcast4to16f(&bounds.upper);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const mic_f centroid2 = bmin+bmax;
+	    const float16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 

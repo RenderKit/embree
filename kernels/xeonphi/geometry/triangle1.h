@@ -71,7 +71,7 @@ namespace embree
     return o;
   } 
 
-  __forceinline mic_i getTriMasks(const Triangle1 * __restrict__ const tptr)
+  __forceinline int16 getTriMasks(const Triangle1 * __restrict__ const tptr)
   {
     return swDDDD(gather16i_4i_align(&tptr[0].v2,&tptr[1].v2,&tptr[2].v2,&tptr[3].v2));
   }

@@ -32,12 +32,12 @@ namespace embree
   static const unsigned int U_BLOCK_SIZE = 5;
   static const unsigned int V_BLOCK_SIZE = 3;
 
-  __forceinline mic_f load4x4f_unalign(const void *__restrict__ const ptr0,
+  __forceinline float16 load4x4f_unalign(const void *__restrict__ const ptr0,
 				       const void *__restrict__ const ptr1,
 				       const void *__restrict__ const ptr2,
 				       const void *__restrict__ const ptr3) 
   {
-    mic_f v = uload16f((float*)ptr0);
+    float16 v = uload16f((float*)ptr0);
     v = uload16f(v,0xf0,(float*)ptr1);
     v = uload16f(v,0xf00,(float*)ptr2);
     v = uload16f(v,0xf000,(float*)ptr3);
@@ -86,7 +86,7 @@ namespace embree
 
 
     BBox3fa createSubTreeCompact(BVH4i::NodeRef &curNode,
-				 mic_f *const lazymem,
+				 float16 *const lazymem,
 				 const SubdivPatch1 &patch,
 				 const float *const grid_array,
 				 const size_t grid_array_elements,				 
@@ -125,14 +125,14 @@ namespace embree
 
 	  //const unsigned int u_size = range.u_end-range.u_start+1;
 	  //const unsigned int v_size = range.v_end-range.v_start+1;
-	  const mic_m m_mask = ((unsigned int)1 << u_size)-1;
+	  const bool16 m_mask = ((unsigned int)1 << u_size)-1;
 
-	  mic_f min_x = pos_inf;
-	  mic_f min_y = pos_inf;
-	  mic_f min_z = pos_inf;
-	  mic_f max_x = neg_inf;
-	  mic_f max_y = neg_inf;
-	  mic_f max_z = neg_inf;
+	  float16 min_x = pos_inf;
+	  float16 min_y = pos_inf;
+	  float16 min_z = pos_inf;
+	  float16 max_x = neg_inf;
+	  float16 max_y = neg_inf;
+	  float16 max_z = neg_inf;
 
 #if 0
 	  for (size_t v = 0; v<v_size; v++)
@@ -141,9 +141,9 @@ namespace embree
 	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
 	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
 
-	      const mic_f x = uload16f(&grid_x_array[ offset ]);
-	      const mic_f y = uload16f(&grid_y_array[ offset ]);
-	      const mic_f z = uload16f(&grid_z_array[ offset ]);
+	      const float16 x = uload16f(&grid_x_array[ offset ]);
+	      const float16 y = uload16f(&grid_y_array[ offset ]);
+	      const float16 z = uload16f(&grid_z_array[ offset ]);
 	      min_x = min(min_x,x);
 	      max_x = max(max_x,x);
 	      min_y = min(min_y,y);
@@ -259,13 +259,13 @@ namespace embree
 
     BVH4i::NodeRef initLocalLazySubdivTreeCompact(const SubdivPatch1 &patch,
 						  unsigned int currentIndex,
-						  mic_f *basemem,
+						  float16 *basemem,
 						  const SubdivMesh* const geom)
     {
       __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
       __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*16];
 
-      mic_f *lazymem = &basemem[currentIndex];
+      float16 *lazymem = &basemem[currentIndex];
 
       TIMER(double msec);
       TIMER(msec = getSeconds());    
@@ -286,11 +286,11 @@ namespace embree
       for (size_t i=0;i<array_elements;i+=16)
 	{
 	  prefetch<PFHINT_L1EX>(&grid_uv[i]);
-	  const mic_f u = load16f(&grid_u[i]);
-	  const mic_f v = load16f(&grid_v[i]);
-	  const mic_i u_i = mic_i(u * 65535.0f/2.0f);
-	  const mic_i v_i = mic_i(v * 65535.0f/2.0f);
-	  const mic_i uv_i = (u_i << 16) | v_i;
+	  const float16 u = load16f(&grid_u[i]);
+	  const float16 v = load16f(&grid_v[i]);
+	  const int16 u_i = int16(u * 65535.0f/2.0f);
+	  const int16 v_i = int16(v * 65535.0f/2.0f);
+	  const int16 uv_i = (u_i << 16) | v_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
@@ -406,7 +406,7 @@ namespace embree
 		    continue;
 		    
 		  }
-		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
@@ -482,7 +482,7 @@ namespace embree
 		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
 		    continue;
 		  }
-		mic_f* local_mem   = (mic_f*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+		float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
 		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
@@ -510,21 +510,21 @@ namespace embree
     // ============================================================================================
 
 
-    void BVH4iIntersector16Subdiv::intersect(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::intersect(int16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[4*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
       /* setup */
-      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16     = rcp_safe(ray16.dir);
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const bool16 m_valid    = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
 
       store16f(stack_dist,inf);
-      ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
-      ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
+      ray16.primID = select(m_valid,int16(-1),ray16.primID);
+      ray16.geomID = select(m_valid,int16(-1),ray16.geomID);
 
       Scene *const scene                         = (Scene*)bvh->geometry;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
@@ -549,12 +549,12 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -633,7 +633,7 @@ namespace embree
 	      // -------------------------------------
 	      // -------------------------------------
 
-	      compactStack(stack_node,stack_dist,sindex,mic_f(ray16.tfar[rayIndex]));
+	      compactStack(stack_node,stack_dist,sindex,float16(ray16.tfar[rayIndex]));
 
 	      // ------------------------
 	    }
@@ -641,7 +641,7 @@ namespace embree
 
 
       /* update primID/geomID and compute normals */
-      mic_m m_hit = (ray16.primID != -1) & m_valid;
+      bool16 m_hit = (ray16.primID != -1) & m_valid;
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
         {
@@ -675,17 +675,17 @@ namespace embree
 
     }
 
-    void BVH4iIntersector16Subdiv::occluded(mic_i* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::occluded(int16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
       /* setup */
-      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16  = rcp_safe(ray16.dir);
-      mic_m terminated    = !m_valid;
-      const mic_f inf     = mic_f(pos_inf);
-      const mic_f zero    = mic_f::zero();
+      const bool16 m_valid = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
+      bool16 terminated    = !m_valid;
+      const float16 inf     = float16(pos_inf);
+      const float16 zero    = float16::zero();
 
       Scene *const scene                   = (Scene*)bvh->geometry;
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
@@ -701,8 +701,8 @@ namespace embree
       threadInfo = localThreadInfo;
 
       stack_node[0] = BVH4i::invalidNode;
-      ray16.primID = select(m_valid,mic_i(-1),ray16.primID);
-      ray16.geomID = select(m_valid,mic_i(-1),ray16.geomID);
+      ray16.primID = select(m_valid,int16(-1),ray16.primID);
+      ray16.geomID = select(m_valid,int16(-1),ray16.geomID);
 
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
@@ -712,13 +712,13 @@ namespace embree
 
 	  STAT3(shadow.travs,1,1,1);
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_i v_invalidNode(BVH4i::invalidNode);
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const int16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
@@ -789,7 +789,7 @@ namespace embree
 								 ray16,
 								 precalculations)))
 		      {
-			terminated |= (mic_m)((unsigned int)1 << rayIndex);
+			terminated |= (bool16)((unsigned int)1 << rayIndex);
 			break;
 		      }		  
 		  }
@@ -797,7 +797,7 @@ namespace embree
 		SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);
 	      }
 
-	      if (unlikely(terminated & (mic_m)((unsigned int)1 << rayIndex))) break;
+	      if (unlikely(terminated & (bool16)((unsigned int)1 << rayIndex))) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	    }
@@ -820,9 +820,9 @@ namespace embree
       STAT3(normal.travs,1,1,1);
 
       /* setup */
-      const mic3f rdir16     = rcp_safe(mic3f(mic_f(ray.dir.x),mic_f(ray.dir.y),mic_f(ray.dir.z)));
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const Vec3f16 rdir16     = rcp_safe(Vec3f16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
 
       const unsigned int oldID = ray.primID;
 
@@ -846,12 +846,12 @@ namespace embree
 
       size_t sindex = 2;
 
-      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
-      mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      float16       max_dist_xyz = broadcast1to16f(&ray.tfar);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -968,9 +968,9 @@ namespace embree
       STAT3(shadow.travs,1,1,1);
 
       /* setup */
-      const mic3f rdir16      = rcp_safe(mic3f(ray.dir.x,ray.dir.y,ray.dir.z));
-      const mic_f inf         = mic_f(pos_inf);
-      const mic_f zero        = mic_f::zero();
+      const Vec3f16 rdir16      = rcp_safe(Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z));
+      const float16 inf         = float16(pos_inf);
+      const float16 zero        = float16::zero();
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -989,12 +989,12 @@ namespace embree
       stack_node[1] = bvh->root;
       size_t sindex = 2;
 
-      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      //const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
-      const mic_f max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      const float16 max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);

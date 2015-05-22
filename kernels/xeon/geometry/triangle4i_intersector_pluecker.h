@@ -44,13 +44,13 @@ namespace embree
           const int* base1 = (const int*) tri.v0[1];
           const int* base2 = (const int*) tri.v0[2];
           const int* base3 = (const int*) tri.v0[3];
-          const ssef a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
-          const ssef b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
-          const ssef c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
-          sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-          sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-          sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          triangle_intersect_pluecker<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          const float4 a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
+          const float4 b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
+          const float4 c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+          Vec3f4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+          Vec3f4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+          Vec3f4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+          triangle_intersect_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
         }
         
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
@@ -61,13 +61,13 @@ namespace embree
           const int* base1 = (const int*) tri.v0[1];
           const int* base2 = (const int*) tri.v0[2];
           const int* base3 = (const int*) tri.v0[3];
-          const ssef a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
-          const ssef b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
-          const ssef c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
-          sse3f p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-          sse3f p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-          sse3f p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          return triangle_occluded_pluecker<enableIntersectionFilter,sseb,ssef,ssei>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          const float4 a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
+          const float4 b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
+          const float4 c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+          Vec3f4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+          Vec3f4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+          Vec3f4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+          return triangle_occluded_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
         }
       };
 

@@ -138,7 +138,7 @@ namespace embree
       PRINT(f1_m());
       PRINT(f2_p());
       PRINT(f2_m());      
-      //sse3f p = eval_t<(*this,ssef(0.0f),ssef(0.0f));
+      //Vec3f4 p = eval_t<(*this,float4(0.0f),float4(0.0f));
       // PRINT(p);
       //exit(0);
     }

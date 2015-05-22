@@ -92,26 +92,26 @@ namespace embree
     
 #if defined(__MIC__)
 
-    const mic_i grid_u_segments = mic_i(grid_u_res)-1;
-    const mic_i grid_v_segments = mic_i(grid_v_res)-1;
+    const int16 grid_u_segments = int16(grid_u_res)-1;
+    const int16 grid_v_segments = int16(grid_v_res)-1;
     
-    const mic_f inv_grid_u_segments = rcp(mic_f(grid_u_segments));
-    const mic_f inv_grid_v_segments = rcp(mic_f(grid_v_segments));
+    const float16 inv_grid_u_segments = rcp(float16(grid_u_segments));
+    const float16 inv_grid_v_segments = rcp(float16(grid_v_segments));
     
     unsigned int index = 0;
-    mic_i v_i( zero );
+    int16 v_i( zero );
     for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
     {
-      mic_i u_i ( step );
+      int16 u_i ( step );
       
-      const mic_m m_v = v_i < grid_v_segments;
+      const bool16 m_v = v_i < grid_v_segments;
       
       for (unsigned int x=0;x<grid_u_res;x+=16, u_i += 16)
       {
-        const mic_m m_u = u_i < grid_u_segments;
+        const bool16 m_u = u_i < grid_u_segments;
 
-	const mic_f u = select(m_u, mic_f(u_i) * inv_grid_u_segments, 1.0f);
-	const mic_f v = select(m_v, mic_f(v_i) * inv_grid_v_segments, 1.0f);
+	const float16 u = select(m_u, float16(u_i) * inv_grid_u_segments, 1.0f);
+	const float16 v = select(m_v, float16(v_i) * inv_grid_v_segments, 1.0f);
 	ustore16f(&u_array[index + x],u);
 	ustore16f(&v_array[index + x],v);	   
       }
@@ -120,25 +120,25 @@ namespace embree
 #else
  
 #if defined(__AVX__)
-    const avxi grid_u_segments = avxi(grid_u_res)-1;
-    const avxi grid_v_segments = avxi(grid_v_res)-1;
+    const int8 grid_u_segments = int8(grid_u_res)-1;
+    const int8 grid_v_segments = int8(grid_v_res)-1;
     
-    const avxf inv_grid_u_segments = rcp(avxf(grid_u_segments));
-    const avxf inv_grid_v_segments = rcp(avxf(grid_v_segments));
+    const float8 inv_grid_u_segments = rcp(float8(grid_u_segments));
+    const float8 inv_grid_v_segments = rcp(float8(grid_v_segments));
     
     unsigned int index = 0;
-    avxi v_i( zero );
+    int8 v_i( zero );
     for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
     {
-      avxi u_i ( step );
+      int8 u_i ( step );
       
-      const avxb m_v = v_i < grid_v_segments;
+      const bool8 m_v = v_i < grid_v_segments;
       
       for (unsigned int x=0;x<grid_u_res;x+=8, u_i += 8)
       {
-        const avxb m_u = u_i < grid_u_segments;
-	const avxf u = select(m_u, avxf(u_i) * inv_grid_u_segments, 1.0f);
-	const avxf v = select(m_v, avxf(v_i) * inv_grid_v_segments, 1.0f);
+        const bool8 m_u = u_i < grid_u_segments;
+	const float8 u = select(m_u, float8(u_i) * inv_grid_u_segments, 1.0f);
+	const float8 v = select(m_v, float8(v_i) * inv_grid_v_segments, 1.0f);
 	storeu8f(&u_array[index + x],u); // FIXME: store not always 8 bytes aligned !!
 	storeu8f(&v_array[index + x],v);	   
       }

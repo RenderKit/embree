@@ -44,17 +44,17 @@ namespace embree
       // === single ray === 
       // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray& ray, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
 											    org_xyz,
 											    min_dist_xyz,
@@ -66,17 +66,17 @@ namespace embree
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return any(Triangle1Intersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
 											       org_xyz,
 											       min_dist_xyz,
@@ -92,17 +92,17 @@ namespace embree
       // ============================================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray16& ray16, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(curNode,
 											     rayIndex,
 											     dir_xyz,
@@ -119,18 +119,18 @@ namespace embree
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
 					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 const Ray16& ray16, 
 					 const Precalculations &pre,
-					 mic_m &m_terminated,
+					 bool16 &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(curNode,
 											    rayIndex,
 											    dir_xyz,
@@ -149,9 +149,9 @@ namespace embree
       // ========================
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
-					    const mic_m m_valid_leaf, 
-					    const mic3f &dir,
-					    const mic3f &org,
+					    const bool16 m_valid_leaf, 
+					    const Vec3f16 &dir,
+					    const Vec3f16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -162,11 +162,11 @@ namespace embree
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
-					   const mic_m m_valid_leaf, 
-					   const mic3f &dir,
-					   const mic3f &org,
+					   const bool16 m_valid_leaf, 
+					   const Vec3f16 &dir,
+					   const Vec3f16 &org,
 					   Ray16& ray16, 
-					   mic_m &m_terminated,					    
+					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
 					   const Scene     *__restrict__ const geometry)
       {
@@ -190,10 +190,10 @@ namespace embree
       // === single ray === 
       // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray& ray, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
@@ -202,7 +202,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 
 	return Triangle1mcIntersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
 											      org_xyz,
@@ -215,10 +215,10 @@ namespace embree
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
@@ -227,7 +227,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 
 	return Triangle1mcIntersector1MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
 											     org_xyz,
@@ -244,10 +244,10 @@ namespace embree
       // ============================================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray16& ray16, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
@@ -257,7 +257,7 @@ namespace embree
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::intersect1(rayIndex,
 											       dir_xyz,
 											       org_xyz,
@@ -272,13 +272,13 @@ namespace embree
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
 					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 const Ray16& ray16, 
 					 const Precalculations &pre,
-					 mic_m &m_terminated,
+					 bool16 &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
@@ -286,7 +286,7 @@ namespace embree
 	unsigned int index = curNode.offsetIndex();
 	const Triangle1mc *__restrict__ const tptr = (Triangle1mc*)accel + index;
 
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1mcIntersector16MoellerTrumbore<ENABLE_INTERSECTION_FILTER>::occluded1(rayIndex,
 											      dir_xyz,
 											      org_xyz,
@@ -303,9 +303,9 @@ namespace embree
       // ==== 16-wide packets ===
       // ========================
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
-					    const mic_m m_valid_leaf, 
-					    const mic3f &dir,
-					    const mic3f &org,
+					    const bool16 m_valid_leaf, 
+					    const Vec3f16 &dir,
+					    const Vec3f16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -317,11 +317,11 @@ namespace embree
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
-					   const mic_m m_valid_leaf, 
-					   const mic3f &dir,
-					   const mic3f &org,
+					   const bool16 m_valid_leaf, 
+					   const Vec3f16 &dir,
+					   const Vec3f16 &org,
 					   Ray16& ray16, 
-					   mic_m &m_terminated,					    
+					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
 					   const Scene     *__restrict__ const geometry)
       {
@@ -347,10 +347,10 @@ namespace embree
       // === single ray === 
       // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray& ray, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
@@ -365,10 +365,10 @@ namespace embree
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
@@ -385,9 +385,9 @@ namespace embree
       // ==== 16-wide packets ===
       // ========================
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
-					    const mic_m m_valid_leaf, 
-					    const mic3f &dir,
-					    const mic3f &org,
+					    const bool16 m_valid_leaf, 
+					    const Vec3f16 &dir,
+					    const Vec3f16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -399,11 +399,11 @@ namespace embree
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
-					   const mic_m m_valid_leaf, 
-					   const mic3f &dir,
-					   const mic3f &org,
+					   const bool16 m_valid_leaf, 
+					   const Vec3f16 &dir,
+					   const Vec3f16 &org,
 					   Ray16& ray16, 
-					   mic_m &m_terminated,					    
+					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
 					   const Scene     *__restrict__ const geometry)
       {
@@ -428,17 +428,17 @@ namespace embree
       // === single ray === 
       // ==================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray& ray, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(dir_xyz,
 												  org_xyz,
 												  min_dist_xyz,
@@ -451,17 +451,17 @@ namespace embree
       }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const Precalculations &pre,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return any(Triangle1Intersector1MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(dir_xyz,
 												     org_xyz,
 												     min_dist_xyz,
@@ -478,17 +478,17 @@ namespace embree
       // ============================================
       static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray16& ray16, 
 					  const Precalculations &pre,
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::intersect1(curNode,
 												   rayIndex,
 												   dir_xyz,
@@ -506,18 +506,18 @@ namespace embree
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
 					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 const Ray16& ray16, 
 					 const Precalculations &pre,
-					 mic_m &m_terminated,
+					 bool16 &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
       {
 	const Triangle1* __restrict__ const tptr  = (Triangle1*) curNode.leaf(accel);	      
-	const mic_i and_mask = broadcast4to16i(zlc4);
+	const int16 and_mask = broadcast4to16i(zlc4);
 	return Triangle1Intersector16MoellerTrumboreRobust<ENABLE_INTERSECTION_FILTER>::occluded1(curNode,
 												  rayIndex,
 												  dir_xyz,
@@ -537,9 +537,9 @@ namespace embree
       // ========================
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
-					    const mic_m m_valid_leaf, 
-					    const mic3f &dir,
-					    const mic3f &org,
+					    const bool16 m_valid_leaf, 
+					    const Vec3f16 &dir,
+					    const Vec3f16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -550,11 +550,11 @@ namespace embree
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
-					   const mic_m m_valid_leaf, 
-					   const mic3f &dir,
-					   const mic3f &org,
+					   const bool16 m_valid_leaf, 
+					   const Vec3f16 &dir,
+					   const Vec3f16 &org,
 					   Ray16& ray16, 
-					   mic_m &m_terminated,					    
+					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
 					   const Scene     *__restrict__ const geometry)
       {

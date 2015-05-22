@@ -62,36 +62,36 @@
 namespace embree
 {
 #if defined (__SSE__)
-  typedef Vec2<sseb> sse2b;
-  typedef Vec3<sseb> sse3b;
-  typedef Vec2<ssei> sse2i;
-  typedef Vec3<ssei> sse3i;
-  typedef Vec2<ssef> sse2f;
-  typedef Vec3<ssef> sse3f;
-  typedef Vec4<ssef> sse4f;
-  typedef LinearSpace3<sse3f> LinearSpaceSSE3f;
-  typedef AffineSpaceT<LinearSpace3<sse3f > > AffineSpaceSSE3f;
-  typedef BBox<sse3f > BBoxSSE3f;
+  typedef Vec2<bool4> Vec2b4;
+  typedef Vec3<bool4> Vec3b4;
+  typedef Vec2<int4> Vec2i4;
+  typedef Vec3<int4> Vec3i4;
+  typedef Vec2<float4> Vec2f4;
+  typedef Vec3<float4> Vec3f4;
+  typedef Vec4<float4> sse4f;
+  typedef LinearSpace3<Vec3f4> LinearSpaceSSE3f;
+  typedef AffineSpaceT<LinearSpace3<Vec3f4 > > AffineSpaceSSE3f;
+  typedef BBox<Vec3f4 > BBoxSSE3f;
 #endif
 
 #if defined (__AVX__)
-  typedef Vec2<avxb> avx2b;
-  typedef Vec3<avxb> avx3b;
-  typedef Vec2<avxi> avx2i; 
-  typedef Vec3<avxi> avx3i;
-  typedef Vec2<avxf> avx2f;
-  typedef Vec3<avxf> avx3f;
-  typedef Vec4<avxf> avx4f;
+  typedef Vec2<bool8> Vec2b8;
+  typedef Vec3<bool8> Vec3b8;
+  typedef Vec2<int8> Vec2i8; 
+  typedef Vec3<int8> Vec3i8;
+  typedef Vec2<float8> Vec2f8;
+  typedef Vec3<float8> Vec3f8;
+  typedef Vec4<float8> avx4f;
 #endif
 
 #if defined (__MIC__)
-  typedef Vec2<mic_m> mic2b;
-  typedef Vec3<mic_m> mic3b;
-  typedef Vec2<mic_i> mic2i;
-  typedef Vec3<mic_i> mic3i;
-  typedef Vec2<mic_f> mic2f;
-  typedef Vec3<mic_f> mic3f;
-  typedef Vec4<mic_f> mic4f;
-  typedef Vec4<mic_i> mic4i;
+  typedef Vec2<bool16> Vec2b16;
+  typedef Vec3<bool16> Vec3b16;
+  typedef Vec2<int16> Vec2i16;
+  typedef Vec3<int16> Vec3i16;
+  typedef Vec2<float16> Vec2f16;
+  typedef Vec3<float16> Vec3f16;
+  typedef Vec4<float16> mic4f;
+  typedef Vec4<int16> mic4i;
 #endif
 }

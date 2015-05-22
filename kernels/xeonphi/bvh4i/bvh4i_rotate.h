@@ -34,39 +34,39 @@ namespace embree
 					    float &cost,
 					    int &pos) 
   { 
-    const mic_f parent_min = parent->lowerXYZ(parentIndex);
-    const mic_f parent_max = parent->upperXYZ(parentIndex);
+    const float16 parent_min = parent->lowerXYZ(parentIndex);
+    const float16 parent_max = parent->upperXYZ(parentIndex);
 
-    const mic_m lane0 = 0xf;
-    const mic_m lane1 = 0xf0;
-    const mic_m lane2 = 0xf00;
-    const mic_m lane3 = 0xf000;
+    const bool16 lane0 = 0xf;
+    const bool16 lane1 = 0xf0;
+    const bool16 lane2 = 0xf00;
+    const bool16 lane3 = 0xf000;
 
-    const mic_f child2c0_min = select(lane0,parent_min,child2->lowerXYZ(0));
-    const mic_f child2c0_max = select(lane0,parent_max,child2->upperXYZ(0));
+    const float16 child2c0_min = select(lane0,parent_min,child2->lowerXYZ(0));
+    const float16 child2c0_max = select(lane0,parent_max,child2->upperXYZ(0));
 
-    const mic_f child2c1_min = select(lane1,parent_min,child2->lowerXYZ(1));
-    const mic_f child2c1_max = select(lane1,parent_max,child2->upperXYZ(1));
+    const float16 child2c1_min = select(lane1,parent_min,child2->lowerXYZ(1));
+    const float16 child2c1_max = select(lane1,parent_max,child2->upperXYZ(1));
 
-    const mic_f child2c2_min = select(lane2,parent_min,child2->lowerXYZ(2));
-    const mic_f child2c2_max = select(lane2,parent_max,child2->upperXYZ(2));
+    const float16 child2c2_min = select(lane2,parent_min,child2->lowerXYZ(2));
+    const float16 child2c2_max = select(lane2,parent_max,child2->upperXYZ(2));
 
-    const mic_f child2c3_min = select(lane3,parent_min,child2->lowerXYZ(3));
-    const mic_f child2c3_max = select(lane3,parent_max,child2->upperXYZ(3));
+    const float16 child2c3_min = select(lane3,parent_min,child2->lowerXYZ(3));
+    const float16 child2c3_max = select(lane3,parent_max,child2->upperXYZ(3));
 
-    const mic_f merged_min = min(min(child2c0_min,child2c1_min),min(child2c2_min,child2c3_min));
-    const mic_f merged_max = max(max(child2c0_max,child2c1_max),max(child2c2_max,child2c3_max));
+    const float16 merged_min = min(min(child2c0_min,child2c1_min),min(child2c2_min,child2c3_min));
+    const float16 merged_max = max(max(child2c0_max,child2c1_max),max(child2c2_max,child2c3_max));
 
-    const mic_f diag = merged_max - merged_min;
-    const mic_f dx = swAAAA(diag);
-    const mic_f dy = swBBBB(diag);
-    const mic_f dz = swCCCC(diag);
+    const float16 diag = merged_max - merged_min;
+    const float16 dx = swAAAA(diag);
+    const float16 dy = swBBBB(diag);
+    const float16 dz = swCCCC(diag);
 
-    const mic_f half_area = dx*(dy+dz)+dy*dz; 
+    const float16 half_area = dx*(dy+dz)+dy*dz; 
 
-    const mic_f min_area = set_min_lanes(half_area);
+    const float16 min_area = set_min_lanes(half_area);
 
-    const mic_m m_min_area = eq(0x1111,min_area,half_area);
+    const bool16 m_min_area = eq(0x1111,min_area,half_area);
     const unsigned int i_min_area = bitscan(m_min_area);
 
     pos = i_min_area >> 2;
@@ -95,7 +95,7 @@ namespace embree
 
       while(1)
 	{
-	  const mic_f _childArea = parent->halfAreaBounds();
+	  const float16 _childArea = parent->halfAreaBounds();
 	  compactustore16f_low(0x1111,childArea,_childArea);
 
 	  /*! Find best rotation. We pick a first child (child1) and a sub-child 

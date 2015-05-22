@@ -20,15 +20,15 @@
 
 namespace embree 
 {
-  struct avxb;
-  struct avxi;
-  struct avxf;
+  struct bool8;
+  struct int8;
+  struct float8;
 }
 
-#include "avxb.h"
+#include "bool8.h"
 #if defined (__AVX2__)
-#include "avxi.h"
+#include "int8.h"
 #else
-#include "avxi_emu.h"
+#include "int8_emu.h"
 #endif
-#include "avxf.h"
+#include "float8.h"

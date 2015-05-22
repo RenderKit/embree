@@ -21,13 +21,13 @@
 namespace embree
 {
 #if defined(__SSE__)
-  extern ssef sse_coeff0[4];
-  extern ssef sse_coeff1[4];
+  extern float4 sse_coeff0[4];
+  extern float4 sse_coeff1[4];
 #endif
 
 #if defined(__AVX__)
-  extern avxf coeff0[4];
-  extern avxf coeff1[4];
+  extern float8 coeff0[4];
+  extern float8 coeff1[4];
 #endif
 }
 

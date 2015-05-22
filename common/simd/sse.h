@@ -35,19 +35,19 @@ namespace embree
 
   extern const __m128 _mm_lookupmask_ps[16];
 
-  struct sseb;
-  struct ssei;
-  struct ssef;
+  struct bool4;
+  struct int4;
+  struct float4;
 
 #if !defined(__MIC__)
-  typedef ssef ssef_t;
-  typedef ssei ssei_t;
+  typedef float4 float4_t;
+  typedef int4 int4_t;
 
-  typedef ssef ssef_m;
-  typedef ssei ssei_m;
+  typedef float4 float4_m;
+  typedef int4 int4_m;
 #endif
 }
 
-#include "sseb.h"
-#include "ssei.h"
-#include "ssef.h"
+#include "bool4.h"
+#include "int4.h"
+#include "float4.h"

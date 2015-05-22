@@ -183,31 +183,31 @@ namespace embree
   template<> __forceinline Vec4<float>::Vec4( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; w = a.w; }
 
 #if defined (__SSE__) 
-  template<> __forceinline Vec4<ssef>::Vec4( const Vec3fa& a ) { 
-    const ssef v = ssef(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v); 
+  template<> __forceinline Vec4<float4>::Vec4( const Vec3fa& a ) { 
+    const float4 v = float4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v); 
   }
-  __forceinline Vec4<ssef> broadcast4f( const Vec4<ssef>& a, const size_t k ) {  
-    return Vec4<ssef>(ssef::broadcast(&a.x[k]), ssef::broadcast(&a.y[k]), ssef::broadcast(&a.z[k]), ssef::broadcast(&a.w[k]));
+  __forceinline Vec4<float4> broadcast4f( const Vec4<float4>& a, const size_t k ) {  
+    return Vec4<float4>(float4::broadcast(&a.x[k]), float4::broadcast(&a.y[k]), float4::broadcast(&a.z[k]), float4::broadcast(&a.w[k]));
   }
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline Vec4<avxf>::Vec4( const Vec3fa& a ) {  
+  template<> __forceinline Vec4<float8>::Vec4( const Vec3fa& a ) {  
     x = a.x; y = a.y; z = a.z; w = a.w; 
   }
-  __forceinline Vec4<ssef> broadcast4f( const Vec4<avxf>& a, const size_t k ) {  
-    return Vec4<ssef>(ssef::broadcast(&a.x[k]), ssef::broadcast(&a.y[k]), ssef::broadcast(&a.z[k]), ssef::broadcast(&a.w[k]));
+  __forceinline Vec4<float4> broadcast4f( const Vec4<float8>& a, const size_t k ) {  
+    return Vec4<float4>(float4::broadcast(&a.x[k]), float4::broadcast(&a.y[k]), float4::broadcast(&a.z[k]), float4::broadcast(&a.w[k]));
   }
-  __forceinline Vec4<avxf> broadcast8f( const Vec4<ssef>& a, const size_t k ) {  
-    return Vec4<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]), avxf::broadcast(&a.w[k]));
+  __forceinline Vec4<float8> broadcast8f( const Vec4<float4>& a, const size_t k ) {  
+    return Vec4<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]), float8::broadcast(&a.w[k]));
   }
-  __forceinline Vec4<avxf> broadcast8f( const Vec4<avxf>& a, const size_t k ) {  
-    return Vec4<avxf>(avxf::broadcast(&a.x[k]), avxf::broadcast(&a.y[k]), avxf::broadcast(&a.z[k]), avxf::broadcast(&a.w[k]));
+  __forceinline Vec4<float8> broadcast8f( const Vec4<float8>& a, const size_t k ) {  
+    return Vec4<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]), float8::broadcast(&a.w[k]));
   }
 #endif
 
 #if defined(__MIC__)
-  //template<> __forceinline Vec4<ssef>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
-  template<> __forceinline Vec4<mic_f>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
+  //template<> __forceinline Vec4<float4>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
+  template<> __forceinline Vec4<float16>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 #endif
 }

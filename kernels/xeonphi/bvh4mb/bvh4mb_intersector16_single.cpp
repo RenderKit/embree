@@ -26,17 +26,17 @@ namespace embree
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
     template<typename LeafIntersector>
-    void BVH4mbIntersector16Single<LeafIntersector>::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+    void BVH4mbIntersector16Single<LeafIntersector>::intersect(int16* valid_i, BVH4mb* bvh, Ray16& ray16)
     {      
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16     = rcp_safe(ray16.dir);
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const bool16 m_valid    = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
       store16f(stack_dist,inf);
 
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
@@ -49,13 +49,13 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const float16 time         = broadcast1to16f(&ray16.time[rayIndex]);
 	      
 	  
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
@@ -104,17 +104,17 @@ namespace embree
     }
     
     template<typename LeafIntersector>
-    void BVH4mbIntersector16Single<LeafIntersector>::occluded(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+    void BVH4mbIntersector16Single<LeafIntersector>::occluded(int16* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16      = rcp_safe(ray16.dir);
-      mic_m m_terminated      = !m_valid;
-      const mic_f inf         = mic_f(pos_inf);
-      const mic_f zero        = mic_f::zero();
+      const bool16 m_valid     = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16      = rcp_safe(ray16.dir);
+      bool16 m_terminated      = !m_valid;
+      const float16 inf         = float16(pos_inf);
+      const float16 zero        = float16::zero();
 
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
@@ -127,13 +127,13 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const float16 time         = broadcast1to16f(&ray16.time[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  while (1)

@@ -165,7 +165,7 @@ namespace embree
 	    p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
 	    p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
 	  }
-          if (!isvalid((ssef)p0) || !isvalid((ssef)p1) || !isvalid((ssef)p2) || !isvalid((ssef)p3))
+          if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
               continue;
 
 	  const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);
@@ -200,7 +200,7 @@ namespace embree
               p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
               p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
             }
-            if (!isvalid((ssef)p0) || !isvalid((ssef)p1) || !isvalid((ssef)p2) || !isvalid((ssef)p3))
+            if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
               continue;
             
             const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);

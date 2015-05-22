@@ -72,8 +72,8 @@ namespace embree
     }
 
 #if defined(__MIC__)
-    __forceinline mic2f getBounds() const { 
-      return mic2f(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
+    __forceinline Vec2f16 getBounds() const { 
+      return Vec2f16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
     }
 #endif
 
@@ -120,13 +120,13 @@ namespace embree
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
 #if defined(__AVX__)
-    const avxf aa = load8f((float*)&a);
-    const avxf bb = load8f((float*)&b);
+    const float8 aa = load8f((float*)&a);
+    const float8 bb = load8f((float*)&b);
     store8f((float*)&a,bb);
     store8f((float*)&b,aa);
 #elif defined(__MIC__)
-    const mic_f aa = uload16f_low((float*)&a.lower);
-    const mic_f bb = uload16f_low((float*)&b.lower);
+    const float16 aa = uload16f_low((float*)&a.lower);
+    const float16 bb = uload16f_low((float*)&b.lower);
     compactustore16f_low(0xff,(float*)&b.lower,aa);
     compactustore16f_low(0xff,(float*)&a.lower,bb);
 #else

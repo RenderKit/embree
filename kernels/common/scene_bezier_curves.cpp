@@ -162,29 +162,29 @@ namespace embree
       {
         const size_t n = numFloats-i;
         const size_t curve = curves[primID];
-        const ssef p0 = ssef::loadu((float*)&src[(curve+0)*stride],n);
-        const ssef p1 = ssef::loadu((float*)&src[(curve+1)*stride],n);
-        const ssef p2 = ssef::loadu((float*)&src[(curve+2)*stride],n);
-        const ssef p3 = ssef::loadu((float*)&src[(curve+3)*stride],n);
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride],n);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride],n);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride],n);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride],n);
 
-        const BezierCurve<ssef> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-        ssef Q, dQdu; bezier.eval(u,Q,dQdu);
+        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
 
-        if (P   ) ssef::storeu(P+i,Q,n);
-        if (dPdu) ssef::storeu(dPdu+i,dQdu,n);
+        if (P   ) float4::storeu(P+i,Q,n);
+        if (dPdu) float4::storeu(dPdu+i,dQdu,n);
 
       } else {
         const size_t curve = curves[primID];
-        const ssef p0 = ssef::loadu((float*)&src[(curve+0)*stride]);
-        const ssef p1 = ssef::loadu((float*)&src[(curve+1)*stride]);
-        const ssef p2 = ssef::loadu((float*)&src[(curve+2)*stride]);
-        const ssef p3 = ssef::loadu((float*)&src[(curve+3)*stride]);
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride]);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride]);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride]);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride]);
 
-        const BezierCurve<ssef> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-        ssef Q, dQdu; bezier.eval(u,Q,dQdu);
+        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
 
-        if (P   ) ssef::storeu(P+i,Q);
-        if (dPdu) ssef::storeu(dPdu+i,dQdu);
+        if (P   ) float4::storeu(P+i,Q);
+        if (dPdu) float4::storeu(dPdu+i,dQdu);
       }
     }
 #endif

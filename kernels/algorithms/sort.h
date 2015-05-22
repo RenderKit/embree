@@ -269,7 +269,7 @@ namespace embree
 	  {
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&parent->radixCount[threadIndex][i*16],mic_i::zero());
+	      store16i(&parent->radixCount[threadIndex][i*16],int16::zero());
 	    
 	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
 
@@ -282,10 +282,10 @@ namespace embree
 
 	    parent->barrier.wait(threadIndex,threadCount);
 
-	    mic_i count[16];
+	    int16 count[16];
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      count[i] = mic_i::zero();
+	      count[i] = int16::zero();
 
 
 	    for (size_t i=0; i<threadIndex; i++)

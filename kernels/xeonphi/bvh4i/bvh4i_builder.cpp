@@ -169,7 +169,7 @@ namespace embree
     const size_t size_node     = (double)(numNodes * bvh4iNodePreallocFactor * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
-    numAllocated64BytesBlocks = size_node / sizeof(mic_f);
+    numAllocated64BytesBlocks = size_node / sizeof(float16);
 
     DBG(
 	PRINT(numPrims);
@@ -183,7 +183,7 @@ namespace embree
 	);
 
     prims = (PrimRef  *) os_malloc(size_primrefs); 
-    node  = (mic_i    *) os_malloc(size_node);
+    node  = (int16    *) os_malloc(size_node);
     accel = (Triangle1*) os_malloc(size_accel);
 
     assert(prims  != 0);
@@ -400,10 +400,10 @@ namespace embree
 
 #endif
 
-		const mic3f v = mesh->getTriangleVertices(tri);
+		const Vec3f16 v = mesh->getTriangleVertices(tri);
 
-		const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-		const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+		const float16 bmin  = min(min(v[0],v[1]),v[2]);
+		const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
 		bounds_cs.extend(bmin,bmax);	
 
@@ -421,7 +421,7 @@ namespace embree
 		  }
 		else
 		  {
-		    const mic_f twoAABBs = load16f(local_prims);
+		    const float16 twoAABBs = load16f(local_prims);
 		    if (numLocalPrims == 2)
 		      {
 			numLocalPrims = 0;
@@ -459,10 +459,10 @@ namespace embree
     const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
     const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-    const mic_i pID(primID);
-    const mic_i gID(geomID);
+    const int16 pID(primID);
+    const int16 gID(geomID);
 
-    const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+    const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
 #if DEBUG
     for (size_t k=0;k<3;k++)
@@ -470,7 +470,7 @@ namespace embree
 	THROW_RUNTIME_ERROR("!isfinite in vertex for tri.v[k]");
 #endif
 
-    const mic_f tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,mic_i(mesh->mask));
+    const float16 tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,int16(mesh->mask));
     store16f_ngo(acc,tri_accel);
   }
 
@@ -558,9 +558,9 @@ namespace embree
 
     const BinMapping mapping(current.bounds);
 
-    mic_f leftArea[3];
-    mic_f rightArea[3];
-    mic_i leftNum[3];
+    float16 leftArea[3];
+    float16 rightArea[3];
+    int16 leftNum[3];
 
     fastbin<PrimRef>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
@@ -662,7 +662,7 @@ namespace embree
 								     current.size(),
 								     mid_parallel,
 								     [&] (const PrimRef &ref) { 
-								       const mic2f b = ref.getBounds();
+								       const Vec2f16 b = ref.getBounds();
 								       return any(mapping.lt_split(b.x,b.y));
 								     }
 								     ));
@@ -756,7 +756,7 @@ namespace embree
 								     sd.rec.size(),
 								     mid_parallel,
 								     [&] (const PrimRef &ref) { 
-								       const mic2f b = ref.getBounds();
+								       const Vec2f16 b = ref.getBounds();
 								       return any(mapping.lt_split(b.x,b.y));
 								     }
 								     )

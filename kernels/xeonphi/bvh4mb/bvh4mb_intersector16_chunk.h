@@ -32,8 +32,8 @@ namespace embree
       typedef typename BVH4i::Node Node;
       
     public:
-      static void intersect(mic_i* valid, BVH4mb* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4mb* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH4mb* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH4mb* bvh, Ray16& ray);
     };
   }
 }

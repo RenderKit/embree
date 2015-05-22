@@ -537,10 +537,10 @@ namespace embree
     {
       auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
-        return ssef::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
+        return float4::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
       };
-      ssef Pt, dPdut, dPdvt; 
-      feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      float4 Pt, dPdut, dPdvt; 
+      feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];

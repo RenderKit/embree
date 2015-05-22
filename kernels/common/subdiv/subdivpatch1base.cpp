@@ -265,22 +265,22 @@ namespace embree
 #if defined(__AVX__)
     for (size_t i=0;i<grid_size_simd_blocks;i++)
       {
-        avxf uu = load8f(&grid_u[8*i]);
-        avxf vv = load8f(&grid_v[8*i]);
-        avx3f normal = normalize(patch.normal(uu,vv));
-        *(avxf*)&grid_nx[8*i] = normal.x;
-        *(avxf*)&grid_ny[8*i] = normal.y;
-        *(avxf*)&grid_nz[8*i] = normal.z;        
+        float8 uu = load8f(&grid_u[8*i]);
+        float8 vv = load8f(&grid_v[8*i]);
+        Vec3f8 normal = normalize(patch.normal(uu,vv));
+        *(float8*)&grid_nx[8*i] = normal.x;
+        *(float8*)&grid_ny[8*i] = normal.y;
+        *(float8*)&grid_nz[8*i] = normal.z;        
       }
 #else
     for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
       {
-        ssef uu      = load4f(&grid_u[4*i]);
-        ssef vv      = load4f(&grid_v[4*i]);
-        sse3f normal = normalize(patch.normal(uu,vv));
-        *(ssef*)&grid_nx[4*i] = normal.x;
-        *(ssef*)&grid_ny[4*i] = normal.y;
-        *(ssef*)&grid_nz[4*i] = normal.z;        
+        float4 uu      = load4f(&grid_u[4*i]);
+        float4 vv      = load4f(&grid_v[4*i]);
+        Vec3f4 normal = normalize(patch.normal(uu,vv));
+        *(float4*)&grid_nx[4*i] = normal.x;
+        *(float4*)&grid_ny[4*i] = normal.y;
+        *(float4*)&grid_nz[4*i] = normal.z;        
       }
 #endif
       
