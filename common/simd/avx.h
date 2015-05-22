@@ -29,6 +29,6 @@ namespace embree
 #if defined (__AVX2__)
 #include "int8_avx2.h"
 #else
-#include "int8_sse2.h"
+#include "int8_avx.h"
 #endif
 #include "float8_avx.h"
