@@ -876,8 +876,6 @@ namespace embree
 	  {
 	    first_border_vertex  = ring[v];
 	    second_border_vertex = ring[(v+faces[f].size) % edge_valence];
-	    //PRINT(first_border_vertex);
-	    //PRINT(second_border_vertex);
 	  }
         v+=faces[f].size;
       }
@@ -956,12 +954,12 @@ namespace embree
 	}
       
       /* e0_plus */
-      e0_plus  = p0 + 2.0f/3.0f * alpha * q0;
-      //e0_plus  = p0 + 1.0f/3.0f * q0;
+      //e0_plus  = p0 + 2.0f/3.0f * alpha * q0;
+      e0_plus  = p0 + 1.0f/3.0f * q0;
 
       /* e0_minus */
-      e0_minus = p0 + 2.0f/3.0f * alpha * q1;
-      //e0_minus = p0 + 1.0f/3.0f * q1;
+      //e0_minus = p0 + 2.0f/3.0f * alpha * q1;
+      e0_minus = p0 + 1.0f/3.0f * q1;
 
       /* r0_plus, r0_minus */
       const Vertex e_i      = cm_ring[0];
