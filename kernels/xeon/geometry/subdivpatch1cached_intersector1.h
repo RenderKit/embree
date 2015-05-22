@@ -25,7 +25,7 @@
 #include "subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
-#define FORCE_TRIANGLE_UV 0
+#define FORCE_TRIANGLE_UV 1
 
 #define ENABLE_NORMALIZED_INTERSECTION 0
 

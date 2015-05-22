@@ -719,7 +719,7 @@ namespace embree
       eval_unique_identifier = min_vertex_index;
       eval_start_face_index = min_vertex_index_face;
       eval_start_vertex_index = min_vertex_index_vertex;
-     
+
       assert( hasValidPositions() );
     }
     
@@ -927,11 +927,11 @@ namespace embree
       /* tangent q1 */
       Vertex q1( zero );
       if (unlikely(std::isinf(vertex_crease_weight)))
-        q1 = ring[2] - vtx;
+        q1 = ring[faces[0].size] - vtx;
       else if (unlikely(border_index != -1))
 	{
 	  if (border_index != face_valence-2 && face_valence != 2)
-	    q1 = ring[2] - vtx;
+	    q1 = ring[faces[0].size] - vtx;
 	  else
 	    q1 = (first_border_vertex - second_border_vertex) * 0.5f;
 	}
@@ -953,13 +953,18 @@ namespace embree
 	  q1 *= 2.0f / N;
 	}
       
+      /* PRINT(q0); */
+      /* PRINT(q1); */
+
       /* e0_plus */
       //e0_plus  = p0 + 2.0f/3.0f * alpha * q0;
       e0_plus  = p0 + 1.0f/3.0f * q0;
 
+
       /* e0_minus */
       //e0_minus = p0 + 2.0f/3.0f * alpha * q1;
       e0_minus = p0 + 1.0f/3.0f * q1;
+
 
       /* r0_plus, r0_minus */
       const Vertex e_i      = cm_ring[0];
@@ -967,11 +972,11 @@ namespace embree
       const Vertex e_i_m_1  = cm_ring[2];
       
       Vertex c_i, e_i_p_1;
-      const bool hasHardEdge =
+      const bool hasHardEdge =  \
       std::isinf(vertex_crease_weight) &&
       std::isinf(faces[0].crease_weight);
                 
-      if (unlikely(border_index == edge_valence-2) || hasHardEdge)
+      if (unlikely(border_index == face_valence-2) || hasHardEdge)
         {
           /* mirror quad center and edge mid-point */
           c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
@@ -996,9 +1001,19 @@ namespace embree
         e_i_m_2  = cm_ring[2*2+0];
       }      
       
+
+      
       r0_plus  = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);      
       r0_minus = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-            
+ 
+      /* PRINT(e_i_m_1 - e_i_p_1); */
+      /* PRINT(c_i_m_1 - c_i); */
+      /* PRINT(e_i     - e_i_m_2); */
+      /* PRINT(c_i_m_1 - c_i_m_2); */
+      /* PRINT(r0_plus); */
+      /* PRINT(r0_minus);       */
+      /* PRINT(e0_plus); */
+      /* PRINT(e0_minus); */
     }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)

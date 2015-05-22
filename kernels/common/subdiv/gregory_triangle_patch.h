@@ -104,9 +104,14 @@ namespace embree
     __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 3);
-      const float face_valence_p0 = patch.ring[0].face_valence;
-      const float face_valence_p1 = patch.ring[1].face_valence;
-      const float face_valence_p2 = patch.ring[2].face_valence;
+      float face_valence_p0 = patch.ring[0].face_valence;
+      float face_valence_p1 = patch.ring[1].face_valence;
+      float face_valence_p2 = patch.ring[2].face_valence;
+
+      if (patch.ring[0].border_face != -1) face_valence_p0--;
+      if (patch.ring[1].border_face != -1) face_valence_p1--;
+      if (patch.ring[2].border_face != -1) face_valence_p2--;
+
 
       Vertex p0_r_p, p0_r_m;
       patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
@@ -117,9 +122,20 @@ namespace embree
       Vertex p2_r_p, p2_r_m;
       patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
 
+      /* PRINT( face_valence_p0 ); */
+      /* PRINT( face_valence_p1 ); */
+      /* PRINT( face_valence_p2 ); */
+
       /* PRINT(p0()); */
       /* PRINT(p1()); */
       /* PRINT(p2()); */
+
+      /* PRINT(p0_r_p); */
+      /* PRINT(p0_r_m); */
+      /* PRINT(p1_r_p); */
+      /* PRINT(p1_r_m); */
+      /* PRINT(p2_r_p); */
+      /* PRINT(p2_r_m); */
 
       /* PRINT(e0_p()); */
       /* PRINT(e0_m()); */
@@ -128,16 +144,16 @@ namespace embree
       /* PRINT(e2_p()); */
       /* PRINT(e2_m()); */
 
-      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m() );
-      computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m() );
-      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
+      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m(),4.0f );
+      computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m(),4.0f );
+      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m(),4.0f );
 
       /* PRINT(f0_p()); */
       /* PRINT(f0_m()); */
       /* PRINT(f1_p()); */
       /* PRINT(f1_m()); */
       /* PRINT(f2_p()); */
-      /* PRINT(f2_m());       */
+      /* PRINT(f2_m()); */
     }
     
 

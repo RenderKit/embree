@@ -115,8 +115,6 @@ namespace embree
       }
     else if (numEdges == 3)
       {
-	PRINT("TRIANGLE");
-
 	GeneralCatmullClarkPatch3fa cpatch;
 	cpatch.init(h_start,mesh->getVertexBuffer());
 
