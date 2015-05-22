@@ -231,7 +231,7 @@ namespace embree
 #endif
 
 #if defined __MIC__
-#include "../simd/mic.h"
+#include "../simd/avx512.h"
 #endif
 
 namespace embree 

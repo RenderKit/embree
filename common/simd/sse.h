@@ -38,16 +38,8 @@ namespace embree
   struct bool4;
   struct int4;
   struct float4;
-
-#if !defined(__MIC__)
-  typedef float4 float4_t;
-  typedef int4 int4_t;
-
-  typedef float4 float4_m;
-  typedef int4 int4_m;
-#endif
 }
 
-#include "bool4.h"
-#include "int4.h"
-#include "float4.h"
+#include "bool4_sse2.h"
+#include "int4_sse2.h"
+#include "float4_sse2.h"

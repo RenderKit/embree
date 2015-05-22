@@ -25,10 +25,10 @@ namespace embree
   struct float8;
 }
 
-#include "bool8.h"
+#include "bool8_avx.h"
 #if defined (__AVX2__)
-#include "int8.h"
+#include "int8_avx2.h"
 #else
-#include "int8_emu.h"
+#include "int8_sse2.h"
 #endif
-#include "float8.h"
+#include "float8_avx.h"

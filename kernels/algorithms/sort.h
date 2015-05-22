@@ -24,7 +24,7 @@
 #include <algorithm>
 
 #if defined(__MIC__)
- #include "../../common/simd/mic.h"
+ #include "../../common/simd/avx512.h"
 #endif
 
 namespace embree

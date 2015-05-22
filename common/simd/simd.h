@@ -18,12 +18,6 @@
 
 #include "../math/math.h"
 
-/* include SSE emulation for Xeon Phi */
-#if defined (__MIC__)
-//#  include "sse_mic.h"
-#  include "mic.h"
-#endif
-
 /* include SSE wrapper classes */
 #if defined(__SSE__)
 #  include "sse.h"
@@ -32,6 +26,11 @@
 /* include AVX wrapper classes */
 #if defined(__AVX__)
 #include "avx.h"
+#endif
+
+/* include AVX512 wrapper classes */
+#if defined (__MIC__)
+#  include "avx512.h"
 #endif
 
 #if defined (__AVX__)

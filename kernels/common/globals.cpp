@@ -17,7 +17,7 @@
 #include "../../common/sys/platform.h"
 
 #if defined(__MIC__)
-#include "../../common/simd/mic.h"
+#include "../../common/simd/avx512.h"
 #else
 #include "../../common/simd/sse.h"
 #endif
