@@ -463,7 +463,6 @@ namespace embree
 	else
 	{
 	  const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
-	  PRINT( (ring[second_border_index] - ring[border_index]) * 0.5f );
 	  return (ring[second_border_index] - ring[border_index]) * 0.5f;
 	}
       }
@@ -877,8 +876,6 @@ namespace embree
 	  {
 	    first_border_vertex  = ring[v];
 	    second_border_vertex = ring[(v+faces[f].size) % edge_valence];
-	    //PRINT(first_border_vertex);
-	    //PRINT(second_border_vertex);
 	  }
         v+=faces[f].size;
       }
@@ -909,14 +906,9 @@ namespace embree
       else if (unlikely(border_index != -1))
 	{
 	  if (border_index != face_valence-2 && face_valence != 2)
-	    {
-	      q0 = ring[0] - vtx;
-	    }
+	    q0 = ring[0] - vtx;
 	  else
-	    {
-	      q0 = (second_border_vertex - first_border_vertex) * 0.5f;
-	      PRINT(q0);
-	    }
+	    q0 = (second_border_vertex - first_border_vertex) * 0.5f;
 	}
       else
 	{

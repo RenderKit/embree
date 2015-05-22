@@ -76,6 +76,30 @@ namespace embree
     const Vertex& f1_m() const { return v[2][0]; }
     const Vertex& f2_m() const { return v[1][0]; }
     
+    void computeGregoryPatchFacePoints(const unsigned int face_valence,
+				       const Vertex& r_e_p, 
+				       const Vertex& r_e_m, 					 
+				       const Vertex& p_vtx, 
+				       const Vertex& e0_p_vtx, 
+				       const Vertex& e1_m_vtx, 
+				       const unsigned int face_valence_p1,
+				       const Vertex& e0_m_vtx,	
+				       const Vertex& e3_p_vtx,	
+				       const unsigned int face_valence_p3,
+				       Vertex& f_p_vtx, 
+				       Vertex& f_m_vtx,
+                                       const float d = 3.0f)
+    {
+      const float c     = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
+    }
+
 
     __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
@@ -93,15 +117,15 @@ namespace embree
       Vertex p2_r_p, p2_r_m;
       patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
 
-      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e3_p(), face_valence_p3, f0_p(), f0_m() );
+      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m() );
       computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m() );
-      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e3_m(), face_valence_p3, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
+      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
       
     }
     
 
     
-    __forceinline void exportControlPoints( Vertex matrix[4][4] ) const
+    __forceinline void exportConrolPoints( Vertex matrix[4][4] ) const
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)
