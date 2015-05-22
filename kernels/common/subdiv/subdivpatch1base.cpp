@@ -138,6 +138,13 @@ namespace embree
 	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
 	}
 
+	updateEdgeLevels(edge_level,mesh);
+
+	level[0] = 1;
+	level[1] = 1;
+	level[2] = 1;
+	level[3] = 1;
+
 	flags |= GREGORY_TRIANGLE_PATCH;
 
       }

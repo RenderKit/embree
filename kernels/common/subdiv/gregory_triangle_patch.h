@@ -117,10 +117,30 @@ namespace embree
       Vertex p2_r_p, p2_r_m;
       patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
 
+      PRINT(p0());
+      PRINT(p1());
+      PRINT(p2());
+
+      PRINT(e0_p());
+      PRINT(e0_m());
+      PRINT(e1_p());
+      PRINT(e1_m());
+      PRINT(e2_p());
+      PRINT(e2_m());
+
       computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m() );
       computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m() );
       computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
-      
+
+      PRINT(f0_p());
+      PRINT(f0_m());
+      PRINT(f1_p());
+      PRINT(f1_m());
+      PRINT(f2_p());
+      PRINT(f2_m());      
+      //sse3f p = eval_t<(*this,ssef(0.0f),ssef(0.0f));
+      // PRINT(p);
+      //exit(0);
     }
     
 
