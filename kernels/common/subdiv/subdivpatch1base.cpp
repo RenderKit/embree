@@ -87,7 +87,6 @@ namespace embree
     }
     //assert(needAdaptiveSubdivision == 0);
 
-    PING;
     if (numEdges == 4)
       {
 	PRINT("QUAD");
@@ -121,6 +120,8 @@ namespace embree
 
 	GeneralCatmullClarkPatch3fa gpatch;
 	gpatch.init(h_start,mesh->getVertexBuffer());
+
+	flags |= GREGORY_TRIANGLE_PATCH;
 
       }
 
@@ -183,10 +184,6 @@ namespace embree
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
 #if COMPACT == 1
-    //PRINT( grid_bvh_size_64b_blocks );
-    //PRINT( grid_u_res);
-    //PRINT( grid_v_res);
-
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
 #else

@@ -197,42 +197,47 @@ namespace embree
 
       return Vec3<T>(x,y,z);
     }
+
+
+    template<class M, class T>
+      static __forceinline Vec3<T> normal_t(const GregoryTrianglePatchT &tpatch,
+					    const T &uu,
+					    const T &vv)
+    {
+      FATAL("not implemented");
+      const T z( zero );
+      return Vec3<T>(z);
+    }    
     
-    
+    template<class M, class T>
+    static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T &uu, const T &vv) 
+    {
+      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
+      return eval_t<M,T>(tpatch,uu,vv); 
+    }
+
+    template<class M, class T>
+    static __forceinline Vec3<T> normal(const Vertex matrix[4][4], const T &uu, const T &vv) 
+    {
+      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
+      return normal_t<M,T>(tpatch,uu,vv); 
+    }
 
 
        
-#if !defined(__MIC__)
-    
-#if defined(__AVX__)    
-    
-    static __forceinline avx3f eval8  (const Vertex matrix[4][4], const avxf &uu, const avxf &vv) 
-    {
-      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
-      return eval_t<avxb,avxf>(tpatch,uu,vv); 
-    }
-    
-#endif
-    
-    static __forceinline sse3f eval4  (const Vertex matrix[4][4], const ssef &uu, const ssef &vv) 
-    {
-      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
-      return eval_t<sseb,ssef>(tpatch,uu,vv); 
-    }
-    
-#else    
-    
-#endif
-           
     static __forceinline Vertex normal(const Vertex matrix[4][4],
-				       const float uu,
-				       const float vv) 
+					 const float uu,
+					 const float vv) 
     {
+      FATAL("not yet implemented");
       return Vertex( zero );
     }
     
-    __forceinline Vertex eval(const float uu, const float vv) const
-    {
+     static __forceinline Vertex eval(const Vertex matrix[4][4],
+				      const float uu, 
+				      const float vv)
+     {
+      FATAL("not yet implemented");
       return Vertex( zero );
     }
     

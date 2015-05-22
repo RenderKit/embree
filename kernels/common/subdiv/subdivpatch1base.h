@@ -474,11 +474,12 @@ namespace embree
   public:
 
     enum {
-      BSPLINE_PATCH     = 1,  
-      BEZIER_PATCH      = 2,  
-      GREGORY_PATCH     = 4,
-      TRANSITION_PATCH  = 8,  // needs stiching?
-      HAS_DISPLACEMENT  = 16   // 0 => no displacments
+      BSPLINE_PATCH          = 1,  
+      BEZIER_PATCH           = 2,  
+      GREGORY_PATCH          = 4,
+      GREGORY_TRIANGLE_PATCH = 8,
+      TRANSITION_PATCH       = 16,  // needs stiching?
+      HAS_DISPLACEMENT       = 32   // 0 => no displacments
     };
 
     /*! Default constructor. */
@@ -509,6 +510,8 @@ namespace embree
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::eval( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -521,6 +524,8 @@ namespace embree
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::normal( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -534,6 +539,8 @@ namespace embree
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::eval_t<sseb>( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::eval<sseb,ssef>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -546,6 +553,8 @@ namespace embree
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::normal_t<sseb>( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::normal<sseb,ssef>( patch.v, uu, vv );
       return sse3f( zero );
     }
 
@@ -561,6 +570,8 @@ namespace embree
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::eval_t<avxb>( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::eval<avxb,avxf>( patch.v, uu, vv );
       return avx3f( zero );
     }
     __forceinline avx3f normal8(const avxf &uu,
@@ -572,6 +583,8 @@ namespace embree
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::normal_t<avxb>( patch.v, uu, vv );
+      else if (likely(isGregoryTrianglePatch()))
+	return GregoryTrianglePatch3fa::normal<avxb,avxf>( patch.v, uu, vv );
       return avx3f( zero );
     }
 #endif
@@ -623,6 +636,11 @@ namespace embree
     __forceinline bool isGregoryPatch() const
     {
       return (flags & GREGORY_PATCH) == GREGORY_PATCH;
+    }
+
+    __forceinline bool isGregoryTrianglePatch() const
+    {
+      return (flags & GREGORY_TRIANGLE_PATCH) == GREGORY_TRIANGLE_PATCH;
     }
 
     __forceinline bool hasDisplacement() const
