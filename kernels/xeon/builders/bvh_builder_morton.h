@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/builder.h"
-#include "algorithms/parallel_reduce.h"
+#include "../../common/builder.h"
+#include "../../algorithms/parallel_reduce.h"
 
 namespace embree
 {

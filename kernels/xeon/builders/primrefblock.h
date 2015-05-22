@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/primref.h"
-#include "common/atomic_set.h"
+#include "../../common/primref.h"
+#include "../../common/atomic_set.h"
 
 namespace embree
 {

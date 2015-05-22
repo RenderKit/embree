@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/buffer.h"
-#include "algorithms/sort.h"
-#include "algorithms/parallel_for.h"
+#include "../common/default.h"
+#include "../common/buffer.h"
+#include "sort.h"
+#include "parallel_for.h"
 
 namespace embree
 {

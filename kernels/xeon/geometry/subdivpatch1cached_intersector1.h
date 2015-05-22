@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "common/ray.h"
-#include "common/scene_subdiv_mesh.h"
-#include "geometry/filter.h"
-#include "bvh4/bvh4.h"
-#include "common/subdiv/tessellation.h"
-#include "common/subdiv/tessellation_cache.h"
-#include "geometry/subdivpatch1cached.h"
+#include "../../common/ray.h"
+#include "../../common/scene_subdiv_mesh.h"
+#include "filter.h"
+#include "../bvh4/bvh4.h"
+#include "../../common/subdiv/tessellation.h"
+#include "../../common/subdiv/tessellation_cache.h"
+#include "subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0

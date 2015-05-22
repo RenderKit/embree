@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "common/alloc.h"
-#include "common/accel.h"
-#include "common/scene.h"
-#include "geometry/primitive.h"
-#include "geometry/triangle1.h"
-#include "geometry/virtual_accel.h"
-#include "geometry/subdivpatch1.h"
+#include "../../common/alloc.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
+#include "../geometry/primitive.h"
+#include "../geometry/triangle1.h"
+#include "../geometry/virtual_accel.h"
+#include "../geometry/subdivpatch1.h"
 
 #define BVH4I_TOP_LEVEL_MARKER 0x80000000
 

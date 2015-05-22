@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/scene_subdiv_mesh.h"
+#include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
-#include "common/scene.h"
+#include "../scene.h"
 
 namespace embree
 {

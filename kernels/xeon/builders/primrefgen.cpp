@@ -16,8 +16,8 @@
 
 #include "primrefgen.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/parallel_for_for.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree
 {

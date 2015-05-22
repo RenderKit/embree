@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_builder_morton.h"
-#include "builders/builder_util.h"
+#include "../builders/builder_util.h"
 #include "bvh4i_rotate.h"
 
 #define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.9f

@@ -16,11 +16,11 @@
 
 #include "bvh8.h"
 #include "bvh8_statistics.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle8v.h"
-#include "geometry/trianglepairs8.h"
-#include "common/accelinstance.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle8v.h"
+#include "../geometry/trianglepairs8.h"
+#include "../../common/accelinstance.h"
 
 namespace embree
 {

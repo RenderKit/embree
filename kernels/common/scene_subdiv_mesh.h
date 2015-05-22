@@ -18,8 +18,8 @@
 
 #include "geometry.h"
 #include "buffer.h"
-#include "algorithms/pmap.h"
-#include "algorithms/pset.h"
+#include "../algorithms/pmap.h"
+#include "../algorithms/pset.h"
 
 namespace embree
 {

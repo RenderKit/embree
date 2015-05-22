@@ -17,12 +17,12 @@
 #pragma once
 
 #include <cmath>
-#include "common/subdiv/bspline_patch.h"
-#include "common/subdiv/bezier_patch.h"
-#include "common/subdiv/gregory_patch.h"
-#include "common/subdiv/gregory_patch_dense.h"
-#include "common/subdiv/gregory_triangle_patch.h"
-#include "common/subdiv/tessellation.h"
+#include "bspline_patch.h"
+#include "bezier_patch.h"
+#include "gregory_patch.h"
+#include "gregory_patch_dense.h"
+#include "gregory_triangle_patch.h"
+#include "tessellation.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1

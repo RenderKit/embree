@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "builders/builder_util.h"
-#include "builders/binning.h"
+#include "../builders/builder_util.h"
+#include "../builders/binning.h"
 
 #include "bvh4i.h"
 #include "bvh4i_statistics.h"

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "common/ray.h"
-#include "common/globals.h"
-#include "geometry/filter.h"
+#include "../../common/ray.h"
+#include "../../common/globals.h"
+#include "filter.h"
 
 namespace embree
 {

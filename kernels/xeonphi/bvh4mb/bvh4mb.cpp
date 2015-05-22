@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "kernels/xeonphi/bvh4mb/bvh4mb.h"
-#include "kernels/xeonphi/bvh4mb/bvh4mb_builder.h"
-#include "geometry/triangle1.h"
-#include "common/accelinstance.h"
+#include "bvh4mb.h"
+#include "bvh4mb_builder.h"
+#include "../geometry/triangle1.h"
+#include "../../common/accelinstance.h"
 
 namespace embree
 {

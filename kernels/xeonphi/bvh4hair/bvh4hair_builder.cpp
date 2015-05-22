@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "bvh4hair/bvh4hair_builder.h"
-#include "geometry/bezier1i.h"
-#include "bvh4hair/bvh4hair_statistics.h"
-#include "algorithms/parallel_partition.h"
+#include "../geometry/bezier1i.h"
+#include "../bvh4hair/bvh4hair_statistics.h"
+#include "../../algorithms/parallel_partition.h"
 
 namespace embree
 {

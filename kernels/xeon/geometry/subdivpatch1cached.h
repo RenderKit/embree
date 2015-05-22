@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "geometry/primitive.h"
-#include "common/subdiv/subdivpatch1base.h"
+#include "../geometry/primitive.h"
+#include "../../common/subdiv/subdivpatch1base.h"
 
 namespace embree
 {

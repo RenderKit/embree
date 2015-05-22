@@ -18,7 +18,7 @@
 
 #include "bvh4i.h"
 #include "bvh4i_traversal.h"
-#include "common/ray16.h" 
+#include "../../common/ray16.h" 
 
 namespace embree
 {

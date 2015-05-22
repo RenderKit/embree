@@ -17,8 +17,8 @@
 #pragma once
 
 #include "subdivpatch1.h"
-#include "common/ray16.h"
-#include "geometry/filter.h"
+#include "../../common/ray16.h"
+#include "filter.h"
 
 namespace embree
 {

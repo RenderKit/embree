@@ -17,7 +17,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_rotate.h"
-#include "common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/feature_adaptive_gregory.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
 

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/scene_instance.h"
-#include "common/ray16.h"
+#include "../../common/scene_instance.h"
+#include "../../common/ray16.h"
 
 namespace embree
 {

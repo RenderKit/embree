@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include "common/scene.h"
-#include "common/primref.h"
-#include "builders/priminfo.h"
-#include "geometry/bezier1v.h"
+#include "../../common/scene.h"
+#include "../../common/primref.h"
+#include "priminfo.h"
+#include "../geometry/bezier1v.h"
 
 namespace embree
 {

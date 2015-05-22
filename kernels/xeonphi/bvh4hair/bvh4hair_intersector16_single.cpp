@@ -16,8 +16,8 @@
 
 #include "bvh4hair_traversal.h"
 #include "bvh4hair_intersector16_single.h"
-#include "geometry/bezier1i.h"
-#include "geometry/bezier1i_intersector16.h"
+#include "../geometry/bezier1i.h"
+#include "../geometry/bezier1i_intersector16.h"
 
 #define DBG(x) 
 

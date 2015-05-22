@@ -17,10 +17,10 @@
 #include "bvh4_refit.h"
 #include "bvh4_statistics.h"
 
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle4v.h"
-#include "geometry/triangle4i.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle4v.h"
+#include "../geometry/triangle4i.h"
 
 #include <algorithm>
 

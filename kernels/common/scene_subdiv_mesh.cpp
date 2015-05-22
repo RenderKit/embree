@@ -17,9 +17,9 @@
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
 
-#include "algorithms/sort.h"
-#include "algorithms/prefix.h"
-#include "algorithms/parallel_for.h"
+#include "../algorithms/sort.h"
+#include "../algorithms/prefix.h"
+#include "../algorithms/parallel_for.h"
 
 #if !defined(__MIC__)
 #include "subdiv/feature_adaptive_eval.h"

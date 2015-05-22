@@ -16,8 +16,8 @@
 
 #include "bvh4i_intersector16_subdiv.h"
 #include "bvh4i_leaf_intersector.h"
-#include "geometry/subdivpatch1.h"
-#include "common/subdiv/tessellation_cache.h"
+#include "../geometry/subdivpatch1.h"
+#include "../../common/subdiv/tessellation_cache.h"
 
 #define TIMER(x) 
 

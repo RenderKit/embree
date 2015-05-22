@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+ 
 #include "subdivpatch1cached_intersector1.h"
-#include "xeon/bvh4/bvh4.h"
-#include "xeon/bvh4/bvh4_intersector1.h"
+#include "../bvh4/bvh4.h"
+#include "../bvh4/bvh4_intersector1.h"
 
 #define TIMER(x) 
 #define DBG(x) 

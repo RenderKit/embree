@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/alloc.h"
-#include "common/accel.h"
-#include "common/scene.h"
-#include "geometry/primitive.h"
-#include "common/ray.h"
+#include "../../common/default.h"
+#include "../../common/alloc.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
+#include "../geometry/primitive.h"
+#include "../../common/ray.h"
 
 namespace embree
 {

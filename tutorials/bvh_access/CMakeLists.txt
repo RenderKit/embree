@@ -14,9 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels)       # FIXME: should not be necessary
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels/xeon)  # FIXME: should not be necessary
-
 ADD_EXECUTABLE(bvh_access bvh_access.cpp)
 TARGET_LINK_LIBRARIES(bvh_access embree)
 SET_PROPERTY(TARGET ${TUTORIAL_NAME} PROPERTY FOLDER tutorials/single)

@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/scene.h"
-#include "common/ray.h"
+#include "../../common/default.h"
+#include "../../common/scene.h"
+#include "../../common/ray.h"
 
 #if defined(__SSE__)
-#include "common/ray4.h"
+#include "../../common/ray4.h"
 #endif
 
 #if defined(__AVX__)
-#include "common/ray8.h"
+#include "../../common/ray8.h"
 #endif
 
 namespace embree

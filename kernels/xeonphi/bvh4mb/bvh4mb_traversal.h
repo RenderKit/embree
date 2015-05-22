@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4mb.h"
-#include "bvh4i/bvh4i_traversal.h"
+#include "../bvh4i/bvh4i_traversal.h"
 
 namespace embree
 {
