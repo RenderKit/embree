@@ -540,7 +540,12 @@ namespace embree
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::eval_t<bool4>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::eval<bool4,float4>( patch.v, uu, vv );
+	{
+	  /* reparametrization */
+	  const float4 s = uu * (1.0f - vv);
+	  const float4 t = vv;
+	  return GregoryTrianglePatch3fa::eval<bool4,float4>( patch.v, s, t );
+	}
       return Vec3f4( zero );
     }
 
@@ -571,7 +576,12 @@ namespace embree
       else if (likely(isGregoryPatch()))
 	return DenseGregoryPatch3fa::eval_t<bool8>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::eval<bool8,float8>( patch.v, uu, vv );
+	{
+	  /* reparametrization */
+	  const float8 s = uu * (1.0f - vv);
+	  const float8 t = vv;
+	  return GregoryTrianglePatch3fa::eval<bool8,float8>( patch.v, s, t );
+	}
       return Vec3f8( zero );
     }
     __forceinline Vec3f8 normal8(const float8 &uu,
