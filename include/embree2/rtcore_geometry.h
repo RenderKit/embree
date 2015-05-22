@@ -331,7 +331,7 @@ RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
  *  get calculated. Both dPdu and dPdv have to be either valid or
  *  NULL. */
 RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
-                               float* dP, float* dPdu, float* dPdv, size_t numFloats);
+                               float* P, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! Interpolates user data to an array of u/v locations. The valid
  *  pointer points to an integer array that specified which entries in
@@ -350,7 +350,7 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID,
 RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, 
-                                float* dP, float* dPdu, float* dPdv, size_t numFloats);
+                                float* P, float* dPdu, float* dPdv, size_t numFloats);
 
 /*! \brief Deletes the geometry. */
 RTCORE_API void rtcDeleteGeometry (RTCScene scene, unsigned geomID);
