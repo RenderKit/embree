@@ -17,7 +17,6 @@
 #pragma once
 
 #include "default.h"
-#include "math/math.h"
 
 namespace embree
 {

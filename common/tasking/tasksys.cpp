@@ -14,15 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sys/platform.h"
-#include "kernels/algorithms/parallel_for.h" 
+#include "../sys/platform.h"
+#include "../../kernels/algorithms/parallel_for.h" 
 
 #if defined(TASKING_LOCKSTEP)
-#include "tasking/taskscheduler_mic.h"
+#include "taskscheduler_mic.h"
 #endif
 
 #if defined(TASKING_TBB_INTERNAL) || defined(TASKING_TBB)
-#include "tasking/taskscheduler_tbb.h"
+#include "taskscheduler_tbb.h"
 #endif
 
 namespace embree

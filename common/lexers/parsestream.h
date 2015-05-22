@@ -17,12 +17,12 @@
 #pragma once
 
 #include "stringstream.h"
-#include "sys/filename.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/col3.h"
+#include "../sys/filename.h"
+#include "../math/vec2.h"
+#include "../math/vec3.h"
+#include "../math/col3.h"
 #if !defined(__MIC__)
-#include "math/color.h"
+#include "../math/color.h"
 #endif
 
 namespace embree

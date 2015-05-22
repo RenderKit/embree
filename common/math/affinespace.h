@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "math/linearspace3.h"
-#include "math/quaternion.h"
-#include "math/bbox.h"
+#include "linearspace3.h"
+#include "quaternion.h"
+#include "bbox.h"
 
 namespace embree
 {

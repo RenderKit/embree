@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "image.h"
-#include "sys/string.h"
+#include "../../../common/sys/string.h"
 
 #include <map>
 #include <iostream>

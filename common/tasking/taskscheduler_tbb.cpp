@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "taskscheduler_tbb.h"
-#include "math/math.h"
-#include "sys/sysinfo.h"
+#include "../math/math.h"
+#include "../sys/sysinfo.h"
 #include <algorithm>
 
 #if TASKING_LOCKSTEP

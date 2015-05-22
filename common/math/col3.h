@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "math/math.h"
+#include "math.h"
 
 namespace embree
 {

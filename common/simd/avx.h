@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "simd/sse.h"
+#include "sse.h"
 
 namespace embree 
 {
@@ -25,10 +25,10 @@ namespace embree
   struct avxf;
 }
 
-#include "simd/avxb.h"
+#include "avxb.h"
 #if defined (__AVX2__)
-#include "simd/avxi.h"
+#include "avxi.h"
 #else
-#include "simd/avxi_emu.h"
+#include "avxi_emu.h"
 #endif
-#include "simd/avxf.h"
+#include "avxf.h"

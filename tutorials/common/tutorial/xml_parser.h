@@ -14,12 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_XML_PARSER_H__
-#define __EMBREE_XML_PARSER_H__
+#pragma once
 
-#include "sys/platform.h"
-#include "sys/filename.h"
-#include "lexers/tokenstream.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/filename.h"
+#include "../../../common/lexers/tokenstream.h"
 
 #include <map>
 #include <string>
@@ -115,6 +114,4 @@ namespace embree
   /*! store XML to disk */
   void emitXML(const FileName& fileName, const Ref<XML>& xml);
 }
-
-#endif
 

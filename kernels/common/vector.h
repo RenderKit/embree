@@ -58,7 +58,7 @@ namespace embree
 /*! instantiate vector using monitored aligned allocations */
 #define vector_t mvector
 #define allocator_t aligned_monitored_allocator<T,std::alignment_of<T>::value>
-#include "sys/vector_t.h"
+#include "../../common/sys/vector_t.h"
 #undef vector_t
 #undef allocator_t
 

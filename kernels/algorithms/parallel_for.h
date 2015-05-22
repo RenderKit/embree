@@ -20,9 +20,9 @@
 #include "range.h"
 
 #if defined(TASKING_LOCKSTEP)
-#include "tasking/taskscheduler_mic.h"
+#include "../../common/tasking/taskscheduler_mic.h"
 #endif // if defined(TASKING_TBB_INTERNAL) // FIXME
-#include "tasking/taskscheduler_tbb.h"
+#include "../../common/tasking/taskscheduler_tbb.h"
 
 namespace embree
 {

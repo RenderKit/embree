@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/intrinsics.h"
-#include "math/constants.h"
+#include "../sys/platform.h"
+#include "../sys/intrinsics.h"
+#include "../math/constants.h"
 //#include "sse_mic.h"
 
 #include <zmmintrin.h>

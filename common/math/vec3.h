@@ -223,15 +223,15 @@ namespace embree
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined __SSE__
-#include "simd/sse.h"
+#include "../simd/sse.h"
 #endif
 
 #if defined __AVX__
-#include "simd/avx.h"
+#include "../simd/avx.h"
 #endif
 
 #if defined __MIC__
-#include "simd/mic.h"
+#include "../simd/mic.h"
 #endif
 
 namespace embree 

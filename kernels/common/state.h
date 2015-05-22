@@ -17,7 +17,6 @@
 #pragma once
 
 #include "default.h"
-#include "lexers/tokenstream.h"
 
 namespace embree
 {

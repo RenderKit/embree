@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/ref.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/ref.h"
 #include "camera.h"
 
 namespace embree

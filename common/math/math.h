@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "sys/platform.h"
+#include "../sys/platform.h"
 #include "constants.h"
 
 #include <emmintrin.h>
