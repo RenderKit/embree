@@ -894,8 +894,11 @@ namespace embree
       else
 	{
 	  p0 = Vertex( zero );
-	  for (size_t f=0; f<face_valence; f++)
-	    p0 += cm_ring[2*f] + cm_ring[2*f+1];
+	  for (size_t face=0; face<face_valence; face++)
+	    {
+	      size_t f = (face + eval_start_face_index)%face_valence;
+	      p0 += cm_ring[2*f] + cm_ring[2*f+1];
+	    }
 	  p0 *= 4.0f / (N * (N + 5.0f));
 	  p0 += (N - 3.0f) / (N + 5.0f) * vtx;
 	}
@@ -916,9 +919,9 @@ namespace embree
 	}
       else
 	{
-	  for (size_t f=0; f<face_valence; f++)
+	  for (size_t face=0; face<face_valence; face++)
 	    {
-	      const size_t index = f;
+	      const size_t index = (face + eval_start_face_index)%face_valence;
 	      const Vertex m_i = cm_ring[2*index+0];
 	      const Vertex c_i = cm_ring[2*index+1];        
 	      q0 += \							
@@ -941,18 +944,17 @@ namespace embree
 	}
       else
 	{
-	  for (ssize_t f=0; f<face_valence; f++)
+	  for (ssize_t face=0; face<face_valence; face++)
 	    {
+	      const ssize_t f = (face + eval_start_face_index)%face_valence;
+
 	      const ssize_t index1 = (f-1) % face_valence;
 	      const ssize_t index0 = f;
 	      const Vertex m_i = cm_ring[2*index0+0];
 	      const Vertex c_i = cm_ring[2*index0+1];        
-	      const float a = (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index1)/N);
-	      const float b = (2.0f * sigma * cosf((2.0f*M_PI*index1+M_PI)/N));
-	      
-	      q1 +=				\
-	      a  * m_i +
-	      b  * c_i;
+	      q1 += \
+	      (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index1)/N) * m_i + 
+	      (2.0f * sigma * cosf((2.0f*M_PI*index1+M_PI)/N)) * c_i;	      
 	    }
 	  q1 *= 2.0f / N;
 	}
