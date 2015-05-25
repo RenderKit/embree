@@ -24,6 +24,10 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray16
   {
+    typedef bool16 simdb;
+    typedef float16 simdf;
+    typedef int16 simdi;
+
     /*! Default construction does nothing. */
     __forceinline Ray16() {}
 

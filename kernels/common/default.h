@@ -84,14 +84,14 @@ namespace embree
   typedef Vec4<float8> avx4f;
 #endif
 
-#if defined (__MIC__)
+#if defined (__AVX512__) || defined (__MIC__)
   typedef Vec2<bool16> Vec2b16;
   typedef Vec3<bool16> Vec3b16;
-  typedef Vec2<int16> Vec2i16;
+  typedef Vec2<int16> Vec2i16; 
   typedef Vec3<int16> Vec3i16;
   typedef Vec2<float16> Vec2f16;
   typedef Vec3<float16> Vec3f16;
-  typedef Vec4<float16> mic4f;
-  typedef Vec4<int16> mic4i;
+  typedef Vec4<float16> Vec4f16;
 #endif
+
 }

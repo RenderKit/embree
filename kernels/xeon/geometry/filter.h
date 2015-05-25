@@ -40,6 +40,10 @@ namespace embree
   typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
 #endif
 
+#if defined(__AVX512__)
+  typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
+#endif
+
     __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
                                               const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
@@ -356,5 +360,137 @@ namespace embree
     }
     
 #endif
+
+
+#if defined(__AVX512__)
+    __forceinline bool16 runIntersectionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                             const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+    {
+      /* temporarily update hit information */
+      const float16 ray_u = ray.u;           store16f(valid,&ray.u,u);
+      const float16 ray_v = ray.v;           store16f(valid,&ray.v,v);
+      const float16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
+      const int16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
+      const int16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+      const float16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
+      const float16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
+      const float16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
+      
+      /* invoke filter function */
+      RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
+      if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
+      else { const bool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
+      const bool16 valid_failed = valid & (ray.geomID == int16(-1));
+      const bool16 valid_passed = valid & (ray.geomID != int16(-1));
+      
+      /* restore hit if filter not passed */
+      if (unlikely(any(valid_failed))) 
+      {
+        store16f(valid_failed,&ray.u,ray_u);
+        store16f(valid_failed,&ray.v,ray_v);
+        store16f(valid_failed,&ray.tfar,ray_tfar);
+        store16i(valid_failed,&ray.geomID,ray_geomID);
+        store16i(valid_failed,&ray.primID,ray_primID);
+        store16f(valid_failed,&ray.Ng.x,ray_Ng_x);
+        store16f(valid_failed,&ray.Ng.y,ray_Ng_y);
+        store16f(valid_failed,&ray.Ng.z,ray_Ng_z);
+      }
+      return valid_passed;
+    }
+    
+    __forceinline bool16 runOcclusionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                          const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+    {
+      /* temporarily update hit information */
+      const float16 ray_tfar = ray.tfar; 
+      const int16 ray_geomID = ray.geomID;
+      store16f(valid,&ray.u,u);
+      store16f(valid,&ray.v,v);
+      store16f(valid,&ray.tfar,t);
+      store16i(valid,&ray.geomID,geomID);
+      store16i(valid,&ray.primID,primID);
+      store16f(valid,&ray.Ng.x,Ng.x);
+      store16f(valid,&ray.Ng.y,Ng.y);
+      store16f(valid,&ray.Ng.z,Ng.z);
+      
+      /* invoke filter function */
+      RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
+      if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
+      else { const bool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
+      const bool16 valid_failed = valid & (ray.geomID == int16(-1));
+      const bool16 valid_passed = valid & (ray.geomID != int16(-1));
+      
+      /* restore hit if filter not passed */
+      store16f(valid_failed,&ray.tfar,ray_tfar);
+      store16i(valid_failed,&ray.geomID,ray_geomID);
+      return valid_passed;
+    }
+    
+    __forceinline bool runIntersectionFilter(const Geometry* const geometry, Ray16& ray, const size_t k,
+                                             const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    {
+      /* temporarily update hit information */
+      const float16 ray_u = ray.u;           ray.u[k] = u;
+      const float16 ray_v = ray.v;           ray.v[k] = v;
+      const float16 ray_tfar = ray.tfar;     ray.tfar[k] = t;
+      const int16 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+      const int16 ray_primID = ray.primID; ray.primID[k] = primID;
+      const float16 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+      const float16 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+      const float16 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+      
+      /* invoke filter function */
+      const bool16 valid(1 << k);
+      RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
+      if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
+      else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
+      const bool passed = ray.geomID[k] != -1;
+      
+      /* restore hit if filter not passed */
+      if (unlikely(!passed)) {
+        store16f(&ray.u,ray_u);
+        store16f(&ray.v,ray_v);
+        store16f(&ray.tfar,ray_tfar);
+        store16i(&ray.geomID,ray_geomID);
+        store16i(&ray.primID,ray_primID);
+        store16f(&ray.Ng.x,ray_Ng_x);
+        store16f(&ray.Ng.y,ray_Ng_y);
+        store16f(&ray.Ng.z,ray_Ng_z);
+      }
+      return passed;
+    }
+    
+    __forceinline bool runOcclusionFilter(const Geometry* const geometry, Ray16& ray, const size_t k,
+                                          const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
+    {
+      /* temporarily update hit information */
+      const float16 ray_tfar = ray.tfar; 
+      const int16 ray_geomID = ray.geomID;
+      ray.u[k] = u;
+      ray.v[k] = v;
+      ray.tfar[k] = t;
+      ray.geomID[k] = geomID;
+      ray.primID[k] = primID;
+      ray.Ng.x[k] = Ng.x;
+      ray.Ng.y[k] = Ng.y;
+      ray.Ng.z[k] = Ng.z;
+      
+      /* invoke filter function */
+      const bool16 valid(1 << k);
+      RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
+      if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
+      else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
+      const bool passed = ray.geomID[k] != -1;
+      
+      /* restore hit if filter not passed */
+      if (unlikely(!passed)) {
+        store16f(&ray.tfar,ray_tfar);
+        store16i(&ray.geomID,ray_geomID);
+      }
+      return passed;
+    }
+    
+#endif
+
   }
 }

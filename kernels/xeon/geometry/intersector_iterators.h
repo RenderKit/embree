@@ -28,6 +28,10 @@
 #include "../../common/ray8.h"
 #endif
 
+#if defined(__AVX512__)
+#include "../../common/ray16.h"
+#endif
+
 namespace embree
 {
   namespace isa
@@ -398,6 +402,33 @@ namespace embree
         }
       };
     
+#endif
+
+#if defined(__AVX512__)
+    template<typename Intersector>
+      struct ArrayIntersector16
+      {
+        typedef typename Intersector::Primitive Primitive;
+        typedef typename Intersector::Precalculations Precalculations;
+        
+        static __forceinline void intersect(const bool16& valid, Precalculations& pre, Ray16& ray, const Primitive* prim, size_t num, Scene* scene)
+        {
+          for (size_t i=0; i<num; i++) {
+            Intersector::intersect(valid,pre,ray,prim[i],scene);
+          }
+        }
+        
+        static __forceinline bool16 occluded(const bool16& valid, Precalculations& pre, Ray16& ray, const Primitive* prim, size_t num, Scene* scene) 
+        {
+          bool16 valid0 = valid;
+          for (size_t i=0; i<num; i++) {
+            valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],scene);
+            if (none(valid0)) break;
+          }
+          return !valid0;
+        }
+      };
+
 #endif
   }
 }

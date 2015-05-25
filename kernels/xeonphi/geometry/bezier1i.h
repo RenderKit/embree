@@ -23,14 +23,14 @@
 
 namespace embree
 {
-  extern mic4f coeff0;
-  extern mic4f coeff1;
-  extern mic4f coeff01;
+  extern Vec4f16 coeff0;
+  extern Vec4f16 coeff1;
+  extern Vec4f16 coeff01;
 
-  extern mic4f coeff_P0;
-  extern mic4f coeff_P1;
-  extern mic4f coeff_P2;
-  extern mic4f coeff_P3;
+  extern Vec4f16 coeff_P0;
+  extern Vec4f16 coeff_P1;
+  extern Vec4f16 coeff_P2;
+  extern Vec4f16 coeff_P3;
 
   __forceinline Vec3f16 convert(const LinearSpace3fa &mat)
   {
@@ -50,7 +50,7 @@ namespace embree
   }
 
 
-    static __forceinline mic4f eval16(const float16 &p0,
+    static __forceinline Vec4f16 eval16(const float16 &p0,
 				      const float16 &p1,
 				      const float16 &p2,
 				      const float16 &p3)
@@ -64,7 +64,7 @@ namespace embree
       const float16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
       const float16 z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
       const float16 w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
-      return mic4f(x,y,z,w);
+      return Vec4f16(x,y,z,w);
     }
 
 
@@ -93,7 +93,7 @@ namespace embree
       const float16 v3 = broadcast4to16f((float*)&p[3]);
       
 #if EVAL_BOUNDS==1
-      const mic4f v = eval16(v0,v1,v2,v3);
+      const Vec4f16 v = eval16(v0,v1,v2,v3);
       const float16 min_x = min(vreduce_min(v.x),v3[0]);
       const float16 max_x = max(vreduce_max(v.x),v3[0]);
       const float16 min_y = min(vreduce_min(v.y),v3[1]);
@@ -147,7 +147,7 @@ namespace embree
       const float16 v3 = xfmPoint4f(p[3],c0,c1,c2);
 
 #if EVAL_BOUNDS==1
-      const mic4f v = eval16(v0,v1,v2,v3);
+      const Vec4f16 v = eval16(v0,v1,v2,v3);
       const float16 min_x = min(vreduce_min(v.x),v3[0]);
       const float16 max_x = max(vreduce_max(v.x),v3[0]);
       const float16 min_y = min(vreduce_min(v.y),v3[1]);

@@ -50,6 +50,11 @@ namespace embree
       v = _mm512_cvtfxpnt_round_adjustepi32_ps(a, _MM_FROUND_NO_EXC,_MM_EXPADJ_NONE);
     }
 
+    static __forceinline void store(const bool16& mask, void* addr, const float16& v2) {
+      _mm512_mask_extstore_ps(addr,mask,v2,_MM_DOWNCONV_PS_NONE,0);
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -656,6 +661,7 @@ namespace embree
   __forceinline void store16f(const bool16& mask, void* addr, const float16& v2) {
     _mm512_mask_extstore_ps(addr,mask,v2,_MM_DOWNCONV_PS_NONE,0);
   }
+
   
   __forceinline void store16f(void* addr, const float16& v2) {
     _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_NONE,0);

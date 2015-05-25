@@ -47,7 +47,7 @@ namespace embree
     typedef Bezier1i Primitive;
 
 
-    static __forceinline mic4f eval16(const float16 &p0123,
+    static __forceinline Vec4f16 eval16(const float16 &p0123,
 				      const float16 &c0,
 				      const float16 &c1,
 				      const float16 &c2,
@@ -69,7 +69,7 @@ namespace embree
       const float16 z = madd(c0,float16(p0123[2]),madd(c1,float16(p0123[6]),madd(c2,float16(p0123[10]),c3* float16(p0123[14]))));
       const float16 w = madd(c0,float16(p0123[3]),madd(c1,float16(p0123[7]),madd(c2,float16(p0123[11]),c3* float16(p0123[15]))));
 #endif
-      return mic4f(x,y,z,w);
+      return Vec4f16(x,y,z,w);
     }
 
     static __forceinline void eval(const float t, const float16 &p0123, float16& point, float16& tangent)
@@ -127,26 +127,26 @@ namespace embree
 
 
 
-      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+      const Vec4f16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
       
       const float16 last_x = float16(p0123_2D[12 + 0]);
       const float16 last_y = float16(p0123_2D[13 + 0]);
       const float16 last_z = float16(p0123_2D[14 + 0]);
       const float16 last_w = float16(p0123_2D[15 + 0]);
 
-      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+      const Vec4f16 p1(align_shift_right<1>(last_x,p0[0]),  
        		     align_shift_right<1>(last_y,p0[1]), 
       		     align_shift_right<1>(last_z,p0[2]),  
        		     align_shift_right<1>(last_w,p0[3]));
 
 
       /* approximative intersection with cone */
-      const mic4f v = p1-p0;
-      const mic4f w = -p0;
+      const Vec4f16 v = p1-p0;
+      const Vec4f16 w = -p0;
       const float16 d0 = w.x*v.x + w.y*v.y;
       const float16 d1 = v.x*v.x + v.y*v.y;
       const float16 u = clamp(d0*rcp_nr(d1),zero,one);
-      const mic4f p = p0 + u*v;
+      const Vec4f16 p = p0 + u*v;
       const float16 t = p.z * inv_ray_length;
       const float16 d2 = p.x*p.x + p.y*p.y; 
       const float16 r = p.w;
@@ -229,14 +229,14 @@ namespace embree
       const float16 c2 = load16f(&coeff01[2]);
       const float16 c3 = load16f(&coeff01[3]);
 
-      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+      const Vec4f16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
       const float16 last_x = float16(p0123_2D[12 + 0]);
       const float16 last_y = float16(p0123_2D[13 + 0]);
       const float16 last_z = float16(p0123_2D[14 + 0]);
       const float16 last_w = float16(p0123_2D[15 + 0]);
 
-      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+      const Vec4f16 p1(align_shift_right<1>(last_x,p0[0]),  
        		     align_shift_right<1>(last_y,p0[1]), 
       		     align_shift_right<1>(last_z,p0[2]),  
        		     align_shift_right<1>(last_w,p0[3]));
@@ -246,12 +246,12 @@ namespace embree
 
 
       /* approximative intersection with cone */
-      const mic4f v = p1-p0;
-      const mic4f w = -p0;
+      const Vec4f16 v = p1-p0;
+      const Vec4f16 w = -p0;
       const float16 d0 = w.x*v.x + w.y*v.y;
       const float16 d1 = v.x*v.x + v.y*v.y;
       const float16 u = clamp(d0*rcp(d1),zero,one);
-      const mic4f p = p0 + u*v;
+      const Vec4f16 p = p0 + u*v;
       const float16 t = p.z * inv_ray_length;
       const float16 d2 = p.x*p.x + p.y*p.y; 
       const float16 r = p.w;
@@ -330,14 +330,14 @@ namespace embree
       const float16 c2 = load16f(&coeff01[2]);
       const float16 c3 = load16f(&coeff01[3]);
 
-      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+      const Vec4f16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
       const float16 last_x = float16(p0123_2D[12 + 0]);
       const float16 last_y = float16(p0123_2D[13 + 0]);
       const float16 last_z = float16(p0123_2D[14 + 0]);
       const float16 last_w = float16(p0123_2D[15 + 0]);
 
-      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+      const Vec4f16 p1(align_shift_right<1>(last_x,p0[0]),  
        		     align_shift_right<1>(last_y,p0[1]), 
       		     align_shift_right<1>(last_z,p0[2]),  
        		     align_shift_right<1>(last_w,p0[3]));
@@ -346,12 +346,12 @@ namespace embree
 
 
       /* approximative intersection with cone */
-      const mic4f v = p1-p0;
-      const mic4f w = -p0;
+      const Vec4f16 v = p1-p0;
+      const Vec4f16 w = -p0;
       const float16 d0 = w.x*v.x + w.y*v.y;
       const float16 d1 = v.x*v.x + v.y*v.y;
       const float16 u = clamp(d0*rcp(d1),zero,one);
-      const mic4f p = p0 + u*v;
+      const Vec4f16 p = p0 + u*v;
       const float16 t = p.z * inv_ray_length;
       const float16 d2 = p.x*p.x + p.y*p.y; 
       const float16 r = p.w;
@@ -430,25 +430,25 @@ namespace embree
       const float16 c2 = load16f(&coeff01[2]);
       const float16 c3 = load16f(&coeff01[3]);
 
-      const mic4f p0 = eval16(p0123_2D,c0,c1,c2,c3);
+      const Vec4f16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
       const float16 last_x = float16(p0123_2D[12 + 0]);
       const float16 last_y = float16(p0123_2D[13 + 0]);
       const float16 last_z = float16(p0123_2D[14 + 0]);
       const float16 last_w = float16(p0123_2D[15 + 0]);
 
-      const mic4f p1(align_shift_right<1>(last_x,p0[0]),  
+      const Vec4f16 p1(align_shift_right<1>(last_x,p0[0]),  
        		     align_shift_right<1>(last_y,p0[1]), 
       		     align_shift_right<1>(last_z,p0[2]),  
        		     align_shift_right<1>(last_w,p0[3]));
 
       /* approximative intersection with cone */
-      const mic4f v = p1-p0;
-      const mic4f w = -p0;
+      const Vec4f16 v = p1-p0;
+      const Vec4f16 w = -p0;
       const float16 d0 = w.x*v.x + w.y*v.y;
       const float16 d1 = v.x*v.x + v.y*v.y;
       const float16 u = clamp(d0*rcp(d1),zero,one);
-      const mic4f p = p0 + u*v;
+      const Vec4f16 p = p0 + u*v;
       const float16 t = p.z * inv_ray_length;
       const float16 d2 = p.x*p.x + p.y*p.y; 
       const float16 r = p.w;

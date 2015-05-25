@@ -574,23 +574,23 @@ namespace embree
         prefetch<PFHINT_L1>(&v[3][0]);
       }
       
-      static __forceinline mic4f eval_derivative(const float16 u, const bool16 m_mask)
+      static __forceinline Vec4f16 eval_derivative(const float16 u, const bool16 m_mask)
       {
-        const mic4f e = CubicBSplineCurve::eval(u);
-        const mic4f d = CubicBSplineCurve::derivative(u);
-        return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
+        const Vec4f16 e = CubicBSplineCurve::eval(u);
+        const Vec4f16 d = CubicBSplineCurve::derivative(u);
+        return Vec4f16(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
       }    
       
       __forceinline float16 normal4(const float uu, const float vv) const
       {
-        const mic4f v_e_d = eval_derivative(float16(vv),0x00ff);       // ev,ev,dv,dv
+        const Vec4f16 v_e_d = eval_derivative(float16(vv),0x00ff);       // ev,ev,dv,dv
         
         const float16 curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
         const float16 curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
         const float16 curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
         const float16 curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
         
-        const mic4f u_e_d = eval_derivative(float16(uu),0xff00);       // du,du,eu,eu
+        const Vec4f16 u_e_d = eval_derivative(float16(uu),0xff00);       // du,du,eu,eu
         
         const float16 tangentUV = (u_e_d[0] * curve0 + u_e_d[1] * curve1 + u_e_d[2] * curve2 + u_e_d[3] * curve3); // tu, tu, tv, tv
         
@@ -603,14 +603,14 @@ namespace embree
       
       __forceinline float16 eval4(const float16 uu, const float16 vv) const
       {
-        const mic4f v_n = CubicBSplineCurve::eval(vv); 
+        const Vec4f16 v_n = CubicBSplineCurve::eval(vv); 
         
         const float16 curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
         const float16 curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
         const float16 curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
         const float16 curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
         
-        const mic4f u_n = CubicBSplineCurve::eval(uu); 
+        const Vec4f16 u_n = CubicBSplineCurve::eval(uu); 
         
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * float16(1.0f/36.0f);
       }

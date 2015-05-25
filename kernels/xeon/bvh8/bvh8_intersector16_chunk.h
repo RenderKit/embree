@@ -16,24 +16,29 @@
 
 #pragma once
 
-#include "sse.h"
+#include "bvh8.h"
+#include "../../common/stack_item.h"
+#include "../../common/ray16.h"
 
-namespace embree 
+namespace embree
 {
-  struct bool8;
-  struct int8;
-  struct float8;
+    
+  namespace isa
+  {
+    /*! BVH8 Traverser. Packet traversal implementation for a Quad BVH. */
+template<typename TriangleIntersector16>    
+class BVH8Intersector16Chunk
+    {
+
+      /* shortcuts for frequently used types */
+      typedef typename TriangleIntersector16::Precalculations Precalculations;
+      typedef typename TriangleIntersector16::Primitive Triangle;
+      typedef typename BVH8::NodeRef NodeRef;
+      typedef typename BVH8::Node Node;
+
+    public:
+      static void intersect(bool16* valid, BVH8* bvh, Ray16& ray);
+      static void occluded (bool16* valid, BVH8* bvh, Ray16& ray);
+    };
+  }
 }
-
-#include "bool8_avx.h"
-#if defined (__AVX2__)
-#include "int8_avx2.h"
-#else
-#include "int8_avx.h"
-#endif
-#include "float8_avx.h"
-
-#if defined (__AVX512__)
-#include "avx512.h"
-#endif
-
