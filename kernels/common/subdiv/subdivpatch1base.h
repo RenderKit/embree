@@ -570,7 +570,7 @@ namespace embree
 			      const float8 &vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval<bool8>( patch.v, uu, vv );
+	return BezierPatch::eval<bool8>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))

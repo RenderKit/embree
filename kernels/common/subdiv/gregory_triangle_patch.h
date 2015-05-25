@@ -53,7 +53,7 @@ namespace embree
     //Vertex& f3_p() { return v[2][1]; }
     Vertex& f0_m() { return v[3][0]; }
     Vertex& f1_m() { return v[2][0]; }
-    Vertex& f2_m() { return v[1][0]; }
+    Vertex& f2_m() { return v[3][1]; }
     //Vertex& f3_m() { return f[1][0]; }
     
     const Vertex& p0() const { return v[0][0]; }
@@ -122,38 +122,9 @@ namespace embree
       Vertex p2_r_p, p2_r_m;
       patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
 
-      /* PRINT( face_valence_p0 ); */
-      /* PRINT( face_valence_p1 ); */
-      /* PRINT( face_valence_p2 ); */
-
-      /* PRINT(p0()); */
-      /* PRINT(p1()); */
-      /* PRINT(p2()); */
-
-      /* PRINT(p0_r_p); */
-      /* PRINT(p0_r_m); */
-      /* PRINT(p1_r_p); */
-      /* PRINT(p1_r_m); */
-      /* PRINT(p2_r_p); */
-      /* PRINT(p2_r_m); */
-
-      /* PRINT(e0_p()); */
-      /* PRINT(e0_m()); */
-      /* PRINT(e1_p()); */
-      /* PRINT(e1_m()); */
-      /* PRINT(e2_p()); */
-      /* PRINT(e2_m()); */
-
       computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m(),4.0f );
       computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m(),4.0f );
       computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m(),4.0f );
-
-      /* PRINT(f0_p()); */
-      /* PRINT(f0_m()); */
-      /* PRINT(f1_p()); */
-      /* PRINT(f1_m()); */
-      /* PRINT(f2_p()); */
-      /* PRINT(f2_m()); */
     }
     
 
@@ -165,6 +136,44 @@ namespace embree
 	  matrix[y][x] = (Vertex_t)v[y][x];
       
     }
+
+     void convertGregoryTrianglePatchToBezierPatch(Vertex matrix[4][4]) const
+     {
+       const Vec3fa b012 = e0_m();
+       const Vec3fa b003 = p0();
+       const Vec3fa b102 = e0_p();
+       
+       const Vec3fa b201 = e1_m();
+       const Vec3fa b300 = p1();
+       const Vec3fa b210 = e1_p();
+       
+       const Vec3fa b120 = e2_m();
+       const Vec3fa b030 = p2();
+       const Vec3fa b021 = e2_p();
+       
+       const Vec3fa b111 = (f0_p() + f1_p() + f2_p()) * 1.0f/3.0f;
+       
+       matrix[0][0] = b003;
+       matrix[0][1] = b102;
+       matrix[0][2] = b201;
+       matrix[0][3] = b300;
+       
+       matrix[1][0] = b012;
+       matrix[1][1] = 1.0f/3.0f * ( 1.0f * b012 + 2.0f * b111);
+       matrix[1][2] = 1.0f/3.0f * ( 2.0f * b111 + 1.0f * b210);
+       matrix[1][3] = b210;
+       
+       matrix[2][0] = b021;
+       matrix[2][1] = 1.0f/3.0f * ( 2.0f * b021 + 1.0f * b120);
+       matrix[2][2] = 1.0f/3.0f * ( 1.0f * b021 + 2.0f * b120);
+       matrix[2][3] = b120;
+       
+       matrix[3][0] = b030;
+       matrix[3][1] = b030;
+       matrix[3][2] = b030;
+       matrix[3][3] = b030;          
+  }
+
         
     template<class T, class S>
       static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
