@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/common/alloc.h"
-#include "kernels/xeon/builders/bvh_builder_sah.h"
-#include "kernels/xeon/builders/bvh_builder_morton.h"
+#include "../../kernels/common/alloc.h"
+#include "../../kernels/xeon/builders/bvh_builder_sah.h"
+#include "../../kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */
 RTCScene g_scene = nullptr;

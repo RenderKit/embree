@@ -35,6 +35,8 @@
 #include "../../common/math/vec4.h"
 #include "../../common/math/bbox.h"
 #include "../../common/math/obbox.h"
+#include "../../common/math/linearspace2.h"
+#include "../../common/math/linearspace3.h"
 #include "../../common/math/affinespace.h"
 #include "../../common/simd/simd.h"
 #include "../../common/lexers/tokenstream.h"
