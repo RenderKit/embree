@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {
-    void InstanceBoundsFunction(const Instance* instance, unsigned int item, BBox3fa& bounds_o)
+    void InstanceBoundsFunction(const Instance* instance, size_t item, BBox3fa& bounds_o)
     {
       Vec3fa lower = instance->object->bounds.lower;
       Vec3fa upper = instance->object->bounds.upper;
@@ -39,7 +39,7 @@ namespace embree
 
     RTCBoundsFunc InstanceBoundsFunc = (RTCBoundsFunc) InstanceBoundsFunction;
 
-    void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, unsigned int item)
+    void FastInstanceIntersector1::intersect(const Instance* instance, Ray& ray, size_t item)
     {
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;
@@ -58,7 +58,7 @@ namespace embree
       }
     }
     
-    void FastInstanceIntersector1::occluded (const Instance* instance, Ray& ray, unsigned int item)
+    void FastInstanceIntersector1::occluded (const Instance* instance, Ray& ray, size_t item)
     {
       const Vec3fa ray_org = ray.org;
       const Vec3fa ray_dir = ray.dir;

@@ -22,54 +22,54 @@
 
 /*! Type of bounding function. */
 typedef void (*RTCBoundsFunc)(void* ptr,              /*!< pointer to user data */
-                              unsigned int item,      /*!< item to calculate bounds for */
+                              size_t item,            /*!< item to calculate bounds for */
                               RTCBounds& bounds_o     /*!< returns calculated bounds */);
 
 /*! Type of intersect function pointer for single rays. */
 typedef void (*RTCIntersectFunc)(void* ptr,           /*!< pointer to user data */
                                  RTCRay& ray,         /*!< ray to intersect */
-                                 unsigned int item    /*!< item to intersect */);
+                                 size_t item          /*!< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size 4. */
 typedef void (*RTCIntersectFunc4)(const void* valid,  /*!< pointer to valid mask */
                                   void* ptr,          /*!< pointer to user data */
                                   RTCRay4& ray,       /*!< ray packet to intersect */
-                                  unsigned int item   /*!< item to intersect */);
+                                  size_t item         /*!< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size 8. */
 typedef void (*RTCIntersectFunc8)(const void* valid,  /*!< pointer to valid mask */
                                   void* ptr,          /*!< pointer to user data */
                                   RTCRay8& ray,       /*!< ray packet to intersect */
-                                  unsigned int item   /*!< item to intersect */);
+                                  size_t item         /*!< item to intersect */);
 
 /*! Type of intersect function pointer for ray packets of size 16. */
 typedef void (*RTCIntersectFunc16)(const void* valid, /*!< pointer to valid mask */
                                    void* ptr,         /*!< pointer to user data */
                                    RTCRay16& ray,     /*!< ray packet to intersect */
-                                   unsigned int item  /*!< item to intersect */);
+                                   size_t item        /*!< item to intersect */);
 
 /*! Type of occlusion function pointer for single rays. */
 typedef void (*RTCOccludedFunc) (void* ptr,           /*!< pointer to user data */ 
                                  RTCRay& ray,         /*!< ray to test occlusion */
-                                 unsigned int item    /*!< item to test for occlusion */);
+                                 size_t item          /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size 4. */
 typedef void (*RTCOccludedFunc4) (const void* valid,  /*! pointer to valid mask */
                                   void* ptr,          /*!< pointer to user data */
                                   RTCRay4& ray,       /*!< Ray packet to test occlusion. */
-                                  unsigned int item   /*!< item to test for occlusion */);
+                                  size_t item         /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size 8. */
 typedef void (*RTCOccludedFunc8) (const void* valid,  /*! pointer to valid mask */
                                   void* ptr,          /*!< pointer to user data */
                                   RTCRay8& ray,       /*!< Ray packet to test occlusion. */
-                                  unsigned int item   /*!< item to test for occlusion */);
+                                  size_t item         /*!< item to test for occlusion */);
 
 /*! Type of occlusion function pointer for ray packets of size 16. */
 typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask */
                                    void* ptr,         /*!< pointer to user data */
                                    RTCRay16& ray,     /*!< Ray packet to test occlusion. */
-                                   unsigned int item  /*!< item to test for occlusion */);
+                                   size_t item        /*!< item to test for occlusion */);
 
 /*! Creates a new user geometry object. This feature makes it possible
  *  to add arbitrary types of geometry to the scene by providing
@@ -85,7 +85,7 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
 RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,        /*!< the scene the user geometry set is created in */
-                                        unsigned int numGeometries   /*!< the number of geometries contained in the set */);
+                                        size_t numGeometries   /*!< the number of geometries contained in the set */);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The

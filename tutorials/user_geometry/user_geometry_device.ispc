@@ -59,7 +59,7 @@ struct Instance
   Vec3f upper;
 };
 
-void instanceBoundsFunc(const uniform Instance* uniform instance, uniform unsigned int item, uniform RTCBounds* uniform bounds_o)
+void instanceBoundsFunc(const uniform Instance* uniform instance, uniform size_t item, uniform RTCBounds* uniform bounds_o)
 {
   uniform Vec3f l = instance->lower;
   uniform Vec3f u = instance->upper;
@@ -81,7 +81,7 @@ void instanceBoundsFunc(const uniform Instance* uniform instance, uniform unsign
   bounds_o->upper_z = upper.z;
 }
 
-void instanceIntersectFunc(const uniform Instance* uniform instance, varying RTCRay& ray, uniform unsigned int item)
+void instanceIntersectFunc(const uniform Instance* uniform instance, varying RTCRay& ray, uniform size_t item)
 {
   const Vec3f ray_org = ray.org;
   const Vec3f ray_dir = ray.dir;
@@ -96,7 +96,7 @@ void instanceIntersectFunc(const uniform Instance* uniform instance, varying RTC
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(const uniform Instance* uniform instance, varying RTCRay& ray, uniform unsigned int item)
+void instanceOccludedFunc(const uniform Instance* uniform instance, varying RTCRay& ray, uniform size_t item)
 {
   const Vec3f ray_org = ray.org;
   const Vec3f ray_dir = ray.dir;
@@ -145,7 +145,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform unsigned int item, uniform RTCBounds* uniform bounds_o)
+void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform size_t item, uniform RTCBounds* uniform bounds_o)
 {
   const uniform Sphere& sphere = spheres[item];
   bounds_o->lower_x = sphere.p.x-sphere.r;
@@ -156,7 +156,7 @@ void sphereBoundsFunc(const uniform Sphere* uniform spheres, uniform unsigned in
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform unsigned int item)
+void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
   const Vec3f v = ray.org-sphere.p;
@@ -187,7 +187,7 @@ void sphereIntersectFunc(const uniform Sphere* uniform spheres, varying RTCRay& 
   }
 }
 
-void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform unsigned int item)
+void sphereOccludedFunc(const uniform Sphere* uniform spheres, varying RTCRay& ray, uniform size_t item)
 {
   const uniform Sphere& sphere = spheres[item];
   const Vec3f v = ray.org-sphere.p;

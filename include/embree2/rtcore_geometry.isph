@@ -105,9 +105,9 @@ void rtcSetTransform (RTCScene scene,                                  //!< scen
   float used for alignment can be arbitrary. */
 uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< the scene the mesh belongs to
                                          uniform RTCGeometryFlags flags,  //!< geometry flags
-                                         uniform unsigned int numTriangles,     //!< number of triangles
-                                         uniform unsigned int numVertices,      //!< number of vertices
-                                         uniform unsigned int numTimeSteps = 1  //!< number of motion blur time steps
+                                         uniform size_t numTriangles,     //!< number of triangles
+                                         uniform size_t numVertices,      //!< number of vertices
+                                         uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new subdivision mesh. The number of faces
@@ -167,13 +167,13 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< t
 
 uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< the scene the mesh belongs to
                                             uniform RTCGeometryFlags flags,        //!< geometry flags
-                                            uniform unsigned int numFaces,               //!< number of faces
-                                            uniform unsigned int numEdges,               //!< number of edges
-                                            uniform unsigned int numVertices,            //!< number of vertices
-                                            uniform unsigned int numEdgeCreases,         //!< number of edge creases
-                                            uniform unsigned int numVertexCreases,       //!< number of vertex creases
-                                            uniform unsigned int numHoles,               //!< number of holes
-                                            uniform unsigned int numTimeSteps = 1        //!< number of motion blur time steps
+                                            uniform size_t numFaces,               //!< number of faces
+                                            uniform size_t numEdges,               //!< number of edges
+                                            uniform size_t numVertices,            //!< number of vertices
+                                            uniform size_t numEdgeCreases,         //!< number of edge creases
+                                            uniform size_t numVertexCreases,       //!< number of vertex creases
+                                            uniform size_t numHoles,               //!< number of holes
+                                            uniform size_t numTimeSteps = 1        //!< number of motion blur time steps
   );
 
 /*! \brief Creates a new hair geometry, consisting of multiple hairs
@@ -196,9 +196,9 @@ uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,                //!< 
   might show geometric artefacts. */
 uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!< the scene the curves belong to
                                          uniform RTCGeometryFlags flags,    //!< geometry flags
-                                         uniform unsigned int numCurves,          //!< number of curves
-                                         uniform unsigned int numVertices,        //!< number of vertices
-                                         uniform unsigned int numTimeSteps = 1    //!< number of motion blur time steps
+                                         uniform size_t numCurves,          //!< number of curves
+                                         uniform size_t numVertices,        //!< number of vertices
+                                         uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
 /*! \brief Sets 32 bit ray mask. */

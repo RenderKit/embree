@@ -108,20 +108,20 @@ namespace embree
     return rtcSetTransform(scene,geomID,layout,xfm);
   }
   
-  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, unsigned int numItems) {
+  extern "C" unsigned ispcNewUserGeometry (RTCScene scene, size_t numItems) {
     return rtcNewUserGeometry(scene,numItems);
   }
   
-  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, unsigned int numTriangles, unsigned int numVertices, unsigned int numTimeSteps) {
+  extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
     return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
   }
   
-  extern "C" unsigned ispcNewBezierCurves (RTCScene scene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) {
+  extern "C" unsigned ispcNewBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
     return rtcNewHairGeometry(scene,flags,numCurves,numVertices,numTimeSteps);
   }
 
-  extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, unsigned int numFaces, unsigned int numEdges, 
-                                              unsigned int numVertices, unsigned int numEdgeCreases, unsigned int numVertexCreases, unsigned int numHoles, unsigned int numTimeSteps) 
+  extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 
+                                              size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
     return rtcNewSubdivisionMesh(scene,flags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
   }

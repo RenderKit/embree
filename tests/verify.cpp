@@ -808,7 +808,7 @@ namespace embree
     float r;
   };
 
-  void BoundsFunc(Sphere* sphere, unsigned int index, BBox3fa* bounds_o)
+  void BoundsFunc(Sphere* sphere, size_t index, BBox3fa* bounds_o)
   {
     bounds_o->lower.x = sphere->pos.x-sphere->r;
     bounds_o->lower.y = sphere->pos.y-sphere->r;
@@ -818,28 +818,28 @@ namespace embree
     bounds_o->upper.z = sphere->pos.z+sphere->r;
   }
 
-  void IntersectFunc(void* ptr, RTCRay& ray, unsigned int item) {
+  void IntersectFunc(void* ptr, RTCRay& ray, size_t item) {
   }
 
-  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray, unsigned int item) {
+  void IntersectFunc4(const void* valid, void* ptr, RTCRay4& ray, size_t item) {
   }
 
-  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray, unsigned int item) {
+  void IntersectFunc8(const void* valid, void* ptr, RTCRay8& ray, size_t item) {
   }
 
-  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray, unsigned int item) {
+  void IntersectFunc16(const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
-  void OccludedFunc (void* ptr, RTCRay& ray, unsigned int item) {
+  void OccludedFunc (void* ptr, RTCRay& ray, size_t item) {
   }
 
-  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray, unsigned int item) {
+  void OccludedFunc4 (const void* valid, void* ptr, RTCRay4& ray, size_t item) {
   }
 
-  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray, unsigned int item) {
+  void OccludedFunc8 (const void* valid, void* ptr, RTCRay8& ray, size_t item) {
   }
 
-  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, unsigned int item) {
+  void OccludedFunc16 (const void* valid, void* ptr, RTCRay16& ray, size_t item) {
   }
 
   unsigned addUserGeometryEmpty (RTCScene scene, Sphere* sphere)

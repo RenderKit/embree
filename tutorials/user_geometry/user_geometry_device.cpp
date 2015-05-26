@@ -59,7 +59,7 @@ struct Instance
   Vec3fa upper;
 };
 
-void instanceBoundsFunc(const Instance* instance, unsigned int item, RTCBounds* bounds_o)
+void instanceBoundsFunc(const Instance* instance, size_t item, RTCBounds* bounds_o)
 {
   Vec3fa l = instance->lower;
   Vec3fa u = instance->upper;
@@ -81,7 +81,7 @@ void instanceBoundsFunc(const Instance* instance, unsigned int item, RTCBounds* 
   bounds_o->upper_z = upper.z;
 }
 
-void instanceIntersectFunc(const Instance* instance, RTCRay& ray, unsigned int item)
+void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
 {
   const Vec3fa ray_org = ray.org;
   const Vec3fa ray_dir = ray.dir;
@@ -96,7 +96,7 @@ void instanceIntersectFunc(const Instance* instance, RTCRay& ray, unsigned int i
   else ray.instID = instance->userID;
 }
 
-void instanceOccludedFunc(const Instance* instance, RTCRay& ray, unsigned int item)
+void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
 {
   const Vec3fa ray_org = ray.org;
   const Vec3fa ray_dir = ray.dir;
@@ -145,7 +145,7 @@ struct Sphere
   unsigned int geomID;
 };
 
-void sphereBoundsFunc(const Sphere* spheres, unsigned int item, RTCBounds* bounds_o)
+void sphereBoundsFunc(const Sphere* spheres, size_t item, RTCBounds* bounds_o)
 {
   const Sphere& sphere = spheres[item];
   bounds_o->lower_x = sphere.p.x-sphere.r;
@@ -156,7 +156,7 @@ void sphereBoundsFunc(const Sphere* spheres, unsigned int item, RTCBounds* bound
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, unsigned int item)
+void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
   const Vec3fa v = ray.org-sphere.p;
@@ -187,7 +187,7 @@ void sphereIntersectFunc(const Sphere* spheres, RTCRay& ray, unsigned int item)
   }
 }
 
-void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, unsigned int item)
+void sphereOccludedFunc(const Sphere* spheres, RTCRay& ray, size_t item)
 {
   const Sphere& sphere = spheres[item];
   const Vec3fa v = ray.org-sphere.p;
