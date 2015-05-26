@@ -926,9 +926,8 @@ namespace embree
 	      const size_t index = (face + eval_start_face_index)%face_valence;
 	      const Vertex m_i = cm_ring[2*index+0];
 	      const Vertex c_i = cm_ring[2*index+1];        
-	      q0 += \							
-	      (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index)/N) * m_i +
-	      (2.0f * sigma * cosf((2.0f*M_PI*index+M_PI)/N)) * c_i;
+	      q0 += (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index)/N) * m_i +
+	            (2.0f * sigma * cosf((2.0f*M_PI*index+M_PI)/N)) * c_i;
 	    }
 	  q0 *= 2.0f / N; 
 	}
