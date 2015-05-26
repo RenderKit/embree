@@ -755,7 +755,7 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
-  RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene, size_t numItems) 
+  RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene, unsigned int numItems) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry);
@@ -765,7 +765,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, unsigned int numTriangles, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewTriangleMesh);
@@ -775,7 +775,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene, RTCGeometryFlags flags, unsigned int numCurves, unsigned int numVertices, unsigned int numTimeSteps) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewHairGeometry);
@@ -785,8 +785,8 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
-                                             size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
+  RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, unsigned int numFaces, unsigned int numEdges, unsigned int numVertices, 
+                                             unsigned int numEdgeCreases, unsigned int numVertexCreases, unsigned int numHoles, unsigned int numTimeSteps) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewSubdivisionMesh);

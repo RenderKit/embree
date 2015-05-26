@@ -42,18 +42,18 @@ namespace embree
     typedef RTCOccludedFunc16 OccludedFunc16;
 
 #if defined(__SSE__)
-    typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
-    typedef void (*ISPCOccludedFunc4 )(void* ptr, RTCRay4& ray, size_t item, __m128 valid);
+    typedef void (*ISPCIntersectFunc4)(void* ptr, RTCRay4& ray, unsigned int item, __m128 valid);
+    typedef void (*ISPCOccludedFunc4 )(void* ptr, RTCRay4& ray, unsigned int item, __m128 valid);
 #endif
 
 #if defined(__AVX__)
-    typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
-    typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
+    typedef void (*ISPCIntersectFunc8)(void* ptr, RTCRay8& ray, unsigned int item, __m256 valid);
+    typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, unsigned int item, __m256 valid);
 #endif
 
 #if defined(__MIC__)
-    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
-    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
+    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, unsigned int item, __mmask16 valid);
+    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, unsigned int item, __mmask16 valid);
 #endif
 
     typedef void (*ErrorFunc) ();
@@ -258,7 +258,7 @@ namespace embree
 #endif
       
     public:
-      size_t numItems; // FIXME: remove
+      unsigned int numItems; // FIXME: remove
       RTCBoundsFunc boundsFunc;
 
       struct Intersectors 
