@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/scene.h"
-#include "builders/priminfo.h"
+#include "../../common/scene.h"
+#include "priminfo.h"
 
 namespace embree
 {
@@ -33,20 +33,20 @@ namespace embree
         /*! calculates the mapping */
         __forceinline SpatialBinMapping(const PrimInfo& pinfo)
         {
-          const ssef lower = (ssef) pinfo.geomBounds.lower;
-          const ssef upper = (ssef) pinfo.geomBounds.upper;
-          const sseb ulpsized = upper - lower <= max(ssef(1E-19f),128.0f*ssef(ulp)*max(abs(lower),abs(upper)));
-          const ssef diag = (ssef) pinfo.geomBounds.size();
-          //scale = select(ulpsized,ssef(0.0f),rcp(diag) * ssef(BINS * 0.99f));
-          scale = select(ulpsized,ssef(0.0f),ssef(BINS * 0.99f)/diag);
-          ofs  = (ssef) pinfo.geomBounds.lower;
+          const float4 lower = (float4) pinfo.geomBounds.lower;
+          const float4 upper = (float4) pinfo.geomBounds.upper;
+          const bool4 ulpsized = upper - lower <= max(float4(1E-19f),128.0f*float4(ulp)*max(abs(lower),abs(upper)));
+          const float4 diag = (float4) pinfo.geomBounds.size();
+          //scale = select(ulpsized,float4(0.0f),rcp(diag) * float4(BINS * 0.99f));
+          scale = select(ulpsized,float4(0.0f),float4(BINS * 0.99f)/diag);
+          ofs  = (float4) pinfo.geomBounds.lower;
         }
         
         /*! slower but safe binning */
-        __forceinline ssei bin(const Vec3fa& p) const
+        __forceinline int4 bin(const Vec3fa& p) const
         {
-          const ssei i = floori((ssef(p)-ofs)*scale);
-          return clamp(i,ssei(0),ssei(BINS-1));
+          const int4 i = floori((float4(p)-ofs)*scale);
+          return clamp(i,int4(0),int4(BINS-1));
         }
         
         /*! calculates left spatial position of bin */
@@ -60,7 +60,7 @@ namespace embree
         }
         
       private:
-        ssef ofs,scale;  //!< linear function that maps to bin ID
+        float4 ofs,scale;  //!< linear function that maps to bin ID
       };
 
     /*! stores all information required to perform some split */
@@ -127,7 +127,7 @@ namespace embree
 
           if (splits == 1)
           {
-            const ssei bin = mapping.bin(center(prim.bounds()));
+            const int4 bin = mapping.bin(center(prim.bounds()));
             for (size_t dim=0; dim<3; dim++) 
             {
               assert(bin[dim] >= 0 && bin[dim] < BINS);
@@ -143,8 +143,8 @@ namespace embree
             //const Vec3fa v0 = mesh->vertex(tri.v[0]);
             //const Vec3fa v1 = mesh->vertex(tri.v[1]);
             //const Vec3fa v2 = mesh->vertex(tri.v[2]);
-            const ssei bin0 = mapping.bin(prim.bounds().lower);
-            const ssei bin1 = mapping.bin(prim.bounds().upper);
+            const int4 bin0 = mapping.bin(prim.bounds().lower);
+            const int4 bin1 = mapping.bin(prim.bounds().upper);
             
             for (size_t dim=0; dim<3; dim++) 
             {
@@ -213,9 +213,9 @@ namespace embree
       SpatialBinSplit<BINS> best(const PrimInfo& pinfo, const SpatialBinMapping<BINS>& mapping, const size_t blocks_shift) const
       {
         /* sweep from right to left and compute parallel prefix of merged bounds */
-        ssef rAreas[BINS];
-        ssei rCounts[BINS];
-        ssei count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+        float4 rAreas[BINS];
+        int4 rCounts[BINS];
+        int4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
         for (size_t i=BINS-1; i>0; i--)
         {
           count += numEnd[i];
@@ -227,8 +227,8 @@ namespace embree
         }
         
         /* sweep from left to right and compute SAH */
-        ssei blocks_add = (1 << blocks_shift)-1;
-        ssei ii = 1; ssef vbestSAH = pos_inf; ssei vbestPos = 0;
+        int4 blocks_add = (1 << blocks_shift)-1;
+        int4 ii = 1; float4 vbestSAH = pos_inf; int4 vbestPos = 0;
         count = 0; bx = empty; by = empty; bz = empty;
         for (size_t i=1; i<BINS; i++, ii+=1)
         {
@@ -236,11 +236,11 @@ namespace embree
           bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
           by.extend(bounds[i-1][1]); float Ay = halfArea(by);
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
-          const ssef lArea = ssef(Ax,Ay,Az,Az);
-          const ssef rArea = rAreas[i];
-          const ssei lCount = (count     +blocks_add) >> blocks_shift;
-          const ssei rCount = (rCounts[i]+blocks_add) >> blocks_shift;
-          const ssef sah = lArea*ssef(lCount) + rArea*ssef(rCount);
+          const float4 lArea = float4(Ax,Ay,Az,Az);
+          const float4 rArea = rAreas[i];
+          const int4 lCount = (count     +blocks_add) >> blocks_shift;
+          const int4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const float4 sah = lArea*float4(lCount) + rArea*float4(rCount);
           vbestPos  = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH  = select(sah < vbestSAH,sah,vbestSAH);
         }
@@ -273,8 +273,8 @@ namespace embree
       
     private:
       BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension // FIXME: 4 -> 3
-      ssei    numBegin[BINS];   //!< number of primitives starting in bin
-      ssei    numEnd[BINS];     //!< number of primitives ending in bin
+      int4    numBegin[BINS];   //!< number of primitives starting in bin
+      int4    numEnd[BINS];     //!< number of primitives ending in bin
     };
   }
 }

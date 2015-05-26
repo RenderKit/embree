@@ -51,13 +51,13 @@ namespace embree
     int instID;        //!< instance ID
 
 #if defined(__MIC__)    
-    __forceinline void update(const mic_m &m_mask,
-			      const mic_f &new_t,
-			      const mic_f &new_u,
-			      const mic_f &new_v,
-			      const mic_f &new_gnormalx,
-			      const mic_f &new_gnormaly,
-			      const mic_f &new_gnormalz,
+    __forceinline void update(const bool16 &m_mask,
+			      const float16 &new_t,
+			      const float16 &new_u,
+			      const float16 &new_v,
+			      const float16 &new_gnormalx,
+			      const float16 &new_gnormaly,
+			      const float16 &new_gnormalz,
 			      const int new_geomID,
 			      const int new_primID)
     {

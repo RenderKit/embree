@@ -17,7 +17,7 @@
 #pragma once
 
 #include "heuristic_spatial.h"
-#include "builders/primrefblock.h"
+#include "primrefblock.h"
 
 namespace embree
 {
@@ -107,7 +107,7 @@ namespace embree
 
               const int splits = prim.geomID() >> 24;
               if (splits == 1) {
-                const ssei bin = split.mapping.bin(center(prim.bounds()));
+                const int4 bin = split.mapping.bin(center(prim.bounds()));
                 bin0 = bin1 = bin[split.dim];
               }
 
@@ -207,7 +207,7 @@ namespace embree
                 
                 const int splits = prim.geomID() >> 24;
                 if (splits == 1) {
-                  const ssei bin = split.mapping.bin(center(prim.bounds()));
+                  const int4 bin = split.mapping.bin(center(prim.bounds()));
                   bin0 = bin1 = bin[split.dim];
                 }
                 

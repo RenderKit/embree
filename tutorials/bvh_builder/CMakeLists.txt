@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels)       # FIXME: should not be necessary
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../../kernels/xeon)  # FIXME: should not be necessary
 SET(ENABLE_ISPC_SUPPORT OFF)
 
 IF (TASKING_INTERNAL)

@@ -225,13 +225,13 @@ extern "C" void device_init (int8* cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1);
-
-  /* add cube */
-  addCube(g_scene);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* add cube */
+  addCube(g_scene);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -261,7 +261,16 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
+    Vec3fa diffuse = ray.geomID != 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
+
+    Vec3fa Ng = ray.Ng;
+    if (ray.geomID > 0) {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = cross(dPdv,dPdu);
+    }
 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -282,7 +291,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }
@@ -330,7 +339,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* recompute levels */
-  updateEdgeLevelBuffer(g_scene,0,p);
+  //updateEdgeLevelBuffer(g_scene,1,p);
     
   /* rebuild scene */
   rtcCommit (g_scene);

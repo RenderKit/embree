@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "common/geometry.h"
-#include "common/ray.h"
-#include "common/ray16.h"
+#include "../../common/geometry.h"
+#include "../../common/ray.h"
+#include "../../common/ray16.h"
 
 namespace embree
 {
   typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
 
   __forceinline bool runIntersectionFilter1(const Geometry* const geometry, Ray& ray, 
-                                            const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                            const float16& u, const float16& v, const float16& t, const float16& Ngx, const float16& Ngy, const float16& Ngz, const bool16 wmask, 
                                             const int geomID, const int primID)
   {
  
@@ -58,7 +58,7 @@ namespace embree
   }
 
   __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, 
-                                         const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                         const float16& u, const float16& v, const float16& t, const float16& Ngx, const float16& Ngy, const float16& Ngz, const bool16 wmask, 
                                          const int geomID, const int primID)
   {
     /* temporarily update hit information */
@@ -86,26 +86,26 @@ namespace embree
     return true;
   }
 
-  __forceinline mic_m runIntersectionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                              const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
+  __forceinline bool16 runIntersectionFilter16(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                              const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int16& geomID, const int16& primID)
   {
     /* temporarily update hit information */
-    const mic_f ray_u = ray.u;           store16f(valid,&ray.u,u);
-    const mic_f ray_v = ray.v;           store16f(valid,&ray.v,v);
-    const mic_f ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
-    const mic_i ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
-    const mic_i ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
-    const mic_f ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
-    const mic_f ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
-    const mic_f ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
+    const float16 ray_u = ray.u;           store16f(valid,&ray.u,u);
+    const float16 ray_v = ray.v;           store16f(valid,&ray.v,v);
+    const float16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
+    const int16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
+    const int16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+    const float16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
+    const float16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
+    const float16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
 
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->intersectionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->intersectionFilter16;
     if (geometry->ispcIntersectionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
-    const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
-    const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
+    const bool16 valid_failed = valid & (ray.geomID == int16(-1));
+    const bool16 valid_passed = valid & (ray.geomID != int16(-1));
 
     /* restore hit if filter not passed */
     if (unlikely(any(valid_failed))) 
@@ -122,12 +122,12 @@ namespace embree
     return valid_passed;
   }
 
-  __forceinline mic_m runOcclusionFilter16(const mic_m& valid, const Geometry* const geometry, Ray16& ray, 
-                                           const mic_f& u, const mic_f& v, const mic_f& t, const mic3f& Ng, const mic_i& geomID, const mic_i& primID)
+  __forceinline bool16 runOcclusionFilter16(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                           const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int16& geomID, const int16& primID)
   {
     /* temporarily update hit information */
-    const mic_f ray_tfar = ray.tfar; 
-    const mic_i ray_geomID = ray.geomID;
+    const float16 ray_tfar = ray.tfar; 
+    const int16 ray_geomID = ray.geomID;
     store16f(valid,&ray.u,u);
     store16f(valid,&ray.v,v);
     store16f(valid,&ray.tfar,t);
@@ -142,8 +142,8 @@ namespace embree
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->occlusionFilter16;
     if (geometry->ispcOcclusionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
     else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
-    const mic_m valid_failed = valid & (ray.geomID == mic_i(-1));
-    const mic_m valid_passed = valid & (ray.geomID != mic_i(-1));
+    const bool16 valid_failed = valid & (ray.geomID == int16(-1));
+    const bool16 valid_passed = valid & (ray.geomID != int16(-1));
 
     /* restore hit if filter not passed */
     store16f(valid_failed,&ray.tfar,ray_tfar);
@@ -152,21 +152,21 @@ namespace embree
   }
 
   __forceinline bool runIntersectionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
-                                             const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                             const float16& u, const float16& v, const float16& t, const float16& Ngx, const float16& Ngy, const float16& Ngz, const bool16 wmask, 
                                              const int geomID, const int primID)
   {
     /* temporarily update hit information */
-    const mic_f ray_u = ray.u;           compactustore16f_low(wmask,&ray.u[k],u); 
-    const mic_f ray_v = ray.v;           compactustore16f_low(wmask,&ray.v[k],v); 
-    const mic_f ray_tfar = ray.tfar;     compactustore16f_low(wmask,&ray.tfar[k],t);
-    const mic_i ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-    const mic_i ray_primID = ray.primID; ray.primID[k] = primID;
-    const mic_f ray_Ng_x = ray.Ng.x;     compactustore16f_low(wmask,&ray.Ng.x[k],Ngx);
-    const mic_f ray_Ng_y = ray.Ng.y;     compactustore16f_low(wmask,&ray.Ng.y[k],Ngy);
-    const mic_f ray_Ng_z = ray.Ng.z;     compactustore16f_low(wmask,&ray.Ng.z[k],Ngz);
+    const float16 ray_u = ray.u;           compactustore16f_low(wmask,&ray.u[k],u); 
+    const float16 ray_v = ray.v;           compactustore16f_low(wmask,&ray.v[k],v); 
+    const float16 ray_tfar = ray.tfar;     compactustore16f_low(wmask,&ray.tfar[k],t);
+    const int16 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+    const int16 ray_primID = ray.primID; ray.primID[k] = primID;
+    const float16 ray_Ng_x = ray.Ng.x;     compactustore16f_low(wmask,&ray.Ng.x[k],Ngx);
+    const float16 ray_Ng_y = ray.Ng.y;     compactustore16f_low(wmask,&ray.Ng.y[k],Ngy);
+    const float16 ray_Ng_z = ray.Ng.z;     compactustore16f_low(wmask,&ray.Ng.z[k],Ngz);
 
     /* invoke filter function */
-    const mic_m valid(1 << k);
+    const bool16 valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->intersectionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->intersectionFilter16;
     if (geometry->ispcIntersectionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);
@@ -188,12 +188,12 @@ namespace embree
   }
 
   __forceinline bool runOcclusionFilter16(const Geometry* const geometry, Ray16& ray, const size_t k,
-                                          const mic_f& u, const mic_f& v, const mic_f& t, const mic_f& Ngx, const mic_f& Ngy, const mic_f& Ngz, const mic_m wmask, 
+                                          const float16& u, const float16& v, const float16& t, const float16& Ngx, const float16& Ngy, const float16& Ngz, const bool16 wmask, 
                                           const int geomID, const int primID)
   {
     /* temporarily update hit information */
-    const mic_f ray_tfar = ray.tfar; 
-    const mic_i ray_geomID = ray.geomID;
+    const float16 ray_tfar = ray.tfar; 
+    const int16 ray_geomID = ray.geomID;
     compactustore16f_low(wmask,&ray.u[k],u); 
     compactustore16f_low(wmask,&ray.v[k],v); 
     compactustore16f_low(wmask,&ray.tfar[k],t);
@@ -204,7 +204,7 @@ namespace embree
     compactustore16f_low(wmask,&ray.Ng.z[k],Ngz);
 
     /* invoke filter function */
-    const mic_m valid(1 << k);
+    const bool16 valid(1 << k);
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->occlusionFilter16;
     ISPCFilterFunc16 ispcFilter16 = (ISPCFilterFunc16) geometry->occlusionFilter16;
     if (geometry->ispcOcclusionFilter16) ispcFilter16(geometry->userPtr,(RTCRay16&)ray,valid);

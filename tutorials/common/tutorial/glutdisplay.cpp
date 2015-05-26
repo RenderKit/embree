@@ -15,11 +15,11 @@
 // ======================================================================== //
 
 #include "glutdisplay.h"
-#include "sys/filename.h"
-#include "sys/sysinfo.h"
-#include "lexers/streamfilters.h"
-#include "lexers/parsestream.h"
-#include "transport/transport_host.h"
+#include "../../../common/sys/filename.h"
+#include "../../../common/sys/sysinfo.h"
+#include "../../../common/lexers/streamfilters.h"
+#include "../../../common/lexers/parsestream.h"
+#include "../transport/transport_host.h"
 
 #include <map>
 #include <sstream>

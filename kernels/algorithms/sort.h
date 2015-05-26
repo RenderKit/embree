@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/barrier.h"
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+#include "../../common/sys/barrier.h"
 #include "parallel_for.h"
-#include "math/math.h"
+#include "../../common/math/math.h"
 #include <algorithm>
 
 #if defined(__MIC__)
- #include "simd/mic.h"
+ #include "../../common/simd/avx512.h"
 #endif
 
 namespace embree
@@ -269,7 +269,7 @@ namespace embree
 	  {
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&parent->radixCount[threadIndex][i*16],mic_i::zero());
+	      store16i(&parent->radixCount[threadIndex][i*16],int16::zero());
 	    
 	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
 
@@ -282,10 +282,10 @@ namespace embree
 
 	    parent->barrier.wait(threadIndex,threadCount);
 
-	    mic_i count[16];
+	    int16 count[16];
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      count[i] = mic_i::zero();
+	      count[i] = int16::zero();
 
 
 	    for (size_t i=0; i<threadIndex; i++)

@@ -225,13 +225,13 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-
-  /* add cube */
-  addCube(g_scene);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* add cube */
+  addCube(g_scene);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -261,7 +261,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = ray.geomID == 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
+    Vec3f diffuse = ray.geomID != 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
+
+    Vec3f Ng = ray.Ng;
+    if (ray.geomID > 0) {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,NULL,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = cross(dPdv,dPdu);
+    }
 
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
@@ -282,7 +291,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }
@@ -330,7 +339,7 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& p)
 {
   /* recompute levels */
-  updateEdgeLevelBuffer(g_scene,0,p);
+  //updateEdgeLevelBuffer(g_scene,1,p);
     
   /* rebuild scene */
   rtcCommit (g_scene);

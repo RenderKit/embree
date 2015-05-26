@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/intrinsics.h"
-#include "math/constants.h"
+#include "../sys/platform.h"
+#include "../sys/intrinsics.h"
+#include "../math/constants.h"
 #include "sse_special.h"
 
 namespace embree 
@@ -35,19 +35,11 @@ namespace embree
 
   extern const __m128 _mm_lookupmask_ps[16];
 
-  struct sseb;
-  struct ssei;
-  struct ssef;
-
-#if !defined(__MIC__)
-  typedef ssef ssef_t;
-  typedef ssei ssei_t;
-
-  typedef ssef ssef_m;
-  typedef ssei ssei_m;
-#endif
+  struct bool4;
+  struct int4;
+  struct float4;
 }
 
-#include "simd/sseb.h"
-#include "simd/ssei.h"
-#include "simd/ssef.h"
+#include "bool4_sse2.h"
+#include "int4_sse2.h"
+#include "float4_sse2.h"

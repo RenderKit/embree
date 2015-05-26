@@ -33,9 +33,9 @@
 #endif
 
 #if defined(TASKING_LOCKSTEP)
-#  include "tasking/taskscheduler_mic.h"
+#  include "../../common/tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
-#  include "tasking/taskscheduler_tbb.h"
+#  include "../../common/tasking/taskscheduler_tbb.h"
 #endif
 
 namespace embree

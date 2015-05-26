@@ -17,18 +17,18 @@
 #include "bvh4.h"
 #include "bvh4_statistics.h"
 
-#include "geometry/bezier1v.h"
-#include "geometry/bezier1i.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle4v.h"
-#include "geometry/triangle4v_mb.h"
-#include "geometry/triangle4i.h"
-#include "geometry/subdivpatch1.h"
-#include "geometry/subdivpatch1cached.h"
-#include "geometry/object.h"
+#include "../geometry/bezier1v.h"
+#include "../geometry/bezier1i.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle4v.h"
+#include "../geometry/triangle4v_mb.h"
+#include "../geometry/triangle4i.h"
+#include "../geometry/subdivpatch1.h"
+#include "../geometry/subdivpatch1cached.h"
+#include "../geometry/object.h"
 
-#include "common/accelinstance.h"
+#include "../../common/accelinstance.h"
 
 namespace embree
 {

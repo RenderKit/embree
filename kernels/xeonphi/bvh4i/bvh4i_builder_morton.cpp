@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4i_builder_morton.h"
-#include "builders/builder_util.h"
+#include "../builders/builder_util.h"
 #include "bvh4i_rotate.h"
 
 #define MORTON_BVH4I_NODE_PREALLOC_FACTOR   0.9f
@@ -324,8 +324,8 @@ namespace embree
     size_t startGroup = thread_startGroup[threadID];
     size_t offset = thread_startGroupOffset[threadID];
 
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     for (size_t group = startGroup; group<numGroups; group++) 
     {       
@@ -350,12 +350,12 @@ namespace embree
 	      assert( tri.v[1] < mesh->numVertices() );
 	      assert( tri.v[2] < mesh->numVertices() );
 
-	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	      const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	      const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
-	      const mic_f centroid2 = bmin+bmax;
+	      const float16 centroid2 = bmin+bmax;
 	      bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	      bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	    }
@@ -381,20 +381,20 @@ namespace embree
     MortonID32Bit* __restrict__ dest = ((MortonID32Bit*)morton) + startID; 
 
     /* compute mapping from world space into 3D grid */
-    const mic_f base     = broadcast4to16f((float*)&global_bounds.centroid2.lower);
-    const mic_f diagonal = 
+    const float16 base     = broadcast4to16f((float*)&global_bounds.centroid2.lower);
+    const float16 diagonal = 
       broadcast4to16f((float*)&global_bounds.centroid2.upper) - 
       broadcast4to16f((float*)&global_bounds.centroid2.lower);
-    const mic_f scale    = select(diagonal != 0, rcp(diagonal) * mic_f(LATTICE_SIZE_PER_DIM * 0.99f),mic_f(0.0f));
+    const float16 scale    = select(diagonal != 0, rcp(diagonal) * float16(LATTICE_SIZE_PER_DIM * 0.99f),float16(0.0f));
 
     size_t currentID = startID;
     size_t offset = thread_startGroupOffset[threadID];
 
 
-    mic_i mID      = mic_i::zero();
-    mic_i binID3_x = mic_i::zero();
-    mic_i binID3_y = mic_i::zero();
-    mic_i binID3_z = mic_i::zero();
+    int16 mID      = int16::zero();
+    int16 binID3_x = int16::zero();
+    int16 binID3_y = int16::zero();
+    int16 binID3_z = int16::zero();
 
     size_t slot = 0;
 
@@ -422,12 +422,12 @@ namespace embree
 
 	      prefetch<PFHINT_NT>(&tri + 16);
 
-	      const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
-	      const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	      const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	      const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	      const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
-	      const mic_f cent  = bmin+bmax;
-	      const mic_i binID = mic_i((cent-base)*scale);
+	      const float16 cent  = bmin+bmax;
+	      const int16 binID = int16((cent-base)*scale);
 
 	      mID[2*slot+1] = groupCode | (offset+i);
 	      compactustore16i_low(0x1,&binID3_x[2*slot+0],binID); // extract
@@ -436,8 +436,8 @@ namespace embree
 	      slot++;
 	      if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
 		{
-		  const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
-		  const mic_i final = select(0x5555,code,mID);      
+		  const int16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
+		  const int16 final = select(0x5555,code,mID);      
 		  assert((size_t)dest % 64 == 0);
 		  store16i_ngo(dest,final);	    
 		  slot = 0;
@@ -452,8 +452,8 @@ namespace embree
 
     if (unlikely(slot != 0))
       {
-	const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
-	const mic_i final = select(0x5555,code,mID);      
+	const int16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
+	const int16 final = select(0x5555,code,mID);      
 	assert((size_t)dest % 64 == 0);
 	store16i_ngo(dest,final);	    
       }
@@ -467,8 +467,8 @@ namespace embree
 
     MortonID32Bit *__restrict__ m = &morton[current.begin];
 
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
 
     for (size_t i=0; i<blocks; i++,m+=NUM_MORTON_IDS_PER_BLOCK)
@@ -484,11 +484,11 @@ namespace embree
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
-	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	    const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+	    const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	    const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
-	    const mic_f centroid2 = bmin+bmax;
+	    const float16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
@@ -505,24 +505,24 @@ namespace embree
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic3f v = mesh->getTriangleVertices<PFHINT_L1>(tri);
-	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
+	    const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+	    const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	    const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
-	    const mic_f centroid2 = bmin+bmax;
+	    const float16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 	  }
       }
 
 
-    const mic_f base     = bounds_centroid_min;
-    const mic_f diagonal = bounds_centroid_max - bounds_centroid_min;
-    const mic_f scale    = select(diagonal != 0,rcp(diagonal) * mic_f(LATTICE_SIZE_PER_DIM * 0.99f),mic_f(0.0f));
+    const float16 base     = bounds_centroid_min;
+    const float16 diagonal = bounds_centroid_max - bounds_centroid_min;
+    const float16 scale    = select(diagonal != 0,rcp(diagonal) * float16(LATTICE_SIZE_PER_DIM * 0.99f),float16(0.0f));
     
-    mic_i binID3_x = mic_i::zero();
-    mic_i binID3_y = mic_i::zero();
-    mic_i binID3_z = mic_i::zero();
+    int16 binID3_x = int16::zero();
+    int16 binID3_y = int16::zero();
+    int16 binID3_z = int16::zero();
 
     m = &morton[current.begin];
 
@@ -537,20 +537,20 @@ namespace embree
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic3f v = mesh->getTriangleVertices(tri);
-	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
-	    const mic_f centroid = bmin+bmax;
-	    const mic_i binID = mic_i((centroid-base)*scale);
+	    const Vec3f16 v = mesh->getTriangleVertices(tri);
+	    const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	    const float16 bmax  = max(max(v[0],v[1]),v[2]);
+	    const float16 centroid = bmin+bmax;
+	    const int16 binID = int16((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 
 	    compactustore16i_low(0x2,&binID3_y[2*j+0],binID);
 	    compactustore16i_low(0x4,&binID3_z[2*j+0],binID);	    
 	  }
 
-	const mic_i mID = uload16i((int*)m);
-	const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
-	const mic_i final = select(0x5555,code,mID);      
+	const int16 mID = uload16i((int*)m);
+	const int16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
+	const int16 final = select(0x5555,code,mID);      
 	ustore16i(m,final);	
       }
     if (rest)
@@ -564,20 +564,20 @@ namespace embree
 	    const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	    const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	    const mic3f v = mesh->getTriangleVertices(tri);
-	    const mic_f bmin  = min(min(v[0],v[1]),v[2]);
-	    const mic_f bmax  = max(max(v[0],v[1]),v[2]);
-	    const mic_f centroid = bmin+bmax;
-	    const mic_i binID = mic_i((centroid-base)*scale);
+	    const Vec3f16 v = mesh->getTriangleVertices(tri);
+	    const float16 bmin  = min(min(v[0],v[1]),v[2]);
+	    const float16 bmax  = max(max(v[0],v[1]),v[2]);
+	    const float16 centroid = bmin+bmax;
+	    const int16 binID = int16((centroid-base)*scale);
 
 	    compactustore16i_low(0x1,&binID3_x[2*j+0],binID); 
 	    compactustore16i_low(0x2,&binID3_y[2*j+0],binID);
 	    compactustore16i_low(0x4,&binID3_z[2*j+0],binID);	    
 	  }
-	const mic_m mask = ((unsigned int)1 << (2*rest))-1;
-	const mic_i mID = uload16i((int*)m);
-	const mic_i code  = bitInterleave(binID3_x,binID3_y,binID3_z);
-	const mic_i final = select(0x5555,code,mID);      
+	const bool16 mask = ((unsigned int)1 << (2*rest))-1;
+	const int16 mID = uload16i((int*)m);
+	const int16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
+	const int16 final = select(0x5555,code,mID);      
 	compactustore16i(mask,(int*)m,final);		
       }       
 
@@ -617,7 +617,7 @@ namespace embree
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&radixCount[threadID][i*16],mic_i::zero());
+	store16i(&radixCount[threadID][i*16],int16::zero());
 
 
       for (size_t i=startID; i<endID; i+=NUM_MORTON_IDS_PER_BLOCK) {
@@ -638,10 +638,10 @@ namespace embree
       /* calculate total number of items for each bucket */
 
 
-      mic_i count[16];
+      int16 count[16];
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	count[i] = mic_i::zero();
+	count[i] = int16::zero();
 
 
       for (size_t i=0; i<threadID; i++)
@@ -770,8 +770,8 @@ namespace embree
   __forceinline BBox3fa BVH4iBuilderMorton::createSmallLeaf(SmallBuildRecord& current)
   {    
     assert(current.size() > 0);
-    mic_f bounds_min(pos_inf);
-    mic_f bounds_max(neg_inf);
+    float16 bounds_min(pos_inf);
+    float16 bounds_max(neg_inf);
 
     Vec3fa lower(pos_inf);
     Vec3fa upper(neg_inf);
@@ -779,8 +779,8 @@ namespace embree
     size_t start = current.begin;
     assert(items<=4);
 
-    const mic_i morton_mask(encodeMask);
-    const mic_i morton_shift(encodeShift);
+    const int16 morton_mask(encodeMask);
+    const int16 morton_shift(encodeShift);
 
     prefetch<PFHINT_L2>(&morton[start+8]);
 
@@ -791,21 +791,21 @@ namespace embree
 	const unsigned int geomID = index >> encodeShift; 
 
 
-	const mic_i morton_index(morton[start+i].index);
-	const mic_i morton_primID = morton_index & morton_mask;
-	const mic_i morton_geomID = morton_index >> morton_shift;
+	const int16 morton_index(morton[start+i].index);
+	const int16 morton_primID = morton_index & morton_mask;
+	const int16 morton_geomID = morton_index >> morton_shift;
 
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	const mic3f v = mesh->getTriangleVertices(tri);
-	const mic_f v0 = v[0];
-	const mic_f v1 = v[1];
-	const mic_f v2 = v[2];
+	const Vec3f16 v = mesh->getTriangleVertices(tri);
+	const float16 v0 = v[0];
+	const float16 v1 = v[1];
+	const float16 v2 = v[2];
 
 	//WARNING: zero last component
 
-	const mic_f tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,mic_i(mesh->mask));
+	const float16 tri_accel = initTriangle1(v0,v1,v2,morton_geomID,morton_primID,int16(mesh->mask));
 
 	bounds_min = min(bounds_min,min(v0,min(v1,v2)));
 	bounds_max = max(bounds_max,max(v0,max(v1,v2)));
@@ -849,8 +849,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);
    
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+    float16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    float16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -987,8 +987,8 @@ namespace embree
     /* allocate next four nodes and prefetch them */
     const size_t currentIndex = allocGlobalNode(1);    
 
-    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+    float16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    float16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);
@@ -1067,8 +1067,8 @@ namespace embree
     const size_t currentIndex = alloc.get(1);    
 
     /* init used/unused nodes */
-    mic_f init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-    mic_f init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+    float16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    float16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
     store16f_ngo((float*)&node[currentIndex].lower,init_lower);
     store16f_ngo((float*)&node[currentIndex].upper,init_upper);

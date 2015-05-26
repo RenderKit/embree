@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
 SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
 SOURCE_GROUP("Source Files\\bvh8" "/bvh8/" )
 SOURCE_GROUP("Source Files\\geometry" "/geometry/" )
@@ -228,6 +226,7 @@ IF (TARGET_AVX512)
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
+    bvh8/bvh8_intersector16_chunk.cpp
 )
   SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
   SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)

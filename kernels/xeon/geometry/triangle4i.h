@@ -45,7 +45,7 @@ namespace embree
     __forceinline Triangle4i () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4i (Vec3f* base[4], const ssei& v1, const ssei& v2, const ssei& geomIDs, const ssei& primIDs)
+    __forceinline Triangle4i (Vec3f* base[4], const int4& v1, const int4& v2, const int4& geomIDs, const int4& primIDs)
       : v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) 
     {
       v0[0] = base[0];
@@ -55,7 +55,7 @@ namespace embree
     }
 
     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline sseb valid() const { return primIDs != ssei(-1); }
+    __forceinline bool4 valid() const { return primIDs != int4(-1); }
     
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { assert(i<4); return geomIDs[i] != -1; }
@@ -64,11 +64,11 @@ namespace embree
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
     
     /*! returns the geometry IDs */
-    __forceinline ssei geomID() const { return geomIDs; }
+    __forceinline int4 geomID() const { return geomIDs; }
     __forceinline int geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
     
     /*! returns the primitive IDs */
-    __forceinline ssei primID() const { return primIDs; }
+    __forceinline int4 primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<4); return primIDs[i]; }
     
     /*! calculate the bounds of the triangles */
@@ -91,9 +91,9 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      ssei geomID = -1, primID = -1;
+      int4 geomID = -1, primID = -1;
       Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-      ssei v1 = zero, v2 = zero;
+      int4 v1 = zero, v2 = zero;
       PrimRef& prim = *prims;
       
       for (size_t i=0; i<4; i++)
@@ -124,9 +124,9 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      ssei geomID = -1, primID = -1;
+      int4 geomID = -1, primID = -1;
       Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-      ssei v1 = zero, v2 = zero;
+      int4 v1 = zero, v2 = zero;
       const PrimRef* prim = &prims[begin];
       
       for (size_t i=0; i<4; i++)
@@ -158,8 +158,8 @@ namespace embree
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      ssei vgeomID = -1, vprimID = -1;
-      sse3f v0 = zero, v1 = zero, v2 = zero;
+      int4 vgeomID = -1, vprimID = -1;
+      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4; i++)
       {
@@ -177,9 +177,9 @@ namespace embree
     
   public:
     const Vec3f* v0[4];  //!< Pointer to 1st vertex
-    ssei v1;             //!< Offset to 2nd vertex
-    ssei v2;             //!< Offset to 3rd vertex
-    ssei geomIDs;        //!< geometry ID of mesh
-    ssei primIDs;        //!< primitive ID of primitive inside mesh
+    int4 v1;             //!< Offset to 2nd vertex
+    int4 v2;             //!< Offset to 3rd vertex
+    int4 geomIDs;        //!< geometry ID of mesh
+    int4 primIDs;        //!< primitive ID of primitive inside mesh
   };
 }

@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include "builders/parallel_builder.h"
-#include "builders/builder_util.h"
-#include "builders/binning.h"
-#include "builders/priminfo.h"
+#include "../builders/parallel_builder.h"
+#include "../builders/builder_util.h"
+#include "../builders/binning.h"
+#include "../builders/priminfo.h"
 
-#include "bvh4i/bvh4i.h"
+#include "bvh4i.h"
 #include "bvh4i_statistics.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/parallel_for_for.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree
 {
@@ -133,7 +133,7 @@ namespace embree
 
     /* work record handling */
     PrimRef  *    prims;
-    mic_i    *    node;  // node array in 64 byte blocks
+    int16    *    node;  // node array in 64 byte blocks
     Triangle1*    accel;
 
     /* threshold for leaf generation */
@@ -148,22 +148,22 @@ namespace embree
 				 BuildRecord *__restrict__ const br,
 				 const size_t numChildren)
     {
-      mic_f lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-      mic_f upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+      float16 lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+      float16 upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
       BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
 
-      mic_m m_lane = 0xf;
+      bool16 m_lane = 0xf;
       for (size_t i=0;i<numChildren;i++)
 	{
-	  const mic_f b_lower = broadcast4to16f(&br[i].bounds.geometry.lower);
-	  const mic_f b_upper = broadcast4to16f(&br[i].bounds.geometry.upper);
+	  const float16 b_lower = broadcast4to16f(&br[i].bounds.geometry.lower);
+	  const float16 b_upper = broadcast4to16f(&br[i].bounds.geometry.upper);
 	  lower = select(m_lane,b_lower,lower);
 	  upper = select(m_lane,b_upper,upper);
 	  m_lane = (unsigned int)m_lane << 4;
 	}      
 
-      store16f_ngo((mic_f*)ptr+0,lower); 
-      store16f_ngo((mic_f*)ptr+1,upper);             
+      store16f_ngo((float16*)ptr+0,lower); 
+      store16f_ngo((float16*)ptr+1,upper);             
     }
 
 

@@ -15,13 +15,13 @@
 // ======================================================================== //
 
 #include "bvh8_intersector4_hybrid.h"
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle8v.h"
-#include "geometry/intersector_iterators.h"
-#include "geometry/triangle_intersector_moeller.h"
-#include "geometry/triangle_intersector_pluecker.h"
-#include "geometry/triangle_intersector_pluecker2.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle8v.h"
+#include "../geometry/intersector_iterators.h"
+#include "../geometry/triangle_intersector_moeller.h"
+#include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/triangle_intersector_pluecker2.h"
 
 #define SWITCH_THRESHOLD 3
 
@@ -31,8 +31,8 @@ namespace embree
   {
     template<typename PrimitiveIntersector4>
     __forceinline void BVH8Intersector4Hybrid<PrimitiveIntersector4>::intersect1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-                                                                                 const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, 
-                                                                                 const ssef& ray_tnear, const ssef& ray_tfar)
+                                                                                 const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, 
+                                                                                 const float4& ray_tnear, const float4& ray_tfar)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -42,15 +42,15 @@ namespace embree
       stack[0].dist = neg_inf;
             
       /*! load the ray into SIMD registers */
-      const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const avx3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const avx3f org_rdir(org*rdir);
-      avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
+      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3f8 org_rdir(org*rdir);
+      float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
 
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
-      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
-      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(float8) : 1*sizeof(float8);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(float8) : 3*sizeof(float8);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(float8) : 5*sizeof(float8);
 
       /* pop loop */
       while (true) pop:
@@ -73,32 +73,32 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = (Node*)cur.node();
-          const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
+          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
 #if defined (__AVX2__)
-          const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const avxf tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const avxf tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const avxf tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const avxf tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
 #else
-          const avxf tNearX = (load8f((const char*)node+nearX) - org.x) * rdir.x;
-          const avxf tNearY = (load8f((const char*)node+nearY) - org.y) * rdir.y;
-          const avxf tNearZ = (load8f((const char*)node+nearZ) - org.z) * rdir.z;
-          const avxf tFarX  = (load8f((const char*)node+farX ) - org.x) * rdir.x;
-          const avxf tFarY  = (load8f((const char*)node+farY ) - org.y) * rdir.y;
-          const avxf tFarZ  = (load8f((const char*)node+farZ ) - org.z) * rdir.z;
+          const float8 tNearX = (load8f((const char*)node+nearX) - org.x) * rdir.x;
+          const float8 tNearY = (load8f((const char*)node+nearY) - org.y) * rdir.y;
+          const float8 tNearZ = (load8f((const char*)node+nearZ) - org.z) * rdir.z;
+          const float8 tFarX  = (load8f((const char*)node+farX ) - org.x) * rdir.x;
+          const float8 tFarY  = (load8f((const char*)node+farY ) - org.y) * rdir.y;
+          const float8 tFarZ  = (load8f((const char*)node+farZ ) - org.z) * rdir.z;
 #endif
 
 #if defined(__AVX2__)
-          const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
-          const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
-          const avxb vmask = cast(tNear) > cast(tFar);
+          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
+          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
+          const bool8 vmask = cast(tNear) > cast(tFar);
           unsigned int mask = movemask(vmask)^0xff;
 #else
-          const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
-          const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          const avxb vmask = tNear <= tFar;
+          const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
+          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+          const bool8 vmask = tNear <= tFar;
           unsigned int mask = movemask(vmask);
 #endif
           
@@ -175,21 +175,21 @@ namespace embree
     }
     
     template<typename PrimitiveIntersector4>
-    void BVH8Intersector4Hybrid<PrimitiveIntersector4>::intersect(sseb* valid_i, BVH8* bvh, Ray4& ray)
+    void BVH8Intersector4Hybrid<PrimitiveIntersector4>::intersect(bool4* valid_i, BVH8* bvh, Ray4& ray)
     {
       /* load ray */
-      const sseb valid0 = *valid_i;
-      sse3f ray_org = ray.org, ray_dir = ray.dir;
-      ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const sse3f rdir = rcp_safe(ray_dir);
-      const sse3f org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,ssef(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,ssef(neg_inf));
-      const ssef inf = ssef(pos_inf);
+      const bool4 valid0 = *valid_i;
+      Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
+      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3f4 rdir = rcp_safe(ray_dir);
+      const Vec3f4 org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,float4(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,float4(neg_inf));
+      const float4 inf = float4(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* allocate stack and push root node */
-      ssef    stack_near[stackSizeChunk]; 
+      float4    stack_near[stackSizeChunk]; 
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
@@ -197,7 +197,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      ssef*    __restrict__ sptr_near = stack_near + 2;
+      float4*    __restrict__ sptr_near = stack_near + 2;
       
       while (1)
       {
@@ -212,8 +212,8 @@ namespace embree
         }
         
         /* cull node if behind closest hit point */
-        ssef curDist = *sptr_near;
-        const sseb active = curDist < ray_tfar;
+        float4 curDist = *sptr_near;
+        const bool4 active = curDist < ray_tfar;
         if (unlikely(none(active))) 
           continue;
         
@@ -235,7 +235,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const sseb valid_node = ray_tfar > curDist;
+          const bool4 valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
           const Node* __restrict__ const node = cur.node();
           
@@ -253,29 +253,29 @@ namespace embree
             if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
-            const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const float4 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const float4 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const float4 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const float4 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const float4 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const float4 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
 #else
-            const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+            const float4 lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+            const float4 lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+            const float4 lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+            const float4 lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+            const float4 lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+            const float4 lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif
     
 #if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+            const float4 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const float4 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const bool4 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const float4 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const float4 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const bool4 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
         
             /* if we hit the child we choose to continue with that child if it 
@@ -283,7 +283,7 @@ namespace embree
             if (likely(any(lhit)))
             {
               assert(sptr_node < stackEnd);
-              const ssef childDist = select(lhit,lnearP,inf);
+              const float4 childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               assert(child != BVH8::emptyNode);
 	      child.prefetch();
@@ -316,7 +316,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const sseb valid_leaf = ray_tfar > curDist;
+        const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
@@ -327,8 +327,8 @@ namespace embree
 
     template<typename PrimitiveIntersector4>
     __forceinline bool BVH8Intersector4Hybrid<PrimitiveIntersector4>::occluded1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-                                                                                const sse3f& ray_org, const sse3f& ray_dir, const sse3f& ray_rdir, 
-                                                                                const ssef& ray_tnear, const ssef& ray_tfar)
+                                                                                const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, 
+                                                                                const float4& ray_tnear, const float4& ray_tfar)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -337,15 +337,15 @@ namespace embree
       stack[0]  = root;
             
       /*! load the ray into SIMD registers */
-      const avx3f org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const avx3f rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const avx3f norg = -org, org_rdir(org*rdir);
-      const avxf rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
+      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(avxf) : 1*sizeof(avxf);
-      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(avxf) : 3*sizeof(avxf);
-      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(avxf) : 5*sizeof(avxf);
+      const size_t nearX = ray_rdir.x[k] >= 0.0f ? 0*sizeof(float8) : 1*sizeof(float8);
+      const size_t nearY = ray_rdir.y[k] >= 0.0f ? 2*sizeof(float8) : 3*sizeof(float8);
+      const size_t nearZ = ray_rdir.z[k] >= 0.0f ? 4*sizeof(float8) : 5*sizeof(float8);
 
       /* pop loop */
       while (true) pop:
@@ -364,32 +364,32 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = (Node*)cur.node();
-          const size_t farX  = nearX ^ sizeof(avxf), farY  = nearY ^ sizeof(avxf), farZ  = nearZ ^ sizeof(avxf);
+          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
 #if defined (__AVX2__)
-          const avxf tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const avxf tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const avxf tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const avxf tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const avxf tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const avxf tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
 #else
-          const avxf tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
-          const avxf tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
-          const avxf tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
-          const avxf tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
-          const avxf tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
-          const avxf tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
+          const float8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
+          const float8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
+          const float8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
+          const float8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
+          const float8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
+          const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
           
 #if defined(__AVX2__)
-          const avxf tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
-          const avxf tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
-          const avxb vmask = cast(tNear) > cast(tFar);
+          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
+          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
+          const bool8 vmask = cast(tNear) > cast(tFar);
           unsigned int mask = movemask(vmask)^0xff;
 #else
-          const avxf tNear = max(tNearX,tNearY,tNearZ,rayNear);
-          const avxf tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          const avxb vmask = tNear <= tFar;
+          const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
+          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+          const bool8 vmask = tNear <= tFar;
           unsigned int mask = movemask(vmask);
 #endif
           
@@ -448,22 +448,22 @@ namespace embree
     }
     
     template<typename PrimitiveIntersector4>
-    void BVH8Intersector4Hybrid<PrimitiveIntersector4>::occluded(sseb* valid_i, BVH8* bvh, Ray4& ray)
+    void BVH8Intersector4Hybrid<PrimitiveIntersector4>::occluded(bool4* valid_i, BVH8* bvh, Ray4& ray)
     {
       /* load ray */
-      const sseb valid = *valid_i;
-      sseb terminated = !valid;
-      sse3f ray_org = ray.org, ray_dir = ray.dir;
-      ssef ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const sse3f rdir = rcp_safe(ray_dir);
-      const sse3f org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,ssef(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,ssef(neg_inf));
-      const ssef inf = ssef(pos_inf);
+      const bool4 valid = *valid_i;
+      bool4 terminated = !valid;
+      Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
+      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3f4 rdir = rcp_safe(ray_dir);
+      const Vec3f4 org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid,ray_tnear,float4(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,float4(neg_inf));
+      const float4 inf = float4(pos_inf);
       Precalculations pre(valid,ray);
 
       /* allocate stack and push root node */
-      ssef    stack_near[stackSizeChunk];
+      float4    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
@@ -471,7 +471,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      ssef*    __restrict__ sptr_near = stack_near + 2;
+      float4*    __restrict__ sptr_near = stack_near + 2;
       
       while (1)
       {
@@ -486,8 +486,8 @@ namespace embree
         }
 
         /* cull node if behind closest hit point */
-        ssef curDist = *sptr_near;
-        const sseb active = curDist < ray_tfar;
+        float4 curDist = *sptr_near;
+        const bool4 active = curDist < ray_tfar;
         if (unlikely(none(active))) 
           continue;
         
@@ -500,7 +500,7 @@ namespace embree
               terminated[i] = -1;
           }
           if (all(terminated)) break;
-          ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
+          ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
           continue;
         }
 #endif
@@ -511,7 +511,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const sseb valid_node = ray_tfar > curDist;
+          const bool4 valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),4);
           const Node* __restrict__ const node = cur.node();
           
@@ -529,29 +529,29 @@ namespace embree
             if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
-            const ssef lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const ssef lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const ssef lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const ssef lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const float4 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const float4 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const float4 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const float4 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const float4 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const float4 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
 #else
-            const ssef lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
-            const ssef lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
-            const ssef lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
-            const ssef lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
-            const ssef lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
-            const ssef lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+            const float4 lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+            const float4 lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+            const float4 lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+            const float4 lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+            const float4 lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+            const float4 lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
 #endif
     
 #if defined(__SSE4_1__)
-            const ssef lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+            const float4 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const float4 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const bool4 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const ssef lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const ssef lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const sseb lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const float4 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const float4 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const bool4 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
             
             /* if we hit the child we choose to continue with that child if it 
@@ -561,7 +561,7 @@ namespace embree
               assert(sptr_node < stackEnd);
               assert(child != BVH8::emptyNode);
 	      child.prefetch();
-              const ssef childDist = select(lhit,lnearP,inf);
+              const float4 childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
               
@@ -591,12 +591,12 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const sseb valid_leaf = ray_tfar > curDist;
+        const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
         terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene);
         if (all(terminated)) break;
-        ray_tfar = select(terminated,ssef(neg_inf),ray_tfar);
+        ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
       }
       store4i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

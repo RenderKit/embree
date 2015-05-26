@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+ 
 #include "subdivpatch1cached_intersector1.h"
-#include "xeon/bvh4/bvh4.h"
-#include "xeon/bvh4/bvh4_intersector1.h"
+#include "../bvh4/bvh4.h"
+#include "../bvh4/bvh4_intersector1.h"
 
 #define TIMER(x) 
 #define DBG(x) 
@@ -526,11 +526,11 @@ namespace embree
         
 	  Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
                 
-	  ssef leaf_x_array[3];
-	  ssef leaf_y_array[3];
-	  ssef leaf_z_array[3];
-	  ssef leaf_u_array[3];
-	  ssef leaf_v_array[3];
+	  float4 leaf_x_array[3];
+	  float4 leaf_y_array[3];
+	  float4 leaf_z_array[3];
+	  float4 leaf_u_array[3];
+	  float4 leaf_v_array[3];
         
 	  for (unsigned int v=v_start;v<=v_end;v++)
 	    {

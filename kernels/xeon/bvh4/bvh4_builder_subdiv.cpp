@@ -15,20 +15,19 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "common/profile.h"
 
-#include "builders/primrefgen.h"
-#include "builders/bvh_builder_sah.h"
+#include "../builders/primrefgen.h"
+#include "../builders/bvh_builder_sah.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/parallel_for_for.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
-#include "common/subdiv/feature_adaptive_gregory.h"
-#include "common/subdiv/feature_adaptive_bspline.h"
+#include "../../common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/feature_adaptive_bspline.h"
 
-#include "geometry/grid.h"
-#include "geometry/subdivpatch1.h"
-#include "geometry/subdivpatch1cached.h"
+#include "../geometry/grid.h"
+#include "../geometry/subdivpatch1.h"
+#include "../geometry/subdivpatch1cached.h"
 
 namespace embree
 {
@@ -532,17 +531,17 @@ namespace embree
       assert(patch.grid_size_simd_blocks >= 1);
 
 #if !defined(__AVX__)      
-      ssef bounds_min_x = pos_inf;
-      ssef bounds_min_y = pos_inf;
-      ssef bounds_min_z = pos_inf;
-      ssef bounds_max_x = neg_inf;
-      ssef bounds_max_y = neg_inf;
-      ssef bounds_max_z = neg_inf;
+      float4 bounds_min_x = pos_inf;
+      float4 bounds_min_y = pos_inf;
+      float4 bounds_min_z = pos_inf;
+      float4 bounds_max_x = neg_inf;
+      float4 bounds_max_y = neg_inf;
+      float4 bounds_max_z = neg_inf;
       for (size_t i = 0; i<patch.grid_size_simd_blocks * 2; i++)
         {
-          ssef x = load4f(&grid_x[i * 4]);
-          ssef y = load4f(&grid_y[i * 4]);
-          ssef z = load4f(&grid_z[i * 4]);
+          float4 x = load4f(&grid_x[i * 4]);
+          float4 y = load4f(&grid_y[i * 4]);
+          float4 z = load4f(&grid_z[i * 4]);
 	  bounds_min_x = min(bounds_min_x,x);
 	  bounds_min_y = min(bounds_min_y,y);
 	  bounds_min_z = min(bounds_min_z,z);
@@ -559,17 +558,17 @@ namespace embree
       b.upper.y = reduce_max(bounds_max_y);
       b.upper.z = reduce_max(bounds_max_z);
 #else
-      avxf bounds_min_x = pos_inf;
-      avxf bounds_min_y = pos_inf;
-      avxf bounds_min_z = pos_inf;
-      avxf bounds_max_x = neg_inf;
-      avxf bounds_max_y = neg_inf;
-      avxf bounds_max_z = neg_inf;
+      float8 bounds_min_x = pos_inf;
+      float8 bounds_min_y = pos_inf;
+      float8 bounds_min_z = pos_inf;
+      float8 bounds_max_x = neg_inf;
+      float8 bounds_max_y = neg_inf;
+      float8 bounds_max_z = neg_inf;
       for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
         {
-          avxf x = load8f(&grid_x[i * 8]);
-          avxf y = load8f(&grid_y[i * 8]);
-          avxf z = load8f(&grid_z[i * 8]);
+          float8 x = load8f(&grid_x[i * 8]);
+          float8 y = load8f(&grid_y[i * 8]);
+          float8 z = load8f(&grid_z[i * 8]);
 	  bounds_min_x = min(bounds_min_x,x);
 	  bounds_min_y = min(bounds_min_y,y);
 	  bounds_min_z = min(bounds_min_z,z);
@@ -737,9 +736,9 @@ namespace embree
         const BBox3fa bounds3 = refit(node->child(3));
         
         /* AOS to SOA transform */
-        BBox<sse3f> bounds;
-        transpose((ssef&)bounds0.lower,(ssef&)bounds1.lower,(ssef&)bounds2.lower,(ssef&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-        transpose((ssef&)bounds0.upper,(ssef&)bounds1.upper,(ssef&)bounds2.upper,(ssef&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+        BBox<Vec3f4> bounds;
+        transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+        transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
         
         /* set new bounds */
         node->lower_x = bounds.lower.x;

@@ -16,16 +16,15 @@
 
 #include "bvh8.h"
 #include "bvh8_statistics.h"
-#include "common/profile.h"
 
-#include "builders/primrefgen.h"
-#include "builders/presplit.h"
-#include "builders/bvh_builder_sah.h"
+#include "../builders/primrefgen.h"
+#include "../builders/presplit.h"
+#include "../builders/bvh_builder_sah.h"
 
-#include "geometry/triangle4.h"
-#include "geometry/triangle8.h"
-#include "geometry/triangle8v.h"
-#include "geometry/trianglepairs8.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/triangle8v.h"
+#include "../geometry/trianglepairs8.h"
 
 #define PROFILE 0
 

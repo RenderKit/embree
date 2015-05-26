@@ -16,41 +16,41 @@
 
 #include "bvh4_intersector8_single.h"
 #include "bvh4_intersector1.h"
-#include "geometry/intersector_iterators.h"
-#include "geometry/bezier1v_intersector.h"
-#include "geometry/bezier1i_intersector.h"
-#include "geometry/subdivpatch1_intersector1.h"
-#include "geometry/subdivpatch1cached_intersector1.h"
-#include "geometry/grid_intersector1.h"
+#include "../geometry/intersector_iterators.h"
+#include "../geometry/bezier1v_intersector.h"
+#include "../geometry/bezier1i_intersector.h"
+#include "../geometry/subdivpatch1_intersector1.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
+#include "../geometry/grid_intersector1.h"
 
 namespace embree
 {
   namespace isa
   {
     template<int types, bool robust, typename PrimitiveIntersector8>
-    void BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const avxb valid0 = *valid_i;
+      const bool8 valid0 = *valid_i;
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(all(valid0,ray.tnear <= ray.tfar));
 
       /* load ray */
-      avx3f ray_org = ray.org;
-      avx3f ray_dir = ray.dir;
-      avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const avx3f rdir = rcp_safe(ray_dir);
-      const avx3f org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,avxf(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,avxf(neg_inf));
-      const avxf inf = avxf(pos_inf);
+      Vec3f8 ray_org = ray.org;
+      Vec3f8 ray_dir = ray.dir;
+      float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3f8 rdir = rcp_safe(ray_dir);
+      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,float8(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,float8(neg_inf));
+      const float8 inf = float8(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
-      avx3i nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(ssef)),avxi(1*(int)sizeof(ssef)));
-      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(ssef)),avxi(3*(int)sizeof(ssef)));
-      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(ssef)),avxi(5*(int)sizeof(ssef)));
+      Vec3i8 nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
 
       /* we have no packet implementation for OBB nodes yet */
       size_t bits = movemask(valid0);
@@ -61,29 +61,29 @@ namespace embree
     }
     
     template<int types, bool robust, typename PrimitiveIntersector8>
-    void BVH4Intersector8Single<types,robust, PrimitiveIntersector8>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4Intersector8Single<types,robust, PrimitiveIntersector8>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const avxb valid = *valid_i;
+      const bool8 valid = *valid_i;
       assert(all(valid,ray.tnear >= 0.0f));
       assert(all(valid,ray.tnear <= ray.tfar));
 
       /* load ray */
-      avxb terminated = !valid;
-      avx3f ray_org = ray.org, ray_dir = ray.dir;
-      avxf ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const avx3f rdir = rcp_safe(ray_dir);
-      const avx3f org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,avxf(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,avxf(neg_inf));
-      const avxf inf = avxf(pos_inf);
+      bool8 terminated = !valid;
+      Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
+      float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3f8 rdir = rcp_safe(ray_dir);
+      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid,ray_tnear,float8(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,float8(neg_inf));
+      const float8 inf = float8(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
-      avx3i nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,avxi(0*(int)sizeof(ssef)),avxi(1*(int)sizeof(ssef)));
-      nearXYZ.y = select(rdir.y >= 0.0f,avxi(2*(int)sizeof(ssef)),avxi(3*(int)sizeof(ssef)));
-      nearXYZ.z = select(rdir.z >= 0.0f,avxi(4*(int)sizeof(ssef)),avxi(5*(int)sizeof(ssef)));
+      Vec3i8 nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
 
       /* we have no packet implementation for OBB nodes yet */
       size_t bits = movemask(valid);
@@ -96,7 +96,7 @@ namespace embree
     }
 
     template<typename Intersector1>
-    void BVH4Intersector8FromIntersector1<Intersector1>::intersect(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4Intersector8FromIntersector1<Intersector1>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       Ray rays[8];
       ray.get(rays);
@@ -109,13 +109,13 @@ namespace embree
     }
     
     template<typename Intersector1>
-    void BVH4Intersector8FromIntersector1<Intersector1>::occluded(avxb* valid_i, BVH4* bvh, Ray8& ray)
+    void BVH4Intersector8FromIntersector1<Intersector1>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       Ray rays[8];
       ray.get(rays);
       size_t bits = movemask(*valid_i);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-	Intersector1::intersect(bvh,rays[i]);
+	Intersector1::occluded(bvh,rays[i]);
       }
       ray.set(rays);
       AVX_ZERO_UPPER();

@@ -142,6 +142,24 @@
     #endif
   #endif
 #endif
+#if defined(CONFIG_AVX512)
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+    #define __SSE4_2__
+    #if !defined(__AVX__)
+      #define __AVX__
+    #endif
+    #if !defined(__AVX2__)
+      #define __AVX2__
+    #endif
+    #if !defined(__AVX512__)
+      #define __AVX512__
+    #endif
+  #endif
+#endif
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

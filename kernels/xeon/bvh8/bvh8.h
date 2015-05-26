@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "common/alloc.h"
-#include "common/accel.h"
-#include "common/scene.h"
-#include "geometry/primitive.h"
+#include "../../common/default.h"
+#include "../../common/alloc.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
+#include "../geometry/primitive.h"
 
 namespace embree
 {
@@ -157,9 +157,9 @@ namespace embree
       }
 
       /*! Returns bounds of all children */
-      /*__forceinline void bounds(BBox<ssef>& bounds0, BBox<ssef>& bounds1, BBox<ssef>& bounds2, BBox<ssef>& bounds3) const {
-        transpose(lower_x,lower_y,lower_z,ssef(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
-        transpose(upper_x,upper_y,upper_z,ssef(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
+      /*__forceinline void bounds(BBox<float4>& bounds0, BBox<float4>& bounds1, BBox<float4>& bounds2, BBox<float4>& bounds3) const {
+        transpose(lower_x,lower_y,lower_z,float4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
+        transpose(upper_x,upper_y,upper_z,float4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
 	}*/
 
       /*! Returns reference to specified child */
@@ -167,12 +167,12 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      avxf lower_x;           //!< X dimension of lower bounds of all 4 children.
-      avxf upper_x;           //!< X dimension of upper bounds of all 4 children.
-      avxf lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      avxf upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      avxf lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      avxf upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      float8 lower_x;           //!< X dimension of lower bounds of all 4 children.
+      float8 upper_x;           //!< X dimension of upper bounds of all 4 children.
+      float8 lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      float8 upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      float8 lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      float8 upper_z;           //!< Z dimension of upper bounds of all 4 children.
       NodeRef children[N];    //!< Pointer to the 4 children (can be a node or leaf)
     };
 

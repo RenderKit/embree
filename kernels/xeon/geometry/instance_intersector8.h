@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/scene_instance.h"
-#include "common/ray8.h"
+#include "../../common/scene_instance.h"
+#include "../../common/ray8.h"
 
 namespace embree
 {
@@ -25,8 +25,8 @@ namespace embree
   {
     struct FastInstanceIntersector8
     {
-      static void intersect(avxb* valid, const Instance* instance, Ray8& ray, size_t item);
-      static void occluded (avxb* valid, const Instance* instance, Ray8& ray, size_t item);
+      static void intersect(bool8* valid, const Instance* instance, Ray8& ray, size_t item);
+      static void occluded (bool8* valid, const Instance* instance, Ray8& ray, size_t item);
     };
   }
 }

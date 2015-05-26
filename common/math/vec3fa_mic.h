@@ -17,7 +17,7 @@
 #pragma once
 
 #include "math.h"
-#include "simd/mic.h"
+#include "../simd/avx512.h"
 
 namespace embree
 {
@@ -82,8 +82,8 @@ namespace embree
     __forceinline operator const __m512&( void ) const { return m512; }
     __forceinline operator       __m512&( void )       { return m512; }
 
-    __forceinline operator const mic_f( void ) const { return mic_f(m512); }
-    __forceinline operator       mic_f( void )       { return mic_f(m512); }
+    __forceinline operator const float16( void ) const { return float16(m512); }
+    __forceinline operator       float16( void )       { return float16(m512); }
 
   public:
     __forceinline explicit Vec3fa_t ( float a ) 

@@ -134,7 +134,7 @@ namespace embree
 
 
     template<unsigned int HINT=0>
-      __forceinline mic3f getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
+      __forceinline Vec3f16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
 	assert( tri.v[0] < numVertices() );
 	assert( tri.v[1] < numVertices() );
@@ -146,16 +146,16 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*) vertices[dim].getPtr(tri.v[2]);
 
-	const mic_f v0 = broadcast4to16f(vptr0); 
-	const mic_f v1 = broadcast4to16f(vptr1); 
-	const mic_f v2 = broadcast4to16f(vptr2); 
-	return mic3f(v0,v1,v2);
+	const float16 v0 = broadcast4to16f(vptr0); 
+	const float16 v1 = broadcast4to16f(vptr1); 
+	const float16 v2 = broadcast4to16f(vptr2); 
+	return Vec3f16(v0,v1,v2);
 #else
-	const mic_i stride = vertices[dim].getBufferStride();
+	const int16 stride = vertices[dim].getBufferStride();
 
-	const mic_i offset0_64 = mul_uint64(stride,mic_i(tri.v[0]));
-	const mic_i offset1_64 = mul_uint64(stride,mic_i(tri.v[1]));
-	const mic_i offset2_64 = mul_uint64(stride,mic_i(tri.v[2]));
+	const int16 offset0_64 = mul_uint64(stride,int16(tri.v[0]));
+	const int16 offset1_64 = mul_uint64(stride,int16(tri.v[1]));
+	const int16 offset2_64 = mul_uint64(stride,int16(tri.v[2]));
 
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
 	const size_t off0 = offset0_64.uint64(0);
@@ -176,13 +176,13 @@ namespace embree
 	assert( vptr1_64 == (float*)vertexPtr(tri.v[1],dim) );
 	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
 	
-	const mic_m m_3f = 0x7;
-	const mic_f v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
-	const mic_f v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
-	const mic_f v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
+	const bool16 m_3f = 0x7;
+	const float16 v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
+	const float16 v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
+	const float16 v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
 	 //FIXME: there should be no need to zero the last component
 
-	return mic3f(select(0x7777,v0,mic_f::zero()),select(0x7777,v1,mic_f::zero()),select(0x7777,v2,mic_f::zero()));
+	return Vec3f16(select(0x7777,v0,float16::zero()),select(0x7777,v1,float16::zero()),select(0x7777,v2,float16::zero()));
 #endif	
       }
     

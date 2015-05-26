@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "common/ray.h"
-#include "common/scene_subdiv_mesh.h"
-#include "geometry/filter.h"
-#include "bvh4/bvh4.h"
-#include "common/subdiv/tessellation.h"
-#include "common/subdiv/tessellation_cache.h"
-#include "geometry/subdivpatch1cached.h"
+#include "../../common/ray.h"
+#include "../../common/scene_subdiv_mesh.h"
+#include "filter.h"
+#include "../bvh4/bvh4.h"
+#include "../../common/subdiv/tessellation.h"
+#include "../../common/subdiv/tessellation_cache.h"
+#include "subdivpatch1cached.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0
@@ -127,30 +127,30 @@ namespace embree
       };
 
 
-      static __forceinline const Vec3<ssef> getV012(const float *const grid,
+      static __forceinline const Vec3<float4> getV012(const float *const grid,
 						    const size_t offset0,
 						    const size_t offset1)
       {
-	const ssef row_a0 = loadu4f(grid + offset0); 
-	const ssef row_b0 = loadu4f(grid + offset1);
-	const ssef row_a1 = shuffle<1,2,3,3>(row_a0);
-	const ssef row_b1 = shuffle<1,2,3,3>(row_b0);
+	const float4 row_a0 = loadu4f(grid + offset0); 
+	const float4 row_b0 = loadu4f(grid + offset1);
+	const float4 row_a1 = shuffle<1,2,3,3>(row_a0);
+	const float4 row_b1 = shuffle<1,2,3,3>(row_b0);
 
-	Vec3<ssef> v;
+	Vec3<float4> v;
 	v[0] = unpacklo( row_a0 , row_b0 );
 	v[1] = unpacklo( row_b0 , row_a1 );
 	v[2] = unpacklo( row_a1 , row_b1 );
 	return v;
       }
 
-      static __forceinline Vec2<ssef> decodeUV(const ssef &uv)
+      static __forceinline Vec2<float4> decodeUV(const float4 &uv)
       {
-	const ssei i_uv = cast(uv);
-	const ssei i_u  = i_uv & 0xffff;
-	const ssei i_v  = i_uv >> 16;
-	const ssef u    = (ssef)i_u * ssef(2.0f/65535.0f);
-	const ssef v    = (ssef)i_v * ssef(2.0f/65535.0f);
-	return Vec2<ssef>(u,v);
+	const int4 i_uv = cast(uv);
+	const int4 i_u  = i_uv & 0xffff;
+	const int4 i_v  = i_uv >> 16;
+	const float4 u    = (float4)i_u * float4(2.0f/65535.0f);
+	const float4 v    = (float4)i_v * float4(2.0f/65535.0f);
+	return Vec2<float4>(u,v);
       }
 
       static __forceinline void intersect1_precise_2x3(Ray& ray,
@@ -165,76 +165,76 @@ namespace embree
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
 
-	const Vec3<ssef> tri012_x = getV012(grid_x,offset0,offset1);
-	const Vec3<ssef> tri012_y = getV012(grid_y,offset0,offset1);
-	const Vec3<ssef> tri012_z = getV012(grid_z,offset0,offset1);
+	const Vec3<float4> tri012_x = getV012(grid_x,offset0,offset1);
+	const Vec3<float4> tri012_y = getV012(grid_y,offset0,offset1);
+	const Vec3<float4> tri012_z = getV012(grid_z,offset0,offset1);
 
-	const Vec3<ssef> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
-	const Vec3<ssef> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
-	const Vec3<ssef> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+	const Vec3<float4> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<float4> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<float4> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
-	const Vec3<ssef> O = ray.org;
-	const Vec3<ssef> D = ray.dir;
+	const Vec3<float4> O = ray.org;
+	const Vec3<float4> D = ray.dir;
         
-	const Vec3<ssef> v0 = v0_org - O;
-	const Vec3<ssef> v1 = v1_org - O;
-	const Vec3<ssef> v2 = v2_org - O;
+	const Vec3<float4> v0 = v0_org - O;
+	const Vec3<float4> v1 = v1_org - O;
+	const Vec3<float4> v2 = v2_org - O;
         
-	const Vec3<ssef> e0 = v2 - v0;
-	const Vec3<ssef> e1 = v0 - v1;	     
-	const Vec3<ssef> e2 = v1 - v2;	     
+	const Vec3<float4> e0 = v2 - v0;
+	const Vec3<float4> e1 = v0 - v1;	     
+	const Vec3<float4> e2 = v1 - v2;	     
         
 	/* calculate geometry normal and denominator */
-	const Vec3<ssef> Ng1 = cross(e1,e0);
-	const Vec3<ssef> Ng = Ng1+Ng1;
-	const ssef den = dot(Ng,D);
-	const ssef absDen = abs(den);
-	const ssef sgnDen = signmsk(den);
+	const Vec3<float4> Ng1 = cross(e1,e0);
+	const Vec3<float4> Ng = Ng1+Ng1;
+	const float4 den = dot(Ng,D);
+	const float4 absDen = abs(den);
+	const float4 sgnDen = signmsk(den);
         
-	sseb valid ( true );
+	bool4 valid ( true );
 	/* perform edge tests */
-	const ssef U = dot(Vec3<ssef>(cross(v2+v0,e0)),D) ^ sgnDen;
+	const float4 U = dot(Vec3<float4>(cross(v2+v0,e0)),D) ^ sgnDen;
 	valid &= U >= 0.0f;
 	if (likely(none(valid))) return;
-	const ssef V = dot(Vec3<ssef>(cross(v0+v1,e1)),D) ^ sgnDen;
+	const float4 V = dot(Vec3<float4>(cross(v0+v1,e1)),D) ^ sgnDen;
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
-	const ssef W = dot(Vec3<ssef>(cross(v1+v2,e2)),D) ^ sgnDen;
+	const float4 W = dot(Vec3<float4>(cross(v1+v2,e2)),D) ^ sgnDen;
 
 	valid &= W >= 0.0f;
 	if (likely(none(valid))) return;
         
 	/* perform depth test */
-	const ssef _t = dot(v0,Ng) ^ sgnDen;
+	const float4 _t = dot(v0,Ng) ^ sgnDen;
 	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
 	if (unlikely(none(valid))) return;
         
 	/* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-	valid &= den > ssef(zero);
+	valid &= den > float4(zero);
 	if (unlikely(none(valid))) return;
 #else
-	valid &= den != ssef(zero);
+	valid &= den != float4(zero);
 	if (unlikely(none(valid))) return;
 #endif
         
 	/* calculate hit information */
-	const ssef rcpAbsDen = rcp(absDen);
-	const ssef u =  U*rcpAbsDen;
-	const ssef v =  V*rcpAbsDen;
-	const ssef t = _t*rcpAbsDen;
+	const float4 rcpAbsDen = rcp(absDen);
+	const float4 u =  U*rcpAbsDen;
+	const float4 v =  V*rcpAbsDen;
+	const float4 t = _t*rcpAbsDen;
         
 #if FORCE_TRIANGLE_UV == 0
-	const Vec3<ssef> tri012_uv = getV012(grid_uv,offset0,offset1);	
-	const Vec2<ssef> uv0 = decodeUV(tri012_uv[0]);
-	const Vec2<ssef> uv1 = decodeUV(tri012_uv[1]);
-	const Vec2<ssef> uv2 = decodeUV(tri012_uv[2]);        
-	const Vec2<ssef> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	const ssef u_final = uv[1];
-	const ssef v_final = uv[0];        
+	const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
+	const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
+	const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
+	const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
+	const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+	const float4 u_final = uv[1];
+	const float4 v_final = uv[0];        
 #else
-	const ssef u_final = u;
-	const ssef v_final = v;
+	const float4 u_final = u;
+	const float4 v_final = v;
 #endif
 	size_t i = select_min(valid,t);
 
@@ -269,55 +269,55 @@ namespace embree
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
 
-	const Vec3<ssef> tri012_x = getV012(grid_x,offset0,offset1);
-	const Vec3<ssef> tri012_y = getV012(grid_y,offset0,offset1);
-	const Vec3<ssef> tri012_z = getV012(grid_z,offset0,offset1);
+	const Vec3<float4> tri012_x = getV012(grid_x,offset0,offset1);
+	const Vec3<float4> tri012_y = getV012(grid_y,offset0,offset1);
+	const Vec3<float4> tri012_z = getV012(grid_z,offset0,offset1);
 
-	const Vec3<ssef> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
-	const Vec3<ssef> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
-	const Vec3<ssef> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+	const Vec3<float4> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<float4> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<float4> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
-        const Vec3<ssef> O = ray.org;
-        const Vec3<ssef> D = ray.dir;
+        const Vec3<float4> O = ray.org;
+        const Vec3<float4> D = ray.dir;
         
-        const Vec3<ssef> v0 = v0_org - O;
-        const Vec3<ssef> v1 = v1_org - O;
-        const Vec3<ssef> v2 = v2_org - O;
+        const Vec3<float4> v0 = v0_org - O;
+        const Vec3<float4> v1 = v1_org - O;
+        const Vec3<float4> v2 = v2_org - O;
         
-        const Vec3<ssef> e0 = v2 - v0;
-        const Vec3<ssef> e1 = v0 - v1;	     
-        const Vec3<ssef> e2 = v1 - v2;	     
+        const Vec3<float4> e0 = v2 - v0;
+        const Vec3<float4> e1 = v0 - v1;	     
+        const Vec3<float4> e2 = v1 - v2;	     
         
         /* calculate geometry normal and denominator */
-        const Vec3<ssef> Ng1 = cross(e1,e0);
-        const Vec3<ssef> Ng = Ng1+Ng1;
-        const ssef den = dot(Ng,D);
-        const ssef absDen = abs(den);
-        const ssef sgnDen = signmsk(den);
+        const Vec3<float4> Ng1 = cross(e1,e0);
+        const Vec3<float4> Ng = Ng1+Ng1;
+        const float4 den = dot(Ng,D);
+        const float4 absDen = abs(den);
+        const float4 sgnDen = signmsk(den);
         
-        sseb valid ( true );
+        bool4 valid ( true );
         /* perform edge tests */
-        const ssef U = dot(Vec3<ssef>(cross(v2+v0,e0)),D) ^ sgnDen;
+        const float4 U = dot(Vec3<float4>(cross(v2+v0,e0)),D) ^ sgnDen;
         valid &= U >= 0.0f;
         if (likely(none(valid))) return false;
-        const ssef V = dot(Vec3<ssef>(cross(v0+v1,e1)),D) ^ sgnDen;
+        const float4 V = dot(Vec3<float4>(cross(v0+v1,e1)),D) ^ sgnDen;
         valid &= V >= 0.0f;
         if (likely(none(valid))) return false;
-        const ssef W = dot(Vec3<ssef>(cross(v1+v2,e2)),D) ^ sgnDen;
+        const float4 W = dot(Vec3<float4>(cross(v1+v2,e2)),D) ^ sgnDen;
         valid &= W >= 0.0f;
         if (likely(none(valid))) return false;
         
         /* perform depth test */
-        const ssef _t = dot(v0,Ng) ^ sgnDen;
+        const float4 _t = dot(v0,Ng) ^ sgnDen;
         valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-        valid &= den > ssef(zero);
+        valid &= den > float4(zero);
         if (unlikely(none(valid))) return false;
 #else
-        valid &= den != ssef(zero);
+        valid &= den != float4(zero);
         if (unlikely(none(valid))) return false;
 #endif
         return true;
@@ -328,35 +328,35 @@ namespace embree
 
 #if defined(__AVX__)
 
-      static __forceinline const Vec3<avxf> getV012(const float *const grid,
+      static __forceinline const Vec3<float8> getV012(const float *const grid,
 						    const size_t offset0,
 						    const size_t offset1,
 						    const size_t offset2)
       {
-	const ssef row_a0 = loadu4f(grid + offset0 + 0); 
-	const ssef row_b0 = loadu4f(grid + offset1 + 0);
-	const ssef row_c0 = loadu4f(grid + offset2 + 0);
-	const avxf row_ab = avxf( row_a0, row_b0 );
-	const avxf row_bc = avxf( row_b0, row_c0 );
+	const float4 row_a0 = loadu4f(grid + offset0 + 0); 
+	const float4 row_b0 = loadu4f(grid + offset1 + 0);
+	const float4 row_c0 = loadu4f(grid + offset2 + 0);
+	const float8 row_ab = float8( row_a0, row_b0 );
+	const float8 row_bc = float8( row_b0, row_c0 );
 
-	const avxf row_ab_shuffle = shuffle<1,2,3,3>(row_ab);
-	const avxf row_bc_shuffle = shuffle<1,2,3,3>(row_bc);
+	const float8 row_ab_shuffle = shuffle<1,2,3,3>(row_ab);
+	const float8 row_bc_shuffle = shuffle<1,2,3,3>(row_bc);
 
-	Vec3<avxf> v;
+	Vec3<float8> v;
 	v[0] = unpacklo(         row_ab , row_bc );
 	v[1] = unpacklo(         row_bc , row_ab_shuffle );
 	v[2] = unpacklo( row_ab_shuffle , row_bc_shuffle );
 	return v;
       }
 
-      static __forceinline Vec2<avxf> decodeUV(const avxf &uv)
+      static __forceinline Vec2<float8> decodeUV(const float8 &uv)
       {
-	const avxi i_uv = cast(uv);
-	const avxi i_u  = i_uv & 0xffff;
-	const avxi i_v  = i_uv >> 16;
-	const avxf u    = (avxf)i_u * avxf(2.0f/65535.0f);
-	const avxf v    = (avxf)i_v * avxf(2.0f/65535.0f);
-	return Vec2<avxf>(u,v);
+	const int8 i_uv = cast(uv);
+	const int8 i_u  = i_uv & 0xffff;
+	const int8 i_v  = i_uv >> 16;
+	const float8 u    = (float8)i_u * float8(2.0f/65535.0f);
+	const float8 v    = (float8)i_v * float8(2.0f/65535.0f);
+	return Vec2<float8>(u,v);
       }
      
  
@@ -373,72 +373,72 @@ namespace embree
 	const size_t offset1 = 1 * line_offset;
 	const size_t offset2 = 2 * line_offset;
 
-	const Vec3<avxf> tri012_x = getV012(grid_x,offset0,offset1,offset2);
-	const Vec3<avxf> tri012_y = getV012(grid_y,offset0,offset1,offset2);
-	const Vec3<avxf> tri012_z = getV012(grid_z,offset0,offset1,offset2);
+	const Vec3<float8> tri012_x = getV012(grid_x,offset0,offset1,offset2);
+	const Vec3<float8> tri012_y = getV012(grid_y,offset0,offset1,offset2);
+	const Vec3<float8> tri012_z = getV012(grid_z,offset0,offset1,offset2);
 
-	const Vec3<avxf> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
-	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
-	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+	const Vec3<float8> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<float8> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<float8> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
 
 #if ENABLE_NORMALIZED_INTERSECTION == 0
-	const Vec3<avxf> O = ray.org;
-	const Vec3<avxf> D = ray.dir;
+	const Vec3<float8> O = ray.org;
+	const Vec3<float8> D = ray.dir;
 
-	const Vec3<avxf> v0 = v0_org - O;
-	const Vec3<avxf> v1 = v1_org - O;
-	const Vec3<avxf> v2 = v2_org - O;
+	const Vec3<float8> v0 = v0_org - O;
+	const Vec3<float8> v1 = v1_org - O;
+	const Vec3<float8> v2 = v2_org - O;
 
-	const Vec3<avxf> e0 = v2 - v0;
-	const Vec3<avxf> e1 = v0 - v1;	     
-	const Vec3<avxf> e2 = v1 - v2;	     
+	const Vec3<float8> e0 = v2 - v0;
+	const Vec3<float8> e1 = v0 - v1;	     
+	const Vec3<float8> e2 = v1 - v2;	     
 
 	/* calculate geometry normal and denominator */
-	const Vec3<avxf> Ng1 = cross(e1,e0);
-	const Vec3<avxf> Ng = Ng1+Ng1;
-	const avxf den = dot(Ng,D);
-	const avxf absDen = abs(den);
-	const avxf sgnDen = signmsk(den);
+	const Vec3<float8> Ng1 = cross(e1,e0);
+	const Vec3<float8> Ng = Ng1+Ng1;
+	const float8 den = dot(Ng,D);
+	const float8 absDen = abs(den);
+	const float8 sgnDen = signmsk(den);
         
-	avxb valid ( true );
+	bool8 valid ( true );
 	/* perform edge tests */
-	const avxf U = dot(Vec3<avxf>(cross(v2+v0,e0)),D) ^ sgnDen;
+	const float8 U = dot(Vec3<float8>(cross(v2+v0,e0)),D) ^ sgnDen;
 	valid &= U >= 0.0f;
 	if (likely(none(valid))) return;
-	const avxf V = dot(Vec3<avxf>(cross(v0+v1,e1)),D) ^ sgnDen;
+	const float8 V = dot(Vec3<float8>(cross(v0+v1,e1)),D) ^ sgnDen;
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
-	const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+	const float8 W = dot(Vec3<float8>(cross(v1+v2,e2)),D) ^ sgnDen;
 
 #else
-        const Vec3<avxf> ray_rdir(pre.ray_rdir.x,pre.ray_rdir.y,pre.ray_rdir.z);
-        const Vec3<avxf> ray_org_rdir(pre.ray_org_rdir.x,pre.ray_org_rdir.y,pre.ray_org_rdir.z);
+        const Vec3<float8> ray_rdir(pre.ray_rdir.x,pre.ray_rdir.y,pre.ray_rdir.z);
+        const Vec3<float8> ray_org_rdir(pre.ray_org_rdir.x,pre.ray_org_rdir.y,pre.ray_org_rdir.z);
 
-	const Vec3<avxf> v0 = v0_org * ray_rdir - ray_org_rdir;
-	const Vec3<avxf> v1 = v1_org * ray_rdir - ray_org_rdir;
-	const Vec3<avxf> v2 = v2_org * ray_rdir - ray_org_rdir;
+	const Vec3<float8> v0 = v0_org * ray_rdir - ray_org_rdir;
+	const Vec3<float8> v1 = v1_org * ray_rdir - ray_org_rdir;
+	const Vec3<float8> v2 = v2_org * ray_rdir - ray_org_rdir;
 
-	const Vec3<avxf> e0 = v2 - v0;
-	const Vec3<avxf> e1 = v0 - v1;	     
-	const Vec3<avxf> e2 = v1 - v2;	     
+	const Vec3<float8> e0 = v2 - v0;
+	const Vec3<float8> e1 = v0 - v1;	     
+	const Vec3<float8> e2 = v1 - v2;	     
 
 	/* calculate geometry normal and denominator */
-	const Vec3<avxf> Ng1 = cross(e1,e0);
-	Vec3<avxf> Ng = Ng1+Ng1;
-	const avxf den = sum(Ng);
-	const avxf absDen = abs(den);
-	const avxf sgnDen = signmsk(den);
+	const Vec3<float8> Ng1 = cross(e1,e0);
+	Vec3<float8> Ng = Ng1+Ng1;
+	const float8 den = sum(Ng);
+	const float8 absDen = abs(den);
+	const float8 sgnDen = signmsk(den);
         
-	avxb valid ( true );
+	bool8 valid ( true );
 	/* perform edge tests */
-	const avxf U = sum(Vec3<avxf>(cross(v2+v0,e0))) ^ sgnDen;
+	const float8 U = sum(Vec3<float8>(cross(v2+v0,e0))) ^ sgnDen;
 	valid &= U >= 0.0f;
 	if (likely(none(valid))) return;
-	const avxf V = sum(Vec3<avxf>(cross(v0+v1,e1))) ^ sgnDen;
+	const float8 V = sum(Vec3<float8>(cross(v0+v1,e1))) ^ sgnDen;
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
-	const avxf W = sum(Vec3<avxf>(cross(v1+v2,e2))) ^ sgnDen;
+	const float8 W = sum(Vec3<float8>(cross(v1+v2,e2))) ^ sgnDen;
 
 #endif        
 
@@ -447,36 +447,36 @@ namespace embree
 	if (likely(none(valid))) return;
         
 	/* perform depth test */
-	const avxf _t = dot(v0,Ng) ^ sgnDen;
+	const float8 _t = dot(v0,Ng) ^ sgnDen;
 	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
 	if (unlikely(none(valid))) return;
         
 	/* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-	valid &= den > avxf(zero);
+	valid &= den > float8(zero);
 	if (unlikely(none(valid))) return;
 #else
-	valid &= den != avxf(zero);
+	valid &= den != float8(zero);
 	if (unlikely(none(valid))) return;
 #endif
         
 	/* calculate hit information */
-	const avxf rcpAbsDen = rcp(absDen);
-	const avxf u =  U*rcpAbsDen;
-	const avxf v =  V*rcpAbsDen;
-	const avxf t = _t*rcpAbsDen;
+	const float8 rcpAbsDen = rcp(absDen);
+	const float8 u =  U*rcpAbsDen;
+	const float8 v =  V*rcpAbsDen;
+	const float8 t = _t*rcpAbsDen;
         
 #if FORCE_TRIANGLE_UV == 0
-	const Vec3<avxf> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
-	const Vec2<avxf> uv0 = decodeUV(tri012_uv[0]);
-	const Vec2<avxf> uv1 = decodeUV(tri012_uv[1]);
-	const Vec2<avxf> uv2 = decodeUV(tri012_uv[2]);        
-	const Vec2<avxf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-	const avxf u_final = uv[1];
-	const avxf v_final = uv[0];
+	const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
+	const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
+	const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
+	const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
+	const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+	const float8 u_final = uv[1];
+	const float8 v_final = uv[0];
 #else
-	const avxf u_final = u;
-	const avxf v_final = v;
+	const float8 u_final = u;
+	const float8 v_final = v;
 #endif
         
 	size_t i = select_min(valid,t);
@@ -490,7 +490,7 @@ namespace embree
 	ray.tfar      = t[i];
 
 #if ENABLE_NORMALIZED_INTERSECTION == 1
-	Ng = Ng * Vec3<avxf>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
+	Ng = Ng * Vec3<float8>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
 #endif
 	if (i % 2)
 	  {
@@ -518,55 +518,55 @@ namespace embree
 	const size_t offset1 = 1 * line_offset;
 	const size_t offset2 = 2 * line_offset;
 
-	const Vec3<avxf> tri012_x = getV012(grid_x,offset0,offset1,offset2);
-	const Vec3<avxf> tri012_y = getV012(grid_y,offset0,offset1,offset2);
-	const Vec3<avxf> tri012_z = getV012(grid_z,offset0,offset1,offset2);
+	const Vec3<float8> tri012_x = getV012(grid_x,offset0,offset1,offset2);
+	const Vec3<float8> tri012_y = getV012(grid_y,offset0,offset1,offset2);
+	const Vec3<float8> tri012_z = getV012(grid_z,offset0,offset1,offset2);
 
-	const Vec3<avxf> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
-	const Vec3<avxf> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
-	const Vec3<avxf> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
+	const Vec3<float8> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
+	const Vec3<float8> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
+	const Vec3<float8> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
-        const Vec3<avxf> O = ray.org;
-        const Vec3<avxf> D = ray.dir;
+        const Vec3<float8> O = ray.org;
+        const Vec3<float8> D = ray.dir;
         
-        const Vec3<avxf> v0 = v0_org - O;
-        const Vec3<avxf> v1 = v1_org - O;
-        const Vec3<avxf> v2 = v2_org - O;
+        const Vec3<float8> v0 = v0_org - O;
+        const Vec3<float8> v1 = v1_org - O;
+        const Vec3<float8> v2 = v2_org - O;
         
-        const Vec3<avxf> e0 = v2 - v0;
-        const Vec3<avxf> e1 = v0 - v1;	     
-        const Vec3<avxf> e2 = v1 - v2;	     
+        const Vec3<float8> e0 = v2 - v0;
+        const Vec3<float8> e1 = v0 - v1;	     
+        const Vec3<float8> e2 = v1 - v2;	     
         
         /* calculate geometry normal and denominator */
-        const Vec3<avxf> Ng1 = cross(e1,e0);
-        const Vec3<avxf> Ng = Ng1+Ng1;
-        const avxf den = dot(Ng,D);
-        const avxf absDen = abs(den);
-        const avxf sgnDen = signmsk(den);
+        const Vec3<float8> Ng1 = cross(e1,e0);
+        const Vec3<float8> Ng = Ng1+Ng1;
+        const float8 den = dot(Ng,D);
+        const float8 absDen = abs(den);
+        const float8 sgnDen = signmsk(den);
         
-        avxb valid ( true );
+        bool8 valid ( true );
         /* perform edge tests */
-        const avxf U = dot(Vec3<avxf>(cross(v2+v0,e0)),D) ^ sgnDen;
+        const float8 U = dot(Vec3<float8>(cross(v2+v0,e0)),D) ^ sgnDen;
         valid &= U >= 0.0f;
         if (likely(none(valid))) return false;
-        const avxf V = dot(Vec3<avxf>(cross(v0+v1,e1)),D) ^ sgnDen;
+        const float8 V = dot(Vec3<float8>(cross(v0+v1,e1)),D) ^ sgnDen;
         valid &= V >= 0.0f;
         if (likely(none(valid))) return false;
-        const avxf W = dot(Vec3<avxf>(cross(v1+v2,e2)),D) ^ sgnDen;
+        const float8 W = dot(Vec3<float8>(cross(v1+v2,e2)),D) ^ sgnDen;
         valid &= W >= 0.0f;
         if (likely(none(valid))) return false;
         
         /* perform depth test */
-        const avxf _t = dot(v0,Ng) ^ sgnDen;
+        const float8 _t = dot(v0,Ng) ^ sgnDen;
         valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-        valid &= den > avxf(zero);
+        valid &= den > float8(zero);
         if (unlikely(none(valid))) return false;
 #else
-        valid &= den != avxf(zero);
+        valid &= den != float8(zero);
         if (unlikely(none(valid))) return false;
 #endif
         return true;
@@ -801,10 +801,10 @@ namespace embree
 	  const Quad2x2 &q = *(Quad2x2*)prim;
 
 #if defined(__AVX__)
-          intersect1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom,pre);
+          intersect1_precise<bool8,float8>( ray, q, (SubdivMesh*)geom,pre);
 #else
-          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,0);
-          intersect1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,pre,6);
+          intersect1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,pre,0);
+          intersect1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,pre,6);
 #endif
 
 #endif
@@ -848,11 +848,11 @@ namespace embree
 
 #if defined(__AVX__)
 	  const Quad2x2 &q = *(Quad2x2*)prim;
-	  return occluded1_precise<avxb,avxf>( ray, q, (SubdivMesh*)geom);
+	  return occluded1_precise<bool8,float8>( ray, q, (SubdivMesh*)geom);
 #else
           const Quad2x2 &q = *(Quad2x2*)prim;
-          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,0)) return true;
-          if (occluded1_precise<sseb,ssef>( ray, q, (SubdivMesh*)geom,6)) return true;
+          if (occluded1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,0)) return true;
+          if (occluded1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,6)) return true;
 #endif
 
 #endif

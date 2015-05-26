@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR}/../tutorials/common)
-
 IF (__XEON__)
 
 IF (TASKING_INTERNAL)

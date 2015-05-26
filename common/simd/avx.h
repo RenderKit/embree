@@ -16,19 +16,24 @@
 
 #pragma once
 
-#include "simd/sse.h"
+#include "sse.h"
 
 namespace embree 
 {
-  struct avxb;
-  struct avxi;
-  struct avxf;
+  struct bool8;
+  struct int8;
+  struct float8;
 }
 
-#include "simd/avxb.h"
+#include "bool8_avx.h"
 #if defined (__AVX2__)
-#include "simd/avxi.h"
+#include "int8_avx2.h"
 #else
-#include "simd/avxi_emu.h"
+#include "int8_avx.h"
 #endif
-#include "simd/avxf.h"
+#include "float8_avx.h"
+
+#if defined (__AVX512__)
+#include "avx512.h"
+#endif
+

@@ -16,7 +16,7 @@
 
 #ifdef USE_LIBJPEG
 
-#include "image/image.h"
+#include "image.h"
 #include "jpeglib.h"
 
 namespace embree

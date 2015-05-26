@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "common/alloc.h"
-#include "common/accel.h"
-#include "common/scene.h"
-#include "geometry/primitive.h"
-#include "geometry/triangle1.h"
-#include "geometry/virtual_accel.h"
-#include "geometry/subdivpatch1.h"
+#include "../../common/alloc.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
+#include "../geometry/primitive.h"
+#include "../geometry/triangle1.h"
+#include "../geometry/virtual_accel.h"
+#include "../geometry/subdivpatch1.h"
 
 #define BVH4I_TOP_LEVEL_MARKER 0x80000000
 
@@ -154,8 +154,8 @@ namespace embree
       }
 
       __forceinline size_t numChildren() const {
-	mic_i c = load16i((int*)lower);
-	const size_t children = countbits(ne(0x8888,c,mic_i(BVH4i::invalidNode))); 
+	int16 c = load16i((int*)lower);
+	const size_t children = countbits(ne(0x8888,c,int16(BVH4i::invalidNode))); 
 	assert(children >=2 && children <= 4);
 	return children;
       }
@@ -169,14 +169,14 @@ namespace embree
         return halfArea( bounds(i) );
       }
 
-      __forceinline mic_f halfAreaBounds() const {
-	const mic_f l = load16f(lower);
-	const mic_f u = load16f(upper);
-	const mic_f diag = u-l;
-	const mic_f dx = swAAAA(diag);
-	const mic_f dy = swBBBB(diag);
-	const mic_f dz = swCCCC(diag);
-	const mic_f half_area = dx*(dy+dz)+dy*dz; 
+      __forceinline float16 halfAreaBounds() const {
+	const float16 l = load16f(lower);
+	const float16 u = load16f(upper);
+	const float16 diag = u-l;
+	const float16 dx = swAAAA(diag);
+	const float16 dy = swBBBB(diag);
+	const float16 dz = swCCCC(diag);
+	const float16 half_area = dx*(dy+dz)+dy*dz; 
 	return half_area;
       }
 
@@ -193,24 +193,24 @@ namespace embree
 
       __forceinline void setBounds(size_t i, const Node *__restrict__ const n) {
 	assert( i < 4 );
-	const mic_f l = min(min(n->lowerXYZ(0),n->lowerXYZ(1)),min(n->lowerXYZ(2),n->lowerXYZ(3)));
-	const mic_f u = max(max(n->upperXYZ(0),n->upperXYZ(1)),max(n->upperXYZ(2),n->upperXYZ(3)));
+	const float16 l = min(min(n->lowerXYZ(0),n->lowerXYZ(1)),min(n->lowerXYZ(2),n->lowerXYZ(3)));
+	const float16 u = max(max(n->upperXYZ(0),n->upperXYZ(1)),max(n->upperXYZ(2),n->upperXYZ(3)));
 
 	store3f(&lower[i],l);
 	store3f(&upper[i],u);
       }
 
-      __forceinline mic_f lowerXYZ(size_t i) const {
+      __forceinline float16 lowerXYZ(size_t i) const {
 	return broadcast4to16f(&lower[i]);
       }
 
-      __forceinline mic_f upperXYZ(size_t i) const {
+      __forceinline float16 upperXYZ(size_t i) const {
 	return broadcast4to16f(&upper[i]);
       }
 
       __forceinline bool isPoint(size_t i) const {
-	mic_m m_lane = ((unsigned int)0x7) << (4*i);
-	mic_m m_box  = eq(m_lane,load16f(lower),load16f(upper));
+	bool16 m_lane = ((unsigned int)0x7) << (4*i);
+	bool16 m_box  = eq(m_lane,load16f(lower),load16f(upper));
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
@@ -246,10 +246,10 @@ namespace embree
       __forceinline void setInvalid() 
       {
 #if 1
-	mic_f lower = broadcast4to16f(&initQBVHNode[0]);
-	mic_f upper = broadcast4to16f(&initQBVHNode[1]);
-	store16f_ngo(((mic_f*)this)+0,lower); 
-	store16f_ngo(((mic_f*)this)+1,upper);             
+	float16 lower = broadcast4to16f(&initQBVHNode[0]);
+	float16 upper = broadcast4to16f(&initQBVHNode[1]);
+	store16f_ngo(((float16*)this)+0,lower); 
+	store16f_ngo(((float16*)this)+1,upper);             
 #else
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);
@@ -313,39 +313,39 @@ namespace embree
       __forceinline       NodeRef &child(size_t i)       { return ((NodeRef*)this)[3+4*i]; }
       __forceinline const NodeRef &child(size_t i) const { return ((NodeRef*)this)[3+4*i]; }
 
-      __forceinline mic_f lowerXYZ() const
+      __forceinline float16 lowerXYZ() const
       {
-	return uload16f_low_uint8(0x7777,lower,mic_f::zero());
+	return uload16f_low_uint8(0x7777,lower,float16::zero());
       }
 
-      __forceinline mic_f decompress_lowerXYZ(const mic_f &s, const mic_f &d)  const
+      __forceinline float16 decompress_lowerXYZ(const float16 &s, const float16 &d)  const
       {
 	return madd_round_down(d,lowerXYZ(),s);
       }
 
-      __forceinline mic_f decompress_upperXYZ(const mic_f &s, const mic_f &d)  const
+      __forceinline float16 decompress_upperXYZ(const float16 &s, const float16 &d)  const
       {	
 	return madd_round_up(d,upperXYZ(),s);
       }
 
-      __forceinline mic_f upperXYZ()  const
+      __forceinline float16 upperXYZ()  const
       {
-	return uload16f_low_uint8(0x7777,upper,mic_f::zero());
+	return uload16f_low_uint8(0x7777,upper,float16::zero());
       }
 
       __forceinline bool isPoint(size_t i) const {
-	mic_m m_lane = ((unsigned int)0x7) << (4*i);
-	mic_m m_box  = eq(m_lane,lowerXYZ(),upperXYZ());
+	bool16 m_lane = ((unsigned int)0x7) << (4*i);
+	bool16 m_box  = eq(m_lane,lowerXYZ(),upperXYZ());
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
       __forceinline BBox3fa bounds(size_t i) const {
 	assert( i < 4 );
-	const mic_f s = decompress_startXYZ();
-	const mic_f d = decompress_diffXYZ();
+	const float16 s = decompress_startXYZ();
+	const float16 d = decompress_diffXYZ();
 
-	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
-	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
+	const float16 decompress_lower_XYZ = decompress_lowerXYZ(s,d);
+	const float16 decompress_upper_XYZ = decompress_upperXYZ(s,d);
 
         Vec3fa l = ((Vec3fa*)&decompress_lower_XYZ)[i];
         Vec3fa u = ((Vec3fa*)&decompress_upper_XYZ)[i];
@@ -353,41 +353,41 @@ namespace embree
       }
 
 
-      __forceinline mic_f decompress_startXYZ() const
+      __forceinline float16 decompress_startXYZ() const
       {
 	return broadcast4to16f(&start);
       }
 
-      __forceinline mic_f decompress_diffXYZ() const
+      __forceinline float16 decompress_diffXYZ() const
       {
 	return broadcast4to16f(&diff);
       }
 
       __forceinline void init( const Node &node) 
       {
-	mic_f l0 = node.lowerXYZ(0);
-	mic_f l1 = node.lowerXYZ(1);
-	mic_f l2 = node.lowerXYZ(2);
-	mic_f l3 = node.lowerXYZ(3);
+	float16 l0 = node.lowerXYZ(0);
+	float16 l1 = node.lowerXYZ(1);
+	float16 l2 = node.lowerXYZ(2);
+	float16 l3 = node.lowerXYZ(3);
 
-	mic_f u0 = node.upperXYZ(0);
-	mic_f u1 = node.upperXYZ(1);
-	mic_f u2 = node.upperXYZ(2);
-	mic_f u3 = node.upperXYZ(3);
+	float16 u0 = node.upperXYZ(0);
+	float16 u1 = node.upperXYZ(1);
+	float16 u2 = node.upperXYZ(2);
+	float16 u3 = node.upperXYZ(3);
 
-	const mic_f minXYZ = select(0x7777,min(min(l0,l1),min(l2,l3)),mic_f::zero());
-	const mic_f maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),mic_f::one());
-	const mic_f diffXYZ = maxXYZ - minXYZ;
+	const float16 minXYZ = select(0x7777,min(min(l0,l1),min(l2,l3)),float16::zero());
+	const float16 maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),float16::one());
+	const float16 diffXYZ = maxXYZ - minXYZ;
 
-	const mic_f nlower = load16f(node.lower);
-	const mic_f nupper = load16f(node.upper);
-	const mic_m isInvalid = eq(0x7777,nlower,pos_inf);
+	const float16 nlower = load16f(node.lower);
+	const float16 nupper = load16f(node.upper);
+	const bool16 isInvalid = eq(0x7777,nlower,pos_inf);
 
-	const mic_f node_lowerXYZ = select(mic_m(0x7777) ^ isInvalid,nlower,minXYZ); 
-	const mic_f node_upperXYZ = select(mic_m(0x7777) ^ isInvalid,nupper,minXYZ); 
+	const float16 node_lowerXYZ = select(bool16(0x7777) ^ isInvalid,nlower,minXYZ); 
+	const float16 node_upperXYZ = select(bool16(0x7777) ^ isInvalid,nupper,minXYZ); 
 
-	mic_f local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* - 0.5f */);
-	mic_f local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * mic_f(255.0f) / diffXYZ) /* + 0.5f */);
+	float16 local_lowerXYZ = floor(( (node_lowerXYZ - minXYZ) * float16(255.0f) / diffXYZ) /* - 0.5f */);
+	float16 local_upperXYZ =  ceil(( (node_upperXYZ - minXYZ) * float16(255.0f) / diffXYZ) /* + 0.5f */);
 
 	store4f(&start,minXYZ);
 	store4f(&diff ,mul_round_up(diffXYZ,(1.0f/255.0f)));
@@ -401,11 +401,11 @@ namespace embree
 
 #if DEBUG
 
-	const mic_f s = decompress_startXYZ();
-	const mic_f d = decompress_diffXYZ();
+	const float16 s = decompress_startXYZ();
+	const float16 d = decompress_diffXYZ();
 
-	const mic_f decompress_lower_XYZ = decompress_lowerXYZ(s,d);
-	const mic_f decompress_upper_XYZ = decompress_upperXYZ(s,d);
+	const float16 decompress_lower_XYZ = decompress_lowerXYZ(s,d);
+	const float16 decompress_upper_XYZ = decompress_upperXYZ(s,d);
 
 	if ( any(gt(0x7777,decompress_lower_XYZ,node_lowerXYZ)) ) 
 	   { 
@@ -499,10 +499,10 @@ namespace embree
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
       assert(i<N && j<N);
-      const mic_f lower_a = broadcast4to16f(&a->lower[i]);
-      const mic_f upper_a = broadcast4to16f(&a->upper[i]);
-      const mic_f lower_b = broadcast4to16f(&b->lower[j]);
-      const mic_f upper_b = broadcast4to16f(&b->upper[j]);
+      const float16 lower_a = broadcast4to16f(&a->lower[i]);
+      const float16 upper_a = broadcast4to16f(&a->upper[i]);
+      const float16 lower_b = broadcast4to16f(&b->lower[j]);
+      const float16 upper_b = broadcast4to16f(&b->upper[j]);
 
       store4f(&a->lower[i],lower_b);
       store4f(&a->upper[i],upper_b);
@@ -558,21 +558,21 @@ namespace embree
 
 
 
-  __forceinline mic_f initTriangle1(const mic_f &v0,
-				    const mic_f &v1,
-				    const mic_f &v2,
-				    const mic_i &geomID,
-				    const mic_i &primID,
-				    const mic_i &mask)
+  __forceinline float16 initTriangle1(const float16 &v0,
+				    const float16 &v1,
+				    const float16 &v2,
+				    const int16 &geomID,
+				    const int16 &primID,
+				    const int16 &mask)
   {
-    const mic_f e1 = v0 - v1;
-    const mic_f e2 = v2 - v0;	     
-    const mic_f normal = lcross_xyz(e1,e2);
-    const mic_f _v0 = select(0x8888,cast((__m512i)primID),v0);
-    const mic_f _v1 = select(0x8888,cast((__m512i)geomID),v1);
-    const mic_f _v2 = select(0x8888,cast((__m512i)mask),v2);
-    const mic_f _v3 = select(0x8888,mic_f::zero(),normal);
-    const mic_f final = lane_shuffle_gather<0>(_v0,_v1,_v2,_v3);
+    const float16 e1 = v0 - v1;
+    const float16 e2 = v2 - v0;	     
+    const float16 normal = lcross_xyz(e1,e2);
+    const float16 _v0 = select(0x8888,cast((__m512i)primID),v0);
+    const float16 _v1 = select(0x8888,cast((__m512i)geomID),v1);
+    const float16 _v2 = select(0x8888,cast((__m512i)mask),v2);
+    const float16 _v3 = select(0x8888,float16::zero(),normal);
+    const float16 final = lane_shuffle_gather<0>(_v0,_v1,_v2,_v3);
     return final;
   }
 

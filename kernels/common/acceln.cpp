@@ -16,7 +16,7 @@
 
 #include "acceln.h"
 #include "embree2/rtcore_ray.h"
-#include "algorithms/parallel_for.h"
+#include "../algorithms/parallel_for.h"
 
 namespace embree
 {
@@ -81,8 +81,8 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded4(valid,ray);
 #if defined(__SSE2__)
-      sseb valid0 = ((sseb*)valid)[0];
-      sseb hit0   = ((ssei*)ray.geomID)[0] == ssei(0);
+      bool4 valid0 = ((bool4*)valid)[0];
+      bool4 hit0   = ((int4*)ray.geomID)[0] == int4(0);
       if (all(valid0,hit0)) break;
 #endif
     }
@@ -94,10 +94,10 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded8(valid,ray);
 #if defined(__SSE2__)
-      sseb valid0 = ((sseb*)valid)[0];
-      sseb hit0   = ((ssei*)ray.geomID)[0] == ssei(0);
-      sseb valid1 = ((sseb*)valid)[1];
-      sseb hit1   = ((ssei*)ray.geomID)[1] == ssei(0);
+      bool4 valid0 = ((bool4*)valid)[0];
+      bool4 hit0   = ((int4*)ray.geomID)[0] == int4(0);
+      bool4 valid1 = ((bool4*)valid)[1];
+      bool4 hit1   = ((int4*)ray.geomID)[1] == int4(0);
       if (all(valid0,hit0) && all(valid1,hit1)) break;
 #endif
     }
@@ -109,8 +109,8 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded16(valid,ray);
 #if defined(__MIC__)
-      mic_m valid0 = ((mic_m*)valid)[0];
-      mic_m hit0   = ((mic_i*)ray.geomID)[0] == mic_i(0);
+      bool16 valid0 = ((bool16*)valid)[0];
+      bool16 hit0   = ((int16*)ray.geomID)[0] == int16(0);
       if (all(valid0,hit0)) break;
 #endif
     }

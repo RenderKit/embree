@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/scene_subdiv_mesh.h"
+#include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
-#include "common/scene.h"
+#include "../scene.h"
 
 namespace embree
 {
@@ -63,6 +63,9 @@ namespace embree
     }
   }
 
+  
+
+  
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh) 
@@ -87,12 +90,8 @@ namespace embree
     }
     //assert(needAdaptiveSubdivision == 0);
 
-
-    PRINT(numEdges);
-
     if (numEdges == 4)
       {
-	PRINT("QUAD");
 	GeneralCatmullClarkPatch3fa cpatch;
 	cpatch.init(h_start,mesh->getVertexBuffer());
 	float edge_level[4] = {
@@ -119,9 +118,37 @@ namespace embree
       }
     else if (numEdges == 3)
       {
-	PRINT("TRIANGLE");
-	GeneralCatmullClarkPatch3fa gpatch;
-	gpatch.init(h_start,mesh->getVertexBuffer());
+	GeneralCatmullClarkPatch3fa cpatch;
+	cpatch.init(h_start,mesh->getVertexBuffer());
+
+	GregoryTrianglePatch3fa gpatch; 
+	gpatch.init( cpatch ); 
+	gpatch.exportConrolPoints( patch.v );	
+
+
+	float edge_level[4] = {
+	  cpatch.ring[0].edge_level,
+	  cpatch.ring[1].edge_level,
+	  cpatch.ring[2].edge_level,
+	  cpatch.ring[2].edge_level
+	};
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+
+	for (size_t i=0; i<4; i++) {
+	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
+	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
+	}
+
+       
+
+	updateEdgeLevels(edge_level,mesh);
+
+#if 0
+	gpatch.convertGregoryTrianglePatchToBezierPatch( patch.v );
+	flags |= BEZIER_PATCH;
+#else	
+	flags |= GREGORY_TRIANGLE_PATCH;
+#endif
 
       }
 
@@ -184,10 +211,6 @@ namespace embree
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
 #if COMPACT == 1
-    //PRINT( grid_bvh_size_64b_blocks );
-    //PRINT( grid_u_res);
-    //PRINT( grid_v_res);
-
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
 #else
@@ -245,22 +268,22 @@ namespace embree
 #if defined(__AVX__)
     for (size_t i=0;i<grid_size_simd_blocks;i++)
       {
-        avxf uu = load8f(&grid_u[8*i]);
-        avxf vv = load8f(&grid_v[8*i]);
-        avx3f normal = normalize(patch.normal(uu,vv));
-        *(avxf*)&grid_nx[8*i] = normal.x;
-        *(avxf*)&grid_ny[8*i] = normal.y;
-        *(avxf*)&grid_nz[8*i] = normal.z;        
+        float8 uu = load8f(&grid_u[8*i]);
+        float8 vv = load8f(&grid_v[8*i]);
+        Vec3f8 normal = normalize(patch.normal(uu,vv));
+        *(float8*)&grid_nx[8*i] = normal.x;
+        *(float8*)&grid_ny[8*i] = normal.y;
+        *(float8*)&grid_nz[8*i] = normal.z;        
       }
 #else
     for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
       {
-        ssef uu      = load4f(&grid_u[4*i]);
-        ssef vv      = load4f(&grid_v[4*i]);
-        sse3f normal = normalize(patch.normal(uu,vv));
-        *(ssef*)&grid_nx[4*i] = normal.x;
-        *(ssef*)&grid_ny[4*i] = normal.y;
-        *(ssef*)&grid_nz[4*i] = normal.z;        
+        float4 uu      = load4f(&grid_u[4*i]);
+        float4 vv      = load4f(&grid_v[4*i]);
+        Vec3f4 normal = normalize(patch.normal(uu,vv));
+        *(float4*)&grid_nx[4*i] = normal.x;
+        *(float4*)&grid_ny[4*i] = normal.y;
+        *(float4*)&grid_nz[4*i] = normal.z;        
       }
 #endif
       

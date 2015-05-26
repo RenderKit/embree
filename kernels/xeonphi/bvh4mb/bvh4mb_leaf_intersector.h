@@ -28,104 +28,104 @@ namespace embree
     // === single ray === 
     // ==================
     static __forceinline bool intersect(BVH4i::NodeRef curNode,
-					const mic_f &dir_xyz,
-					const mic_f &org_xyz,
-					const mic_f &min_dist_xyz,
-					mic_f &max_dist_xyz,
+					const float16 &dir_xyz,
+					const float16 &org_xyz,
+					const float16 &min_dist_xyz,
+					float16 &max_dist_xyz,
 					Ray& ray, 
 					const void *__restrict__ const accel,
 					const Scene*__restrict__ const geometry)
     {
-      const mic_f time     = broadcast1to16f(&ray.time);
-      const mic_f one_time = (mic_f::one() - time);
+      const float16 time     = broadcast1to16f(&ray.time);
+      const float16 one_time = (float16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
-      prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
+      prefetch<PFHINT_L2>((float16*)tptr +  0); 
+      prefetch<PFHINT_L2>((float16*)tptr +  1); 
+      prefetch<PFHINT_L2>((float16*)tptr +  2); 
+      prefetch<PFHINT_L2>((float16*)tptr +  3); 
+      prefetch<PFHINT_L2>((float16*)tptr +  4); 
+      prefetch<PFHINT_L2>((float16*)tptr +  5); 
+      prefetch<PFHINT_L2>((float16*)tptr +  6); 
+      prefetch<PFHINT_L2>((float16*)tptr +  7); 
 
-      const mic_i and_mask = broadcast4to16i(zlc4);
+      const int16 and_mask = broadcast4to16i(zlc4);
 	      
-      const mic_f v0_t0 = gather_4f_zlc(and_mask,
+      const float16 v0_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v0,
 					(float*)&tptr[1].t0.v0,
 					(float*)&tptr[2].t0.v0,
 					(float*)&tptr[3].t0.v0);
 	      
-      const mic_f v1_t0 = gather_4f_zlc(and_mask,
+      const float16 v1_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v1,
 					(float*)&tptr[1].t0.v1,
 					(float*)&tptr[2].t0.v1,
 					(float*)&tptr[3].t0.v1);
 	      
-      const mic_f v2_t0 = gather_4f_zlc(and_mask,
+      const float16 v2_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v2,
 					(float*)&tptr[1].t0.v2,
 					(float*)&tptr[2].t0.v2,
 					(float*)&tptr[3].t0.v2);
 
-      const mic_f v0_t1 = gather_4f_zlc(and_mask,
+      const float16 v0_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v0,
 					(float*)&tptr[1].t1.v0,
 					(float*)&tptr[2].t1.v0,
 					(float*)&tptr[3].t1.v0);
 	      
-      const mic_f v1_t1 = gather_4f_zlc(and_mask,
+      const float16 v1_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v1,
 					(float*)&tptr[1].t1.v1,
 					(float*)&tptr[2].t1.v1,
 					(float*)&tptr[3].t1.v1);
 	      
-      const mic_f v2_t1 = gather_4f_zlc(and_mask,
+      const float16 v2_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v2,
 					(float*)&tptr[1].t1.v2,
 					(float*)&tptr[2].t1.v2,
 					(float*)&tptr[3].t1.v2);
 
-      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+      const float16 v0 = v0_t0 * one_time + time * v0_t1;
+      const float16 v1 = v1_t0 * one_time + time * v1_t1;
+      const float16 v2 = v2_t0 * one_time + time * v2_t1;
 
-      const mic_f e1 = v1 - v0;
-      const mic_f e2 = v0 - v2;	     
-      const mic_f normal = lcross_zxy(e1,e2);
-      const mic_f org = v0 - org_xyz;
-      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-      const mic_f rcp_den = rcp(den);
-      const mic_f uu = ldot3_zxy(e2,odzxy); 
-      const mic_f vv = ldot3_zxy(e1,odzxy); 
-      const mic_f u = uu * rcp_den;
-      const mic_f v = vv * rcp_den;
+      const float16 e1 = v1 - v0;
+      const float16 e2 = v0 - v2;	     
+      const float16 normal = lcross_zxy(e1,e2);
+      const float16 org = v0 - org_xyz;
+      const float16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const float16 den = ldot3_zxy(dir_xyz,normal);	      
+      const float16 rcp_den = rcp(den);
+      const float16 uu = ldot3_zxy(e2,odzxy); 
+      const float16 vv = ldot3_zxy(e1,odzxy); 
+      const float16 u = uu * rcp_den;
+      const float16 v = vv * rcp_den;
 #if defined(RTCORE_BACKFACE_CULLING)
-      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+      const bool16 m_init = (bool16)0x1111 & (den > zero);
 #else
-      const mic_m m_init = 0x1111;
+      const bool16 m_init = 0x1111;
 #endif
-      const mic_m valid_u = ge(m_init,u,zero);
-      const mic_m valid_v = ge(valid_u,v,zero);
-      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+      const bool16 valid_u = ge(m_init,u,zero);
+      const bool16 valid_v = ge(valid_u,v,zero);
+      const bool16 m_aperture = le(valid_v,u+v,float16::one()); 
 
-      const mic_f nom = ldot3_zxy(org,normal);
+      const float16 nom = ldot3_zxy(org,normal);
 
       if (unlikely(none(m_aperture))) return false;
 
-      const mic_f t = rcp_den*nom;
-      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+      const float16 t = rcp_den*nom;
+      bool16 m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
       max_dist_xyz  = select(m_final,t,max_dist_xyz);
 		    
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(RTCORE_RAY_MASK)
-      const mic_i rayMask(ray.mask);
-      const mic_i triMask = getTriMasks(tptr); 
-      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+      const int16 rayMask(ray.mask);
+      const int16 triMask = getTriMasks(tptr); 
+      const bool16 m_ray_mask = (rayMask & triMask) != int16::zero();
       m_final &= m_ray_mask;	      
 #endif
 
@@ -133,22 +133,22 @@ namespace embree
       /* did the ray hot one of the four triangles? */
       if (unlikely(any(m_final)))
 	{
-	  const mic_f min_dist = vreduce_min(max_dist_xyz);
-	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	  const float16 min_dist = vreduce_min(max_dist_xyz);
+	  const bool16 m_dist = eq(min_dist,max_dist_xyz);
 
-	  prefetch<PFHINT_L1EX>((mic_f*)&ray + 0);
-	  prefetch<PFHINT_L1EX>((mic_f*)&ray + 1);
+	  prefetch<PFHINT_L1EX>((float16*)&ray + 0);
+	  prefetch<PFHINT_L1EX>((float16*)&ray + 1);
 
 	  const size_t vecIndex = bitscan(toInt(m_dist));
 	  const size_t triIndex = vecIndex >> 2;
 
 	  const BVH4mb::Triangle01  *__restrict__ tri_ptr = tptr + triIndex;
 
-	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	  const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
 
-	  const mic_f gnormalz = swAAAA(normal);
-	  const mic_f gnormalx = swBBBB(normal);
-	  const mic_f gnormaly = swCCCC(normal);
+	  const float16 gnormalz = swAAAA(normal);
+	  const float16 gnormalx = swBBBB(normal);
+	  const float16 gnormaly = swCCCC(normal);
 		  
 	  max_dist_xyz = min_dist;
 
@@ -167,102 +167,102 @@ namespace embree
     }
 
       static __forceinline bool occluded(BVH4i::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
     {
-      const mic_f time     = broadcast1to16f(&ray.time);
-      const mic_f one_time = (mic_f::one() - time);
+      const float16 time     = broadcast1to16f(&ray.time);
+      const float16 one_time = (float16::one() - time);
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  3); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
+      prefetch<PFHINT_L2>((float16*)tptr +  0); 
+      prefetch<PFHINT_L2>((float16*)tptr +  1); 
+      prefetch<PFHINT_L2>((float16*)tptr +  2); 
+      prefetch<PFHINT_L2>((float16*)tptr +  3); 
+      prefetch<PFHINT_L2>((float16*)tptr +  4); 
+      prefetch<PFHINT_L2>((float16*)tptr +  5); 
+      prefetch<PFHINT_L2>((float16*)tptr +  6); 
+      prefetch<PFHINT_L2>((float16*)tptr +  7); 
 
-      const mic_i and_mask = broadcast4to16i(zlc4);
+      const int16 and_mask = broadcast4to16i(zlc4);
 	      
-      const mic_f v0_t0 = gather_4f_zlc(and_mask,
+      const float16 v0_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v0,
 					(float*)&tptr[1].t0.v0,
 					(float*)&tptr[2].t0.v0,
 					(float*)&tptr[3].t0.v0);
 	      
-      const mic_f v1_t0 = gather_4f_zlc(and_mask,
+      const float16 v1_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v1,
 					(float*)&tptr[1].t0.v1,
 					(float*)&tptr[2].t0.v1,
 					(float*)&tptr[3].t0.v1);
 	      
-      const mic_f v2_t0 = gather_4f_zlc(and_mask,
+      const float16 v2_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v2,
 					(float*)&tptr[1].t0.v2,
 					(float*)&tptr[2].t0.v2,
 					(float*)&tptr[3].t0.v2);
 
-      const mic_f v0_t1 = gather_4f_zlc(and_mask,
+      const float16 v0_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v0,
 					(float*)&tptr[1].t1.v0,
 					(float*)&tptr[2].t1.v0,
 					(float*)&tptr[3].t1.v0);
 	      
-      const mic_f v1_t1 = gather_4f_zlc(and_mask,
+      const float16 v1_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v1,
 					(float*)&tptr[1].t1.v1,
 					(float*)&tptr[2].t1.v1,
 					(float*)&tptr[3].t1.v1);
 	      
-      const mic_f v2_t1 = gather_4f_zlc(and_mask,
+      const float16 v2_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v2,
 					(float*)&tptr[1].t1.v2,
 					(float*)&tptr[2].t1.v2,
 					(float*)&tptr[3].t1.v2);
 
 
-      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+      const float16 v0 = v0_t0 * one_time + time * v0_t1;
+      const float16 v1 = v1_t0 * one_time + time * v1_t1;
+      const float16 v2 = v2_t0 * one_time + time * v2_t1;
 
-      const mic_f e1 = v1 - v0;
-      const mic_f e2 = v0 - v2;	     
-      const mic_f normal = lcross_zxy(e1,e2);
-      const mic_f org = v0 - org_xyz;
-      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-      const mic_f rcp_den = rcp(den);
-      const mic_f uu = ldot3_zxy(e2,odzxy); 
-      const mic_f vv = ldot3_zxy(e1,odzxy); 
-      const mic_f u = uu * rcp_den;
-      const mic_f v = vv * rcp_den;
+      const float16 e1 = v1 - v0;
+      const float16 e2 = v0 - v2;	     
+      const float16 normal = lcross_zxy(e1,e2);
+      const float16 org = v0 - org_xyz;
+      const float16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const float16 den = ldot3_zxy(dir_xyz,normal);	      
+      const float16 rcp_den = rcp(den);
+      const float16 uu = ldot3_zxy(e2,odzxy); 
+      const float16 vv = ldot3_zxy(e1,odzxy); 
+      const float16 u = uu * rcp_den;
+      const float16 v = vv * rcp_den;
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+      const bool16 m_init = (bool16)0x1111 & (den > zero);
 #else
-      const mic_m m_init = 0x1111;
+      const bool16 m_init = 0x1111;
 #endif
-      const mic_m valid_u = ge(m_init,u,zero);
-      const mic_m valid_v = ge(valid_u,v,zero);
-      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+      const bool16 valid_u = ge(m_init,u,zero);
+      const bool16 valid_v = ge(valid_u,v,zero);
+      const bool16 m_aperture = le(valid_v,u+v,float16::one()); 
 
-      const mic_f nom = ldot3_zxy(org,normal);
-      const mic_f t = rcp_den*nom;
+      const float16 nom = ldot3_zxy(org,normal);
+      const float16 t = rcp_den*nom;
 
       if (unlikely(none(m_aperture))) return false;
 
-      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+      bool16 m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 #if defined(RTCORE_RAY_MASK)
-      const mic_i rayMask(ray.mask);
-      const mic_i triMask = getTriMasks(tptr); 
-      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+      const int16 rayMask(ray.mask);
+      const int16 triMask = getTriMasks(tptr); 
+      const bool16 m_ray_mask = (rayMask & triMask) != int16::zero();
       m_final &= m_ray_mask;	      
 #endif
 
@@ -275,108 +275,108 @@ namespace embree
     // ============================================
     static __forceinline bool intersect(BVH4i::NodeRef curNode,
 					const size_t rayIndex, 
-					const mic_f &dir_xyz,
-					const mic_f &org_xyz,
-					const mic_f &min_dist_xyz,
-					mic_f &max_dist_xyz,
+					const float16 &dir_xyz,
+					const float16 &org_xyz,
+					const float16 &min_dist_xyz,
+					float16 &max_dist_xyz,
 					Ray16& ray16, 
 					const void *__restrict__ const accel,
 					const Scene*__restrict__ const geometry)
     {
-      const mic_f time     = broadcast1to16f(&ray16.time[rayIndex]);
-      const mic_f one_time = (mic_f::one() - time);
+      const float16 time     = broadcast1to16f(&ray16.time[rayIndex]);
+      const float16 one_time = (float16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
 	      
-      prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
+      prefetch<PFHINT_L1>((float16*)tptr +  0); 
+      prefetch<PFHINT_L1>((float16*)tptr +  1); 
+      prefetch<PFHINT_L1>((float16*)tptr +  2); 
+      prefetch<PFHINT_L1>((float16*)tptr +  3); 
+      prefetch<PFHINT_L2>((float16*)tptr +  4); 
+      prefetch<PFHINT_L2>((float16*)tptr +  5); 
+      prefetch<PFHINT_L2>((float16*)tptr +  6); 
+      prefetch<PFHINT_L2>((float16*)tptr +  7); 
 
-      const mic_i and_mask = broadcast4to16i(zlc4);
+      const int16 and_mask = broadcast4to16i(zlc4);
 	     
 
-      const mic_f v0_t0 = gather_4f_zlc(and_mask,
+      const float16 v0_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v0,
 					(float*)&tptr[1].t0.v0,
 					(float*)&tptr[2].t0.v0,
 					(float*)&tptr[3].t0.v0);
 	      
-      const mic_f v1_t0 = gather_4f_zlc(and_mask,
+      const float16 v1_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v1,
 					(float*)&tptr[1].t0.v1,
 					(float*)&tptr[2].t0.v1,
 					(float*)&tptr[3].t0.v1);
 	      
-      const mic_f v2_t0 = gather_4f_zlc(and_mask,
+      const float16 v2_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v2,
 					(float*)&tptr[1].t0.v2,
 					(float*)&tptr[2].t0.v2,
 					(float*)&tptr[3].t0.v2);
 
-      const mic_f v0_t1 = gather_4f_zlc(and_mask,
+      const float16 v0_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v0,
 					(float*)&tptr[1].t1.v0,
 					(float*)&tptr[2].t1.v0,
 					(float*)&tptr[3].t1.v0);
 	      
-      const mic_f v1_t1 = gather_4f_zlc(and_mask,
+      const float16 v1_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v1,
 					(float*)&tptr[1].t1.v1,
 					(float*)&tptr[2].t1.v1,
 					(float*)&tptr[3].t1.v1);
 	      
-      const mic_f v2_t1 = gather_4f_zlc(and_mask,
+      const float16 v2_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v2,
 					(float*)&tptr[1].t1.v2,
 					(float*)&tptr[2].t1.v2,
 					(float*)&tptr[3].t1.v2);
 
-      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+      const float16 v0 = v0_t0 * one_time + time * v0_t1;
+      const float16 v1 = v1_t0 * one_time + time * v1_t1;
+      const float16 v2 = v2_t0 * one_time + time * v2_t1;
 
-      const mic_f e1 = v1 - v0;
-      const mic_f e2 = v0 - v2;	     
-      const mic_f normal = lcross_zxy(e1,e2);
-      const mic_f org = v0 - org_xyz;
-      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-      const mic_f rcp_den = rcp(den);
-      const mic_f uu = ldot3_zxy(e2,odzxy); 
-      const mic_f vv = ldot3_zxy(e1,odzxy); 
-      const mic_f u = uu * rcp_den;
-      const mic_f v = vv * rcp_den;
+      const float16 e1 = v1 - v0;
+      const float16 e2 = v0 - v2;	     
+      const float16 normal = lcross_zxy(e1,e2);
+      const float16 org = v0 - org_xyz;
+      const float16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const float16 den = ldot3_zxy(dir_xyz,normal);	      
+      const float16 rcp_den = rcp(den);
+      const float16 uu = ldot3_zxy(e2,odzxy); 
+      const float16 vv = ldot3_zxy(e1,odzxy); 
+      const float16 u = uu * rcp_den;
+      const float16 v = vv * rcp_den;
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+      const bool16 m_init = (bool16)0x1111 & (den > zero);
 #else
-      const mic_m m_init = 0x1111;
+      const bool16 m_init = 0x1111;
 #endif
 
-      const mic_m valid_u = ge(m_init,u,zero);
-      const mic_m valid_v = ge(valid_u,v,zero);
-      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+      const bool16 valid_u = ge(m_init,u,zero);
+      const bool16 valid_v = ge(valid_u,v,zero);
+      const bool16 m_aperture = le(valid_v,u+v,float16::one()); 
 
-      const mic_f nom = ldot3_zxy(org,normal);
+      const float16 nom = ldot3_zxy(org,normal);
 
       if (unlikely(none(m_aperture))) return false;
-      const mic_f t = rcp_den*nom;
+      const float16 t = rcp_den*nom;
 
-      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+      bool16 m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
       max_dist_xyz  = select(m_final,t,max_dist_xyz);
 		    
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if defined(RTCORE_RAY_MASK)
-      const mic_i rayMask(ray16.mask[rayIndex]);
-      const mic_i triMask = getTriMasks(tptr); 
-      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+      const int16 rayMask(ray16.mask[rayIndex]);
+      const int16 triMask = getTriMasks(tptr); 
+      const bool16 m_ray_mask = (rayMask & triMask) != int16::zero();
       m_final &= m_ray_mask;	      
 #endif
 
@@ -384,19 +384,19 @@ namespace embree
       /* did the ray hot one of the four triangles? */
       if (unlikely(any(m_final)))
 	{
-	  const mic_f min_dist = vreduce_min(max_dist_xyz);
-	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	  const float16 min_dist = vreduce_min(max_dist_xyz);
+	  const bool16 m_dist = eq(min_dist,max_dist_xyz);
 
 	  const size_t vecIndex = bitscan(toInt(m_dist));
 	  const size_t triIndex = vecIndex >> 2;
 
 	  const BVH4mb::Triangle01  *__restrict__ tri_ptr = tptr + triIndex;
 
-	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	  const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
 		  
-	  const mic_f gnormalz = swAAAA(normal);
-	  const mic_f gnormalx = swBBBB(normal);
-	  const mic_f gnormaly = swCCCC(normal);
+	  const float16 gnormalz = swAAAA(normal);
+	  const float16 gnormalx = swBBBB(normal);
+	  const float16 gnormaly = swCCCC(normal);
 
 	  prefetch<PFHINT_L1EX>(&ray16.tfar);  
 	  prefetch<PFHINT_L1EX>(&ray16.u);
@@ -427,111 +427,111 @@ namespace embree
 
     static __forceinline bool occluded(BVH4i::NodeRef curNode,
 				       const size_t rayIndex, 
-				       const mic_f &dir_xyz,
-				       const mic_f &org_xyz,
-				       const mic_f &min_dist_xyz,
-				       const mic_f &max_dist_xyz,
+				       const float16 &dir_xyz,
+				       const float16 &org_xyz,
+				       const float16 &min_dist_xyz,
+				       const float16 &max_dist_xyz,
 				       const Ray16& ray16, 
-				       mic_m &m_terminated,
+				       bool16 &m_terminated,
 				       const void *__restrict__ const accel,
 				       const Scene*__restrict__ const geometry)
     {
-      const mic_f time     = broadcast1to16f(&ray16.time[rayIndex]);
-      const mic_f one_time = (mic_f::one() - time);
+      const float16 time     = broadcast1to16f(&ray16.time[rayIndex]);
+      const float16 one_time = (float16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  0); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  1); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  2); 
-      prefetch<PFHINT_L1>((mic_f*)tptr +  3); 
+      prefetch<PFHINT_L1>((float16*)tptr +  0); 
+      prefetch<PFHINT_L1>((float16*)tptr +  1); 
+      prefetch<PFHINT_L1>((float16*)tptr +  2); 
+      prefetch<PFHINT_L1>((float16*)tptr +  3); 
 
-      const mic_i and_mask = broadcast4to16i(zlc4);
+      const int16 and_mask = broadcast4to16i(zlc4);
 	      
-      const mic_f v0_t0 = gather_4f_zlc(and_mask,
+      const float16 v0_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v0,
 					(float*)&tptr[1].t0.v0,
 					(float*)&tptr[2].t0.v0,
 					(float*)&tptr[3].t0.v0);
 	      
-      const mic_f v1_t0 = gather_4f_zlc(and_mask,
+      const float16 v1_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v1,
 					(float*)&tptr[1].t0.v1,
 					(float*)&tptr[2].t0.v1,
 					(float*)&tptr[3].t0.v1);
 	      
-      const mic_f v2_t0 = gather_4f_zlc(and_mask,
+      const float16 v2_t0 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t0.v2,
 					(float*)&tptr[1].t0.v2,
 					(float*)&tptr[2].t0.v2,
 					(float*)&tptr[3].t0.v2);
 
 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  4); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  5); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  6); 
-      prefetch<PFHINT_L2>((mic_f*)tptr +  7); 
+      prefetch<PFHINT_L2>((float16*)tptr +  4); 
+      prefetch<PFHINT_L2>((float16*)tptr +  5); 
+      prefetch<PFHINT_L2>((float16*)tptr +  6); 
+      prefetch<PFHINT_L2>((float16*)tptr +  7); 
 
-      const mic_f v0_t1 = gather_4f_zlc(and_mask,
+      const float16 v0_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v0,
 					(float*)&tptr[1].t1.v0,
 					(float*)&tptr[2].t1.v0,
 					(float*)&tptr[3].t1.v0);
 	      
-      const mic_f v1_t1 = gather_4f_zlc(and_mask,
+      const float16 v1_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v1,
 					(float*)&tptr[1].t1.v1,
 					(float*)&tptr[2].t1.v1,
 					(float*)&tptr[3].t1.v1);
 	      
-      const mic_f v2_t1 = gather_4f_zlc(and_mask,
+      const float16 v2_t1 = gather_4f_zlc(and_mask,
 					(float*)&tptr[0].t1.v2,
 					(float*)&tptr[1].t1.v2,
 					(float*)&tptr[2].t1.v2,
 					(float*)&tptr[3].t1.v2);
 
-      const mic_f v0 = v0_t0 * one_time + time * v0_t1;
-      const mic_f v1 = v1_t0 * one_time + time * v1_t1;
-      const mic_f v2 = v2_t0 * one_time + time * v2_t1;
+      const float16 v0 = v0_t0 * one_time + time * v0_t1;
+      const float16 v1 = v1_t0 * one_time + time * v1_t1;
+      const float16 v2 = v2_t0 * one_time + time * v2_t1;
 
-      const mic_f e1 = v1 - v0;
-      const mic_f e2 = v0 - v2;	     
-      const mic_f normal = lcross_zxy(e1,e2);
-      const mic_f org = v0 - org_xyz;
-      const mic_f odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
-      const mic_f den = ldot3_zxy(dir_xyz,normal);	      
-      const mic_f rcp_den = rcp(den);
-      const mic_f uu = ldot3_zxy(e2,odzxy); 
-      const mic_f vv = ldot3_zxy(e1,odzxy); 
-      const mic_f u = uu * rcp_den;
-      const mic_f v = vv * rcp_den;
+      const float16 e1 = v1 - v0;
+      const float16 e2 = v0 - v2;	     
+      const float16 normal = lcross_zxy(e1,e2);
+      const float16 org = v0 - org_xyz;
+      const float16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const float16 den = ldot3_zxy(dir_xyz,normal);	      
+      const float16 rcp_den = rcp(den);
+      const float16 uu = ldot3_zxy(e2,odzxy); 
+      const float16 vv = ldot3_zxy(e1,odzxy); 
+      const float16 u = uu * rcp_den;
+      const float16 v = vv * rcp_den;
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      const mic_m m_init = (mic_m)0x1111 & (den > zero);
+      const bool16 m_init = (bool16)0x1111 & (den > zero);
 #else
-      const mic_m m_init = 0x1111;
+      const bool16 m_init = 0x1111;
 #endif
 
-      const mic_m valid_u = ge((mic_m)m_init,u,zero);
-      const mic_m valid_v = ge(valid_u,v,zero);
-      const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+      const bool16 valid_u = ge((bool16)m_init,u,zero);
+      const bool16 valid_v = ge(valid_u,v,zero);
+      const bool16 m_aperture = le(valid_v,u+v,float16::one()); 
 
-      const mic_f nom = ldot3_zxy(org,normal);
-      const mic_f t = rcp_den*nom;
+      const float16 nom = ldot3_zxy(org,normal);
+      const float16 t = rcp_den*nom;
       if (unlikely(none(m_aperture))) return false;
 
-      mic_m m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
+      bool16 m_final  = lt(lt(m_aperture,min_dist_xyz,t),t,max_dist_xyz);
 
 #if defined(RTCORE_RAY_MASK)
-      const mic_i rayMask(ray16.mask[rayIndex]);
-      const mic_i triMask = getTriMasks(tptr); 
-      const mic_m m_ray_mask = (rayMask & triMask) != mic_i::zero();
+      const int16 rayMask(ray16.mask[rayIndex]);
+      const int16 triMask = getTriMasks(tptr); 
+      const bool16 m_ray_mask = (rayMask & triMask) != int16::zero();
       m_final &= m_ray_mask;	      
 #endif
 
       if (unlikely(any(m_final)))
 	{
-	  m_terminated |= mic_m::shift1[rayIndex];
+	  m_terminated |= bool16::shift1[rayIndex];
 	  return true;
 	}
       return false;
@@ -543,31 +543,31 @@ namespace embree
       // ========================
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
-					    const mic_m m_valid_leaf, 
-					    const mic3f &dir,
-					    const mic3f &org,
+					    const bool16 m_valid_leaf, 
+					    const Vec3f16 &dir,
+					    const Vec3f16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
       {
 
-	const mic_f time     = ray16.time;
-	const mic_f one_time = (mic_f::one() - time);
+	const float16 time     = ray16.time;
+	const float16 one_time = (float16::one() - time);
 
 	unsigned int items; 
 	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
 
-	const mic_f zero = mic_f::zero();
-	const mic_f one  = mic_f::one();
+	const float16 zero = float16::zero();
+	const float16 one  = float16::one();
 
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
+	prefetch<PFHINT_L1>((float16*)tris +  0); 
+	prefetch<PFHINT_L2>((float16*)tris +  1); 
+	prefetch<PFHINT_L2>((float16*)tris +  2); 
+	prefetch<PFHINT_L2>((float16*)tris +  3); 
+	prefetch<PFHINT_L2>((float16*)tris +  4); 
+	prefetch<PFHINT_L2>((float16*)tris +  5); 
+	prefetch<PFHINT_L2>((float16*)tris +  6); 
+	prefetch<PFHINT_L2>((float16*)tris +  7); 
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -580,27 +580,27 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
 	    /* load vertices and calculate edges */
-	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
+	    const Vec3f16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const Vec3f16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3f16 v0 = v0_t0 * one_time + time * v0_t1;
+	    const Vec3f16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const Vec3f16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3f16 v1 = v1_t0 * one_time + time * v1_t1;
+	    const Vec3f16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const Vec3f16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3f16 v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const mic3f e1 = v0-v1;
-	    const mic3f e2 = v2-v0;
+	    const Vec3f16 e1 = v0-v1;
+	    const Vec3f16 e2 = v2-v0;
 
-	    const mic3f Ng = cross(e1,e2);
+	    const Vec3f16 Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const mic3f C =  v0 - org;
+	    const Vec3f16 C =  v0 - org;
 	    
-	    const mic_f den = dot(Ng,dir);
+	    const float16 den = dot(Ng,dir);
 
-	    mic_m valid = m_valid_leaf;
+	    bool16 valid = m_valid_leaf;
 
 #if defined(RTCORE_BACKFACE_CULLING)
 	    
@@ -608,17 +608,17 @@ namespace embree
 #endif
 
 	    /* perform edge tests */
-	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
-	    const mic_f u = dot(R,e2)*rcp_den;
-	    const mic_f v = dot(R,e1)*rcp_den;
+	    const float16 rcp_den = rcp(den);
+	    const Vec3f16 R = cross(dir,C);
+	    const float16 u = dot(R,e2)*rcp_den;
+	    const float16 v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);
 	    prefetch<PFHINT_L1EX>(&ray16.u);      
 	    prefetch<PFHINT_L1EX>(&ray16.v);      
 	    prefetch<PFHINT_L1EX>(&ray16.tfar);      
-	    const mic_f t = dot(C,Ng) * rcp_den;
+	    const float16 t = dot(C,Ng) * rcp_den;
 
 	    if (unlikely(none(valid))) continue;
       
@@ -626,8 +626,8 @@ namespace embree
 	    valid = ge(valid, t,ray16.tnear);
 	    valid = ge(valid,ray16.tfar,t);
 
-	    const mic_i geomID = tri_t0.geomID();
-	    const mic_i primID = tri_t0.primID();
+	    const int16 geomID = tri_t0.geomID();
+	    const int16 primID = tri_t0.primID();
 	    prefetch<PFHINT_L1EX>(&ray16.geomID);      
 	    prefetch<PFHINT_L1EX>(&ray16.primID);      
 	    prefetch<PFHINT_L1EX>(&ray16.Ng.x);      
@@ -636,7 +636,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-	    valid &= (mic_i(tri_t0.mask()) & ray16.mask) != 0;
+	    valid &= (int16(tri_t0.mask()) & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
         
@@ -653,32 +653,32 @@ namespace embree
       }
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
-					   const mic_m m_valid_leaf_active, 
-					   const mic3f &dir,
-					   const mic3f &org,
+					   const bool16 m_valid_leaf_active, 
+					   const Vec3f16 &dir,
+					   const Vec3f16 &org,
 					   Ray16& ray16, 
-					   mic_m &m_terminated,					    
+					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
 					   const Scene     *__restrict__ const geometry)
       {
-	mic_m m_valid_leaf = m_valid_leaf_active;
+	bool16 m_valid_leaf = m_valid_leaf_active;
 
-	const mic_f time     = ray16.time;
-	const mic_f one_time = (mic_f::one() - time);
+	const float16 time     = ray16.time;
+	const float16 one_time = (float16::one() - time);
 
 	unsigned int items; 
 	const BVH4mb::Triangle01* tris  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel,items);
 
-	prefetch<PFHINT_L1>((mic_f*)tris +  0); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  1); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  2); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  3); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  4); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  5); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  6); 
-	prefetch<PFHINT_L2>((mic_f*)tris +  7); 
+	prefetch<PFHINT_L1>((float16*)tris +  0); 
+	prefetch<PFHINT_L2>((float16*)tris +  1); 
+	prefetch<PFHINT_L2>((float16*)tris +  2); 
+	prefetch<PFHINT_L2>((float16*)tris +  3); 
+	prefetch<PFHINT_L2>((float16*)tris +  4); 
+	prefetch<PFHINT_L2>((float16*)tris +  5); 
+	prefetch<PFHINT_L2>((float16*)tris +  6); 
+	prefetch<PFHINT_L2>((float16*)tris +  7); 
 
-	const mic_f zero = mic_f::zero();
+	const float16 zero = float16::zero();
 
 	for (size_t i=0; i<items; i++) 
 	  {
@@ -691,27 +691,27 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf_active),16);
         
 	    /* load vertices and calculate edges */
-	    const mic3f v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const mic3f v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const mic3f v0 = v0_t0 * one_time + time * v0_t1;
-	    const mic3f v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const mic3f v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const mic3f v1 = v1_t0 * one_time + time * v1_t1;
-	    const mic3f v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const mic3f v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const mic3f v2 = v2_t0 * one_time + time * v2_t1;
+	    const Vec3f16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const Vec3f16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3f16 v0 = v0_t0 * one_time + time * v0_t1;
+	    const Vec3f16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const Vec3f16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3f16 v1 = v1_t0 * one_time + time * v1_t1;
+	    const Vec3f16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const Vec3f16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3f16 v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const mic3f e1 = v0-v1;
-	    const mic3f e2 = v2-v0;
+	    const Vec3f16 e1 = v0-v1;
+	    const Vec3f16 e2 = v2-v0;
 
-	    const mic3f Ng = cross(e1,e2);
+	    const Vec3f16 Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const mic3f C =  v0 - org;
+	    const Vec3f16 C =  v0 - org;
 	    
-	    const mic_f den = dot(Ng,dir);
+	    const float16 den = dot(Ng,dir);
 
-	    mic_m valid = m_valid_leaf;
+	    bool16 valid = m_valid_leaf;
 
 #if defined(RTCORE_BACKFACE_CULLING)
 	    
@@ -719,14 +719,14 @@ namespace embree
 #endif
 
 	    /* perform edge tests */
-	    const mic_f rcp_den = rcp(den);
-	    const mic3f R = cross(dir,C);
-	    const mic_f u = dot(R,e2)*rcp_den;
-	    const mic_f v = dot(R,e1)*rcp_den;
+	    const float16 rcp_den = rcp(den);
+	    const Vec3f16 R = cross(dir,C);
+	    const float16 u = dot(R,e2)*rcp_den;
+	    const float16 v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
 	    valid = le(valid,u+v,one);
-	    const mic_f t = dot(C,Ng) * rcp_den;
+	    const float16 t = dot(C,Ng) * rcp_den;
 
 	    if (unlikely(none(valid))) continue;
       
@@ -736,7 +736,7 @@ namespace embree
 
 	    /* ray masking test */
 #if defined(RTCORE_RAY_MASK)
-	    valid &= (mic_i(tri_t0.mask()) & ray16.mask) != 0;
+	    valid &= (int16(tri_t0.mask()) & ray16.mask) != 0;
 #endif
 	    if (unlikely(none(valid))) continue;
 	    

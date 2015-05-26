@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tutorial/tutorial.h"
-#include "image/image.h"
+#include "../common/tutorial/tutorial.h"
+#include "../common/image/image.h"
 
 namespace embree
 {

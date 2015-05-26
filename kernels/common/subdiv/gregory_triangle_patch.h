@@ -19,200 +19,161 @@
 #include "catmullclark_patch.h"
 
 namespace embree
-{  
-  class __aligned(64) GregoryTrianglePatch 
+{
+  template<typename Vertex, typename Vertex_t = Vertex>  
+  class __aligned(64) GregoryTrianglePatchT 
   {
+     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
+   
   public:
 
-    Vec3fa v[4][4];
+    Vertex v[4][4];
         
-    GregoryTrianglePatch() {
-      memset(this,0,sizeof(GregoryTrianglePatch));
+    GregoryTrianglePatchT() {
+      memset(this,0,sizeof(GregoryTrianglePatchT));
     }
      
-    Vec3fa& p0() { return v[0][0]; }
-    Vec3fa& p1() { return v[0][3]; }
-    Vec3fa& p2() { return v[3][3]; }
-    //Vec3fa& p3() { return v[3][0]; }
+    Vertex& p0() { return v[0][0]; }
+    Vertex& p1() { return v[0][3]; }
+    Vertex& p2() { return v[3][3]; }
+    //Vertex& p3() { return v[3][0]; }
     
-    Vec3fa& e0_p() { return v[0][1]; }
-    Vec3fa& e0_m() { return v[1][0]; }
-    Vec3fa& e1_p() { return v[1][3]; }
-    Vec3fa& e1_m() { return v[0][2]; }
-    Vec3fa& e2_p() { return v[3][2]; }
-    Vec3fa& e2_m() { return v[2][3]; }
-    //Vec3fa& e3_p() { return v[2][0]; }
-    //Vec3fa& e3_m() { return v[3][1]; }
+    Vertex& e0_p() { return v[0][1]; }
+    Vertex& e0_m() { return v[1][0]; }
+    Vertex& e1_p() { return v[1][3]; }
+    Vertex& e1_m() { return v[0][2]; }
+    Vertex& e2_p() { return v[3][2]; }
+    Vertex& e2_m() { return v[2][3]; }
+    //Vertex& e3_p() { return v[2][0]; }
+    //Vertex& e3_m() { return v[3][1]; }
     
-    Vec3fa& f0_p() { return v[1][1]; }
-    Vec3fa& f1_p() { return v[1][2]; }
-    Vec3fa& f2_p() { return v[2][2]; }
-    //Vec3fa& f3_p() { return v[2][1]; }
-    Vec3fa& f0_m() { return v[3][0]; }
-    Vec3fa& f1_m() { return v[2][0]; }
-    Vec3fa& f2_m() { return v[1][0]; }
-    //Vec3fa& f3_m() { return f[1][0]; }
+    Vertex& f0_p() { return v[1][1]; }
+    Vertex& f1_p() { return v[1][2]; }
+    Vertex& f2_p() { return v[2][2]; }
+    //Vertex& f3_p() { return v[2][1]; }
+    Vertex& f0_m() { return v[3][0]; }
+    Vertex& f1_m() { return v[2][0]; }
+    Vertex& f2_m() { return v[3][1]; }
+    //Vertex& f3_m() { return f[1][0]; }
     
-    const Vec3fa& p0() const { return v[0][0]; }
-    const Vec3fa& p1() const { return v[0][3]; }
-    const Vec3fa& p2() const { return v[3][3]; }
+    const Vertex& p0() const { return v[0][0]; }
+    const Vertex& p1() const { return v[0][3]; }
+    const Vertex& p2() const { return v[3][3]; }
     
-    const Vec3fa& e0_p() const { return v[0][1]; }
-    const Vec3fa& e1_p() const { return v[1][3]; }
-    const Vec3fa& e2_p() const { return v[3][2]; }
+    const Vertex& e0_p() const { return v[0][1]; }
+    const Vertex& e1_p() const { return v[1][3]; }
+    const Vertex& e2_p() const { return v[3][2]; }
 
-    const Vec3fa& e0_m() const { return v[1][0]; }
-    const Vec3fa& e1_m() const { return v[0][2]; }
-    const Vec3fa& e2_m() const { return v[2][3]; }
+    const Vertex& e0_m() const { return v[1][0]; }
+    const Vertex& e1_m() const { return v[0][2]; }
+    const Vertex& e2_m() const { return v[2][3]; }
     
-    const Vec3fa& f0_p() const { return v[1][1]; }
-    const Vec3fa& f1_p() const { return v[1][2]; }
-    const Vec3fa& f2_p() const { return v[2][2]; }
+    const Vertex& f0_p() const { return v[1][1]; }
+    const Vertex& f1_p() const { return v[1][2]; }
+    const Vertex& f2_p() const { return v[2][2]; }
 
-    const Vec3fa& f0_m() const { return v[3][0]; }
-    const Vec3fa& f1_m() const { return v[2][0]; }
-    const Vec3fa& f2_m() const { return v[1][0]; }
+    const Vertex& f0_m() const { return v[3][0]; }
+    const Vertex& f1_m() const { return v[2][0]; }
+    const Vertex& f2_m() const { return v[1][0]; }
     
-    
-    Vec3fa initCornerVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index)
+    void computeGregoryPatchFacePoints(const unsigned int face_valence,
+				       const Vertex& r_e_p, 
+				       const Vertex& r_e_m, 					 
+				       const Vertex& p_vtx, 
+				       const Vertex& e0_p_vtx, 
+				       const Vertex& e1_m_vtx, 
+				       const unsigned int face_valence_p1,
+				       const Vertex& e0_m_vtx,	
+				       const Vertex& e3_p_vtx,	
+				       const unsigned int face_valence_p3,
+				       Vertex& f_p_vtx, 
+				       Vertex& f_m_vtx,
+                                       const float d = 3.0f)
     {
-      return irreg_patch.ring[index].getLimitVertex();
-    }
-    
-    
-    Vec3fa initPositiveEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
-    {
-      const Vec3fa tangent = irreg_patch.ring[index].getLimitTangent();
-#if 0
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * tangent + p_vtx;
-#else
-      return 1.0f/3.0f * tangent + p_vtx;
-#endif
-    }
-    
-    Vec3fa initNegativeEdgeVertex(const CatmullClarkPatch3fa &irreg_patch, const size_t index, const Vec3fa &p_vtx)
-    {
-      const Vec3fa tangent = irreg_patch.ring[index].getSecondLimitTangent();
-#if 0
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * tangent + p_vtx;
-#else
-      return 1.0f/3.0f * tangent + p_vtx;
-#endif
-    }
-    
-    
-    void initFaceVertex(const CatmullClarkPatch3fa &irreg_patch,
-			const size_t index,
-			const Vec3fa &p_vtx,
-			const Vec3fa &e0_p_vtx,
-			const Vec3fa &e1_m_vtx,
-			const unsigned int face_valence_p1,
-			const Vec3fa &e0_m_vtx,
-			const Vec3fa &e3_p_vtx,
-			const unsigned int face_valence_p3,
-			Vec3fa &f_p_vtx,
-			Vec3fa &f_m_vtx)
-    {
-      const unsigned int face_valence = irreg_patch.ring[index].face_valence;
-      const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
-      const unsigned int border_index = irreg_patch.ring[index].border_index;
-      
-      const Vec3fa &vtx     = irreg_patch.ring[index].vtx;
-      const Vec3fa e_i      = irreg_patch.ring[index].getEdgeCenter( 0 );
-      const Vec3fa c_i_m_1  = irreg_patch.ring[index].getQuadCenter( 0 );
-      const Vec3fa e_i_m_1  = irreg_patch.ring[index].getEdgeCenter( 1 );
-      
-      Vec3fa c_i, e_i_p_1;
-      const bool hasHardEdge = \
-        std::isinf(irreg_patch.ring[index].vertex_crease_weight) &&
-        std::isinf(irreg_patch.ring[index].crease_weight[0]);
-                
-      if (unlikely(border_index == edge_valence-2) || hasHardEdge)
-      {
-        /* mirror quad center and edge mid-point */
-        c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
-        e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
-      }
-      else
-      {
-        c_i     = irreg_patch.ring[index].getQuadCenter( face_valence-1 );
-        e_i_p_1 = irreg_patch.ring[index].getEdgeCenter( face_valence-1 );
-      }
-      
-      Vec3fa c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
-      {
-        /* mirror quad center and edge mid-point */
-        c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
-        e_i_m_2  = e_i + 2 * (vtx - e_i);	  
-      }
-      else
-      {
-        c_i_m_2  = irreg_patch.ring[index].getQuadCenter( 1 );
-        e_i_m_2  = irreg_patch.ring[index].getEdgeCenter( 2 );
-      }      
-      
-      const float d = 4.0f;
       const float c     = cosf(2.0*M_PI/(float)face_valence);
       const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
       
-      const Vec3fa r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
-      
-      f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
-      
-      const Vec3fa r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
     }
 
 
-    __noinline void init(const CatmullClarkPatch3fa& patch)
+    __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
-      assert( patch.ring[0].hasValidPositions() );
-      assert( patch.ring[1].hasValidPositions() );
-      assert( patch.ring[2].hasValidPositions() );
+      assert(patch.size() == 3);
+      float face_valence_p0 = patch.ring[0].face_valence;
+      float face_valence_p1 = patch.ring[1].face_valence;
+      float face_valence_p2 = patch.ring[2].face_valence;
 
-      p0() = initCornerVertex(patch,0);
-      p1() = initCornerVertex(patch,1);
-      p2() = initCornerVertex(patch,2);
+      if (patch.ring[0].border_face != -1) face_valence_p0--;
+      if (patch.ring[1].border_face != -1) face_valence_p1--;
+      if (patch.ring[2].border_face != -1) face_valence_p2--;
 
-      e0_p() = initPositiveEdgeVertex(patch,0, p0());
-      e1_p() = initPositiveEdgeVertex(patch,1, p1());
-      e2_p() = initPositiveEdgeVertex(patch,2, p2());
 
-      e0_m() = initNegativeEdgeVertex(patch,0, p0());
-      e1_m() = initNegativeEdgeVertex(patch,1, p1());
-      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      Vertex p0_r_p, p0_r_m;
+      patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
 
-      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
-      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
-      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      Vertex p1_r_p, p1_r_m;
+      patch.ring[1].computeGregoryPatchEdgePoints( p1(), e1_p(), e1_m(), p1_r_p, p1_r_m );
       
-      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e2_p(),face_valence_p2,f0_p(),f0_m() );
-      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
-      initFaceVertex(patch,2,p2(),e2_p(),e0_m(),face_valence_p0,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
+      Vertex p2_r_p, p2_r_m;
+      patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
+
+      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m(),4.0f );
+      computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m(),4.0f );
+      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m(),4.0f );
     }
     
-    __noinline void init(const GeneralCatmullClarkPatch3fa& patch)
-    {
-      assert(patch.size() == 4);
-      CatmullClarkPatch3fa qpatch; patch.init(qpatch);
-      init(qpatch);
-    }
 
     
-    __forceinline void exportControlPoints( Vec3fa matrix[4][4] ) const
+    __forceinline void exportConrolPoints( Vertex matrix[4][4] ) const
     {
       for (size_t y=0;y<4;y++)
 	for (size_t x=0;x<4;x++)
-	  matrix[y][x] = (Vec3fa_t)v[y][x];
+	  matrix[y][x] = (Vertex_t)v[y][x];
       
     }
+
+     void convertGregoryTrianglePatchToBezierPatch(Vertex matrix[4][4]) const
+     {
+       const Vec3fa b012 = e0_m();
+       const Vec3fa b003 = p0();
+       const Vec3fa b102 = e0_p();
+       
+       const Vec3fa b201 = e1_m();
+       const Vec3fa b300 = p1();
+       const Vec3fa b210 = e1_p();
+       
+       const Vec3fa b120 = e2_m();
+       const Vec3fa b030 = p2();
+       const Vec3fa b021 = e2_p();
+       
+       const Vec3fa b111 = (f0_p() + f1_p() + f2_p()) * 1.0f/3.0f;
+       
+       matrix[0][0] = b003;
+       matrix[0][1] = b102;
+       matrix[0][2] = b201;
+       matrix[0][3] = b300;
+       
+       matrix[1][0] = b012;
+       matrix[1][1] = 1.0f/3.0f * ( 1.0f * b012 + 2.0f * b111);
+       matrix[1][2] = 1.0f/3.0f * ( 2.0f * b111 + 1.0f * b210);
+       matrix[1][3] = b210;
+       
+       matrix[2][0] = b021;
+       matrix[2][1] = 1.0f/3.0f * ( 2.0f * b021 + 1.0f * b120);
+       matrix[2][2] = 1.0f/3.0f * ( 1.0f * b021 + 2.0f * b120);
+       matrix[2][3] = b120;
+       
+       matrix[3][0] = b030;
+       matrix[3][1] = b030;
+       matrix[3][2] = b030;
+       matrix[3][3] = b030;          
+  }
+
         
     template<class T, class S>
       static __forceinline T deCasteljau_t(const S &uu, const T &v0, const T &v1, const T &v2, const T &v3)
@@ -241,7 +202,7 @@ namespace embree
     
         
     template<class M, class T>
-      static __forceinline Vec3<T> eval_t(const GregoryTrianglePatch &tpatch,
+      static __forceinline Vec3<T> eval_t(const GregoryTrianglePatchT &tpatch,
 				   const T &uu,
 				   const T &vv)
     {
@@ -302,45 +263,48 @@ namespace embree
 
       return Vec3<T>(x,y,z);
     }
+
+
+    template<class M, class T>
+      static __forceinline Vec3<T> normal_t(const GregoryTrianglePatchT &tpatch,
+					    const T &uu,
+					    const T &vv)
+    {
+      FATAL("not implemented");
+      const T z( zero );
+      return Vec3<T>(z);
+    }    
     
-    
+    template<class M, class T>
+    static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T &uu, const T &vv) 
+    {
+      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
+      return eval_t<M,T>(tpatch,uu,vv); 
+    }
+
+    template<class M, class T>
+    static __forceinline Vec3<T> normal(const Vertex matrix[4][4], const T &uu, const T &vv) 
+    {
+      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
+      return normal_t<M,T>(tpatch,uu,vv); 
+    }
 
 
        
-#if !defined(__MIC__)
-    
-#if defined(__AVX__)    
-    
-    static __forceinline avx3f eval8  (const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) 
+    static __forceinline Vertex normal(const Vertex matrix[4][4],
+					 const float uu,
+					 const float vv) 
     {
-      const GregoryTrianglePatch &tpatch = *(GregoryTrianglePatch*)matrix;
-      return eval_t<avxb,avxf>(tpatch,uu,vv); 
-    }
-    //static __forceinline avx3f normal8(const Vec3fa matrix[4][4], const avxf &uu, const avxf &vv) { return normal_t<avxb,avxf>(matrix,uu,vv); }
-    
-#endif
-    
-    static __forceinline sse3f eval4  (const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) 
-    {
-      const GregoryTrianglePatch &tpatch = *(GregoryTrianglePatch*)matrix;
-      return eval_t<sseb,ssef>(tpatch,uu,vv); 
-    }
-    //static __forceinline sse3f normal4(const Vec3fa matrix[4][4], const ssef &uu, const ssef &vv) { return normal_t<sseb,ssef>(matrix,uu,vv); }
-    
-#else    
-    
-#endif
-           
-    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],
-				       const float uu,
-				       const float vv) 
-    {
-      return Vec3fa( zero );
+      FATAL("not yet implemented");
+      return Vertex( zero );
     }
     
-    __forceinline Vec3fa eval(const float uu, const float vv) const
-    {
-      return Vec3fa( zero );
+     static __forceinline Vertex eval(const Vertex matrix[4][4],
+				      const float uu, 
+				      const float vv)
+     {
+      FATAL("not yet implemented");
+      return Vertex( zero );
     }
     
     __forceinline BBox3fa bounds() const
@@ -366,7 +330,7 @@ namespace embree
       return bounds;
     }
     
-    friend std::ostream &operator<<(std::ostream &o, const GregoryTrianglePatch&g)
+    friend std::ostream &operator<<(std::ostream &o, const GregoryTrianglePatchT &g)
     {
       o << "p0 " << g.p0() << std::endl;
       o << "p1 " << g.p1() << std::endl;
@@ -393,4 +357,7 @@ namespace embree
       return o;
     } 
   };
+
+  typedef GregoryTrianglePatchT<Vec3fa,Vec3fa_t> GregoryTrianglePatch3fa;
+  
 }

@@ -14,15 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sys/platform.h"
-#include "sys/ref.h"
-#include "sys/thread.h"
-#include "sys/sysinfo.h"
-#include "sys/barrier.h"
-#include "sys/mutex.h"
-#include "sys/condition.h"
-#include "math/vec3.h"
-#include "math/bbox.h"
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"

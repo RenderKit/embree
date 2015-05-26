@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "image/image.h"
+#include "image.h"
 
 #include <cstdio>
 

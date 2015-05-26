@@ -16,8 +16,8 @@
 
 #include "bvh4hair_traversal.h"
 #include "bvh4hair_intersector16_single.h"
-#include "geometry/bezier1i.h"
-#include "geometry/bezier1i_intersector16.h"
+#include "../geometry/bezier1i.h"
+#include "../geometry/bezier1i_intersector16.h"
 
 #define DBG(x) 
 
@@ -41,18 +41,18 @@ namespace embree
     {
       static __forceinline bool intersect(BVH4Hair::NodeRef curNode,
 					  const size_t rayIndex, 
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray16& ray16, 
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry,
 					  Precalculations &pre)
       {
-	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+	const float16 pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const float16 pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const float16 pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
@@ -71,19 +71,19 @@ namespace embree
 
       static __forceinline bool occluded(BVH4Hair::NodeRef curNode,
 					 const size_t rayIndex, 
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 const Ray16& ray16, 
-					 mic_m &m_terminated,
+					 bool16 &m_terminated,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry,
 					 Precalculations &pre)
       {
-	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+	const float16 pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const float16 pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const float16 pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex();
@@ -101,18 +101,18 @@ namespace embree
       }
 
       static __forceinline bool intersect(BVH4Hair::NodeRef curNode,
-					  const mic_f &dir_xyz,
-					  const mic_f &org_xyz,
-					  const mic_f &min_dist_xyz,
-					  mic_f &max_dist_xyz,
+					  const float16 &dir_xyz,
+					  const float16 &org_xyz,
+					  const float16 &min_dist_xyz,
+					  float16 &max_dist_xyz,
 					  Ray& ray, 
 					  const void *__restrict__ const accel,
 					  const Scene*__restrict__ const geometry,
 					  Precalculations &pre)
       {
-	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+	const float16 pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const float16 pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const float16 pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); 
@@ -134,18 +134,18 @@ namespace embree
       }
 
       static __forceinline bool occluded(BVH4Hair::NodeRef curNode,
-					 const mic_f &dir_xyz,
-					 const mic_f &org_xyz,
-					 const mic_f &min_dist_xyz,
-					 const mic_f &max_dist_xyz,
+					 const float16 &dir_xyz,
+					 const float16 &org_xyz,
+					 const float16 &min_dist_xyz,
+					 const float16 &max_dist_xyz,
 					 Ray& ray,
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry,
 					 Precalculations &pre)
       {
-	const mic_f pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
-	const mic_f pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
-	const mic_f pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
+	const float16 pre_vx = broadcast4to16f((float*)&pre.ray_space.vx);
+	const float16 pre_vy = broadcast4to16f((float*)&pre.ray_space.vy);
+	const float16 pre_vz = broadcast4to16f((float*)&pre.ray_space.vz);
 
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); 
@@ -166,7 +166,7 @@ namespace embree
 
 
     template<typename LeafIntersector>    
-    void BVH4HairIntersector16<LeafIntersector>::intersect(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
+    void BVH4HairIntersector16<LeafIntersector>::intersect(int16* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
 #if EMBREE_DISABLE_HAIR
 	THROW_RUNTIME_ERROR("hair explicitly disabled (to work aroudn compiler bug in icc 13.1.0)");
@@ -175,15 +175,15 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
-      const mic_f inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
-      const mic3f ray16_normalized = ray16.dir * inv_ray_length;
-      LinearSpace_mic3f ray16_space = frame(ray16_normalized).transposed();
+      const float16 inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
+      const Vec3f16 ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace_Vec3f16 ray16_space = frame(ray16_normalized).transposed();
 
       /* setup */
-      const mic_m m_valid    = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16     = rcp_safe(ray16.dir);
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const bool16 m_valid    = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
 
       store16f(stack_dist,inf);
 
@@ -202,13 +202,13 @@ namespace embree
 
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const float16 org_rdir_xyz = rdir_xyz * org_xyz;
 
 	  const unsigned int leaf_mask = BVH4HAIR_LEAF_MASK;
 	  const unsigned int alignednode_mask = BVH4HAIR_ALIGNEDNODE_MASK;
@@ -268,21 +268,21 @@ namespace embree
     }
 
     template<typename LeafIntersector>    
-    void BVH4HairIntersector16<LeafIntersector>::occluded(mic_i* valid_i, BVH4Hair* bvh, Ray16& ray16)
+    void BVH4HairIntersector16<LeafIntersector>::occluded(int16* valid_i, BVH4Hair* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
       /* setup */
-      const mic_f inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
-      const mic3f ray16_normalized = ray16.dir * inv_ray_length;
-      LinearSpace_mic3f ray16_space = frame(ray16_normalized).transposed();
+      const float16 inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
+      const Vec3f16 ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace_Vec3f16 ray16_space = frame(ray16_normalized).transposed();
 
-      const mic_m m_valid = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16  = rcp_safe(ray16.dir);
-      mic_m terminated    = !m_valid;
-      const mic_f inf     = mic_f(pos_inf);
-      const mic_f zero    = mic_f::zero();
+      const bool16 m_valid = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
+      bool16 terminated    = !m_valid;
+      const float16 inf     = float16(pos_inf);
+      const float16 zero    = float16::zero();
 
       const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
@@ -297,12 +297,12 @@ namespace embree
 	  stack_node[1] = bvh->root; 
 	  size_t sindex = 2;
 
-	  const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  const float16 org_rdir_xyz = rdir_xyz * org_xyz;
 
 	  const unsigned int leaf_mask    = BVH4HAIR_LEAF_MASK;
 
@@ -371,14 +371,14 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
-      const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
-      const mic3f ray16_dir_normalized = ray16_dir * inv_ray16_length;
-      LinearSpace_mic3f ray16_space    = frame(ray16_dir_normalized).transposed();
+      const Vec3f16 ray16_dir            = Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
+      const Vec3f16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace_Vec3f16 ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
 
       store16f(stack_dist,inf);
 
@@ -392,14 +392,14 @@ namespace embree
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
 
-      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
-      mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      float16       max_dist_xyz = broadcast1to16f(&ray.tfar);
 
-      const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
-      const mic_f rdir_xyz     = rcp_safe(dir_xyz);
-      const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+      const float16 org_xyz1     = select(0x7777,org_xyz,float16::one());
+      const float16 rdir_xyz     = rcp_safe(dir_xyz);
+      const float16 org_rdir_xyz = rdir_xyz * org_xyz;
 
       const unsigned int leaf_mask = BVH4HAIR_LEAF_MASK;
       const unsigned int alignednode_mask = BVH4HAIR_ALIGNEDNODE_MASK;
@@ -464,14 +464,14 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
-      const mic3f ray16_dir            = mic3f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
-      const mic3f ray16_dir_normalized = ray16_dir * inv_ray16_length;
-      LinearSpace_mic3f ray16_space    = frame(ray16_dir_normalized).transposed();
+      const Vec3f16 ray16_dir            = Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
+      const Vec3f16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace_Vec3f16 ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
-      const mic_f inf        = mic_f(pos_inf);
-      const mic_f zero       = mic_f::zero();
+      const float16 inf        = float16(pos_inf);
+      const float16 zero       = float16::zero();
 
       store16f(stack_dist,inf);
 
@@ -485,15 +485,15 @@ namespace embree
       stack_node[1] = bvh->root; 
       size_t sindex = 2;
 
-      const mic_f org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const mic_f dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const mic_f rdir_xyz     = rcp_safe(dir_xyz);
-      const mic_f org_rdir_xyz = rdir_xyz * org_xyz;
+      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const float16 rdir_xyz     = rcp_safe(dir_xyz);
+      const float16 org_rdir_xyz = rdir_xyz * org_xyz;
 
-      const mic_f min_dist_xyz = broadcast1to16f(&ray.tnear);
-      mic_f       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      float16       max_dist_xyz = broadcast1to16f(&ray.tfar);
 
-      const mic_f org_xyz1     = select(0x7777,org_xyz,mic_f::one());
+      const float16 org_xyz1     = select(0x7777,org_xyz,float16::one());
 
       const size_t leaf_mask = BVH4HAIR_LEAF_MASK;
 

@@ -17,12 +17,12 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/bvh4.h"
-#include "bvh8/bvh8.h"
+#include "../xeon/bvh4/bvh4.h"
+#include "../xeon/bvh8/bvh8.h"
 #else
-#include "xeonphi/bvh4i/bvh4i.h"
-#include "xeonphi/bvh4mb/bvh4mb.h"
-#include "xeonphi/bvh4hair/bvh4hair.h"
+#include "../xeonphi/bvh4i/bvh4i.h"
+#include "../xeonphi/bvh4mb/bvh4mb.h"
+#include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
 namespace embree
@@ -39,7 +39,7 @@ namespace embree
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
-      needSubdivIndices(false),
+      needSubdivIndices(false), needSubdivVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -65,7 +65,10 @@ namespace embree
     if (aflags & RTC_INTERPOLATE) {
       needTriangleIndices = true;
       needBezierIndices = true;
-      needSubdivIndices = true;
+      //needSubdivIndices = true; // not required for interpolation
+      needTriangleVertices = true;
+      needBezierVertices = true;
+      needSubdivVertices = true;
     }
 
 #if defined(__MIC__)

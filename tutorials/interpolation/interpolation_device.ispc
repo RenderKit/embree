@@ -16,7 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
-#define EDGE_LEVEL 256
+#define EDGE_LEVEL 16
+//#define EDGE_LEVEL 256
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -275,11 +276,11 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add cube */
+  addHair(g_scene,make_Vec3f(0.0f,-1.0f,-4.5f));
   addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,4.5f));
   addTriangleSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,1.5f));
   addQuadSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,-1.5f));
-  addHair(g_scene,make_Vec3f(0.0f,-1.0f,-4.5f));
-
+  
   /* commit changes to scene */
   rtcCommit (g_scene);
 
@@ -308,12 +309,25 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    /* interpolate diffuse color */
     Vec3f diffuse = make_Vec3f(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) {
       foreach_unique (geomID in ray.geomID) {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
       }
     }
+
+    /* calculate smooth shading normal */
+    Vec3f Ng = ray.Ng;
+    if (ray.geomID >= 3) {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+      }
+      //return dPdu;
+      Ng = cross(dPdv,dPdu);
+    }
+
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
@@ -330,10 +344,12 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+
+    
     
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }

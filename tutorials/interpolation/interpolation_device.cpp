@@ -16,7 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#define EDGE_LEVEL 256
+#define EDGE_LEVEL 16
+//#define EDGE_LEVEL 256
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -275,11 +276,11 @@ extern "C" void device_init (int8* cfg)
   addGroundPlane(g_scene);
 
   /* add cube */
+  addHair(g_scene,Vec3fa(0.0f,-1.0f,-4.5f));
   addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,4.5f));
   addTriangleSubdivCube(g_scene,Vec3fa(0.0f,0.0f,1.5f));
   addQuadSubdivCube(g_scene,Vec3fa(0.0f,0.0f,-1.5f));
-  addHair(g_scene,Vec3fa(0.0f,-1.0f,-4.5f));
-
+  
   /* commit changes to scene */
   rtcCommit (g_scene);
 
@@ -308,12 +309,24 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    /* interpolate diffuse color */
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0) {
       int geomID = ray.geomID;  {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
       }
     }
+
+    /* calculate smooth shading normal */
+    Vec3fa Ng = ray.Ng;
+    if (ray.geomID >= 3) {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = cross(dPdv,dPdu);
+    }
+
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
@@ -330,10 +343,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
+
+    
     
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }

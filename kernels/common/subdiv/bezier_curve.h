@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "common/globals.h"
+#include "../globals.h"
 
 namespace embree
 {
@@ -106,7 +106,7 @@ namespace embree
     using BezierCurve<Vec3fa>::BezierCurve;
 
 #if defined(__SSE__)
-    __forceinline sse4f eval4(const ssef& c0, const ssef& c1, const ssef& c2, const ssef& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline sse4f eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
       const sse4f p00 = sse4f(v0);
       const sse4f p01 = sse4f(v1);
@@ -117,7 +117,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-    __forceinline avx4f eval8(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline avx4f eval8(const float8& c0, const float8& c1, const float8& c2, const float8& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
       const avx4f p00 = avx4f(v0);
       const avx4f p01 = avx4f(v1);

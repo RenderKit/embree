@@ -67,64 +67,64 @@ namespace embree
      
 #if defined(__MIC__)
      
-     static __forceinline mic_f extract_f_m_mic_f(const Vec3fa matrix[4][4], const size_t n)
+     static __forceinline float16 extract_f_m_float16(const Vec3fa matrix[4][4], const size_t n)
      {
-       const mic_f row = load16f(&matrix[n][0]);
+       const float16 row = load16f(&matrix[n][0]);
        __aligned(64) float xyzw[16];
       compactustore16f_low(0x8888,xyzw,row);
       return broadcast4to16f(xyzw);
     }
      
-     static __forceinline mic3f extract_f_m_mic3f(const Vec3fa matrix[4][4], const size_t n) {
-       return mic3f( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
+     static __forceinline Vec3f16 extract_f_m_Vec3f16(const Vec3fa matrix[4][4], const size_t n) {
+       return Vec3f16( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
     
-    static __forceinline mic_f eval4(const Vec3fa matrix[4][4],
-				     const mic_f uu,
-				     const mic_f vv) 
+    static __forceinline float16 eval4(const Vec3fa matrix[4][4],
+				     const float16 uu,
+				     const float16 vv) 
     {
-      const mic_m m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+      const bool16 m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
-      const mic_f f0_p = (Vec3fa_t)matrix[1][1];
-      const mic_f f1_p = (Vec3fa_t)matrix[1][2];
-      const mic_f f2_p = (Vec3fa_t)matrix[2][2];
-      const mic_f f3_p = (Vec3fa_t)matrix[2][1];
+      const float16 f0_p = (Vec3fa_t)matrix[1][1];
+      const float16 f1_p = (Vec3fa_t)matrix[1][2];
+      const float16 f2_p = (Vec3fa_t)matrix[2][2];
+      const float16 f3_p = (Vec3fa_t)matrix[2][1];
       
-      const mic_f f0_m = extract_f_m_mic_f(matrix,0);
-      const mic_f f1_m = extract_f_m_mic_f(matrix,1);
-      const mic_f f2_m = extract_f_m_mic_f(matrix,2);
-      const mic_f f3_m = extract_f_m_mic_f(matrix,3);
+      const float16 f0_m = extract_f_m_float16(matrix,0);
+      const float16 f1_m = extract_f_m_float16(matrix,1);
+      const float16 f2_m = extract_f_m_float16(matrix,2);
+      const float16 f3_m = extract_f_m_float16(matrix,3);
       
-      const mic_f one_minus_uu = mic_f(1.0f) - uu;
-      const mic_f one_minus_vv = mic_f(1.0f) - vv;      
+      const float16 one_minus_uu = float16(1.0f) - uu;
+      const float16 one_minus_vv = float16(1.0f) - vv;      
       
 #if 1
-      const mic_f inv0 = rcp(uu+vv);
-      const mic_f inv1 = rcp(one_minus_uu+vv);
-      const mic_f inv2 = rcp(one_minus_uu+one_minus_vv);
-      const mic_f inv3 = rcp(uu+one_minus_vv);
+      const float16 inv0 = rcp(uu+vv);
+      const float16 inv1 = rcp(one_minus_uu+vv);
+      const float16 inv2 = rcp(one_minus_uu+one_minus_vv);
+      const float16 inv3 = rcp(uu+one_minus_vv);
 #else
-      const mic_f inv0 = 1.0f/(uu+vv);
-      const mic_f inv1 = 1.0f/(one_minus_uu+vv);
-      const mic_f inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const mic_f inv3 = 1.0f/(uu+one_minus_vv);
+      const float16 inv0 = 1.0f/(uu+vv);
+      const float16 inv1 = 1.0f/(one_minus_uu+vv);
+      const float16 inv2 = 1.0f/(one_minus_uu+one_minus_vv);
+      const float16 inv3 = 1.0f/(uu+one_minus_vv);
 #endif
       
-      const mic_f F0 = select(m_border,f0_p, (          uu * f0_p +           vv * f0_m) * inv0);
-      const mic_f F1 = select(m_border,f1_p, (one_minus_uu * f1_m +           vv * f1_p) * inv1);
-      const mic_f F2 = select(m_border,f2_p, (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2);
-      const mic_f F3 = select(m_border,f3_p, (          uu * f3_m + one_minus_vv * f3_p) * inv3);
+      const float16 F0 = select(m_border,f0_p, (          uu * f0_p +           vv * f0_m) * inv0);
+      const float16 F1 = select(m_border,f1_p, (one_minus_uu * f1_m +           vv * f1_p) * inv1);
+      const float16 F2 = select(m_border,f2_p, (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2);
+      const float16 F3 = select(m_border,f3_p, (          uu * f3_m + one_minus_vv * f3_p) * inv3);
       
-      const mic_f B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const mic_f B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const mic_f B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const mic_f B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const mic_f B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const mic_f B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const mic_f B3_u = uu * uu * uu;
-      const mic_f B3_v = vv * vv * vv;
+      const float16 B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
+      const float16 B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
+      const float16 B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
+      const float16 B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
+      const float16 B2_u = 3.0f * (uu * one_minus_uu * uu);
+      const float16 B2_v = 3.0f * (vv * one_minus_vv * vv);
+      const float16 B3_u = uu * uu * uu;
+      const float16 B3_v = vv * vv * vv;
       
-      const mic_f res = 
+      const float16 res = 
 	(B0_u * (Vec3fa_t)matrix[0][0] + B1_u * (Vec3fa_t)matrix[0][1] + B2_u * (Vec3fa_t)matrix[0][2] + B3_u * (Vec3fa_t)matrix[0][3]) * B0_v + 
 	(B0_u * (Vec3fa_t)matrix[1][0] + B1_u *                     F0 + B2_u *                     F1 + B3_u * (Vec3fa_t)matrix[1][3]) * B1_v + 
 	(B0_u * (Vec3fa_t)matrix[2][0] + B1_u *                     F3 + B2_u *                     F2 + B3_u * (Vec3fa_t)matrix[2][3]) * B2_v + 
@@ -133,12 +133,12 @@ namespace embree
     }
     
     
-    static __forceinline mic3f eval16(const Vec3fa matrix[4][4], const mic_f &uu, const mic_f &vv) {
-      return eval_t<mic_m,mic_f>(matrix,uu,vv);
+    static __forceinline Vec3f16 eval16(const Vec3fa matrix[4][4], const float16 &uu, const float16 &vv) {
+      return eval_t<bool16,float16>(matrix,uu,vv);
     }
         
-    static __forceinline mic3f normal16(const Vec3fa matrix[4][4], const mic_f &uu, const mic_f &vv) {
-      return normal_t<mic_m,mic_f>(matrix,uu,vv);
+    static __forceinline Vec3f16 normal16(const Vec3fa matrix[4][4], const float16 &uu, const float16 &vv) {
+      return normal_t<bool16,float16>(matrix,uu,vv);
     }
     
 #endif
@@ -148,10 +148,10 @@ namespace embree
 				       const float vv) 
     {
 #if defined(__MIC__)
-      const mic_f row0 = load16f(&matrix[0][0]);
-      const mic_f row1 = load16f(&matrix[1][0]);
-      const mic_f row2 = load16f(&matrix[2][0]);
-      const mic_f row3 = load16f(&matrix[3][0]);
+      const float16 row0 = load16f(&matrix[0][0]);
+      const float16 row1 = load16f(&matrix[1][0]);
+      const float16 row2 = load16f(&matrix[2][0]);
+      const float16 row3 = load16f(&matrix[3][0]);
       
       __aligned(64) Vec3fa f_m[2][2];
       compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);

@@ -17,9 +17,9 @@
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
 
-#include "algorithms/sort.h"
-#include "algorithms/prefix.h"
-#include "algorithms/parallel_for.h"
+#include "../algorithms/sort.h"
+#include "../algorithms/prefix.h"
+#include "../algorithms/parallel_for.h"
 
 #if !defined(__MIC__)
 #include "subdiv/feature_adaptive_eval.h"
@@ -208,10 +208,12 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
+    const bool freeIndices = !parent->needSubdivIndices;
+    const bool freeVertices = !parent->needSubdivVertices;
     faceVertices.free();
-    if (!parent->needSubdivIndices) vertexIndices.free();
-    vertices[0].free();
-    vertices[1].free();
+    if (freeIndices) vertexIndices.free();
+    if (freeVertices) vertices[0].free();
+    if (freeVertices) vertices[1].free();
     edge_creases.free();
     edge_crease_weights.free();
     vertex_creases.free();
@@ -535,10 +537,10 @@ namespace embree
     {
       auto load = [&](const SubdivMesh::HalfEdge* p) { 
         const unsigned vtx = p->getStartVertexIndex();
-        return ssef::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
+        return float4::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
       };
-      ssef Pt, dPdut, dPdvt; 
-      feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      float4 Pt, dPdut, dPdvt; 
+      feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];

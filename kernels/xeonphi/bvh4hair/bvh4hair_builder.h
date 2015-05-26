@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "builders/parallel_builder.h"
-#include "builders/builder_util.h"
-#include "builders/binning.h"
+#include "../builders/parallel_builder.h"
+#include "../builders/builder_util.h"
+#include "../builders/binning.h"
 
-#include "bvh4i/bvh4i_builder.h"
+#include "../bvh4i/bvh4i_builder.h"
 #include "bvh4hair.h"
-#include "geometry/bezier1i.h"
+#include "../geometry/bezier1i.h"
 
 
 namespace embree
@@ -56,18 +56,18 @@ namespace embree
 
       __forceinline void PreQuantizeMatrix()
       {
-	mic_f col0 = broadcast4to16f(&xfm.vx) * 127.0f;
-	mic_f col1 = broadcast4to16f(&xfm.vy) * 127.0f;
-	mic_f col2 = broadcast4to16f(&xfm.vz) * 127.0f;
+	float16 col0 = broadcast4to16f(&xfm.vx) * 127.0f;
+	float16 col1 = broadcast4to16f(&xfm.vy) * 127.0f;
+	float16 col2 = broadcast4to16f(&xfm.vz) * 127.0f;
 	
-	mic_i char_col0,char_col1,char_col2;
+	int16 char_col0,char_col1,char_col2;
 	store16f_int8(&char_col0,col0);
 	store16f_int8(&char_col1,col1);
 	store16f_int8(&char_col2,col2);
 
-	mic_f new_col0 = load16f_int8((char*)&char_col0);
-	mic_f new_col1 = load16f_int8((char*)&char_col1);
-	mic_f new_col2 = load16f_int8((char*)&char_col2);
+	float16 new_col0 = load16f_int8((char*)&char_col0);
+	float16 new_col1 = load16f_int8((char*)&char_col1);
+	float16 new_col2 = load16f_int8((char*)&char_col2);
 
 	store4f(&xfm.vx,new_col0);
 	store4f(&xfm.vy,new_col1);
