@@ -51,8 +51,7 @@ namespace embree
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
-    //scheduler = nullptr;
-    scheduler = new TaskSchedulerTBB; // FIXME: should not be created for every scene
+    scheduler = nullptr;
 #else
     group = new tbb::task_group;
 #endif
@@ -494,10 +493,12 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    //{
-    //  Lock<MutexSys> lock(buildMutex);
-      //if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(threadCount != 0);
-    //}
+    Ref<TaskSchedulerTBB> scheduler = nullptr;
+    {
+      Lock<MutexSys> lock(schedulerMutex);
+      scheduler = this->scheduler;
+      if (scheduler == null) this->scheduler = scheduler = new TaskSchedulerTBB;
+    }
 
     if (threadCount != 0) 
     {
@@ -508,43 +509,29 @@ namespace embree
         scheduler->wait_for_threads(threadCount);
     }
 
-    ///* allow only one build at a time */
-    //Lock<MutexSys> lock(buildMutex);
-
     /* try to obtain build lock */
     TryLock<MutexSys> lock(buildMutex);
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
       scheduler->join();
-      //buildMutex.lock();
-      //buildMutex.unlock();
       return;
     }
 
     if (!isModified()) {
+      this->scheduler = nullptr;
       return;
     }
 
     progress_monitor_counter = 0;
 
-    //if (isStatic() && isBuild()) {
-    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-    //  return;
-    //}
-
     if (!ready()) {
+      this->scheduler = nullptr;
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
-      return;
     }
 
-    //if (threadCount) {
     scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
-      //delete scheduler; scheduler = nullptr;
-      //}
-      //else {
-      //TaskSchedulerTBB::spawn([&]() { build_task(); });
-      //}
+    this->scheduler = nullptr;
   }
 
 #endif

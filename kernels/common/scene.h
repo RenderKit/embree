@@ -153,12 +153,8 @@ namespace embree
     /* determines if scene is modified */
     __forceinline bool isModified() const { return modified; }
 
- /* sets modified flag */
-    __forceinline void setModified(bool f = true) 
-    { 
-#if defined(TASKING_TBB_INTERNAL)
-      if (f) scheduler->reset();
-#endif
+    /* sets modified flag */
+    __forceinline void setModified(bool f = true) { 
       modified = f; 
     }
 
@@ -256,7 +252,8 @@ namespace embree
 #if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB* volatile scheduler;
+    MutexSys schedulerMutex;
+    Ref<TaskSchedulerTBB> scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
