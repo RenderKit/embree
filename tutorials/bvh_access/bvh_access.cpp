@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "embree2/rtcore.h"
 #include "../common/tutorial/tutorial.h"
+#include "../../include/embree2/rtcore.h"
 #include "../../kernels/xeon/bvh4/bvh4.h"
 #include "../../kernels/xeon/geometry/triangle4v.h"
 

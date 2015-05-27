@@ -17,7 +17,7 @@
 #pragma once
 
 #include "default.h"
-#include "embree2/rtcore_ray.h"
+#include "../../include/embree2/rtcore_ray.h"
 
 namespace embree
 {

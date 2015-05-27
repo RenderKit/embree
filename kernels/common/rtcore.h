@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "embree2/rtcore.h"
+#include "../../include/embree2/rtcore.h"
 
 namespace embree
 {
