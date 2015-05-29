@@ -42,7 +42,7 @@ namespace embree
      
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular() || 1) /* bezier vs. gregory */
+    if (ipatch.isRegular()) /* bezier vs. gregory */
     {
 #if 0
       flags |= BEZIER_PATCH;
