@@ -286,16 +286,17 @@ namespace embree
         {
 	  const bool hasHardCorner =
 	    std::isinf(patch.ring[0].vertex_crease_weight);
-
+          
           v[1][1] = patch.ring[0].vtx;
           v[0][1] = patch.ring[0].regular_border_vertex_6();
           //v[0][0] = patch.ring[0].regular_border_vertex_5();
-	  if (hasHardCorner || 1)
+	  if (hasHardCorner)
 	    v[0][0] = 4.0f * patch.ring[0].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
 	  else
-	    v[0][0] = patch.ring[0].vtx - 20.0f * patch.ring[2].vtx;
+	    v[0][0] = -8.0f * patch.ring[0].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
 
           v[1][0] = patch.ring[0].regular_border_vertex_4();
+          
         } else {
           v[1][1] = patch.ring[0].vtx;
           v[0][1] = patch.ring[0].ring[6];
@@ -307,14 +308,14 @@ namespace embree
         {
 	  const bool hasHardCorner =
 	    std::isinf(patch.ring[1].vertex_crease_weight);
-
+          
           v[1][2] = patch.ring[1].vtx;
           v[1][3] = patch.ring[1].regular_border_vertex_6();
           //v[0][3] = patch.ring[1].regular_border_vertex_5();
-	  if (hasHardCorner || 1)
+	  if (hasHardCorner)
 	    v[0][3] = 4.0f * patch.ring[1].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
 	  else
-	    v[0][3] = patch.ring[1].vtx - 20.0f * patch.ring[3].vtx;
+	    v[0][3] = -8.0f * patch.ring[1].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
 	  
           v[0][2] = patch.ring[1].regular_border_vertex_4();
         } else {
@@ -328,14 +329,14 @@ namespace embree
         {
 	  const bool hasHardCorner =
 	    std::isinf(patch.ring[2].vertex_crease_weight);
-
+                    
           v[2][2] = patch.ring[2].vtx;
           v[3][2] = patch.ring[2].regular_border_vertex_6();
           //v[3][3] = patch.ring[2].regular_border_vertex_5();
-	  if (hasHardCorner || 1)
+	  if (hasHardCorner)
 	    v[3][3] = 4.0f * patch.ring[2].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
 	  else
-	    v[3][3] = patch.ring[2].vtx - 20.0f * patch.ring[0].vtx;
+	    v[3][3] = -8.0f * patch.ring[2].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
 
           v[2][3] = patch.ring[2].regular_border_vertex_4();
         } else {
@@ -349,14 +350,14 @@ namespace embree
         {
 	  const bool hasHardCorner =
 	    std::isinf(patch.ring[3].vertex_crease_weight);
-
+          
           v[2][1] = patch.ring[3].vtx;
           v[2][0] = patch.ring[3].regular_border_vertex_6();
           //v[3][0] = patch.ring[3].regular_border_vertex_5();
-	  if (hasHardCorner || 1)
+	  if (hasHardCorner)
 	    v[3][0] = 4.0f * patch.ring[3].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
 	  else
-	    v[3][0] = patch.ring[3].vtx - 20.0f * patch.ring[1].vtx;
+	    v[3][0] = -8.0f * patch.ring[3].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
 
           v[3][1] = patch.ring[3].regular_border_vertex_4();
         } else {
