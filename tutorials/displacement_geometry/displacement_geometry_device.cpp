@@ -18,6 +18,7 @@
 
 /* configuration */
 #define EDGE_LEVEL 256.0f
+#define ENABLE_SMOOTH_NORMALS 0
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -101,6 +102,28 @@ unsigned int cube_faces[12] = {
 
 #endif
 
+float displacement(const Vec3fa P)
+{
+  float dN = 0.0f;
+  for (float freq = 1.0f; freq<40.0f; freq*= 2) {
+    float n = abs(noise(freq*P));
+    dN += 1.4f*n*n/freq;
+  }
+  return dN;
+}
+
+float displacement_du(const Vec3fa P, const Vec3fa dPdu)
+{
+  const float du = 0.001f;
+  return (displacement(P+du*dPdu)-displacement(P))/du;
+}
+
+float displacement_dv(const Vec3fa P, const Vec3fa dPdv)
+{
+  const float dv = 0.001f;
+  return (displacement(P+dv*dPdv)-displacement(P))/dv;
+}
+
 void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
                       const float* u,      /*!< u coordinates (source) */
                       const float* v,      /*!< v coordinates (source) */
@@ -115,12 +138,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
   for (size_t i = 0; i<N; i++) {
     const Vec3fa P = Vec3fa(px[i],py[i],pz[i]);
     const Vec3fa Ng = Vec3fa(nx[i],ny[i],nz[i]);
-    float dN = 0.0f;
-    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
-      float n = abs(noise(freq*P));
-      dN += 1.4f*n*n/freq;
-    }
-    const Vec3fa dP = dN*Ng;
+    const Vec3fa dP = displacement(P)*Ng;
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 }
@@ -177,13 +195,13 @@ extern "C" void device_init (char* cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1);
-
-  /* add cube */
-  addCube(g_scene);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* add cube */
+  addCube(g_scene);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -213,9 +231,24 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
+    Vec3fa diffuse = ray.geomID != 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
+
+    Vec3fa Ng = normalize(ray.Ng);
+#if ENABLE_SMOOTH_NORMALS
+    Vec3fa P = ray.org + ray.tfar*ray.dir;
+    if (ray.geomID > 0) {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = normalize(cross(dPdv,dPdu));
+      dPdu = dPdu + Ng*displacement_du(P,dPdu);
+      dPdv = dPdv + Ng*displacement_dv(P,dPdv);
+      Ng = normalize(cross(dPdv,dPdu));
+    }
+#endif
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -233,7 +266,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-(dot(lightDir,normalize(ray.Ng))),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-(dot(lightDir,Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }

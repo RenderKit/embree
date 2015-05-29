@@ -18,6 +18,7 @@
 
 /* configuration */
 #define EDGE_LEVEL 256.0f
+#define ENABLE_SMOOTH_NORMALS 0
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -101,6 +102,28 @@ uniform unsigned int cube_faces[12] = {
 
 #endif
 
+float displacement(const Vec3f P)
+{
+  float dN = 0.0f;
+  for (float freq = 1.0f; freq<40.0f; freq*= 2) {
+    float n = abs(noise(freq*P));
+    dN += 1.4f*n*n/freq;
+  }
+  return dN;
+}
+
+float displacement_du(const Vec3f P, const Vec3f dPdu)
+{
+  const float du = 0.001f;
+  return (displacement(P+du*dPdu)-displacement(P))/du;
+}
+
+float displacement_dv(const Vec3f P, const Vec3f dPdv)
+{
+  const float dv = 0.001f;
+  return (displacement(P+dv*dPdv)-displacement(P))/dv;
+}
+
 void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
                       const uniform float* uniform u,      /*!< u coordinates (source) */
                       const uniform float* uniform v,      /*!< v coordinates (source) */
@@ -113,14 +136,9 @@ void displacementFunction(void* uniform ptr, uniform unsigned int geomID, unifor
                       uniform size_t N)
 {
   foreach (i=0 ... N) {
-    const Vec3fa P = make_Vec3fa(px[i],py[i],pz[i]);
-    const Vec3fa Ng = make_Vec3fa(nx[i],ny[i],nz[i]);
-    float dN = 0.0f;
-    for (float freq = 1.0f; freq<40.0f; freq*= 2) {
-      float n = abs(noise(freq*P));
-      dN += 1.4f*n*n/freq;
-    }
-    const Vec3fa dP = dN*Ng;
+    const Vec3f P = make_Vec3f(px[i],py[i],pz[i]);
+    const Vec3f Ng = make_Vec3f(nx[i],ny[i],nz[i]);
+    const Vec3f dP = displacement(P)*Ng;
     px[i] += dP.x; py[i] += dP.y; pz[i] += dP.z;
   }
 }
@@ -177,13 +195,13 @@ export void device_init (uniform int8* uniform cfg)
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
-
-  /* add cube */
-  addCube(g_scene);
+  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* add cube */
+  addCube(g_scene);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -213,9 +231,24 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = ray.geomID == 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
+    Vec3f diffuse = ray.geomID != 0 ? make_Vec3f(0.9f,0.6f,0.5f) : make_Vec3f(0.8f,0.0f,0.0f);
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
+
+    Vec3f Ng = normalize(ray.Ng);
+#if ENABLE_SMOOTH_NORMALS
+    Vec3f P = ray.org + ray.tfar*ray.dir;
+    if (ray.geomID > 0) {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,NULL,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = normalize(cross(dPdv,dPdu));
+      dPdu = dPdu + Ng*displacement_du(P,dPdu);
+      dPdv = dPdv + Ng*displacement_dv(P,dPdv);
+      Ng = normalize(cross(dPdv,dPdu));
+    }
+#endif
     
     /* initialize shadow ray */
     RTCRay shadow;
@@ -233,7 +266,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-(dot(lightDir,normalize(ray.Ng))),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-(dot(lightDir,Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }

@@ -87,8 +87,8 @@ inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
 }
 
 /* noise functions */
-float noise(const Vec3fa& p);
-Vec3fa noise3D(const Vec3fa& p);
+float noise(const Vec3f& p);
+Vec3f noise3D(const Vec3f& p);
 
 /* draws progress bar */
 void progressStart();
