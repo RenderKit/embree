@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "embree2/rtcore.h"
-#include "embree2/rtcore_ray.h"
+#include "../include/embree2/rtcore.h"
+#include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include <vector>
 

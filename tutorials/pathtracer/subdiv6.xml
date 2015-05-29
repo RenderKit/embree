@@ -33,11 +33,12 @@
       </faces>
 
       <material>
-        <code>"Matte"</code>
+        <code>"OBJ"</code>
         <parameters>
-          <float3 name="reflectance">1 1 1</float3>
+          <float3 name="Kd">1 1 1</float3>
         </parameters>
       </material>
+
     </SubdivisionMesh>
   </Group>
 </scene>

@@ -26,7 +26,7 @@ struct Vertex   { float x,y,z,r; };
 #endif
 struct Triangle { int v0, v1, v2; };
 
-#include "embree2/rtcore.h"
+#include "../../../include/embree2/rtcore.h"
 #include "ray.h"
 
 //FIXME:
