@@ -44,13 +44,12 @@ namespace embree
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
     {
-#if 0
+#if 1
       flags |= BEZIER_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_bezier( ipatch ); 
       gpatch.exportDenseConrolPoints( patch.v );
 #else
-      PING;
       flags |= BSPLINE_PATCH;
       patch.init( ipatch );
 #endif
