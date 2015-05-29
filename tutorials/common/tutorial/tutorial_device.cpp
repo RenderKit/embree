@@ -214,9 +214,9 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  int64 c0 = get_tsc();
+  int64_t c0 = get_tsc();
   rtcIntersect(g_scene,ray);
-  int64 c1 = get_tsc();
+  int64_t c1 = get_tsc();
   /* shade pixel */
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }

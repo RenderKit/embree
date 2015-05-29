@@ -972,7 +972,7 @@ namespace embree
 	      const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
 	      const float16 cent  = bmin+bmax;
-	      const int16 binID = convert_uint32((cent-base)*scale);
+	      const int16 binID = convert_uint32_t((cent-base)*scale);
 
 	      // dest->primID  = offset+i;
 	      // dest->groupID = group;

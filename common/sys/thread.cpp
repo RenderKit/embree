@@ -54,7 +54,7 @@ namespace embree
 
     GROUP_AFFINITY groupAffinity;
     groupAffinity.Group = (WORD)group;
-    groupAffinity.Mask = (KAFFINITY)(uint64(1) << number);
+    groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
     groupAffinity.Reserved[0] = 0;
     groupAffinity.Reserved[1] = 0;
     groupAffinity.Reserved[2] = 0;
@@ -68,7 +68,7 @@ namespace embree
     if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr))
       THROW_RUNTIME_ERROR("cannot set ideal processor");
 #else
-    if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64(1) << affinity)))
+    if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64_t(1) << affinity)))
       THROW_RUNTIME_ERROR("cannot set thread affinity mask");
     if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1)
       THROW_RUNTIME_ERROR("cannot set ideal processor");

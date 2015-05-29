@@ -97,8 +97,8 @@ namespace embree
     }
 
     /*! special function for operator< */
-    __forceinline uint64 ID64() const {
-      return (((uint64)primID()) << 32) + (uint64)geomID();
+    __forceinline uint64_t ID64() const {
+      return (((uint64_t)primID()) << 32) + (uint64_t)geomID();
     }
     
     /*! allows sorting the primrefs by ID */

@@ -47,7 +47,7 @@ __forceinline __m128i _mm_mullo_epi32( __m128i value, __m128i input ) {
   char* _r = (char*)(&rvalue + 1);
   char* _v = (char*)(& value + 1);
   char* _i = (char*)(& input + 1);
-  for ( ssize_t i = -16 ; i != 0 ; i += 4 ) *((int32*)(_r + i)) = *((int32*)(_v + i))*  *((int32*)(_i + i));
+  for ( ssize_t i = -16 ; i != 0 ; i += 4 ) *((int32_t*)(_r + i)) = *((int32_t*)(_v + i))*  *((int32_t*)(_i + i));
   return rvalue;
 }
 
@@ -80,7 +80,7 @@ __forceinline __m128i _mm_insert_epi32( __m128i value, int input, const int inde
 
 #define _mm_extract_ps __emu_mm_extract_ps
 __forceinline int _mm_extract_ps( __m128 input, const int index ) {
-  int32* ptr = (int32*)&input; return ptr[index];
+  int32_t* ptr = (int32_t*)&input; return ptr[index];
 }
 
 #define _mm_insert_ps __emu_mm_insert_ps
@@ -102,12 +102,12 @@ __forceinline __m128 _mm_round_ps( __m128 value, const int flags )
 
 #ifdef _M_X64
 #define _mm_insert_epi64 __emu_mm_insert_epi64
-__forceinline __m128i _mm_insert_epi64( __m128i value, __int64 input, const int index ) { 
-    assert(size_t(index) < 4); ((__int64*)&value)[index] = input; return value; 
+__forceinline __m128i _mm_insert_epi64( __m128i value, int64_t input, const int index ) { 
+    assert(size_t(index) < 4); ((int64_t*)&value)[index] = input; return value; 
 }
 
 #define _mm_extract_epi64 __emu_mm_extract_epi64
-__forceinline __int64 _mm_extract_epi64( __m128i input, const int index ) { 
+__forceinline int64_t _mm_extract_epi64( __m128i input, const int index ) { 
     assert(size_t(index) < 2); 
     return index == 0 ? _mm_cvtsi128_si64x(input) : _mm_cvtsi128_si64x(_mm_unpackhi_epi64(input, input)); 
 }

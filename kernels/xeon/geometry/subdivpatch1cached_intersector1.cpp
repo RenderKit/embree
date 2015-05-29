@@ -163,7 +163,7 @@ namespace embree
 	  /* fast path for cache hit */
 	  {
 	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref; 
+	    const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref; 
 	    
 	    if (likely(subdiv_patch_root_ref)) 
 	      {
@@ -183,7 +183,7 @@ namespace embree
 
 	  subdiv_patch->write_lock();
 	  {
-	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref;
+	    const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
 	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 
 	    /* do we still need to create the subtree data? */
@@ -200,18 +200,18 @@ namespace embree
 		  }
 		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 #if COMPACT == 1
-                int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+                int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
 
 #else                
 		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
 		void *test = (void*)new_root_ref;
 
-		new_root_ref -= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+		new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
 		assert( new_root_ref <= 0xffffffff );
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
-		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
 
 #if _DEBUG
@@ -238,7 +238,7 @@ namespace embree
     {      
       TIMER(double msec = 0.0);
       TIMER(msec = getSeconds());
-      TIMER(uint64 cycles = rdtsc());
+      TIMER(uint64_t cycles = rdtsc());
       assert( patch.grid_size_simd_blocks >= 1 );
 
       const size_t array_elements = patch.grid_size_simd_blocks * 8;

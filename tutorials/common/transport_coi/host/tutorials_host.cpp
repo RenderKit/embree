@@ -113,7 +113,7 @@ namespace embree
 
   }
 
-  void key_pressed(int32 key)
+  void key_pressed(int key)
   {
     KeyPressedData parms;
     parms.key = key;
@@ -496,7 +496,7 @@ namespace embree
 
   }
 
-  void resize(int32_t width, int32_t height)
+  void resize(int width, int height)
   {
     COIRESULT result;
     if (g_width == width && g_height == height)

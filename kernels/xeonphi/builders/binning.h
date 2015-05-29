@@ -77,7 +77,7 @@ namespace embree
 
     __forceinline int16 getBinID(const float16 &centroid_2) const
     {
-      return convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+      return convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
     }
 
     __forceinline bool16 getValidDimMask() const
@@ -297,7 +297,7 @@ namespace embree
 	const float16 b_max = bounds.y;
 
 	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -346,7 +346,7 @@ namespace embree
 	const float16 b_max = bounds.y;
 
 	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -410,7 +410,7 @@ namespace embree
 	    const float16 b_max  = bounds.y;
 
 	    const float16 centroid_2 = b_min + b_max;
-	    const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	    const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 
 	    assert(0 <= binID[0] && binID[0] < 16);
 	    assert(0 <= binID[1] && binID[1] < 16);
@@ -548,7 +548,7 @@ namespace embree
 	const float16 b_max  = bounds.y;
 
 	const float16 centroid_2 = b_min + b_max;
-	const int16 binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const int16 binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 	const int16 binID = min(max(binID_noclamp,int16::zero()),int16(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
@@ -925,7 +925,7 @@ namespace embree
 	const float16 b_max  = bounds.y;
 
 	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32((centroid_2 - centroidBoundsMin_2)*scale);
+	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 
 	assert(0 <= binID[0] && binID[0] < 16); 
 	assert(0 <= binID[1] && binID[1] < 16); 

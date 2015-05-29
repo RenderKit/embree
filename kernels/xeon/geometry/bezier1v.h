@@ -235,8 +235,8 @@ namespace embree
       return true;
     }
 
-    __forceinline uint64 id64() const {
-      return (((uint64)prim) << 32) + (uint64)geom;
+    __forceinline uint64_t id64() const {
+      return (((uint64_t)prim) << 32) + (uint64_t)geom;
     }
 
     friend __forceinline bool operator<(const Bezier1v& p0, const Bezier1v& p1) {

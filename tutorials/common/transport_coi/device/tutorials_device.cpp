@@ -26,7 +26,7 @@
 #include <common/COIEvent_common.h>
 
 
-extern "C" int64 get_tsc() {
+extern "C" int64_t get_tsc() {
   return read_tsc();
 }
 

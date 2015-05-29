@@ -222,10 +222,10 @@ namespace embree
     holes.free();
   }
 
-  __forceinline uint64 pair64(unsigned int x, unsigned int y) 
+  __forceinline uint64_t pair64(unsigned int x, unsigned int y) 
   {
     if (x<y) std::swap(x,y);
-    return (((uint64)x) << 32) | (uint64)y;
+    return (((uint64_t)x) << 32) | (uint64_t)y;
   }
 
   void SubdivMesh::calculateHalfEdges()
@@ -268,7 +268,7 @@ namespace embree
 	  unsigned int nextIndex = de + 1;
 	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
 	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
-	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
+	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
@@ -300,14 +300,14 @@ namespace embree
       /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
       if (e != 0 && (halfEdges1[e].key == halfEdges1[e-1].key)) {
-	const uint64 key = halfEdges1[e].key;
+	const uint64_t key = halfEdges1[e].key;
 	while (e<r.end() && halfEdges1[e].key == key) e++;
       }
 
       /* process all adjacent edges starting in our range */
       while (e<r.end())
       {
-	const uint64 key = halfEdges1[e].key;
+	const uint64_t key = halfEdges1[e].key;
 	if (key == -1) break;
 	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
 
@@ -372,7 +372,7 @@ namespace embree
         
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
-	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
+	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 

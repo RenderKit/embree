@@ -26,7 +26,7 @@ namespace embree
     union  {                   // data
       __m256 m256; 
       struct { __m128 l,h; }; 
-      int32 v[8]; 
+      int v[8]; 
     };  
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -76,8 +76,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool   operator []( const size_t i ) const { assert(i < 8); return (_mm256_movemask_ps(m256) >> i) & 1; }
-    __forceinline int32& operator []( const size_t i )       { assert(i < 8); return v[i]; }
+    __forceinline bool operator []( const size_t i ) const { assert(i < 8); return (_mm256_movemask_ps(m256) >> i) & 1; }
+    __forceinline int& operator []( const size_t i )       { assert(i < 8); return v[i]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -49,19 +49,19 @@ namespace embree
     struct Edge 
     {
       /*! edge constructor */
-      __forceinline Edge(const uint32 v0, const uint32 v1)
+      __forceinline Edge(const uint32_t v0, const uint32_t v1)
 	: v0(v0), v1(v1) {}
 
       /*! create an 64 bit identifier that is unique for the not oriented edge */
-      __forceinline operator uint64() const       
+      __forceinline operator uint64_t() const       
       {
-	uint32 p0 = v0, p1 = v1;
+	uint32_t p0 = v0, p1 = v1;
 	if (p0<p1) std::swap(p0,p1);
-	return (((uint64)p0) << 32) | (uint64)p1;
+	return (((uint64_t)p0) << 32) | (uint64_t)p1;
       }
 
     public:
-      uint32 v0,v1;    //!< start and end vertex of the edge
+      uint32_t v0,v1;    //!< start and end vertex of the edge
     };
 
     class __aligned(32) HalfEdge
@@ -340,10 +340,10 @@ namespace embree
     {
       KeyHalfEdge() {}
       
-      KeyHalfEdge (uint64 key, HalfEdge* edge) 
+      KeyHalfEdge (uint64_t key, HalfEdge* edge) 
       : key(key), edge(edge) {}
       
-      __forceinline operator uint64() const { 
+      __forceinline operator uint64_t() const { 
 	return key; 
       }
 
@@ -352,7 +352,7 @@ namespace embree
       }
       
     public:
-      uint64 key;
+      uint64_t key;
       HalfEdge* edge;
     };
 
@@ -469,13 +469,13 @@ namespace embree
     size_t numHalfEdges; 
 
     /*! fast lookup table to find the first half edge for some face */
-    mvector<uint32> faceStartEdge;
+    mvector<uint32_t> faceStartEdge;
 
     /*! Half edge structure. */
     mvector<HalfEdge> halfEdges;
 
     /*! set with all holes */
-    pset<uint32> holeSet;
+    pset<uint32_t> holeSet;
 
     /*! flag whether only the edge levels have changed and the mesh has no creases,
      *  allows for simple bvh update instead of full rebuild in cached mode */
@@ -490,10 +490,10 @@ namespace embree
     std::vector<KeyHalfEdge> halfEdges1;
 
     /*! map with all vertex creases */
-    pmap<uint32,float> vertexCreaseMap;
+    pmap<uint32_t,float> vertexCreaseMap;
 
     /*! map with all edge creases */
-    pmap<uint64,float> edgeCreaseMap;
+    pmap<uint64_t,float> edgeCreaseMap;
   };
 
   class SubdivMeshAVX : public SubdivMesh

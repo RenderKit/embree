@@ -120,24 +120,24 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline Vec3ia& operator +=( Vec3ia& a, const Vec3ia& b ) { return a = a + b; }
-  __forceinline Vec3ia& operator +=( Vec3ia& a, const int32&  b ) { return a = a + b; }
+  __forceinline Vec3ia& operator +=( Vec3ia& a, const int&   b ) { return a = a + b; }
   
   __forceinline Vec3ia& operator -=( Vec3ia& a, const Vec3ia& b ) { return a = a - b; }
-  __forceinline Vec3ia& operator -=( Vec3ia& a, const int32&  b ) { return a = a - b; }
+  __forceinline Vec3ia& operator -=( Vec3ia& a, const int&   b ) { return a = a - b; }
   
 #if defined(__SSE4_1__)
   __forceinline Vec3ia& operator *=( Vec3ia& a, const Vec3ia& b ) { return a = a * b; }
-  __forceinline Vec3ia& operator *=( Vec3ia& a, const int32&  b ) { return a = a * b; }
+  __forceinline Vec3ia& operator *=( Vec3ia& a, const int&    b ) { return a = a * b; }
 #endif
   
   __forceinline Vec3ia& operator &=( Vec3ia& a, const Vec3ia& b ) { return a = a & b; }
-  __forceinline Vec3ia& operator &=( Vec3ia& a, const int32&  b ) { return a = a & b; }
+  __forceinline Vec3ia& operator &=( Vec3ia& a, const int&    b ) { return a = a & b; }
   
   __forceinline Vec3ia& operator |=( Vec3ia& a, const Vec3ia& b ) { return a = a | b; }
-  __forceinline Vec3ia& operator |=( Vec3ia& a, const int32&  b ) { return a = a | b; }
+  __forceinline Vec3ia& operator |=( Vec3ia& a, const int&    b ) { return a = a | b; }
   
-  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int32& b ) { return a = a << b; }
-  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int32& b ) { return a = a >> b; }
+  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int& b ) { return a = a << b; }
+  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int& b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

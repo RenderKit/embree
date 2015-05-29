@@ -23,12 +23,12 @@ namespace embree
   /*! 4-wide SSE integer type. */
   struct int4
   {
-    typedef bool4 Mask;                    // mask type
+    typedef bool4 Mask;                   // mask type
     typedef int4 Int;                     // int type
-    typedef float4 Float;                   // float type
+    typedef float4 Float;                 // float type
 
     enum   { size = 4 };                  // number of SIMD elements
-    union  { __m128i m128; int32 i[4]; }; // data
+    union  { __m128i m128; int i[4]; }; // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -42,12 +42,12 @@ namespace embree
     __forceinline operator const __m128i&( void ) const { return m128; }
     __forceinline operator       __m128i&( void )       { return m128; }
 
-    __forceinline int4           ( const int32&  a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-    __forceinline int4           ( const uint32& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline int4           ( const int&  a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline int4           ( const uint& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
 #if defined(__X86_64__)
     __forceinline int4           ( const size_t a  ) : m128(_mm_set1_epi32((int)a)) {}
 #endif
-    __forceinline int4           ( int32  a, int32  b, int32  c, int32  d) : m128(_mm_set_epi32(d, c, b, a)) {}
+    __forceinline int4           ( int  a, int  b, int  c, int  d) : m128(_mm_set_epi32(d, c, b, a)) {}
 
     __forceinline explicit int4( const __m128 a ) : m128(_mm_cvtps_epi32(a)) {}
 
@@ -115,8 +115,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline const int32& operator []( const size_t index ) const { assert(index < 4); return i[index]; }
-    __forceinline       int32& operator []( const size_t index )       { assert(index < 4); return i[index]; }
+    __forceinline const int& operator []( const size_t index ) const { assert(index < 4); return i[index]; }
+    __forceinline       int& operator []( const size_t index )       { assert(index < 4); return i[index]; }
 
     friend __forceinline const int4 select( const bool4& m, const int4& t, const int4& f ) { 
 #if defined(__SSE4_1__)
@@ -143,36 +143,36 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const int4 operator +( const int4& a, const int4& b ) { return _mm_add_epi32(a.m128, b.m128); }
-  __forceinline const int4 operator +( const int4& a, const int32&  b ) { return a + int4(b); }
-  __forceinline const int4 operator +( const int32&  a, const int4& b ) { return int4(a) + b; }
+  __forceinline const int4 operator +( const int4& a, const int&  b ) { return a + int4(b); }
+  __forceinline const int4 operator +( const int&  a, const int4& b ) { return int4(a) + b; }
 
   __forceinline const int4 operator -( const int4& a, const int4& b ) { return _mm_sub_epi32(a.m128, b.m128); }
-  __forceinline const int4 operator -( const int4& a, const int32&  b ) { return a - int4(b); }
-  __forceinline const int4 operator -( const int32&  a, const int4& b ) { return int4(a) - b; }
+  __forceinline const int4 operator -( const int4& a, const int&  b ) { return a - int4(b); }
+  __forceinline const int4 operator -( const int&  a, const int4& b ) { return int4(a) - b; }
 
 #if defined(__SSE4_1__)
   __forceinline const int4 operator *( const int4& a, const int4& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
-  __forceinline const int4 operator *( const int4& a, const int32&  b ) { return a * int4(b); }
-  __forceinline const int4 operator *( const int32&  a, const int4& b ) { return int4(a) * b; }
+  __forceinline const int4 operator *( const int4& a, const int&  b ) { return a * int4(b); }
+  __forceinline const int4 operator *( const int&  a, const int4& b ) { return int4(a) * b; }
 #endif
 
   __forceinline const int4 operator &( const int4& a, const int4& b ) { return _mm_and_si128(a.m128, b.m128); }
-  __forceinline const int4 operator &( const int4& a, const int32&  b ) { return a & int4(b); }
-  __forceinline const int4 operator &( const int32& a, const int4& b ) { return int4(a) & b; }
+  __forceinline const int4 operator &( const int4& a, const int&  b ) { return a & int4(b); }
+  __forceinline const int4 operator &( const int& a, const int4& b ) { return int4(a) & b; }
 
   __forceinline const int4 operator |( const int4& a, const int4& b ) { return _mm_or_si128(a.m128, b.m128); }
-  __forceinline const int4 operator |( const int4& a, const int32&  b ) { return a | int4(b); }
-  __forceinline const int4 operator |( const int32& a, const int4& b ) { return int4(a) | b; }
+  __forceinline const int4 operator |( const int4& a, const int&  b ) { return a | int4(b); }
+  __forceinline const int4 operator |( const int& a, const int4& b ) { return int4(a) | b; }
 
   __forceinline const int4 operator ^( const int4& a, const int4& b ) { return _mm_xor_si128(a.m128, b.m128); }
-  __forceinline const int4 operator ^( const int4& a, const int32&  b ) { return a ^ int4(b); }
-  __forceinline const int4 operator ^( const int32& a, const int4& b ) { return int4(a) ^ b; }
+  __forceinline const int4 operator ^( const int4& a, const int&  b ) { return a ^ int4(b); }
+  __forceinline const int4 operator ^( const int& a, const int4& b ) { return int4(a) ^ b; }
 
-  __forceinline const int4 operator <<( const int4& a, const int32& n ) { return _mm_slli_epi32(a.m128, n); }
-  __forceinline const int4 operator >>( const int4& a, const int32& n ) { return _mm_srai_epi32(a.m128, n); }
+  __forceinline const int4 operator <<( const int4& a, const int& n ) { return _mm_slli_epi32(a.m128, n); }
+  __forceinline const int4 operator >>( const int4& a, const int& n ) { return _mm_srai_epi32(a.m128, n); }
 
-  __forceinline const int4 sra ( const int4& a, const int32& b ) { return _mm_srai_epi32(a.m128, b); }
-  __forceinline const int4 srl ( const int4& a, const int32& b ) { return _mm_srli_epi32(a.m128, b); }
+  __forceinline const int4 sra ( const int4& a, const int& b ) { return _mm_srai_epi32(a.m128, b); }
+  __forceinline const int4 srl ( const int4& a, const int& b ) { return _mm_srli_epi32(a.m128, b); }
   
 #if defined(__SSE4_1__)
   __forceinline const int4 min( const int4& a, const int4& b ) { return _mm_min_epi32(a.m128, b.m128); }
@@ -182,62 +182,62 @@ namespace embree
   __forceinline const int4 max( const int4& a, const int4& b ) { return int4(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]),max(a[3],b[3])); }
 #endif
 
-  __forceinline const int4 min( const int4& a, const int32&  b ) { return min(a,int4(b)); }
-  __forceinline const int4 min( const int32&  a, const int4& b ) { return min(int4(a),b); }
-  __forceinline const int4 max( const int4& a, const int32&  b ) { return max(a,int4(b)); }
-  __forceinline const int4 max( const int32&  a, const int4& b ) { return max(int4(a),b); }
+  __forceinline const int4 min( const int4& a, const int&  b ) { return min(a,int4(b)); }
+  __forceinline const int4 min( const int&  a, const int4& b ) { return min(int4(a),b); }
+  __forceinline const int4 max( const int4& a, const int&  b ) { return max(a,int4(b)); }
+  __forceinline const int4 max( const int&  a, const int4& b ) { return max(int4(a),b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline int4& operator +=( int4& a, const int4& b ) { return a = a + b; }
-  __forceinline int4& operator +=( int4& a, const int32&  b ) { return a = a + b; }
+  __forceinline int4& operator +=( int4& a, const int&  b ) { return a = a + b; }
   
   __forceinline int4& operator -=( int4& a, const int4& b ) { return a = a - b; }
-  __forceinline int4& operator -=( int4& a, const int32&  b ) { return a = a - b; }
+  __forceinline int4& operator -=( int4& a, const int&  b ) { return a = a - b; }
 
 #if defined(__SSE4_1__)
   __forceinline int4& operator *=( int4& a, const int4& b ) { return a = a * b; }
-  __forceinline int4& operator *=( int4& a, const int32&  b ) { return a = a * b; }
+  __forceinline int4& operator *=( int4& a, const int&  b ) { return a = a * b; }
 #endif
   
   __forceinline int4& operator &=( int4& a, const int4& b ) { return a = a & b; }
-  __forceinline int4& operator &=( int4& a, const int32&  b ) { return a = a & b; }
+  __forceinline int4& operator &=( int4& a, const int&  b ) { return a = a & b; }
   
   __forceinline int4& operator |=( int4& a, const int4& b ) { return a = a | b; }
-  __forceinline int4& operator |=( int4& a, const int32&  b ) { return a = a | b; }
+  __forceinline int4& operator |=( int4& a, const int&  b ) { return a = a | b; }
   
-  __forceinline int4& operator <<=( int4& a, const int32&  b ) { return a = a << b; }
-  __forceinline int4& operator >>=( int4& a, const int32&  b ) { return a = a >> b; }
+  __forceinline int4& operator <<=( int4& a, const int&  b ) { return a = a << b; }
+  __forceinline int4& operator >>=( int4& a, const int&  b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const bool4 operator ==( const int4& a, const int4& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32 (a.m128, b.m128)); }
-  __forceinline const bool4 operator ==( const int4& a, const int32& b ) { return a == int4(b); }
-  __forceinline const bool4 operator ==( const int32& a, const int4& b ) { return int4(a) == b; }
+  __forceinline const bool4 operator ==( const int4& a, const int&  b ) { return a == int4(b); }
+  __forceinline const bool4 operator ==( const int&  a, const int4& b ) { return int4(a) == b; }
   
   __forceinline const bool4 operator !=( const int4& a, const int4& b ) { return !(a == b); }
-  __forceinline const bool4 operator !=( const int4& a, const int32& b ) { return a != int4(b); }
-  __forceinline const bool4 operator !=( const int32& a, const int4& b ) { return int4(a) != b; }
+  __forceinline const bool4 operator !=( const int4& a, const int&  b ) { return a != int4(b); }
+  __forceinline const bool4 operator !=( const int&  a, const int4& b ) { return int4(a) != b; }
   
   __forceinline const bool4 operator < ( const int4& a, const int4& b ) { return _mm_castsi128_ps(_mm_cmplt_epi32 (a.m128, b.m128)); }
-  __forceinline const bool4 operator < ( const int4& a, const int32& b ) { return a <  int4(b); }
-  __forceinline const bool4 operator < ( const int32& a, const int4& b ) { return int4(a) <  b; }
+  __forceinline const bool4 operator < ( const int4& a, const int&  b ) { return a <  int4(b); }
+  __forceinline const bool4 operator < ( const int&  a, const int4& b ) { return int4(a) <  b; }
   
   __forceinline const bool4 operator >=( const int4& a, const int4& b ) { return !(a <  b); }
-  __forceinline const bool4 operator >=( const int4& a, const int32& b ) { return a >= int4(b); }
-  __forceinline const bool4 operator >=( const int32& a, const int4& b ) { return int4(a) >= b; }
+  __forceinline const bool4 operator >=( const int4& a, const int&  b ) { return a >= int4(b); }
+  __forceinline const bool4 operator >=( const int&  a, const int4& b ) { return int4(a) >= b; }
 
   __forceinline const bool4 operator > ( const int4& a, const int4& b ) { return _mm_castsi128_ps(_mm_cmpgt_epi32 (a.m128, b.m128)); }
-  __forceinline const bool4 operator > ( const int4& a, const int32& b ) { return a >  int4(b); }
-  __forceinline const bool4 operator > ( const int32& a, const int4& b ) { return int4(a) >  b; }
+  __forceinline const bool4 operator > ( const int4& a, const int&  b ) { return a >  int4(b); }
+  __forceinline const bool4 operator > ( const int&  a, const int4& b ) { return int4(a) >  b; }
 
   __forceinline const bool4 operator <=( const int4& a, const int4& b ) { return !(a >  b); }
-  __forceinline const bool4 operator <=( const int4& a, const int32& b ) { return a <= int4(b); }
-  __forceinline const bool4 operator <=( const int32& a, const int4& b ) { return int4(a) <= b; }
+  __forceinline const bool4 operator <=( const int4& a, const int&  b ) { return a <= int4(b); }
+  __forceinline const bool4 operator <=( const int&  a, const int4& b ) { return int4(a) <= b; }
 
  
 
@@ -280,10 +280,10 @@ namespace embree
 
 #if defined(__SSE4_1__)
   template<size_t src> __forceinline int extract( const int4& b ) { return _mm_extract_epi32(b, src); }
-  template<size_t dst> __forceinline const int4 insert( const int4& a, const int32 b ) { return _mm_insert_epi32(a, b, dst); }
+  template<size_t dst> __forceinline const int4 insert( const int4& a, const int b ) { return _mm_insert_epi32(a, b, dst); }
 #else
   template<size_t src> __forceinline int extract( const int4& b ) { return b[src]; }
-  template<size_t dst> __forceinline const int4 insert( const int4& a, const int32 b ) { int4 c = a; c[dst] = b; return c; }
+  template<size_t dst> __forceinline const int4 insert( const int4& a, const int b ) { int4 c = a; c[dst] = b; return c; }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

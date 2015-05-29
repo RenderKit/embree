@@ -769,7 +769,7 @@ namespace embree
     unsigned short grid_subtree_size_64b_blocks;
 
     RWMutex mtx;
-    volatile int64 root_ref;
+    volatile int64_t root_ref;
 
     __aligned(64) BSplinePatch3fa patch;
   };

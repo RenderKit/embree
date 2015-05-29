@@ -123,7 +123,7 @@ namespace embree
   /*   return broadcast4to16f(&v); */
   /* } */
 
-  __forceinline int16 mul_uint64( const int16& a, const int16& b) { 
+  __forceinline int16 mul_uint64_t( const int16& a, const int16& b) { 
     const int16 low  = _mm512_mullo_epi32(a, b);
     const int16 high = _mm512_mulhi_epu32(a, b);
     return select(0x5555,low,high);

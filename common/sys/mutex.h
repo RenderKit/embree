@@ -178,7 +178,7 @@ namespace embree
 
     __forceinline void lock()
     {
-      const unsigned short i = atomic_add((int16*)&threads, 1);
+      const int16_t i = atomic_add(&threads, 1);
 
       unsigned int wait = 128;	
       while (tickets != i) 
@@ -211,8 +211,8 @@ namespace embree
     }
 
   public:
-    volatile unsigned short threads;     
-    volatile unsigned short tickets;
+    volatile int16_t threads;     
+    volatile int16_t tickets;
   };
 
  class MultipleReaderSingleWriterMutex

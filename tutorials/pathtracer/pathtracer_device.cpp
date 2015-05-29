@@ -830,7 +830,7 @@ void occlusionFilterReject(void* ptr, RTCRay& ray) {
 #endif
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -862,7 +862,7 @@ Vec3fa g_accu_p;
 extern "C" bool g_changed;
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize last seen camera */
   g_accu_vx = Vec3fa(0.0f);

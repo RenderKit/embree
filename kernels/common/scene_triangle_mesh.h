@@ -30,7 +30,7 @@ namespace embree
     /*! triangle indices */
     struct Triangle 
     {
-      uint32 v[3];
+      uint32_t v[3];
 
       /*! outputs triangle indices */
       __forceinline friend std::ostream &operator<<(std::ostream& cout, const Triangle& t) {
@@ -153,14 +153,14 @@ namespace embree
 #else
 	const int16 stride = vertices[dim].getBufferStride();
 
-	const int16 offset0_64 = mul_uint64(stride,int16(tri.v[0]));
-	const int16 offset1_64 = mul_uint64(stride,int16(tri.v[1]));
-	const int16 offset2_64 = mul_uint64(stride,int16(tri.v[2]));
+	const int16 offset0_64 = mul_uint64_t(stride,int16(tri.v[0]));
+	const int16 offset1_64 = mul_uint64_t(stride,int16(tri.v[1]));
+	const int16 offset2_64 = mul_uint64_t(stride,int16(tri.v[2]));
 
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
-	const size_t off0 = offset0_64.uint64(0);
-	const size_t off1 = offset1_64.uint64(0);
-	const size_t off2 = offset2_64.uint64(0);
+	const size_t off0 = offset0_64.uint64_t(0);
+	const size_t off1 = offset1_64.uint64_t(0);
+	const size_t off2 = offset2_64.uint64_t(0);
 
 	const float *__restrict__ const vptr0_64 = (float*)(base + off0);
 	const float *__restrict__ const vptr1_64 = (float*)(base + off1);

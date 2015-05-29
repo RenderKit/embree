@@ -34,7 +34,7 @@ struct Triangle { int v0, v1, v2; };
 using namespace embree;
 
 /* returns time stamp counter */
-extern "C" int64 get_tsc();
+extern "C" int64_t get_tsc();
 
 /* face forward for shading normals */
 __forceinline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {

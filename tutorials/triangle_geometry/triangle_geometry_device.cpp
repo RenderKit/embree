@@ -25,7 +25,7 @@ Vec3fa* vertex_colors = nullptr;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -126,7 +126,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);

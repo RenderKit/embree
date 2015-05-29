@@ -26,7 +26,7 @@ namespace embree
     union  {                              // data
       __m256i m256; 
       struct { __m128i l,h; }; 
-      int32 v[8]; 
+      int v[8]; 
     }; 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -45,11 +45,11 @@ namespace embree
     __forceinline int8( const int4& a, const int4& b ) : m256(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
     __forceinline int8( const __m128i& a, const __m128i& b ) : l(a), h(b) {}
  
-    __forceinline explicit int8  ( const int32* const a ) : m256(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
-    __forceinline int8           ( int32  a ) : m256(_mm256_set1_epi32(a)) {}
-    __forceinline int8           ( int32  a, int32  b) : m256(_mm256_set_epi32(b, a, b, a, b, a, b, a)) {}
-    __forceinline int8           ( int32  a, int32  b, int32  c, int32  d) : m256(_mm256_set_epi32(d, c, b, a, d, c, b, a)) {}
-    __forceinline int8           ( int32  a, int32  b, int32  c, int32  d, int32  e, int32  f, int32  g, int32  h) : m256(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
+    __forceinline explicit int8  ( const int* const a ) : m256(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
+    __forceinline int8           ( int  a ) : m256(_mm256_set1_epi32(a)) {}
+    __forceinline int8           ( int  a, int  b) : m256(_mm256_set_epi32(b, a, b, a, b, a, b, a)) {}
+    __forceinline int8           ( int  a, int  b, int  c, int  d) : m256(_mm256_set_epi32(d, c, b, a, d, c, b, a)) {}
+    __forceinline int8           ( int  a, int  b, int  c, int  d, int  e, int  f, int  g, int  h) : m256(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
 
     __forceinline explicit int8( const __m256 a ) : m256(_mm256_cvtps_epi32(a)) {}
 
@@ -91,8 +91,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline const int32& operator []( const size_t i ) const { assert(i < 8); return v[i]; }
-    __forceinline       int32& operator []( const size_t i )       { assert(i < 8); return v[i]; }
+    __forceinline const int& operator []( const size_t i ) const { assert(i < 8); return v[i]; }
+    __forceinline       int& operator []( const size_t i )       { assert(i < 8); return v[i]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -108,64 +108,64 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const int8 operator +( const int8& a, const int8& b ) { return int8(_mm_add_epi32(a.l, b.l), _mm_add_epi32(a.h, b.h)); }
-  __forceinline const int8 operator +( const int8& a, const int32 b ) { return a + int8(b); }
-  __forceinline const int8 operator +( const int32 a, const int8& b ) { return int8(a) + b; }
+  __forceinline const int8 operator +( const int8& a, const int   b ) { return a + int8(b); }
+  __forceinline const int8 operator +( const int   a, const int8& b ) { return int8(a) + b; }
 
   __forceinline const int8 operator -( const int8& a, const int8& b ) { return int8(_mm_sub_epi32(a.l, b.l), _mm_sub_epi32(a.h, b.h)); }
-  __forceinline const int8 operator -( const int8& a, const int32 b ) { return a - int8(b); }
-  __forceinline const int8 operator -( const int32 a, const int8& b ) { return int8(a) - b; }
+  __forceinline const int8 operator -( const int8& a, const int   b ) { return a - int8(b); }
+  __forceinline const int8 operator -( const int   a, const int8& b ) { return int8(a) - b; }
 
   __forceinline const int8 operator *( const int8& a, const int8& b ) { return int8(_mm_mullo_epi32(a.l, b.l), _mm_mullo_epi32(a.h, b.h)); }
-  __forceinline const int8 operator *( const int8& a, const int32 b ) { return a * int8(b); }
-  __forceinline const int8 operator *( const int32 a, const int8& b ) { return int8(a) * b; }
+  __forceinline const int8 operator *( const int8& a, const int   b ) { return a * int8(b); }
+  __forceinline const int8 operator *( const int   a, const int8& b ) { return int8(a) * b; }
 
   __forceinline const int8 operator &( const int8& a, const int8& b ) { return _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
-  __forceinline const int8 operator &( const int8& a, const int32 b ) { return a & int8(b); }
-  __forceinline const int8 operator &( const int32 a, const int8& b ) { return int8(a) & b; }
+  __forceinline const int8 operator &( const int8& a, const int   b ) { return a & int8(b); }
+  __forceinline const int8 operator &( const int   a, const int8& b ) { return int8(a) & b; }
 
   __forceinline const int8 operator |( const int8& a, const int8& b ) { return _mm256_castps_si256(_mm256_or_ps (_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
-  __forceinline const int8 operator |( const int8& a, const int32 b ) { return a | int8(b); }
-  __forceinline const int8 operator |( const int32 a, const int8& b ) { return int8(a) | b; }
+  __forceinline const int8 operator |( const int8& a, const int   b ) { return a | int8(b); }
+  __forceinline const int8 operator |( const int   a, const int8& b ) { return int8(a) | b; }
 
   __forceinline const int8 operator ^( const int8& a, const int8& b ) { return _mm256_castps_si256(_mm256_xor_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
-  __forceinline const int8 operator ^( const int8& a, const int32 b ) { return a ^ int8(b); }
-  __forceinline const int8 operator ^( const int32 a, const int8& b ) { return int8(a) ^ b; }
+  __forceinline const int8 operator ^( const int8& a, const int   b ) { return a ^ int8(b); }
+  __forceinline const int8 operator ^( const int   a, const int8& b ) { return int8(a) ^ b; }
 
-  __forceinline const int8 operator <<( const int8& a, const int32 n ) { return int8(_mm_slli_epi32(a.l, n), _mm_slli_epi32(a.h, n)); }
-  __forceinline const int8 operator >>( const int8& a, const int32 n ) { return int8(_mm_srai_epi32(a.l, n), _mm_srai_epi32(a.h, n)); }
+  __forceinline const int8 operator <<( const int8& a, const int n ) { return int8(_mm_slli_epi32(a.l, n), _mm_slli_epi32(a.h, n)); }
+  __forceinline const int8 operator >>( const int8& a, const int n ) { return int8(_mm_srai_epi32(a.l, n), _mm_srai_epi32(a.h, n)); }
 
-  __forceinline const int8 sra ( const int8& a, const int32 b ) { return int8(_mm_srai_epi32(a.l, b), _mm_srai_epi32(a.h, b)); }
-  __forceinline const int8 srl ( const int8& a, const int32 b ) { return int8(_mm_srli_epi32(a.l, b), _mm_srli_epi32(a.h, b)); }
+  __forceinline const int8 sra ( const int8& a, const int b ) { return int8(_mm_srai_epi32(a.l, b), _mm_srai_epi32(a.h, b)); }
+  __forceinline const int8 srl ( const int8& a, const int b ) { return int8(_mm_srli_epi32(a.l, b), _mm_srli_epi32(a.h, b)); }
   
   __forceinline const int8 min( const int8& a, const int8& b ) { return int8(_mm_min_epi32(a.l, b.l), _mm_min_epi32(a.h, b.h)); }
-  __forceinline const int8 min( const int8& a, const int32 b ) { return min(a,int8(b)); }
-  __forceinline const int8 min( const int32 a, const int8& b ) { return min(int8(a),b); }
+  __forceinline const int8 min( const int8& a, const int   b ) { return min(a,int8(b)); }
+  __forceinline const int8 min( const int   a, const int8& b ) { return min(int8(a),b); }
 
   __forceinline const int8 max( const int8& a, const int8& b ) { return int8(_mm_max_epi32(a.l, b.l), _mm_max_epi32(a.h, b.h)); }
-  __forceinline const int8 max( const int8& a, const int32 b ) { return max(a,int8(b)); }
-  __forceinline const int8 max( const int32 a, const int8& b ) { return max(int8(a),b); }
+  __forceinline const int8 max( const int8& a, const int   b ) { return max(a,int8(b)); }
+  __forceinline const int8 max( const int   a, const int8& b ) { return max(int8(a),b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline int8& operator +=( int8& a, const int8& b ) { return a = a + b; }
-  __forceinline int8& operator +=( int8& a, const int32  b ) { return a = a + b; }
+  __forceinline int8& operator +=( int8& a, const int   b ) { return a = a + b; }
   
   __forceinline int8& operator -=( int8& a, const int8& b ) { return a = a - b; }
-  __forceinline int8& operator -=( int8& a, const int32  b ) { return a = a - b; }
+  __forceinline int8& operator -=( int8& a, const int   b ) { return a = a - b; }
   
   __forceinline int8& operator *=( int8& a, const int8& b ) { return a = a * b; }
-  __forceinline int8& operator *=( int8& a, const int32  b ) { return a = a * b; }
+  __forceinline int8& operator *=( int8& a, const int   b ) { return a = a * b; }
   
   __forceinline int8& operator &=( int8& a, const int8& b ) { return a = a & b; }
-  __forceinline int8& operator &=( int8& a, const int32  b ) { return a = a & b; }
+  __forceinline int8& operator &=( int8& a, const int   b ) { return a = a & b; }
   
   __forceinline int8& operator |=( int8& a, const int8& b ) { return a = a | b; }
-  __forceinline int8& operator |=( int8& a, const int32  b ) { return a = a | b; }
+  __forceinline int8& operator |=( int8& a, const int   b ) { return a = a | b; }
   
-  __forceinline int8& operator <<=( int8& a, const int32  b ) { return a = a << b; }
-  __forceinline int8& operator >>=( int8& a, const int32  b ) { return a = a >> b; }
+  __forceinline int8& operator <<=( int8& a, const int  b ) { return a = a << b; }
+  __forceinline int8& operator >>=( int8& a, const int  b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
@@ -173,30 +173,30 @@ namespace embree
 
   __forceinline const bool8 operator ==( const int8& a, const int8& b ) { return bool8(_mm_castsi128_ps(_mm_cmpeq_epi32 (a.l, b.l)), 
                                                                                      _mm_castsi128_ps(_mm_cmpeq_epi32 (a.h, b.h))); }
-  __forceinline const bool8 operator ==( const int8& a, const int32 b ) { return a == int8(b); }
-  __forceinline const bool8 operator ==( const int32 a, const int8& b ) { return int8(a) == b; }
+  __forceinline const bool8 operator ==( const int8& a, const int   b ) { return a == int8(b); }
+  __forceinline const bool8 operator ==( const int   a, const int8& b ) { return int8(a) == b; }
   
   __forceinline const bool8 operator !=( const int8& a, const int8& b ) { return !(a == b); }
-  __forceinline const bool8 operator !=( const int8& a, const int32 b ) { return a != int8(b); }
-  __forceinline const bool8 operator !=( const int32 a, const int8& b ) { return int8(a) != b; }
+  __forceinline const bool8 operator !=( const int8& a, const int   b ) { return a != int8(b); }
+  __forceinline const bool8 operator !=( const int   a, const int8& b ) { return int8(a) != b; }
   
   __forceinline const bool8 operator < ( const int8& a, const int8& b ) { return bool8(_mm_castsi128_ps(_mm_cmplt_epi32 (a.l, b.l)), 
                                                                                      _mm_castsi128_ps(_mm_cmplt_epi32 (a.h, b.h))); }
-  __forceinline const bool8 operator < ( const int8& a, const int32 b ) { return a <  int8(b); }
-  __forceinline const bool8 operator < ( const int32 a, const int8& b ) { return int8(a) <  b; }
+  __forceinline const bool8 operator < ( const int8& a, const int   b ) { return a <  int8(b); }
+  __forceinline const bool8 operator < ( const int   a, const int8& b ) { return int8(a) <  b; }
   
   __forceinline const bool8 operator >=( const int8& a, const int8& b ) { return !(a <  b); }
-  __forceinline const bool8 operator >=( const int8& a, const int32 b ) { return a >= int8(b); }
-  __forceinline const bool8 operator >=( const int32 a, const int8& b ) { return int8(a) >= b; }
+  __forceinline const bool8 operator >=( const int8& a, const int   b ) { return a >= int8(b); }
+  __forceinline const bool8 operator >=( const int   a, const int8& b ) { return int8(a) >= b; }
 
   __forceinline const bool8 operator > ( const int8& a, const int8& b ) { return bool8(_mm_castsi128_ps(_mm_cmpgt_epi32 (a.l, b.l)), 
                                                                                      _mm_castsi128_ps(_mm_cmpgt_epi32 (a.h, b.h))); }
-  __forceinline const bool8 operator > ( const int8& a, const int32 b ) { return a >  int8(b); }
-  __forceinline const bool8 operator > ( const int32 a, const int8& b ) { return int8(a) >  b; }
+  __forceinline const bool8 operator > ( const int8& a, const int   b ) { return a >  int8(b); }
+  __forceinline const bool8 operator > ( const int   a, const int8& b ) { return int8(a) >  b; }
 
   __forceinline const bool8 operator <=( const int8& a, const int8& b ) { return !(a >  b); }
-  __forceinline const bool8 operator <=( const int8& a, const int32 b ) { return a <= int8(b); }
-  __forceinline const bool8 operator <=( const int32 a, const int8& b ) { return int8(a) <= b; }
+  __forceinline const bool8 operator <=( const int8& a, const int   b ) { return a <= int8(b); }
+  __forceinline const bool8 operator <=( const int   a, const int8& b ) { return int8(a) <= b; }
 
   __forceinline const int8 select( const bool8& m, const int8& t, const int8& f ) { 
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m)); 

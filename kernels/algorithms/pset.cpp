@@ -32,11 +32,11 @@ namespace embree
 
       /* create vector with random numbers */
       const size_t N = 10000;
-      std::vector<uint32> unsorted(N);
+      std::vector<uint32_t> unsorted(N);
       for (size_t i=0; i<N; i++) unsorted[i] = 2*rand();
       
       /* created set from numbers */
-      pset<uint32> sorted;
+      pset<uint32_t> sorted;
       sorted.init(unsorted);
 
       /* check that all elements are in the set */

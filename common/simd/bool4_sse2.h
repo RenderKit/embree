@@ -26,7 +26,7 @@ namespace embree
     typedef float4 Float;                   // float type
 
     enum   { size = 4 };                  // number of SIMD elements
-    union  { __m128 m128; int32 v[4]; };  // data
+    union  { __m128 m128; int v[4]; };  // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -63,8 +63,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool   operator []( const size_t i ) const { assert(i < 4); return (_mm_movemask_ps(m128) >> i) & 1; }
-    __forceinline int32& operator []( const size_t i )       { assert(i < 4); return v[i]; }
+    __forceinline bool operator []( const size_t i ) const { assert(i < 4); return (_mm_movemask_ps(m128) >> i) & 1; }
+    __forceinline int& operator []( const size_t i )       { assert(i < 4); return v[i]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////

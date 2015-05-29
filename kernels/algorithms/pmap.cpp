@@ -32,20 +32,20 @@ namespace embree
 
       /* create key/value vectors with random numbers */
       const size_t N = 10000;
-      std::vector<uint32> keys(N);
-      std::vector<uint32> vals(N);
+      std::vector<uint32_t> keys(N);
+      std::vector<uint32_t> vals(N);
       for (size_t i=0; i<N; i++) {
 	keys[i] = 2*rand();
 	vals[i] = 2*rand();
       }
       
       /* create map */
-      pmap<uint32,uint32> map;
+      pmap<uint32_t,uint32_t> map;
       map.init(keys,vals);
 
       /* check that all keys are properly mapped */
       for (size_t i=0; i<N; i++) {
-	const uint32* val = map.lookup(keys[i]);
+	const uint32_t* val = map.lookup(keys[i]);
 	passed &= val && (*val == vals[i]);
       }
 

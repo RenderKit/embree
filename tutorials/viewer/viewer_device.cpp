@@ -92,7 +92,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -116,7 +116,7 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);

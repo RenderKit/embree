@@ -27,7 +27,7 @@ namespace embree
   struct Triangle { int v0, v1, v2; };
 
   /* error reporting function */
-  void error_handler(const RTCError code, const int8* str)
+  void error_handler(const RTCError code, const char* str)
   {
     printf("Embree: ");
     switch (code) {

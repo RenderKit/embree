@@ -20,7 +20,7 @@
 #include "../../common/tutorial/tutorial_device.h"
 #include "../../common/tutorial/scene_device.h"
 
-extern "C" int64 get_tsc() {
+extern "C" int64_t get_tsc() {
   return read_tsc();
 }
 
@@ -110,11 +110,11 @@ namespace embree
     device_init(cfg);
   }
 
-  void key_pressed (int32 key) {
+  void key_pressed (int key) {
     device_key_pressed(key);
   }
 
-  void resize(int32 width, int32 height)
+  void resize(int width, int height)
   {
     if (width == g_width && height == g_height)
       return;

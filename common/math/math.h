@@ -150,7 +150,7 @@ namespace embree
 #endif
 
   __forceinline     int min(int     a, int     b) { return a<b ? a:b; }
-  __forceinline   int64 min(int64   a, int64   b) { return a<b ? a:b; }
+  __forceinline int64_t min(int64_t a, int64_t b) { return a<b ? a:b; }
   __forceinline  size_t min(size_t  a, size_t  b) { return a<b ? a:b; }
 #if !defined(__WIN32__)
   __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }
@@ -163,7 +163,7 @@ namespace embree
   template<typename T> __forceinline T min(const T& a, const T& b, const T& c, const T& d, const T& e) { return min(min(min(a,b),min(c,d)),e); }
 
   __forceinline     int max(int     a, int     b) { return a<b ? b:a; }
-  __forceinline   int64 max(int64   a, int64   b) { return a<b ? b:a; }
+  __forceinline int64_t max(int64_t a, int64_t b) { return a<b ? b:a; }
   __forceinline  size_t max(size_t  a, size_t  b) { return a<b ? b:a; }
 #if !defined(__WIN32__)
   __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
@@ -196,16 +196,16 @@ namespace embree
 #endif
 
   /*! random functions */
-  template<typename T> T          random() { return T(0); }
+  template<typename T> T random() { return T(0); }
 #if defined(_WIN32)
-  template<> __forceinline int    random() { return int(rand()) ^ (int(rand()) << 8) ^ (int(rand()) << 16); }
-  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 8) ^ (uint32(rand()) << 16); }
+  template<> __forceinline int      random() { return int(rand()) ^ (int(rand()) << 8) ^ (int(rand()) << 16); }
+  template<> __forceinline uint32_t random() { return uint32_t(rand()) ^ (uint32_t(rand()) << 8) ^ (uint32_t(rand()) << 16); }
 #else
-  template<> __forceinline int    random() { return int(rand()); }
-  template<> __forceinline uint32 random() { return uint32(rand()) ^ (uint32(rand()) << 16); }
+  template<> __forceinline int      random() { return int(rand()); }
+  template<> __forceinline uint32_t random() { return uint32_t(rand()) ^ (uint32_t(rand()) << 16); }
 #endif
-  template<> __forceinline float  random() { return random<uint32>()/float(RAND_MAX); }
-  template<> __forceinline double random() { return random<uint32>()/double(RAND_MAX); }
+  template<> __forceinline float  random() { return random<uint32_t>()/float(RAND_MAX); }
+  template<> __forceinline double random() { return random<uint32_t>()/double(RAND_MAX); }
 
 #if _WIN32
   __forceinline double drand48() {

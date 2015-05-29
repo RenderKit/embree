@@ -750,20 +750,20 @@ namespace embree
     /* map triangle and vertex buffer */
     if (numTimeSteps >= 1) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32>();
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32_t>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     }
     if (numTimeSteps >= 2) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32>();
+      for (size_t i=0; i<4*3*numTriangles; i++) v[i] = random<uint32_t>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     }
     
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t i=0; i<numTriangles; i++) {
-      triangles[i].v0 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+0;
-      triangles[i].v1 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+1;
-      triangles[i].v2 = (random<int>() % 32 == 0) ? random<uint32>() : 3*i+2;
+      triangles[i].v0 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+0;
+      triangles[i].v1 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+1;
+      triangles[i].v2 = (random<int>() % 32 == 0) ? random<uint32_t>() : 3*i+2;
     }
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
@@ -779,18 +779,18 @@ namespace embree
     /* map triangle and vertex buffer */
     if (numTimeSteps >= 1) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32>();
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32_t>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER0); 
     }
     if (numTimeSteps >= 2) {
       int* v = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
-      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32>();
+      for (size_t i=0; i<4*4*numCurves; i++) v[i] = random<uint32_t>();
       rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER1); 
     }
     
     int* curves = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
     for (size_t i=0; i<numCurves; i++) 
-      curves[i] = (random<int>() % 32 == 0) ? random<uint32>() : 4*i;
+      curves[i] = (random<int>() % 32 == 0) ? random<uint32_t>() : 4*i;
     rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
 
     return mesh;
