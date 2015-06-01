@@ -283,24 +283,24 @@ namespace embree
         assert( patch.ring[3].hasValidPositions() );
         
         if (unlikely(patch.ring[0].hasBorder())) 
+        {
+          const bool hasCorner = patch.ring[0].face_valence == 2; // FIXME: need helper function	     
+          
+          v[1][1] = patch.ring[0].vtx;
+          v[0][1] = patch.ring[0].regular_border_vertex_6();
+          v[0][0] = patch.ring[0].regular_border_vertex_5();
+          
+          if (hasCorner)
           {
-            const bool hasCorner = patch.ring[0].face_valence == 2; // FIXME: need helper function	     
+            if (std::isinf(patch.ring[0].vertex_crease_weight))
+              v[0][0] = 4.0f * patch.ring[0].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
+            else
+              v[0][0] = -8.0f * patch.ring[0].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
+          }
           
-            v[1][1] = patch.ring[0].vtx;
-            v[0][1] = patch.ring[0].regular_border_vertex_6();
-            v[0][0] = patch.ring[0].regular_border_vertex_5();
-
-            if (hasCorner)
-              {
-                if (std::isinf(patch.ring[0].vertex_crease_weight))
-                  v[0][0] = 4.0f * patch.ring[0].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
-                else
-                  v[0][0] = -8.0f * patch.ring[0].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
-              }
-
-            v[1][0] = patch.ring[0].regular_border_vertex_4();
+          v[1][0] = patch.ring[0].regular_border_vertex_4();
           
-          } else {
+        } else {
           v[1][1] = patch.ring[0].vtx;
           v[0][1] = patch.ring[0].ring[6];
           v[0][0] = patch.ring[0].ring[5];
@@ -308,23 +308,23 @@ namespace embree
         }
         
         if (unlikely(patch.ring[1].hasBorder())) 
-          {
-            const bool hasCorner = patch.ring[1].face_valence == 2; // FIXME
-	    
-          
-            v[1][2] = patch.ring[1].vtx;
-            v[1][3] = patch.ring[1].regular_border_vertex_6();
-            v[0][3] = patch.ring[1].regular_border_vertex_5();
-            if (hasCorner)
-              {
-                if (std::isinf(patch.ring[1].vertex_crease_weight))
-                  v[0][3] = 4.0f * patch.ring[1].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
-                else
-                  v[0][3] = -8.0f * patch.ring[1].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
-              }
+        {
+          const bool hasCorner = patch.ring[1].face_valence == 2; // FIXME
 	  
-            v[0][2] = patch.ring[1].regular_border_vertex_4();
-          } else {
+          
+          v[1][2] = patch.ring[1].vtx;
+          v[1][3] = patch.ring[1].regular_border_vertex_6();
+          v[0][3] = patch.ring[1].regular_border_vertex_5();
+          if (hasCorner)
+          {
+            if (std::isinf(patch.ring[1].vertex_crease_weight))
+              v[0][3] = 4.0f * patch.ring[1].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
+            else
+              v[0][3] = -8.0f * patch.ring[1].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
+          }
+	  
+          v[0][2] = patch.ring[1].regular_border_vertex_4();
+        } else {
           v[1][2] = patch.ring[1].vtx;
           v[1][3] = patch.ring[1].ring[6];
           v[0][3] = patch.ring[1].ring[5];
@@ -332,22 +332,22 @@ namespace embree
         }
         
         if (unlikely(patch.ring[2].hasBorder())) 
+        {
+          const bool hasCorner = patch.ring[2].face_valence == 2; //FIXME
+	  
+          v[2][2] = patch.ring[2].vtx;
+          v[3][2] = patch.ring[2].regular_border_vertex_6();
+          v[3][3] = patch.ring[2].regular_border_vertex_5();
+          if (hasCorner)
           {
-            const bool hasCorner = patch.ring[2].face_valence == 2; //FIXME
-	                        
-            v[2][2] = patch.ring[2].vtx;
-            v[3][2] = patch.ring[2].regular_border_vertex_6();
-            v[3][3] = patch.ring[2].regular_border_vertex_5();
-            if (hasCorner)
-              {
-                if (std::isinf(patch.ring[2].vertex_crease_weight))
-                  v[3][3] = 4.0f * patch.ring[2].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
-                else
-                  v[3][3] = -8.0f * patch.ring[2].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
-              }
-
-            v[2][3] = patch.ring[2].regular_border_vertex_4();
-          } else {
+            if (std::isinf(patch.ring[2].vertex_crease_weight))
+              v[3][3] = 4.0f * patch.ring[2].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
+            else
+              v[3][3] = -8.0f * patch.ring[2].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
+          }
+          
+          v[2][3] = patch.ring[2].regular_border_vertex_4();
+        } else {
           v[2][2] = patch.ring[2].vtx;
           v[3][2] = patch.ring[2].ring[6];
           v[3][3] = patch.ring[2].ring[5];
@@ -355,21 +355,21 @@ namespace embree
         }
         
         if (unlikely(patch.ring[3].hasBorder())) 
-          {
-            const bool hasCorner = patch.ring[3].face_valence == 2;
+        {
+          const bool hasCorner = patch.ring[3].face_valence == 2;
           
-            v[2][1] = patch.ring[3].vtx;
-            v[2][0] = patch.ring[3].regular_border_vertex_6();
-            v[3][0] = patch.ring[3].regular_border_vertex_5();
-            if (hasCorner)
-              {
-                if ( std::isinf(patch.ring[3].vertex_crease_weight) )
-                  v[3][0] = 4.0f * patch.ring[3].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
-                else
-                  v[3][0] = -8.0f * patch.ring[3].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
-              }
-            v[3][1] = patch.ring[3].regular_border_vertex_4();
-          } else {
+          v[2][1] = patch.ring[3].vtx;
+          v[2][0] = patch.ring[3].regular_border_vertex_6();
+          v[3][0] = patch.ring[3].regular_border_vertex_5();
+          if (hasCorner)
+          {
+            if ( std::isinf(patch.ring[3].vertex_crease_weight) )
+              v[3][0] = 4.0f * patch.ring[3].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
+            else
+              v[3][0] = -8.0f * patch.ring[3].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
+          }
+          v[3][1] = patch.ring[3].regular_border_vertex_4();
+        } else {
           v[2][1] = patch.ring[3].vtx;
           v[2][0] = patch.ring[3].ring[6];
           v[3][0] = patch.ring[3].ring[5];      
@@ -401,35 +401,39 @@ namespace embree
       }
       
       template<typename Loader>
-      __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0,
-                                     Loader& load,
-                                     Vertex& v00, 
-                                     const Vertex& v01, const Vertex& v02, 
-                                     const Vertex& v11, const Vertex& v22, 
-                                     const Vertex& v10, const Vertex& v20)
+      __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0, Loader& load,
+                                     Vertex& v00, const Vertex& v01, const Vertex& v02, 
+                                     const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                     const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         const bool opposite0 = edge0->hasOpposite();
         const bool opposite3 = edge0->prev()->hasOpposite();
         if (likely(opposite0 && opposite3))
         {
           const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
-          if (likely(e->hasOpposite()))
+          if (likely(e->hasOpposite())) {
+            assert(edge0->prev()->opposite()->prev()->hasOpposite());
             v00 = load(e->opposite()->prev());
+          }
           else {
             assert(!edge0->prev()->opposite()->prev()->hasOpposite());
-            v00 = 2.0f*v11-v22;
+            v00 = 2.0f*v11-v22; // FIXME: is this correct
           }
         } 
-        else if (!opposite0) v00 = 2.0f*v10-v20;
-        else if (!opposite3) v00 = 2.0f*v01-v02;
+        else if (!opposite0) v00 = 2.0f*v10-v20; // border rule
+        else if (!opposite3) v00 = 2.0f*v01-v02; // border rule
         else {
-          if (edge0->vertex_crease_weight == 0.0f) v00 = 2.0f*v11-v22; // FIXME: correct formula
-          else                                     v00 = v11; // FIXME: does this create proper soft corners?
+          if (edge0->vertex_crease_weight == 0.0f) 
+            v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+          else if (std::isinf(edge0->vertex_crease_weight))
+            v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
+          else
+            assert(false);
         }
         
         /* hard vertex crease rule */
         //if (unlikely(edge0->vertex_crease_weight == float(inf))) 
-        //  v00 = 2.0f*v11-v22;
+        //  v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
       }
       
       template<typename Loader>
@@ -450,10 +454,10 @@ namespace embree
         init_border(edge3,load,v[2][0],v[1][0],v21,v11,v22,v12);
         
         /* fill corner vertices */
-        init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v11,v22,v[1][0],v[2][0]);
-        init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v12,v21,v[0][2],v[0][1]);
-        init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v22,v11,v[2][3],v[1][3]);
-        init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v21,v12,v[3][1],v[3][2]);
+        init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
       __forceinline BBox<Vertex> bounds() const
