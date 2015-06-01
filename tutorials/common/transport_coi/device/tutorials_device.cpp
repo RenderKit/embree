@@ -27,7 +27,7 @@
 
 
 extern "C" int64_t get_tsc() {
-  return read_tsc();
+return embree::read_tsc();
 }
 
 float g_debug = 0.0f;
