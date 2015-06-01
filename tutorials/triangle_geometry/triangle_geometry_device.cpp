@@ -247,8 +247,8 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  delete[] face_colors;
-  delete[] vertex_colors;
+  alignedFree(face_colors);
+  alignedFree(vertex_colors);
   rtcExit();
 }
 

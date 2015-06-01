@@ -343,7 +343,7 @@ extern "C" void device_cleanup ()
 {
   alignedFree(g_accu);
   rtcDeleteScene (g_scene);
-  delete[] face_colors;
+  alignedFree(face_colors);
   rtcExit();
 }
 
