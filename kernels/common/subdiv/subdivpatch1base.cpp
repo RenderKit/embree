@@ -143,7 +143,7 @@ namespace embree
 
 	updateEdgeLevels(edge_level,mesh);
 
-#if 0
+#if 1
 	gpatch.convertGregoryTrianglePatchToBezierPatch( patch.v );
 	flags |= BEZIER_PATCH;
 #else	

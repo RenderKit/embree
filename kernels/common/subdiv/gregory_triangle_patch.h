@@ -112,7 +112,6 @@ namespace embree
       if (patch.ring[1].border_face != -1) face_valence_p1--;
       if (patch.ring[2].border_face != -1) face_valence_p2--;
 
-
       Vertex p0_r_p, p0_r_m;
       patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
 
@@ -121,10 +120,11 @@ namespace embree
       
       Vertex p2_r_p, p2_r_m;
       patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
-
+      
       computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e2_p(), face_valence_p2, f0_p(), f0_m(),4.0f );
       computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m(),4.0f );
       computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m(),4.0f );
+
     }
     
 

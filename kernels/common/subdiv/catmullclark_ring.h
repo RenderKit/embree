@@ -922,10 +922,14 @@ namespace embree
         q0 = ring[0] - vtx;
       else if (unlikely(border_index != -1))
 	{
-	  if (border_index != face_valence-2 && face_valence != 2)
+	  if (border_index != edge_valence-2 && face_valence != 2)
+          {
 	    q0 = ring[0] - vtx;
+          }
 	  else
+          {
 	    q0 = (second_border_vertex - first_border_vertex) * 0.5f;
+          }
 	}
       else
 	{
@@ -946,10 +950,14 @@ namespace embree
         q1 = ring[faces[0].size] - vtx;
       else if (unlikely(border_index != -1))
 	{
-	  if (border_index != face_valence-2 && face_valence != 2)
+	  if (border_index != edge_valence-2 && face_valence != 2)
+          {
 	    q1 = ring[faces[0].size] - vtx;
+          }
 	  else
+          {
 	    q1 = (first_border_vertex - second_border_vertex) * 0.5f;
+          }
 	}
       else
 	{
@@ -976,7 +984,6 @@ namespace embree
       /* e0_minus */
       //e0_minus = p0 + 2.0f/3.0f * alpha * q1;
       e0_minus = p0 + 1.0f/3.0f * q1;
-
 
       /* r0_plus, r0_minus */
       const Vertex e_i      = cm_ring[0];

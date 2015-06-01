@@ -429,7 +429,7 @@ namespace embree
       static __forceinline Vec3<T> eval_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
+
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
       const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
       const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
@@ -479,8 +479,7 @@ namespace embree
 	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
 	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
 	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-      
-      
+            
       return Vec3<T>(x,y,z);
     }
     
