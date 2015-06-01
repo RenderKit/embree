@@ -43,7 +43,7 @@ namespace embree
     __forceinline operator       __m128i&( void )       { return m128; }
 
     __forceinline int4           ( const int&  a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
-    __forceinline int4           ( const uint& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
+    __forceinline int4           ( const uint32_t& a ) : m128(_mm_shuffle_epi32(_mm_castps_si128(_mm_load_ss((float*)&a)), _MM_SHUFFLE(0, 0, 0, 0))) {}
 #if defined(__X86_64__)
     __forceinline int4           ( const size_t a  ) : m128(_mm_set1_epi32((int)a)) {}
 #endif

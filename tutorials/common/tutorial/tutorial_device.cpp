@@ -33,7 +33,7 @@ extern "C" bool g_changed = false;
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
 
-extern float g_debug;
+extern "C" float g_debug;
 
 /* standard rendering function for each tutorial */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
