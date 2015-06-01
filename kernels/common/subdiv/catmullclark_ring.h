@@ -66,6 +66,14 @@ namespace embree
     __forceinline bool has_last_face() const {
       return border_index != edge_valence-2;
     }
+
+    __forceinline bool has_opposite_front(size_t i) const {
+      return border_index != 2*i;
+    }
+
+    __forceinline bool has_opposite_back(size_t i) const {
+      return border_index != (edge_valence-2-2*i);
+    }
     
     __forceinline bool has_second_face() const {
       return (border_index == -1) || (border_index >= 4);

@@ -56,6 +56,7 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) BSplinePatchT
     {
+      typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
       typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
       
     public:
@@ -273,7 +274,7 @@ namespace embree
         quad.vtx[3] = limit_v3;
       };
       
-      
+#if 0      
       __forceinline void init(const CatmullClarkPatch& patch)
       {
         assert( patch.isRegular() );
@@ -376,6 +377,76 @@ namespace embree
           v[3][1] = patch.ring[3].ring[4];
         }
       }
+#endif
+
+      __forceinline void init_border(const CatmullClarkRing& edge0,
+                                     Vertex& v01, Vertex& v02,
+                                     const Vertex& v11, const Vertex& v12,
+                                     const Vertex& v21, const Vertex& v22)
+      {
+        if (likely(edge0.has_opposite_back(0)))
+        {
+          v01 = edge0.back(2);
+          v02 = edge0.back(1);
+        } else {
+          v01 = 2.0f*v11-v21;
+          v02 = 2.0f*v12-v22;
+        }
+      }
+      
+      __forceinline void init_corner(const CatmullClarkRing& edge0,
+                                     Vertex& v00, const Vertex& v01, const Vertex& v02, 
+                                     const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                     const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      {
+        const bool opposite0 = edge0.has_opposite_back(0);
+        const bool opposite3 = edge0.has_opposite_front(1);
+        if (likely(opposite0 && opposite3))
+        {
+          if (likely(edge0.has_opposite_back(1))) {
+            assert(edge0.has_opposite_front(2));
+            v00 = edge0.back(3);
+          }
+          else {
+            assert(!edge0.has_opposite_front(2));
+            v00 = 2.0f*v11-v22; // FIXME: is this correct
+          }
+        } 
+        else if (opposite3) v00 = 2.0f*v10-v20; // border rule
+        else if (opposite0) v00 = 2.0f*v01-v02; // border rule
+        else {
+          if (edge0.vertex_crease_weight == 0.0f) 
+            v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+          else if (std::isinf(edge0.vertex_crease_weight))
+            v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
+          else
+            assert(false);
+        }
+      }
+      
+      void init(const CatmullClarkPatch& patch)
+      {
+        assert( patch.isRegular() );
+        
+        /* fill inner vertices */
+        const Vertex v11 = v[1][1] = patch.ring[0].vtx;
+        const Vertex v12 = v[1][2] = patch.ring[1].vtx;
+        const Vertex v22 = v[2][2] = patch.ring[2].vtx; 
+        const Vertex v21 = v[2][1] = patch.ring[3].vtx; 
+        
+        /* fill border vertices */
+        init_border(patch.ring[0],v[0][1],v[0][2],v11,v12,v21,v22);
+        init_border(patch.ring[1],v[1][3],v[2][3],v12,v22,v11,v21);
+        init_border(patch.ring[2],v[3][2],v[3][1],v22,v21,v12,v11);
+        init_border(patch.ring[3],v[2][0],v[1][0],v21,v11,v22,v12);
+        
+        /* fill corner vertices */
+        init_corner(patch.ring[0],v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_corner(patch.ring[1],v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_corner(patch.ring[2],v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_corner(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
+      }
+
       
       template<typename Loader>
       __forceinline void init_border(const SubdivMesh::HalfEdge* edge0, Loader& load,
@@ -420,8 +491,8 @@ namespace embree
             v00 = 2.0f*v11-v22; // FIXME: is this correct
           }
         } 
-        else if (!opposite0) v00 = 2.0f*v10-v20; // border rule
-        else if (!opposite3) v00 = 2.0f*v01-v02; // border rule
+        else if (opposite3) v00 = 2.0f*v10-v20; // border rule
+        else if (opposite0) v00 = 2.0f*v01-v02; // border rule
         else {
           if (edge0->vertex_crease_weight == 0.0f) 
             v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
