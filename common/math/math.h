@@ -18,6 +18,7 @@
 
 #include "../sys/platform.h"
 #include "constants.h"
+#include <cmath>
 
 #include <emmintrin.h>
 #include <xmmintrin.h>
@@ -152,9 +153,6 @@ namespace embree
   __forceinline     int min(int     a, int     b) { return a<b ? a:b; }
   __forceinline int64_t min(int64_t a, int64_t b) { return a<b ? a:b; }
   __forceinline  size_t min(size_t  a, size_t  b) { return a<b ? a:b; }
-#if !defined(__WIN32__)
-  __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }
-#endif
   __forceinline   float min(float   a, float   b) { return a<b ? a:b; }
   __forceinline  double min(double  a, double  b) { return a<b ? a:b; }
 
@@ -165,9 +163,6 @@ namespace embree
   __forceinline     int max(int     a, int     b) { return a<b ? b:a; }
   __forceinline int64_t max(int64_t a, int64_t b) { return a<b ? b:a; }
   __forceinline  size_t max(size_t  a, size_t  b) { return a<b ? b:a; }
-#if !defined(__WIN32__)
-  __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
-#endif
   __forceinline   float max(float   a, float   b) { return a<b ? b:a; }
   __forceinline  double max(double  a, double  b) { return a<b ? b:a; }
 
