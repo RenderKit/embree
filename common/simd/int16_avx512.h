@@ -73,11 +73,11 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline int       operator[](const size_t index)       { return i[index]; };
-    __forceinline const int operator[](const size_t index) const { return i[index]; };
+    __forceinline int& operator[](const size_t index)       { return i[index]; };
+    __forceinline const int& operator[](const size_t index) const { return i[index]; };
 
     __forceinline unsigned int       uint(const size_t index) const      { assert(index < 16); return ((unsigned int*)i)[index]; };
-    __forceinline size_t&             uint64_t(const size_t index)  const     { assert(index < 8); return ((uint64_t*)i)[index]; }; // FIXME: required
+    __forceinline size_t&            uint64_t(const size_t index)  const     { assert(index < 8); return ((size_t*)i)[index]; }; 
 
 
   };
