@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tokenstream.h"
+#include "../math/math.h"
 
 namespace embree
 {
@@ -85,6 +86,15 @@ namespace embree
   {
     bool ok = false;
     std::string str;
+    if (trySymbol("+inf")) {
+      token = Token(float(pos_inf));
+      return true;
+    }
+    if (trySymbol("-inf")) {
+      token = Token(float(neg_inf));
+      return true;
+    }
+
     if (decDigits(str))
     {
       if (cin->peek() == '.') {

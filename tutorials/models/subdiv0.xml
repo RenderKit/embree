@@ -40,7 +40,7 @@
       </vertex_creases>
 
       <vertex_crease_weights>
-        0 1E10 0 1E10
+        0 +inf 0 +inf
       </vertex_crease_weights>
 
       <material>

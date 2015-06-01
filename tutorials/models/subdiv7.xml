@@ -48,8 +48,8 @@
       </vertex_creases>
 
       <vertex_crease_weights>
-        1E10 1E10 1E10 1E10
-        1E10 1E10 1E10 1E10
+        +inf +inf +inf +inf
+        +inf +inf +inf +inf
       </vertex_crease_weights>
 
       <material>
