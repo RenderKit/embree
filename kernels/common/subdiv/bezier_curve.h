@@ -103,7 +103,11 @@ namespace embree
 
   struct BezierCurve3fa : public BezierCurve<Vec3fa>
   {
-    using BezierCurve<Vec3fa>::BezierCurve;
+    //using BezierCurve<Vec3fa>::BezierCurve; // FIXME: not supported by VS2010
+
+	__forceinline BezierCurve3fa() {}
+	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0, const float t1, const int depth)
+      : BezierCurve<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
 #if defined(__SSE__)
     __forceinline sse4f eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in

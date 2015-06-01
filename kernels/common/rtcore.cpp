@@ -1122,7 +1122,7 @@ namespace embree
     for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
     {
       if (valid && !valid[i]) continue;
-      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
+      embree::rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
       if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
       if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
       if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];

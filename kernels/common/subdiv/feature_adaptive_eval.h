@@ -145,7 +145,7 @@ namespace embree
       /* parametrization for arbitrary polygons */
       else 
       {
-        const unsigned i = trunc(uv.x); assert(i<N);
+        const unsigned i = floorf(uv.x); assert(i<N);
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
       }

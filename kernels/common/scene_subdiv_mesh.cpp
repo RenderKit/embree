@@ -535,7 +535,7 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
-      auto load = [&](const SubdivMesh::HalfEdge* p) { 
+      auto load = [&](const SubdivMesh::HalfEdge* p) -> float4 { 
         const unsigned vtx = p->getStartVertexIndex();
         return float4::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
       };

@@ -188,7 +188,7 @@ namespace embree
       ssize_t threadIndex = -1;
       {
         Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, [&] () { return terminate || schedulers.size(); });
+        condition.wait(mutex, [&] () { return terminate || !schedulers.empty(); });
         if (terminate) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();

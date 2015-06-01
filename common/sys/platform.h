@@ -27,6 +27,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <stdint.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// detect platform
@@ -242,25 +243,13 @@
 /// Basic Types
 ////////////////////////////////////////////////////////////////////////////////
 
-/* windows does not have stdint.h */
+/* windows does not have ssize_t */
 #if defined(__WIN32__)
-typedef          long long  int64_t;
-typedef unsigned long long uint64_t;
-typedef                int  int32_t;
-typedef unsigned       int uint32_t;
-typedef              short  int16_t;
-typedef unsigned     short uint16_t;
-typedef               char   int8_t;
-typedef unsigned      char  uint8_t;
-
 #if defined(__X86_64__)
 typedef int64_t ssize_t;
 #else
 typedef int32_t ssize_t;
 #endif
-
-#else
-#include <stdint.h>
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
