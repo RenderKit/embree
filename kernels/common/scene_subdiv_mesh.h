@@ -498,7 +498,10 @@ namespace embree
 
   class SubdivMeshAVX : public SubdivMesh
   {
-    using SubdivMesh::SubdivMesh; // inherit all constructors
+  public:
+    //using SubdivMesh::SubdivMesh; // inherit all constructors // FIXME: compiler bug under VS2013
+    SubdivMeshAVX (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                  size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
   };
 };

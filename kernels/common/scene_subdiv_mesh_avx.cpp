@@ -23,6 +23,10 @@
 
 namespace embree
 {
+  SubdivMeshAVX::SubdivMeshAVX(Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                               size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps)
+                               : SubdivMesh(parent,flags,numFaces,numEdges,numVertices,numCreases,numCorners,numHoles,numTimeSteps) {}
+    
   void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode

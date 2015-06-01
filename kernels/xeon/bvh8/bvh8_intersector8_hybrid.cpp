@@ -620,8 +620,8 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA false> > >);
 
-    DEFINE_INTERSECTOR4(BVH8Triangle8vIntersector8HybridPluecker, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Triangle8vIntersector8HybridPlueckerNoFilter, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPluecker, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPlueckerNoFilter, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA false> > >);
 
   }
 }  
