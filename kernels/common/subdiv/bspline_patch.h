@@ -274,111 +274,6 @@ namespace embree
         quad.vtx[3] = limit_v3;
       };
       
-#if 0      
-      __forceinline void init(const CatmullClarkPatch& patch)
-      {
-        assert( patch.isRegular() );
-        assert( patch.ring[0].hasValidPositions() );
-        assert( patch.ring[1].hasValidPositions() );
-        assert( patch.ring[2].hasValidPositions() );
-        assert( patch.ring[3].hasValidPositions() );
-        
-        if (unlikely(patch.ring[0].hasBorder())) 
-        {
-          const bool hasCorner = patch.ring[0].face_valence == 2; // FIXME: need helper function	     
-          
-          v[1][1] = patch.ring[0].vtx;
-          v[0][1] = patch.ring[0].regular_border_vertex_6();
-          v[0][0] = patch.ring[0].regular_border_vertex_5();
-          
-          if (hasCorner)
-          {
-            if (std::isinf(patch.ring[0].vertex_crease_weight))
-              v[0][0] = 4.0f * patch.ring[0].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
-            else
-              v[0][0] = -8.0f * patch.ring[0].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[2].vtx;
-          }
-          
-          v[1][0] = patch.ring[0].regular_border_vertex_4();
-          
-        } else {
-          v[1][1] = patch.ring[0].vtx;
-          v[0][1] = patch.ring[0].ring[6];
-          v[0][0] = patch.ring[0].ring[5];
-          v[1][0] = patch.ring[0].ring[4];
-        }
-        
-        if (unlikely(patch.ring[1].hasBorder())) 
-        {
-          const bool hasCorner = patch.ring[1].face_valence == 2; // FIXME
-	  
-          
-          v[1][2] = patch.ring[1].vtx;
-          v[1][3] = patch.ring[1].regular_border_vertex_6();
-          v[0][3] = patch.ring[1].regular_border_vertex_5();
-          if (hasCorner)
-          {
-            if (std::isinf(patch.ring[1].vertex_crease_weight))
-              v[0][3] = 4.0f * patch.ring[1].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
-            else
-              v[0][3] = -8.0f * patch.ring[1].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[3].vtx;
-          }
-	  
-          v[0][2] = patch.ring[1].regular_border_vertex_4();
-        } else {
-          v[1][2] = patch.ring[1].vtx;
-          v[1][3] = patch.ring[1].ring[6];
-          v[0][3] = patch.ring[1].ring[5];
-          v[0][2] = patch.ring[1].ring[4];
-        }
-        
-        if (unlikely(patch.ring[2].hasBorder())) 
-        {
-          const bool hasCorner = patch.ring[2].face_valence == 2; //FIXME
-	  
-          v[2][2] = patch.ring[2].vtx;
-          v[3][2] = patch.ring[2].regular_border_vertex_6();
-          v[3][3] = patch.ring[2].regular_border_vertex_5();
-          if (hasCorner)
-          {
-            if (std::isinf(patch.ring[2].vertex_crease_weight))
-              v[3][3] = 4.0f * patch.ring[2].vtx - 2.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
-            else
-              v[3][3] = -8.0f * patch.ring[2].vtx + 4.0f * (patch.ring[1].vtx + patch.ring[3].vtx) + patch.ring[0].vtx;
-          }
-          
-          v[2][3] = patch.ring[2].regular_border_vertex_4();
-        } else {
-          v[2][2] = patch.ring[2].vtx;
-          v[3][2] = patch.ring[2].ring[6];
-          v[3][3] = patch.ring[2].ring[5];
-          v[2][3] = patch.ring[2].ring[4];
-        }
-        
-        if (unlikely(patch.ring[3].hasBorder())) 
-        {
-          const bool hasCorner = patch.ring[3].face_valence == 2;
-          
-          v[2][1] = patch.ring[3].vtx;
-          v[2][0] = patch.ring[3].regular_border_vertex_6();
-          v[3][0] = patch.ring[3].regular_border_vertex_5();
-          if (hasCorner)
-          {
-            if ( std::isinf(patch.ring[3].vertex_crease_weight) )
-              v[3][0] = 4.0f * patch.ring[3].vtx - 2.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
-            else
-              v[3][0] = -8.0f * patch.ring[3].vtx + 4.0f * (patch.ring[0].vtx + patch.ring[2].vtx) + patch.ring[1].vtx;
-          }
-          v[3][1] = patch.ring[3].regular_border_vertex_4();
-        } else {
-          v[2][1] = patch.ring[3].vtx;
-          v[2][0] = patch.ring[3].ring[6];
-          v[3][0] = patch.ring[3].ring[5];      
-          v[3][1] = patch.ring[3].ring[4];
-        }
-      }
-#endif
-
       __forceinline void init_border(const CatmullClarkRing& edge0,
                                      Vertex& v01, Vertex& v02,
                                      const Vertex& v11, const Vertex& v12,
@@ -409,7 +304,7 @@ namespace embree
           }
           else {
             assert(!edge0.has_opposite_front(2));
-            v00 = 2.0f*v11-v22; // FIXME: is this correct
+            assert(false); // concave corner not supported
           }
         } 
         else if (opposite3) v00 = 2.0f*v10-v20; // border rule
@@ -446,7 +341,6 @@ namespace embree
         init_corner(patch.ring[2],v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
         init_corner(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
-
       
       template<typename Loader>
       __forceinline void init_border(const SubdivMesh::HalfEdge* edge0, Loader& load,
@@ -463,12 +357,6 @@ namespace embree
           v01 = 2.0f*v11-v21;
           v02 = 2.0f*v12-v22;
         }
-        
-        /* hard vertex crease rule */
-        //if (unlikely(edge0->vertex_crease_weight == float(inf)))
-        //  v01 = 2.0f*v11-v21;
-        //if (unlikely(edge0->next()->vertex_crease_weight == float(inf)))
-        //  v02 = 2.0f*v12-v22;
       }
       
       template<typename Loader>
@@ -488,7 +376,7 @@ namespace embree
           }
           else {
             assert(!edge0->prev()->opposite()->prev()->hasOpposite());
-            v00 = 2.0f*v11-v22; // FIXME: is this correct
+            assert(false); // concave corner not supported
           }
         } 
         else if (opposite3) v00 = 2.0f*v10-v20; // border rule
@@ -501,10 +389,6 @@ namespace embree
           else
             assert(false);
         }
-        
-        /* hard vertex crease rule */
-        //if (unlikely(edge0->vertex_crease_weight == float(inf))) 
-        //  v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
       }
       
       template<typename Loader>
