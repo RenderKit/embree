@@ -277,7 +277,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Ns = normalize(Ns);
   OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[materialID];
   color = Vec3fa(material->Kd);
-
   /* apply ambient light */
   Vec3fa Nf = faceforward(Ns,neg(ray.dir),Ns);
   //Vec3fa Ng = normalize(ray.Ng);
