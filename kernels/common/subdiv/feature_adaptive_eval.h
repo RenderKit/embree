@@ -264,7 +264,8 @@ namespace embree
       const float scale_x = rcp(srange.upper.x-srange.lower.x);
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
-      if (patch.isRegular()) 
+      if (patch.isRegular())
+        //if (true)
       {
 	BSplinePatch3fa patcheval; patcheval.init(patch);
 	//GregoryPatch patcheval; patcheval.init(patch);
