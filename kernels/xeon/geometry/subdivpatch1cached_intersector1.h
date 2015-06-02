@@ -814,7 +814,6 @@ namespace embree
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
 	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
-          
         }             
         
       }

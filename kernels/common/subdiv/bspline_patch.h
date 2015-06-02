@@ -304,16 +304,18 @@ namespace embree
           }
           else {
             assert(!edge0.has_opposite_front(2));
-            assert(false); // concave corner not supported
+            v00 = 2.0f*(v01+v10)+8.0f*v11-(v20+v02)-4.0f*(v21+v12)-v22; // soft concave corner
           }
         } 
         else if (opposite3) v00 = 2.0f*v10-v20; // border rule
         else if (opposite0) v00 = 2.0f*v01-v02; // border rule
         else {
           if (edge0.vertex_crease_weight == 0.0f) 
-            v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+            //v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+            v00 = -4.0f*(v10+v01) - (v20 + v02) - v22 + 2.0f*(v12 + v21) + 8.0f*v11; // soft corner rule
           else if (std::isinf(edge0.vertex_crease_weight))
-            v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
+            //v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
+            v00 = -4.0f*((v01+v21)+(v10+v12)) - ((v02+v20)+v22) + 20.0f*v11;   // hard corner rule
           else
             assert(false);
         }
@@ -383,7 +385,8 @@ namespace embree
         else if (opposite0) v00 = 2.0f*v01-v02; // border rule
         else {
           if (edge0->vertex_crease_weight == 0.0f) 
-            v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+            //v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
+            v00 = -4.0f*(v10+v01) - v20 - v02 - v22; // soft corner rule
           else if (std::isinf(edge0->vertex_crease_weight))
             v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
           else
