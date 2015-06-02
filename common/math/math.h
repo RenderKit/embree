@@ -170,6 +170,11 @@ namespace embree
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d) { return max(max(a,b),max(c,d)); }
   template<typename T> __forceinline T max(const T& a, const T& b, const T& c, const T& d, const T& e) { return max(max(max(a,b),max(c,d)),e); }
 
+#if defined(__MACOSX__)
+  __forceinline ssize_t min(ssize_t a, ssize_t b) { return a<b ? a:b; }
+  __forceinline ssize_t max(ssize_t a, ssize_t b) { return a<b ? b:a; }
+#endif
+
   template<typename T> __forceinline T clamp(const T& x, const T& lower = T(zero), const T& upper = T(one)) { return max(min(x,upper),lower); }
   template<typename T> __forceinline T clampz(const T& x, const T& upper) { return max(T(zero), min(x,upper)); }
 
