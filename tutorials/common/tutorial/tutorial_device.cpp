@@ -417,11 +417,13 @@ void renderTile(int taskIndex,
                 const int numTilesX, 
                 const int numTilesY);
 
+//thread_local bool inrender = false;
+
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
-#if 1
+#if 0
   atomic_t tileID = 0;
   parallel_for(size_t(0),size_t(getNumberOfLogicalThreads()),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
@@ -435,8 +437,11 @@ void launch_renderTile (int numTiles,
 
 #else
   parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
+      //if (inrender) PING;
+      //inrender = true;
       for (size_t i=r.begin(); i<r.end(); i++)
         renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+      //inrender = false;
     });
 #endif
 }
