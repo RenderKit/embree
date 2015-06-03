@@ -330,6 +330,25 @@ namespace embree
         }
       }
 
+      __forceinline void init_border(const CatmullClarkRing& edge0,
+                                          const Vertex& v00,       Vertex& v01, const Vertex& v02, 
+                                          Vertex& v10,       const Vertex& v11, const Vertex& v12, 
+                                          const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      {
+        const bool opposite0 = edge0.has_opposite_back(0);
+        const bool opposite1 = edge0.has_opposite_front(1);
+        const bool opposite2 = edge0.has_opposite_front(2);
+        const bool opposite3 = edge0.has_opposite_back(1);
+
+        if (likely(opposite1)) v10 = edge0.front(4);
+        else if (likely(opposite0 && opposite3)) v10 = edge0.back(4);
+        else v10 = 2.0f*v11-v12;
+
+        if (likely(opposite0)) v01 = edge0.back(2);
+        else if (likely(opposite1 && opposite2)) v01 = edge0.front(6);
+        else v01 = 2.0f*v11-v21;
+      }
+
       __forceinline void init_corner(const CatmullClarkRing& edge0,
                                      Vertex& v00,       const Vertex& v01, const Vertex& v02, 
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
@@ -373,10 +392,14 @@ namespace embree
         const Vertex v21 = v[2][1] = patch.ring[3].vtx; 
         
         /* fill border vertices */
-        init_border(patch.ring[0],v[0][1],v[0][2],v11,v12,v21,v22);
-        init_border(patch.ring[1],v[1][3],v[2][3],v12,v22,v11,v21);
-        init_border(patch.ring[2],v[3][2],v[3][1],v22,v21,v12,v11);
-        init_border(patch.ring[3],v[2][0],v[1][0],v21,v11,v22,v12);
+        //init_border(patch.ring[0],v[0][1],v[0][2],v11,v12,v21,v22);
+        //init_border(patch.ring[1],v[1][3],v[2][3],v12,v22,v11,v21);
+        //init_border(patch.ring[2],v[3][2],v[3][1],v22,v21,v12,v11);
+        //init_border(patch.ring[3],v[2][0],v[1][0],v21,v11,v22,v12);
+        init_border(patch.ring[0],v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_border(patch.ring[1],v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_border(patch.ring[2],v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_border(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
         
         /* fill corner vertices */
         init_corner(patch.ring[0],v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
