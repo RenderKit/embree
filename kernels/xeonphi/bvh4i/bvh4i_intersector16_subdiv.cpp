@@ -424,19 +424,8 @@ namespace embree
 
       while(1)
 	{
-	  /* per thread lock */
-	  while(1)
-	    {
-	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadInfo->id);	       
-	      if (unlikely(lock == 1))
-		{
-		  /* lock failed wait until sync phase is over */
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);	       
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(threadInfo->id,0);
-		}
-	      else
-		break;
-	    }
+          SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadInfo->id);
+
 
 	  SubdivPatch1* subdiv_patch = &patches[patchIndex];
       
