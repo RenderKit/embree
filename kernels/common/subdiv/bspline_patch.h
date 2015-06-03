@@ -278,15 +278,13 @@ namespace embree
                                        const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                        const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        //return -4.0f*((v01+v21)+(v10+v12)) - ((v02+v20)+v22) + 20.0f*v11;
-        return 4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
+        return 4.0f*v11 - 2.0f*(v12+v21) + v22;
       }
 
       __forceinline Vertex soft_convex_corner( const                    Vertex& v01, const Vertex& v02, 
                                                const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                                const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        //return -4.0f*(v10+v01) - (v20 + v02) - v22 + 2.0f*(v12 + v21) + 8.0f*v11;
         return -8.0f*v11 + 4.0f*(v12+v21) + v22;
       }
 
@@ -319,30 +317,18 @@ namespace embree
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        const bool opposite0 = edge0.has_opposite_back(0);
-        const bool opposite1 = edge0.has_opposite_front(1);
-        const bool opposite2 = edge0.has_opposite_front(2);
-        const bool opposite3 = edge0.has_opposite_back(1);
-        if (likely(opposite0))
-        {
-          if (likely(opposite1))
-          {
-            assert(opposite3 && opposite2);
-            v00 = edge0.back(3);
-          }
-          else {
-            assert(!opposite3);
-            v00 = 2.0f*v01-v02;
-          }
+        const bool has_back1 = edge0.has_opposite_back(1);
+        const bool has_back0 = edge0.has_opposite_back(0);
+        const bool has_front1 = edge0.has_opposite_front(1);
+        const bool has_front2 = edge0.has_opposite_front(2);
+        
+        if (likely(has_back0)) {
+          if (likely(has_front1)) { assert(has_back1 && has_front2); v00 = edge0.back(3); }
+          else { assert(!has_back1); v00 = 2.0f*v01-v02; }
         }
-        else
-        {
-          if (likely(opposite1)) {
-            assert(!opposite2);
-            v00 = 2.0f*v10-v20;
-          }
-          else
-            v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
+        else {
+          if (likely(has_front1)) { assert(!has_front2); v00 = 2.0f*v10-v20; }
+          else v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
         }
       }
       
@@ -392,30 +378,33 @@ namespace embree
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        const bool opposite0 = edge0->hasOpposite();
-        const bool opposite1 = edge0->prev()->hasOpposite();
-        if (likely(opposite0 && opposite1))
-        {
+        const bool has_back0 = edge0->hasOpposite();
+        const bool has_front1 = edge0->prev()->hasOpposite();
+
+        if (likely(has_back0))
+        { 
           const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
-          if (likely(e->hasOpposite())) {
+          if (likely(has_front1))
+          {
+            assert(e->hasOpposite());
             assert(edge0->prev()->opposite()->prev()->hasOpposite());
             v00 = load(e->opposite()->prev());
+          } 
+          else {
+            assert(!e->hasOpposite());
+            v00 = 2.0f*v01-v02;
+          }
+        }
+        else
+        {
+          if (likely(has_front1)) {
+            assert(!edge0->prev()->opposite()->prev()->hasOpposite());
+            v00 = 2.0f*v10-v20;
           }
           else {
-            assert(!edge0->prev()->opposite()->prev()->hasOpposite());
-            assert(false); // concave corner not supported
+            assert(edge0->vertex_crease_weight == 0.0f || std::isinf(edge0->vertex_crease_weight));
+            v00 = convex_corner(edge0->vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
           }
-        } 
-        else if (opposite1) v00 = 2.0f*v10-v20; // border rule
-        else if (opposite0) v00 = 2.0f*v01-v02; // border rule
-        else {
-          if (edge0->vertex_crease_weight == 0.0f) 
-            //v00 = -8.0f*v11 + 4.0f*(v12+v21) + v22; // soft corner rule
-            v00 = -4.0f*(v10+v01) - v20 - v02 - v22; // soft corner rule
-          else if (std::isinf(edge0->vertex_crease_weight))
-            v00 =  4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
-          else
-            assert(false);
         }
       }
       
