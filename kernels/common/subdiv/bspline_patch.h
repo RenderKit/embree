@@ -278,31 +278,16 @@ namespace embree
                                        const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                        const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        return -4.0f*((v01+v21)+(v10+v12)) - ((v02+v20)+v22) + 20.0f*v11;
-      }
-
-      __forceinline Vertex soft_concave_corner(const                    Vertex& v01, const Vertex& v02, 
-                                               const Vertex& v10, const Vertex& v11, const Vertex& v12, 
-                                               const Vertex& v20, const Vertex& v21, const Vertex& v22)
-      {
-        return 2.0f*(v01+v10)+8.0f*v11-(v20+v02)-4.0f*(v21+v12)-v22;
+        //return -4.0f*((v01+v21)+(v10+v12)) - ((v02+v20)+v22) + 20.0f*v11;
+        return 4.0f*v11 - 2.0f*(v12+v21) + v22; // hard corner rule
       }
 
       __forceinline Vertex soft_convex_corner( const                    Vertex& v01, const Vertex& v02, 
                                                const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                                const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        return -4.0f*(v10+v01) - (v20 + v02) - v22 + 2.0f*(v12 + v21) + 8.0f*v11;
-      }
-
-      __forceinline Vertex concave_corner(const float vertex_crease_weight, 
-                                          const                    Vertex& v01, const Vertex& v02, 
-                                          const Vertex& v10, const Vertex& v11, const Vertex& v12, 
-                                          const Vertex& v20, const Vertex& v21, const Vertex& v22)
-      {
-        if      (vertex_crease_weight == 0.0f    ) return soft_concave_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-        else if (std::isinf(vertex_crease_weight)) return hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-        else assert(false);
+        //return -4.0f*(v10+v01) - (v20 + v02) - v22 + 2.0f*(v12 + v21) + 8.0f*v11;
+        return -8.0f*v11 + 4.0f*(v12+v21) + v22;
       }
 
       __forceinline Vertex convex_corner(const float vertex_crease_weight, 
@@ -310,9 +295,8 @@ namespace embree
                                          const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                          const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        if      (vertex_crease_weight == 0.0f    ) return soft_convex_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-        else if (std::isinf(vertex_crease_weight)) return hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-        else assert(false);
+        if (std::isinf(vertex_crease_weight)) return hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
+        else                                  return soft_convex_corner(v01,v02,v10,v11,v12,v20,v21,v22);
       }
 
       __forceinline void init_border(const CatmullClarkRing& edge0,
