@@ -123,6 +123,23 @@ namespace embree
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
 
+   /* per thread lock */
+   __forceinline void lockThreadLoop (const unsigned int threadID) 
+   { 
+     while(1)
+     {
+       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadID);
+       if (unlikely(lock == 1))
+       {
+         /* lock failed wait until sync phase is over */
+         sharedLazyTessellationCache.unlockThread(threadID);	       
+         sharedLazyTessellationCache.waitForUsersLessEqual(threadID,0);
+       }
+       else
+         break;
+     }
+   }
+
    __forceinline void prefetchThread(const unsigned int threadID) { 
 #if defined(__MIC__)
      prefetch<PFHINT_L1EX>(&threadWorkState[threadID].counter);  

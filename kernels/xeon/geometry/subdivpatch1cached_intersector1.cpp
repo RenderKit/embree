@@ -141,19 +141,7 @@ namespace embree
 
       while(1)
       {
-        /* per thread lock */
-        while(1)
-        {
-          unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
-          if (unlikely(lock == 1))
-          {
-            /* lock failed wait until sync phase is over */
-            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
-            SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
-          }
-          else
-            break;
-        }
+        SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.threadID);
         
         static const size_t REF_TAG      = 1;
         static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
