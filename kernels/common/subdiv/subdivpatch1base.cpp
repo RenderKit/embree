@@ -44,8 +44,8 @@ namespace embree
 
     if (ipatch.isRegular()) /* bezier vs. gregory */
     {
-#if 1
-      flags |= BEZIER_PATCH;
+#if 0
+      flags |= BEZIER_PATCH; // FIXME: this codepath is buggy on MIC
       GregoryPatch3fa gpatch; 
       gpatch.init_bezier( ipatch ); 
       gpatch.exportDenseConrolPoints( patch.v );
