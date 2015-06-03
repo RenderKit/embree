@@ -146,23 +146,9 @@ namespace embree
         if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
             return (size_t) ptr;
         
-        subdiv_patch->write_lock();
+        if (subdiv_patch->try_write_lock())
         {
-          const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
-          const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-          
-          /* do we still need to create the subtree data? */
-          if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
-          {	      
-            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-            if (block_index == (size_t)-1)
-            {
-              /* cannot allocate => flush the cache */
-              subdiv_patch->write_unlock();
-              SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
-              SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-              continue; 
-            }
+            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.threadID,subdiv_patch->grid_subtree_size_64b_blocks);
             BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 #if COMPACT == 1
             int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
@@ -186,9 +172,9 @@ namespace embree
             CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
             //SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
 #endif
-          }
+          subdiv_patch->write_unlock();
         }
-        subdiv_patch->write_unlock();
+        //subdiv_patch->write_unlock();
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
       }
       

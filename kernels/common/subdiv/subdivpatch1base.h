@@ -739,7 +739,7 @@ namespace embree
     __forceinline void write_lock()     { mtx.write_lock();   }
     __forceinline void write_unlock()   { mtx.write_unlock(); }
     
-    __forceinline bool try_write_lock() { return mtx.try_read_lock(); }
+    __forceinline bool try_write_lock() { return mtx.try_write_lock(); }
     __forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
     
     __forceinline void upgrade_read_to_write_lock() { mtx.upgrade_read_to_write_lock(); }

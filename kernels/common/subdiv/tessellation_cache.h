@@ -188,6 +188,24 @@ namespace embree
      return index;
    }
 
+   static __forceinline size_t allocLoop(const unsigned int threadID, const size_t blocks)
+   {
+     size_t block_index = -1;
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc(blocks);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(threadID);
+         continue; 
+       }
+       break;
+     }
+     return block_index;
+   }
+
    __forceinline void *getBlockPtr(const size_t block_index)
    {
      assert(block_index < maxBlocks);
