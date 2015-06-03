@@ -347,7 +347,10 @@ namespace embree
         }
         else
         {
-          if (likely(opposite3)) v00 = 2.0f*v10-v20; // border rule
+          if (likely(opposite3)) {
+            if (likely(edge0.has_opposite_front(4))) v00 = edge0.front(5);
+            else v00 = 2.0f*v10-v20; // border rule
+          }
           else v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
         }
         
