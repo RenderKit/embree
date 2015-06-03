@@ -274,37 +274,39 @@ namespace embree
         quad.vtx[3] = limit_v3;
       };
 
-            __forceinline Vertex hard_corner(                   const Vertex& v01, const Vertex& v02, 
+      __forceinline Vertex hard_corner(const                    Vertex& v01, const Vertex& v02, 
                                        const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                        const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         return -4.0f*((v01+v21)+(v10+v12)) - ((v02+v20)+v22) + 20.0f*v11;
       }
 
-      __forceinline Vertex soft_concave_corner(                   const Vertex& v01, const Vertex& v02, 
+      __forceinline Vertex soft_concave_corner(const                    Vertex& v01, const Vertex& v02, 
                                                const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                                const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         return 2.0f*(v01+v10)+8.0f*v11-(v20+v02)-4.0f*(v21+v12)-v22;
       }
 
-      __forceinline Vertex soft_convex_corner(                   const Vertex& v01, const Vertex& v02, 
+      __forceinline Vertex soft_convex_corner( const                    Vertex& v01, const Vertex& v02, 
                                                const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                                const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         return -4.0f*(v10+v01) - (v20 + v02) - v22 + 2.0f*(v12 + v21) + 8.0f*v11;
       }
 
-      __forceinline Vertex concave_corner(const float vertex_crease_weight, const Vertex& v01, const Vertex& v02, 
-                                               const Vertex& v10, const Vertex& v11, const Vertex& v12, 
-                                               const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      __forceinline Vertex concave_corner(const float vertex_crease_weight, 
+                                          const                    Vertex& v01, const Vertex& v02, 
+                                          const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                          const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         if      (vertex_crease_weight == 0.0f    ) return soft_concave_corner(v01,v02,v10,v11,v12,v20,v21,v22);
         else if (std::isinf(vertex_crease_weight)) return hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
         else assert(false);
       }
 
-      __forceinline Vertex convex_corner(const float vertex_crease_weight, const Vertex& v01, const Vertex& v02, 
+      __forceinline Vertex convex_corner(const float vertex_crease_weight, 
+                                         const                    Vertex& v01, const Vertex& v02, 
                                          const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                          const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
@@ -340,7 +342,7 @@ namespace embree
           if (likely(opposite3))
           {
             if (likely(edge0.has_opposite_back(1))) v00 = edge0.back(3);
-            else v00 = concave_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
+            else v00 = soft_concave_corner(v01,v02,v10,v11,v12,v20,v21,v22);
           }
           else
             v00 = 2.0f*v01-v02; // border rule
@@ -348,35 +350,13 @@ namespace embree
         else
         {
           if (likely(opposite3)) {
-            if (likely(edge0.has_opposite_front(4))) v00 = edge0.front(5);
-            else v00 = 2.0f*v10-v20; // border rule
+            //if (likely(edge0.has_opposite_front(4))) v00 = edge0.front(5);
+            //else 
+              v00 = 2.0f*v10-v20; // border rule
           }
-          else v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
-        }
-        
-        /*const bool opposite0 = edge0.has_opposite_back(0);
-        const bool opposite3 = edge0.has_opposite_front(1);
-        if (likely(opposite0 && opposite3))
-        {
-          if (likely(edge0.has_opposite_back(1))) {
-            assert(edge0.has_opposite_front(2));
-            v00 = edge0.back(3);
-          }
-          else {
-            assert(!edge0.has_opposite_front(2));
-            v00 = soft_concave_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-          }
-        } 
-        else if (opposite3) v00 = 2.0f*v10-v20; // border rule
-        else if (opposite0) v00 = 2.0f*v01-v02; // border rule
-        else {
-          if (edge0.vertex_crease_weight == 0.0f) 
-            v00 = soft_convex_corner(v01,v02,v10,v11,v12,v20,v21,v22);
-          else if (std::isinf(edge0.vertex_crease_weight))
-            v00 = hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
           else
-            assert(false);
-            }*/
+            v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
+        }
       }
       
       void init(const CatmullClarkPatch& patch)
