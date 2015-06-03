@@ -331,28 +331,31 @@ namespace embree
       }
 
       __forceinline void init_corner(const CatmullClarkRing& edge0,
-                                     Vertex& v00, const Vertex& v01, const Vertex& v02, 
+                                     Vertex& v00,       const Vertex& v01, const Vertex& v02, 
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         const bool opposite0 = edge0.has_opposite_back(0);
-        const bool opposite3 = edge0.has_opposite_front(1);
+        const bool opposite1 = edge0.has_opposite_front(1);
+        const bool opposite2 = edge0.has_opposite_front(2);
+        const bool opposite3 = edge0.has_opposite_back(1);
         if (likely(opposite0))
         {
-          if (likely(opposite3))
+          if (likely(opposite1))
           {
-            if (likely(edge0.has_opposite_back(1))) v00 = edge0.back(3);
-            else v00 = soft_concave_corner(v01,v02,v10,v11,v12,v20,v21,v22);
+            if (likely(opposite3)) { assert(opposite2); v00 = edge0.back(3); }
+            else { assert(!opposite2); v00 = concave_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22); }
           }
-          else
-            v00 = 2.0f*v01-v02; // border rule
+          else {
+            if (likely(opposite3)) v00 = edge0.back(3);
+            else v00 = 2.0f*v01-v02;
+          }
         }
         else
         {
-          if (likely(opposite3)) {
-            //if (likely(edge0.has_opposite_front(4))) v00 = edge0.front(5);
-            //else 
-              v00 = 2.0f*v10-v20; // border rule
+          if (likely(opposite1)) {
+            if (likely(opposite2)) v00 = edge0.front(5);
+            else v00 = 2.0f*v10-v20;
           }
           else
             v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
@@ -406,8 +409,8 @@ namespace embree
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
         const bool opposite0 = edge0->hasOpposite();
-        const bool opposite3 = edge0->prev()->hasOpposite();
-        if (likely(opposite0 && opposite3))
+        const bool opposite1 = edge0->prev()->hasOpposite();
+        if (likely(opposite0 && opposite1))
         {
           const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
           if (likely(e->hasOpposite())) {
@@ -419,7 +422,7 @@ namespace embree
             assert(false); // concave corner not supported
           }
         } 
-        else if (opposite3) v00 = 2.0f*v10-v20; // border rule
+        else if (opposite1) v00 = 2.0f*v10-v20; // border rule
         else if (opposite0) v00 = 2.0f*v01-v02; // border rule
         else {
           if (edge0->vertex_crease_weight == 0.0f) 
