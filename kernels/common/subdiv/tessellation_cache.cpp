@@ -21,6 +21,9 @@ namespace embree
 {
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
+  __thread LocalTessellationCacheThreadInfo* SharedLazyTessellationCache::localThreadInfo = nullptr;
+
+
   void resizeTessellationCache(const size_t new_size)
   {    
     if (new_size <= 1024 * 1024)
@@ -49,6 +52,11 @@ namespace embree
     _mm_free(mem);
   }
 
+
+  void SharedLazyTessellationCache::createLocalThreadInfo()
+  {
+    localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
+  }
 
   SharedLazyTessellationCache::SharedLazyTessellationCache()
   {

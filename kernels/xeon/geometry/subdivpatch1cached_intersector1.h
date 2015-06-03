@@ -42,12 +42,6 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       
-      /*! Per thread tessellation ref cache */
-      static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
-
-      /*! Creates per thread tessellation cache */
-      static void createLocalThreadInfo();
-      
       /*! Precalculations for subdiv patch intersection */
       class Precalculations {
       public:
@@ -75,10 +69,7 @@ namespace embree
 
           current_patch = nullptr;
           hit_patch     = nullptr;
-
-	  if (unlikely(!localThreadInfo))
-            createLocalThreadInfo();
-          threadID = localThreadInfo->id;
+          threadID = SharedLazyTessellationCache::threadIndex();
 
 #if _DEBUG
 	  numPrimitives = ((BVH4*)ptr)->numPrimitives;

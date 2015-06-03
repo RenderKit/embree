@@ -25,11 +25,6 @@ namespace embree
 {
   namespace isa
   {  
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    __thread LocalTessellationCacheThreadInfo* SubdivPatch1CachedIntersector1::localThreadInfo = nullptr;
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void verifySubTreeBVH(const BVH4::NodeRef ref)
@@ -110,25 +105,6 @@ namespace embree
             }
         }
     }
-
-    // void copyTessellationCacheTag(TessellationCacheTag *dest, TessellationCacheTag *source)
-    // {
-    //   assert( dest->getNumBlocks() >= source->getNumBlocks() );
-    //   const size_t needed_blocks = source->getNumBlocks();
-      
-    //   memcpy(dest->getPtr(),source->getPtr(),64*needed_blocks);
-    //   size_t source_root = source->getRootRef();
-    //   updateBVH4Refs(source_root,(size_t)source->getPtr(),(size_t)dest->getPtr());
-    //   dest->updateRootRef( ((size_t)source_root - (size_t)source->getPtr()) + (size_t)dest->getPtr() );
-
-    //   const size_t l1_range0 = (size_t)dest->getPtr();
-    //   const size_t l1_range1 = l1_range0 + 64*needed_blocks;
-    //   size_t l1_blocks = countBlocks(BVH4::NodeRef(dest->getRootRef()),l1_range0,l1_range1);
-              
-    //   assert(l1_blocks >= needed_blocks);              
-    // }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
@@ -575,13 +551,5 @@ namespace embree
       
       return bounds;
     }
-
-
-
-    void SubdivPatch1CachedIntersector1::createLocalThreadInfo()
-    {
-      localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
-    }
-
   };
 }

@@ -81,6 +81,19 @@ namespace embree
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 
+    /*! Per thread tessellation ref cache */
+   static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
+
+   /*! Creates per thread tessellation cache */
+   static void createLocalThreadInfo();
+
+   static __forceinline size_t threadIndex() 
+   {
+     if (unlikely(!localThreadInfo))
+       createLocalThreadInfo();
+     return localThreadInfo->id;
+   }
+
    struct Tag
    {
      __forceinline Tag() : data(0) {}
