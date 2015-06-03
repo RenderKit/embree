@@ -442,13 +442,7 @@ namespace embree
           
           CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
           
-          /*static const size_t REF_TAG      = 1;
-          assert( !(new_root_ref & REF_TAG) );
-          new_root_ref |= REF_TAG;
-          new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-          subdiv_patch->root_ref = new_root_ref;*/
           subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
-          
           subdiv_patch->write_unlock();
         }
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  

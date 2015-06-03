@@ -770,7 +770,6 @@ namespace embree
     unsigned short grid_subtree_size_64b_blocks;
 
     RWMutex mtx;
-    //volatile int64_t root_ref;
     volatile SharedLazyTessellationCache::Tag root_ref;
 
     __aligned(64) BSplinePatch3fa patch;
