@@ -37,7 +37,6 @@ namespace embree
 {
   namespace isa
   {
-
     class SubdivPatch1CachedIntersector1
     {
     public:
@@ -46,9 +45,7 @@ namespace embree
       /*! Per thread tessellation ref cache */
       static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
 
-
       /*! Creates per thread tessellation cache */
-      static void createTessellationCache();
       static void createLocalThreadInfo();
       
       /*! Precalculations for subdiv patch intersection */
@@ -59,13 +56,13 @@ namespace embree
 #if ENABLE_NORMALIZED_INTERSECTION == 1
 	Vec3fa ray_dir_scale;
 #endif
-        SubdivPatch1Cached   *current_patch;
-        SubdivPatch1Cached   *hit_patch;
+        SubdivPatch1Cached* current_patch;
+        SubdivPatch1Cached* hit_patch;
 	unsigned int threadID;
-        Ray &r;
+        Ray& r;
 #if _DEBUG
 	size_t numPrimitives;
-	SubdivPatch1Cached *array;
+	SubdivPatch1Cached* array;
 #endif
         
         __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
@@ -87,7 +84,6 @@ namespace embree
 	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
 	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
 #endif
-          
         }
 
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
@@ -96,7 +92,7 @@ namespace embree
 	  if (current_patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
           
-          if (unlikely(hit_patch != nullptr))
+          if (unlikely(hit_patch != nullptr)) // FIXME: does this work if the scene also contains triangles?
           {
 
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
@@ -815,7 +811,6 @@ namespace embree
 	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
-        
       }
       
       /*! Test if the ray is occluded by the primitive */

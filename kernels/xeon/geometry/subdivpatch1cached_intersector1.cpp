@@ -137,94 +137,92 @@ namespace embree
     {
       /* unlock previous patch */
       if (pre.current_patch)
-	{
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);
-	}
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);
 
       while(1)
-	{
-	  /* per thread lock */
-	  while(1)
-	    {
-	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
-	      if (unlikely(lock == 1))
-		{
-		  /* lock failed wait until sync phase is over */
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
-		}
-	      else
-		break;
-	    }
-      
-	  static const size_t REF_TAG      = 1;
-	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-
-	  /* fast path for cache hit */
-	  {
-	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref; 
-	    
-	    if (likely(subdiv_patch_root_ref)) 
-	      {
-		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-		
-		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
-		  {
-		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-		    return subdiv_patch_root;
-		  }
-	      }
-	  }
-
-	  /* cache miss */
-	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-
-	  subdiv_patch->write_lock();
-	  {
-	    const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
-	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-
-	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
-	      {	      
-		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		if (block_index == (size_t)-1)
-		  {
-		    /* cannot allocate => flush the cache */
-		    subdiv_patch->write_unlock();
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-		    continue;
-		  }
-		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+      {
+        /* per thread lock */
+        while(1)
+        {
+          unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
+          if (unlikely(lock == 1))
+          {
+            /* lock failed wait until sync phase is over */
+            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
+            SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
+          }
+          else
+            break;
+        }
+        
+        static const size_t REF_TAG      = 1;
+        static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+        
+        /* fast path for cache hit */
+        {
+          CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+          const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref; 
+	  
+          if (likely(subdiv_patch_root_ref)) 
+          {
+            const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+            const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+            
+            if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+            {
+              CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+              return subdiv_patch_root;
+            }
+          }
+        }
+        
+        /* cache miss */
+        CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+        
+        subdiv_patch->write_lock();
+        {
+          const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
+          const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+          
+          /* do we still need to create the subtree data? */
+          if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
+          {	      
+            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
+            if (block_index == (size_t)-1)
+            {
+              /* cannot allocate => flush the cache */
+              subdiv_patch->write_unlock();
+              SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+              SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+              continue;
+            }
+            BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 #if COMPACT == 1
-                int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
-
+            int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+            
 #else                
-		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+            size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
-		void *test = (void*)new_root_ref;
-
-		new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-		assert( new_root_ref <= 0xffffffff );
-		assert( !(new_root_ref & REF_TAG) );
-		new_root_ref |= REF_TAG;
-		new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-		subdiv_patch->root_ref = new_root_ref;
-
+            void *test = (void*)new_root_ref;
+            
+            new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+            assert( new_root_ref <= 0xffffffff );
+            assert( !(new_root_ref & REF_TAG) );
+            new_root_ref |= REF_TAG;
+            new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+            subdiv_patch->root_ref = new_root_ref;
+            
 #if _DEBUG
-		const size_t patchIndex = subdiv_patch - pre.array;
-		assert(patchIndex < pre.numPrimitives);
-		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
-		//SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
+            const size_t patchIndex = subdiv_patch - pre.array;
+            assert(patchIndex < pre.numPrimitives);
+            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
+            //SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
 #endif
-	      }
-	  }
-	  subdiv_patch->write_unlock();
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
-	}
+          }
+        }
+        subdiv_patch->write_unlock();
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
+      }
       
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
