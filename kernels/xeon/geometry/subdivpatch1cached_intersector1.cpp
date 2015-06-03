@@ -148,7 +148,7 @@ namespace embree
         
         if (subdiv_patch->try_write_lock())
         {
-          BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.threadID,16*subdiv_patch->grid_subtree_size_64b_blocks);
+          BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.threadID,64*subdiv_patch->grid_subtree_size_64b_blocks);
 #if COMPACT == 1
           size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
           

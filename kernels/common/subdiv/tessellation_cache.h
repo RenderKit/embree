@@ -245,7 +245,7 @@ namespace embree
      size_t block_index = -1;
      while (true)
      {
-       block_index = sharedLazyTessellationCache.alloc(bytes/16);
+       block_index = sharedLazyTessellationCache.alloc(bytes/64);
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(threadID);		  
