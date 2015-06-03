@@ -257,8 +257,7 @@ namespace embree
       return float8( float4::loadu(&source[0+offset]), float4::loadu(&source[6+offset]) ); // FIXME: unaligned loads
     }
 
-    __forceinline int8 combine_discretized( const unsigned short *const source, const size_t offset) const {
-      
+    __forceinline int8 combine_discretized( const unsigned short *const source, const size_t offset) const {  
       return int8( u16_to_int4(&source[0+offset]), u16_to_int4(&source[6+offset]) );            
     }
 
@@ -309,7 +308,6 @@ namespace embree
 
   };
 
-  /*! Outputs ray to stream. */
   inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
     for (size_t i=0;i<12;i++)
       cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2f_uv(i) << std::endl;
@@ -516,8 +514,7 @@ namespace embree
       return Vec3fa( zero );
     }
 
-    __forceinline Vec3fa normal(const float &uu,
-				const float &vv) const
+    __forceinline Vec3fa normal(const float& uu, const float& vv) const
     {
       if (likely(isBezierPatch()))
         return BezierPatch::normal( patch.v, uu, vv );
@@ -530,92 +527,44 @@ namespace embree
       return Vec3fa( zero );
     }
 
-#if defined(__SSE__)
-    __forceinline Vec3f4 eval4(const float4 &uu,
-			      const float4 &vv) const
+    template<typename simdf, typename simdb = typename simdf::Mask>
+      __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval<bool4>( patch.v, uu, vv );
+        return BezierPatch::eval<simdb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval_t<bool4>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<simdb>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	{
-	  /* reparametrization */
-	  const float4 s = uu * (1.0f - vv);
-	  const float4 t = vv;
-	  return GregoryTrianglePatch3fa::eval<bool4,float4>( patch.v, s, t );
-	}
-      return Vec3f4( zero );
+        return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch.v, uu * (1.0f - vv), vv );
+      return Vec3<simdf>( zero );
     }
 
-    __forceinline Vec3f4 normal4(const float4 &uu,
-                                const float4 &vv) const
+    template<typename simdf, typename simdb = typename simdf::Mask>
+      __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal<bool4>( patch.v, uu, vv );
+        return BezierPatch::normal<simdb>( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal_t<bool4>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<simdb>( patch.v, uu, vv );
       else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal<bool4,float4>( patch.v, uu, vv );
-      return Vec3f4( zero );
+	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch.v, uu, vv );
+      return Vec3<simdf>( zero );
     }
-
-#endif
-
-#if defined(__AVX__)
-    __forceinline Vec3f8 eval8(const float8 &uu,
-			      const float8 &vv) const
-    {
-      if (likely(isBezierPatch()))
-	return BezierPatch::eval<bool8>( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.eval(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval_t<bool8>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-	{
-	  /* reparametrization */
-	  const float8 s = uu * (1.0f - vv);
-	  const float8 t = vv;
-	  return GregoryTrianglePatch3fa::eval<bool8,float8>( patch.v, s, t );
-	}
-      return Vec3f8( zero );
-    }
-    __forceinline Vec3f8 normal8(const float8 &uu,
-                                const float8 &vv) const
-    {
-      if (likely(isBezierPatch()))
-        return BezierPatch::normal<bool8>( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.normal(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal_t<bool8>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal<bool8,float8>( patch.v, uu, vv );
-      return Vec3f8( zero );
-    }
-#endif
 
 #if defined(__MIC__)
-    __forceinline float16 eval4(const float16 &uu,
-			      const float16 &vv) const
+    __forceinline float16 eval4(const float16& uu, const float16& vv) const
     {
       if (likely(isBSplinePatch()))
-	{
-	  return patch.eval4(uu,vv);
-	}
+        return patch.eval4(uu,vv);
       else 
-	{	  
-	  return DenseGregoryPatch3fa::eval4( patch.v, uu, vv );
-	}     
+        return DenseGregoryPatch3fa::eval4( patch.v, uu, vv );
     }
 
-    __forceinline Vec3f16 eval16(const float16 &uu,
-			       const float16 &vv) const
+    __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
     {
       if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
@@ -623,8 +572,7 @@ namespace embree
         return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
     }
 
-    __forceinline Vec3f16 normal16(const float16 &uu,
-				 const float16 &vv) const
+    __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
     {
       if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
@@ -658,7 +606,6 @@ namespace embree
     {
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
     }
-
 
     __forceinline void prefetchData() const
     {
@@ -695,11 +642,11 @@ namespace embree
       return grid_u_res*y+x;
     }
 
-    void evalToOBJ(Scene *scene, size_t &vertex_index,size_t &numTotalTriangles);
+    void evalToOBJ(Scene *scene, size_t& vertex_index,size_t& numTotalTriangles);
     
   private:
 
-    size_t get64BytesBlocksForGridSubTree(const GridRange &range,
+    size_t get64BytesBlocksForGridSubTree(const GridRange& range,
                                           const unsigned int leafBlocks)
     {
       if (range.hasLeafSize()) return leafBlocks;
@@ -775,7 +722,7 @@ namespace embree
     __aligned(64) BSplinePatch3fa patch;
   };
 
-  __forceinline std::ostream &operator<<(std::ostream &o, const SubdivPatch1Base &p)
+  __forceinline std::ostream& operator<<(std::ostream& o, const SubdivPatch1Base& p)
   {
     o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
     o << " patch " << p.patch;
@@ -784,7 +731,7 @@ namespace embree
   } 
 
   /* eval grid over patch and stich edges when required */      
-  static __forceinline void evalGrid(const SubdivPatch1Base &patch,
+  static __forceinline void evalGrid(const SubdivPatch1Base& patch,
                                      float *__restrict__ const grid_x,
                                      float *__restrict__ const grid_y,
                                      float *__restrict__ const grid_z,
@@ -872,7 +819,7 @@ namespace embree
       {
         float8 uu = load8f(&grid_u[8*i]);
         float8 vv = load8f(&grid_v[8*i]);
-        Vec3f8 vtx = patch.eval8(uu,vv);
+        Vec3f8 vtx = patch.eval(uu,vv);
                  
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
           {
@@ -881,7 +828,7 @@ namespace embree
 	    const Vec2f uv2 = patch.getUV(2);
 	    const Vec2f uv3 = patch.getUV(3);
 
-            Vec3f8 normal = patch.normal8(uu,vv);
+            Vec3f8 normal = patch.normal(uu,vv);
             normal = normalize_safe(normal) ;
             
             const float8 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
@@ -909,7 +856,7 @@ namespace embree
       {
         float4 uu = load4f(&grid_u[4*i]);
         float4 vv = load4f(&grid_v[4*i]);
-        Vec3f4 vtx = patch.eval4(uu,vv);
+        Vec3f4 vtx = patch.eval(uu,vv);
           
           
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
@@ -919,7 +866,7 @@ namespace embree
 	    const Vec2f uv2 = patch.getUV(2);
 	    const Vec2f uv3 = patch.getUV(3);
 
-            Vec3f4 normal = patch.normal4(uu,vv);
+            Vec3f4 normal = patch.normal(uu,vv);
             normal = normalize_safe(normal);
 
             const float4 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
