@@ -429,29 +429,10 @@ namespace embree
 
 	  SubdivPatch1* subdiv_patch = &patches[patchIndex];
       
+          const size_t index = SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
+          if (index != -1) return index;
+
 	  static const size_t REF_TAG      = 1;
-	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-
-	  /* fast path for cache hit */
-	  {
-	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
-	    
-	    if (likely(subdiv_patch_root_ref)) 
-	      {
-		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK); // + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-		
-		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
-		  {
-		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
-		    return subdiv_patch_root;
-		  }
-	      }
-	  }
-
-	  /* cache miss */
-	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
 
 	  subdiv_patch->write_lock();
 	  {
