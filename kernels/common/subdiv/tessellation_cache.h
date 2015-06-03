@@ -140,6 +140,18 @@ namespace embree
      }
    }
 
+   static __forceinline int64_t tag(void* ptr)
+   {
+     int64_t new_root_ref = (int64_t) ptr;
+     new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+     assert( new_root_ref <= 0xffffffff );
+     static const size_t REF_TAG      = 1;
+     assert( !(new_root_ref & REF_TAG) );
+     new_root_ref |= REF_TAG;
+     new_root_ref |= (int64_t)sharedLazyTessellationCache.getCurrentIndex() << 32; 
+     return new_root_ref;
+   }
+
    static __forceinline void* lookup(volatile int64_t* tag)
    {
      static const size_t REF_TAG      = 1;
