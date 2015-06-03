@@ -432,16 +432,14 @@ namespace embree
           const size_t index = SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
           if (index != -1) return index;
 
-	  static const size_t REF_TAG      = 1;
-
-	  subdiv_patch->write_lock();
+	  if (subdiv_patch->try_write_lock())
 	  {
 	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref;
 	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
 
 	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
-	      {	      
+	    //if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
+            //{	      
 		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
 		if (block_index == (size_t)-1)
@@ -459,13 +457,14 @@ namespace embree
 
 		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
 
+                static const size_t REF_TAG      = 1;
 		assert( !(new_root_ref & REF_TAG) );
 		new_root_ref |= REF_TAG;
 		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
 		subdiv_patch->root_ref = new_root_ref;
-	      }
+                //}
+            subdiv_patch->write_unlock();
 	  }
-	  subdiv_patch->write_unlock();
 	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
 	}	      
 #endif
