@@ -210,7 +210,7 @@ namespace embree
      return index;
    }
 
-   static __forceinline size_t allocLoop(const unsigned int threadID, const size_t blocks)
+   static __forceinline size_t allocIndexLoop(const unsigned int threadID, const size_t blocks)
    {
      size_t block_index = -1;
      while (true)
@@ -226,6 +226,24 @@ namespace embree
        break;
      }
      return block_index;
+   }
+
+   static __forceinline void* allocLoop(const unsigned int threadID, const size_t bytes)
+   {
+     size_t block_index = -1;
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc(bytes/16);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(threadID);
+         continue; 
+       }
+       break;
+     }
+     return sharedLazyTessellationCache.getBlockPtr(block_index);
    }
 
    __forceinline void *getBlockPtr(const size_t block_index)

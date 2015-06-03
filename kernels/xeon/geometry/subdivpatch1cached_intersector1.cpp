@@ -148,36 +148,34 @@ namespace embree
         
         if (subdiv_patch->try_write_lock())
         {
-            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.threadID,subdiv_patch->grid_subtree_size_64b_blocks);
-            BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+          BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.threadID,16*subdiv_patch->grid_subtree_size_64b_blocks);
 #if COMPACT == 1
-            int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
-            
+          int64_t new_root_ref = (int64_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+          
 #else                
-            size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+          size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
-            void *test = (void*)new_root_ref;
-            
-            new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-            assert( new_root_ref <= 0xffffffff );
-            static const size_t REF_TAG      = 1;
-            assert( !(new_root_ref & REF_TAG) );
-            new_root_ref |= REF_TAG;
-            new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-            subdiv_patch->root_ref = new_root_ref;
-            
+          void *test = (void*)new_root_ref;
+          
+          new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+          assert( new_root_ref <= 0xffffffff );
+          static const size_t REF_TAG      = 1;
+          assert( !(new_root_ref & REF_TAG) );
+          new_root_ref |= REF_TAG;
+          new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+          subdiv_patch->root_ref = new_root_ref;
+          
+          // FIXME: guarantee progress on miss
+          
 #if _DEBUG
-            const size_t patchIndex = subdiv_patch - pre.array;
-            assert(patchIndex < pre.numPrimitives);
-            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
-            //SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
+          const size_t patchIndex = subdiv_patch - pre.array;
+          assert(patchIndex < pre.numPrimitives);
+          CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
 #endif
           subdiv_patch->write_unlock();
         }
-        //subdiv_patch->write_unlock();
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
       }
-      
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
