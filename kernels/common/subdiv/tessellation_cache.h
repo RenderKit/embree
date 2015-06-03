@@ -140,6 +140,27 @@ namespace embree
      }
    }
 
+   static __forceinline void* lookup(volatile int64_t* tag)
+   {
+     static const size_t REF_TAG      = 1;
+     static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+       
+     const int64_t subdiv_patch_root_ref = *tag; 
+     
+     if (likely(subdiv_patch_root_ref)) 
+     {
+       const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
+       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       
+       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+       {
+         CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+         return (void*) subdiv_patch_root;
+       }
+     }
+     return nullptr;
+   }
+
    __forceinline void prefetchThread(const unsigned int threadID) { 
 #if defined(__MIC__)
      prefetch<PFHINT_L1EX>(&threadWorkState[threadID].counter);  

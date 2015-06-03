@@ -142,28 +142,10 @@ namespace embree
       while(1)
       {
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.threadID);
-        
-        static const size_t REF_TAG      = 1;
-        static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-        
-        /* fast path for cache hit */
-        {
-          CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-          const int64_t subdiv_patch_root_ref    = subdiv_patch->root_ref; 
-	  
-          if (likely(subdiv_patch_root_ref)) 
-          {
-            const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-            const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       
+        if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
+            return (size_t) ptr;
             
-            if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
-            {
-              CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-              return subdiv_patch_root;
-            }
-          }
-        }
-        
         /* cache miss */
         CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
         
@@ -182,7 +164,7 @@ namespace embree
               subdiv_patch->write_unlock();
               SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
               SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-              continue;
+              continue; // FIXME: write_lock not released
             }
             BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 #if COMPACT == 1
@@ -195,6 +177,7 @@ namespace embree
             
             new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
             assert( new_root_ref <= 0xffffffff );
+            static const size_t REF_TAG      = 1;
             assert( !(new_root_ref & REF_TAG) );
             new_root_ref |= REF_TAG;
             new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
