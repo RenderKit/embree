@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../default.h"
-#include "subdivpatch1base.h"
+//#include "subdivpatch1base.h"
 
 #define CACHE_DBG(x) 
 
@@ -81,6 +81,25 @@ namespace embree
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 
+   struct Tag
+   {
+     __forceinline Tag() : data(0) {}
+
+     __forceinline Tag(void* ptr)
+     {
+       int64_t new_root_ref = (int64_t) ptr;
+       new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+       assert( new_root_ref <= 0xffffffff );
+       static const size_t REF_TAG      = 1;
+       assert( !(new_root_ref & REF_TAG) );
+       new_root_ref |= REF_TAG;
+       new_root_ref |= (int64_t)sharedLazyTessellationCache.getCurrentIndex() << 32; 
+       data = new_root_ref;
+     }
+
+     int64_t data;
+   };
+
  private:
    struct __aligned(64) ThreadWorkState {
      AtomicCounter counter;
@@ -140,24 +159,12 @@ namespace embree
      }
    }
 
-   static __forceinline int64_t tag(void* ptr)
-   {
-     int64_t new_root_ref = (int64_t) ptr;
-     new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-     assert( new_root_ref <= 0xffffffff );
-     static const size_t REF_TAG      = 1;
-     assert( !(new_root_ref & REF_TAG) );
-     new_root_ref |= REF_TAG;
-     new_root_ref |= (int64_t)sharedLazyTessellationCache.getCurrentIndex() << 32; 
-     return new_root_ref;
-   }
-
-   static __forceinline void* lookup(volatile int64_t* tag)
+   static __forceinline void* lookup(volatile Tag* tag)
    {
      static const size_t REF_TAG      = 1;
      static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
        
-     const int64_t subdiv_patch_root_ref = *tag; 
+     const int64_t subdiv_patch_root_ref = tag->data; 
      
      if (likely(subdiv_patch_root_ref)) 
      {
@@ -174,12 +181,12 @@ namespace embree
      return nullptr;
    }
 
-   static __forceinline size_t lookupIndex(volatile int64_t* tag)
+   static __forceinline size_t lookupIndex(volatile Tag* tag)
    {
      static const size_t REF_TAG      = 1;
      static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
        
-     const int64_t subdiv_patch_root_ref = *tag; 
+     const int64_t subdiv_patch_root_ref = tag->data; 
      
      if (likely(subdiv_patch_root_ref)) 
      {

@@ -438,15 +438,16 @@ namespace embree
           float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
           unsigned int currentIndex = 0;
           BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-          size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+          size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem; // - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
           
           CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
           
-          static const size_t REF_TAG      = 1;
+          /*static const size_t REF_TAG      = 1;
           assert( !(new_root_ref & REF_TAG) );
           new_root_ref |= REF_TAG;
           new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-          subdiv_patch->root_ref = new_root_ref;
+          subdiv_patch->root_ref = new_root_ref;*/
+          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
           
           subdiv_patch->write_unlock();
         }

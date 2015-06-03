@@ -156,7 +156,7 @@ namespace embree
           size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
           
-          subdiv_patch->root_ref = SharedLazyTessellationCache::tag((void*)new_root_ref);
+          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
           
 #if _DEBUG
           const size_t patchIndex = subdiv_patch - pre.array;

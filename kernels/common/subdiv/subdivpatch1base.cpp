@@ -28,7 +28,7 @@ namespace embree
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4]) 
-    : geom(gID),prim(pID),flags(0),root_ref(0)
+    : geom(gID),prim(pID),flags(0)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
@@ -69,7 +69,7 @@ namespace embree
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh) 
-    : geom(gID),prim(pID),flags(0),root_ref(0)
+    : geom(gID),prim(pID),flags(0)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();

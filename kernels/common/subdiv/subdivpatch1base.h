@@ -23,6 +23,7 @@
 #include "gregory_patch_dense.h"
 #include "gregory_triangle_patch.h"
 #include "tessellation.h"
+#include "tessellation_cache.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
@@ -748,7 +749,7 @@ namespace embree
     __forceinline void resetRootRef()
     {
       assert( mtx.hasInitialState() );
-      root_ref = 0;
+      root_ref = SharedLazyTessellationCache::Tag();
     }
 
 
@@ -769,7 +770,8 @@ namespace embree
     unsigned short grid_subtree_size_64b_blocks;
 
     RWMutex mtx;
-    volatile int64_t root_ref;
+    //volatile int64_t root_ref;
+    volatile SharedLazyTessellationCache::Tag root_ref;
 
     __aligned(64) BSplinePatch3fa patch;
   };
