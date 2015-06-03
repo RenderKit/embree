@@ -145,9 +145,6 @@ namespace embree
        
         if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
             return (size_t) ptr;
-            
-        /* cache miss */
-        CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
         
         subdiv_patch->write_lock();
         {
@@ -164,7 +161,7 @@ namespace embree
               subdiv_patch->write_unlock();
               SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
               SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-              continue; // FIXME: write_lock not released
+              continue; 
             }
             BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 #if COMPACT == 1

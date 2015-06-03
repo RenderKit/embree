@@ -92,7 +92,7 @@ namespace embree
 	  if (current_patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
           
-          if (unlikely(hit_patch != nullptr)) // FIXME: does this work if the scene also contains triangles?
+          if (unlikely(hit_patch != nullptr))
           {
 
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)

@@ -158,6 +158,7 @@ namespace embree
          return (void*) subdiv_patch_root;
        }
      }
+     CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
      return nullptr;
    }
 
