@@ -441,15 +441,7 @@ namespace embree
 	    //if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
             //{	      
 		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
-		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		if (block_index == (size_t)-1)
-		  {
-		    /* cannot allocate => flush the cache */
-		    subdiv_patch->write_unlock();
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadInfo->id);		  
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-		    continue;
-		  }
+                size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadInfo->id,subdiv_patch->grid_subtree_size_64b_blocks);
 		float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
 		unsigned int currentIndex = 0;
 		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
