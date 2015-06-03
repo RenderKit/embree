@@ -158,14 +158,13 @@ namespace embree
           
           subdiv_patch->root_ref = SharedLazyTessellationCache::tag((void*)new_root_ref);
           
-          // FIXME: guarantee progress on miss
-          
 #if _DEBUG
           const size_t patchIndex = subdiv_patch - pre.array;
           assert(patchIndex < pre.numPrimitives);
           CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
 #endif
           subdiv_patch->write_unlock();
+          return new_root_ref;
         }
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
       }
