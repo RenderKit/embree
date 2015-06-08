@@ -21,18 +21,21 @@
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
 #include "feature_adaptive_eval.h"
-#include "tessellation_cache.h"
 
 namespace embree
 {
-  template<typename Vertex, typename Vertex_t>
+  template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) Patch
   {
   public:
     
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
+    typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
+    typedef EvalPatchT<Vertex> EvalPatch;
 
     enum Type {
+      INVALID_PATCH = 0,
       BSPLINE_PATCH = 1,  
       GREGORY_PATCH = 2,
       EVAL_PATCH = 3
@@ -41,19 +44,19 @@ namespace embree
     /*! Default constructor. */
     __forceinline Patch () {}
 
-    __forceinline Patch (const SubdivMesh::HalfEdge* edge, const void* vertices, size_t stride) 
-      : flags(0)
+    __forceinline Patch (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride) 
+      : type(INVALID_PATCH)
     {
       auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
         const unsigned vtx = p->getStartVertexIndex();
-        return Vertex::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
+        return Vertex::loadu((float*)&vertices[vtx*stride]);  // FIXME: reads behind the end of the array
       };
 
       switch (edge->type) 
       {
       case SubdivMesh::REGULAR_QUAD_PATCH: 
       {
-        ((BSplinePatchT<Vertex>*)data)->init(edge,loader);
+        ((BSplinePatch*)data)->init(edge,loader);
         type = BSPLINE_PATCH;
         break;
       }
@@ -62,7 +65,7 @@ namespace embree
       {
         CatmullClarkPatchT<Vertex> patch;
         patch.init2(edge,loader);
-        ((GregoryPatchT<Vertex>*)data)->init(patch);
+        ((GregoryPatch*)data)->init(patch);
         type = GREGORY_PATCH;
         break;
       }
@@ -78,7 +81,7 @@ namespace embree
     __forceinline Vertex eval(const float uu, const float vv) const
     {
       switch (type) {
-      case BSPLINE_PATCH: return ((BsplinePatch*)data)->eval(uu,vv);
+      case BSPLINE_PATCH: return ((BSplinePatch*)data)->eval(uu,vv);
       case GREGORY_PATCH: return ((GregoryPatch*)data)->eval(uu,vv);
       case EVAL_PATCH   : { Vertex P; return ((EvalPatch*)data)->eval(uu,vv,&p,nullptr,nullptr); return P; }
       }
@@ -89,8 +92,8 @@ namespace embree
     {
       switch (type) {
       case BSPLINE_PATCH: 
-        *dPdu = ((BsplinePatch*)data)->tangentU(uu,vv); 
-        *dPdv = ((BsplinePatch*)data)->tangentV(uu,vv); 
+        *dPdu = ((BSplinePatch*)data)->tangentU(uu,vv); 
+        *dPdv = ((BSplinePatch*)data)->tangentV(uu,vv); 
         break;
       case GREGORY_PATCH: 
         *dPdu = ((GregoryPatch*)data)->tangentU(uu,vv); 
@@ -100,16 +103,15 @@ namespace embree
         ((EvalPatch*)data)->eval(uu,vv,nullptr,dPdu,dPdv); 
         break;
       }
-      return zero;
     }
 
     __forceinline void eval(const float& uu, const float& vv, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
     {
       switch (type) {
       case BSPLINE_PATCH: 
-        if (P)    *P    = ((BsplinePatch*)data)->eval(uu,vv); 
-        if (dPdu) *dPdu = ((BsplinePatch*)data)->tangentU(uu,vv); 
-        if (dPdv) *dPdv = ((BsplinePatch*)data)->tangentV(uu,vv); 
+        if (P)    *P    = ((BSplinePatch*)data)->eval(uu,vv); 
+        if (dPdu) *dPdu = ((BSplinePatch*)data)->tangentU(uu,vv); 
+        if (dPdv) *dPdv = ((BSplinePatch*)data)->tangentV(uu,vv); 
         break;
       case GREGORY_PATCH: 
         if (P)    *P    = ((GregoryPatch*)data)->eval(uu,vv); 
@@ -120,7 +122,6 @@ namespace embree
         ((EvalPatch*)data)->eval(uu,vv,P,dPdu,dPdv); 
         break;
       }
-      return zero;
     }
 
   public:

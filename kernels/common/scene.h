@@ -40,6 +40,7 @@ namespace embree
   __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
   __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
   __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
+  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
 
   /*! Base class all scenes are derived from */
   class Scene : public Accel
@@ -223,6 +224,7 @@ namespace embree
     __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
     __forceinline bool isRobust() const { return embree::isRobust(flags); }
     __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
+    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
 
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }

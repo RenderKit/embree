@@ -18,6 +18,7 @@
 
 #include "geometry.h"
 #include "buffer.h"
+#include "subdiv/tessellation_cache.h"
 #include "../algorithms/pmap.h"
 #include "../algorithms/pset.h"
 
@@ -480,6 +481,14 @@ namespace embree
     /*! flag whether only the edge levels have changed and the mesh has no creases,
      *  allows for simple bvh update instead of full rebuild in cached mode */
     bool levelUpdate;
+
+    /*! interpolation cache */
+  public:
+    struct CacheEntry {
+      RWMutex mutex;
+      SharedLazyTessellationCache::Tag tag;
+    };
+    std::vector<CacheEntry> interpolation_cache_tags;
 
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
