@@ -531,7 +531,7 @@ namespace embree
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval<simdb>( patch.v, uu, vv );
+        return BezierPatch::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -545,7 +545,7 @@ namespace embree
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal<simdb>( patch.v, uu, vv );
+        return BezierPatch::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -556,17 +556,12 @@ namespace embree
     }
 
 #if defined(__MIC__)
-    __forceinline float16 eval4(const float16& uu, const float16& vv) const
-    {
-      if (likely(isBSplinePatch()))
-        return patch.eval4(uu,vv);
-      else 
-        return DenseGregoryPatch3fa::eval4( patch.v, uu, vv );
-    }
 
     __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
     {
-      if (likely(isBSplinePatch()))
+      if (likely(isBezierPatch()))
+        return BezierPatch::eval( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else 
         return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
@@ -574,7 +569,9 @@ namespace embree
 
     __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
     {
-      if (likely(isBSplinePatch()))
+      if (likely(isBezierPatch()))
+        return BezierPatch::normal( patch.v, uu, vv );
+      else if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
       else
         return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );

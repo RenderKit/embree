@@ -97,7 +97,7 @@ namespace embree
       return n;     
     }
     
-    template<class M, class T>
+    template<class T>
       static __forceinline Vec3<T> eval(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
     {      
       const T one_minus_uu = 1.0f - uu;
@@ -133,7 +133,7 @@ namespace embree
       return Vec3<T>(x,y,z);
     }
 
-    template<class M, class T>
+    template<class T>
       static __forceinline Vec3<T> normal(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
     {
       
