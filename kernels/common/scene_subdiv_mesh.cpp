@@ -23,6 +23,7 @@
 
 #if !defined(__MIC__)
 #include "subdiv/feature_adaptive_eval.h"
+#include "subdiv/patch.h"
 #endif
 
 namespace embree
@@ -533,11 +534,20 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
     }
 
+#if 0
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
+      Patch<float4> patch(getHalfEdge(primID),src,stride);
+      patch.eval(u,v,
+
+#else
+
+    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    {
+      size_t ofs = i*sizeof(float);
       auto load = [&](const SubdivMesh::HalfEdge* p) -> float4 { 
         const unsigned vtx = p->getStartVertexIndex();
-        return float4::loadu((float*)&src[vtx*stride]);  // FIXME: reads behind the end of the array
+        return float4::loadu((float*)&src[vtx*stride+ofs]);  // FIXME: reads behind the end of the array
       };
       float4 Pt, dPdut, dPdvt; 
       feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
@@ -545,6 +555,8 @@ namespace embree
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
+#endif
+
 #endif
   }
 }

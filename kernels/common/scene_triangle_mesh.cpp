@@ -171,23 +171,24 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
+      size_t ofs = i*sizeof(float);
       if (i+4 > numFloats) 
       {
         const size_t n = numFloats-i;
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride],n);
-        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride],n);
-        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride],n);
+        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs],n);
+        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs],n);
+        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs],n);
         if (P   ) float4::storeu(P+i,w*p0 + u*p1 + v*p2,n);
         if (dPdu) float4::storeu(dPdu+i,p1-p0,n);
         if (dPdv) float4::storeu(dPdv+i,p2-p0,n);
       } else {
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride]);
-        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride]);
-        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride]);
+        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs]);
+        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs]);
+        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs]);
         if (P   ) float4::storeu(P+i,w*p0 + u*p1 + v*p2);
         if (dPdu) float4::storeu(dPdu+i,p1-p0);
         if (dPdv) float4::storeu(dPdv+i,p2-p0);

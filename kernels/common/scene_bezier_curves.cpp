@@ -158,14 +158,15 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
+      size_t ofs = i*sizeof(float);
       if (i+4 > numFloats) 
       {
         const size_t n = numFloats-i;
         const size_t curve = curves[primID];
-        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride],n);
-        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride],n);
-        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride],n);
-        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride],n);
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs],n);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs],n);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs],n);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs],n);
 
         const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
         float4 Q, dQdu; bezier.eval(u,Q,dQdu);
@@ -175,10 +176,10 @@ namespace embree
 
       } else {
         const size_t curve = curves[primID];
-        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride]);
-        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride]);
-        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride]);
-        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride]);
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs]);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs]);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
 
         const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
         float4 Q, dQdu; bezier.eval(u,Q,dQdu);

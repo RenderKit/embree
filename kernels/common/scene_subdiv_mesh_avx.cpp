@@ -51,12 +51,13 @@ namespace embree
     
     for (size_t i=0; i<numFloats; i+=8)
     {
+      size_t ofs = i*sizeof(float);
       if (i+4 > numFloats)
       {
         const size_t n = numFloats-i;
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return float4::loadu((float*)&src[vtx*stride],n); 
+          return float4::loadu((float*)&src[vtx*stride+ofs],n); 
         };
         float4 Pt, dPdut, dPdvt; 
         feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
@@ -69,7 +70,7 @@ namespace embree
         const size_t n = numFloats-i;
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return float8::loadu((float*)&src[vtx*stride],n); 
+          return float8::loadu((float*)&src[vtx*stride+ofs],n); 
         };
         float8 Pt, dPdut, dPdvt; 
         feature_adaptive_point_eval<float8>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
@@ -81,7 +82,7 @@ namespace embree
       {
         auto load = [&](const SubdivMesh::HalfEdge* p) { 
           const unsigned vtx = p->getStartVertexIndex();
-          return float8::loadu((float*)&src[vtx*stride]);
+          return float8::loadu((float*)&src[vtx*stride+ofs]);
         };
         float8 Pt, dPdut, dPdvt; 
         feature_adaptive_point_eval<float8>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
