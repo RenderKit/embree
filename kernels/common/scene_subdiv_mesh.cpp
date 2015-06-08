@@ -433,8 +433,8 @@ namespace embree
     else if (update) updateHalfEdges();
 
     /* create interpolation cache mapping for interpolation scenes */
-    if (parent->isInterpolatable())
-      interpolation_cache_tags.resize(numVertices);
+    if (parent->isInterpolatable()) 
+      interpolation_cache_tags.resize(numFaces);
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 
@@ -551,19 +551,21 @@ namespace embree
 
 #if 1
       Patch<float4>* patch = nullptr;
-
+      
       while(1)
       {
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadIndex);
        
         CacheEntry& entry = interpolation_cache_tags[primID];
         patch = (Patch<float4>*) SharedLazyTessellationCache::lookup(&entry.tag);
+
         if (patch) break;
 
         if (entry.mutex.try_write_lock())
         {
           void* ptr = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Patch<float4>));
           patch = new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
+
           __memory_barrier();
           entry.tag = SharedLazyTessellationCache::Tag(ptr);
           entry.mutex.write_unlock();
