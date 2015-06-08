@@ -168,6 +168,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+
   }
 
   /* add all meshes to the scene */
@@ -355,7 +356,7 @@ extern "C" void device_render (int* pixels,
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode)
       {
-       updateEdgeLevels(g_ispc_scene, cam_org);
+        updateEdgeLevels(g_ispc_scene, cam_org);
        rtcCommit (g_scene);
       }
 #endif

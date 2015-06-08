@@ -108,6 +108,16 @@ namespace embree
       float face_valence_p1 = patch.ring[1].face_valence;
       float face_valence_p2 = patch.ring[2].face_valence;
 
+      /* PRINT( patch.ring[0].face_valence ); */
+      /* PRINT( patch.ring[0].edge_valence ); */
+
+      /* PRINT( patch.ring[1].face_valence ); */
+      /* PRINT( patch.ring[1].edge_valence ); */
+
+      /* PRINT( patch.ring[2].face_valence ); */
+      /* PRINT( patch.ring[2].edge_valence ); */
+
+
       if (patch.ring[0].border_face != -1) face_valence_p0--;
       if (patch.ring[1].border_face != -1) face_valence_p1--;
       if (patch.ring[2].border_face != -1) face_valence_p2--;

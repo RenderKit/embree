@@ -913,6 +913,7 @@ namespace embree
 	  else
             {
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+              const size_t numEdges = first_half_edge->numEdges();
 
 	      float edge_level[4] = {
 		first_half_edge[0].edge_level,
@@ -920,7 +921,12 @@ namespace embree
 		first_half_edge[2].edge_level,
 		first_half_edge[3].edge_level
 	      };
-              
+
+              /* updating triangular bezier patch */
+              if (numEdges == 3) {
+                edge_level[3] = first_half_edge[1].edge_level;
+              }
+
 	      const unsigned int patchIndex = base.size()+s.size();
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 	      subdiv_patches[patchIndex].resetRootRef();

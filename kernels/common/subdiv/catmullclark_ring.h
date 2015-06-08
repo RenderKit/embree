@@ -922,8 +922,8 @@ namespace embree
         q0 = ring[0] - vtx;
       else if (unlikely(border_index != -1))
 	{
-	  if (border_index != edge_valence-2 && face_valence != 2)
-          {
+	  if (border_index == edge_valence-2 || face_valence == 2)
+          { 
 	    q0 = ring[0] - vtx;
           }
 	  else
@@ -950,7 +950,7 @@ namespace embree
         q1 = ring[faces[0].size] - vtx;
       else if (unlikely(border_index != -1))
 	{
-	  if (border_index != edge_valence-2 && face_valence != 2)
+	  if (border_index == 2 || face_valence == 2) 
           {
 	    q1 = ring[faces[0].size] - vtx;
           }

@@ -130,8 +130,9 @@ namespace embree
 	  cpatch.ring[0].edge_level,
 	  cpatch.ring[1].edge_level,
 	  cpatch.ring[2].edge_level,
-	  cpatch.ring[2].edge_level
+	  cpatch.ring[1].edge_level
 	};
+
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
 
 	for (size_t i=0; i<4; i++) {
@@ -140,7 +141,6 @@ namespace embree
 	}
 
        
-
 	updateEdgeLevels(edge_level,mesh);
 
 #if 1
