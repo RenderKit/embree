@@ -434,7 +434,12 @@ namespace embree
 
     /* create interpolation cache mapping for interpolation scenes */
     if (parent->isInterpolatable()) 
-      interpolation_cache_tags.resize(numFaces);
+    {
+      for (size_t i=0; i<2; i++) {
+        if (vertices[i]) vertex_buffer_tags[i].resize(numFaces);
+        if (userbuffers[i]) user_buffer_tags[i].resize(numFaces);
+      }
+    }
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 
@@ -530,12 +535,16 @@ namespace embree
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
+    size_t bufID = buffer&0xFFFF;
+    CacheEntry* entry;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
-      src    = userbuffers[buffer&0xFFFF]->getPtr();
-      stride = userbuffers[buffer&0xFFFF]->getStride();
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
+      entry = &user_buffer_tags[bufID][primID];
     } else {
-      src    = vertices[buffer&0xFFFF].getPtr();
-      stride = vertices[buffer&0xFFFF].getStride();
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
+      entry = &vertex_buffer_tags[bufID][primID];
     }
 
     const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
@@ -556,19 +565,18 @@ namespace embree
       {
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadIndex);
        
-        CacheEntry& entry = interpolation_cache_tags[primID];
-        patch = (Patch<float4>*) SharedLazyTessellationCache::lookup(&entry.tag);
+        patch = (Patch<float4>*) SharedLazyTessellationCache::lookup(&entry->tag);
 
         if (patch) break;
 
-        if (entry.mutex.try_write_lock())
+        if (entry->mutex.try_write_lock())
         {
           void* ptr = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Patch<float4>));
           patch = new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
 
           __memory_barrier();
-          entry.tag = SharedLazyTessellationCache::Tag(ptr);
-          entry.mutex.write_unlock();
+          entry->tag = SharedLazyTessellationCache::Tag(ptr);
+          entry->mutex.write_unlock();
           break;
         }
         else
