@@ -110,7 +110,7 @@ namespace embree
        data = new_root_ref;
      }
 
-     int64_t data;
+     volatile int64_t data;
    };
 
  private:

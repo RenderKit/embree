@@ -83,7 +83,7 @@ namespace embree
       switch (type) {
       case BSPLINE_PATCH: return ((BSplinePatch*)data)->eval(uu,vv);
       case GREGORY_PATCH: return ((GregoryPatch*)data)->eval(uu,vv);
-      case EVAL_PATCH   : { Vertex P; return ((EvalPatch*)data)->eval(uu,vv,&p,nullptr,nullptr); return P; }
+      case EVAL_PATCH   : { Vertex P; return ((EvalPatch*)data)->eval(uu,vv,&P,nullptr,nullptr); return P; }
       }
       return zero;
     }
