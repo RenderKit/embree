@@ -76,7 +76,7 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
-    numMaxRenderThreads = 1024; //MAX_MIC_THREADS;
+    numMaxRenderThreads = 2*MAX_MIC_THREADS; // FIXME
     threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
 
     for (size_t i=0;i<numMaxRenderThreads;i++)
@@ -87,21 +87,23 @@ namespace embree
 
   size_t SharedLazyTessellationCache::getNextRenderThreadID() 
   {
-    mtx_threads.lock();
+    reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
     if (numRenderThreads >= numMaxRenderThreads) 
       { 
-    	numMaxRenderThreads *= 2;
-	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); // FIXME: this is buggy! cannot reallocate while thread are working on this array!
+        // FIXME: this is buggy! cannot reallocate while thread are working on this array!
 
-	for (size_t i=id;i<numMaxRenderThreads;i++)
-	  threadWorkState[i].reset();
+    	//numMaxRenderThreads *= 2;
+	//threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); 
+	//for (size_t i=id;i<numMaxRenderThreads;i++)
+	//  threadWorkState[i].reset();
 
-	assert( threadWorkState );
-	if (!threadWorkState)
-          THROW_RUNTIME_ERROR("realloc threadWorkState");
+	//assert( threadWorkState );
+	//if (!threadWorkState)
+        THROW_RUNTIME_ERROR("getNextRenderThreadID");
       }    
-    mtx_threads.unlock();
+    reset_state.unlock();
+
     return id;
   }
 

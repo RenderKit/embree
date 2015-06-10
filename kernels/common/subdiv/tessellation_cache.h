@@ -137,7 +137,6 @@ namespace embree
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
-   __aligned(64) AtomicMutex   mtx_threads;
 
 
 
