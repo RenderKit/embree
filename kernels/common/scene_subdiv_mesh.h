@@ -484,6 +484,14 @@ namespace embree
 
     /*! interpolation cache */
   public:
+    static __forceinline size_t numInterpolationSlots4(size_t stride) { return (stride+15)/16; }
+    static __forceinline size_t numInterpolationSlots8(size_t stride) { size_t r = stride-stride/32*32; return stride/32 + (r==0 ? 0 : (r+15)/16); }
+    static __forceinline size_t interpolationSlot4(size_t prim, size_t slot, size_t stride) {
+      const size_t slots = numInterpolationSlots4(stride); assert(slot < slots); return slots*prim+slot;
+    }
+    static __forceinline size_t interpolationSlot8(size_t prim, size_t slot, size_t stride) {
+      const size_t slots = numInterpolationSlots8(stride); assert(slot < slots); return slots*prim+slot;
+    }
     std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
     std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
 
