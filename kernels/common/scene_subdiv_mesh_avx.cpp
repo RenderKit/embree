@@ -16,10 +16,7 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-
-#if !defined(__MIC__)
 #include "subdiv/patch.h"
-#endif
 
 namespace embree
 {

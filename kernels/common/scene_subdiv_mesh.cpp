@@ -16,14 +16,11 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
+#include "subdiv/patch.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
 #include "../algorithms/parallel_for.h"
-
-#if !defined(__MIC__)
-#include "subdiv/patch.h"
-#endif
 
 namespace embree
 {
@@ -536,8 +533,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-#if !defined(__MIC__) // FIXME: not working on MIC yet
-
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -554,13 +549,20 @@ namespace embree
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
+#if defined (__MIC__)
+#define float4 Vec3fa
+#define float4_t Vec3fa_t
+#else
+#define float4_t float4
+#endif
 
     for (size_t i=0; i<numFloats; i+=4)
     {
       SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
-      Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
-          return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup<Patch<float4,float4_t> >(entry,[&] (void* ptr) {
+          return new (ptr) Patch<float4,float4_t>(getHalfEdge(primID),src+i*sizeof(float),stride);
         });
+      //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);
       float4 Pt, dPdut, dPdvt; 
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
       SharedLazyTessellationCache::unlock();
@@ -568,6 +570,5 @@ namespace embree
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
-#endif
   }
 }
