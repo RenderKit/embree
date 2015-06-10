@@ -208,6 +208,82 @@ namespace embree
    {
      const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
 
+#if 1
+      while(1)
+	{
+	  /* per thread lock */
+	  while(1)
+	    {
+	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadIndex);	       
+	      if (unlikely(lock == 1))
+		{
+		  /* lock failed wait until sync phase is over */
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);	       
+		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(threadIndex,0);
+		}
+	      else
+		break;
+	    }
+      
+	  static const size_t REF_TAG      = 1;
+	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+
+	  /* fast path for cache hit */
+	  {
+	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+	    const int64_t subdiv_patch_root_ref    = entry.tag.data; 
+	    
+	    if (likely(subdiv_patch_root_ref)) 
+	      {
+		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+		
+		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+		  {
+		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+		    return (Ty*) subdiv_patch_root;
+		  }
+	      }
+	  }
+
+	  /* cache miss */
+	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+
+	  entry.mutex.write_lock();
+	  {
+	    const int64_t subdiv_patch_root_ref    = entry.tag.data;
+	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+
+	    /* do we still need to create the subtree data? */
+	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
+	      {	      
+                size_t numBlocks = sizeof(Ty)/64;
+		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(numBlocks);
+		if (block_index == (size_t)-1)
+		  {
+		    /* cannot allocate => flush the cache */
+		    entry.mutex.write_unlock();
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
+		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
+		    continue;
+		  }
+		Ty* ptr = (Ty*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+                int64_t new_root_ref = (int64_t) constructor(ptr);
+
+		new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+		assert( new_root_ref <= 0xffffffff );
+		assert( !(new_root_ref & REF_TAG) );
+		new_root_ref |= REF_TAG;
+		new_root_ref |= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
+		entry.tag.data = new_root_ref;
+	      }
+	  }
+	  entry.mutex.write_unlock();
+	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
+	}
+
+#else
+
      while (true)
      {
        sharedLazyTessellationCache.lockThreadLoop(threadIndex);
@@ -220,6 +296,7 @@ namespace embree
          Ty* ret = constructor(ptr);
           __memory_barrier();
           entry.tag = SharedLazyTessellationCache::Tag(ptr);
+          __memory_barrier();
           entry.mutex.write_unlock();
           return ret;
        }
@@ -229,6 +306,8 @@ namespace embree
          continue;
        }
      }
+#endif
+
      return nullptr;
    }
    
