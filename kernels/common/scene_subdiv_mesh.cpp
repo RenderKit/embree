@@ -566,12 +566,12 @@ namespace embree
       float4 Pt, dPdut, dPdvt; 
 
 #if 1
-      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(((stride+15)/16)*primID+i);
+      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(((stride+15)/16)*primID+i/4);
       Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
           return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
         });
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
+      SharedLazyTessellationCache::unlock();
 #endif
 
 #if 0

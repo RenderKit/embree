@@ -161,8 +161,8 @@ namespace embree
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
 
-   __forceinline void lock  () { lockThread(threadIndex()); }
-   __forceinline void unlock() { unlockThread(threadIndex()); }
+   static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadIndex()); }
+   static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadIndex()); }
 
    /* per thread lock */
    __forceinline void lockThreadLoop (const unsigned int threadID) 
