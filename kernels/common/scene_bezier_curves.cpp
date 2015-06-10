@@ -141,7 +141,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-#if !defined(__MIC__) // FIXME: not working on MIC yet
 
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
@@ -155,6 +154,8 @@ namespace embree
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();
     }
+
+#if !defined(__MIC__) 
 
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
@@ -188,6 +189,27 @@ namespace embree
         if (dPdu) float4::storeu(dPdu+i,dQdu);
       }
     }
+
+#else
+
+    for (size_t i=0; i<numFloats; i+=16) 
+    {
+      size_t ofs = i*sizeof(float);
+      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      const size_t curve = curves[primID];
+      const float16 p0 = uload16f(mask,(float*)&src[(curve+0)*stride+ofs]);
+      const float16 p1 = uload16f(mask,(float*)&src[(curve+1)*stride+ofs]);
+      const float16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
+      const float16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
+
+      const BezierCurve<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      float16 Q, dQdu; bezier.eval(u,Q,dQdu);
+
+      if (P   ) compactustore16f(mask,P+i,Q);
+      if (dPdu) compactustore16f(mask,dPdu+i,dQdu);
+    }
+
+
 #endif
   }
 
