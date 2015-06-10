@@ -39,7 +39,7 @@ namespace embree
     }
 
     updateEdgeLevels(edge_level,mesh);
-     
+    
     /* determine whether patch is regular or not */
 
     if (ipatch.isRegular()) /* bezier vs. gregory */

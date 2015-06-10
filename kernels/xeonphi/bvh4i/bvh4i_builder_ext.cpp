@@ -35,6 +35,8 @@
 
 //FIXME: use 8-bytes compact prim ref is used
 
+#define ENABLE_FEATURE_ADAPTIVE 1
+
 namespace embree
 {
 
@@ -962,11 +964,16 @@ PRINT(CORRECT_numPrims);
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
+#if ENABLE_FEATURE_ADAPTIVE == 1
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
 					       {
 						 s++;
-					       });	    
+					       });
+#else
+	      s++;
+#endif
+	    
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -1168,6 +1175,8 @@ PRINT(CORRECT_numPrims);
 
 	  if (!fastUpdateMode) 
 	    {
+
+#if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(
 						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 						   [&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
@@ -1184,6 +1193,10 @@ PRINT(CORRECT_numPrims);
 
 						     const unsigned int patchIndex = base.size()+s.size();
 						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
+#else
+						     const unsigned int patchIndex = base.size()+s.size();
+                                                     subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
+#endif                                                     
 						   
 						     /* compute patch bounds */
 						     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
@@ -1193,7 +1206,10 @@ PRINT(CORRECT_numPrims);
 						     
 						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
+#if ENABLE_FEATURE_ADAPTIVE == 1            
 						   });
+#endif
+
 	    }
 	  else
 	    {
@@ -1231,117 +1247,6 @@ PRINT(CORRECT_numPrims);
   {
   }
 
-
-  /* FIXME: code is deprecated */
-  void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
-  {
-    const size_t numTotalGroups = scene->size();
-
-
-    /* count total number of virtual objects */
-    const size_t numFaces  = numPrimitives;
-    const size_t startID   = (threadID+0)*numFaces/numThreads;
-    const size_t endID     = (threadID+1)*numFaces/numThreads; 
-    
-    PrimRef *__restrict__ const prims     = this->prims;
-
-    // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == nullptr)) continue;
-      if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const SubdivMesh* const geom = (SubdivMesh*) scene->get(g);
-      const size_t numPrims = geom->size();
-      if (numSkipped + numPrims > startID) break;
-      numSkipped += numPrims;
-    }
-
-    /* start with first group containing startID */
-    float16 bounds_scene_min((float)pos_inf);
-    float16 bounds_scene_max((float)neg_inf);
-    float16 bounds_centroid_min((float)pos_inf);
-    float16 bounds_centroid_max((float)neg_inf);
-
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
-
-    SubdivPatch1 *acc = (SubdivPatch1*)accel;
-
-    for (; g<numTotalGroups; g++) 
-      {
-	if (unlikely(scene->get(g) == nullptr)) continue;
-	if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
-	if (unlikely(!scene->get(g)->isEnabled())) continue;
-
-	SubdivMesh *subdiv_mesh = (SubdivMesh *)scene->get(g);
-
-        size_t N = subdiv_mesh->size();
-        for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
-	  { 		
-	    assert( currentID < numFaces );
-
-	    prefetch<PFHINT_L2EX>(&prims[currentID]);
-
-	    CatmullClarkPatch3fa ipatch;
-            ipatch.init( subdiv_mesh->getHalfEdge(i),
-                         subdiv_mesh->getVertexBuffer() );
-	    
-            Vec2f uv[4];
-            uv[0] = Vec2f(0.0f,0.0f);
-            uv[1] = Vec2f(0.0f,1.0f);
-            uv[2] = Vec2f(1.0f,1.0f);
-            uv[3] = Vec2f(1.0f,0.0f);
-
-            float edge_level[4] = {
-              ipatch.ring[0].edge_level,
-              ipatch.ring[1].edge_level,
-              ipatch.ring[2].edge_level,
-              ipatch.ring[3].edge_level
-            };
-
-	    SubdivPatch1 tmp = SubdivPatch1(ipatch,
-					    g,
-					    i,
-					    subdiv_mesh,
-                                            uv,
-                                            edge_level);
-	    	    
-	    const BBox3fa bounds = getBounds(tmp,subdiv_mesh);
-	    
-	    tmp.store(&acc[currentID]);
-
-	    prefetch<PFHINT_L1EX>(&prims[currentID]);
-
-	    const float16 bmin = broadcast4to16f(&bounds.lower); 
-	    const float16 bmax = broadcast4to16f(&bounds.upper);
-          
-	    bounds_scene_min = min(bounds_scene_min,bmin);
-	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const float16 centroid2 = bmin+bmax;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-	    store4f(&prims[currentID].lower,bmin);
-	    store4f(&prims[currentID].upper,bmax);	
-	    prims[currentID].lower.a = currentID;
-	    prims[currentID].upper.a = 0;
-	  }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-
-    /* update global bounds */
-    Centroid_Scene_AABB bounds;
-    
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
-    global_bounds.extend_atomic(bounds);    
-  }
 
 
   void BVH4iBuilderSubdivMesh::updateLeaves(const size_t threadIndex, const size_t threadCount)
