@@ -113,6 +113,12 @@ namespace embree
      volatile int64_t data;
    };
 
+   struct CacheEntry
+   {
+     RWMutex mtx;
+     Tag tag;
+   };
+
  private:
    struct __aligned(64) ThreadWorkState {
      AtomicCounter counter;
@@ -155,6 +161,9 @@ namespace embree
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
 
+   __forceinline void lock  () { lockThread(threadIndex()); }
+   __forceinline void unlock() { unlockThread(threadIndex()); }
+
    /* per thread lock */
    __forceinline void lockThreadLoop (const unsigned int threadID) 
    { 
@@ -194,6 +203,37 @@ namespace embree
      return nullptr;
    }
 
+#if 0
+   template<typename Ty, typename Constructor>
+     static __forceinline Ty* lookup (CacheEntry& entry, const Constructor& constructor)
+   {
+     const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
+
+     while (true)
+     {
+       sharedLazyTessellationCache.lockThreadLoop(threadIndex);
+       Ty* patch = (Ty*) SharedLazyTessellationCache::lookup(&entry.tag);
+       if (patch) return patch;
+       
+       if (entry.mutex.try_write_lock())
+       {
+         void* ptr = sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Ty));
+         Ty* ret = constructor(ptr);
+          __memory_barrier();
+          entry.tag = SharedLazyTessellationCache::Tag(ptr);
+          entry.mutex.write_unlock();
+          return ret;
+       }
+       else
+       {
+         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);
+         continue;
+       }
+     }
+     return nullptr;
+   }
+#endif
+   
    static __forceinline size_t lookupIndex(volatile Tag* tag)
    {
      static const size_t REF_TAG      = 1;

@@ -564,10 +564,11 @@ namespace embree
     {
       size_t ofs = i*sizeof(float);
       float4 Pt, dPdut, dPdvt; 
-#if 0
-      Patch<float4> patch(getHalfEdge(primID),src+i*sizeof(float),stride);
-      patch.eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-#endif
+
+#if 1
+      /*Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
+          return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
+          });*/
 
 #if 1
       Patch<float4>* patch = nullptr;
@@ -586,7 +587,6 @@ namespace embree
         {
           void* ptr = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Patch<float4>));
           patch = new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
-
           __memory_barrier();
           entry.tag = SharedLazyTessellationCache::Tag(ptr);
           entry.mutex.write_unlock();
@@ -598,7 +598,7 @@ namespace embree
           continue;
         }
       }
-
+#endif
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
       
       SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
