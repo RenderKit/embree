@@ -89,10 +89,10 @@ namespace embree
   {
     mtx_threads.lock();
     const size_t id = numRenderThreads.add(1); 
-    if (numRenderThreads >= numMaxRenderThreads)
+    if (numRenderThreads >= numMaxRenderThreads) 
       { 
-	numMaxRenderThreads *= 2;
-	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads);
+    	numMaxRenderThreads *= 2;
+	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); // FIXME: this is buggy! cannot reallocate while thread are working on this array!
 
 	for (size_t i=id;i<numMaxRenderThreads;i++)
 	  threadWorkState[i].reset();
