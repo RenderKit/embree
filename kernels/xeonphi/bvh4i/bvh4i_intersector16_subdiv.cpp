@@ -422,86 +422,6 @@ namespace embree
 	}
 #else
 
-#if 1
-       while(1)
-	{
-	  /* per thread lock */
-	  while(1)
-	    {
-	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadIndex);	       
-	      if (unlikely(lock == 1))
-		{
-		  /* lock failed wait until sync phase is over */
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);	       
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(threadIndex,0);
-		}
-	      else
-		break;
-	    }
-
-	  SubdivPatch1* subdiv_patch = &patches[patchIndex];
-      
-	  static const size_t REF_TAG      = 1;
-	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-
-	  /* fast path for cache hit */
-	  {
-	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref.data;
-	    
-	    if (likely(subdiv_patch_root_ref)) 
-	      {
-		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK); // + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-		
-		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
-		  {
-		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);	      
-		    return subdiv_patch_root;
-		  }
-	      }
-	  }
-
-	  /* cache miss */
-	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
-
-	  subdiv_patch->write_lock();
-	  {
-	    const size_t subdiv_patch_root_ref    = subdiv_patch->root_ref.data;
-	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-
-	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
-	      {	      
-		const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
-		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		if (block_index == (size_t)-1)
-		  {
-		    /* cannot allocate => flush the cache */
-		    subdiv_patch->write_unlock();
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-		    continue;
-		  }
-		float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-		unsigned int currentIndex = 0;
-		BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-		size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-
-		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
-
-		assert( !(new_root_ref & REF_TAG) );
-		new_root_ref |= REF_TAG;
-		new_root_ref |= SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-		subdiv_patch->root_ref.data = new_root_ref;
-	      }
-	  }
-	  subdiv_patch->write_unlock();
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
-	}	      
-
-#else
-
       while(1)
       {
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadIndex);
@@ -527,7 +447,6 @@ namespace embree
         }
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
       }	      
-#endif
 
 #endif
     }
