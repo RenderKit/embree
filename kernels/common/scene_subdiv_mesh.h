@@ -484,12 +484,8 @@ namespace embree
 
     /*! interpolation cache */
   public:
-    struct CacheEntry {
-      RWMutex mutex;
-      SharedLazyTessellationCache::Tag tag;
-    };
-    std::vector<CacheEntry> vertex_buffer_tags[2];
-    std::vector<CacheEntry> user_buffer_tags[2];
+    std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
+    std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
 
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */

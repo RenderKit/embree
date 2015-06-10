@@ -115,7 +115,7 @@ namespace embree
 
    struct CacheEntry
    {
-     RWMutex mtx;
+     RWMutex mutex;
      Tag tag;
    };
 
@@ -203,9 +203,8 @@ namespace embree
      return nullptr;
    }
 
-#if 0
    template<typename Ty, typename Constructor>
-     static __forceinline Ty* lookup (CacheEntry& entry, const Constructor& constructor)
+     static __forceinline Ty* lookup (CacheEntry& entry, const Constructor constructor)
    {
      const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
 
@@ -232,7 +231,6 @@ namespace embree
      }
      return nullptr;
    }
-#endif
    
    static __forceinline size_t lookupIndex(volatile Tag* tag)
    {

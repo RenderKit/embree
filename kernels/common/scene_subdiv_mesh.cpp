@@ -547,7 +547,7 @@ namespace embree
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
-    std::vector<CacheEntry>* baseEntry = nullptr;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
       src    = userbuffers[bufID]->getPtr();
       stride = userbuffers[bufID]->getStride();
@@ -566,41 +566,11 @@ namespace embree
       float4 Pt, dPdut, dPdvt; 
 
 #if 1
-      /*Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
+      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(((stride+15)/16)*primID+i);
+      Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
           return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
-          });*/
-
-#if 1
-      Patch<float4>* patch = nullptr;
-      
-      while(1)
-      {
-        SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadIndex);
-       
-        const size_t blocks = (stride+15)/16;
-        CacheEntry& entry = baseEntry->at(blocks*primID+i);
-        patch = (Patch<float4>*) SharedLazyTessellationCache::lookup(&entry.tag);
-
-        if (patch) break;
-
-        if (entry.mutex.try_write_lock())
-        {
-          void* ptr = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Patch<float4>));
-          patch = new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
-          __memory_barrier();
-          entry.tag = SharedLazyTessellationCache::Tag(ptr);
-          entry.mutex.write_unlock();
-          break;
-        }
-        else
-        {
-          SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);
-          continue;
-        }
-      }
-#endif
+        });
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-      
       SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
 #endif
 
