@@ -76,7 +76,7 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
-    numMaxRenderThreads = MAX_MIC_THREADS;
+    numMaxRenderThreads = 1024; //MAX_MIC_THREADS;
     threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
 
     for (size_t i=0;i<numMaxRenderThreads;i++)
