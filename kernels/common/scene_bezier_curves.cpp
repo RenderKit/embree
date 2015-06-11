@@ -68,12 +68,30 @@ namespace embree
 #endif
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : curves.set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].set(ptr,offset,stride); break;
-    case RTC_USER_VERTEX_BUFFER0  : if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); userbuffers[0]->set(ptr,offset,stride);  break;
-    case RTC_USER_VERTEX_BUFFER1  : if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); userbuffers[1]->set(ptr,offset,stride);  break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    case RTC_INDEX_BUFFER  : 
+      curves.set(ptr,offset,stride); 
+      break;
+    case RTC_VERTEX_BUFFER0: 
+      vertices[0].set(ptr,offset,stride); 
+      vertices[0].checkPadding16();
+      break;
+    case RTC_VERTEX_BUFFER1: 
+      vertices[1].set(ptr,offset,stride); 
+      vertices[1].checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER0  : 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1  : 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
+      break;
+    default: 
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      break;
     }
   }
 

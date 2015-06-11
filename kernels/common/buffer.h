@@ -83,13 +83,20 @@ namespace embree
     }
 
     /*! returns pointer to first element */
-    __forceinline const char* getPtr() const {
-      return ptr_ofs;
+    __forceinline const char* getPtr( size_t i = 0 ) const {
+      return ptr_ofs + i*stride;
     }
 
     /*! returns buffer stride */
     __forceinline unsigned getStride() const {
       return stride;
+    }
+
+    /*! checks padding to 16 byte check, fails hard */
+    __forceinline void checkPadding16() const 
+    {
+       if (size()) 
+         volatile int w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
     }
 
   protected:
