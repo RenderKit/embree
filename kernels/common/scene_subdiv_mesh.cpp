@@ -561,7 +561,8 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
-      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup<Patch<float4,float4_t> >(entry,[&] (void* ptr) {
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+          void* ptr = SharedLazyTessellationCache::malloc(sizeof(Patch<float4,float4_t>));
           return new (ptr) Patch<float4,float4_t>(getHalfEdge(primID),src+i*sizeof(float),stride);
         });
       //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);

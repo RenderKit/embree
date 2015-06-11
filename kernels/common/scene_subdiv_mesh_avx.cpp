@@ -55,7 +55,8 @@ namespace embree
       if (i+8 > numFloats)
       {
         SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
+        Patch<float4>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+            void* ptr = SharedLazyTessellationCache::malloc(sizeof(Patch<float4>));
             return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
           });
         float4 Pt, dPdut, dPdvt; 
@@ -69,7 +70,8 @@ namespace embree
       else
       {
         SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float8>* patch = SharedLazyTessellationCache::lookup<Patch<float8> >(entry,[&] (void* ptr) {
+        Patch<float8>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+            void* ptr = SharedLazyTessellationCache::malloc(sizeof(Patch<float8>));
             return new (ptr) Patch<float8>(getHalfEdge(primID),src+i*sizeof(float),stride);
           });
         float8 Pt, dPdut, dPdvt; 

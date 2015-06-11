@@ -49,7 +49,7 @@ namespace embree
     {
       auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
         const unsigned vtx = p->getStartVertexIndex();
-        return Vertex_t::loadu((float*)&vertices[vtx*stride]);  // FIXME: reads behind the end of the array
+        return Vertex_t::loadu((float*)&vertices[vtx*stride]);
       };
 
       switch (edge->type) 
