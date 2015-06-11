@@ -319,7 +319,6 @@ namespace embree
     else 
 #endif
       geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
-
     return geom->id;
   }
 

@@ -196,7 +196,6 @@ namespace embree
       assert( T != float16::zero() );
 
       ray.update(1,k,float16(t[i]),float16(uu),float16::zero(),swAAAA(T),swBBBB(T),swCCCC(T),curve_in.geomID,curve_in.primID);
-
       return true;
     }
 

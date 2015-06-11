@@ -310,13 +310,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     /* interpolate diffuse color */
+
     Vec3f diffuse = make_Vec3f(1.0f,0.0f,0.0f);
-    if (ray.geomID > 0) {
+    if (ray.geomID > 0) 
+    {
       foreach_unique (geomID in ray.geomID) {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
       }
     }
-
     /* calculate smooth shading normal */
     Vec3f Ng = ray.Ng;
     if (ray.geomID >= 3) {
@@ -327,7 +328,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       //return dPdu;
       Ng = cross(dPdv,dPdu);
     }
-
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     

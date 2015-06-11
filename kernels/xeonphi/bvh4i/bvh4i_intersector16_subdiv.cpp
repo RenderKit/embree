@@ -473,8 +473,11 @@ namespace embree
       const float16 zero       = float16::zero();
 
       store16f(stack_dist,inf);
+
+      const int16 old_primID = ray16.primID;
+      const int16 old_geomID = ray16.geomID;
+
       ray16.primID = select(m_valid,int16(-1),ray16.primID);
-      ray16.geomID = select(m_valid,int16(-1),ray16.geomID);
 
       Scene *const scene                         = (Scene*)bvh->geometry;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
@@ -584,12 +587,16 @@ namespace embree
 	}
 
 
-      /* update primID/geomID and compute normals */
-      bool16 m_hit = (ray16.primID != -1) & m_valid;
+      /* update primID/geomID and compute normals, primID was reset to -1, update only changed slots */
+      const int16 new_primID = ray16.primID;
+      ray16.geomID     = old_geomID;
+      ray16.primID     = old_primID;
+
+      bool16 m_hit = (new_primID != -1) & m_valid; 
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
         {
-	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray16.primID[rayIndex]];
+	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[new_primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
@@ -639,8 +646,7 @@ namespace embree
       size_t threadIndex = SharedLazyTessellationCache::threadIndex();
 
       stack_node[0] = BVH4i::invalidNode;
-      ray16.primID = select(m_valid,int16(-1),ray16.primID);
-      ray16.geomID = select(m_valid,int16(-1),ray16.geomID);
+      //ray16.primID = select(m_valid,int16(-1),ray16.primID);
 
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
