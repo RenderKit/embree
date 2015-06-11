@@ -39,6 +39,10 @@ namespace embree
     { 
     }
 
+    SubdivPatch1 (const unsigned int gID,
+                  const unsigned int pID,
+                  const SubdivMesh *const mesh) : SubdivPatch1Base(gID,pID,mesh) {}
+    
   };
 
 };

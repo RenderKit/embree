@@ -32,7 +32,7 @@ namespace embree
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
     typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
-    typedef EvalPatchT<Vertex> EvalPatch;
+    typedef EvalPatchT<Vertex,Vertex_t> EvalPatch;
 
     enum Type {
       INVALID_PATCH = 0,
@@ -49,7 +49,7 @@ namespace embree
     {
       auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
         const unsigned vtx = p->getStartVertexIndex();
-        return Vertex::loadu((float*)&vertices[vtx*stride]);  // FIXME: reads behind the end of the array
+        return Vertex_t::loadu((float*)&vertices[vtx*stride]);  // FIXME: reads behind the end of the array
       };
 
       switch (edge->type) 
@@ -63,7 +63,7 @@ namespace embree
   
       case SubdivMesh::IRREGULAR_QUAD_PATCH:
       {
-        CatmullClarkPatchT<Vertex> patch;
+        CatmullClarkPatch patch;
         patch.init2(edge,loader);
         ((GregoryPatch*)data)->init(patch);
         type = GREGORY_PATCH;
@@ -83,7 +83,7 @@ namespace embree
       switch (type) {
       case BSPLINE_PATCH: return ((BSplinePatch*)data)->eval(uu,vv);
       case GREGORY_PATCH: return ((GregoryPatch*)data)->eval(uu,vv);
-      case EVAL_PATCH   : { Vertex P; return ((EvalPatch*)data)->eval(uu,vv,&p,nullptr,nullptr); return P; }
+      case EVAL_PATCH   : { Vertex P; return ((EvalPatch*)data)->eval(uu,vv,&P,nullptr,nullptr); return P; }
       }
       return zero;
     }

@@ -16,10 +16,7 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-
-#if !defined(__MIC__)
-#include "subdiv/feature_adaptive_eval.h"
-#endif
+#include "subdiv/patch.h"
 
 namespace embree
 {
@@ -41,54 +38,47 @@ namespace embree
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
+    size_t bufID = buffer&0xFFFF;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
       src    = userbuffers[buffer&0xFFFF]->getPtr();
       stride = userbuffers[buffer&0xFFFF]->getStride();
+      baseEntry = &user_buffer_tags[bufID];
     } else {
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();
+      baseEntry = &vertex_buffer_tags[bufID];
     }
     
-    for (size_t i=0; i<numFloats; i+=8)
+    for (size_t i=0,slot=0; i<numFloats; slot++)
     {
-      size_t ofs = i*sizeof(float);
-      if (i+4 > numFloats)
+      if (i+8 > numFloats)
       {
-        const size_t n = numFloats-i;
-        auto load = [&](const SubdivMesh::HalfEdge* p) { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return float4::loadu((float*)&src[vtx*stride+ofs],n); 
-        };
+        SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
+        Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
+            return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
+          });
         float4 Pt, dPdut, dPdvt; 
-        feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
-        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
-        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
+        patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        SharedLazyTessellationCache::unlock();
+        if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
+        if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
+        if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
+        i+=4;
       }
-      else if (i+8 > numFloats) 
-      {
-        const size_t n = numFloats-i;
-        auto load = [&](const SubdivMesh::HalfEdge* p) { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return float8::loadu((float*)&src[vtx*stride+ofs],n); 
-        };
-        float8 Pt, dPdut, dPdvt; 
-        feature_adaptive_point_eval<float8>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-        if (P   ) for (size_t j=i; j<numFloats; j++) P[j] = Pt[j-i];
-        if (dPdu) for (size_t j=i; j<numFloats; j++) dPdu[j] = dPdut[j-i];
-        if (dPdv) for (size_t j=i; j<numFloats; j++) dPdv[j] = dPdvt[j-i];
-      } 
       else
       {
-        auto load = [&](const SubdivMesh::HalfEdge* p) { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return float8::loadu((float*)&src[vtx*stride+ofs]);
-        };
+        SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
+        Patch<float8>* patch = SharedLazyTessellationCache::lookup<Patch<float8> >(entry,[&] (void* ptr) {
+            return new (ptr) Patch<float8>(getHalfEdge(primID),src+i*sizeof(float),stride);
+          });
         float8 Pt, dPdut, dPdvt; 
-        feature_adaptive_point_eval<float8>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        SharedLazyTessellationCache::unlock();
         if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<i+8; j++) dPdu[j] = dPdut[j-i];
         if (dPdv) for (size_t j=i; j<i+8; j++) dPdv[j] = dPdvt[j-i];
+        i+=8;
       }
     }
     AVX_ZERO_UPPER();

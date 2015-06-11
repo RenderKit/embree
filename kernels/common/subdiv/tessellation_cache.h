@@ -110,7 +110,13 @@ namespace embree
        data = new_root_ref;
      }
 
-     int64_t data;
+     volatile int64_t data;
+   };
+
+   struct CacheEntry
+   {
+     RWMutex mutex;
+     Tag tag;
    };
 
  private:
@@ -131,7 +137,6 @@ namespace embree
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
-   __aligned(64) AtomicMutex   mtx_threads;
 
 
 
@@ -154,6 +159,9 @@ namespace embree
 
    __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
    __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
+
+   static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadIndex()); }
+   static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadIndex()); }
 
    /* per thread lock */
    __forceinline void lockThreadLoop (const unsigned int threadID) 
@@ -194,6 +202,36 @@ namespace embree
      return nullptr;
    }
 
+   template<typename Ty, typename Constructor>
+     static __forceinline Ty* lookup (CacheEntry& entry, const Constructor constructor)
+   {
+     const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
+
+     while (true)
+     {
+       sharedLazyTessellationCache.lockThreadLoop(threadIndex);
+       Ty* patch = (Ty*) SharedLazyTessellationCache::lookup(&entry.tag);
+       if (patch) return patch;
+       
+       if (entry.mutex.try_write_lock())
+       {
+         void* ptr = sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Ty));
+         Ty* ret = constructor(ptr);
+          __memory_barrier();
+          entry.tag = SharedLazyTessellationCache::Tag(ptr);
+          __memory_barrier();
+          entry.mutex.write_unlock();
+          return ret;
+       }
+       else
+       {
+         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);
+         continue;
+       }
+     }
+     return nullptr;
+   }
+   
    static __forceinline size_t lookupIndex(volatile Tag* tag)
    {
      static const size_t REF_TAG      = 1;

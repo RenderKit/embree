@@ -16,15 +16,11 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
+#include "subdiv/patch.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
 #include "../algorithms/parallel_for.h"
-
-#if !defined(__MIC__)
-#include "subdiv/feature_adaptive_eval.h"
-#include "subdiv/patch.h"
-#endif
 
 namespace embree
 {
@@ -436,19 +432,17 @@ namespace embree
     if (parent->isInterpolatable()) 
     {
 #if defined (__TARGET_AVX__)
-      size_t interpolation_width = hasISA(AVX) ? 8 : 4;
+      auto numInterpolationSlots = [] (size_t stride) {
+        if (hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
+      };
 #else
-      size_t interpolation_width = 4;
+      auto numInterpolationSlots = [] (size_t stride) {
+        return numInterpolationSlots4(stride);
+      };
 #endif
       for (size_t i=0; i<2; i++) {
-        if (vertices[i]) {
-          size_t multiplier = (vertices[i].getStride()+4*interpolation_width-1)/(4*interpolation_width);
-          vertex_buffer_tags[i].resize(numFaces*multiplier);
-        }
-        if (userbuffers[i]) {
-          size_t multiplier = (userbuffers[i]->getStride()+4*interpolation_width-1)/(4*interpolation_width);
-          user_buffer_tags[i].resize(numFaces*multiplier);
-        }
+        if (vertices   [i]) vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
+        if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
       }
     }
 
@@ -539,15 +533,13 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-#if !defined(__MIC__) // FIXME: not working on MIC yet
-
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
     const char* src = nullptr; 
     size_t stride = 0;
     size_t bufID = buffer&0xFFFF;
-    std::vector<CacheEntry>* baseEntry = nullptr;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
     if (buffer >= RTC_USER_VERTEX_BUFFER0) {
       src    = userbuffers[bufID]->getPtr();
       stride = userbuffers[bufID]->getStride();
@@ -557,64 +549,26 @@ namespace embree
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
+#if defined (__MIC__)
+#define float4 Vec3fa
+#define float4_t Vec3fa_t
+#else
+#define float4_t float4
+#endif
 
-    const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
-
-    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    for (size_t i=0; i<numFloats; i+=4)
     {
-      size_t ofs = i*sizeof(float);
+      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup<Patch<float4,float4_t> >(entry,[&] (void* ptr) {
+          return new (ptr) Patch<float4,float4_t>(getHalfEdge(primID),src+i*sizeof(float),stride);
+        });
+      //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);
       float4 Pt, dPdut, dPdvt; 
-#if 0
-      Patch<float4> patch(getHalfEdge(primID),src+i*sizeof(float),stride);
-      patch.eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-#endif
-
-#if 1
-      Patch<float4>* patch = nullptr;
-      
-      while(1)
-      {
-        SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(threadIndex);
-       
-        const size_t blocks = (stride+15)/16;
-        CacheEntry& entry = baseEntry->at(blocks*primID+i);
-        patch = (Patch<float4>*) SharedLazyTessellationCache::lookup(&entry.tag);
-
-        if (patch) break;
-
-        if (entry.mutex.try_write_lock())
-        {
-          void* ptr = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Patch<float4>));
-          patch = new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
-
-          __memory_barrier();
-          entry.tag = SharedLazyTessellationCache::Tag(ptr);
-          entry.mutex.write_unlock();
-          break;
-        }
-        else
-        {
-          SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);
-          continue;
-        }
-      }
-
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-      
-      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);		  
-#endif
-
-#if 0
-      auto load = [&](const SubdivMesh::HalfEdge* p) -> float4 { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return float4::loadu((float*)&src[vtx*stride+ofs]);  // FIXME: reads behind the end of the array
-      };
-      feature_adaptive_point_eval<float4>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-#endif
+      SharedLazyTessellationCache::unlock();
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
-#endif
   }
 }

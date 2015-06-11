@@ -92,6 +92,14 @@ namespace embree
     __forceinline Vec3fa_t( const Vec3fa& other ) { 
       m512 = _mm512_extload_ps(&other,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE); 
     }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Loading
+    ////////////////////////////////////////////////////////////////////////////////
+
+    static __forceinline Vec3fa_t loadu( const float* const a ) { 
+      return _mm512_extload_ps(a,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);  // FIXME: should be unaligned load
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -253,6 +261,9 @@ namespace embree
   __forceinline float  area       ( const Vec3fa& d )                    { return 2.0f*halfArea(d); }
   __forceinline Vec3fa_t reflect  ( const Vec3fa_t& V, const Vec3fa_t& N ) { return 2.0f*dot(V,N)*N-V; }
   
+  __forceinline Vec3fa_t normalize_safe( const Vec3fa_t& a ) { 
+    const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select

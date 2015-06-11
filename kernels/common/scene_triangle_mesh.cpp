@@ -154,8 +154,6 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-#if !defined(__MIC__) // FIXME: not working on MIC yet
-
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -168,6 +166,8 @@ namespace embree
       src    = vertices[buffer&0xFFFF].getPtr();
       stride = vertices[buffer&0xFFFF].getStride();
     }
+
+#if !defined(__MIC__) // FIXME: not working on MIC yet
 
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
@@ -194,6 +194,23 @@ namespace embree
         if (dPdv) float4::storeu(dPdv+i,p2-p0);
       }
     }
+
+#else
+
+    for (size_t i=0; i<numFloats; i+=16) 
+    {
+      size_t ofs = i*sizeof(float);
+      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      const float w = 1.0f-u-v;
+      const Triangle& tri = triangle(primID);
+      const float16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
+      const float16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
+      const float16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
+      if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
+      if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);
+    }
+
 #endif
   }
 
