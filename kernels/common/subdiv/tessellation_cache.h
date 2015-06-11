@@ -68,12 +68,14 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
 
-
- struct LocalTessellationCacheThreadInfo
- {
-   unsigned int id;
-   LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
+ struct __aligned(64) ThreadWorkState {
+   AtomicCounter counter;
+   ThreadWorkState *next;
+   
+   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); counter = 0; next = NULL; }
+   __forceinline void reset() { counter = 0; }
  };
+
 
  class __aligned(64) SharedLazyTessellationCache 
  {
@@ -82,16 +84,16 @@ namespace embree
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 
     /*! Per thread tessellation ref cache */
-   static __thread LocalTessellationCacheThreadInfo* localThreadInfo;
+   static __thread ThreadWorkState* init_t_state;
 
    /*! Creates per thread tessellation cache */
    static void createLocalThreadInfo();
 
-   static __forceinline size_t threadIndex() 
+   static __forceinline ThreadWorkState *threadState() 
    {
-     if (unlikely(!localThreadInfo))
-       createLocalThreadInfo();
-     return localThreadInfo->id;
+     if (unlikely(!init_t_state))
+       init_t_state = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
+     return init_t_state;
    }
 
    struct Tag
@@ -120,11 +122,6 @@ namespace embree
    };
 
  private:
-   struct __aligned(64) ThreadWorkState {
-     AtomicCounter counter;
-     ThreadWorkState() { counter = 0; }
-     __forceinline void reset() { counter = 0; }
-   };
 
    float *data;
    size_t size;
@@ -152,28 +149,28 @@ namespace embree
       
    SharedLazyTessellationCache();
 
-   size_t getNextRenderThreadID();
+   ThreadWorkState *getNextRenderThreadWorkState();
 
    __forceinline size_t getCurrentIndex() { return index; }
    __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
 
-   __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
-   __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
+   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
+   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
 
-   static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadIndex()); }
-   static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadIndex()); }
+   static __forceinline void lock  () { PING; sharedLazyTessellationCache.lockThread(threadState()); }
+   static __forceinline void unlock() { PING; sharedLazyTessellationCache.unlockThread(threadState()); }
 
    /* per thread lock */
-   __forceinline void lockThreadLoop (const unsigned int threadID) 
+   __forceinline void lockThreadLoop (ThreadWorkState *const t_state) 
    { 
      while(1)
      {
-       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(threadID);
+       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
        if (unlikely(lock == 1))
        {
          /* lock failed wait until sync phase is over */
-         sharedLazyTessellationCache.unlockThread(threadID);	       
-         sharedLazyTessellationCache.waitForUsersLessEqual(threadID,0);
+         sharedLazyTessellationCache.unlockThread(t_state);	       
+         sharedLazyTessellationCache.waitForUsersLessEqual(t_state,0);
        }
        else
          break;
@@ -205,11 +202,11 @@ namespace embree
    template<typename Constructor>
      static __forceinline auto lookup (CacheEntry& entry, const Constructor constructor) -> decltype(constructor())
    {
-     const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
+     ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
      while (true)
      {
-       sharedLazyTessellationCache.lockThreadLoop(threadIndex);
+       sharedLazyTessellationCache.lockThreadLoop(t_state);
        void* patch = SharedLazyTessellationCache::lookup(&entry.tag);
        if (patch) return (decltype(constructor())) patch;
        
@@ -224,7 +221,7 @@ namespace embree
        }
        else
        {
-         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadIndex);
+         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
          continue;
        }
      }
@@ -252,9 +249,9 @@ namespace embree
      return -1;
    }
 
-   __forceinline void prefetchThread(const unsigned int threadID) { 
+   __forceinline void prefetchThread(ThreadWorkState *const t_state) { 
 #if defined(__MIC__)
-     prefetch<PFHINT_L1EX>(&threadWorkState[threadID].counter);  
+     prefetch<PFHINT_L1EX>(&t_state->counter);  
 #endif
    }
 
@@ -268,7 +265,7 @@ namespace embree
 #endif
    }
 
-   void waitForUsersLessEqual(const unsigned int threadID,
+   void waitForUsersLessEqual(ThreadWorkState *const t_state,
 			      const unsigned int users);
     
    __forceinline size_t alloc(const size_t blocks)
@@ -278,7 +275,7 @@ namespace embree
      return index;
    }
 
-   static __forceinline size_t allocIndexLoop(const unsigned int threadID, const size_t blocks)
+   static __forceinline size_t allocIndexLoop(ThreadWorkState *const t_state, const size_t blocks)
    {
      size_t block_index = -1;
      while (true)
@@ -286,9 +283,9 @@ namespace embree
        block_index = sharedLazyTessellationCache.alloc(blocks);
        if (block_index == (size_t)-1)
        {
-         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.unlockThread(t_state);		  
          sharedLazyTessellationCache.resetCache();
-         sharedLazyTessellationCache.lockThread(threadID);
+         sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
        break;
@@ -296,7 +293,7 @@ namespace embree
      return block_index;
    }
 
-   static __forceinline void* allocLoop(const unsigned int threadID, const size_t bytes)
+   static __forceinline void* allocLoop(ThreadWorkState *const t_state, const size_t bytes)
    {
      size_t block_index = -1;
      while (true)
@@ -304,9 +301,9 @@ namespace embree
        block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
        if (block_index == (size_t)-1)
        {
-         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.unlockThread(t_state);		  
          sharedLazyTessellationCache.resetCache();
-         sharedLazyTessellationCache.lockThread(threadID);
+         sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
        break;
@@ -317,15 +314,15 @@ namespace embree
    static __forceinline void* malloc(const size_t bytes)
    {
      size_t block_index = -1;
-     size_t threadID = threadIndex();
+     ThreadWorkState *const t_state = threadState();
      while (true)
      {
        block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
        if (block_index == (size_t)-1)
        {
-         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.unlockThread(t_state);		  
          sharedLazyTessellationCache.resetCache();
-         sharedLazyTessellationCache.lockThread(threadID);
+         sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
        break;

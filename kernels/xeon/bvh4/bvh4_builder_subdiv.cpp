@@ -806,7 +806,7 @@ namespace embree
             for (size_t f=r.begin(); f!=r.end(); ++f) 
             {          
               if (!mesh->valid(f)) continue;
-#define ENABLE_FEATURE_ADAPTIVE 0
+#define ENABLE_FEATURE_ADAPTIVE 1
 
 #if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),

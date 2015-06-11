@@ -52,7 +52,7 @@ namespace embree
 #endif
         SubdivPatch1Cached* current_patch;
         SubdivPatch1Cached* hit_patch;
-	unsigned int threadID;
+        ThreadWorkState *t_state;
         Ray& r;
 #if _DEBUG
 	size_t numPrimitives;
@@ -69,8 +69,7 @@ namespace embree
 
           current_patch = nullptr;
           hit_patch     = nullptr;
-          threadID = SharedLazyTessellationCache::threadIndex();
-
+          t_state = SharedLazyTessellationCache::threadState();
 #if _DEBUG
 	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
 	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
@@ -81,7 +80,7 @@ namespace embree
         __forceinline ~Precalculations() 
         {
 	  if (current_patch)
-            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(threadID);
+            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
           
           if (unlikely(hit_patch != nullptr))
           {
