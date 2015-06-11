@@ -322,14 +322,16 @@ RTCORE_API void* rtcGetUserData (RTCScene scene, unsigned geomID);
 
 /*! Interpolates user data to some u/v location. The data buffer
  *  specifies per vertex data to interpolate and can be one of the
- *  RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
- *  numFloats floating point values to interpolate for each vertex of
- *  the geometry. The dP array will get filled with the interpolated
- *  data and the dPdu and dPdv arrays with the u and v derivative of
- *  the interpolation. If the pointers dP is NULL, the value will not
- *  get calculated. If dPdu and dPdv are NULL the derivatives will not
- *  get calculated. Both dPdu and dPdv have to be either valid or
- *  NULL. */
+ *  RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
+ *  contain numFloats floating point values to interpolate for each
+ *  vertex of the geometry. The dP array will get filled with the
+ *  interpolated data and the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation. If the pointers dP is NULL, the
+ *  value will not get calculated. If dPdu and dPdv are NULL the
+ *  derivatives will not get calculated. Both dPdu and dPdv have to be
+ *  either valid or NULL. The buffer has to be padded at the end such
+ *  that the last element can be read safely using SSE
+ *  instructions. */
 RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, RTCBufferType buffer, 
                                float* P, float* dPdu, float* dPdv, size_t numFloats);
 
@@ -338,15 +340,17 @@ RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID,
  *  the u/v arrays are valid (-1 denotes valid, and 0 invalid). If the
  *  valid pointer is NULL all elements are considers valid. The data
  *  buffer specifies per vertex data to interpolate and can be one of
- *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to contain
- *  numFloats floating point values to interpolate for each vertex of
- *  the geometry. The dP array will get filled with the interpolated
- *  data, and the dPdu and dPdv arrays with the u and v derivative of
- *  the interpolation. If the pointers dP is NULL, the value will not
- *  get calculated. If dPdu and dPdv are NULL the derivatives will not
- *  get calculated. Both dPdu and dPdv have to be either valid or
- *  NULL. These destination arrays are filled in structure of array
- *  (SoA) layout. */
+ *  the RTC_VERTEX_BUFFER0/1 or RTC_USER_VERTEX_BUFFER0/1 and has to
+ *  contain numFloats floating point values to interpolate for each
+ *  vertex of the geometry. The dP array will get filled with the
+ *  interpolated data, and the dPdu and dPdv arrays with the u and v
+ *  derivative of the interpolation. If the pointers dP is NULL, the
+ *  value will not get calculated. If dPdu and dPdv are NULL the
+ *  derivatives will not get calculated. Both dPdu and dPdv have to be
+ *  either valid or NULL. These destination arrays are filled in
+ *  structure of array (SoA) layout. The buffer has to be padded at
+ *  the end such that the last element can be read safely using SSE
+ *  instructions.*/
 RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                 const void* valid, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, 

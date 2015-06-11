@@ -233,30 +233,6 @@ namespace embree
     }
   }
 
-  template<typename Vertex, typename Vertex_t>
-    struct EvalPatchT
-  {
-    __forceinline EvalPatchT (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
-      : edge(edge), vertices(vertices), stride(stride) {}
-
-    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
-    {
-      auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return Vertex_t::loadu((float*)&vertices[vtx*stride]);  // FIXME: reads behind the end of the array
-      };
-
-      GeneralCatmullClarkPatchT<Vertex,Vertex_t> patch;
-      patch.init2(edge,loader);
-      FeatureAdaptivePointEval<Vertex,Vertex_t> eval(patch,u,v,P,dPdu,dPdv); 
-    }
-
-  public:
-    const SubdivMesh::HalfEdge* const edge;
-    const char* const vertices;
-    const size_t stride;
-  };
-
   struct FeatureAdaptiveEval
   {
     const size_t x0,x1;

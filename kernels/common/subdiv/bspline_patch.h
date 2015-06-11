@@ -251,7 +251,11 @@ namespace embree
     public:
       
       BSplinePatchT () {}
-      
+
+      BSplinePatchT (const CatmullClarkPatch& patch) {
+        init(patch);
+      }
+
       __forceinline void init( FinalQuad& quad ) const
       {
         quad.vtx[0] = v[1][1];

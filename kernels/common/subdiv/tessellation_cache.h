@@ -202,23 +202,22 @@ namespace embree
      return nullptr;
    }
 
-   template<typename Ty, typename Constructor>
-     static __forceinline Ty* lookup (CacheEntry& entry, const Constructor constructor)
+   template<typename Constructor>
+     static __forceinline auto lookup (CacheEntry& entry, const Constructor constructor) -> decltype(constructor())
    {
      const size_t threadIndex = SharedLazyTessellationCache::threadIndex();
 
      while (true)
      {
        sharedLazyTessellationCache.lockThreadLoop(threadIndex);
-       Ty* patch = (Ty*) SharedLazyTessellationCache::lookup(&entry.tag);
-       if (patch) return patch;
+       void* patch = SharedLazyTessellationCache::lookup(&entry.tag);
+       if (patch) return (decltype(constructor())) patch;
        
        if (entry.mutex.try_write_lock())
        {
-         void* ptr = sharedLazyTessellationCache.allocLoop(threadIndex,sizeof(Ty));
-         Ty* ret = constructor(ptr);
+         auto ret = constructor();
           __memory_barrier();
-          entry.tag = SharedLazyTessellationCache::Tag(ptr);
+          entry.tag = SharedLazyTessellationCache::Tag(ret);
           __memory_barrier();
           entry.mutex.write_unlock();
           return ret;
@@ -229,7 +228,6 @@ namespace embree
          continue;
        }
      }
-     return nullptr;
    }
    
    static __forceinline size_t lookupIndex(volatile Tag* tag)
@@ -301,6 +299,25 @@ namespace embree
    static __forceinline void* allocLoop(const unsigned int threadID, const size_t bytes)
    {
      size_t block_index = -1;
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(threadID);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(threadID);
+         continue; 
+       }
+       break;
+     }
+     return sharedLazyTessellationCache.getBlockPtr(block_index);
+   }
+
+   static __forceinline void* malloc(const size_t bytes)
+   {
+     size_t block_index = -1;
+     size_t threadID = threadIndex();
      while (true)
      {
        block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);

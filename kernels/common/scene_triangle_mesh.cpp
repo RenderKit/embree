@@ -64,23 +64,23 @@ namespace embree
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-
-      /* test if array is properly padded */
-      if (vertices[0].size()) 
-        volatile int w = *((int*)vertices[0].getPtr(vertices[0].size()-1)+3); // FIXME: is failing hard avoidable?
-
+      vertices[0].checkPadding16();
       break;
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-
-      /* test if array is properly padded */
-      if (vertices[1].size()) 
-        volatile int w = *((int*)vertices[1].getPtr(vertices[1].size()-1)+3); // FIXME: is failing hard avoidable?
-      
+      vertices[1].checkPadding16();
       break;
 
-    case RTC_USER_VERTEX_BUFFER0: if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); userbuffers[0]->set(ptr,offset,stride);  break;
-    case RTC_USER_VERTEX_BUFFER1: if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); userbuffers[1]->set(ptr,offset,stride);  break;
+    case RTC_USER_VERTEX_BUFFER0: 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1: 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
+      break;
 
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");

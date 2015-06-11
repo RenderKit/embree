@@ -49,14 +49,16 @@ namespace embree
       stride = vertices[buffer&0xFFFF].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
+
+    auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
     
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
       if (i+8 > numFloats)
       {
         SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float4>* patch = SharedLazyTessellationCache::lookup<Patch<float4> >(entry,[&] (void* ptr) {
-            return new (ptr) Patch<float4>(getHalfEdge(primID),src+i*sizeof(float),stride);
+        Patch<float4>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+            return Patch<float4>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
           });
         float4 Pt, dPdut, dPdvt; 
         patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
@@ -69,8 +71,8 @@ namespace embree
       else
       {
         SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float8>* patch = SharedLazyTessellationCache::lookup<Patch<float8> >(entry,[&] (void* ptr) {
-            return new (ptr) Patch<float8>(getHalfEdge(primID),src+i*sizeof(float),stride);
+        Patch<float8>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+            return Patch<float8>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
           });
         float8 Pt, dPdut, dPdvt; 
         patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);

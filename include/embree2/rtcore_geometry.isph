@@ -285,7 +285,9 @@ void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID);
  *  get calculated. If dPdu and dPdv are NULL the derivatives will not
  *  get calculated. Both dPdu and dPdv have to be either valid or
  *  NULL. These destination arrays are filled in structure of array
- *  (SoA) layout. */
+ *  (SoA) layout. The buffer has to be padded at the end such
+ *  that the last element can be read safely using SSE
+ *  instructions. */
 void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primIDs, varying float u, varying float v, 
                     uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats);

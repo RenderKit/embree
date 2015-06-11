@@ -98,22 +98,24 @@ namespace embree
 
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)vertices[0].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
-      }
+      vertices[0].checkPadding16();
       break;
 
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)vertices[1].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
-      }
+      vertices[1].checkPadding16();
       break;
 
-    case RTC_USER_VERTEX_BUFFER0: if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices,stride)); userbuffers[0]->set(ptr,offset,stride);  break;
-    case RTC_USER_VERTEX_BUFFER1: if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices,stride)); userbuffers[1]->set(ptr,offset,stride);  break;
+    case RTC_USER_VERTEX_BUFFER0: 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices,stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1: 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices,stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
+      break;
 
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
@@ -559,8 +561,9 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
-      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup<Patch<float4,float4_t> >(entry,[&] (void* ptr) {
-          return new (ptr) Patch<float4,float4_t>(getHalfEdge(primID),src+i*sizeof(float),stride);
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+          auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
+          return Patch<float4,float4_t>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
         });
       //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);
       float4 Pt, dPdut, dPdvt; 
