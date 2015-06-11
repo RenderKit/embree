@@ -30,6 +30,12 @@ namespace embree
   public:
     Vertex v[4][4];
     Vertex f[2][2];
+
+    __forceinline GregoryPatchT() {}
+
+    __forceinline GregoryPatchT(const CatmullClarkPatch& patch) {
+      init(patch);
+    }
     
     __forceinline Vertex& p0() { return v[0][0]; }
     __forceinline Vertex& p1() { return v[0][3]; }

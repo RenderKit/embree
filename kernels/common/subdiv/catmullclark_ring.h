@@ -374,32 +374,31 @@ namespace embree
     }
 
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
+    __forceinline bool isGregory() const 
+    {
+      if (vertex_crease_weight == (float)pos_inf) 
+        return true; // FIXME: wrong !!!!!
+
+      if (vertex_crease_weight > 0.0f) 
+        return false;
+      
+      for (size_t i=1; i<face_valence; i++) 
+        if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
+          return false;
+      
+      if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
+        return false;
+      
+      if (!noForcedSubdivision)
+        return false;
+
+      return true;
+    }
+
+    /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregoryOrFinal(const size_t depth) const 
     {
-      if (depth < MAX_DEPTH_SUBDIVISION && vertex_level > 1.0f )      
-	{
-          if (vertex_crease_weight == (float)pos_inf) return true;
-
-	  if (vertex_crease_weight > 0.0f) 
-	      return false;
-	
-	  for (size_t i=1; i<face_valence; i++) 
-	    if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	      {
-		return false;
-	      }
-	  
-	  if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	    {
-	      return false;
-	    }
-
-
-	  if (!noForcedSubdivision)
-	    {
-	      return false;
-	    }
-      }
+      if (depth < MAX_DEPTH_SUBDIVISION && vertex_level > 1.0f) return isGregory();
       return true;
     }
     

@@ -109,6 +109,15 @@ namespace embree
       return ring0 && ring1 && ring2 && ring3;
     }
 
+    /*! returns true of the patch is a Gregory patch */
+    __forceinline bool isGregory() const {
+      const bool ring0 = ring[0].isGregory();
+      const bool ring1 = ring[1].isGregory();
+      const bool ring2 = ring[2].isGregory();
+      const bool ring3 = ring[3].isGregory();
+      return ring0 && ring1 && ring2 && ring3;
+    }
+
     static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
 					   const CatmullClark1RingT<Vertex,Vertex_t>& p1,
 					   CatmullClark1RingT<Vertex,Vertex_t>& dest0,
