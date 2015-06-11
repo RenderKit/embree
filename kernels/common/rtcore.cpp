@@ -1118,7 +1118,7 @@ namespace embree
     float* Pt = P ? P_tmp : nullptr;
     float* dPdut = dPdu ? dPdu_tmp : nullptr;
     float* dPdvt = dPdv ? dPdv_tmp : nullptr;
-    
+
     for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
     {
       if (valid && !valid[i]) continue;
