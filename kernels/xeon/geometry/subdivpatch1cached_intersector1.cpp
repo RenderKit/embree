@@ -124,23 +124,27 @@ namespace embree
         
         if (subdiv_patch->try_write_lock())
         {
-          BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
+          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
+          {
+            BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
 #if COMPACT == 1
-          size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
-          
+            size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+            
 #else                
-          size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
+            size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
-          __memory_barrier();
-          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
-          
+            __memory_barrier();
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
+            
 #if _DEBUG
-          const size_t patchIndex = subdiv_patch - pre.array;
-          assert(patchIndex < pre.numPrimitives);
-          CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
+            const size_t patchIndex = subdiv_patch - pre.array;
+            assert(patchIndex < pre.numPrimitives);
+            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
 #endif
+            subdiv_patch->write_unlock();
+            return new_root_ref;
+          }
           subdiv_patch->write_unlock();
-          return new_root_ref;
         }
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
       }

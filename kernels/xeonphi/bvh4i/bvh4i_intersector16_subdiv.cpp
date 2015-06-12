@@ -433,16 +433,19 @@ namespace embree
         
         if (subdiv_patch->try_write_lock())
         {
-          const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
-          size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocIndexLoop(t_state,subdiv_patch->grid_subtree_size_64b_blocks);
-          float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-          unsigned int currentIndex = 0;
-          BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-          size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem; // - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          
-          CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
-          
-          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
+          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
+          {
+            const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
+            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocIndexLoop(t_state,subdiv_patch->grid_subtree_size_64b_blocks);
+            float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+            unsigned int currentIndex = 0;
+            BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
+            size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem; // - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+            
+            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
+            
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
+          }
           subdiv_patch->write_unlock();
         }
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);		  

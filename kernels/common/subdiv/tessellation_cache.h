@@ -157,8 +157,8 @@ namespace embree
    __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
    __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
 
-   static __forceinline void lock  () { PING; sharedLazyTessellationCache.lockThread(threadState()); }
-   static __forceinline void unlock() { PING; sharedLazyTessellationCache.unlockThread(threadState()); }
+   static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
+   static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadState()); }
 
    /* per thread lock */
    __forceinline void lockThreadLoop (ThreadWorkState *const t_state) 
@@ -212,18 +212,18 @@ namespace embree
        
        if (entry.mutex.try_write_lock())
        {
-         auto ret = constructor();
-          __memory_barrier();
-          entry.tag = SharedLazyTessellationCache::Tag(ret);
-          __memory_barrier();
-          entry.mutex.write_unlock();
-          return ret;
+         if (!validTag(entry.tag)) 
+         {
+           auto ret = constructor();
+           __memory_barrier();
+           entry.tag = SharedLazyTessellationCache::Tag(ret);
+           __memory_barrier();
+           entry.mutex.write_unlock();
+           return ret;
+         }
+         entry.mutex.write_unlock();
        }
-       else
-       {
-         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
-         continue;
-       }
+       SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
      }
    }
    
@@ -264,6 +264,14 @@ namespace embree
      return i+(NUM_CACHE_SEGMENTS-1) >= index;
 #endif
    }
+
+    static __forceinline bool validTag(const Tag& tag)
+    {
+      const int64_t subdiv_patch_root_ref = tag.data; 
+      if (subdiv_patch_root_ref == 0) return false;
+      const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+      return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index);
+    }
 
    void waitForUsersLessEqual(ThreadWorkState *const t_state,
 			      const unsigned int users);
