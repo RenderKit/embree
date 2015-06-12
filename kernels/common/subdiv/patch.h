@@ -22,7 +22,7 @@
 #include "gregory_triangle_patch.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
-#define PATCH_MAX_CACHE_DEPTH 2
+#define PATCH_MAX_CACHE_DEPTH 0
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 
 namespace embree
@@ -109,14 +109,13 @@ namespace embree
       eval(patch,Vec2f(uu,vv),size_t(0));
     }
 
-    void eval(const GeneralCatmullClarkPatch& patch, Vec2f uv, const size_t depth) // FIXME: no recursion required
+    void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth) 
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         CatmullClarkPatch qpatch; patch.init(qpatch);
-	eval(qpatch,uv,srange,depth); 
+	eval(qpatch,uv,1.0f,depth); 
 	return;
       }
 
@@ -133,22 +132,21 @@ namespace embree
         const bool ab_abc = right_of_line(ab,abc,uv);
         const bool ac_abc = right_of_line(ac,abc,uv);
         const bool bc_abc = right_of_line(bc,abc,uv);
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
         if  (!ab_abc &&  ac_abc) {
           const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-          eval(patches[0],xy,srange,depth+1);
+          eval(patches[0],xy,1.0f,depth+1);
           if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
         }
         else if ( ab_abc && !bc_abc) {
           const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-          eval(patches[1],xy,srange,depth+1);
+          eval(patches[1],xy,1.0f,depth+1);
           if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
         }
         else {
           const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-          eval(patches[2],xy,srange,depth+1);
+          eval(patches[2],xy,1.0f,depth+1);
           if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
         }
       } 
@@ -156,11 +154,10 @@ namespace embree
       /* parametrization for quads */
       else if (N == 4) 
       {
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         float u = uv.x, v = uv.y;
         if (uv.y < 0.5f) {
           if (uv.x < 0.5f) {
-            eval(patches[0],Vec2f(2.0f*u,2.0f*v),srange,depth+1);
+            eval(patches[0],Vec2f(2.0f*u,2.0f*v),1.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
               *dPdu = 2.0f*dpdx;
@@ -168,7 +165,7 @@ namespace embree
             }
           }
           else {
-            eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),srange,depth+1);
+            eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),1.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
               *dPdu = -2.0f*dpdy;
@@ -177,7 +174,7 @@ namespace embree
           }
         } else {
           if (uv.x > 0.5f) {
-            eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),srange,depth+1);
+            eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),1.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
               *dPdu = -2.0f*dpdx;
@@ -185,7 +182,7 @@ namespace embree
             }
           }
           else {
-            eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),srange,depth+1);
+            eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),1.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
               *dPdu = 2.0f*dpdy;
@@ -199,12 +196,11 @@ namespace embree
       else 
       {
         const unsigned i = floorf(uv.x); assert(i<N);
-        const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-        eval(patches[i],Vec2f(floorf(uv.x),uv.y),srange,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+        eval(patches[i],Vec2f(floorf(uv.x),uv.y),1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
       }
     }
 
-    void eval(CatmullClarkPatch& patch, const Vec2f& uv, BBox2f srange, size_t depth)
+    void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth)
     {
       /*! recursively subdivide */
       while (!patch.isRegular() && depth<PATCH_MAX_EVAL_DEPTH) 
@@ -212,41 +208,37 @@ namespace embree
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
         
-        const Vec2f c = srange.center();
-        if (uv.y < c.y) {
-          if (uv.x < c.x) { patch = patches[0]; srange = BBox2f(srange.lower,c); }
-          else            { patch = patches[1]; srange = BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)); }
+        const float u = uv.x, v = uv.y;
+        if (uv.y < 0.5f) {
+          if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
+          else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
         } else {
-          if (uv.x > c.x) { patch = patches[2]; srange = BBox2f(c,srange.upper); }
-          else            { patch = patches[3]; srange = BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)); }
+          if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
+          else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
         }
+        dscale *= 2.0f;
         depth++;
       }
-
-      const float scaleU = rcp(srange.upper.x-srange.lower.x);
-      const float scaleV = rcp(srange.upper.y-srange.lower.y);
 
       /*! use either B-spline or bilinear patch to interpolate */
       if (patch.isRegular()) 
       {
         BSplinePatch bspline; bspline.init(patch);
-        const float fx = (uv.x-srange.lower.x)*scaleU;
-        const float fy = (uv.y-srange.lower.y)*scaleV;
-        if (P   ) *P    = bspline.eval(fx,fy);
-        if (dPdu) *dPdu = bspline.tangentU(fx,fy)*scaleU; 
-        if (dPdv) *dPdv = bspline.tangentV(fx,fy)*scaleV; 
+        if (P   ) *P    = bspline.eval(uv.x,uv.y);
+        if (dPdu) *dPdu = bspline.tangentU(uv.x,uv.y)*dscale; 
+        if (dPdv) *dPdv = bspline.tangentV(uv.x,uv.y)*dscale; 
       }
       else 
       {
-        const float sx1 = (uv.x-srange.lower.x)*scaleU, sx0 = 1.0f-sx1;
-        const float sy1 = (uv.y-srange.lower.y)*scaleV, sy0 = 1.0f-sy1;
+        const float sx1 = uv.x, sx0 = 1.0f-sx1;
+        const float sy1 = uv.y, sy0 = 1.0f-sy1;
         const Vertex P0 = patch.ring[0].getLimitVertex();
         const Vertex P1 = patch.ring[1].getLimitVertex();
         const Vertex P2 = patch.ring[2].getLimitVertex();
         const Vertex P3 = patch.ring[3].getLimitVertex();
         if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-        if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*scaleU; 
-        if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*scaleV;
+        if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
+        if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
       }
     }
   };
