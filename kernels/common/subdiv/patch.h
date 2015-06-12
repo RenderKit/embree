@@ -24,6 +24,7 @@
 #define PATCH_DEBUG_SUBDIVISION 0
 #define PATCH_MAX_CACHE_DEPTH 0
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
@@ -135,6 +136,7 @@ namespace embree
         if (dPdv) *dPdv = patch.tangentV(u,v); 
         break;
       }
+#if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: {
         CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
         GregoryPatch patch; patch.init(ccpatch);
@@ -143,6 +145,7 @@ namespace embree
         if (dPdv) *dPdv = patch.tangentV(u,v); 
         break;
       }
+#endif
       default: {
         GeneralCatmullClarkPatch patch;
         patch.init2(edge,loader);
@@ -198,36 +201,32 @@ namespace embree
         float u = uv.x, v = uv.y;
         if (uv.y < 0.5f) {
           if (uv.x < 0.5f) {
-            eval(patches[0],Vec2f(2.0f*u,2.0f*v),1.0f,depth+1);
+            eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = 2.0f*dpdx;
-              *dPdv = 2.0f*dpdy;
+              *dPdu = dpdx; *dPdv = dpdy;
             }
           }
           else {
-            eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),1.0f,depth+1);
+            eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -2.0f*dpdy;
-              *dPdv = 2.0f*dpdx;
+              *dPdu = -dpdy; *dPdv = dpdx;
             }
           }
         } else {
           if (uv.x > 0.5f) {
-            eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),1.0f,depth+1);
+            eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -2.0f*dpdx;
-              *dPdv = -2.0f*dpdy;
+              *dPdu = -dpdx; *dPdv = -dpdy;
             }
           }
           else {
-            eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),1.0f,depth+1);
+            eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = 2.0f*dpdy;
-              *dPdv = -2.0f*dpdx;
+              *dPdu = dpdy; *dPdv = -dpdx;
             }
           }
         }
@@ -243,43 +242,63 @@ namespace embree
 
     void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth)
     {
-      /*! recursively subdivide */
-      while (!patch.isRegular() && depth<PATCH_MAX_EVAL_DEPTH) 
+      while (true) 
       {
-        array_t<CatmullClarkPatch,4> patches; 
-        patch.subdivide(patches); // FIXME: only have to generate one of the patches
-        
-        const float u = uv.x, v = uv.y;
-        if (uv.y < 0.5f) {
-          if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
-          else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
-        } else {
-          if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
-          else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
+        if (unlikely(patch.isRegular()))
+        {
+          BSplinePatch bspline(patch);
+          if (P   ) *P    = bspline.eval(uv.x,uv.y);
+          if (dPdu) *dPdu = bspline.tangentU(uv.x,uv.y)*dscale; 
+          if (dPdv) *dPdv = bspline.tangentV(uv.x,uv.y)*dscale; 
+          return;
         }
-        dscale *= 2.0f;
-        depth++;
-      }
-
-      /*! use either B-spline or bilinear patch to interpolate */
-      if (patch.isRegular()) 
-      {
-        BSplinePatch bspline; bspline.init(patch);
-        if (P   ) *P    = bspline.eval(uv.x,uv.y);
-        if (dPdu) *dPdu = bspline.tangentU(uv.x,uv.y)*dscale; 
-        if (dPdv) *dPdv = bspline.tangentV(uv.x,uv.y)*dscale; 
-      }
-      else 
-      {
-        const float sx1 = uv.x, sx0 = 1.0f-sx1;
-        const float sy1 = uv.y, sy0 = 1.0f-sy1;
-        const Vertex P0 = patch.ring[0].getLimitVertex();
-        const Vertex P1 = patch.ring[1].getLimitVertex();
-        const Vertex P2 = patch.ring[2].getLimitVertex();
-        const Vertex P3 = patch.ring[3].getLimitVertex();
-        if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-        if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
-        if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
+#if PATCH_USE_GREGORY == 2
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
+        {
+          GregoryPatch gregory(patch);
+          if (P   ) *P    = gregory.eval(uv.x,uv.y);
+          if (dPdu) *dPdu = gregory.tangentU(uv.x,uv.y)*dscale; 
+          if (dPdv) *dPdv = gregory.tangentV(uv.x,uv.y)*dscale; 
+          return;
+        }
+#else
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+        {
+#if PATCH_USE_GREGORY == 1
+          GregoryPatch gregory(patch);
+          if (P   ) *P    = gregory.eval(uv.x,uv.y);
+          if (dPdu) *dPdu = gregory.tangentU(uv.x,uv.y)*dscale; 
+          if (dPdv) *dPdv = gregory.tangentV(uv.x,uv.y)*dscale; 
+#else
+          const float sx1 = uv.x, sx0 = 1.0f-sx1;
+          const float sy1 = uv.y, sy0 = 1.0f-sy1;
+          const Vertex P0 = patch.ring[0].getLimitVertex();
+          const Vertex P1 = patch.ring[1].getLimitVertex();
+          const Vertex P2 = patch.ring[2].getLimitVertex();
+          const Vertex P3 = patch.ring[3].getLimitVertex();
+          if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+          if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
+          if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
+#endif
+          return;
+        }
+#endif
+        else
+        {
+          array_t<CatmullClarkPatch,4> patches; 
+          patch.subdivide(patches); // FIXME: only have to generate one of the patches
+          
+          const float u = uv.x, v = uv.y;
+          if (uv.y < 0.5f) {
+            if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
+            else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
+          } else {
+            if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
+            else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
+          }
+          dscale *= 2.0f;
+          depth++;
+        }
       }
     }
   };
@@ -548,7 +567,9 @@ namespace embree
 
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
+#if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+#endif
       default: {
           GeneralCatmullClarkPatch patch;
           patch.init2(edge,loader);
@@ -600,7 +621,9 @@ namespace embree
   __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
   {
     if (patch.isRegular()) { assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); }
-    //else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
+#if PATCH_USE_GREGORY == 2
+    else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
+#endif
     else if (depth >= PATCH_MAX_CACHE_DEPTH) return nullptr;
     else {
       SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
