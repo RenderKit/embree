@@ -322,14 +322,13 @@ namespace embree
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
           
         const float u = uv.x, v = uv.y;
-        if (uv.y < 0.5f) {
-          if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
-          else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
+        if (v < 0.5f) {
+          if (u < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); dscale *= 2.0f; }
+          else          { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); dscale *= 2.0f; }
         } else {
-          if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
-          else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
+          if (u > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); dscale *= 2.0f; }
+          else          { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); dscale *= 2.0f; }
         }
-        dscale *= 2.0f;
       }
       
     public:
@@ -388,8 +387,8 @@ namespace embree
       static void eval_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
       {
         float u = uv.x, v = uv.y;
-        if (uv.y < 0.5f) {
-          if (uv.x < 0.5f) {
+        if (v < 0.5f) {
+          if (u < 0.5f) {
             Patch::eval_direct(patches[0],Vec2f(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
@@ -404,7 +403,7 @@ namespace embree
             }
           }
         } else {
-          if (uv.x > 0.5f) {
+          if (u > 0.5f) {
             Patch::eval_direct(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
@@ -437,24 +436,20 @@ namespace embree
       };
       
       EvalPatch* root = EvalPatch::create(alloc,edge,vertices,stride);
-      Patch* child = nullptr;
-      
       if (PATCH_MAX_CACHE_DEPTH == 0) 
         return (Patch*) root;
       
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH:   root->child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: root->child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
         GeneralCatmullClarkPatch patch(edge,loader);
-        child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
+        root->child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
         break;
       }
       }
-      
-      root->child = child;
       return (Patch*) root;
     }
 
@@ -547,11 +542,25 @@ namespace embree
     template<typename Allocator>
     __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
-      if (patch.isRegular()) { assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); }
+      if (unlikely(patch.isRegular())) { 
+        assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); 
+      }
 #if PATCH_USE_GREGORY == 2
-      else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
+      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) { 
+        assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); 
+      }
+#else
+      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+      {
+#if PATCH_USE_GREGORY == 1
+        return (Patch*) GregoryPatch::create(alloc,patch); 
+#else
+        return (Patch*) QuadPatch::create(alloc,patch);
 #endif
-      else if (depth >= PATCH_MAX_CACHE_DEPTH) return nullptr;
+      }
+#endif
+      else if (depth >= PATCH_MAX_CACHE_DEPTH) 
+        return nullptr;
       
       else 
       {
@@ -622,11 +631,7 @@ namespace embree
       return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
     }
 
-    
-    
-    
-    
-    public:
+  public:
     Type type;
   };
 }
