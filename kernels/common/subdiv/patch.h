@@ -432,8 +432,7 @@ namespace embree
       case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
-        GeneralCatmullClarkPatch patch;
-        patch.init2(edge,loader);
+        GeneralCatmullClarkPatch patch(edge,loader);
         child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
         break;
       }
@@ -451,19 +450,12 @@ namespace embree
         };
 
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH: {
-        BSplinePatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv);
-        break;
-      }
+      case SubdivMesh::REGULAR_QUAD_PATCH: BSplinePatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: {
-        GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv);
-        break;
-      }
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #endif
       default: {
-        GeneralCatmullClarkPatch patch;
-        patch.init2(edge,loader);
+        GeneralCatmullClarkPatch patch(edge,loader);
         eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,size_t(0));
         break;
       }

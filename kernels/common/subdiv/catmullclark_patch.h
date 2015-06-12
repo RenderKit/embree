@@ -28,6 +28,11 @@ namespace embree
 
     __forceinline CatmullClarkPatchT () {}
 
+  template<typename Loader>
+  __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+    init2(first_half_edge,loader);
+  }
+
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       init2(first_half_edge,
@@ -411,6 +416,11 @@ namespace embree
 
     __forceinline GeneralCatmullClarkPatchT () 
       : N(0) {}
+
+  template<typename Loader>
+  __forceinline GeneralCatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+    init2(first_half_edge,loader);
+  }
 
     __forceinline size_t size() const { 
       return N; 
