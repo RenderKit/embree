@@ -277,7 +277,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* add cube */
   addHair(g_scene,make_Vec3f(0.0f,-1.0f,-4.5f));
-  addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,4.5f));
+  addTriangleCube(g_scene,make_Vec3f(0.0f,0.0f,5.0f));
   addTriangleSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,1.5f));
   addQuadSubdivCube(g_scene,make_Vec3f(0.0f,0.0f,-1.5f));
   
@@ -331,6 +331,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       //return dPdu;
       Ng = cross(dPdv,dPdu);
     }
+    Ng = normalize(Ng);
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
@@ -351,8 +352,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     /* add light contribution */
     if (shadow.geomID) {
       Vec3f r = normalize(reflect(ray.dir,Ng));
-      float s = clamp(pow(abs(dot(r,lightDir)),10.0f),0.0f,1.0f);
-      float d = clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
+      float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
+      float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);
       color = color + diffuse*d + 0.5f*make_Vec3f(s); // FIXME: +=
     }
   }
