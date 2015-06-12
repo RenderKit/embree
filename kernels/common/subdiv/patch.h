@@ -22,7 +22,7 @@
 #include "gregory_triangle_patch.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
-#define PATCH_MAX_CACHE_DEPTH 1
+#define PATCH_MAX_CACHE_DEPTH 0
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 
 namespace embree
@@ -526,10 +526,13 @@ namespace embree
       EvalPatch* root = EvalPatch::create(alloc,edge,vertices,stride);
       Patch* child = nullptr;
       
+      if (PATCH_MAX_CACHE_DEPTH == 0) 
+        return (Patch*) root;
+
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
       case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
-      default: if (PATCH_MAX_CACHE_DEPTH > 0) {
+      default: {
           GeneralCatmullClarkPatch patch;
           patch.init2(edge,loader);
           child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
