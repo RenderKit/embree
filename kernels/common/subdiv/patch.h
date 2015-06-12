@@ -220,13 +220,7 @@ namespace embree
           return true;
         
         /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-        };
-        
-        //FeatureAdaptivePointEval<Vertex,Vertex_t> eval(edge,loader,u,v,P,dPdu,dPdv); 
-        eval_direct(edge,loader,u,v,P,dPdu,dPdv);
+        Patch::eval_direct(edge,vertices,stride,u,v,P,dPdu,dPdv);
         PATCH_DEBUG_SUBDIVISION(0,0,c);
         return true;
       }
@@ -448,6 +442,36 @@ namespace embree
       root->child = child;
       return (Patch*) root;
     }
+
+    static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+    {
+      auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+          const unsigned vtx = p->getStartVertexIndex();
+          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
+        };
+
+      switch (edge->type) {
+      case SubdivMesh::REGULAR_QUAD_PATCH: {
+        BSplinePatchT<Vertex,Vertex_t> patch; patch.init(edge,loader);
+        patch.eval(u,v,P,dPdu,dPdv);
+        break;
+      }
+#if PATCH_USE_GREGORY == 2
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: {
+        CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
+        GregoryPatchT<Vertex,Vertex_t> patch; patch.init(ccpatch);
+        patch.eval(u,v,P,dPdu,dPdv);
+        break;
+      }
+#endif
+      default: {
+        GeneralCatmullClarkPatch patch;
+        patch.init2(edge,loader);
+        eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,size_t(0));
+        break;
+      }
+      }
+    }
     
     template<typename Allocator>
     __noinline static Patch* create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
@@ -482,6 +506,37 @@ namespace embree
         assert(false);
       
       return nullptr;
+    }
+
+    static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
+    {
+      /* convert into standard quad patch if possible */
+      if (likely(patch.isQuadPatch())) 
+      {
+        CatmullClarkPatch qpatch; patch.init(qpatch);
+        eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
+        return;
+      }
+      
+      /* subdivide patch */
+      size_t N;
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+      
+      /* parametrization for triangles */
+      if (N == 3) 
+        SubdividedGeneralTrianglePatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
+      
+      /* parametrization for quads */
+      else if (N == 4) 
+        SubdividedGeneralQuadPatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
+      
+      /* parametrization for arbitrary polygons */
+      else 
+      {
+        const unsigned i = floorf(uv.x); assert(i<N);
+        eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+      }
     }
     
     template<typename Allocator>
@@ -522,62 +577,7 @@ namespace embree
       return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
     }
 
-    template<typename Loader>
-    static void eval_direct (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-    {
-      switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH: {
-        BSplinePatchT<Vertex,Vertex_t> patch; patch.init(edge,loader);
-        patch.eval(u,v,P,dPdu,dPdv);
-        break;
-      }
-#if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: {
-        CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
-        GregoryPatchT<Vertex,Vertex_t> patch; patch.init(ccpatch);
-        patch.eval(u,v,P,dPdu,dPdv);
-        break;
-      }
-#endif
-      default: {
-        GeneralCatmullClarkPatch patch;
-        patch.init2(edge,loader);
-        eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,size_t(0));
-        break;
-      }
-      }
-    }
     
-    static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
-    {
-      /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch())) 
-      {
-        CatmullClarkPatch qpatch; patch.init(qpatch);
-        eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
-        return;
-      }
-      
-      /* subdivide patch */
-      size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
-      patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
-      
-      /* parametrization for triangles */
-      if (N == 3) 
-        SubdividedGeneralTrianglePatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
-      
-      /* parametrization for quads */
-      else if (N == 4) 
-        SubdividedGeneralQuadPatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
-      
-      /* parametrization for arbitrary polygons */
-      else 
-      {
-        const unsigned i = floorf(uv.x); assert(i<N);
-        eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
-      }
-    }
     
     static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, float dscale, size_t depth)
     {
