@@ -31,7 +31,7 @@ namespace embree
   {
   public:
 
-    static const size_t MAX_DEPTH = 0;
+    static const size_t MAX_DEPTH = 4;
     
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
@@ -43,7 +43,7 @@ namespace embree
       EVAL_PATCH = 3,
       SUBDIVIDED_GENERAL_QUAD_PATCH = 4,
       SUBDIVIDED_QUAD_PATCH = 5,
-      SUBDIVIDED_TRIANGLE_PATCH = 6
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 6
     };
 
     struct BSplinePatch 
@@ -65,13 +65,16 @@ namespace embree
       __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
         : type(BSPLINE_PATCH), data(patch) {}
       
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         if (P)    *P    = data.eval(u,v); 
-        if (dPdu) *dPdu = data.tangentU(u,v); 
-        if (dPdv) *dPdv = data.tangentV(u,v); 
+        if (dPdu) *dPdu = data.tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = data.tangentV(u,v)*dscale; 
 #if PATCH_DEBUG_SUBDIVISION
-        if (P) *P = Vertex((float)(((size_t)this)&0xff)/255.0f);
+        size_t hex = (size_t)this;
+        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
+        const float c = (float)(hex&0xff)/255.0f;
+        if (P) *P = Vertex(c,0.0f,0.0f,0.0f);
 #endif  
         return true;
       }
@@ -99,13 +102,16 @@ namespace embree
       __forceinline GregoryPatch (const CatmullClarkPatch& patch) 
         : type(GREGORY_PATCH), data(patch) {}
 
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         if (P)    *P    = data.eval(u,v); 
-        if (dPdu) *dPdu = data.tangentU(u,v); 
-        if (dPdv) *dPdv = data.tangentV(u,v); 
+        if (dPdu) *dPdu = data.tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = data.tangentV(u,v)*dscale; 
 #if PATCH_DEBUG_SUBDIVISION
-        if (P) *P = Vertex((float)(((size_t)this)&0xff)/255.0f);
+        size_t hex = (size_t)this;
+        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
+        const float c = (float)(hex&0xff)/255.0f;
+        if (P) *P = Vertex(0.0f,c,0.0f,0.0f);
 #endif  
         return true;
       }
@@ -131,7 +137,7 @@ namespace embree
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
       
-        if (child && child->eval(u,v,P,dPdu,dPdv)) 
+        if (child && child->eval(u,v,P,dPdu,dPdv,1.0f)) 
           return true;
         
         GeneralCatmullClarkPatch patch;
@@ -139,7 +145,10 @@ namespace embree
         FeatureAdaptivePointEval<Vertex,Vertex_t> eval(patch,u,v,P,dPdu,dPdv); 
         
 #if PATCH_DEBUG_SUBDIVISION
-        if (P) *P = Vertex((float)(((size_t)this)&0xff)/255.0f);
+        size_t hex = (size_t)this;
+        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
+        const float c = (float)(hex&0xff)/255.0f;
+        if (P) *P = Vertex(0.0f,0.0f,c,0.0f);
 #endif  
         return true;
       }
@@ -152,14 +161,14 @@ namespace embree
       Patch* child;
     };
     
-  struct SubdividedTrianglePatch
+  struct SubdividedGeneralTrianglePatch
   {
     template<typename Allocator>
-    __noinline static SubdividedTrianglePatch* create(const Allocator& alloc) {
-      return new (alloc(sizeof(SubdividedTrianglePatch))) SubdividedTrianglePatch;
+    __noinline static SubdividedGeneralTrianglePatch* create(const Allocator& alloc) {
+      return new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch;
     }
     
-    __forceinline SubdividedTrianglePatch() : type(SUBDIVIDED_TRIANGLE_PATCH) {}
+    __forceinline SubdividedGeneralTrianglePatch() : type(SUBDIVIDED_GENERAL_TRIANGLE_PATCH) {}
     
     bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
     {
@@ -172,15 +181,15 @@ namespace embree
       const float w = 1.0f-u-v;
       if  (!ab_abc &&  ac_abc) {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
-        return child[0]->eval(xy.x,xy.y,P,dPdu,dPdv);
+        return child[0]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
       }
       else if ( ab_abc && !bc_abc) {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
-        return child[1]->eval(xy.x,xy.y,P,dPdu,dPdv);
+        return child[1]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
       }
       else {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
-        return child[2]->eval(xy.x,xy.y,P,dPdu,dPdv);
+        return child[2]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
       }
     }
     
@@ -197,14 +206,14 @@ namespace embree
       
       __forceinline SubdividedQuadPatch() : type(SUBDIVIDED_QUAD_PATCH) {}
       
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
       {
         if (v < 0.5f) {
-          if (u < 0.5f) return child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv);
-          else          return child[1]->eval(2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv);
+          if (u < 0.5f) return child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
+          else          return child[1]->eval(2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
         } else {
-          if (u > 0.5f) return child[2]->eval(2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv);
-          else          return child[3]->eval(2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv);
+          if (u > 0.5f) return child[2]->eval(2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
+          else          return child[3]->eval(2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
         }
       }
 
@@ -225,39 +234,35 @@ namespace embree
       {
         if (v < 0.5f) {
           if (u < 0.5f) {
-            if (!child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv)) return false;
+            if (!child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f)) return false;
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = 2.0f*dpdx;
-              *dPdv = 2.0f*dpdy;
+              *dPdu = dpdx; *dPdv = dpdy;
             }
             return true;
           }
           else {
-            if (!child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv)) return false;
+            if (!child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv,2.0f)) return false;
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -2.0f*dpdy;
-              *dPdv = 2.0f*dpdx;
+              *dPdu = -dpdy; *dPdv = dpdx;
             }
             return true;
           }
         } else {
           if (u > 0.5f) {
-            if (!child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv)) return false;
+            if (!child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv,2.0f)) return false;
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -2.0f*dpdx;
-              *dPdv = -2.0f*dpdy;
+              *dPdu = -dpdx; *dPdv = -dpdy;
             }
             return true;
           }
           else {
-            if (!child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv)) return false;
+            if (!child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv,2.0f)) return false;
             if (dPdu && dPdv) {
               const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = 2.0f*dpdy;
-              *dPdv = -2.0f*dpdx;
+              *dPdu = dpdy; *dPdv = -dpdx;
             }
             return true;
           }
@@ -283,7 +288,7 @@ namespace embree
       Patch* child = nullptr;
       
       switch (edge->type) {
-        //case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
         //case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
       default: if (MAX_DEPTH > 0) {
           GeneralCatmullClarkPatch patch;
@@ -316,12 +321,12 @@ namespace embree
 
       Patch* ret = nullptr;
       if (N == 3) {
-        SubdividedTrianglePatch* node = SubdividedTrianglePatch::create(alloc);
+        SubdividedGeneralTrianglePatch* node = SubdividedGeneralTrianglePatch::create(alloc);
         for (size_t i=0; i<3; i++)
           node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
         ret = (Patch*) node;
       } 
-      else if (N == 4) { // FIXME: triggering this code path causes interpolation errors!
+      else if (N == 4) {
         SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
         for (size_t i=0; i<4; i++)
           node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
@@ -338,7 +343,7 @@ namespace embree
   __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
   {
     if (patch.isRegular()) { assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); }
-    else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
+    //else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
     else if (depth >= MAX_DEPTH) return nullptr;
     else {
       SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
@@ -350,19 +355,24 @@ namespace embree
     }
   }
 
-    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
+    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
     {
       if (this == nullptr) return false;
 
       switch (type) {
-      case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv); 
-      case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv); 
-      case EVAL_PATCH   : return ((EvalPatch*)   this)->eval(u,v,P,dPdu,dPdv); 
-      case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv);
-      case SUBDIVIDED_GENERAL_QUAD_PATCH: return ((SubdividedGeneralQuadPatch*)this)->eval(u,v,P,dPdu,dPdv);
-      case SUBDIVIDED_TRIANGLE_PATCH: return ((SubdividedTrianglePatch*)this)->eval(u,v,P,dPdu,dPdv); 
+      case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
+      case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
+      case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
+      case SUBDIVIDED_GENERAL_QUAD_PATCH:     { assert(dscale == 1.0f); return ((SubdividedGeneralQuadPatch*)this)->eval(u,v,P,dPdu,dPdv); }
+      case SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { assert(dscale == 1.0f); return ((SubdividedGeneralTrianglePatch*)this)->eval(u,v,P,dPdu,dPdv); }
       default: assert(false); return false;
       }
+    }
+
+    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
+    {
+      assert(type == EVAL_PATCH);
+      return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
     }
 
   public:
