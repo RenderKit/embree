@@ -42,7 +42,7 @@ namespace embree
     const T v2_1         = one_minus_uu * v2   + uu * v3;      
     const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
     const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
-    return v1_2 - v0_2;      
+    return S(3.0f)*(v1_2-v0_2);
   }
 
   class __aligned(64) BezierPatch
