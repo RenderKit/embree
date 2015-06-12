@@ -22,7 +22,7 @@
 #include "gregory_triangle_patch.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
-#define PATCH_MAX_CACHE_DEPTH 0
+#define PATCH_MAX_CACHE_DEPTH 1
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 
 namespace embree
@@ -93,6 +93,7 @@ namespace embree
     struct FeatureAdaptivePointEval
   {
     typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
+    typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
 
@@ -105,11 +106,29 @@ namespace embree
     __forceinline FeatureAdaptivePointEval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       : u(u), v(v), P(P), dPdu(dPdu), dPdv(dPdv)
     {
-      GeneralCatmullClarkPatch patch;
-      patch.init2(edge,loader);
-      const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps, add assertions
-      const float uu = clamp(u,0.0f,1.0f); 
-      eval(patch,Vec2f(uu,vv),size_t(0));
+      switch (edge->type) {
+      case SubdivMesh::REGULAR_QUAD_PATCH: {
+        BSplinePatch patch; patch.init(edge,loader);
+        if (P)    *P    = patch.eval(u,v); 
+        if (dPdu) *dPdu = patch.tangentU(u,v); 
+        if (dPdv) *dPdv = patch.tangentV(u,v); 
+        break;
+      }
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: {
+        CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
+        GregoryPatch patch; patch.init(ccpatch);
+        if (P)    *P    = patch.eval(u,v); 
+        if (dPdu) *dPdu = patch.tangentU(u,v); 
+        if (dPdv) *dPdv = patch.tangentV(u,v); 
+        break;
+      }
+      default: {
+        GeneralCatmullClarkPatch patch;
+        patch.init2(edge,loader);
+        eval(patch,Vec2f(u,v),size_t(0));
+        break;
+      }
+      }
     }
 
     void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth) 
@@ -278,16 +297,16 @@ namespace embree
 
       template<typename Loader>
       __noinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-        : type(BSPLINE_PATCH) { data.init(edge,loader); }
+        : type(BSPLINE_PATCH) { patch.init(edge,loader); }
 
       __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
-        : type(BSPLINE_PATCH), data(patch) {}
+        : type(BSPLINE_PATCH), patch(patch) {}
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
-        if (P)    *P    = data.eval(u,v); 
-        if (dPdu) *dPdu = data.tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = data.tangentV(u,v)*dscale; 
+        if (P)    *P    = patch.eval(u,v); 
+        if (dPdu) *dPdu = patch.tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = patch.tangentV(u,v)*dscale; 
 #if PATCH_DEBUG_SUBDIVISION
         size_t hex = (size_t)this;
         for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
@@ -298,7 +317,7 @@ namespace embree
       }
 
       Type type;
-      BSplinePatchT<Vertex,Vertex_t> data;
+      BSplinePatchT<Vertex,Vertex_t> patch;
     };
 
     struct GregoryPatch
@@ -315,16 +334,16 @@ namespace embree
 
       template<typename Loader>
       __forceinline GregoryPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-        : type(GREGORY_PATCH) { CatmullClarkPatch patch; patch.init2(edge,loader); data.init(patch); }
+        : type(GREGORY_PATCH) { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); }
 
       __forceinline GregoryPatch (const CatmullClarkPatch& patch) 
-        : type(GREGORY_PATCH), data(patch) {}
+        : type(GREGORY_PATCH), patch(patch) {}
 
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
-        if (P)    *P    = data.eval(u,v); 
-        if (dPdu) *dPdu = data.tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = data.tangentV(u,v)*dscale; 
+        if (P)    *P    = patch.eval(u,v); 
+        if (dPdu) *dPdu = patch.tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = patch.tangentV(u,v)*dscale; 
 #if PATCH_DEBUG_SUBDIVISION
         size_t hex = (size_t)this;
         for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
@@ -335,7 +354,7 @@ namespace embree
       }
 
       Type type;
-      GregoryPatchT<Vertex,Vertex_t> data;
+      GregoryPatchT<Vertex,Vertex_t> patch;
     };
 
     struct EvalPatch
@@ -509,7 +528,7 @@ namespace embree
       
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
-        //case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
       default: if (PATCH_MAX_CACHE_DEPTH > 0) {
           GeneralCatmullClarkPatch patch;
           patch.init2(edge,loader);
