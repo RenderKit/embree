@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bilinear_patch.h"
 #include "bspline_patch.h"
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
@@ -31,7 +32,7 @@
 
 #define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 1     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
@@ -128,12 +129,36 @@ namespace embree
     
     enum Type {
       INVALID_PATCH = 0,
-      BSPLINE_PATCH = 1,  
-      GREGORY_PATCH = 2,
-      EVAL_PATCH = 3,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 4,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 5,
-      SUBDIVIDED_QUAD_PATCH = 6
+      BILINEAR_PATCH = 1,
+      BSPLINE_PATCH = 2,  
+      GREGORY_PATCH = 3,
+      EVAL_PATCH = 4,
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
+      SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
+      SUBDIVIDED_QUAD_PATCH = 7
+    };
+
+    struct BilinearPatch 
+    {
+      /* creates BilinearPatch from a CatmullClarkPatch */
+      template<typename Allocator>
+      __noinline static BilinearPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch);
+      }
+      
+      __forceinline BilinearPatch (const CatmullClarkPatch& patch) 
+        : type(BILINEAR_PATCH), patch(patch) {}
+      
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
+      {
+        patch.eval(u,v,P,dPdu,dPdv,dscale);
+        PATCH_DEBUG_SUBDIVISION(c,c,0);
+        return true;
+      }
+      
+    public:
+      Type type;
+      BilinearPatchT<Vertex,Vertex_t> patch;
     };
     
     struct BSplinePatch 
@@ -555,7 +580,7 @@ namespace embree
 #if PATCH_USE_GREGORY == 1
         return (Patch*) GregoryPatch::create(alloc,patch); 
 #else
-        return (Patch*) QuadPatch::create(alloc,patch);
+        return (Patch*) BilinearPatch::create(alloc,patch);
 #endif
       }
 #endif
@@ -588,18 +613,9 @@ namespace embree
         else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
         {
 #if PATCH_USE_GREGORY == 1
-          GregoryPatch gregory(patch);
-          gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+          GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
 #else
-          const float sx1 = uv.x, sx0 = 1.0f-sx1;
-          const float sy1 = uv.y, sy0 = 1.0f-sy1;
-          const Vertex P0 = patch.ring[0].getLimitVertex();
-          const Vertex P1 = patch.ring[1].getLimitVertex();
-          const Vertex P2 = patch.ring[2].getLimitVertex();
-          const Vertex P3 = patch.ring[3].getLimitVertex();
-          if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-          if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
-          if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
+          BilinearPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
 #endif
           return;
         }
@@ -616,6 +632,7 @@ namespace embree
       if (this == nullptr) return false;
       
       switch (type) {
+      case BILINEAR_PATCH: return ((BilinearPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
       case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
       case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
       case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
