@@ -101,9 +101,12 @@ namespace embree
     Vertex* dPdu;
     Vertex* dPdv;
     
-    __forceinline FeatureAdaptivePointEval (const GeneralCatmullClarkPatch& patch, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+    template<typename Loader>
+    __forceinline FeatureAdaptivePointEval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       : u(u), v(v), P(P), dPdu(dPdu), dPdv(dPdv)
     {
+      GeneralCatmullClarkPatch patch;
+      patch.init2(edge,loader);
       const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps, add assertions
       const float uu = clamp(u,0.0f,1.0f); 
       eval(patch,Vec2f(uu,vv),size_t(0));
@@ -355,9 +358,7 @@ namespace embree
         if (child && child->eval(u,v,P,dPdu,dPdv,1.0f)) 
           return true;
         
-        GeneralCatmullClarkPatch patch;
-        patch.init2(edge,loader);
-        FeatureAdaptivePointEval<Vertex,Vertex_t> eval(patch,u,v,P,dPdu,dPdv); 
+        FeatureAdaptivePointEval<Vertex,Vertex_t> eval(edge,loader,u,v,P,dPdu,dPdv); 
         
 #if PATCH_DEBUG_SUBDIVISION
         size_t hex = (size_t)this;
