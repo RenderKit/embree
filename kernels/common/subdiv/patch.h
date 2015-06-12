@@ -22,11 +22,15 @@
 #include "gregory_triangle_patch.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
+#define PATCH_MAX_CACHE_DEPTH 2
+#define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 
 namespace embree
 {
-    __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
+  __forceinline Vec2f map_tri_to_quad(const Vec2f& uv)
   {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
     const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
     const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
@@ -132,18 +136,18 @@ namespace embree
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-        if  (!ab_abc &&  ac_abc) { // FIXME: simplify
-          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
+        if  (!ab_abc &&  ac_abc) {
+          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
           eval(patches[0],xy,srange,depth+1);
           if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
         }
         else if ( ab_abc && !bc_abc) {
-          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
+          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
           eval(patches[1],xy,srange,depth+1);
           if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
         }
         else {
-          const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
+          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
           eval(patches[2],xy,srange,depth+1);
           if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
         }
@@ -203,7 +207,7 @@ namespace embree
     void eval(CatmullClarkPatch& patch, const Vec2f& uv, BBox2f srange, size_t depth)
     {
       /*! recursively subdivide */
-      while (!patch.isRegularOrFinal2(depth)) 
+      while (!patch.isRegular() && depth<PATCH_MAX_EVAL_DEPTH) 
       {
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
@@ -251,8 +255,6 @@ namespace embree
     struct __aligned(64) Patch
   {
   public:
-
-    static const size_t MAX_DEPTH = 4;
     
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
@@ -401,17 +403,17 @@ namespace embree
 
       const float w = 1.0f-u-v;
       if  (!ab_abc &&  ac_abc) {
-        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
+        const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
         if (!child[0]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
         if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
       }
       else if ( ab_abc && !bc_abc) {
-        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
+        const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
         if (!child[1]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
         if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
       }
       else {
-        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
+        const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
         if (!child[2]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
         if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
       }
@@ -515,7 +517,7 @@ namespace embree
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
         //case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
-      default: if (MAX_DEPTH > 0) {
+      default: if (PATCH_MAX_CACHE_DEPTH > 0) {
           GeneralCatmullClarkPatch patch;
           patch.init2(edge,loader);
           child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
@@ -536,7 +538,7 @@ namespace embree
       return Patch::create(alloc,qpatch,edge,vertices,stride,depth);
     }
     
-    if (depth >= MAX_DEPTH)
+    if (depth >= PATCH_MAX_CACHE_DEPTH)
       return nullptr;
     
     /* subdivide patch */
@@ -567,7 +569,7 @@ namespace embree
   {
     if (patch.isRegular()) { assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); }
     //else if (patch.isGregory()) { assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); }
-    else if (depth >= MAX_DEPTH) return nullptr;
+    else if (depth >= PATCH_MAX_CACHE_DEPTH) return nullptr;
     else {
       SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
       array_t<CatmullClarkPatch,4> patches; 
