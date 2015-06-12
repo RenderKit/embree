@@ -27,12 +27,12 @@
     size_t hex = (size_t)this;                          \
     for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);  \
     const float c = (float)(hex&0xff)/255.0f;           \
-    if (P) *P = Vertex(0.2f+0.8f*x,0.2f+0.8f*y,0.2f+0.8f*z,0.0f);         \
+    if (P) *P = Vertex(0.5f+0.5f*x,0.5f+0.5f*y,0.5f+0.5f*z,0.0f);         \
     }               */
 
 #define PATCH_MAX_CACHE_DEPTH 4
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 1     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
