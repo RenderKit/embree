@@ -20,7 +20,6 @@
 #include "bspline_patch.h"
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
-//#include "feature_adaptive_eval.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
 
@@ -536,33 +535,31 @@ namespace embree
       CatmullClarkPatch qpatch; patch.init(qpatch);
       return Patch::create(alloc,qpatch,edge,vertices,stride,depth);
     }
-    else if (depth >= MAX_DEPTH) {
+    
+    if (depth >= MAX_DEPTH)
       return nullptr;
+    
+    /* subdivide patch */
+    size_t N;
+    array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+    patch.subdivide(patches,N);
+
+    if (N == 3) {
+      SubdividedGeneralTrianglePatch* node = SubdividedGeneralTrianglePatch::create(alloc);
+      for (size_t i=0; i<3; i++)
+        node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
+      return (Patch*) node;
+    } 
+    else if (N == 4) {
+      SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
+      for (size_t i=0; i<4; i++)
+        node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
+      return (Patch*) node;
     }
     else 
-    {
-      size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
-      patch.subdivide(patches,N);
-
-      Patch* ret = nullptr;
-      if (N == 3) {
-        SubdividedGeneralTrianglePatch* node = SubdividedGeneralTrianglePatch::create(alloc);
-        for (size_t i=0; i<3; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        ret = (Patch*) node;
-      } 
-      else if (N == 4) {
-        SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
-        for (size_t i=0; i<4; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        ret = (Patch*) node;
-      }
-      else 
-        assert(false);
-      
-      return ret;
-    }
+      assert(false);
+    
+    return nullptr;
   }
 
   template<typename Allocator>
