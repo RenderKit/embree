@@ -27,10 +27,10 @@
     size_t hex = (size_t)this;                          \
     for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);  \
     const float c = (float)(hex&0xff)/255.0f;           \
-    if (P) *P = Vertex(c,0.0f,0.0f,0.0f);               \
+    if (P) *P = Vertex(0.2f+0.8f*x,0.2f+0.8f*y,0.2f+0.8f*z,0.0f);         \
     }               */
 
-#define PATCH_MAX_CACHE_DEPTH 2
+#define PATCH_MAX_CACHE_DEPTH 4
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 #define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
@@ -185,7 +185,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(c,0,0);
+        PATCH_DEBUG_SUBDIVISION(0,c,0);
         return true;
       }
       
@@ -218,7 +218,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(0,c,0);
+        PATCH_DEBUG_SUBDIVISION(0,0,c);
         return true;
       }
       
@@ -246,7 +246,7 @@ namespace embree
         
         /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
         Patch::eval_direct(edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(0,0,c);
+        PATCH_DEBUG_SUBDIVISION(c,0,0);
         return true;
       }
       
