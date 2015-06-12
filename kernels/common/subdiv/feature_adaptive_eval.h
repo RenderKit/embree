@@ -22,6 +22,27 @@
 
 namespace embree
 {
+  __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
+  {
+    const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
+    const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
+    const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+    const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
+    return Vec2f(uu,vv);
+  }
+  
+  __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+    return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
+  }
+  
+  __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+    return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
+  }
+  
+  __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
+    return det(A-P,B-P) <= 0.0f;
+  }
+
   template<typename Vertex, typename Vertex_t = Vertex>
     struct FeatureAdaptivePointEval
   {
@@ -40,27 +61,6 @@ namespace embree
       const float vv = clamp(v,0.0f,1.0f); // FIXME: remove clamps, add assertions
       const float uu = clamp(u,0.0f,1.0f); 
       eval(patch,Vec2f(uu,vv),size_t(0));
-    }
- 
-    __forceinline Vec2f map_tri_to_quad(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& uv)
-    {
-      const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-      const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-      const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-      const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
-      return Vec2f(uu,vv);
-    }
-
-    __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
-      return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
-    }
-
-    __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
-      return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
-    }
-
-    __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
-      return det(A-P,B-P) <= 0.0f;
     }
 
     void eval(const GeneralCatmullClarkPatch& patch, Vec2f uv, const size_t depth) // FIXME: no recursion required

@@ -165,7 +165,25 @@ namespace embree
     
     bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
     {
-      return false;
+      const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+      const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+      const bool ab_abc = right_of_line(ab,abc,Vec2f(u,v));
+      const bool ac_abc = right_of_line(ac,abc,Vec2f(u,v));
+      const bool bc_abc = right_of_line(bc,abc,Vec2f(u,v));
+
+      const float w = 1.0f-u-v;
+      if  (!ab_abc &&  ac_abc) {
+        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
+        return child[0]->eval(xy.x,xy.y,P,dPdu,dPdv);
+      }
+      else if ( ab_abc && !bc_abc) {
+        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
+        return child[1]->eval(xy.x,xy.y,P,dPdu,dPdv);
+      }
+      else {
+        const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
+        return child[2]->eval(xy.x,xy.y,P,dPdu,dPdv);
+      }
     }
     
     Type type;
