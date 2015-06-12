@@ -313,19 +313,21 @@ namespace embree
 
     struct BSplinePatch 
     {
+      /* creates BSplinePatch from a half edge */
       template<typename Loader, typename Allocator>
         __noinline static BSplinePatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
         return new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader);
       }
 
+      template<typename Loader>
+      __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+        : type(BSPLINE_PATCH) { patch.init(edge,loader); }
+
+      /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
       __noinline static BSplinePatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
         return new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch);
       }
-
-      template<typename Loader>
-      __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-        : type(BSPLINE_PATCH) { patch.init(edge,loader); }
 
       __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
         : type(BSPLINE_PATCH), patch(patch) {}
