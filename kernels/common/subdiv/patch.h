@@ -31,7 +31,7 @@
 
 #define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 2     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 1     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
@@ -117,188 +117,6 @@ namespace embree
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
-  
-  template<typename Vertex, typename Vertex_t = Vertex>
-    struct FeatureAdaptivePointEval
-    {
-      typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
-      typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
-      typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
-      typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
-      
-      const float u,v;
-      Vertex* P;
-      Vertex* dPdu;
-      Vertex* dPdv;
-      
-      template<typename Loader>
-      __forceinline FeatureAdaptivePointEval (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      : u(u), v(v), P(P), dPdu(dPdu), dPdv(dPdv)
-      {
-        switch (edge->type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: {
-          BSplinePatch patch; patch.init(edge,loader);
-          patch.eval(u,v,P,dPdu,dPdv);
-          break;
-        }
-#if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: {
-          CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
-          GregoryPatch patch; patch.init(ccpatch);
-          patch.eval(u,v,P,dPdu,dPdv);
-          break;
-        }
-#endif
-        default: {
-          GeneralCatmullClarkPatch patch;
-          patch.init2(edge,loader);
-          eval(patch,Vec2f(u,v),size_t(0));
-          break;
-        }
-        }
-      }
-      
-      void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth) 
-      {
-        /* convert into standard quad patch if possible */
-        if (likely(patch.isQuadPatch())) 
-        {
-          CatmullClarkPatch qpatch; patch.init(qpatch);
-          eval(qpatch,uv,1.0f,depth); 
-          return;
-        }
-        
-        /* subdivide patch */
-        size_t N;
-        array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
-        patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
-        
-        /* parametrization for triangles */
-        if (N == 3) 
-        {
-          const bool ab_abc = right_of_line_ab_abc(uv);
-          const bool ac_abc = right_of_line_ac_abc(uv);
-          const bool bc_abc = right_of_line_bc_abc(uv);
-          
-          const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-          if  (!ab_abc &&  ac_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-            eval(patches[0],xy,1.0f,depth+1);
-            if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
-          }
-          else if ( ab_abc && !bc_abc) {
-            const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-            eval(patches[1],xy,1.0f,depth+1);
-            if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
-          }
-          else {
-            const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-            eval(patches[2],xy,1.0f,depth+1);
-            if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
-          }
-        } 
-        
-        /* parametrization for quads */
-        else if (N == 4) 
-        {
-          float u = uv.x, v = uv.y;
-          if (uv.y < 0.5f) {
-            if (uv.x < 0.5f) {
-              eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1);
-              if (dPdu && dPdv) {
-                const Vertex dpdx = *dPdu, dpdy = *dPdv;
-                *dPdu = dpdx; *dPdv = dpdy;
-              }
-            }
-            else {
-              eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
-              if (dPdu && dPdv) {
-                const Vertex dpdx = *dPdu, dpdy = *dPdv;
-                *dPdu = -dpdy; *dPdv = dpdx;
-              }
-            }
-          } else {
-            if (uv.x > 0.5f) {
-              eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
-              if (dPdu && dPdv) {
-                const Vertex dpdx = *dPdu, dpdy = *dPdv;
-                *dPdu = -dpdx; *dPdv = -dpdy;
-              }
-            }
-            else {
-              eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
-              if (dPdu && dPdv) {
-                const Vertex dpdx = *dPdu, dpdy = *dPdv;
-                *dPdu = dpdy; *dPdv = -dpdx;
-              }
-            }
-          }
-        }
-        
-        /* parametrization for arbitrary polygons */
-        else 
-        {
-          const unsigned i = floorf(uv.x); assert(i<N);
-          eval(patches[i],Vec2f(floorf(uv.x),uv.y),1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
-        }
-      }
-      
-      void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth)
-      {
-        while (true) 
-        {
-          if (unlikely(patch.isRegular()))
-          {
-            BSplinePatch bspline(patch);
-            bspline.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-            return;
-          }
-#if PATCH_USE_GREGORY == 2
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
-          {
-            GregoryPatch gregory(patch);
-            gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-            return;
-          }
-#else
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-          {
-#if PATCH_USE_GREGORY == 1
-            GregoryPatch gregory(patch);
-            gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-#else
-            const float sx1 = uv.x, sx0 = 1.0f-sx1;
-            const float sy1 = uv.y, sy0 = 1.0f-sy1;
-            const Vertex P0 = patch.ring[0].getLimitVertex();
-            const Vertex P1 = patch.ring[1].getLimitVertex();
-            const Vertex P2 = patch.ring[2].getLimitVertex();
-            const Vertex P3 = patch.ring[3].getLimitVertex();
-            if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-            if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
-            if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
-#endif
-            return;
-          }
-#endif
-          else
-          {
-            array_t<CatmullClarkPatch,4> patches; 
-            patch.subdivide(patches); // FIXME: only have to generate one of the patches
-            
-            const float u = uv.x, v = uv.y;
-            if (uv.y < 0.5f) {
-              if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
-              else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
-            } else {
-              if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
-              else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
-            }
-            dscale *= 2.0f;
-            depth++;
-          }
-        }
-      }  
-    };
   
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) Patch
@@ -397,17 +215,18 @@ namespace embree
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
       {
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-        };
-        
         /* first try to fast path using cached subdivision tree */
         if (child && child->eval(u,v,P,dPdu,dPdv,1.0f)) 
           return true;
         
         /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
-        FeatureAdaptivePointEval<Vertex,Vertex_t> eval(edge,loader,u,v,P,dPdu,dPdv); 
+        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+          const unsigned vtx = p->getStartVertexIndex();
+          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
+        };
+        
+        //FeatureAdaptivePointEval<Vertex,Vertex_t> eval(edge,loader,u,v,P,dPdu,dPdv); 
+        eval_direct(edge,loader,u,v,P,dPdu,dPdv);
         PATCH_DEBUG_SUBDIVISION(0,0,c);
         return true;
       }
@@ -454,6 +273,30 @@ namespace embree
         }
         return true;
       }
+
+      static void eval_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
+      {
+        const bool ab_abc = right_of_line_ab_abc(uv);
+        const bool ac_abc = right_of_line_ac_abc(uv);
+        const bool bc_abc = right_of_line_bc_abc(uv);
+        
+        const float u = uv.x, v = uv.y, w = 1.0f-u-v;
+        if  (!ab_abc &&  ac_abc) {
+          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
+          Patch::eval_direct(patches[0],xy,P,dPdu,dPdv,1.0f,depth+1);
+          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
+        }
+        else if ( ab_abc && !bc_abc) {
+          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
+          Patch::eval_direct(patches[1],xy,P,dPdu,dPdv,1.0f,depth+1);
+          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
+        }
+        else {
+          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
+          Patch::eval_direct(patches[2],xy,P,dPdu,dPdv,1.0f,depth+1);
+          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
+        }
+      }
       
       Type type;
       Patch* child[3];
@@ -479,6 +322,7 @@ namespace embree
         }
       }
       
+    public:
       Type type;
       Patch* child[4];
     };
@@ -527,6 +371,42 @@ namespace embree
               *dPdu = dpdy; *dPdv = -dpdx;
             }
             return true;
+          }
+        }
+      }
+
+      static void eval_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
+      {
+        float u = uv.x, v = uv.y;
+        if (uv.y < 0.5f) {
+          if (uv.x < 0.5f) {
+            Patch::eval_direct(patches[0],Vec2f(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = dpdx; *dPdv = dpdy;
+            }
+          }
+          else {
+            Patch::eval_direct(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),P,dPdu,dPdv,2.0f,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -dpdy; *dPdv = dpdx;
+            }
+          }
+        } else {
+          if (uv.x > 0.5f) {
+            Patch::eval_direct(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -dpdx; *dPdv = -dpdy;
+            }
+          }
+          else {
+            Patch::eval_direct(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),P,dPdu,dPdv,2.0f,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = dpdy; *dPdv = -dpdx;
+            }
           }
         }
       }
@@ -641,8 +521,121 @@ namespace embree
       assert(type == EVAL_PATCH);
       return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
     }
+
+    template<typename Loader>
+    static void eval_direct (const SubdivMesh::HalfEdge* edge, const Loader& loader, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+    {
+      switch (edge->type) {
+      case SubdivMesh::REGULAR_QUAD_PATCH: {
+        BSplinePatchT<Vertex,Vertex_t> patch; patch.init(edge,loader);
+        patch.eval(u,v,P,dPdu,dPdv);
+        break;
+      }
+#if PATCH_USE_GREGORY == 2
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: {
+        CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
+        GregoryPatchT<Vertex,Vertex_t> patch; patch.init(ccpatch);
+        patch.eval(u,v,P,dPdu,dPdv);
+        break;
+      }
+#endif
+      default: {
+        GeneralCatmullClarkPatch patch;
+        patch.init2(edge,loader);
+        eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,size_t(0));
+        break;
+      }
+      }
+    }
+    
+    static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
+    {
+      /* convert into standard quad patch if possible */
+      if (likely(patch.isQuadPatch())) 
+      {
+        CatmullClarkPatch qpatch; patch.init(qpatch);
+        eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
+        return;
+      }
+      
+      /* subdivide patch */
+      size_t N;
+      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+      patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+      
+      /* parametrization for triangles */
+      if (N == 3) 
+        SubdividedGeneralTrianglePatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
+      
+      /* parametrization for quads */
+      else if (N == 4) 
+        SubdividedGeneralQuadPatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
+      
+      /* parametrization for arbitrary polygons */
+      else 
+      {
+        const unsigned i = floorf(uv.x); assert(i<N);
+        eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+      }
+    }
+    
+    static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, float dscale, size_t depth)
+    {
+      while (true) 
+      {
+        if (unlikely(patch.isRegular()))
+        {
+          BSplinePatch bspline(patch);
+          bspline.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+          return;
+        }
+#if PATCH_USE_GREGORY == 2
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
+        {
+          GregoryPatch gregory(patch);
+          gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+          return;
+        }
+#else
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+        {
+#if PATCH_USE_GREGORY == 1
+          GregoryPatch gregory(patch);
+          gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+#else
+          const float sx1 = uv.x, sx0 = 1.0f-sx1;
+          const float sy1 = uv.y, sy0 = 1.0f-sy1;
+          const Vertex P0 = patch.ring[0].getLimitVertex();
+          const Vertex P1 = patch.ring[1].getLimitVertex();
+          const Vertex P2 = patch.ring[2].getLimitVertex();
+          const Vertex P3 = patch.ring[3].getLimitVertex();
+          if (P   ) *P    = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+          if (dPdu) *dPdu = (sy0*(P1-P0) + sy1*(P2-P3))*dscale; 
+          if (dPdv) *dPdv = (sx0*(P3-P0) + sx1*(P2-P1))*dscale;
+#endif
+          return;
+        }
+#endif
+        else
+        {
+          array_t<CatmullClarkPatch,4> patches; 
+          patch.subdivide(patches); // FIXME: only have to generate one of the patches
+          
+          const float u = uv.x, v = uv.y;
+          if (uv.y < 0.5f) {
+            if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
+            else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
+          } else {
+            if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
+            else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
+          }
+          dscale *= 2.0f;
+          depth++;
+        }
+      }
+    }  
     
     public:
-      Type type;
-    };
+    Type type;
+  };
 }

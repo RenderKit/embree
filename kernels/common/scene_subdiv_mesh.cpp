@@ -560,7 +560,6 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4)
     {
-#if 1
       SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
       Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
           auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
@@ -570,14 +569,6 @@ namespace embree
       float4 Pt, dPdut, dPdvt; 
       patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
       SharedLazyTessellationCache::unlock();
-#else
-      auto loader = [&](const SubdivMesh::HalfEdge* p) -> float4 { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return float4_t::loadu((float*)&src[vtx*stride+i*sizeof(float)]);
-      };
-      float4 Pt, dPdut, dPdvt; 
-      feature_adaptive_point_eval (getHalfEdge(primID),loader,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-#endif
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
