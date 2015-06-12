@@ -231,7 +231,7 @@ namespace embree
   {
     switch (edge->type) 
     {
-      /*case SubdivMesh::REGULAR_QUAD_PATCH: 
+      /*case SubdivMesh::REGULAR_QUAD_PATCH:  // FIXME: enable
     {
       BSplinePatchT<Ty> bspline;
       bspline.init(edge,loader);

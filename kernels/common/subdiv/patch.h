@@ -131,10 +131,7 @@ namespace embree
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
       
-        if (!child) 
-          return false;
-
-        if (child->eval(u,v,P,dPdu,dPdv)) 
+        if (child && child->eval(u,v,P,dPdu,dPdv)) 
           return true;
         
         GeneralCatmullClarkPatch patch;
