@@ -50,6 +50,27 @@ namespace embree
     return det(A-P,B-P) <= 0.0f;
   }
 
+  __forceinline bool right_of_line_ab_abc(const Vec2f& uv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    return right_of_line(ab,abc,uv);
+  }
+
+  __forceinline bool right_of_line_ac_abc(const Vec2f& uv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    return right_of_line(ac,abc,uv);
+  }
+
+  __forceinline bool right_of_line_bc_abc(const Vec2f& uv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    return right_of_line(bc,abc,uv);
+  }
+
   template<typename Vertex>
     __forceinline void map_quad0_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
   {
@@ -149,11 +170,9 @@ namespace embree
       /* parametrization for triangles */
       if (N == 3) 
       {
-        const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-        const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-        const bool ab_abc = right_of_line(ab,abc,uv);
-        const bool ac_abc = right_of_line(ac,abc,uv);
-        const bool bc_abc = right_of_line(bc,abc,uv);
+        const bool ab_abc = right_of_line_ab_abc(uv);
+        const bool ac_abc = right_of_line_ac_abc(uv);
+        const bool bc_abc = right_of_line_bc_abc(uv);
 
         const float u = uv.x, v = uv.y, w = 1.0f-u-v;
         if  (!ab_abc &&  ac_abc) {
@@ -407,11 +426,9 @@ namespace embree
     
     bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
     {
-      const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-      const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-      const bool ab_abc = right_of_line(ab,abc,Vec2f(u,v));
-      const bool ac_abc = right_of_line(ac,abc,Vec2f(u,v));
-      const bool bc_abc = right_of_line(bc,abc,Vec2f(u,v));
+      const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
+      const bool ac_abc = right_of_line_ac_abc(Vec2f(u,v));
+      const bool bc_abc = right_of_line_bc_abc(Vec2f(u,v));
 
       const float w = 1.0f-u-v;
       if  (!ab_abc &&  ac_abc) {
