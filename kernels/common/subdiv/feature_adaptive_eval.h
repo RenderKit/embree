@@ -43,6 +43,45 @@ namespace embree
     return det(A-P,B-P) <= 0.0f;
   }
 
+  template<typename Vertex>
+    __forceinline void map_quad0_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    const Vertex dpdx = dPdu, dpdy = dPdv;
+    const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
+    const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
+    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+  }
+
+  template<typename Vertex>
+    __forceinline void map_quad1_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    const Vertex dpdx = dPdu, dpdy = dPdv;
+    const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
+    const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
+    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+  }
+
+  template<typename Vertex>
+    __forceinline void map_quad2_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  {
+    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    const Vertex dpdx = dPdu, dpdy = dPdv;
+    const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
+    const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
+    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
+    dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
+  }
+
   template<typename Vertex, typename Vertex_t = Vertex>
     struct FeatureAdaptivePointEval
   {
@@ -93,38 +132,17 @@ namespace embree
         if  (!ab_abc &&  ac_abc) { // FIXME: simplify
           const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
           eval(patches[0],xy,srange,depth+1);
-          if (dPdu && dPdv) {
-            const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
-            const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
-            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-          }
+          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
         }
         else if ( ab_abc && !bc_abc) {
           const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
           eval(patches[1],xy,srange,depth+1);
-          if (dPdu && dPdv) {
-            const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
-            const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
-            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-          }
+          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
         }
         else {
           const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
           eval(patches[2],xy,srange,depth+1);
-          if (dPdu && dPdv) {
-            const Vertex dpdx = *dPdu, dpdy = *dPdv;
-            const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
-            const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
-            const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
-            *dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
-            *dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
-          }
+          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
         }
       } 
 

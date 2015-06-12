@@ -181,16 +181,20 @@ namespace embree
       const float w = 1.0f-u-v;
       if  (!ab_abc &&  ac_abc) {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(u,v));
-        return child[0]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
+        if (!child[0]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
+        if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
       }
       else if ( ab_abc && !bc_abc) {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(v,w));
-        return child[1]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
+        if (!child[1]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
+        if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
       }
       else {
         const Vec2f xy = map_tri_to_quad(a,ab,abc,ac,Vec2f(w,u));
-        return child[2]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f);
+        if (!child[2]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
+        if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
       }
+      return true;
     }
     
     Type type;
