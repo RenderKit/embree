@@ -494,6 +494,13 @@ namespace embree
         return cross(tv,tu);
       }   
       
+      __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+      {
+        if (P)    *P    = eval(u,v); 
+        if (dPdu) *dPdu = tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+      }
+
       template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
       {

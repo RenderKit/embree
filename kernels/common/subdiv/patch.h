@@ -22,9 +22,9 @@
 #include "gregory_triangle_patch.h"
 
 #define PATCH_DEBUG_SUBDIVISION 0
-#define PATCH_MAX_CACHE_DEPTH 0
+#define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 2     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
@@ -131,18 +131,14 @@ namespace embree
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH: {
         BSplinePatch patch; patch.init(edge,loader);
-        if (P)    *P    = patch.eval(u,v); 
-        if (dPdu) *dPdu = patch.tangentU(u,v); 
-        if (dPdv) *dPdv = patch.tangentV(u,v); 
+        patch.eval(u,v,P,dPdu,dPdv);
         break;
       }
 #if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: {
         CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
         GregoryPatch patch; patch.init(ccpatch);
-        if (P)    *P    = patch.eval(u,v); 
-        if (dPdu) *dPdu = patch.tangentU(u,v); 
-        if (dPdv) *dPdv = patch.tangentV(u,v); 
+        patch.eval(u,v,P,dPdu,dPdv);
         break;
       }
 #endif
@@ -247,18 +243,14 @@ namespace embree
         if (unlikely(patch.isRegular()))
         {
           BSplinePatch bspline(patch);
-          if (P   ) *P    = bspline.eval(uv.x,uv.y);
-          if (dPdu) *dPdu = bspline.tangentU(uv.x,uv.y)*dscale; 
-          if (dPdv) *dPdv = bspline.tangentV(uv.x,uv.y)*dscale; 
+          bspline.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
           return;
         }
 #if PATCH_USE_GREGORY == 2
         else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
         {
           GregoryPatch gregory(patch);
-          if (P   ) *P    = gregory.eval(uv.x,uv.y);
-          if (dPdu) *dPdu = gregory.tangentU(uv.x,uv.y)*dscale; 
-          if (dPdv) *dPdv = gregory.tangentV(uv.x,uv.y)*dscale; 
+          gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
           return;
         }
 #else
@@ -266,9 +258,7 @@ namespace embree
         {
 #if PATCH_USE_GREGORY == 1
           GregoryPatch gregory(patch);
-          if (P   ) *P    = gregory.eval(uv.x,uv.y);
-          if (dPdu) *dPdu = gregory.tangentU(uv.x,uv.y)*dscale; 
-          if (dPdv) *dPdv = gregory.tangentV(uv.x,uv.y)*dscale; 
+          gregory.eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
 #else
           const float sx1 = uv.x, sx0 = 1.0f-sx1;
           const float sy1 = uv.y, sy0 = 1.0f-sy1;
@@ -316,9 +306,9 @@ namespace embree
       BSPLINE_PATCH = 1,  
       GREGORY_PATCH = 2,
       EVAL_PATCH = 3,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 4,
-      SUBDIVIDED_QUAD_PATCH = 5,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 6
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 4,
+      SUBDIVIDED_GENERAL_QUAD_PATCH = 5,
+      SUBDIVIDED_QUAD_PATCH = 6
     };
 
     struct BSplinePatch 
@@ -334,7 +324,7 @@ namespace embree
       }
 
       template<typename Loader>
-      __noinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+      __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
         : type(BSPLINE_PATCH) { patch.init(edge,loader); }
 
       __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
@@ -342,9 +332,7 @@ namespace embree
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
-        if (P)    *P    = patch.eval(u,v); 
-        if (dPdu) *dPdu = patch.tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = patch.tangentV(u,v)*dscale; 
+        patch.eval(u,v,P,dPdu,dPdv,dscale);
 #if PATCH_DEBUG_SUBDIVISION
         size_t hex = (size_t)this;
         for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
@@ -379,9 +367,7 @@ namespace embree
 
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
-        if (P)    *P    = patch.eval(u,v); 
-        if (dPdu) *dPdu = patch.tangentU(u,v)*dscale; 
-        if (dPdv) *dPdv = patch.tangentV(u,v)*dscale; 
+        patch.eval(u,v,P,dPdu,dPdv,dscale);
 #if PATCH_DEBUG_SUBDIVISION
         size_t hex = (size_t)this;
         for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);

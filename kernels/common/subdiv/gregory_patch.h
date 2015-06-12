@@ -430,6 +430,13 @@ namespace embree
     __forceinline Vertex tangentV( const float uu, const float vv) const {
       return tangentV(v,f,uu,vv);
     }
+    
+    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+    {
+      if (P)    *P    = eval(u,v); 
+      if (dPdu) *dPdu = tangentU(u,v)*dscale; 
+      if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+    }
 
     template<class M, class T>
       static __forceinline Vec3<T> eval_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
