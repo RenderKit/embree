@@ -317,7 +317,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       foreach_unique (geomID in ray.geomID) {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
       }
+      //return diffuse;
+      diffuse = 0.5f*diffuse;
     }
+
     /* calculate smooth shading normal */
     Vec3f Ng = ray.Ng;
     if (ray.geomID >= 3) {
@@ -344,12 +347,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-
-    
     
     /* add light contribution */
-    if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
+    if (shadow.geomID) {
+      Vec3f r = normalize(reflect(ray.dir,Ng));
+      float s = clamp(pow(abs(dot(r,lightDir)),10.0f),0.0f,1.0f);
+      float d = clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
+      color = color + diffuse*d + 0.5f*make_Vec3f(s); // FIXME: +=
+    }
   }
   return color;
 }

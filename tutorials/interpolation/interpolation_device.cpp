@@ -310,11 +310,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
     /* interpolate diffuse color */
+
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
-    if (ray.geomID > 0) {
+    if (ray.geomID > 0) 
+    {
       int geomID = ray.geomID;  {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
       }
+      //return diffuse;
+      diffuse = 0.5f*diffuse;
     }
 
     /* calculate smooth shading normal */
@@ -327,7 +331,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       //return dPdu;
       Ng = cross(dPdv,dPdu);
     }
-
     color = color + diffuse*0.5f; // FIXME: +=
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
@@ -344,12 +347,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     
     /* trace shadow ray */
     rtcOccluded(g_scene,shadow);
-
-    
     
     /* add light contribution */
-    if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
+    if (shadow.geomID) {
+      Vec3fa r = normalize(reflect(ray.dir,Ng));
+      float s = clamp(pow(abs(dot(r,lightDir)),10.0f),0.0f,1.0f);
+      float d = clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
+      color = color + diffuse*d + 0.5f*Vec3fa(s); // FIXME: +=
+    }
   }
   return color;
 }
