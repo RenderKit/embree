@@ -250,10 +250,15 @@ namespace embree
       }
     public:
       
-      BSplinePatchT () {}
+      __forceinline BSplinePatchT () {}
 
-      BSplinePatchT (const CatmullClarkPatch& patch) {
+      __forceinline BSplinePatchT (const CatmullClarkPatch& patch) {
         init(patch);
+      }
+
+      template<typename Loader>
+        __forceinline BSplinePatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) {
+        init(edge,loader);
       }
 
       __forceinline void init( FinalQuad& quad ) const

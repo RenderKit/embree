@@ -21,7 +21,14 @@
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
 
-#define PATCH_DEBUG_SUBDIVISION 0
+#define PATCH_DEBUG_SUBDIVISION(x,y,z) \
+/*  {                                                   \
+    size_t hex = (size_t)this;                          \
+    for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);  \
+    const float c = (float)(hex&0xff)/255.0f;           \
+    if (P) *P = Vertex(c,0.0f,0.0f,0.0f);               \
+    }               */
+
 #define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 #define PATCH_USE_GREGORY 2     // 0 = no gregory, 1 = fill, 2 = as early as possible
@@ -321,7 +328,7 @@ namespace embree
 
       template<typename Loader>
       __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-        : type(BSPLINE_PATCH) { patch.init(edge,loader); }
+      : type(BSPLINE_PATCH), patch(edge,loader) {}
 
       /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
@@ -335,12 +342,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-#if PATCH_DEBUG_SUBDIVISION
-        size_t hex = (size_t)this;
-        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
-        const float c = (float)(hex&0xff)/255.0f;
-        if (P) *P = Vertex(c,0.0f,0.0f,0.0f);
-#endif  
+        PATCH_DEBUG_SUBDIVISION(c,0,0);
         return true;
       }
 
@@ -370,12 +372,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-#if PATCH_DEBUG_SUBDIVISION
-        size_t hex = (size_t)this;
-        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
-        const float c = (float)(hex&0xff)/255.0f;
-        if (P) *P = Vertex(0.0f,c,0.0f,0.0f);
-#endif  
+        PATCH_DEBUG_SUBDIVISION(0,c,0);
         return true;
       }
 
@@ -404,13 +401,7 @@ namespace embree
           return true;
         
         FeatureAdaptivePointEval<Vertex,Vertex_t> eval(edge,loader,u,v,P,dPdu,dPdv); 
-        
-#if PATCH_DEBUG_SUBDIVISION
-        size_t hex = (size_t)this;
-        for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);
-        const float c = (float)(hex&0xff)/255.0f;
-        if (P) *P = Vertex(0.0f,0.0f,c,0.0f);
-#endif  
+        PATCH_DEBUG_SUBDIVISION(0,0,c);
         return true;
       }
       
