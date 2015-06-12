@@ -315,6 +315,22 @@ namespace embree
           else          return child[3]->eval(2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
         }
       }
+
+      __forceinline static void eval_direct(CatmullClarkPatch& patch, Vec2f& uv, float& dscale)
+      {
+        array_t<CatmullClarkPatch,4> patches; 
+        patch.subdivide(patches); // FIXME: only have to generate one of the patches
+          
+        const float u = uv.x, v = uv.y;
+        if (uv.y < 0.5f) {
+          if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
+          else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
+        } else {
+          if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
+          else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
+        }
+        dscale *= 2.0f;
+      }
       
     public:
       Type type;
@@ -579,20 +595,8 @@ namespace embree
           return;
         }
 #endif
-        else
-        {
-          array_t<CatmullClarkPatch,4> patches; 
-          patch.subdivide(patches); // FIXME: only have to generate one of the patches
-          
-          const float u = uv.x, v = uv.y;
-          if (uv.y < 0.5f) {
-            if (uv.x < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); }
-            else             { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); }
-          } else {
-            if (uv.x > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); }
-            else             { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); }
-          }
-          dscale *= 2.0f;
+        else {
+          SubdividedQuadPatch::eval_direct(patch,uv,dscale);
           depth++;
         }
       }
