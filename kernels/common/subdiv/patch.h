@@ -31,7 +31,7 @@ namespace embree
   {
   public:
 
-    static const size_t MAX_DEPTH = 1;
+    static const size_t MAX_DEPTH = 0;
     
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
@@ -227,11 +227,43 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         if (v < 0.5f) {
-          if (u < 0.5f) return child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv);
-          else          return child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv);
+          if (u < 0.5f) {
+            if (!child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv)) return false;
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = 2.0f*dpdx;
+              *dPdv = 2.0f*dpdy;
+            }
+            return true;
+          }
+          else {
+            if (!child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv)) return false;
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -2.0f*dpdy;
+              *dPdv = 2.0f*dpdx;
+            }
+            return true;
+          }
         } else {
-          if (u > 0.5f) return child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv);
-          else          return child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv);
+          if (u > 0.5f) {
+            if (!child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv)) return false;
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -2.0f*dpdx;
+              *dPdv = -2.0f*dpdy;
+            }
+            return true;
+          }
+          else {
+            if (!child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv)) return false;
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = 2.0f*dpdy;
+              *dPdv = -2.0f*dpdx;
+            }
+            return true;
+          }
         }
       }
 
@@ -252,17 +284,18 @@ namespace embree
       
       EvalPatch* root = EvalPatch::create(alloc,edge,vertices,stride);
       Patch* child = nullptr;
-
+      
       switch (edge->type) {
         //case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
         //case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
-      default: {
-        GeneralCatmullClarkPatch patch;
-        patch.init2(edge,loader);
-        child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
-        break;
+      default: if (MAX_DEPTH > 0) {
+          GeneralCatmullClarkPatch patch;
+          patch.init2(edge,loader);
+          child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
+          break;
+        }
       }
-      }
+
       root->child = child;
       return (Patch*) root;
     }
@@ -271,11 +304,11 @@ namespace embree
   __noinline static Patch* create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
   {
     /* convert into standard quad patch if possible */
-    /*if (likely(patch.isQuadPatch())) {
+    if (likely(patch.isQuadPatch())) {
       CatmullClarkPatch qpatch; patch.init(qpatch);
       return Patch::create(alloc,qpatch,edge,vertices,stride,depth);
     }
-    else*/ if (depth >= MAX_DEPTH) {
+    else if (depth >= MAX_DEPTH) {
       return nullptr;
     }
     else 

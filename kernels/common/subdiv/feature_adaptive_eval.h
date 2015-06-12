@@ -66,13 +66,13 @@ namespace embree
     void eval(const GeneralCatmullClarkPatch& patch, Vec2f uv, const size_t depth) // FIXME: no recursion required
     {
       /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch())) 
+      /*if (likely(patch.isQuadPatch())) 
       {
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
         CatmullClarkPatch qpatch; patch.init(qpatch);
 	eval(qpatch,uv,srange,depth); 
 	return;
-      }
+        }*/
 
       /* subdivide patch */
       size_t N;
@@ -132,13 +132,41 @@ namespace embree
       else if (N == 4) 
       {
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(1.0f,1.0f));
-        const Vec2f c = srange.center();
-        if (uv.y < c.y) {
-          if (uv.x < c.x) eval(patches[0],uv,BBox2f(srange.lower,c),depth+1);
-          else            eval(patches[1],uv,BBox2f(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y)),depth+1);
+        float u = uv.x, v = uv.y;
+        if (uv.y < 0.5f) {
+          if (uv.x < 0.5f) {
+            eval(patches[0],Vec2f(2.0f*u,2.0f*v),srange,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = 2.0f*dpdx;
+              *dPdv = 2.0f*dpdy;
+            }
+          }
+          else {
+            eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),srange,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -2.0f*dpdy;
+              *dPdv = 2.0f*dpdx;
+            }
+          }
         } else {
-          if (uv.x > c.x) eval(patches[2],uv,BBox2f(c,srange.upper),depth+1);
-          else            eval(patches[3],uv,BBox2f(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y)),depth+1);
+          if (uv.x > 0.5f) {
+            eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),srange,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = -2.0f*dpdx;
+              *dPdv = -2.0f*dpdy;
+            }
+          }
+          else {
+            eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),srange,depth+1);
+            if (dPdu && dPdv) {
+              const Vertex dpdx = *dPdu, dpdy = *dPdv;
+              *dPdu = 2.0f*dpdy;
+              *dPdv = -2.0f*dpdx;
+            }
+          }
         }
       }
 
@@ -203,7 +231,7 @@ namespace embree
   {
     switch (edge->type) 
     {
-    case SubdivMesh::REGULAR_QUAD_PATCH: 
+      /*case SubdivMesh::REGULAR_QUAD_PATCH: 
     {
       BSplinePatchT<Ty> bspline;
       bspline.init(edge,loader);
@@ -222,7 +250,7 @@ namespace embree
       if (dPdu) *dPdu = gregory.tangentU(u,v);
       if (dPdv) *dPdv = gregory.tangentV(u,v);
       break;
-    }
+      }*/
     default: 
     {
       GeneralCatmullClarkPatchT<Ty> patch;
