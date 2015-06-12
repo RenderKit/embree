@@ -36,7 +36,15 @@ namespace embree
     __forceinline GregoryPatchT(const CatmullClarkPatch& patch) {
       init(patch);
     }
-    
+
+    template<typename Loader>
+    __forceinline GregoryPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    {
+      CatmullClarkPatch ccpatch; 
+      ccpatch.init2(edge,loader); 
+      init(ccpatch);
+    }
+      
     __forceinline Vertex& p0() { return v[0][0]; }
     __forceinline Vertex& p1() { return v[0][3]; }
     __forceinline Vertex& p2() { return v[3][3]; }

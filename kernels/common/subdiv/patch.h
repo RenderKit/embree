@@ -31,7 +31,7 @@
 
 #define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MAX_EVAL_DEPTH 4  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 1     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 2     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
 {
@@ -457,9 +457,7 @@ namespace embree
       }
 #if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: {
-        CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); 
-        GregoryPatchT<Vertex,Vertex_t> patch; patch.init(ccpatch);
-        patch.eval(u,v,P,dPdu,dPdv);
+        GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv);
         break;
       }
 #endif
