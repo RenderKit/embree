@@ -452,8 +452,7 @@ namespace embree
 
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH: {
-        BSplinePatchT<Vertex,Vertex_t> patch; patch.init(edge,loader);
-        patch.eval(u,v,P,dPdu,dPdv);
+        BSplinePatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv);
         break;
       }
 #if PATCH_USE_GREGORY == 2
