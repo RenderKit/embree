@@ -41,8 +41,9 @@ namespace embree
       BSPLINE_PATCH = 1,  
       GREGORY_PATCH = 2,
       EVAL_PATCH = 3,
-      SUBDIVIDED_QUAD_PATCH = 4,
-      SUBDIVIDED_TRIANGLE_PATCH = 5
+      SUBDIVIDED_GENERAL_QUAD_PATCH = 4,
+      SUBDIVIDED_QUAD_PATCH = 5,
+      SUBDIVIDED_TRIANGLE_PATCH = 6
     };
 
     struct BSplinePatch 
@@ -213,6 +214,30 @@ namespace embree
       Type type;
       Patch* child[4];
     };
+
+  struct SubdividedGeneralQuadPatch
+    {
+      template<typename Allocator>
+      __noinline static SubdividedGeneralQuadPatch* create(const Allocator& alloc) {
+        return new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch;
+      }
+      
+      __forceinline SubdividedGeneralQuadPatch() : type(SUBDIVIDED_GENERAL_QUAD_PATCH) {}
+      
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        if (v < 0.5f) {
+          if (u < 0.5f) return child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv);
+          else          return child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv);
+        } else {
+          if (u > 0.5f) return child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv);
+          else          return child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv);
+        }
+      }
+
+      Type type;
+      Patch* child[4];
+    };
    
     /*! Default constructor. */
     __forceinline Patch () {}
@@ -229,8 +254,8 @@ namespace embree
       Patch* child = nullptr;
 
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+        //case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
+        //case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
       default: {
         GeneralCatmullClarkPatch patch;
         patch.init2(edge,loader);
@@ -246,11 +271,11 @@ namespace embree
   __noinline static Patch* create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
   {
     /* convert into standard quad patch if possible */
-    if (likely(patch.isQuadPatch())) {
+    /*if (likely(patch.isQuadPatch())) {
       CatmullClarkPatch qpatch; patch.init(qpatch);
       return Patch::create(alloc,qpatch,edge,vertices,stride,depth);
     }
-    else if (depth >= MAX_DEPTH) {
+    else*/ if (depth >= MAX_DEPTH) {
       return nullptr;
     }
     else 
@@ -267,7 +292,7 @@ namespace embree
         ret = (Patch*) node;
       } 
       else if (N == 4) { // FIXME: triggering this code path causes interpolation errors!
-        SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
+        SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
         for (size_t i=0; i<4; i++)
           node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
         ret = (Patch*) node;
@@ -304,6 +329,7 @@ namespace embree
       case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv); 
       case EVAL_PATCH   : return ((EvalPatch*)   this)->eval(u,v,P,dPdu,dPdv); 
       case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv);
+      case SUBDIVIDED_GENERAL_QUAD_PATCH: return ((SubdividedGeneralQuadPatch*)this)->eval(u,v,P,dPdu,dPdv);
       case SUBDIVIDED_TRIANGLE_PATCH: return ((SubdividedTrianglePatch*)this)->eval(u,v,P,dPdu,dPdv); 
       default: assert(false); return false;
       }
