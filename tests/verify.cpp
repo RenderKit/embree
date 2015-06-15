@@ -2978,6 +2978,116 @@ namespace embree
     return true;
   }
 
+  /*********************************************************************************/
+  /*                        rtcInterpolate                                         */
+  /*********************************************************************************/
+
+  const size_t num_interpolation_vertices = 16;
+  const size_t num_interpolation_faces = 9;
+
+  float interpolation_vertices[num_interpolation_vertices*3] = {
+    -1.0f, -1.0f, 0.0f,
+    0.0f, -1.0f, 0.0f, 
+    +1.0f, -1.0f, 0.0f,
+    +2.0f, -1.0f, 0.0f,
+    
+    -1.0f,  0.0f, 0.0f,
+    0.0f,  0.0f, 0.0f,
+    +1.0f,  0.0f, 0.0f,
+    +2.0f,  0.0f, 0.0f,
+
+    -1.0f, +1.0f, 0.0f,
+    0.0f, +1.0f, 0.0f,
+    +1.0f, +1.0f, 0.0f,
+    +2.0f, +1.0f, 0.0f,
+
+    -1.0f, +2.0f, 0.0f,
+    0.0f, +2.0f, 0.0f,
+    +1.0f, +2.0f, 0.0f,
+    +2.0f, +2.0f, 0.0f,
+  };
+
+  int interpolation_indices[num_interpolation_faces*4] = {
+    0, 1, 5, 4,
+    1, 2, 6, 5,
+    2, 3, 7, 6,
+    4, 5, 9, 8, 
+    5, 6, 10, 9,
+    6, 7, 11, 10,
+    8, 9, 13, 12,
+    9, 10, 14, 13,
+    10, 11, 15, 14
+  };
+
+  int interpolation_faces[num_interpolation_faces] = {
+    4, 4, 4, 4, 4, 4, 4, 4, 4
+  };
+
+  bool checkInterpolation00(RTCScene scene, int geomID, RTCBufferType buffer, float* data, size_t N)
+  {
+    bool passed = true;
+    float P[256], dPdu[256], dPdv[256];
+    rtcInterpolate(scene,geomID,0,0.0f,0.0f,buffer,P,dPdu,dPdv,N);
+    
+    for (size_t i=0; i<N; i++) {
+      float v = (1.0f/6.0f)*(1.0f*data[4*N+i] + 4.0f*data[0*N+i] + 1.0f*data[1*N+i]);
+      passed &= fabs(v-P[i]) < 1E-4f;
+    }
+    return passed;
+  }
+
+  bool rtcore_interpolate(size_t N)
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+    AssertNoError();
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 0, 0, 0, 1);
+    AssertNoError();
+
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_indices , 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_faces,    0, sizeof(unsigned int));
+    AssertNoError();
+
+    float* vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    /*float* vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+    AssertNoError();*/
+
+    float* user_vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    float* user_vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+    AssertNoError();
+
+    //rtcDisable(scene,geomID); // FIXME: not working is everything is disabled
+    AssertNoError();
+    rtcCommit(scene);
+    AssertNoError();
+
+    bool passed = true;
+    passed &= checkInterpolation00(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N);
+    //passed &= checkInterpolation00(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N);
+    passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N);
+    //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
+    AssertNoError();
+
+    delete[] vertices0;
+    //delete[] vertices1;
+    delete[] user_vertices0;
+    delete[] user_vertices1;
+
+    return passed;
+  }
+
+
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
@@ -3031,8 +3141,14 @@ namespace embree
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
-    rtcore_build();
+    POSITIVE("interpolate4",                rtcore_interpolate(4));
+    POSITIVE("interpolate5",                rtcore_interpolate(5));
+    POSITIVE("interpolate8",                rtcore_interpolate(8));
+    POSITIVE("interpolate11",               rtcore_interpolate(11));
+    POSITIVE("interpolate12",               rtcore_interpolate(12));
+    POSITIVE("interpolate15",               rtcore_interpolate(15));
 
+    rtcore_build();
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
