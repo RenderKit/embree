@@ -188,6 +188,11 @@ namespace embree
         return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH /* || patchType() == IRREGULAR_TRIANGLE_PATCH */;
       }
 
+      /*! tests if the base vertex of this half edge is a corner vertex */
+      __forceinline bool isCorner() const {
+        return !hasOpposite() && !prev()->hasOpposite();
+      }
+
       /*! calculates conservative bounds of a catmull clark subdivision face */
       __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
       {
@@ -367,6 +372,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
+    void setBoundaryMode (RTCBoundaryMode mode);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
@@ -426,9 +432,10 @@ namespace embree
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
   private:
-    size_t numFaces;                  //!< number of faces
-    size_t numEdges;                  //!< number of edges
-    size_t numVertices;               //!< number of vertices
+    size_t numFaces;           //!< number of faces
+    size_t numEdges;           //!< number of edges
+    size_t numVertices;        //!< number of vertices
+    RTCBoundaryMode boundary;  //!< boundary interpolation mode
 
     /*! all buffers in this section are provided by the application */
   protected:

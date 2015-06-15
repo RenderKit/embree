@@ -806,6 +806,16 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
+  RTCORE_API void rtcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) 
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBoundaryMode);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setBoundaryMode(mode);
+    RTCORE_CATCH_END;
+  }
+
   RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) 
   {
     RTCORE_CATCH_BEGIN;

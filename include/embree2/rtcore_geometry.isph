@@ -62,13 +62,20 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
+/*! \brief Boundary interpolation mode for subdivision surfaces */
+enum RTCBoundaryMode
+{
+  RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
+  RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
+};
+
 /*! Intersection filter function for uniform rays. */
 typedef void (*uniform RTCFilterFuncUniform)(void* uniform ptr,    /*!< pointer to user data */
-                                     uniform RTCRay1& ray  /*!< intersection to filter */);
+                                             uniform RTCRay1& ray  /*!< intersection to filter */);
 
 /*! Intersection filter function for varying rays. */
 typedef void (*uniform RTCFilterFuncVarying)(void* uniform ptr,   /*!< pointer to user data */
-                                     varying RTCRay& ray  /*!< intersection to filter */);
+                                             varying RTCRay& ray  /*!< intersection to filter */);
 
 
 /*! \brief Creates a new scene instance. 
@@ -203,6 +210,9 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!<
 
 /*! \brief Sets 32 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+
+/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */

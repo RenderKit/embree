@@ -31,6 +31,7 @@ namespace embree
       numEdges(numEdges), 
       numHalfEdges(0),
       numVertices(numVertices),
+      boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
       displBounds(empty),
       levelUpdate(false)
@@ -67,6 +68,13 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
+  }
+
+  void SubdivMesh::setBoundaryMode (RTCBoundaryMode mode)
+  {
+    if (boundary == mode) return;
+    boundary = mode;
+    updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -331,15 +339,21 @@ namespace embree
       }
     });
 
-    /* calculate type of each patch */
+    /* calculate patch types and sharp corners */
     parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
         PatchType type = edge->patchType();
-        for (size_t i=0; i<faceVertices[f]; i++)
+        for (size_t i=0; i<faceVertices[f]; i++) 
+        {
           edge[i].type = type;
+
+          /* calculate sharp corner vertices */
+          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge[i].isCorner()) 
+            edge[i].vertex_crease_weight = float(inf);
+        }
       }
     });
   }
@@ -375,8 +389,11 @@ namespace embree
 	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
-	if (updateVertexCreases)
+	if (updateVertexCreases) {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
+            edge.vertex_crease_weight = float(inf);
+        }
 
         if (updateEdgeCreases || updateVertexCreases) {
           edge.type = edge.patchType();
@@ -430,7 +447,7 @@ namespace embree
     if (recalculate) calculateHalfEdges();
     else if (update) updateHalfEdges();
 
-    /* create interpolation cache mapping for interpolation scenes */
+    /* create interpolation cache mapping for interpolatable meshes */
     if (parent->isInterpolatable()) 
     {
 #if defined (__TARGET_AVX__)

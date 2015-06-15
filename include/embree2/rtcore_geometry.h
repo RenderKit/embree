@@ -62,6 +62,13 @@ enum RTCGeometryFlags
   RTC_GEOMETRY_DYNAMIC    = 2,    //!< specifies dynamic geometry with arbitrary motion (BVH refit not possible)
 };
 
+/*! \brief Boundary interpolation mode for subdivision surfaces */
+enum RTCBoundaryMode
+{
+  RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
+  RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
+};
+
 /*! Axis aligned bounding box representation */
 struct RTCORE_ALIGN(16) RTCBounds
 {
@@ -233,6 +240,9 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
 
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
+
+/*! \brief Sets boundary interpolation mode for subdivision surfaces */                                                                        
+RTCORE_API void rtcSetBoundaryMode(RTCScene scene, unsigned geomID, RTCBoundaryMode mode);
 
 /*! \brief Maps specified buffer. This function can be used to set index and
  *  vertex buffers of geometries. */

@@ -122,6 +122,12 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! for subdivision surfaces only */
+  public:
+    virtual void setBoundaryMode (RTCBoundaryMode mode) {
+      throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 

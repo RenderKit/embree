@@ -129,6 +129,10 @@ namespace embree
   extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {
     rtcSetMask(scene,geomID,mask);
   }
+
+  extern "C" void ispcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) {
+    rtcSetBoundaryMode(scene,geomID,mode);
+  }
   
   extern "C" void* ispcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) {
     return rtcMapBuffer(scene,geomID,type);

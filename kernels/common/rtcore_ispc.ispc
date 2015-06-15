@@ -63,6 +63,7 @@ extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform size_tt numTimeSteps);
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+extern "C" void ispcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt mask);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, void* uniform ptr, uniform size_tt offset, uniform size_tt stride);
@@ -240,6 +241,10 @@ uniform unsigned int rtcNewSubdivisionMesh (RTCScene scene,
 
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask) {
   ispcSetRayMask(scene,geomID,mask);
+}
+
+void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode) {
+  ispcSetBoundaryMode(scene,geomID,mode);
 }
 
 void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {

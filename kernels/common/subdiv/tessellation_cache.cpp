@@ -119,7 +119,6 @@ namespace embree
 
   void SharedLazyTessellationCache::resetCache() 
   {
-
     if (reset_state.try_lock())
       {
 	if (next_block >= switch_block_threshold)
