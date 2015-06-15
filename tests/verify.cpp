@@ -3038,7 +3038,7 @@ namespace embree
 
   bool rtcore_interpolate(size_t N)
   {
-    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1 | RTC_INTERPOLATE);
+    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERPOLATE);
     AssertNoError();
     unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 0, 0, 0, 1);
     AssertNoError();
@@ -3067,7 +3067,7 @@ namespace embree
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
     AssertNoError();
 
-    //rtcDisable(scene,geomID); // FIXME: not working is everything is disabled
+    rtcDisable(scene,geomID);
     AssertNoError();
     rtcCommit(scene);
     AssertNoError();

@@ -71,8 +71,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -81,11 +88,6 @@ namespace embree
         bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH");
-
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
         prims.resize(numPrimitives);
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -123,8 +125,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -137,12 +146,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -260,8 +265,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -274,12 +286,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -383,8 +391,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -397,12 +412,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -761,8 +772,15 @@ namespace embree
       
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -779,12 +797,10 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
         /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+        Scene::Iterator<SubdivMesh> iter(scene);
         for (size_t i=0; i<iter.size(); i++)
-          if (iter[i]) 
-          {
-            iter[i]->initializeHalfEdgeStructures();
-            fastUpdateMode_numFaces += iter[i]->size();
+          if (iter[i]) {
+            fastUpdateMode_numFaces += iter[i]->size(); // FIXME: same as numPrimitives above?
             if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
           }
         

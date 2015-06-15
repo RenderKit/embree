@@ -877,7 +877,15 @@ PRINT(CORRECT_numPrims);
     fastUpdateMode_numFaces = 0;
 
     /* initialize all half edge structures */
-    new (&iter) Scene::Iterator<SubdivMesh>(this->scene,scene->isInterpolatable());
+    //const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+    if (numPrimitives > 0 || scene->isInterpolatable()) {
+      Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+      for (size_t i=0; i<iter.size(); i++)
+        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+    }
+
+    /* initialize all half edge structures */
+    new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
 
     DBG_CACHE_BUILDER( PRINT( iter.size() ) );
 
@@ -887,7 +895,7 @@ PRINT(CORRECT_numPrims);
 	  DBG_CACHE_BUILDER( PRINT( i ) );
 	  DBG_CACHE_BUILDER( PRINT( iter[i] ) );
 
-	  iter[i]->initializeHalfEdgeStructures();
+	  //iter[i]->initializeHalfEdgeStructures();
 	  fastUpdateMode_numFaces += iter[i]->size();
 	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
 	}
