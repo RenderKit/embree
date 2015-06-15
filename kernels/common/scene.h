@@ -54,14 +54,14 @@ namespace embree
       public:
       Iterator ()  {}
       
-      Iterator (Scene* scene) 
-      : scene(scene) {}
+      Iterator (Scene* scene, bool all = false) 
+      : scene(scene), all(all) {}
       
       __forceinline Ty* at(const size_t i)
       {
         Geometry* geom = scene->geometries[i];
         if (geom == nullptr) return nullptr;
-        if (!geom->isEnabled()) return nullptr;
+        if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
         if (geom->numTimeSteps != timeSteps) return nullptr;
         return (Ty*) geom;
@@ -92,6 +92,7 @@ namespace embree
       
     private:
       Scene* scene;
+      bool all;
     };
 
   public:
