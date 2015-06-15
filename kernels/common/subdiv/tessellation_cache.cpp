@@ -93,14 +93,14 @@ namespace embree
       { 
         // FIXME: this is buggy! cannot reallocate while thread are working on this array!
 
-    	//numMaxRenderThreads *= 2;
-	//threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); 
-	//for (size_t i=id;i<numMaxRenderThreads;i++)
-	//  threadWorkState[i].reset();
+    	numMaxRenderThreads *= 2;
+	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); 
+	for (size_t i=id;i<numMaxRenderThreads;i++)
+	  threadWorkState[i].reset();
 
 	//assert( threadWorkState );
 	//if (!threadWorkState)
-        THROW_RUNTIME_ERROR("getNextRenderThreadID");
+        //THROW_RUNTIME_ERROR("getNextRenderThreadID");
       }    
     reset_state.unlock();
 
