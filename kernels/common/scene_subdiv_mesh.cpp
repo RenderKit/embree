@@ -160,9 +160,6 @@ namespace embree
     case RTC_LEVEL_BUFFER               : levels.unmap(parent->numMappedBuffers); break;
     default                             : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
-
-    /* signal that a buffer has been updated */
-    updateBuffer(type);
   }
 
   void SubdivMesh::update ()

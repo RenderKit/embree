@@ -21,7 +21,7 @@
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
-#define LEVEL_FACTOR   64.0f
+#define LEVEL_FACTOR  128.0f
 
 
 /* scene data */
@@ -154,15 +154,12 @@ unsigned int hair_indices[1] = {
 
 inline float updateEdgeLevel(const Vec3fa& cam_pos, Vec3fa* vtx, unsigned int* indices, const size_t e0, const size_t e1)
 {
-  //Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
-
   const Vec3fa v0 = vtx[indices[e0]];
   const Vec3fa v1 = vtx[indices[e1]];
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
   const float level = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-  //rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   return level;
 }
                                       
@@ -199,7 +196,7 @@ void setTriangleSubdivCubeLevels (RTCScene scene_i, unsigned int geomID, const V
   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  for (size_t i=0;i<NUM_TRI_INDICES;i+=3)
+  for (size_t i=0; i<NUM_TRI_INDICES; i+=3)
   {
     level[i+0] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+0, i+1);
     level[i+1] = updateEdgeLevel(cam_pos, vtx, cube_tri_indices, i+1, i+2);
@@ -208,6 +205,7 @@ void setTriangleSubdivCubeLevels (RTCScene scene_i, unsigned int geomID, const V
 
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  rtcUpdateBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 }
 
 /* adds a subdiv cube to the scene */
@@ -243,7 +241,7 @@ void setQuadSubdivCubeLevels (RTCScene scene_i, unsigned int geomID, const Vec3f
   Vec3fa* vtx = (Vec3fa*) rtcMapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
   float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 
-  for (size_t i=0;i<NUM_QUAD_INDICES;i+=4)
+  for (size_t i=0; i<NUM_QUAD_INDICES; i+=4)
   {
     level[i+0] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+0, i+1);
     level[i+1] = updateEdgeLevel(cam_pos, vtx, cube_quad_indices, i+1, i+2);
@@ -253,6 +251,7 @@ void setQuadSubdivCubeLevels (RTCScene scene_i, unsigned int geomID, const Vec3f
 
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   rtcUnmapBuffer(scene_i, geomID, RTC_VERTEX_BUFFER);
+  rtcUpdateBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
 }
 
 /* adds a cube to the scene */
