@@ -461,7 +461,7 @@ namespace embree
 #endif
       for (size_t i=0; i<2; i++) {
         if (vertices   [i]) vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
-        if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
+        if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(userbuffers[i]->getStride()));
       }
     }
 

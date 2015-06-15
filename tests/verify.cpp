@@ -3076,7 +3076,7 @@ namespace embree
     passed &= checkInterpolation00(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N);
     //passed &= checkInterpolation00(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N);
     passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N);
-    //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
+    passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
     AssertNoError();
 
     delete[] vertices0;
@@ -3112,6 +3112,7 @@ namespace embree
     //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
+    //POSITIVE("interpolate4",                rtcore_interpolate(4));
     //exit(1);
 
 #if 1
