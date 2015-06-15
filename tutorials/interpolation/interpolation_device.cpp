@@ -27,7 +27,7 @@
 /* scene data */
 RTCScene g_scene = nullptr;
 Vec3fa* vertex_colors = nullptr;
-unsigned int triCubeID, quadCubeID;
+unsigned int triCubeID, quadCubeID, quadCubeID2;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -333,6 +333,8 @@ extern "C" void device_init (char* cfg)
 
   triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(0.0f,0.0f,1.5f));
   quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(0.0f,0.0f,-1.5f));
+  quadCubeID2 = addQuadSubdivCube(g_scene,Vec3fa(0.0f,0.0f,-1.5f));
+  rtcDisable(g_scene,quadCubeID2);
   
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -368,7 +370,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     if (ray.geomID > 0) 
     {
       int geomID = ray.geomID;  {
-        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
+        int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
+        rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
