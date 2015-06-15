@@ -557,13 +557,13 @@ namespace embree
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
-      //tbb_task_arena.execute([&]{ group->wait(); });
-      group->wait();
+      tbb_task_arena.execute([&]{ group->wait(); });
+      //group->wait();
       while (!buildMutex.try_lock()) {
         __pause_cpu();
         yield();
-        //tbb_task_arena.execute([&]{ group->wait(); });
-        group->wait();
+        tbb_task_arena.execute([&]{ group->wait(); });
+        //group->wait();
       }
       buildMutex.unlock();
       return;
@@ -587,16 +587,15 @@ namespace embree
     try {
     
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
-      ctx.set_priority(tbb::priority_high);
+      //ctx.set_priority(tbb::priority_high);
 
-      //tbb_task_arena.execute([&]{
+      tbb_task_arena.execute([&]{
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
-              //build_task();
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
-          //}); 
+        }); 
       
       /* reset MXCSR register again */
 #if !defined(__MIC__)
