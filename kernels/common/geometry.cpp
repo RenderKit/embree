@@ -54,8 +54,8 @@ namespace embree
 
   void Geometry::enable () 
   {
-    if (parent->isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcEnable cannot get called in static scenes");
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcEnable cannot get called in static scenes after the first rtcCommit call");
 
     if (isEnabled() || isErasing()) 
       return;
@@ -68,8 +68,8 @@ namespace embree
 
   void Geometry::update() 
   {
-    if (parent->isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcUpdate cannot get called in static scenes");
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcUpdate cannot get called in static scenes after the first rtcCommit call");
 
     if (isModified() || isErasing())
       return;
@@ -80,8 +80,8 @@ namespace embree
 
   void Geometry::disable () 
   {
-    if (parent->isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcDisable cannot get called in static scenes");
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcDisable cannot get called in static scenes after the first rtcCommit call");
 
     if (isDisabled() || isErasing()) 
       return;
