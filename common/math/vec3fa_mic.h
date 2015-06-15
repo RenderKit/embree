@@ -98,7 +98,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline Vec3fa_t loadu( const float* const a ) { 
-      return _mm512_extload_ps(a,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);  // FIXME: should be unaligned load
+      const bool16 m_4f = 0xf;
+      return (__m512)permute<0,0,0,0>(uload16f(m_4f,a));
     }
   };
 
