@@ -3040,49 +3040,49 @@ namespace embree
     8,9, 9,10, 10,11
   };
 
-  bool checkInterpolation2D(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N)
+  bool checkInterpolation2D(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
   {
     bool passed = true;
     float P[256], dPdu[256], dPdv[256];
     rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
     
     for (size_t i=0; i<N; i++) {
-      float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N+i] + 4.0f*data[(v0-4+0)*N+i] + 1.0f*data[(v0-4+1)*N+i]);
-      float p1 = (1.0f/6.0f)*(1.0f*data[(v0+0-1)*N+i] + 4.0f*data[(v0+0+0)*N+i] + 1.0f*data[(v0+0+1)*N+i]);
-      float p2 = (1.0f/6.0f)*(1.0f*data[(v0+4-1)*N+i] + 4.0f*data[(v0+4+0)*N+i] + 1.0f*data[(v0+4+1)*N+i]);
+      float p0 = (1.0f/6.0f)*(1.0f*data[(v0-4-1)*N_total+i] + 4.0f*data[(v0-4+0)*N_total+i] + 1.0f*data[(v0-4+1)*N_total+i]);
+      float p1 = (1.0f/6.0f)*(1.0f*data[(v0+0-1)*N_total+i] + 4.0f*data[(v0+0+0)*N_total+i] + 1.0f*data[(v0+0+1)*N_total+i]);
+      float p2 = (1.0f/6.0f)*(1.0f*data[(v0+4-1)*N_total+i] + 4.0f*data[(v0+4+0)*N_total+i] + 1.0f*data[(v0+4+1)*N_total+i]);
       float p = (1.0f/6.0f)*(1.0f*p0+4.0f*p1+1.0f*p2);
       passed &= fabs(p-P[i]) < 1E-4f;
     }
     return passed;
   }
 
-  bool checkInterpolation1D(RTCScene scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N)
+  bool checkInterpolation1D(RTCScene scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
   {
     bool passed = true;
     float P[256], dPdu[256], dPdv[256];
     rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
     
     for (size_t i=0; i<N; i++) {
-      float v = (1.0f/6.0f)*(1.0f*data[v0*N+i] + 4.0f*data[v1*N+i] + 1.0f*data[v2*N+i]);
+      float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
       passed &= fabs(v-P[i]) < 1E-3f;
     }
     return passed;
   }
 
-   bool checkInterpolationSharpVertex(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N)
+  bool checkInterpolationSharpVertex(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
   {
     bool passed = true;
     float P[256], dPdu[256], dPdv[256];
     rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
     
     for (size_t i=0; i<N; i++) {
-      float v = data[v0*N+i];
+      float v = data[v0*N_total+i];
       passed &= fabs(v-P[i]) < 1E-3f;
     }
     return passed;
   }
 
-  bool checkInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N)
+  bool checkInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
   {
     rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
     AssertNoError();
@@ -3092,25 +3092,25 @@ namespace embree
     AssertNoError();
 
     bool passed = true;
-    passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N);
-    passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
+    passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
 
-    passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N);
-    passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N);
+    passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
+    passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
     
-    passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N);
-    passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
+    passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
 
-    passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N);
-    passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N);
+    passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,buffer,vertices0,N,N_total);
+    passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,buffer,vertices0,N,N_total);
     
     rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
     AssertNoError();
     rtcCommit(scene);
     AssertNoError();
 
-    passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N);
-    passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,buffer,vertices0,N);
+    passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+    passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,buffer,vertices0,N,N_total);
     return passed;
   }
 
@@ -3150,10 +3150,15 @@ namespace embree
     AssertNoError();
 
     bool passed = true;
-    passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N);
-    //passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
+    passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+    //passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+
+    passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+    //passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
 
     delete[] vertices0;
     //delete[] vertices1;
