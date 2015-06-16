@@ -24,12 +24,6 @@
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
-#if defined(__MIC__)
-#define NEW_TCACHE_SYNC 0
-#else
-#define NEW_TCACHE_SYNC 0
-#endif
-
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -70,10 +64,10 @@ namespace embree
 
  struct __aligned(64) ThreadWorkState {
    AtomicCounter counter;
-   ThreadWorkState *next;
-   
-   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); counter = 0; next = NULL; }
-   __forceinline void reset() { counter = 0; }
+   ThreadWorkState *prev;
+
+   __forceinline void reset() { counter = 0; prev = NULL; }   
+   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); reset(); }
  };
 
 
@@ -82,17 +76,23 @@ namespace embree
  public:
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
+#if defined(__MIC__)
+   static const size_t NUM_CACHE_SEGMENTS              = 4;
+#else
+   static const size_t NUM_CACHE_SEGMENTS              = 8;
+#endif
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
+   static const size_t COMMIT_INDEX_SHIFT              = 32;
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
-
-   /*! Creates per thread tessellation cache */
-   static void createLocalThreadInfo();
-
+   static ThreadWorkState* current_t_state;
+   
    static __forceinline ThreadWorkState *threadState() 
    {
      if (unlikely(!init_t_state))
-       init_t_state = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
+       /* sets init_t_state, can't return pointer due to macosx icc bug*/
+       SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
      return init_t_state;
    }
 
@@ -100,7 +100,7 @@ namespace embree
    {
      __forceinline Tag() : data(0) {}
 
-     __forceinline Tag(void* ptr)
+     __forceinline Tag(void* ptr, size_t commitIndex)
      {
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
@@ -108,12 +108,14 @@ namespace embree
        static const size_t REF_TAG      = 1;
        assert( !(new_root_ref & REF_TAG) );
        new_root_ref |= REF_TAG;
-       new_root_ref |= (int64_t)sharedLazyTessellationCache.getCurrentIndex() << 32; 
+       new_root_ref |= (int64_t)commitIndex << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
 
      volatile int64_t data;
    };
+
+   static __forceinline size_t extractCommitIndex(const int64_t v) { return v >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT; }
 
    struct CacheEntry
    {
@@ -126,7 +128,6 @@ namespace embree
    float *data;
    size_t size;
    size_t maxBlocks;
-   size_t numMaxRenderThreads;
    ThreadWorkState *threadWorkState;
       
    __aligned(64) AtomicCounter index;
@@ -136,26 +137,19 @@ namespace embree
    __aligned(64) AtomicCounter numRenderThreads;
 
 
-
  public:
 
-#if defined(__MIC__)
-   static const size_t NUM_CACHE_SEGMENTS = 4;
-#else
-   static const size_t NUM_CACHE_SEGMENTS = 8;
-   //static const size_t NUM_CACHE_SEGMENTS = 16;
-
-#endif
       
    SharedLazyTessellationCache();
 
-   ThreadWorkState *getNextRenderThreadWorkState();
+   void getNextRenderThreadWorkState();
 
    __forceinline size_t getCurrentIndex() { return index; }
    __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
 
    __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
    __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
+   __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
    static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadState()); }
@@ -187,7 +181,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -216,7 +210,8 @@ namespace embree
          {
            auto ret = constructor();
            __memory_barrier();
-           entry.tag = SharedLazyTessellationCache::Tag(ret);
+           const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+           entry.tag = SharedLazyTessellationCache::Tag(ret,commitIndex);
            __memory_barrier();
            entry.mutex.write_unlock();
            return ret;
@@ -237,7 +232,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -269,7 +264,7 @@ namespace embree
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;
-      const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+      const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
       return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index);
     }
 

@@ -259,7 +259,7 @@ namespace embree
     
     __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
     {
-      assert( patch.isRegular() );
+      assert( patch.isRegular1() );
       init( patch );
       f0_p() = (f0_p() + f0_m()) * 0.5f;
       f1_p() = (f1_p() + f1_m()) * 0.5f;
