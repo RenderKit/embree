@@ -443,8 +443,10 @@ namespace embree
             size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem; // - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
             
             CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
-            
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
+            const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+            __memory_barrier();
+
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
           }
           subdiv_patch->write_unlock();
         }

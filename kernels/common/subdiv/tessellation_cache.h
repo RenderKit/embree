@@ -100,7 +100,7 @@ namespace embree
    {
      __forceinline Tag() : data(0) {}
 
-     __forceinline Tag(void* ptr)
+     __forceinline Tag(void* ptr, size_t commitIndex)
      {
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
@@ -108,7 +108,7 @@ namespace embree
        static const size_t REF_TAG      = 1;
        assert( !(new_root_ref & REF_TAG) );
        new_root_ref |= REF_TAG;
-       new_root_ref |= (int64_t)sharedLazyTessellationCache.getCurrentIndex() << 32; 
+       new_root_ref |= (int64_t)commitIndex << 32; 
        data = new_root_ref;
      }
 
@@ -207,7 +207,8 @@ namespace embree
          {
            auto ret = constructor();
            __memory_barrier();
-           entry.tag = SharedLazyTessellationCache::Tag(ret);
+           const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+           entry.tag = SharedLazyTessellationCache::Tag(ret,commitIndex);
            __memory_barrier();
            entry.mutex.write_unlock();
            return ret;

@@ -122,11 +122,18 @@ namespace embree
         if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
             return (size_t) ptr;
         
+
         if (subdiv_patch->try_write_lock())
         {
           if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
           {
             BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
+
+            const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+            __memory_barrier();
+
+            //SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
+
 #if COMPACT == 1
             size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
             
@@ -134,7 +141,7 @@ namespace embree
             size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
             __memory_barrier();
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref);
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
             
 #if _DEBUG
             const size_t patchIndex = subdiv_patch - pre.array;
