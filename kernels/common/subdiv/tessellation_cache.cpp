@@ -23,7 +23,6 @@ namespace embree
 
   __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
 
-
   void resizeTessellationCache(const size_t new_size)
   {    
     if (new_size <= 1024 * 1024)
@@ -80,7 +79,7 @@ namespace embree
     reset_state.reset();
   }
 
-  ThreadWorkState * SharedLazyTessellationCache::getNextRenderThreadWorkState() 
+  void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
     reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
@@ -98,7 +97,7 @@ namespace embree
         //THROW_RUNTIME_ERROR("getNextRenderThreadID");
       }    
     reset_state.unlock();
-    return &threadWorkState[id];
+    init_t_state = &threadWorkState[id];
   }
 
   void SharedLazyTessellationCache::waitForUsersLessEqual(ThreadWorkState *const t_state,

@@ -88,11 +88,12 @@ namespace embree
 
    /*! Creates per thread tessellation cache */
    static void createLocalThreadInfo();
-
+   
    static __forceinline ThreadWorkState *threadState() 
    {
      if (unlikely(!init_t_state))
-       init_t_state = SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
+       /* sets init_t_state, can't return due to macosx icc bug*/
+       SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
      return init_t_state;
    }
 
@@ -149,7 +150,7 @@ namespace embree
       
    SharedLazyTessellationCache();
 
-   ThreadWorkState *getNextRenderThreadWorkState();
+   void getNextRenderThreadWorkState();
 
    __forceinline size_t getCurrentIndex() { return index; }
    __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
