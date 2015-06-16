@@ -72,6 +72,9 @@ namespace embree
 
   void SubdivMesh::setBoundaryMode (RTCBoundaryMode mode)
   {
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
     if (boundary == mode) return;
     boundary = mode;
     updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
