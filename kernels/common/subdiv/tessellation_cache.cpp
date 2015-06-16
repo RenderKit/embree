@@ -83,15 +83,13 @@ namespace embree
   {
     reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
-    if (numRenderThreads >= NUM_PREALLOC_THREAD_WORK_STATES) 
+    if (id >= NUM_PREALLOC_THREAD_WORK_STATES) 
       { 
         init_t_state = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState),64);
-        //PRINT(init_t_state);
         init_t_state->reset();
       }   
     else
     {
-      //PRINT(id);
       init_t_state = &threadWorkState[id];
     }
 

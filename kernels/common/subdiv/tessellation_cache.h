@@ -76,6 +76,13 @@ namespace embree
  public:
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
+#if defined(__MIC__)
+   static const size_t NUM_CACHE_SEGMENTS = 4;
+#else
+   static const size_t NUM_CACHE_SEGMENTS = 8;
+#endif
+
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
@@ -128,16 +135,8 @@ namespace embree
    __aligned(64) AtomicCounter numRenderThreads;
 
 
-
  public:
 
-#if defined(__MIC__)
-   static const size_t NUM_CACHE_SEGMENTS = 4;
-#else
-   static const size_t NUM_CACHE_SEGMENTS = 8;
-#endif
-
-   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
       
    SharedLazyTessellationCache();
 
