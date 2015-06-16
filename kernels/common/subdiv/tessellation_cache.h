@@ -77,12 +77,12 @@ namespace embree
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 #if defined(__MIC__)
-   static const size_t NUM_CACHE_SEGMENTS = 4;
+   static const size_t NUM_CACHE_SEGMENTS              = 4;
 #else
-   static const size_t NUM_CACHE_SEGMENTS = 8;
+   static const size_t NUM_CACHE_SEGMENTS              = 8;
 #endif
-
    static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
+   static const size_t COMMIT_INDEX_SHIFT              = 32;
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
@@ -108,7 +108,7 @@ namespace embree
        static const size_t REF_TAG      = 1;
        assert( !(new_root_ref & REF_TAG) );
        new_root_ref |= REF_TAG;
-       new_root_ref |= (int64_t)commitIndex << 32; 
+       new_root_ref |= (int64_t)commitIndex << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
 
@@ -179,7 +179,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -230,7 +230,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -262,7 +262,7 @@ namespace embree
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;
-      const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
+      const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
       return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index);
     }
 
