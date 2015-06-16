@@ -87,8 +87,11 @@ namespace embree
     }
 
     /*! returns true if the patch is a B-spline patch */
-    __forceinline bool isRegular() const {
-      return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    __forceinline bool isRegular1() const {
+      return ring[0].isRegular1() && ring[1].isRegular1() && ring[2].isRegular1() && ring[3].isRegular1();
+    }
+  __forceinline bool isRegular2() const {
+      return ring[0].isRegular2() && ring[1].isRegular2() && ring[2].isRegular2() && ring[3].isRegular2();
     }
 
     __forceinline bool hasBorder() const {
@@ -98,11 +101,6 @@ namespace embree
     /*! returns true if the patch is a B-spline patch or final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const {
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
-    }
-
-    /*! returns true if the patch is a B-spline patch or final Quad */
-    __forceinline bool isRegularOrFinal2(const size_t depth) const {
-      return ring[0].isRegularOrFinal2(depth) && ring[1].isRegularOrFinal2(depth) && ring[2].isRegularOrFinal2(depth) && ring[3].isRegularOrFinal2(depth);
     }
 
     /*! returns true of the patch is a Gregory patch */

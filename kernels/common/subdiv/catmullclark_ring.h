@@ -300,7 +300,7 @@ namespace embree
       }
     }
     
-    __forceinline bool isRegular() const 
+    __forceinline bool isRegular1() const 
     {
       if (border_index == -1) {
 	if (face_valence == 4) return true;
@@ -310,67 +310,37 @@ namespace embree
       return false;
     }
 
-     /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
-    __forceinline bool isRegularOrFinal(const size_t depth) const 
+    __forceinline bool isRegular2() const
     {
-      if (depth < MAX_DEPTH_SUBDIVISION)
+      if (border_index == -1) 
       {
-	if (border_index == -1) 
-	{
-	  if (face_valence != 4)
-	    return false;
-	  if (vertex_crease_weight > 0.0f) 
-	    return false;
-	} 
-	else {
-	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (face_valence == 3 && vertex_crease_weight == 0.0f);
-	  else return false;
+        if (face_valence != 4)
+          return false;
+        if (vertex_crease_weight > 0.0f) 
+          return false;
+      } 
+      else {
+        if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
+        else if (face_valence == 3 && vertex_crease_weight == 0.0f);
+        else return false;
 	}
-
-	for (size_t i=1; i<face_valence; i++)
-	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	    return false;
-
-	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	  return false;
-	
-	if (!noForcedSubdivision)
-	  return false;
-      }
+      
+      for (size_t i=1; i<face_valence; i++)
+        if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
+          return false;
+      
+      if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
+        return false;
+      
+      if (!noForcedSubdivision)
+        return false;
+      
       return true;
     }
 
-    /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
-    __forceinline bool isRegularOrFinal2(const size_t depth) const 
-    {
-      //if (depth < 2)
-      if (vertex_level > 1.0f) 
-      {
-	if (border_index == -1) 
-	{
-	  if (face_valence != 4)
-	    return false;
-	  if (vertex_crease_weight > 0.0f) 
-	    return false;
-	} 
-	else {
-	  if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-	  else if (face_valence == 3 && vertex_crease_weight == 0.0f); // FIXME: document
-	  else return false;
-	}
-
-	for (size_t i=1; i<face_valence; i++)
-	  if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-	    return false;
-
-	if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-	  return false;
-	
-	if (!noForcedSubdivision)
-	  return false;
-      }
-      return true;
+     /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
+    __forceinline bool isRegularOrFinal(const size_t depth) const {
+      return (depth >= MAX_DEPTH_SUBDIVISION) || (vertex_level <= 1.0f) || isRegular2();
     }
 
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
@@ -396,10 +366,8 @@ namespace embree
     }
 
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
-    __forceinline bool isGregoryOrFinal(const size_t depth) const 
-    {
-      if (depth < MAX_DEPTH_SUBDIVISION && vertex_level > 1.0f) return isGregory();
-      return true;
+    __forceinline bool isGregoryOrFinal(const size_t depth) const {
+      return (depth >= MAX_DEPTH_SUBDIVISION) || (vertex_level <= 1.0f) || isGregory();
     }
     
     __forceinline Vertex ksum(Vertex_t &sum, Vertex_t &c, const Vertex_t &i) const
@@ -1038,7 +1006,7 @@ namespace embree
       return o;
     } 
 
-    friend __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
+    /*friend __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
     {
       if (source.face_valence != dest.face_valence) return false;
       if (source.edge_valence != dest.edge_valence) return false;
@@ -1062,7 +1030,7 @@ namespace embree
             }
         }
       return true;
-    }
+      }*/
 
   };  
 }

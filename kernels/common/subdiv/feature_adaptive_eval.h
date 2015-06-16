@@ -53,7 +53,7 @@ namespace embree
       const float scale_x = rcp(srange.upper.x-srange.lower.x);
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
-      if (patch.isRegular())
+      if (patch.isRegular1())
       //if (true)
       {
 	BSplinePatch3fa patcheval; patcheval.init(patch);
@@ -108,7 +108,7 @@ namespace embree
       if (erange.empty())
 	return;
       
-      if (patch.isRegularOrFinal2(depth))
+      if (patch.isRegularOrFinal(depth))
 	return dice(patch,srange,erange);
 
       array_t<CatmullClarkPatch3fa,4> patches; 

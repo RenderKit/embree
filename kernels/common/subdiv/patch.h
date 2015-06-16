@@ -34,8 +34,8 @@
     }               
 #endif
 
-#define PATCH_MAX_CACHE_DEPTH 7
-#define PATCH_MAX_EVAL_DEPTH 7  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_MAX_CACHE_DEPTH 0
+#define PATCH_MAX_EVAL_DEPTH 8  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 #define PATCH_USE_GREGORY 0     // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 namespace embree
@@ -571,7 +571,7 @@ namespace embree
     template<typename Allocator>
     __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
-      if (unlikely(patch.isRegular())) { 
+      if (unlikely(patch.isRegular2())) { 
         assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); 
       }
 #if PATCH_USE_GREGORY == 2
@@ -606,7 +606,7 @@ namespace embree
     {
       while (true) 
       {
-        if (unlikely(patch.isRegular())) { 
+        if (unlikely(patch.isRegular2())) { 
           assert(depth > 0); BSplinePatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
         }
 #if PATCH_USE_GREGORY == 2
