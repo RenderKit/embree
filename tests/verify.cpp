@@ -2983,7 +2983,8 @@ namespace embree
   /*********************************************************************************/
 
   const size_t num_interpolation_vertices = 16;
-  const size_t num_interpolation_faces = 9;
+  const size_t num_interpolation_quad_faces = 9;
+  const size_t num_interpolation_triangle_faces = 18;
 
   __aligned(16) float interpolation_vertices[num_interpolation_vertices*3] = {
     -1.0f, -1.0f, 0.0f,
@@ -3007,7 +3008,7 @@ namespace embree
     +2.0f, +2.0f, 0.0f,
   };
 
-  __aligned(16) int interpolation_indices[num_interpolation_faces*4] = {
+  __aligned(16) int interpolation_quad_indices[num_interpolation_quad_faces*4] = {
     0, 1, 5, 4,
     1, 2, 6, 5,
     2, 3, 7, 6,
@@ -3019,7 +3020,19 @@ namespace embree
     10, 11, 15, 14
   };
 
-  __aligned(16) int interpolation_faces[num_interpolation_faces] = {
+  __aligned(16) int interpolation_triangle_indices[num_interpolation_triangle_faces*3] = {
+    0, 1, 5,  0, 5, 4,
+    1, 2, 6,  1, 6, 5,
+    2, 3, 7,  2, 7, 6,
+    4, 5, 9,  4, 9, 8, 
+    5, 6, 10,  5, 10, 9,
+    6, 7, 11,  6, 11, 10,
+    8, 9, 13,   8, 13, 12,
+    9, 10, 14,   9, 14, 13,
+    10, 11, 15,  10, 15, 14
+  };
+
+  __aligned(16) int interpolation_quad_faces[num_interpolation_quad_faces] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4
   };
 
@@ -3082,7 +3095,7 @@ namespace embree
     return passed;
   }
 
-  bool checkInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+  bool checkSubdivInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
   {
     rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
     AssertNoError();
@@ -3114,15 +3127,15 @@ namespace embree
     return passed;
   }
 
-  bool rtcore_interpolate(size_t N)
+  bool rtcore_interpolate_subdiv(size_t N)
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
     AssertNoError();
-    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_quad_faces, num_interpolation_quad_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
     AssertNoError();
 
-    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_indices , 0, sizeof(unsigned int));
-    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_faces,    0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_quad_indices , 0, sizeof(unsigned int));
+    rtcSetBuffer(scene, geomID, RTC_FACE_BUFFER,   interpolation_quad_faces,    0, sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,   interpolation_edge_crease_indices,  0, 2*sizeof(unsigned int));
     rtcSetBuffer(scene, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,  interpolation_edge_crease_weights,  0, sizeof(float));
     rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, interpolation_vertex_crease_indices,0, sizeof(unsigned int));
@@ -3150,15 +3163,95 @@ namespace embree
     AssertNoError();
 
     bool passed = true;
-    passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
-    //passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+    //passed &= checkSubdivInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
 
-    passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
-    //passed &= checkInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
-    passed &= checkInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+    //passed &= checkSubdivInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+    passed &= checkSubdivInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+
+    delete[] vertices0;
+    //delete[] vertices1;
+    delete[] user_vertices0;
+    delete[] user_vertices1;
+
+    return passed;
+  }
+
+  bool checkTriangleInterpolation(RTCScene scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+  {
+    bool passed = true;
+    float P[256], dPdu[256], dPdv[256];
+    rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+    
+    for (size_t i=0; i<N; i++) {
+      float p0 = data[v0*N_total+i];
+      float p1 = data[v1*N_total+i];
+      float p2 = data[v2*N_total+i];
+      float p = (1.0f-u-v)*p0 + u*p1 + v*p2;
+      passed &= fabs(p-P[i]) < 1E-4f;
+    }
+    return passed;
+  }
+
+  bool checkTriangleInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+  {
+    bool passed = true;
+    passed &= checkTriangleInterpolation(scene,geomID,0,0.0f,0.0f,0,1,5,buffer,vertices0,N,N_total);
+    passed &= checkTriangleInterpolation(scene,geomID,0,0.5f,0.5f,0,1,5,buffer,vertices0,N,N_total);
+    passed &= checkTriangleInterpolation(scene,geomID,17,0.0f,0.0f,10,15,14,buffer,vertices0,N,N_total);
+    passed &= checkTriangleInterpolation(scene,geomID,17,0.5f,0.5f,10,15,14,buffer,vertices0,N,N_total);
+    return passed;
+  }
+
+  bool rtcore_interpolate_triangles(size_t N)
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
+    AssertNoError();
+    unsigned int geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_triangle_faces, num_interpolation_vertices, 1);
+    AssertNoError();
+
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
+    AssertNoError();
+
+    float* vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    /*float* vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+    AssertNoError();*/
+
+    float* user_vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    float* user_vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+    AssertNoError();
+
+    rtcDisable(scene,geomID);
+    AssertNoError();
+    rtcCommit(scene);
+    AssertNoError();
+
+    bool passed = true;
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+    //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+    //passed &= checkTriangleInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+    passed &= checkTriangleInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
 
     delete[] vertices0;
     //delete[] vertices1;
@@ -3223,12 +3316,19 @@ namespace embree
     POSITIVE("overlapping_hair",          rtcore_overlapping_hair(100000));
     POSITIVE("new_delete_geometry",       rtcore_new_delete_geometry());
 
-    POSITIVE("interpolate4",                rtcore_interpolate(4));
-    POSITIVE("interpolate5",                rtcore_interpolate(5));
-    POSITIVE("interpolate8",                rtcore_interpolate(8));
-    POSITIVE("interpolate11",               rtcore_interpolate(11));
-    POSITIVE("interpolate12",               rtcore_interpolate(12));
-    POSITIVE("interpolate15",               rtcore_interpolate(15));
+    POSITIVE("interpolate_subdiv4",                rtcore_interpolate_subdiv(4));
+    POSITIVE("interpolate_subdiv5",                rtcore_interpolate_subdiv(5));
+    POSITIVE("interpolate_subdiv8",                rtcore_interpolate_subdiv(8));
+    POSITIVE("interpolate_subdiv11",               rtcore_interpolate_subdiv(11));
+    POSITIVE("interpolate_subdiv12",               rtcore_interpolate_subdiv(12));
+    POSITIVE("interpolate_subdiv15",               rtcore_interpolate_subdiv(15));
+
+    POSITIVE("interpolate_triangles4",                rtcore_interpolate_triangles(4));
+    POSITIVE("interpolate_triangles5",                rtcore_interpolate_triangles(5));
+    POSITIVE("interpolate_triangles8",                rtcore_interpolate_triangles(8));
+    POSITIVE("interpolate_triangles11",               rtcore_interpolate_triangles(11));
+    POSITIVE("interpolate_triangles12",               rtcore_interpolate_triangles(12));
+    POSITIVE("interpolate_triangles15",               rtcore_interpolate_triangles(15));
 
     rtcore_build();
 
