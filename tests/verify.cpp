@@ -3260,6 +3260,100 @@ namespace embree
 
     return passed;
   }
+  
+  const size_t num_interpolation_hair_vertices = 13;
+  const size_t num_interpolation_hairs = 4;
+
+  __aligned(16) int interpolation_hair_indices[num_interpolation_hairs] = {
+    0, 3, 6, 9
+  };
+
+  bool checkHairInterpolation(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N, size_t N_total)
+  {
+    bool passed = true;
+    float P[256], dPdu[256], dPdv[256];
+    rtcInterpolate(scene,geomID,primID,u,v,buffer,P,dPdu,dPdv,N);
+    
+    for (size_t i=0; i<N; i++) {
+      const float p00 = data[(v0+0)*N_total+i];
+      const float p01 = data[(v0+1)*N_total+i];
+      const float p02 = data[(v0+2)*N_total+i];
+      const float p03 = data[(v0+3)*N_total+i];
+      const float t0 = 1.0f - u, t1 = u;
+      const float p10 = p00 * t0 + p01 * t1;
+      const float p11 = p01 * t0 + p02 * t1;
+      const float p12 = p02 * t0 + p03 * t1;
+      const float p20 = p10 * t0 + p11 * t1;
+      const float p21 = p11 * t0 + p12 * t1;
+      const float p30 = p20 * t0 + p21 * t1;
+      passed &= fabs(p30-P[i]) < 1E-4f;
+    }
+    return passed;
+  }
+
+  bool checkHairInterpolation(RTCScene scene, int geomID, RTCBufferType buffer, float* vertices0, size_t N, size_t N_total)
+  {
+    bool passed = true;
+    passed &= checkHairInterpolation(scene,geomID,0,0.0f,0.0f,0,buffer,vertices0,N,N_total);
+    passed &= checkHairInterpolation(scene,geomID,1,0.5f,0.0f,3,buffer,vertices0,N,N_total);
+    passed &= checkHairInterpolation(scene,geomID,2,0.0f,0.0f,6,buffer,vertices0,N,N_total);
+    passed &= checkHairInterpolation(scene,geomID,3,0.2f,0.0f,9,buffer,vertices0,N,N_total);
+    return passed;
+  }
+
+  bool rtcore_interpolate_hair(size_t N)
+  {
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
+    AssertNoError();
+    unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
+    AssertNoError();
+    
+    rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
+    AssertNoError();
+
+    float* vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    /*float* vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
+    AssertNoError();*/
+
+    float* user_vertices0 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
+    AssertNoError();
+
+    float* user_vertices1 = new float[num_interpolation_vertices*N];
+    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
+    AssertNoError();
+
+    rtcDisable(scene,geomID);
+    AssertNoError();
+    rtcCommit(scene);
+    AssertNoError();
+
+    bool passed = true;
+    passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,N,N);
+    //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N,N);
+    passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N,N);
+    passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N,N);
+
+    passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER0,vertices0,1,N);
+    //passed &= checkHairInterpolation(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,1,N);
+    passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,1,N);
+    passed &= checkHairInterpolation(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,1,N);
+
+    delete[] vertices0;
+    //delete[] vertices1;
+    delete[] user_vertices0;
+    delete[] user_vertices1;
+
+    return passed;
+  }
 
 
   /* main function in embree namespace */
@@ -3329,6 +3423,13 @@ namespace embree
     POSITIVE("interpolate_triangles11",               rtcore_interpolate_triangles(11));
     POSITIVE("interpolate_triangles12",               rtcore_interpolate_triangles(12));
     POSITIVE("interpolate_triangles15",               rtcore_interpolate_triangles(15));
+
+    POSITIVE("interpolate_hair4",                rtcore_interpolate_hair(4));
+    POSITIVE("interpolate_hair5",                rtcore_interpolate_hair(5));
+    POSITIVE("interpolate_hair8",                rtcore_interpolate_hair(8));
+    POSITIVE("interpolate_hair11",               rtcore_interpolate_hair(11));
+    POSITIVE("interpolate_hair12",               rtcore_interpolate_hair(12));
+    POSITIVE("interpolate_hair15",               rtcore_interpolate_hair(15));
 
     rtcore_build();
 
