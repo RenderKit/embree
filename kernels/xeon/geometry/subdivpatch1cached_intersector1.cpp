@@ -113,26 +113,35 @@ namespace embree
     {
       /* unlock previous patch */
       if (pre.current_patch)
+      {
+        assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(pre.t_state));
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);
+      }
 
       while(1)
       {
+
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.t_state);
        
         if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
             return (size_t) ptr;
         
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
 
         if (subdiv_patch->try_write_lock())
         {
           if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
           {
+            /* FIXME: generate U,V,XYZ grid here */
+
+            /* lock the cache */
+            SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.t_state);
+
+            /* allocate memory in cache and get current commit index */
             BVH4::Node* node = (BVH4::Node*) SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(pre.t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
 
             const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
             __memory_barrier();
-
-            //SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
 
 #if COMPACT == 1
             size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
@@ -141,6 +150,7 @@ namespace embree
             size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
 #endif
             __memory_barrier();
+            /* write new root ref */
             subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
             
 #if _DEBUG
@@ -148,12 +158,16 @@ namespace embree
             assert(patchIndex < pre.numPrimitives);
             CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
 #endif
+            assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(pre.t_state));
+
+            /* unlock current patch */
             subdiv_patch->write_unlock();
+            /* memory region still locked, forward progress guaranteed */
             return new_root_ref;
           }
+          /* unlock current patch */
           subdiv_patch->write_unlock();
         }
-        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
       }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
