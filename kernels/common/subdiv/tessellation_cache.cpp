@@ -22,6 +22,7 @@ namespace embree
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
   __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
+  ThreadWorkState* SharedLazyTessellationCache::current_t_state = nullptr;
 
   void resizeTessellationCache(const size_t new_size)
   {    
@@ -70,10 +71,9 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
-    numMaxRenderThreads = 2*MAX_MIC_THREADS; // FIXME
-    threadWorkState     = (ThreadWorkState*)std::malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
+    threadWorkState     = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState)*NUM_PREALLOC_THREAD_WORK_STATES,64);
 
-    for (size_t i=0;i<numMaxRenderThreads;i++)
+    for (size_t i=0;i<NUM_PREALLOC_THREAD_WORK_STATES;i++)
       threadWorkState[i].reset();
 
     reset_state.reset();
@@ -83,21 +83,22 @@ namespace embree
   {
     reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
-    if (numRenderThreads >= numMaxRenderThreads) 
+    if (numRenderThreads >= NUM_PREALLOC_THREAD_WORK_STATES) 
       { 
-        // FIXME: this is buggy! cannot reallocate while thread are working on this array!
+        init_t_state = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState),64);
+        //PRINT(init_t_state);
+        init_t_state->reset();
+      }   
+    else
+    {
+      //PRINT(id);
+      init_t_state = &threadWorkState[id];
+    }
 
-    	numMaxRenderThreads *= 2;
-	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads); 
-	for (size_t i=id;i<numMaxRenderThreads;i++)
-	  threadWorkState[i].reset();
+    init_t_state->prev = current_t_state;
+    current_t_state = init_t_state;
 
-	//assert( threadWorkState );
-	//if (!threadWorkState)
-        //THROW_RUNTIME_ERROR("getNextRenderThreadID");
-      }    
     reset_state.unlock();
-    init_t_state = &threadWorkState[id];
   }
 
   void SharedLazyTessellationCache::waitForUsersLessEqual(ThreadWorkState *const t_state,
@@ -124,10 +125,12 @@ namespace embree
 	  {
 	    //double msec = getSeconds();
 
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      //lockThread(i);
-	      if (lockThread(&threadWorkState[i]) == 1)
-		waitForUsersLessEqual(&threadWorkState[i],1);
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+            {
+	      if (lockThread(t) == 1)
+		waitForUsersLessEqual(t,1);
+            }
+
 
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
@@ -156,8 +159,8 @@ namespace embree
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
 
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      unlockThread(&threadWorkState[i]);
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+	      unlockThread(t);
 	    
 	    //msec = getSeconds()-msec;    
 	    //PRINT( 1000.0f * msec );

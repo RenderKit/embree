@@ -24,12 +24,6 @@
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
 
-#if defined(__MIC__)
-#define NEW_TCACHE_SYNC 0
-#else
-#define NEW_TCACHE_SYNC 0
-#endif
-
 
 #if defined(DEBUG)
 #define CACHE_STATS(x) 
@@ -70,10 +64,10 @@ namespace embree
 
  struct __aligned(64) ThreadWorkState {
    AtomicCounter counter;
-   ThreadWorkState *next;
-   
-   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); counter = 0; next = NULL; }
-   __forceinline void reset() { counter = 0; }
+   ThreadWorkState *prev;
+
+   __forceinline void reset() { counter = 0; prev = NULL; }   
+   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); reset(); }
  };
 
 
@@ -85,14 +79,12 @@ namespace embree
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
-
-   /*! Creates per thread tessellation cache */
-   static void createLocalThreadInfo();
+   static ThreadWorkState* current_t_state;
    
    static __forceinline ThreadWorkState *threadState() 
    {
      if (unlikely(!init_t_state))
-       /* sets init_t_state, can't return due to macosx icc bug*/
+       /* sets init_t_state, can't return pointer due to macosx icc bug*/
        SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
      return init_t_state;
    }
@@ -127,7 +119,6 @@ namespace embree
    float *data;
    size_t size;
    size_t maxBlocks;
-   size_t numMaxRenderThreads;
    ThreadWorkState *threadWorkState;
       
    __aligned(64) AtomicCounter index;
@@ -144,9 +135,9 @@ namespace embree
    static const size_t NUM_CACHE_SEGMENTS = 4;
 #else
    static const size_t NUM_CACHE_SEGMENTS = 8;
-   //static const size_t NUM_CACHE_SEGMENTS = 16;
-
 #endif
+
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
       
    SharedLazyTessellationCache();
 
