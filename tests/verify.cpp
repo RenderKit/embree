@@ -3031,16 +3031,16 @@ namespace embree
     12, 15
   };
 
-  __aligned(16) float interpolation_edge_crease_weights[1] = {
-    inf
+  __aligned(16) float interpolation_edge_crease_weights[3] = {
+    inf, inf, inf
   };
 
-  __aligned(16) unsigned int interpolation_edge_crease_indices[2] = 
+  __aligned(16) unsigned int interpolation_edge_crease_indices[6] = 
   {
-    9,10
+    8,9, 9,10, 10,11
   };
 
-  bool checkInterpolationRegularVertex(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N)
+  bool checkInterpolation2D(RTCScene scene, int geomID, int primID, float u, float v, int v0, RTCBufferType buffer, float* data, size_t N)
   {
     bool passed = true;
     float P[256], dPdu[256], dPdv[256];
@@ -3056,7 +3056,7 @@ namespace embree
     return passed;
   }
 
-  bool checkInterpolationSoftCorner(RTCScene scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N)
+  bool checkInterpolation1D(RTCScene scene, int geomID, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType buffer, float* data, size_t N)
   {
     bool passed = true;
     float P[256], dPdu[256], dPdv[256];
@@ -3064,7 +3064,7 @@ namespace embree
     
     for (size_t i=0; i<N; i++) {
       float v = (1.0f/6.0f)*(1.0f*data[v0*N+i] + 4.0f*data[v1*N+i] + 1.0f*data[v2*N+i]);
-      passed &= fabs(v-P[i]) < 1E-4f;
+      passed &= fabs(v-P[i]) < 1E-3f;
     }
     return passed;
   }
@@ -3077,7 +3077,7 @@ namespace embree
     
     for (size_t i=0; i<N; i++) {
       float v = data[v0*N+i];
-      passed &= fabs(v-P[i]) < 1E-4f;
+      passed &= fabs(v-P[i]) < 1E-3f;
     }
     return passed;
   }
@@ -3086,7 +3086,7 @@ namespace embree
   {
     RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERPOLATE);
     AssertNoError();
-    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 1, 2, 0, 1);
+    unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
     AssertNoError();
 
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_indices , 0, sizeof(unsigned int));
@@ -3123,17 +3123,18 @@ namespace embree
     AssertNoError();
 
     bool passed = true;
-    passed &= checkInterpolationSoftCorner(scene,geomID,0,0.0f,0.0f,4,0,1,RTC_VERTEX_BUFFER0,vertices0,N);
-    passed &= checkInterpolationSoftCorner(scene,geomID,2,1.0f,0.0f,2,3,7,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,RTC_VERTEX_BUFFER0,vertices0,N);
 
-    passed &= checkInterpolationRegularVertex(scene,geomID,3,1.0f,0.0f,5,RTC_VERTEX_BUFFER0,vertices0,N);
-    passed &= checkInterpolationRegularVertex(scene,geomID,1,1.0f,1.0f,6,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,RTC_VERTEX_BUFFER0,vertices0,N);
     
-    //passed &= checkInterpolationSharpVertex(scene,geomID,3,1.0f,1.0f,9,RTC_VERTEX_BUFFER0,vertices0,N);
-    //passed &= checkInterpolationSharpVertex(scene,geomID,7,1.0f,0.0f,15,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,RTC_VERTEX_BUFFER0,vertices0,N);
 
     passed &= checkInterpolationSharpVertex(scene,geomID,6,0.0f,1.0f,12,RTC_VERTEX_BUFFER0,vertices0,N);
     passed &= checkInterpolationSharpVertex(scene,geomID,8,1.0f,1.0f,15,RTC_VERTEX_BUFFER0,vertices0,N);
+    
     //passed &= checkInterpolation00(scene,geomID,RTC_VERTEX_BUFFER1,vertices1,N);
     //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N);
     //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
