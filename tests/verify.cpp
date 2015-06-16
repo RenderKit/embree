@@ -3084,9 +3084,11 @@ namespace embree
 
   bool rtcore_interpolate(size_t N)
   {
-    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERPOLATE);
+    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
     AssertNoError();
     unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_faces, num_interpolation_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
+    AssertNoError();
+    rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_ONLY);
     AssertNoError();
 
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_indices , 0, sizeof(unsigned int));
@@ -3139,6 +3141,14 @@ namespace embree
     //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER0,user_vertices0,N);
     //passed &= checkInterpolation00(scene,geomID,RTC_USER_VERTEX_BUFFER1,user_vertices1,N);
     AssertNoError();
+
+    rtcSetBoundaryMode(scene,geomID,RTC_BOUNDARY_EDGE_AND_CORNER);
+    AssertNoError();
+    rtcCommit(scene);
+    AssertNoError();
+
+    passed &= checkInterpolationSharpVertex(scene,geomID,0,0.0f,0.0f,0,RTC_VERTEX_BUFFER0,vertices0,N);
+    passed &= checkInterpolationSharpVertex(scene,geomID,2,1.0f,0.0f,3,RTC_VERTEX_BUFFER0,vertices0,N);
 
     delete[] vertices0;
     //delete[] vertices1;

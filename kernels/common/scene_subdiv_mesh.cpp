@@ -68,6 +68,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
   }
 
   void SubdivMesh::setBoundaryMode (RTCBoundaryMode mode)
@@ -77,7 +78,7 @@ namespace embree
 
     if (boundary == mode) return;
     boundary = mode;
-    updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);
+    updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);    
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 

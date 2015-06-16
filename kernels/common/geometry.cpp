@@ -71,9 +71,6 @@ namespace embree
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (isModified() || isErasing())
-      return;
-
     parent->setModified();
     modified = true;
   }

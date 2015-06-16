@@ -48,6 +48,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
   }
 
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 

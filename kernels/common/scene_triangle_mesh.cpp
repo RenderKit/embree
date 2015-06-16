@@ -47,6 +47,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
   }
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
