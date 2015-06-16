@@ -824,6 +824,10 @@ namespace embree
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
     binFile = fopen(binFileName.c_str(),"rb");
+    if (!binFile) {
+      binFileName = fileName.addExt(".bin");
+      binFile = fopen(binFileName.c_str(),"rb");
+    }
 
     Ref<XML> xml = parseXML(fileName);
     if (xml->name != "scene") THROW_RUNTIME_ERROR(xml->loc.str()+": invalid scene tag");
