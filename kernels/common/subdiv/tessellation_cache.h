@@ -115,6 +115,8 @@ namespace embree
      volatile int64_t data;
    };
 
+   static __forceinline size_t extractCommitIndex(const int64_t v) { return v >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT; }
+
    struct CacheEntry
    {
      RWMutex mutex;
@@ -179,7 +181,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -230,7 +232,7 @@ namespace embree
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
-       const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
        if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
        {
@@ -262,7 +264,7 @@ namespace embree
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;
-      const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT;
+      const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
       return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index);
     }
 
