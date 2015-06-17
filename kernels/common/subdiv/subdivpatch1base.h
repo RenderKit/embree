@@ -504,7 +504,7 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -517,7 +517,7 @@ namespace embree
     __forceinline Vec3fa normal(const float& uu, const float& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -531,7 +531,7 @@ namespace embree
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -545,7 +545,7 @@ namespace embree
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.normal(uu,vv);
       else if (likely(isGregoryPatch()))
@@ -560,7 +560,7 @@ namespace embree
     __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
         return patch.eval(uu,vv);
       else 
@@ -570,7 +570,7 @@ namespace embree
     __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
     {
       if (likely(isBezierPatch()))
-        return BezierPatch::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
 	return patch.normal(uu,vv);
       else

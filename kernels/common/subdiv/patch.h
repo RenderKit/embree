@@ -19,6 +19,7 @@
 #include "catmullclark_patch.h"
 #include "bilinear_patch.h"
 #include "bspline_patch.h"
+#include "bezier_patch.h"
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
 
@@ -35,8 +36,17 @@
 #endif
 
 #define PATCH_MAX_CACHE_DEPTH 4
-#define PATCH_MAX_EVAL_DEPTH 8  // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 1     // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_MAX_EVAL_DEPTH 8     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_BEZIER_PATCH 0   // enable use of bezier instead of gregory patches
+
+#if PATCH_USE_BEZIER_PATCH
+#  define RegularPatch  BezierPatch
+#  define RegularPatchT BezierPatchT<Vertex,Vertex_t>
+#else
+#  define RegularPatch  BSplinePatch
+#  define RegularPatchT BSplinePatchT<Vertex,Vertex_t>
+#endif
 
 namespace embree
 {
@@ -135,11 +145,12 @@ namespace embree
       INVALID_PATCH = 0,
       BILINEAR_PATCH = 1,
       BSPLINE_PATCH = 2,  
-      GREGORY_PATCH = 3,
-      EVAL_PATCH = 4,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
-      SUBDIVIDED_QUAD_PATCH = 7
+      BEZIER_PATCH = 3,  
+      GREGORY_PATCH = 4,
+      EVAL_PATCH = 5,
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 6,
+      SUBDIVIDED_GENERAL_QUAD_PATCH = 7,
+      SUBDIVIDED_QUAD_PATCH = 8
     };
 
     struct BilinearPatch 
@@ -196,6 +207,39 @@ namespace embree
     public:
       Type type;
       BSplinePatchT<Vertex,Vertex_t> patch;
+    };
+
+    struct BezierPatch
+    {
+      /* creates BezierPatch from a half edge */
+      template<typename Loader, typename Allocator>
+        __noinline static BezierPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        return new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader);
+      }
+      
+      template<typename Loader>
+      __forceinline BezierPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+      : type(BEZIER_PATCH), patch(edge,loader) {}
+      
+      /* creates Bezier from a CatmullClarkPatch */
+      template<typename Allocator>
+      __noinline static BezierPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return new (alloc(sizeof(BezierPatch))) BezierPatch(patch);
+      }
+      
+      __forceinline BezierPatch (const CatmullClarkPatch& patch) 
+        : type(BEZIER_PATCH), patch(patch) {}
+      
+      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
+      {
+        patch.eval(u,v,P,dPdu,dPdv,dscale);
+        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+        return true;
+      }
+      
+    public:
+      Type type;
+      BezierPatchT<Vertex,Vertex_t> patch;
     };
     
     struct GregoryPatch
@@ -469,7 +513,7 @@ namespace embree
         return (Patch*) root;
       
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   root->child = (Patch*) BSplinePatch::create(alloc,edge,loader); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH:   root->child = (Patch*) RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: root->child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
 #endif
@@ -490,7 +534,7 @@ namespace embree
         };
 
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH: BSplinePatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #endif
@@ -572,7 +616,7 @@ namespace embree
     __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       if (unlikely(patch.isRegular2())) { 
-        assert(depth > 0); return (Patch*) BSplinePatch::create(alloc,patch); 
+        assert(depth > 0); return (Patch*) RegularPatch::create(alloc,patch); 
       }
 #if PATCH_USE_GREGORY == 2
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) { 
@@ -607,7 +651,7 @@ namespace embree
       while (true) 
       {
         if (unlikely(patch.isRegular2())) { 
-          assert(depth > 0); BSplinePatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+          assert(depth > 0); RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
         }
 #if PATCH_USE_GREGORY == 2
         else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
@@ -637,7 +681,8 @@ namespace embree
       
       switch (type) {
       case BILINEAR_PATCH: return ((BilinearPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
-      case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
+      case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
+      case BEZIER_PATCH: return ((BezierPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
       case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
       case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
       case SUBDIVIDED_GENERAL_QUAD_PATCH:     { assert(dscale == 1.0f); return ((SubdividedGeneralQuadPatch*)this)->eval(u,v,P,dPdu,dPdv); }
