@@ -257,85 +257,79 @@ namespace embree
 
 
 
-    BVH4i::NodeRef initLocalLazySubdivTreeCompact(const SubdivPatch1 &patch,
-						  unsigned int currentIndex,
-						  float16 *basemem,
-						  const SubdivMesh* const geom)
+    size_t initLocalLazySubdivTreeCompact(const SubdivPatch1 &patch,
+                                          ThreadWorkState *const t_state,
+                                          const SubdivMesh* const geom)
     {
-      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
-      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*16];
+      __aligned(64) float local_grid_u[(patch.grid_size_simd_blocks+1)*16]; // for unaligned access
+      __aligned(64) float local_grid_v[(patch.grid_size_simd_blocks+1)*16];
+      __aligned(64) float local_grid_x[(patch.grid_size_simd_blocks+1)*16]; 
+      __aligned(64) float local_grid_y[(patch.grid_size_simd_blocks+1)*16];
+      __aligned(64) float local_grid_z[(patch.grid_size_simd_blocks+1)*16];
 
-      float16 *lazymem = &basemem[currentIndex];
 
       TIMER(double msec);
       TIMER(msec = getSeconds());    
 
       const size_t array_elements = patch.grid_size_simd_blocks * 16;
 
+
+
+      evalGrid(patch,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+
+      // ================================================================================================
+
+      /* lock the cache */
+      SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
+
+      /* allocate memory */
+      size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocIndexLoop(t_state,patch.grid_subtree_size_64b_blocks);
+
+      float16* lazymem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+      
+      // ================================================================================================
+
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
+      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
       float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
       float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
       float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
 
-      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
+      memcpy(grid_x,local_grid_x,array_elements*sizeof(float));
+      memcpy(grid_y,local_grid_y,array_elements*sizeof(float));
+      memcpy(grid_z,local_grid_z,array_elements*sizeof(float));
 
-      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-      
       for (size_t i=0;i<array_elements;i+=16)
 	{
 	  prefetch<PFHINT_L1EX>(&grid_uv[i]);
-	  const float16 u = load16f(&grid_u[i]);
-	  const float16 v = load16f(&grid_v[i]);
+	  const float16 u = load16f(&local_grid_u[i]);
+	  const float16 v = load16f(&local_grid_v[i]);
 	  const int16 u_i = int16(u * 65535.0f/2.0f);
 	  const int16 v_i = int16(v * 65535.0f/2.0f);
 	  const int16 uv_i = (u_i << 16) | v_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
-#if 0
-      TIMER(msec = getSeconds()-msec);    
-      TIMER(PRINT("tess"));
-      TIMER(PRINT(patch.grid_u_res));
-      TIMER(PRINT(patch.grid_v_res));
-      TIMER(PRINT(1000.0f * msec));
-      TIMER(msec = getSeconds());    
-#endif
 
       BVH4i::NodeRef subtree_root = 0;
-      const unsigned int oldIndex = currentIndex;
 
       const unsigned int grid_u_blocks = (patch.grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
       const unsigned int grid_v_blocks = (patch.grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
 
-      //PRINT(grid_u_blocks);
-      //PRINT(grid_v_blocks);
-
       unsigned int localCounter = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
-					     basemem,
+					     lazymem,
 					     patch,
 					     grid_x,
 					     array_elements,
 					     GridRange(0,grid_u_blocks,0,grid_v_blocks),
 					     localCounter);
 
-      //assert(currentIndex - oldIndex == patch.grid_bvh_size_64b_blocks);
       assert(localCounter == patch.grid_bvh_size_64b_blocks);
-      TIMER(msec = getSeconds()-msec);    
-      TIMER(PRINT("tess+bvh"));
-      TIMER(PRINT(patch.grid_u_res));
-      TIMER(PRINT(patch.grid_v_res));
-      TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
 
-      TIMER(PRINT(1000.0f * msec));
-      TIMER(double throughput = 1.0 / (1000*msec));
-
-      TIMER(msec = getSeconds());    
-      TIMER(PRINT(throughput));
-
-      return subtree_root;
+      return (size_t)subtree_root + (size_t)lazymem;
     }
 
 
@@ -363,33 +357,25 @@ namespace embree
 
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);		  
         
-        if (subdiv_patch->try_write_lock())
+        subdiv_patch->write_lock();
+        if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
         {
-          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
-          {
-            const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
+          const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 
-            /* lock the cache */
-            SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
+          /* generate vertex grid, lock and allocate memory in the cache */
+          size_t new_root_ref = initLocalLazySubdivTreeCompact(*subdiv_patch,t_state,geom);
 
-            /* allocate memory in cache and get current commit index */
-            size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocIndexLoop(t_state,subdiv_patch->grid_subtree_size_64b_blocks);
-            const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
-            __memory_barrier();
-
-            float16* local_mem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-            unsigned int currentIndex = 0;
-            BVH4i::NodeRef bvh4i_root = initLocalLazySubdivTreeCompact(*subdiv_patch,currentIndex,local_mem,geom);
-            size_t new_root_ref = (size_t)bvh4i_root + (size_t)local_mem; // - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-            
-            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
-
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
-            subdiv_patch->write_unlock();
-            return SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
-          }
+          /* get current commit index */
+          const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+          __memory_barrier();
+          
+          CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
+          
+          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
           subdiv_patch->write_unlock();
+          return SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
         }
+        subdiv_patch->write_unlock();
       }     
     }
     
