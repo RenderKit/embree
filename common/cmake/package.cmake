@@ -51,6 +51,10 @@ ENDIF()
 # Install Headers
 ##############################################################
 INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
+CONFIGURE_FILE(include/embree2/rtcore.h rtcore.h @ONLY)
+CONFIGURE_FILE(include/embree2/rtcore.isph rtcore.isph @ONLY)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION include/embree2 COMPONENT headers)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION include/embree2 COMPONENT headers)
 
 ##############################################################
 # Install Models

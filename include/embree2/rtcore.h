@@ -50,6 +50,12 @@ typedef int ssize_t;
   #define RTCORE_DEPRECATED
 #endif
 
+/*! Embree API version */
+#define RTCORE_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
+#define RTCORE_VERSION_MINOR @EMBREE_VERSION_MINOR@
+#define RTCORE_VERSION_PATCH @EMBREE_VERSION_PATCH@
+#define RTCORE_VERSION       @EMBREE_VERSION_NUMBER@
+
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
