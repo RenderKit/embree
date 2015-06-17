@@ -21,6 +21,68 @@
 namespace embree
 {
 
+  __forceinline Vec3fa computeInnerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));
+  }
+  
+  __forceinline Vec3fa computeTopEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y-1][x-1] + v[y-1][x+1]);
+  }
+
+  __forceinline Vec3fa computeButtomEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y+1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y+1][x-1] + v[y+1][x+1]);
+  }
+
+  __forceinline Vec3fa computeLeftEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x-1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x-1] + v[y+1][x-1]);
+  }
+
+  __forceinline Vec3fa computeRightEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x+1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x+1] + v[y+1][x+1]);
+  }
+
+  __forceinline Vec3fa computeCornerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x, const ssize_t delta_y, const ssize_t delta_x)
+  {
+    return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
+  }
+
+  void convertToBicubicBezierPatch(const Vec3fa source[4][4],
+                                   Vec3fa dest[4][4])
+  {
+    /* compute inner bezier control points */
+    dest[1][1] = computeInnerBezierControlPoint(source,1,1);
+    dest[1][2] = computeInnerBezierControlPoint(source,1,2);
+    dest[2][2] = computeInnerBezierControlPoint(source,2,2);
+    dest[2][1] = computeInnerBezierControlPoint(source,2,1);
+
+    /* compute top edge control points */
+    dest[0][1] = computeTopEdgeBezierControlPoint(source,1,1);
+    dest[0][2] = computeTopEdgeBezierControlPoint(source,1,2);
+
+    /* compute buttom edge control points */
+    dest[3][1] = computeButtomEdgeBezierControlPoint(source,2,1);
+    dest[3][2] = computeButtomEdgeBezierControlPoint(source,2,2);
+    
+    /* compute left edge control points */
+    dest[1][0] = computeLeftEdgeBezierControlPoint(source,1,1);
+    dest[2][0] = computeLeftEdgeBezierControlPoint(source,2,1);
+
+    /* compute right edge control points */
+    dest[1][3] = computeRightEdgeBezierControlPoint(source,1,2);
+    dest[2][3] = computeRightEdgeBezierControlPoint(source,2,2);
+
+    /* compute corner control points */
+    dest[0][0] = computeCornerBezierControlPoint(source,1,1,-1,-1);
+    dest[0][3] = computeCornerBezierControlPoint(source,1,2,-1, 1);
+    dest[3][3] = computeCornerBezierControlPoint(source,2,2, 1, 1);
+    dest[3][0] = computeCornerBezierControlPoint(source,2,1, 1,-1);        
+  }
+  
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const unsigned int gID,
