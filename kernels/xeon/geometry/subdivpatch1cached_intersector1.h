@@ -722,28 +722,10 @@ namespace embree
       static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);                  
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      static BVH4::NodeRef buildSubdivPatchTree(const SubdivPatch1Cached &patch,
-                                                void *const lazymem,
-                                                const SubdivMesh* const geom);
-
-      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-						       void *const lazymem,
+						       ThreadWorkState *t_state,
 						       const SubdivMesh* const geom);
       
-      /*! Create BVH4 tree over grid. */
-      static BBox3fa createSubTree(BVH4::NodeRef &curNode,
-                                   float *const lazymem,
-                                   const SubdivPatch1Cached &patch,
-                                   const float *const grid_x_array,
-                                   const float *const grid_y_array,
-                                   const float *const grid_z_array,
-                                   const float *const grid_u_array,
-                                   const float *const grid_v_array,
-                                   const GridRange &range,
-                                   unsigned int &localCounter,
-                                   const SubdivMesh* const geom);
-
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
 					  float *const lazymem,
@@ -767,7 +749,6 @@ namespace embree
         if (likely(ty == 2))
         {
 
-#if COMPACT == 1          
           const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
           const size_t line_offset   = pre.current_patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
@@ -782,18 +763,6 @@ namespace embree
 	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom,pre);
 #endif
 
-#else
-
-	  const Quad2x2 &q = *(Quad2x2*)prim;
-
-#if defined(__AVX__)
-          intersect1_precise<bool8,float8>( ray, q, (SubdivMesh*)geom,pre);
-#else
-          intersect1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,pre,0);
-          intersect1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,pre,6);
-#endif
-
-#endif
         }
         else 
         {
@@ -811,7 +780,6 @@ namespace embree
         if (likely(ty == 2))
         {
 
-#if COMPACT == 1          
           const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
           const size_t line_offset   = pre.current_patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
@@ -827,19 +795,6 @@ namespace embree
 	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom)) return true;
 #endif
 
-          
-#else
-
-#if defined(__AVX__)
-	  const Quad2x2 &q = *(Quad2x2*)prim;
-	  return occluded1_precise<bool8,float8>( ray, q, (SubdivMesh*)geom);
-#else
-          const Quad2x2 &q = *(Quad2x2*)prim;
-          if (occluded1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,0)) return true;
-          if (occluded1_precise<bool4,float4>( ray, q, (SubdivMesh*)geom,6)) return true;
-#endif
-
-#endif
         }
         else 
         {
