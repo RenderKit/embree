@@ -156,7 +156,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(c,c,0);
+        PATCH_DEBUG_SUBDIVISION(c,c,-1);
         return true;
       }
       
@@ -189,7 +189,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(0,c,0);
+        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
         return true;
       }
       
@@ -222,7 +222,7 @@ namespace embree
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
       {
         patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(0,0,c);
+        PATCH_DEBUG_SUBDIVISION(-1,-1,c);
         return true;
       }
       
@@ -250,7 +250,7 @@ namespace embree
         
         /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
         Patch::eval_direct(edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,0,0);
+        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
         return true;
       }
       
