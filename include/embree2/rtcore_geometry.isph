@@ -65,6 +65,7 @@ enum RTCGeometryFlags
 /*! \brief Boundary interpolation mode for subdivision surfaces */
 enum RTCBoundaryMode
 {
+  RTC_BOUNDARY_EDGE_NONE = 0,          //!< ignores border patches
   RTC_BOUNDARY_EDGE_ONLY = 1,          //!< soft boundary (default)
   RTC_BOUNDARY_EDGE_AND_CORNER = 2     //!< boundary corner vertices are sharp vertices
 };

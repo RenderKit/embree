@@ -193,6 +193,28 @@ namespace embree
         return !hasOpposite() && !prev()->hasOpposite();
       }
 
+      /*! tests if the vertex is attached to any border */
+      __forceinline bool vertexHasBorder() const 
+      {
+        const HalfEdge* p = this;
+        do {
+          if (!p->hasOpposite()) return true;
+          p = p->rotate();
+        } while (p != this);
+        return false;
+      }
+
+      /*! tests if the face this half edge belongs to has some border */
+      __forceinline bool faceHasBorder() const 
+      {
+        const HalfEdge* p = this;
+        do {
+          if (p->vertexHasBorder()) return true;
+          p = p->next();
+        } while (p != this);
+        return false;
+      }
+      
       /*! calculates conservative bounds of a catmull clark subdivision face */
       __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
       {
@@ -323,11 +345,6 @@ namespace embree
         return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
       }
 
-      /*! tests if the edge has creases */
-      //__forceinline bool hasCreases() const {
-      //return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
-      //}
-
     private:
       unsigned int vtx_index;         //!< index of edge start vertex
       int next_half_edge_ofs;         //!< relative offset to next half edge of face
@@ -396,7 +413,11 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const {
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    {
+      if (unlikely(boundary == RTC_BOUNDARY_EDGE_NONE)) {
+        if (getHalfEdge(i)->faceHasBorder()) return false;
+      }
       if (bbox) *bbox = bounds(i);
       return getHalfEdge(i)->valid(vertices[0]) && !holeSet.lookup(i);
     }
