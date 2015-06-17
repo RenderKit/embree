@@ -415,7 +415,7 @@ namespace embree
     /*! check if the i'th primitive is valid */
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
-      if (unlikely(boundary == RTC_BOUNDARY_EDGE_NONE)) {
+      if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
         if (getHalfEdge(i)->faceHasBorder()) return false;
       }
       if (bbox) *bbox = bounds(i);
