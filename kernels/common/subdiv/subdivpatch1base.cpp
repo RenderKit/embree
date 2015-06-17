@@ -28,7 +28,7 @@ namespace embree
   
   __forceinline Vec3fa computeTopEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
   {
-    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y-1][x-1] + v[y-1][x+1]);
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y-1][x+1]));
   }
 
   __forceinline Vec3fa computeButtomEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
@@ -55,32 +55,32 @@ namespace embree
                                    Vec3fa dest[4][4])
   {
     /* compute inner bezier control points */
-    dest[1][1] = computeInnerBezierControlPoint(source,1,1);
-    dest[1][2] = computeInnerBezierControlPoint(source,1,2);
-    dest[2][2] = computeInnerBezierControlPoint(source,2,2);
-    dest[2][1] = computeInnerBezierControlPoint(source,2,1);
+    dest[0][0] = computeInnerBezierControlPoint(source,1,1);
+    dest[0][3] = computeInnerBezierControlPoint(source,1,2);
+    dest[3][3] = computeInnerBezierControlPoint(source,2,2);
+    dest[3][0] = computeInnerBezierControlPoint(source,2,1);
 
     /* compute top edge control points */
-    dest[0][1] = computeTopEdgeBezierControlPoint(source,1,1);
-    dest[0][2] = computeTopEdgeBezierControlPoint(source,1,2);
-
+    dest[0][1] = computeRightEdgeBezierControlPoint(source,1,1);
+    dest[0][2] = computeLeftEdgeBezierControlPoint(source,1,2); 
+ 
     /* compute buttom edge control points */
-    dest[3][1] = computeButtomEdgeBezierControlPoint(source,2,1);
-    dest[3][2] = computeButtomEdgeBezierControlPoint(source,2,2);
+    dest[3][1] = computeRightEdgeBezierControlPoint(source,2,1);
+    dest[3][2] = computeLeftEdgeBezierControlPoint(source,2,2);
     
     /* compute left edge control points */
-    dest[1][0] = computeLeftEdgeBezierControlPoint(source,1,1);
-    dest[2][0] = computeLeftEdgeBezierControlPoint(source,2,1);
+    dest[1][0] = computeButtomEdgeBezierControlPoint(source,1,1);
+    dest[2][0] = computeTopEdgeBezierControlPoint(source,2,1);
 
     /* compute right edge control points */
-    dest[1][3] = computeRightEdgeBezierControlPoint(source,1,2);
-    dest[2][3] = computeRightEdgeBezierControlPoint(source,2,2);
+    dest[1][3] = computeButtomEdgeBezierControlPoint(source,1,2);
+    dest[2][3] = computeTopEdgeBezierControlPoint(source,2,2);
 
     /* compute corner control points */
-    dest[0][0] = computeCornerBezierControlPoint(source,1,1,-1,-1);
-    dest[0][3] = computeCornerBezierControlPoint(source,1,2,-1, 1);
-    dest[3][3] = computeCornerBezierControlPoint(source,2,2, 1, 1);
-    dest[3][0] = computeCornerBezierControlPoint(source,2,1, 1,-1);        
+    dest[1][1] = computeCornerBezierControlPoint(source,1,1, 1, 1);
+    dest[1][2] = computeCornerBezierControlPoint(source,1,2, 1,-1);
+    dest[2][2] = computeCornerBezierControlPoint(source,2,2,-1,-1);
+    dest[2][1] = computeCornerBezierControlPoint(source,2,1,-1, 1);        
   }
   
   /*! Construction from vertices and IDs. */
@@ -106,14 +106,23 @@ namespace embree
 
     if (ipatch.isRegular1()) /* bezier vs. gregory */
     {
-#if 1
+#if 0
       flags |= BEZIER_PATCH; 
       GregoryPatch3fa gpatch; 
       gpatch.init_bezier( ipatch ); 
       gpatch.exportDenseConrolPoints( patch.v );
 #else
+
+#if 0
+      BSplinePatch3fa tmp;
+      tmp.init( ipatch );
+      convertToBicubicBezierPatch(tmp.v,patch.v);
+      flags |= BEZIER_PATCH;
+#else
       flags |= BSPLINE_PATCH;
       patch.init( ipatch );
+#endif
+      
 #endif
     }
     else
