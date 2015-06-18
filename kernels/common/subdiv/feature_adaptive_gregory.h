@@ -29,17 +29,23 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
+
+      /* fast path for regular input primitives */
+      if (h->isRegularFace())
+      {
+	CatmullClarkPatch3fa patch; 
+        patch.init(h,vertices);
+        int neighborSubdiv[4] = { 0,0,0,0 };
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+        tessellator(patch,uv,neighborSubdiv);        
+        return;
+      }      
+
+      /* slow path for everything else */
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
-
-      int needAdaptiveSubdivision = 0;
-      for (size_t i=0; i<patch.size(); i++) {
-	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-	needAdaptiveSubdivision += neighborSubdiv[i];
-      }
-
       subdivide(patch,0,neighborSubdiv);
 
     }
