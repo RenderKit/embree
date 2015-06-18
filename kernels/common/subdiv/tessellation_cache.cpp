@@ -141,7 +141,6 @@ namespace embree
 	    const size_t region = index % NUM_CACHE_SEGMENTS;
 	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
 	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
-
 #if 0
 	    PRINT( region );
 	    PRINT( maxBlocks );

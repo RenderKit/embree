@@ -31,7 +31,7 @@ namespace embree
     {
 
       /* fast path for regular input primitives */
-      if (h->isRegularFace())
+      if (likely(h->isRegularFace()))
       {
 	CatmullClarkPatch3fa patch; 
         patch.init(h,vertices);
