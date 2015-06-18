@@ -428,6 +428,12 @@ namespace embree
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
+    __forceinline bool isRegular() const 
+    {
+      return (N == 4) && ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    }
+
+
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       init2(first_half_edge,

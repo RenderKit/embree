@@ -29,7 +29,6 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
@@ -49,7 +48,7 @@ namespace embree
     void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
     {
       /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch())) 
+      if (likely(patch.isQuadPatch() && patch.isRegular() )) 
       {
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
 	CatmullClarkPatch3fa qpatch; patch.init(qpatch);

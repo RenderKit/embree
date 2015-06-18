@@ -467,8 +467,6 @@ namespace embree
 
 	const float a = c1 * cosf(2.0f*M_PI*index/n);
 	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); // FIXME: factor of 2 missing?
-        //alpha = ksum(alpha,c_alpha,a*ring[2*i]);
-        //beta  = ksum(beta ,c_beta ,b*ring[2*i+1]);
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
       }
@@ -613,6 +611,12 @@ namespace embree
 
     GeneralCatmullClark1RingT() 
       : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
+
+    __forceinline bool isRegular() const 
+    {
+      if (border_face == -1 && face_valence == 4) return true;
+      return false;
+    }
     
     __forceinline bool has_last_face() const {
       return border_face != face_valence-1;

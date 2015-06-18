@@ -104,29 +104,25 @@ namespace embree
     
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular1()) /* bezier vs. gregory */
+    if (ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior */
     {
-#if 1
-      flags |= BEZIER_PATCH; 
-      GregoryPatch3fa gpatch; 
-      gpatch.init_bezier( ipatch ); 
-      gpatch.exportDenseConrolPoints( patch.v );
-#else
 
-#if 0
+#if 1
+      /* bezier */
       BSplinePatch3fa tmp;
       tmp.init( ipatch );
       convertToBicubicBezierPatch(tmp.v,patch.v);
       flags |= BEZIER_PATCH;
 #else
+      /* bspline */
+
       flags |= BSPLINE_PATCH;
       patch.init( ipatch );
-#endif
-      
-#endif
+#endif      
     }
     else
     {
+      /* greogy */
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init( ipatch ); 
