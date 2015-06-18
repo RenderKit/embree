@@ -107,6 +107,7 @@ namespace embree
 #endif
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
+            //r.primID = (size_t)hit_patch;
           }
         }
         

@@ -425,14 +425,14 @@ namespace embree
     {
       if (unlikely(std::isinf(vertex_crease_weight)))
         return ring[0] - vtx;
-      
+
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
 	//if (unlikely(std::isinf(vertex_crease_weight)))
         //return ring[0] - vtx;
 	
-	if (border_index != edge_valence-2 && face_valence != 2) {
+	if (border_index != edge_valence-2 ) { // && face_valence != 2
 	  return ring[0] - vtx; 
 	}
 	else
@@ -489,7 +489,7 @@ namespace embree
         //return ring[2] - vtx;
         
         //if (border_index == 0 && face_valence != 2) {
-        if (border_index == edge_valence-2 && face_valence != 2) {
+        if (border_index != 2) { //edge_valence-2 ) { // && face_valence != 2
           return ring[2] - vtx;
         }
         else {
@@ -814,7 +814,6 @@ namespace embree
 
     void convert(CatmullClark1Ring& dst) const
     {
-      assert(only_quads);
       dst.edge_level = edge_level;
       dst.vertex_level = vertex_level;
       dst.vtx = vtx;
