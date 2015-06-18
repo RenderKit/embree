@@ -229,8 +229,8 @@ namespace embree
     void loadGroupNode(const Ref<XML>& xml, const AffineSpace3f& space);
 
   private:
-    template<typename T> T load(const Ref<XML>& xml) { return T(zero); }
-    template<typename T> T load(const Ref<XML>& xml, const T& opt) { return T(zero); }
+    template<typename T> T load(const Ref<XML>& xml) { assert(false); return T(zero); }
+    template<typename T> T load(const Ref<XML>& xml, const T& opt) { assert(false); return T(zero); }
     char* loadBinary(const Ref<XML>& xml, size_t eltSize, size_t& size);
 
     std::vector<float> loadFloatArray(const Ref<XML>& xml);
@@ -307,6 +307,11 @@ namespace embree
   template<> Vec3f XMLLoader::load<Vec3f>(const Ref<XML>& xml) {
     if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
     return Vec3f(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
+  }
+
+  template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml) {
+    if (xml->body.size() != 3) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong float3 body");
+    return Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float());
   }
 
   template<> Vec3fa XMLLoader::load<Vec3fa>(const Ref<XML>& xml, const Vec3fa& opt) {
