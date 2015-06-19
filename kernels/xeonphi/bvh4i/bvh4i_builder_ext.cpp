@@ -966,6 +966,8 @@ PRINT(CORRECT_numPrims);
     /* in fast update mode we know the number of primitives in advance */
     if (fastUpdateMode) return fastUpdateMode_numFaces;
 
+    TIMER(double msec = getSeconds());	
+
     PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
      {
        size_t s = 0;
@@ -985,6 +987,9 @@ PRINT(CORRECT_numPrims);
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "getNumPrimitives " << 1000. * msec << " ms" << std::endl << std::flush);
 
     return pinfo.size();
     /* count total number of subdivision surface objects */

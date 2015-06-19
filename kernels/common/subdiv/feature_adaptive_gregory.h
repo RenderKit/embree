@@ -31,7 +31,8 @@ namespace embree
     {
 
       /* fast path for regular input primitives */
-      if (likely(h->isRegularFace()))
+      //if (likely(h->isRegularFace()))
+      if (likely(h->isGregoryFace()))
       {
 	CatmullClarkPatch3fa patch; 
         patch.init(h,vertices);
@@ -40,7 +41,6 @@ namespace embree
         tessellator(patch,uv,neighborSubdiv);        
         return;
       }      
-
       /* slow path for everything else */
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       GeneralCatmullClarkPatch3fa patch;
