@@ -95,6 +95,19 @@ RTCORE_API void rtcInit(const char* cfg = NULL);
   call. */
 RTCORE_API void rtcExit();
 
+/*! \brief Parameters that can get configured using the rtcSetParameter functions. */
+enum RTCParameter {
+  RTC_SOFTWARE_CACHE_SIZE = 0      /*! Configures the software cache size (used
+                                     to cache subdivision surfaces for
+                                     instance). The size is specified as an
+                                     integer number of bytes. The software
+                                     cache cannot be configured during
+                                     rendering. */
+};
+
+/*! \brief Configures some parameters. */
+RTCORE_API void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
+
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
   RTC_NO_ERROR = 0,          //!< No error has been recorded.

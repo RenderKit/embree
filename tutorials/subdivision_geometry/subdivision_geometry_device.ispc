@@ -221,6 +221,9 @@ export void device_init (uniform int8* uniform cfg)
   /* initialize ray tracing core */
   rtcInit(cfg);
 
+  /* configure the size of the software cache used for subdivision geometry */
+  rtcSetParameter1i(RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
+
   /* set error handler */
   rtcSetErrorFunction(error_handler);
 

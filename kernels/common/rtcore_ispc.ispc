@@ -21,6 +21,7 @@
 
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
+extern "C" void ispcSetParameter1i(const uniform RTCParameter parm, uniform ssize_tt val);
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
@@ -110,6 +111,10 @@ void rtcInit(const uniform int8* uniform cfg) {
 
 void rtcExit() {
   ispcExit();
+}
+
+void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val) {
+  ispcSetParameter1i(parm,val);
 }
 
 uniform RTCError rtcGetError() {

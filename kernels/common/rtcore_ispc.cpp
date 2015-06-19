@@ -29,7 +29,11 @@ namespace embree
   extern "C" void ispcExit() {
     rtcExit();
   }
-  
+
+  extern "C" void ispcSetParameter1i(const RTCParameter parm, ssize_t val) {
+    rtcSetParameter1i(parm,val);
+  }
+
   extern "C" RTCError ispcGetError() {
     return rtcGetError();
   }
