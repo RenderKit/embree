@@ -364,7 +364,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
     switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(val); break;
+    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
     default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
     };
     RTCORE_CATCH_END;
