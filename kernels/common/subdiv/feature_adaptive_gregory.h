@@ -46,6 +46,11 @@ namespace embree
       GeneralCatmullClarkPatch3fa patch;
       patch.init(h,vertices);
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
+
+      for (size_t i=0; i<patch.size(); i++) {
+	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+      }
+
       subdivide(patch,0,neighborSubdiv);
 
     }
@@ -54,7 +59,7 @@ namespace embree
     void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
     {
       /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch() && patch.isRegular() )) 
+      if (likely(patch.isQuadPatch()  && patch.isRegular() )) 
       {
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
 	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
