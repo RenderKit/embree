@@ -3380,7 +3380,7 @@ namespace embree
     //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    //POSITIVE("interpolate4",                rtcore_interpolate(4));
+    //POSITIVE("interpolate_subdiv4",                rtcore_interpolate_subdiv(4));
     //exit(1);
 
 #if 1

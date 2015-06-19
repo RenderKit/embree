@@ -63,7 +63,7 @@ namespace embree
 #endif
 
     maxBlocks              = size/64;
-    index                  = 0; // 1
+    localTime              = 0; // 1
     next_block             = 0;
     numRenderThreads       = 0;
 #if FORCE_SIMPLE_FLUSH == 1
@@ -138,7 +138,7 @@ namespace embree
 	    next_block = 0;
 	    switch_block_threshold = maxBlocks;
 #else
-	    const size_t region = index % NUM_CACHE_SEGMENTS;
+	    const size_t region = localTime % NUM_CACHE_SEGMENTS;
 	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
 	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
 #if 0

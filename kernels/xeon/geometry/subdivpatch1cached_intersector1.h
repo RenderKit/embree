@@ -720,7 +720,7 @@ namespace embree
         return true;
       };
 
-      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const void* geom);                  
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
@@ -743,7 +743,7 @@ namespace embree
       
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* geom, size_t& lazy_node) 
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -760,7 +760,7 @@ namespace embree
 #if defined(__AVX__)
 	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, (SubdivMesh*)geom,pre);
 #else
-	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom,pre);
+	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom,pre); // FIXME: geom is the scene not a subdiv mesh
 	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom,pre);
 #endif
 
@@ -774,7 +774,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const void* geom, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* geom, size_t& lazy_node) 
       {
         STAT3(shadow.trav_prims,1,1,1);
         

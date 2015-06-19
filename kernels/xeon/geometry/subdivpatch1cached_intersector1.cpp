@@ -109,7 +109,7 @@ namespace embree
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
 							  SubdivPatch1Cached* const subdiv_patch, 
-							  const void* geom)
+							  const Scene* scene)
     {
       /* unlock previous patch */
       if (pre.current_patch)
@@ -123,24 +123,26 @@ namespace embree
 
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.t_state);
        
-        if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref))
+        const size_t globalTime = scene->commitCounter;
+        if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref,globalTime))
             return (size_t) ptr;
         
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
 
         if (subdiv_patch->try_write_lock())
         {
-          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
+          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
           {
             /* generate vertex grid, lock and allocate memory in the cache */
-            size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,pre.t_state,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
+            size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,pre.t_state,scene->getSubdivMesh(subdiv_patch->geom));                                
             
             /* get current commit index */
-            const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+            const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
 
             __memory_barrier();
             /* write new root ref */
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
             
 #if _DEBUG
             const size_t patchIndex = subdiv_patch - pre.array;

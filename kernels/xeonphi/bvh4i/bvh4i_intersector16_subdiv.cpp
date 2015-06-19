@@ -340,7 +340,7 @@ namespace embree
 
 
     __forceinline size_t lazyBuildPatch(const unsigned int patchIndex,
-					const unsigned int commitCounter,
+					const unsigned int globalTime,
 					SubdivPatch1* const patches,
 					Scene *const scene,
                                         ThreadWorkState *const t_state,
@@ -352,13 +352,13 @@ namespace embree
         
         SubdivPatch1* subdiv_patch = &patches[patchIndex];
         
-        const size_t index = SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
+        const size_t index = SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref,globalTime);
         if (index != -1) return index;
 
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);		  
         
         subdiv_patch->write_lock();
-        if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref)) 
+        if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
         {
           const SubdivMesh* const geom = (SubdivMesh*)scene->get(subdiv_patch->geom); 
 
@@ -366,14 +366,14 @@ namespace embree
           size_t new_root_ref = initLocalLazySubdivTreeCompact(*subdiv_patch,t_state,geom);
 
           /* get current commit index */
-          const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+          const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
           __memory_barrier();
           
           CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,bvh->numPrimitives));
           
-          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,commitIndex);
+          subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
           subdiv_patch->write_unlock();
-          return SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref);
+          return SharedLazyTessellationCache::lookupIndex(&subdiv_patch->root_ref,globalTime);
         }
         subdiv_patch->write_unlock();
       }     

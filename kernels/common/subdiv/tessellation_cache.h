@@ -100,7 +100,7 @@ namespace embree
    {
      __forceinline Tag() : data(0) {}
 
-     __forceinline Tag(void* ptr, size_t commitIndex)
+     __forceinline Tag(void* ptr, size_t combinedTime)
      {
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
@@ -108,7 +108,7 @@ namespace embree
        static const size_t REF_TAG      = 1;
        assert( !(new_root_ref & REF_TAG) );
        new_root_ref |= REF_TAG;
-       new_root_ref |= (int64_t)commitIndex << COMMIT_INDEX_SHIFT; 
+       new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
 
@@ -130,7 +130,7 @@ namespace embree
    size_t maxBlocks;
    ThreadWorkState *threadWorkState;
       
-   __aligned(64) AtomicCounter index;
+   __aligned(64) AtomicCounter localTime;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicCounter switch_block_threshold;
@@ -144,8 +144,12 @@ namespace embree
 
    void getNextRenderThreadWorkState();
 
-   __forceinline size_t getCurrentIndex() { return index; }
-   __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
+   //__forceinline size_t getCurrentIndex() { return localTime; }
+   __forceinline void   addCurrentIndex(const size_t i=1) { localTime.add(i); }
+
+   __forceinline size_t getTime(const unsigned globalTime) {
+     return localTime+NUM_CACHE_SEGMENTS*globalTime;
+   }
 
    __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
    __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
@@ -171,7 +175,7 @@ namespace embree
      }
    }
 
-   static __forceinline void* lookup(volatile Tag* tag)
+   static __forceinline void* lookup(volatile Tag* tag, unsigned globalTime)
    {
      static const size_t REF_TAG      = 1;
      static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
@@ -183,7 +187,7 @@ namespace embree
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
-       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime) ))
        {
          CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
          return (void*) subdiv_patch_root;
@@ -194,24 +198,24 @@ namespace embree
    }
 
    template<typename Constructor>
-     static __forceinline auto lookup (CacheEntry& entry, const Constructor constructor) -> decltype(constructor())
+     static __forceinline auto lookup (CacheEntry& entry, unsigned globalTime, const Constructor constructor) -> decltype(constructor())
    {
      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
      while (true)
      {
        sharedLazyTessellationCache.lockThreadLoop(t_state);
-       void* patch = SharedLazyTessellationCache::lookup(&entry.tag);
+       void* patch = SharedLazyTessellationCache::lookup(&entry.tag,globalTime);
        if (patch) return (decltype(constructor())) patch;
        
        if (entry.mutex.try_write_lock())
        {
-         if (!validTag(entry.tag)) 
+         if (!validTag(entry.tag,globalTime)) 
          {
            auto ret = constructor();
            __memory_barrier();
-           const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
-           entry.tag = SharedLazyTessellationCache::Tag(ret,commitIndex);
+           //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+           entry.tag = SharedLazyTessellationCache::Tag(ret,sharedLazyTessellationCache.getTime(globalTime));
            __memory_barrier();
            entry.mutex.write_unlock();
            return ret;
@@ -222,7 +226,7 @@ namespace embree
      }
    }
    
-   static __forceinline size_t lookupIndex(volatile Tag* tag)
+   static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
    {
      static const size_t REF_TAG      = 1;
      static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
@@ -234,7 +238,7 @@ namespace embree
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
        
-       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
+       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime) ))
        {
          CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
          return subdiv_patch_root;
@@ -250,22 +254,21 @@ namespace embree
 #endif
    }
 
-
-   __forceinline bool validCacheIndex(const size_t i)
+   __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
      return i == index;
 #else
-     return i+(NUM_CACHE_SEGMENTS-1) >= index;
+     return i+(NUM_CACHE_SEGMENTS-1) >= getTime(globalTime);
 #endif
    }
 
-    static __forceinline bool validTag(const Tag& tag)
+    static __forceinline bool validTag(const Tag& tag, unsigned globalTime)
     {
       const int64_t subdiv_patch_root_ref = tag.data; 
       if (subdiv_patch_root_ref == 0) return false;
       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
-      return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index);
+      return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime);
     }
 
    void waitForUsersLessEqual(ThreadWorkState *const t_state,

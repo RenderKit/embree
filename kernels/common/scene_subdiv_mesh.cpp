@@ -582,7 +582,7 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
-      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,[&] () {
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,parent->commitCounter,[&] () {
           auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
           return Patch<float4,float4_t>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
         });
