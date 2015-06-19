@@ -244,7 +244,7 @@ namespace embree
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
     
-#if defined(__MIC__)
+#if defined(__MIC__)    
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
     grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
 #else

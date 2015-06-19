@@ -257,7 +257,7 @@ namespace embree
    __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
-     return i == index;
+     return i == getTime(globalTime);
 #else
      return i+(NUM_CACHE_SEGMENTS-1) >= getTime(globalTime);
 #endif

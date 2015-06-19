@@ -463,6 +463,12 @@ namespace embree
 	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
+              bool16 m_quad3x5 = 0xffff; 
+              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              {
+                const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
+                m_quad3x5 = m_row | (m_row << 8);
+              }
 	      // ----------------------------------------------------------------------------------------------------
 
 	      STAT3(normal.trav_prims,1,1,1);
@@ -499,7 +505,7 @@ namespace embree
 
 		  Quad3x5 quad3x5;
 		  quad3x5.init( curNode.offsetIndex(), patch, lazyCachePtr);
-		  quad3x5.intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,precalculations,patchIndex);		  
+		  quad3x5.intersect1_tri16_precise(rayIndex,dir_xyz,org_xyz,ray16,precalculations,patchIndex,m_quad3x5);		  
 		}
 
 	      SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
@@ -621,6 +627,13 @@ namespace embree
 	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
+              bool16 m_quad3x5 = 0xffff; 
+              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              {
+                const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
+                m_quad3x5 = m_row | (m_row << 8);
+              }
+
 	      // ----------------------------------------------------------------------------------------------------
 
 	      {
@@ -659,7 +672,8 @@ namespace embree
 								 dir_xyz,
 								 org_xyz,
 								 ray16,
-								 precalculations)))
+								 precalculations,
+                                                                 m_quad3x5)))
 		      {
 			terminated |= (bool16)((unsigned int)1 << rayIndex);
 			break;
@@ -750,6 +764,13 @@ namespace embree
 	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
+          bool16 m_quad3x5 = 0xffff; 
+          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          {
+            const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
+            m_quad3x5 = m_row | (m_row << 8);
+          }
+
 	  // ----------------------------------------------------------------------------------------------------
 
 	  STAT3(normal.trav_prims,1,1,1);
@@ -786,7 +807,7 @@ namespace embree
 
 	      Quad3x5 quad3x5;
 	      quad3x5.init( curNode.offsetIndex(), patch, lazyCachePtr);
-	      quad3x5.intersect1_tri16_precise(dir_xyz,org_xyz,ray,precalculations,patchIndex);		  
+	      quad3x5.intersect1_tri16_precise(dir_xyz,org_xyz,ray,precalculations,patchIndex,m_quad3x5);		  
 	    }
 
 	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
@@ -888,6 +909,12 @@ namespace embree
 	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
+          bool16 m_quad3x5 = 0xffff; 
+          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          {
+            const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
+            m_quad3x5 = m_row | (m_row << 8);
+          }          
 	  // ----------------------------------------------------------------------------------------------------
 
 
@@ -926,7 +953,8 @@ namespace embree
 	      if (unlikely(quad3x5.occluded1_tri16_precise(dir_xyz,
 							   org_xyz,
 							   ray,
-							   precalculations)))
+							   precalculations,
+                                                           m_quad3x5)))
 		{
 		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
 		  ray.geomID = 0;

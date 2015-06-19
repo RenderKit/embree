@@ -90,7 +90,8 @@ namespace embree
 						const float16 &org_xyz,
 						Ray16& ray16,
 						const Precalculations &pre,
-						const unsigned int subdiv_patch_index) const
+						const unsigned int subdiv_patch_index,
+                                                const bool16 m_input = 0xffff) const
     {
       const int16 perm_v0 = load16i(tri_permute_v0);
       const int16 perm_v1 = load16i(tri_permute_v1);
@@ -115,9 +116,9 @@ namespace embree
       const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      bool16 m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      bool16 m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
       const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
@@ -195,7 +196,8 @@ namespace embree
 					       const float16 &dir_xyz,
 					       const float16 &org_xyz,
 					       Ray16& ray16,
-					       const Precalculations &pre)
+					       const Precalculations &pre,
+                                               const bool16 m_input = 0xffff)
     {
       const int16 perm_v0 = load16i(tri_permute_v0);
       const int16 perm_v1 = load16i(tri_permute_v1);
@@ -220,9 +222,9 @@ namespace embree
       const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      bool16 m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      bool16 m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
       const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
@@ -252,7 +254,8 @@ namespace embree
 						const float16 &org_xyz,
 						Ray& ray,
 						const Precalculations &pre,
-						const unsigned int subdiv_patch_index) const
+						const unsigned int subdiv_patch_index,
+                                                const bool16 m_input = 0xffff) const
     {
       const int16 perm_v0 = load16i(tri_permute_v0);
       const int16 perm_v1 = load16i(tri_permute_v1);
@@ -276,9 +279,9 @@ namespace embree
       const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      bool16 m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      bool16 m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
       const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
@@ -348,7 +351,8 @@ namespace embree
     __forceinline bool occluded1_tri16_precise(const float16 &dir_xyz,
 					       const float16 &org_xyz,
 					       Ray& ray,
-					       const Precalculations &pre)
+					       const Precalculations &pre,
+                                               const bool16 m_input = 0xffff)
     {
       const int16 perm_v0 = load16i(tri_permute_v0);
       const int16 perm_v1 = load16i(tri_permute_v1);
@@ -372,9 +376,9 @@ namespace embree
       const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      bool16 m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      bool16 m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
       const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
