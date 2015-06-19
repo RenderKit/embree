@@ -3129,6 +3129,8 @@ namespace embree
 
   bool rtcore_interpolate_subdiv(size_t N)
   {
+    size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+    
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
     AssertNoError();
     unsigned int geomID = rtcNewSubdivisionMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_quad_faces, num_interpolation_quad_faces*4, num_interpolation_vertices, 3, 2, 0, 1);
@@ -3142,23 +3144,23 @@ namespace embree
     rtcSetBuffer(scene, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,interpolation_vertex_crease_weights,0, sizeof(float));
     AssertNoError();
 
-    float* vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    float* vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    /*float* vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    /*float* vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
     AssertNoError();*/
 
-    float* user_vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    float* user_vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    float* user_vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    float* user_vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
     AssertNoError();
 
@@ -3209,6 +3211,8 @@ namespace embree
 
   bool rtcore_interpolate_triangles(size_t N)
   {
+    size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
     AssertNoError();
     unsigned int geomID = rtcNewTriangleMesh(scene, RTC_GEOMETRY_STATIC, num_interpolation_triangle_faces, num_interpolation_vertices, 1);
@@ -3217,23 +3221,23 @@ namespace embree
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_triangle_indices , 0, 3*sizeof(unsigned int));
     AssertNoError();
 
-    float* vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    float* vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    /*float* vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    /*float* vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
     AssertNoError();*/
 
-    float* user_vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    float* user_vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    float* user_vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    float* user_vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
     AssertNoError();
 
@@ -3303,6 +3307,8 @@ namespace embree
 
   bool rtcore_interpolate_hair(size_t N)
   {
+    size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+
     RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERPOLATE);
     AssertNoError();
     unsigned int geomID = rtcNewHairGeometry(scene, RTC_GEOMETRY_STATIC, num_interpolation_hairs, num_interpolation_hair_vertices, 1);
@@ -3311,23 +3317,23 @@ namespace embree
     rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  interpolation_hair_indices , 0, sizeof(unsigned int));
     AssertNoError();
 
-    float* vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices0[i] = drand48();
+    float* vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER0, vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    /*float* vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) vertices1[i] = drand48();
+    /*float* vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_VERTEX_BUFFER1, vertices1, 0, N*sizeof(float));
     AssertNoError();*/
 
-    float* user_vertices0 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices0[i] = drand48();
+    float* user_vertices0 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices0[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER0, user_vertices0, 0, N*sizeof(float));
     AssertNoError();
 
-    float* user_vertices1 = new float[num_interpolation_vertices*N];
-    for (size_t i=0; i<num_interpolation_vertices*N; i++) user_vertices1[i] = drand48();
+    float* user_vertices1 = new float[M];
+    for (size_t i=0; i<M; i++) user_vertices1[i] = drand48();
     rtcSetBuffer(scene, geomID, RTC_USER_VERTEX_BUFFER1, user_vertices1, 0, N*sizeof(float));
     AssertNoError();
 
