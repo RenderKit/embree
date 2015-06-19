@@ -12,6 +12,7 @@ TBB_PATH=$PWD/tbb
 mkdir -p build
 cd build
 rm CMakeCache.txt # make sure to use default settings
+rm version.h
 
 # set release settings
 cmake \
@@ -24,9 +25,12 @@ cmake \
 -D USE_OPENEXR=OFF \
 ..
 
+# read embree version
+VERSION_MAJOR=`sed -n 's/#define __EMBREE_VERSION_MAJOR__ \(.*\)/\1/p' version.h`
+VERSION_MINOR=`sed -n 's/#define __EMBREE_VERSION_MINOR__ \(.*\)/\1/p' version.h`
+VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
+
 # make docu after cmake to have correct version.h
-#make -C ../embree-doc doc
-#cp ../embree-doc/doc/* ..
 make -j 8 preinstall
 
 # create installers
@@ -37,22 +41,13 @@ make -j 8 package
 cmake -D ENABLE_INSTALLER=OFF ..
 make -j 8 package
 
-#make -j 8 preinstall
-#umask_org=`umask` # workaround for bug in CMake/CPack: need to reset umask
-#umask 022
-#cmake -D CMAKE_INSTALL_PREFIX="$destdir" -P cmake_install.cmake
-#rm embree-*.rpm # remove stale RPM packages
-#make -j 8 package
-
-# rename RPMs
-for i in embree-*.rpm ; do # rename RPMs to have component name before version
+# rename RPMs to have component name before version
+for i in embree-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-1.*.rpm ; do 
   newname=`echo $i | sed -e "s/embree-\(.\+\)-\([a-z_]\+\)\.rpm/embree-\2-\1.rpm/"`
   mv $i $newname
 done
-#umask $umask_org
+
+tar czf embree-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.x86_64.rpm.tar.gz embree-*-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}-1.x86_64.rpm
+
 cd ..
 
-# install scripts
-#install scripts/install_linux/paths.sh "$destdir"
-#sed -e "s/@EMBREE_VERSION@/`cat embree-doc/version`/" scripts/install_linux/install.sh > "$destdir"/install.sh
-#chmod 755 "$destdir"/install.sh
