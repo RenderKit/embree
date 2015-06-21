@@ -17,39 +17,43 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "gregory_patch.h"
 
 namespace embree
 {  
-  template<class T, class S>
-    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  template<typename Vertex, typename Vertex_t>
+    class __aligned(64) BezierPatchT
   {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1 = one_minus_uu * v0   + uu * v1;
-    const T v1_1 = one_minus_uu * v1   + uu * v2;
-    const T v2_1 = one_minus_uu * v2   + uu * v3;      
-    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-    return v0_3;
-  }
-  
-  template<class T, class S>
-    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-  {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1         = one_minus_uu * v0   + uu * v1;
-    const T v1_1         = one_minus_uu * v1   + uu * v2;
-    const T v2_1         = one_minus_uu * v2   + uu * v3;      
-    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
-    return v1_2 - v0_2;      
-  }
-
-  class __aligned(64) BezierPatch
-  {
+   public:
+      Vertex matrix[4][4];
+    
   public:
 
-    static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const float& uu, const float& vv) 
+    __forceinline BezierPatchT() {}
+
+    template<typename Loader>
+      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    {
+      CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
+      GregoryPatchT<Vertex,Vertex_t> gpatch; 
+      gpatch.init_bezier(patch); 
+      //gpatch.exportDenseConrolPoints(matrix);
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
+
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
+    {
+      GregoryPatchT<Vertex,Vertex_t> gpatch; 
+      gpatch.init_bezier(patch); 
+      //gpatch.exportDenseConrolPoints(matrix);
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
+
+    static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
       const float one_minus_uu = 1.0f - uu;
       const float one_minus_vv = 1.0f - vv;      
@@ -63,8 +67,7 @@ namespace embree
       const float B3_u = uu * uu * uu;
       const float B3_v = vv * vv * vv;
 
-
-      const Vec3fa_t res = 
+      const Vertex_t res = 
        (B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
        (B0_u * matrix[1][0] + B1_u * matrix[1][1] + B2_u * matrix[1][2] + B3_u * matrix[1][3]) * B1_v + 
        (B0_u * matrix[2][0] + B1_u * matrix[2][1] + B2_u * matrix[2][2] + B3_u * matrix[2][3]) * B2_v + 
@@ -73,32 +76,52 @@ namespace embree
       return res;
     }
 
-    static __forceinline Vec3fa normal(const Vec3fa matrix[4][4], const float uu, const float vv) 
+    static __forceinline Vertex_t tangentU(const Vertex matrix[4][4], const float uu, const float vv) 
     {
-      /* tangentU */
-      const Vec3fa_t col0 = deCasteljau(vv, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[3][0]);
-      const Vec3fa_t col1 = deCasteljau(vv, (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[1][1], (Vec3fa_t)matrix[2][1], (Vec3fa_t)matrix[3][1]);
-      const Vec3fa_t col2 = deCasteljau(vv, (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[1][2], (Vec3fa_t)matrix[2][2], (Vec3fa_t)matrix[3][2]);
-      const Vec3fa_t col3 = deCasteljau(vv, (Vec3fa_t)matrix[0][3], (Vec3fa_t)matrix[1][3], (Vec3fa_t)matrix[2][3], (Vec3fa_t)matrix[3][3]);
-      
-      const Vec3fa_t tangentU = deCasteljau_tangent(uu, col0, col1, col2, col3);
-      
-      /* tangentV */
-      const Vec3fa_t row0 = deCasteljau(uu, (Vec3fa_t)matrix[0][0], (Vec3fa_t)matrix[0][1], (Vec3fa_t)matrix[0][2], (Vec3fa_t)matrix[0][3]);
-      const Vec3fa_t row1 = deCasteljau(uu, (Vec3fa_t)matrix[1][0], (Vec3fa_t)matrix[1][1], (Vec3fa_t)matrix[1][2], (Vec3fa_t)matrix[1][3]);
-      const Vec3fa_t row2 = deCasteljau(uu, (Vec3fa_t)matrix[2][0], (Vec3fa_t)matrix[2][1], (Vec3fa_t)matrix[2][2], (Vec3fa_t)matrix[2][3]);
-      const Vec3fa_t row3 = deCasteljau(uu, (Vec3fa_t)matrix[3][0], (Vec3fa_t)matrix[3][1], (Vec3fa_t)matrix[3][2], (Vec3fa_t)matrix[3][3]);
-      
-      const Vec3fa_t tangentV = deCasteljau_tangent(vv, row0, row1, row2, row3);
-      
-      /* normal = tangentU x tangentV */
-      const Vec3fa_t n = cross(tangentV,tangentU);
-      
-      return n;     
+      const Vertex_t col0 = deCasteljau(vv, (Vertex_t)matrix[0][0], (Vertex_t)matrix[1][0], (Vertex_t)matrix[2][0], (Vertex_t)matrix[3][0]);
+      const Vertex_t col1 = deCasteljau(vv, (Vertex_t)matrix[0][1], (Vertex_t)matrix[1][1], (Vertex_t)matrix[2][1], (Vertex_t)matrix[3][1]);
+      const Vertex_t col2 = deCasteljau(vv, (Vertex_t)matrix[0][2], (Vertex_t)matrix[1][2], (Vertex_t)matrix[2][2], (Vertex_t)matrix[3][2]);
+      const Vertex_t col3 = deCasteljau(vv, (Vertex_t)matrix[0][3], (Vertex_t)matrix[1][3], (Vertex_t)matrix[2][3], (Vertex_t)matrix[3][3]);
+      return deCasteljau_tangent(uu, col0, col1, col2, col3);
+    }
+
+    static __forceinline Vertex_t tangentV(const Vertex matrix[4][4], const float uu, const float vv) 
+    {
+      const Vertex_t row0 = deCasteljau(uu, (Vertex_t)matrix[0][0], (Vertex_t)matrix[0][1], (Vertex_t)matrix[0][2], (Vertex_t)matrix[0][3]);
+      const Vertex_t row1 = deCasteljau(uu, (Vertex_t)matrix[1][0], (Vertex_t)matrix[1][1], (Vertex_t)matrix[1][2], (Vertex_t)matrix[1][3]);
+      const Vertex_t row2 = deCasteljau(uu, (Vertex_t)matrix[2][0], (Vertex_t)matrix[2][1], (Vertex_t)matrix[2][2], (Vertex_t)matrix[2][3]);
+      const Vertex_t row3 = deCasteljau(uu, (Vertex_t)matrix[3][0], (Vertex_t)matrix[3][1], (Vertex_t)matrix[3][2], (Vertex_t)matrix[3][3]);
+      return deCasteljau_tangent(vv, row0, row1, row2, row3);
+    }
+
+    static __forceinline Vertex_t normal(const Vertex matrix[4][4], const float uu, const float vv) 
+    {
+      const Vertex_t dPdu = tangentU(matrix,uu,vv);
+      const Vertex_t dPdv = tangentV(matrix,uu,vv);
+      return cross(dPdv,dPdu);
+    }
+
+    __forceinline Vertex_t eval(const float uu, const float vv) const {
+      return eval(matrix,uu,vv);
+    }
+
+    __forceinline Vertex_t tangentU(const float uu, const float vv) const { 
+      return tangentU(matrix,uu,vv);
+    }
+
+    __forceinline Vertex_t tangentV(const float uu, const float vv) const {
+      return tangentV(matrix,uu,vv);
     }
     
-    template<class M, class T>
-      static __forceinline Vec3<T> eval(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
+    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+    {
+      if (P)    *P    = eval(u,v); 
+      if (dPdu) *dPdu = tangentU(u,v)*dscale; 
+      if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+    }
+    
+    template<class T>
+      static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T& uu, const T& vv) 
     {      
       const T one_minus_uu = 1.0f - uu;
       const T one_minus_vv = 1.0f - vv;      
@@ -133,8 +156,8 @@ namespace embree
       return Vec3<T>(x,y,z);
     }
 
-    template<class M, class T>
-      static __forceinline Vec3<T> normal(const Vec3fa matrix[4][4], const T& uu, const T& vv) 
+    template<class T>
+      static __forceinline Vec3<T> normal(const Vertex matrix[4][4], const T& uu, const T& vv) 
     {
       
       const Vec3<T> matrix_00 = Vec3<T>(matrix[0][0].x,matrix[0][0].y,matrix[0][0].z);
@@ -178,4 +201,6 @@ namespace embree
       return n;
     }
   };
+
+  typedef BezierPatchT<Vec3fa,Vec3fa_t> BezierPatch3fa;
 }

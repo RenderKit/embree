@@ -69,10 +69,10 @@ namespace embree
     }
 
     // === start with first group containing startID ===
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -96,14 +96,14 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-	mic_f bmin = min(min(v[0],v[1]),v[2]);
-	mic_f bmax = max(max(v[0],v[1]),v[2]);
+	float16 bmin = min(min(v[0],v[1]),v[2]);
+	float16 bmax = max(max(v[0],v[1]),v[2]);
 
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
+	const float16 centroid2 = bmin+bmax;
 	bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
@@ -121,7 +121,7 @@ namespace embree
 	  }
 	else
 	  {
-	    const mic_f twoAABBs = load16f(local_prims);
+	    const float16 twoAABBs = load16f(local_prims);
 	    if (numLocalPrims == 2)
 	      {
 		numLocalPrims = 0;
@@ -175,12 +175,12 @@ namespace embree
     const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
     const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-    const mic_i pID(primID);
-    const mic_i gID(geomID);
+    const int16 pID(primID);
+    const int16 gID(geomID);
 
-    const mic3f v_t0 = mesh->getTriangleVertices<PFHINT_L1>(tri);
+    const Vec3f16 v_t0 = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
-    const mic_f tri_accel_t0 = initTriangle1(v_t0[0],v_t0[1],v_t0[2],gID,pID,mic_i(mesh->mask));
+    const float16 tri_accel_t0 = initTriangle1(v_t0[0],v_t0[1],v_t0[2],gID,pID,int16(mesh->mask));
 
     store16f_ngo(&acc->t0,tri_accel_t0);
 
@@ -192,8 +192,8 @@ namespace embree
       {
 	assert( (int)mesh->numTimeSteps == 2 );
 
-	const mic3f v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
-	const mic_f tri_accel_t1 = initTriangle1(v_t1[0],v_t1[1],v_t1[2],gID,pID,mic_i(mesh->mask));
+	const Vec3f16 v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
+	const float16 tri_accel_t1 = initTriangle1(v_t1[0],v_t1[1],v_t1[2],gID,pID,int16(mesh->mask));
 
 	store16f_ngo(&acc->t1,tri_accel_t1);
       }
@@ -242,9 +242,9 @@ namespace embree
 	return leaf_bounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
-    mic_m m_lane = 0xf;
+    float16 node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    float16 node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+    bool16 m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
     BBox3fa parentBounds = empty;
@@ -252,15 +252,15 @@ namespace embree
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
 	BBox3fa bounds = refit( n->child(i) );
-	const mic_f b_lower = broadcast4to16f(&bounds.lower);
-	const mic_f b_upper = broadcast4to16f(&bounds.upper);
+	const float16 b_lower = broadcast4to16f(&bounds.lower);
+	const float16 b_upper = broadcast4to16f(&bounds.upper);
 	node_lower_t1 = select(m_lane,b_lower,node_lower_t1);
 	node_upper_t1 = select(m_lane,b_upper,node_upper_t1);
 	m_lane = (unsigned int)m_lane << 4;
 	parentBounds.extend( bounds );
       }
-    store16f_ngo((mic_f*)n->lower_t1,node_lower_t1);
-    store16f_ngo((mic_f*)n->upper_t1,node_upper_t1);            
+    store16f_ngo((float16*)n->lower_t1,node_lower_t1);
+    store16f_ngo((float16*)n->upper_t1,node_upper_t1);            
 
     return parentBounds;
   }    
@@ -348,9 +348,9 @@ namespace embree
 	return parentBounds;
       }
 
-    mic_f node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-    mic_f node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
-    mic_m m_lane = 0xf;
+    float16 node_lower_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+    float16 node_upper_t1 = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+    bool16 m_lane = 0xf;
 
     BVH4mb::Node *n = (BVH4mb::Node*)ref.node(node);
     BBox3fa parentBounds = empty;
@@ -358,15 +358,15 @@ namespace embree
       {
 	if (n->child(i) == BVH4i::invalidNode) break;
 	BBox3fa bounds = refit_toplevel( n->child(i), depth + 1 );
-	const mic_f b_lower = broadcast4to16f(&bounds.lower);
-	const mic_f b_upper = broadcast4to16f(&bounds.upper);
+	const float16 b_lower = broadcast4to16f(&bounds.lower);
+	const float16 b_upper = broadcast4to16f(&bounds.upper);
 	node_lower_t1 = select(m_lane,b_lower,node_lower_t1);
 	node_upper_t1 = select(m_lane,b_upper,node_upper_t1);
 	m_lane = (unsigned int)m_lane << 4;
 	parentBounds.extend( bounds );
       }
-    store16f_ngo((mic_f*)n->lower_t1,node_lower_t1);
-    store16f_ngo((mic_f*)n->upper_t1,node_upper_t1);            
+    store16f_ngo((float16*)n->lower_t1,node_lower_t1);
+    store16f_ngo((float16*)n->upper_t1,node_upper_t1);            
 
     return parentBounds;
 

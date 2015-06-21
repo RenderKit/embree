@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "math/vec3.h"
+#include "../../../common/math/vec3.h"
 
 namespace embree
 {
@@ -27,7 +27,7 @@ namespace embree
 
   struct KeyPressedData
   {
-    int32 key;
+    int key;
   };
 
   struct CreateSceneData 
@@ -74,7 +74,7 @@ namespace embree
   };
 
   struct ResizeData {
-    int32 width, height;
+    int width, height;
   };
 
   struct PickDataSend {

@@ -16,32 +16,35 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/thread.h"
-#include "sys/alloc.h"
-#include "sys/ref.h"
-#include "sys/intrinsics.h"
-#include "sys/atomic.h"
-#include "sys/mutex.h"
-#include "sys/vector.h"
-#include "sys/array.h"
-#include "sys/string.h"
-#include "sys/regression.h"
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+#include "../../common/sys/thread.h"
+#include "../../common/sys/alloc.h"
+#include "../../common/sys/ref.h"
+#include "../../common/sys/intrinsics.h"
+#include "../../common/sys/atomic.h"
+#include "../../common/sys/mutex.h"
+#include "../../common/sys/vector.h"
+#include "../../common/sys/array.h"
+#include "../../common/sys/string.h"
+#include "../../common/sys/regression.h"
 
-#include "math/math.h"
-#include "math/vec2.h"
-#include "math/vec3.h"
-#include "math/vec4.h"
-#include "math/bbox.h"
-#include "math/obbox.h"
-#include "math/affinespace.h"
-#include "simd/simd.h"
+#include "../../common/math/math.h"
+#include "../../common/math/vec2.h"
+#include "../../common/math/vec3.h"
+#include "../../common/math/vec4.h"
+#include "../../common/math/bbox.h"
+#include "../../common/math/obbox.h"
+#include "../../common/math/linearspace2.h"
+#include "../../common/math/linearspace3.h"
+#include "../../common/math/affinespace.h"
+#include "../../common/simd/simd.h"
+#include "../../common/lexers/tokenstream.h"
 
 #if defined(TASKING_LOCKSTEP)
-#include "tasking/taskscheduler_mic.h"
+#include "../../common/tasking/taskscheduler_mic.h"
 #else // if defined(TASKING_TBB_INTERNAL) // FIXME
-#include "tasking/taskscheduler_tbb.h"
+#include "../../common/tasking/taskscheduler_tbb.h"
 #endif
 
 #define COMMA ,
@@ -61,36 +64,36 @@
 namespace embree
 {
 #if defined (__SSE__)
-  typedef Vec2<sseb> sse2b;
-  typedef Vec3<sseb> sse3b;
-  typedef Vec2<ssei> sse2i;
-  typedef Vec3<ssei> sse3i;
-  typedef Vec2<ssef> sse2f;
-  typedef Vec3<ssef> sse3f;
-  typedef Vec4<ssef> sse4f;
-  typedef LinearSpace3<sse3f> LinearSpaceSSE3f;
-  typedef AffineSpaceT<LinearSpace3<sse3f > > AffineSpaceSSE3f;
-  typedef BBox<sse3f > BBoxSSE3f;
+  typedef Vec2<bool4> Vec2b4;
+  typedef Vec3<bool4> Vec3b4;
+  typedef Vec2<int4> Vec2i4;
+  typedef Vec3<int4> Vec3i4;
+  typedef Vec2<float4> Vec2f4;
+  typedef Vec3<float4> Vec3f4;
+  typedef Vec4<float4> sse4f;
+  typedef LinearSpace3<Vec3f4> LinearSpaceSSE3f;
+  typedef AffineSpaceT<LinearSpace3<Vec3f4 > > AffineSpaceSSE3f;
+  typedef BBox<Vec3f4 > BBoxSSE3f;
 #endif
 
 #if defined (__AVX__)
-  typedef Vec2<avxb> avx2b;
-  typedef Vec3<avxb> avx3b;
-  typedef Vec2<avxi> avx2i; 
-  typedef Vec3<avxi> avx3i;
-  typedef Vec2<avxf> avx2f;
-  typedef Vec3<avxf> avx3f;
-  typedef Vec4<avxf> avx4f;
+  typedef Vec2<bool8> Vec2b8;
+  typedef Vec3<bool8> Vec3b8;
+  typedef Vec2<int8> Vec2i8; 
+  typedef Vec3<int8> Vec3i8;
+  typedef Vec2<float8> Vec2f8;
+  typedef Vec3<float8> Vec3f8;
+  typedef Vec4<float8> avx4f;
 #endif
 
-#if defined (__MIC__)
-  typedef Vec2<mic_m> mic2b;
-  typedef Vec3<mic_m> mic3b;
-  typedef Vec2<mic_i> mic2i;
-  typedef Vec3<mic_i> mic3i;
-  typedef Vec2<mic_f> mic2f;
-  typedef Vec3<mic_f> mic3f;
-  typedef Vec4<mic_f> mic4f;
-  typedef Vec4<mic_i> mic4i;
+#if defined (__AVX512__) || defined (__MIC__)
+  typedef Vec2<bool16> Vec2b16;
+  typedef Vec3<bool16> Vec3b16;
+  typedef Vec2<int16> Vec2i16; 
+  typedef Vec3<int16> Vec3i16;
+  typedef Vec2<float16> Vec2f16;
+  typedef Vec3<float16> Vec3f16;
+  typedef Vec4<float16> Vec4f16;
 #endif
+
 }

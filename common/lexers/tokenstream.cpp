@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "tokenstream.h"
+#include "../math/math.h"
 
 namespace embree
 {
@@ -27,7 +28,7 @@ namespace embree
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {
     for (size_t i=0; i<256; i++) map[i] = false;
-    for (size_t i=0; i<chrs.size(); i++) map[uint8(chrs[i])] = true;
+    for (size_t i=0; i<chrs.size(); i++) map[uint8_t(chrs[i])] = true;
   }
 
   /* build full tokenizer that takes list of valid characters and keywords */
@@ -85,6 +86,15 @@ namespace embree
   {
     bool ok = false;
     std::string str;
+    if (trySymbol("+inf")) {
+      token = Token(float(pos_inf));
+      return true;
+    }
+    if (trySymbol("-inf")) {
+      token = Token(float(neg_inf));
+      return true;
+    }
+
     if (decDigits(str))
     {
       if (cin->peek() == '.') {

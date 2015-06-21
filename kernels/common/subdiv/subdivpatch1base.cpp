@@ -14,13 +14,75 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/scene_subdiv_mesh.h"
+#include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
-#include "common/scene.h"
+#include "../scene.h"
 
 namespace embree
 {
 
+  __forceinline Vec3fa computeInnerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));
+  }
+  
+  __forceinline Vec3fa computeTopEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y-1][x+1]));
+  }
+
+  __forceinline Vec3fa computeButtomEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y+1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y+1][x-1] + v[y+1][x+1]);
+  }
+
+  __forceinline Vec3fa computeLeftEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x-1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x-1] + v[y+1][x-1]);
+  }
+
+  __forceinline Vec3fa computeRightEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
+  {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x+1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x+1] + v[y+1][x+1]);
+  }
+
+  __forceinline Vec3fa computeCornerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x, const ssize_t delta_y, const ssize_t delta_x)
+  {
+    return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
+  }
+
+  void convertToBicubicBezierPatch(const Vec3fa source[4][4],
+                                   Vec3fa dest[4][4])
+  {
+    /* compute inner bezier control points */
+    dest[0][0] = computeInnerBezierControlPoint(source,1,1);
+    dest[0][3] = computeInnerBezierControlPoint(source,1,2);
+    dest[3][3] = computeInnerBezierControlPoint(source,2,2);
+    dest[3][0] = computeInnerBezierControlPoint(source,2,1);
+
+    /* compute top edge control points */
+    dest[0][1] = computeRightEdgeBezierControlPoint(source,1,1);
+    dest[0][2] = computeLeftEdgeBezierControlPoint(source,1,2); 
+ 
+    /* compute buttom edge control points */
+    dest[3][1] = computeRightEdgeBezierControlPoint(source,2,1);
+    dest[3][2] = computeLeftEdgeBezierControlPoint(source,2,2);
+    
+    /* compute left edge control points */
+    dest[1][0] = computeButtomEdgeBezierControlPoint(source,1,1);
+    dest[2][0] = computeTopEdgeBezierControlPoint(source,2,1);
+
+    /* compute right edge control points */
+    dest[1][3] = computeButtomEdgeBezierControlPoint(source,1,2);
+    dest[2][3] = computeTopEdgeBezierControlPoint(source,2,2);
+
+    /* compute corner control points */
+    dest[1][1] = computeCornerBezierControlPoint(source,1,1, 1, 1);
+    dest[1][2] = computeCornerBezierControlPoint(source,1,2, 1,-1);
+    dest[2][2] = computeCornerBezierControlPoint(source,2,2,-1,-1);
+    dest[2][1] = computeCornerBezierControlPoint(source,2,1,-1, 1);        
+  }
+  
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const unsigned int gID,
@@ -28,7 +90,7 @@ namespace embree
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4]) 
-    : geom(gID),prim(pID),flags(0),root_ref(0)
+    : geom(gID),prim(pID),flags(0)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
@@ -39,23 +101,28 @@ namespace embree
     }
 
     updateEdgeLevels(edge_level,mesh);
-     
+    
     /* determine whether patch is regular or not */
 
-    if (ipatch.isRegular()) /* bezier vs. gregory */
+    if (ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior */
     {
-#if 1
+
+#if 0
+      /* bezier */
+      BSplinePatch3fa tmp;
+      tmp.init( ipatch );
+      convertToBicubicBezierPatch(tmp.v,patch.v);
       flags |= BEZIER_PATCH;
-      GregoryPatch3fa gpatch; 
-      gpatch.init_bezier( ipatch ); 
-      gpatch.exportDenseConrolPoints( patch.v );
 #else
+      /* bspline */
+
       flags |= BSPLINE_PATCH;
       patch.init( ipatch );
-#endif
+#endif      
     }
     else
     {
+      /* greogy */
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init( ipatch ); 
@@ -63,11 +130,17 @@ namespace embree
     }
   }
 
+  
+
+  
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh) 
-    : geom(gID),prim(pID),flags(0),root_ref(0)
+    : geom(gID),prim(pID),flags(0)
   {
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    mtx.reset();
+
     int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
 
     const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
@@ -84,29 +157,65 @@ namespace embree
     }
     //assert(needAdaptiveSubdivision == 0);
 
-    PRINT(numEdges);
-
     if (numEdges == 4)
       {
-	PRINT("QUAD");
-	CatmullClarkPatch3fa gpatch;
-	gpatch.init(h_start,mesh->getVertexBuffer());
+	GeneralCatmullClarkPatch3fa cpatch;
+	cpatch.init(h_start,mesh->getVertexBuffer());
 	float edge_level[4] = {
-	  gpatch.ring[0].edge_level,
-	  gpatch.ring[1].edge_level,
-	  gpatch.ring[2].edge_level,
-	  gpatch.ring[3].edge_level
+	  cpatch.ring[0].edge_level,
+	  cpatch.ring[1].edge_level,
+	  cpatch.ring[2].edge_level,
+	  cpatch.ring[3].edge_level
 	};
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+
+	for (size_t i=0; i<4; i++) {
+	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
+	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
+	}
+
+	updateEdgeLevels(edge_level,mesh);
 	
-	new (this) SubdivPatch1Base(gpatch,gID,pID,mesh,uv,edge_level);
+	//new (this) SubdivPatch1Base(cpatch,gID,pID,mesh,uv,edge_level);
+	flags |= GREGORY_PATCH;
+	GregoryPatch3fa gpatch; 
+	gpatch.init( cpatch ); 
+	gpatch.exportDenseConrolPoints( patch.v );	
 
       }
     else if (numEdges == 3)
       {
-	PRINT("TRIANGLE");
-	GeneralCatmullClarkPatch3fa gpatch;
-	gpatch.init(h_start,mesh->getVertexBuffer());
+	GeneralCatmullClarkPatch3fa cpatch;
+	cpatch.init(h_start,mesh->getVertexBuffer());
+
+	GregoryTrianglePatch3fa gpatch; 
+	gpatch.init( cpatch ); 
+	gpatch.exportConrolPoints( patch.v );	
+
+
+	float edge_level[4] = {
+	  cpatch.ring[0].edge_level,
+	  cpatch.ring[1].edge_level,
+	  cpatch.ring[2].edge_level,
+	  cpatch.ring[1].edge_level
+	};
+
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
+
+	for (size_t i=0; i<4; i++) {
+	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
+	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
+	}
+
+       
+	updateEdgeLevels(edge_level,mesh);
+
+#if 0
+	gpatch.convertGregoryTrianglePatchToBezierPatch( patch.v );
+	flags |= BEZIER_PATCH;
+#else	
+	flags |= GREGORY_TRIANGLE_PATCH;
+#endif
 
       }
 
@@ -135,7 +244,7 @@ namespace embree
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
     
-#if defined(__MIC__)
+#if defined(__MIC__)    
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
     grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
 #else
@@ -168,16 +277,8 @@ namespace embree
 #endif
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
-#if COMPACT == 1
-    //PRINT( grid_bvh_size_64b_blocks );
-    //PRINT( grid_u_res);
-    //PRINT( grid_v_res);
-
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
-#else
-    grid_subtree_size_64b_blocks = getSubTreeSize64bBlocks( leafBlocks ); // u,v,x,y,z 
-#endif
 
 
     /* has displacements? */
@@ -230,22 +331,22 @@ namespace embree
 #if defined(__AVX__)
     for (size_t i=0;i<grid_size_simd_blocks;i++)
       {
-        avxf uu = load8f(&grid_u[8*i]);
-        avxf vv = load8f(&grid_v[8*i]);
-        avx3f normal = normalize(patch.normal(uu,vv));
-        *(avxf*)&grid_nx[8*i] = normal.x;
-        *(avxf*)&grid_ny[8*i] = normal.y;
-        *(avxf*)&grid_nz[8*i] = normal.z;        
+        float8 uu = load8f(&grid_u[8*i]);
+        float8 vv = load8f(&grid_v[8*i]);
+        Vec3f8 normal = normalize(patch.normal(uu,vv));
+        *(float8*)&grid_nx[8*i] = normal.x;
+        *(float8*)&grid_ny[8*i] = normal.y;
+        *(float8*)&grid_nz[8*i] = normal.z;        
       }
 #else
     for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
       {
-        ssef uu      = load4f(&grid_u[4*i]);
-        ssef vv      = load4f(&grid_v[4*i]);
-        sse3f normal = normalize(patch.normal(uu,vv));
-        *(ssef*)&grid_nx[4*i] = normal.x;
-        *(ssef*)&grid_ny[4*i] = normal.y;
-        *(ssef*)&grid_nz[4*i] = normal.z;        
+        float4 uu      = load4f(&grid_u[4*i]);
+        float4 vv      = load4f(&grid_v[4*i]);
+        Vec3f4 normal = normalize(patch.normal(uu,vv));
+        *(float4*)&grid_nx[4*i] = normal.x;
+        *(float4*)&grid_ny[4*i] = normal.y;
+        *(float4*)&grid_nz[4*i] = normal.z;        
       }
 #endif
       

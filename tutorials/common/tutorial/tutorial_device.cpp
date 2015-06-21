@@ -15,8 +15,7 @@
 // ======================================================================== //
 
 #include "tutorial_device.h"
-#include "kernels/algorithms/parallel_for.h"
-#include "sys/sysinfo.h"
+#include "../../../kernels/algorithms/parallel_for.h"
 #include "scene_device.h"
 
 /* the scene to render */
@@ -34,7 +33,7 @@ extern "C" bool g_changed = false;
 /* stores pointer to currently used rendePixel function */
 extern renderPixelFunc renderPixel;
 
-extern float g_debug;
+extern "C" float g_debug;
 
 /* standard rendering function for each tutorial */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
@@ -215,9 +214,9 @@ Vec3fa renderPixelCycles(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  int64 c0 = get_tsc();
+  int64_t c0 = get_tsc();
   rtcIntersect(g_scene,ray);
-  int64 c1 = get_tsc();
+  int64_t c1 = get_tsc();
   /* shade pixel */
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
@@ -418,11 +417,13 @@ void renderTile(int taskIndex,
                 const int numTilesX, 
                 const int numTilesY);
 
+//thread_local bool inrender = false;
+
 void launch_renderTile (int numTiles, 
                         int* pixels, const int width, const int height, const float time, 
                         const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, const int numTilesX, const int numTilesY)
 {
-#if 1
+#if 0
   atomic_t tileID = 0;
   parallel_for(size_t(0),size_t(getNumberOfLogicalThreads()),[&] (const range<size_t>& r) {
       for (size_t tid=r.begin(); tid<r.end(); tid++) {
@@ -436,8 +437,11 @@ void launch_renderTile (int numTiles,
 
 #else
   parallel_for(size_t(0),size_t(numTiles),[&] (const range<size_t>& r) {
+      //if (inrender) PING;
+      //inrender = true;
       for (size_t i=r.begin(); i<r.end(); i++)
         renderTile(i,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY);
+      //inrender = false;
     });
 #endif
 }

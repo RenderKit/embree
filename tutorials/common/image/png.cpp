@@ -16,7 +16,7 @@
 
 #ifdef USE_LIBPNG
 
-#include "image/image.h"
+#include "image.h"
 
 #include <iostream>
 #include <cstring>

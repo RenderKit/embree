@@ -18,10 +18,6 @@
 
 namespace embree
 {
-  //ParallelRadixSort shared_radix_sort_state;
-  //ParallelRadixSortT<uint32> radix_sort_u32(shared_radix_sort_state);
-  //ParallelRadixSortT<uint64> radix_sort_u64(shared_radix_sort_state);
-  
   template<typename Key>
   struct RadixSortRegressionTest : public RegressionTest
   {
@@ -40,7 +36,7 @@ namespace embree
       {
 	std::vector<Key> src(N); memset(src.data(),0,N*sizeof(Key));
 	std::vector<Key> tmp(N); memset(tmp.data(),0,N*sizeof(Key));
-	for (size_t i=0; i<N; i++) src[i] = uint64(rand())*uint64(rand());
+	for (size_t i=0; i<N; i++) src[i] = uint64_t(rand())*uint64_t(rand());
 	
 	/* calculate checksum */
 	Key sum0 = 0; for (size_t i=0; i<N; i++) sum0 += src[i];
@@ -72,6 +68,6 @@ namespace embree
     const char* name;
   };
 
-  RadixSortRegressionTest<uint32> test_u32("RadixSortRegressionTestU32");
-  RadixSortRegressionTest<uint64> test_u64("RadixSortRegressionTestU64");
+  RadixSortRegressionTest<uint32_t> test_u32("RadixSortRegressionTestU32");
+  RadixSortRegressionTest<uint64_t> test_u64("RadixSortRegressionTestU64");
 }

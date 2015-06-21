@@ -33,9 +33,9 @@
 #endif
 
 #if defined(TASKING_LOCKSTEP)
-#  include "tasking/taskscheduler_mic.h"
+#  include "../../common/tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
-#  include "tasking/taskscheduler_tbb.h"
+#  include "../../common/tasking/taskscheduler_tbb.h"
 #endif
 
 namespace embree
@@ -356,6 +356,17 @@ namespace embree
 #endif
     State::instance()->clear();
     g_initialized = false;
+    RTCORE_CATCH_END;
+  }
+
+  RTCORE_API void rtcSetParameter1i(const RTCParameter parm, ssize_t val)
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetParameter1i);
+    switch (parm) {
+    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
+    };
     RTCORE_CATCH_END;
   }
 
@@ -806,6 +817,16 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
+  RTCORE_API void rtcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) 
+  {
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcSetBoundaryMode);
+    RTCORE_VERIFY_HANDLE(scene);
+    RTCORE_VERIFY_GEOMID(geomID);
+    ((Scene*)scene)->get_locked(geomID)->setBoundaryMode(mode);
+    RTCORE_CATCH_END;
+  }
+
   RTCORE_API void* rtcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) 
   {
     RTCORE_CATCH_BEGIN;
@@ -1088,20 +1109,21 @@ namespace embree
     RTCORE_CATCH_END;
   }
 
-  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, const float* src, size_t byteStride, 
+  RTCORE_API void rtcInterpolate(RTCScene scene, unsigned geomID, unsigned primID, float u, float v, 
+                                 RTCBufferType buffer,
                                  float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcInterpolate);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,src,byteStride,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
+    ((Scene*)scene)->get(geomID)->interpolate(primID,u,v,buffer,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
   }
 
   RTCORE_API void rtcInterpolateN(RTCScene scene, unsigned geomID, 
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                  const float* src, size_t byteStride, 
+                                  RTCBufferType buffer,
                                   float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
     RTCORE_CATCH_BEGIN;
@@ -1117,11 +1139,11 @@ namespace embree
     float* Pt = P ? P_tmp : nullptr;
     float* dPdut = dPdu ? dPdu_tmp : nullptr;
     float* dPdvt = dPdv ? dPdv_tmp : nullptr;
-    
+
     for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
     {
       if (valid && !valid[i]) continue;
-      rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],src,byteStride,Pt,dPdut,dPdvt,numFloats);
+      embree::rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
       if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
       if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
       if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];

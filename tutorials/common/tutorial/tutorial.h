@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/ref.h"
-#include "lexers/streamfilters.h"
-#include "lexers/parsestream.h"
-#include "tutorial/glutdisplay.h"
-#include "transport/transport_host.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/sysinfo.h"
+#include "../../../common/sys/ref.h"
+#include "../../../common/lexers/streamfilters.h"
+#include "../../../common/lexers/parsestream.h"
+#include "glutdisplay.h"
+#include "../transport/transport_host.h"
 
 #include <xmmintrin.h>
 

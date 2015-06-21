@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "math/vec3.h"
+#include "../../../common/math/vec3.h"
 
 namespace embree
 {
@@ -24,10 +24,10 @@ namespace embree
   void init(const char* cfg);
 
   /* keypressed event */
-  void key_pressed(int32 key);
+  void key_pressed(int key);
 
   /* resize framebuffer */
-  void resize(int32 width, int32 height);
+  void resize(int width, int height);
 
   /* set scene to use */
   struct OBJScene;

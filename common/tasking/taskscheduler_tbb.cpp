@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 #include "taskscheduler_tbb.h"
-#include "math/math.h"
-#include "sys/sysinfo.h"
+#include "../math/math.h"
+#include "../sys/sysinfo.h"
 #include <algorithm>
 
 #if TASKING_LOCKSTEP
@@ -161,7 +161,7 @@ namespace embree
       embree::join(threads[i]);
   }
 
-  __dllexport void TaskSchedulerTBB::ThreadPool::add(TaskSchedulerTBB* scheduler)
+  __dllexport void TaskSchedulerTBB::ThreadPool::add(const Ref<TaskSchedulerTBB>& scheduler)
   {
     mutex.lock();
     schedulers.push_back(scheduler);
@@ -169,10 +169,10 @@ namespace embree
     condition.notify_all();
   }
 
-  __dllexport void TaskSchedulerTBB::ThreadPool::remove(TaskSchedulerTBB* scheduler)
+  __dllexport void TaskSchedulerTBB::ThreadPool::remove(const Ref<TaskSchedulerTBB>& scheduler)
   {
     Lock<MutexSys> lock(mutex);
-    for (std::list<TaskSchedulerTBB*>::iterator it = schedulers.begin(); it != schedulers.end(); it++) {
+    for (std::list<Ref<TaskSchedulerTBB> >::iterator it = schedulers.begin(); it != schedulers.end(); it++) {
       if (scheduler == *it) {
         schedulers.erase(it);
         return;
@@ -184,11 +184,11 @@ namespace embree
   {
     while (!terminate)
     {
-      TaskSchedulerTBB* scheduler = NULL;
+      Ref<TaskSchedulerTBB> scheduler = NULL;
       ssize_t threadIndex = -1;
       {
         Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, [&] () { return terminate || schedulers.size(); });
+        condition.wait(mutex, [&] () { return terminate || !schedulers.empty(); });
         if (terminate) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
@@ -247,7 +247,10 @@ namespace embree
 
   __dllexport TaskSchedulerTBB* TaskSchedulerTBB::instance() 
   {
-    if (g_instance == NULL) g_instance = new TaskSchedulerTBB;
+    if (g_instance == NULL) {
+      g_instance = new TaskSchedulerTBB;
+      g_instance->refInc();
+    }
     return g_instance;
   }
 

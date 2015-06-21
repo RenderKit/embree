@@ -81,7 +81,7 @@ namespace embree
   {
 #if !defined(__X86_64__)
 
-    typedef int64 atomic64_t;
+    typedef int64_t atomic64_t;
 
     __forceinline atomic64_t atomic_add(volatile atomic64_t* ptr, atomic_t x) {
       mutex.lock();

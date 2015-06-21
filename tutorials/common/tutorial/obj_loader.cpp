@@ -155,7 +155,7 @@ namespace embree
     int fix_vn(int index);
     void flushFaceGroup();
     Vertex getInt3(const char*& token);
-    uint32 getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
+    uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
   };
 
   OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode) 
@@ -381,9 +381,9 @@ namespace embree
     return(v);
   }
 
-  uint32 OBJLoader::getVertex(std::map<Vertex,uint32>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i)
+  uint32_t OBJLoader::getVertex(std::map<Vertex,uint32_t>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i)
   {
-    const std::map<Vertex, uint32>::iterator& entry = vertexMap.find(i);
+    const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
     mesh->v.push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
     if (i.vn >= 0) mesh->vn.push_back(vn[i.vn]);
@@ -464,7 +464,7 @@ namespace embree
 	model.meshes.push_back(mesh);
 
 	// merge three indices into one
-	std::map<Vertex, uint32> vertexMap;
+	std::map<Vertex, uint32_t> vertexMap;
 	for (size_t j=0; j < curGroup.size(); j++)
 	  {
 	    /* iterate over all faces */
@@ -474,7 +474,7 @@ namespace embree
 	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
 	    for (size_t k=2; k < face.size(); k++) {
 	      i1 = i2; i2 = face[k];
-	      uint32 v0,v1,v2;
+	      uint32_t v0,v1,v2;
 	      v0 = getVertex(vertexMap, mesh, i0);
 	      v1 = getVertex(vertexMap, mesh, i1);
 	      v2 = getVertex(vertexMap, mesh, i2);

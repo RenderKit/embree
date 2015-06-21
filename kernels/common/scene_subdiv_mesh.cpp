@@ -16,14 +16,11 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
+#include "subdiv/patch.h"
 
-#include "algorithms/sort.h"
-#include "algorithms/prefix.h"
-#include "algorithms/parallel_for.h"
-
-#if !defined(__MIC__)
-#include "subdiv/feature_adaptive_eval.h"
-#endif
+#include "../algorithms/sort.h"
+#include "../algorithms/prefix.h"
+#include "../algorithms/parallel_for.h"
 
 namespace embree
 {
@@ -34,6 +31,7 @@ namespace embree
       numEdges(numEdges), 
       numHalfEdges(0),
       numVertices(numVertices),
+      boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
       displBounds(empty),
       levelUpdate(false)
@@ -70,6 +68,17 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
+  }
+
+  void SubdivMesh::setBoundaryMode (RTCBoundaryMode mode)
+  {
+    if (parent->isStatic() && parent->isBuild()) 
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    if (boundary == mode) return;
+    boundary = mode;
+    updateBuffer(RTC_VERTEX_CREASE_WEIGHT_BUFFER);    
   }
 
   void SubdivMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -101,18 +110,23 @@ namespace embree
 
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)vertices[0].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
-      }
+      vertices[0].checkPadding16();
       break;
 
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-      if (numVertices) {
-        /* test if array is properly padded */
-        volatile int w = *((int*)vertices[1].getPtr(numVertices-1)+3); // FIXME: is failing hard avoidable?
-      }
+      vertices[1].checkPadding16();
+      break;
+
+    case RTC_USER_VERTEX_BUFFER0: 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices,stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1: 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices,stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
       break;
 
     default: 
@@ -205,10 +219,12 @@ namespace embree
 
   void SubdivMesh::immutable () 
   {
+    const bool freeIndices = !parent->needSubdivIndices;
+    const bool freeVertices = !parent->needSubdivVertices;
     faceVertices.free();
-    if (!parent->needSubdivIndices) vertexIndices.free();
-    vertices[0].free();
-    vertices[1].free();
+    if (freeIndices) vertexIndices.free();
+    if (freeVertices) vertices[0].free();
+    if (freeVertices) vertices[1].free();
     edge_creases.free();
     edge_crease_weights.free();
     vertex_creases.free();
@@ -217,10 +233,10 @@ namespace embree
     holes.free();
   }
 
-  __forceinline uint64 pair64(unsigned int x, unsigned int y) 
+  __forceinline uint64_t pair64(unsigned int x, unsigned int y) 
   {
     if (x<y) std::swap(x,y);
-    return (((uint64)x) << 32) | (uint64)y;
+    return (((uint64_t)x) << 32) | (uint64_t)y;
   }
 
   void SubdivMesh::calculateHalfEdges()
@@ -263,7 +279,7 @@ namespace embree
 	  unsigned int nextIndex = de + 1;
 	  if (unlikely(nextIndex >= N)) nextIndex -= N; 
 	  const unsigned int endVertex = vertexIndices[e + nextIndex]; 
-	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
+	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  
 	  float edge_level = 1.0f;
 	  if (levels) edge_level = levels[e+de];
@@ -295,14 +311,14 @@ namespace embree
       /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
       if (e != 0 && (halfEdges1[e].key == halfEdges1[e-1].key)) {
-	const uint64 key = halfEdges1[e].key;
+	const uint64_t key = halfEdges1[e].key;
 	while (e<r.end() && halfEdges1[e].key == key) e++;
       }
 
       /* process all adjacent edges starting in our range */
       while (e<r.end())
       {
-	const uint64 key = halfEdges1[e].key;
+	const uint64_t key = halfEdges1[e].key;
 	if (key == -1) break;
 	int N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
 
@@ -327,15 +343,21 @@ namespace embree
       }
     });
 
-    /* calculate type of each patch */
+    /* calculate patch types and sharp corners */
     parallel_for( size_t(0), numFaces, blockSize, [&](const range<size_t>& r) 
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
         PatchType type = edge->patchType();
-        for (size_t i=0; i<faceVertices[f]; i++)
+        for (size_t i=0; i<faceVertices[f]; i++) 
+        {
           edge[i].type = type;
+
+          /* calculate sharp corner vertices */
+          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge[i].isCorner()) 
+            edge[i].vertex_crease_weight = float(inf);
+        }
       }
     });
   }
@@ -367,12 +389,15 @@ namespace embree
         
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
-	  const uint64 key = SubdivMesh::Edge(startVertex,endVertex);
+	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
 	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
-	if (updateVertexCreases)
+	if (updateVertexCreases) {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
+          if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
+            edge.vertex_crease_weight = float(inf);
+        }
 
         if (updateEdgeCreases || updateVertexCreases) {
           edge.type = edge.patchType();
@@ -425,6 +450,24 @@ namespace embree
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
     else if (update) updateHalfEdges();
+
+    /* create interpolation cache mapping for interpolatable meshes */
+    if (parent->isInterpolatable()) 
+    {
+#if defined (__TARGET_AVX__)
+      auto numInterpolationSlots = [] (size_t stride) {
+        if (hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
+      };
+#else
+      auto numInterpolationSlots = [] (size_t stride) {
+        return numInterpolationSlots4(stride);
+      };
+#endif
+      for (size_t i=0; i<2; i++) {
+        if (vertices   [i]) vertex_buffer_tags[i].resize(numFaces*numInterpolationSlots(vertices[i].getStride()));
+        if (userbuffers[i]) user_buffer_tags  [i].resize(numFaces*numInterpolationSlots(userbuffers[i]->getStride()));
+      }
+    }
 
     /* cleanup some state for static scenes */
     if (parent->isStatic()) 
@@ -506,27 +549,50 @@ namespace embree
     return true;
   }
 
-  void SubdivMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
-#if !defined(__MIC__) // FIXME: not working on MIC yet
-    const char* src = (const char*) src_i;
-    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    size_t bufID = buffer&0xFFFF;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
+      baseEntry = &user_buffer_tags[bufID];
+    } else {
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
+      baseEntry = &vertex_buffer_tags[bufID];
+    }
+#if defined (__MIC__)
+#define float4 Vec3fa
+#define float4_t Vec3fa_t
+#else
+#define float4_t float4
+#endif
+
+    for (size_t i=0; i<numFloats; i+=4)
     {
-      auto load = [&](const SubdivMesh::HalfEdge* p) { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return ssef::loadu((float*)&src[vtx*byteStride]);  // FIXME: reads behind the end of the array
-      };
-      ssef Pt, dPdut, dPdvt; 
-      feature_adaptive_point_eval<ssef>(getHalfEdge(primID),load,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
+      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,parent->commitCounter,[&] () {
+          auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
+          return Patch<float4,float4_t>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
+        });
+      //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);
+      float4 Pt, dPdut, dPdvt; 
+      patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      SharedLazyTessellationCache::unlock();
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
-#endif
   }
 }

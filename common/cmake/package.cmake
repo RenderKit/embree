@@ -37,10 +37,10 @@ ELSEIF (WIN32)
   SET(TUTORIALS_INSTALL_DIR bin)
   SET(UTILITIES_INSTALL_DIR bin)
 ELSEIF (APPLE)
-  SET(DOC_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/documentation)
-  SET(APPLICATION_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION})
-  SET(TUTORIALS_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/tutorials)
-  SET(UTILITIES_INSTALL_DIR ../../Applications/embree-${EMBREE_VERSION}/tutorials)
+  SET(DOC_INSTALL_DIR ../../Applications/Embree2/documentation)
+  SET(APPLICATION_INSTALL_DIR ../../Applications/Embree2)
+  SET(TUTORIALS_INSTALL_DIR ../../Applications/Embree2/tutorials)
+  SET(UTILITIES_INSTALL_DIR ../../Applications/Embree2/tutorials)
 ELSE()
   SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
   SET(TUTORIALS_INSTALL_DIR bin/embree-${EMBREE_VERSION})
@@ -50,23 +50,27 @@ ENDIF()
 ##############################################################
 # Install Headers
 ##############################################################
-INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT headers)
+INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT devel)
+CONFIGURE_FILE(include/embree2/rtcore.h rtcore.h @ONLY)
+CONFIGURE_FILE(include/embree2/rtcore.isph rtcore.isph @ONLY)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION include/embree2 COMPONENT devel)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION include/embree2 COMPONENT devel)
 
 ##############################################################
 # Install Models
 ##############################################################
-INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT tutorials)
+INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT examples)
 
 ##############################################################
 # Install Documentation
 ##############################################################
 
 #FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
-#INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} COMPONENT documentation)
+#INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
 
 # currently CMake does not support solution folders without projects
 # SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
@@ -78,9 +82,9 @@ INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} CO
 IF (NOT ENABLE_INSTALLER)
   IF (WIN32)
   ELSEIF(APPLE)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT libraries)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT lib)
   ELSE()
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh DESTINATION "." COMPONENT libraries)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh DESTINATION "." COMPONENT lib)
   ENDIF()
 ENDIF()
 
@@ -93,7 +97,7 @@ ELSEIF (APPLE)
   CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
   IF (ENABLE_INSTALLER)
     CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
-    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${APPLICATION_INSTALL_DIR} COMPONENT libraries)
+    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${APPLICATION_INSTALL_DIR} COMPONENT lib)
   ENDIF()
 ELSE()
   CONFIGURE_FILE(common/cmake/embree-config-linux.cmake embree-config.cmake @ONLY)
@@ -102,8 +106,8 @@ ENDIF()
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
 IF (ENABLE_INSTALLER)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT libraries)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 ENDIF()
 
 ##############################################################
@@ -122,50 +126,26 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Embree: High Performance Ray Tracing Kern
 SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
 SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
 
-SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
-SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The Embree library.")
+SET(CPACK_COMPONENT_LIB_DISPLAY_NAME "Library")
+SET(CPACK_COMPONENT_LIB_DESCRIPTION "The Embree library including documentation.")
 
-SET(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "Headers")
-SET(CPACK_COMPONENT_HEADERS_DESCRIPTION "Header Files for C and ISPC required to develop applications with Embree.")
-
-SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
-SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documents describing Embree's API, usage and tutorials.")
-
-SET(CPACK_COMPONENT_TUTORIALS_DISPLAY_NAME "Tutorials")
-SET(CPACK_COMPONENT_TUTORIALS_DESCRIPTION "Tutorials demonstrating how to use Embree.")
-
-SET(CPACK_COMPONENT_UTILITIES_DISPLAY_NAME "Utilities")
-SET(CPACK_COMPONENT_UTILITIES_DESCRIPTION "Tools to benchmark, test and debug Embree.")
-
-# devel install group
-SET(CPACK_COMPONENT_LIBRARIES_GROUP devel)
-SET(CPACK_COMPONENT_HEADERS_GROUP devel)
-SET(CPACK_COMPONENT_DOCUMENTATION_GROUP devel)
-SET(CPACK_COMPONENT_GROUP_DEVEL_DISPLAY_NAME "Development")
-SET(CPACK_COMPONENT_GROUP_DEVEL_DESCRIPTION "Files needed to develop applications based on Embree.")
-SET(CPACK_COMPONENT_DEVEL_DESCRIPTION ${CPACK_COMPONENT_GROUP_DEVEL_DESCRIPTION})
-
-# example install group
-SET(CPACK_COMPONENT_TUTORIALS_GROUP examples)
-SET(CPACK_COMPONENT_UTILITIES_GROUP examples)
-SET(CPACK_COMPONENT_GROUP_EXAMPLES_DISPLAY_NAME "Examples")
-SET(CPACK_COMPONENT_GROUP_EXAMPLES_DESCRIPTION "Example tutorials and tools for Embree.")
-SET(CPACK_COMPONENT_EXAMPLES_DESCRIPTION ${CPACK_COMPONENT_GROUP_EXAMPLES_DESCRIPTION})
-
-# xeon phi install groups
-SET(CPACK_COMPONENT_LIBRARIES_XEONPHI_GROUP devel_xeonphi)
-SET(CPACK_COMPONENT_TUTORIALS_XEONPHI_GROUP examples_xeonphi)
-SET(CPACK_COMPONENT_UTILITIES_XEONPHI_GROUP examples_xeonphi)
 SET(XEONPHI_DESCRIPTION "For The Intel Xeon Phi coprocessor." )
-SET(CPACK_COMPONENT_DEVEL_XEONPHI_DESCRIPTION "${CPACK_COMPONENT_GROUP_DEVEL_DESCRIPTION}\n${XEONPHI_DESCRIPTION}")
-SET(CPACK_COMPONENT_EXAMPLES_XEONPHI_DESCRIPTION "${CPACK_COMPONENT_GROUP_EXAMPLES_DESCRIPTION}\n${XEONPHI_DESCRIPTION}")
+SET(CPACK_COMPONENT_LIB_XEONPHI_NAME "Xeon Phi Library")
+SET(CPACK_COMPONENT_LIB_XEONPHI_DESCRIPTION "${CPACK_COMPONENT_LIB_DESCRIPTION}\n${XEONPHI_DESCRIPTION}")
+
+SET(CPACK_COMPONENT_DEVEL_DISPLAY_NAME "Development")
+SET(CPACK_COMPONENT_DEVEL_DESCRIPTION "Header Files for C and ISPC required to develop applications with Embree.")
+
+SET(CPACK_COMPONENT_EXAMPLES_DISPLAY_NAME "Examples")
+SET(CPACK_COMPONENT_EXAMPLES_DESCRIPTION "Tutorials demonstrating how to use Embree.")
+
+SET(CPACK_COMPONENT_EXAMPLES_XEONPHI_NAME "Xeon Phi Examples")
+SET(CPACK_COMPONENT_EXAMPLES_XEONPHI_DESCRIPTION "${CPACK_COMPONENT_EXAMPLES_DESCRIPTION}\n${XEONPHI_DESCRIPTION}")
 
 # dependencies between components
-SET(CPACK_COMPONENT_TUTORIALS_DEPENDS libraries)
-SET(CPACK_COMPONENT_UTILITIES_DEPENDS libraries)
-SET(CPACK_COMPONENT_LIBRARIES_XEONPHI_DEPENDS libraries)
-SET(CPACK_COMPONENT_TUTORIALS_XEONPHI_DEPENDS libraries_xeonphi)
-SET(CPACK_COMPONENT_UTILITIES_XEONPHI_DEPENDS libraries_xeonphi)
+SET(CPACK_COMPONENT_LIB_XEONPHI_DEPENDS lib)
+SET(CPACK_COMPONENT_EXAMPLES_DEPENDS lib)
+SET(CPACK_COMPONENT_EXAMPLES_XEONPHI_DEPENDS lib_xeonphi)
 
 # point to readme and license files
 SET(CPACK_RESOURCE_FILE_README ${PROJECT_SOURCE_DIR}/README.md)
@@ -186,7 +166,7 @@ IF(WIN32)
   IF (ENABLE_INSTALLER)
     SET(CPACK_GENERATOR NSIS)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}")
-    SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
+    SET(CPACK_COMPONENTS_ALL lib devel examples)
     SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
     SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
     SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
@@ -209,7 +189,7 @@ ELSEIF(APPLE)
   IF (ENABLE_INSTALLER)
     SET(CPACK_GENERATOR PackageMaker)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64")
-    #SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities)
+    #SET(CPACK_COMPONENTS_ALL lib devel examples)
     SET(CPACK_MONOLITHIC_INSTALL 1)
     SET(CPACK_PACKAGE_NAME embree-${EMBREE_VERSION})
     SET(CPACK_PACKAGE_VENDOR "intel") # creates short name com.intel.embree2.xxx in pkgutil
@@ -228,7 +208,7 @@ ELSE()
 
     SET(CPACK_GENERATOR RPM)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
-    SET(CPACK_COMPONENTS_ALL libraries headers documentation tutorials utilities libraries_xeonphi tutorials_xeonphi utilities_xeonphi)
+    SET(CPACK_COMPONENTS_ALL devel lib examples lib_xeonphi examples_xeonphi)
     SET(CPACK_RPM_COMPONENT_INSTALL ON)
     SET(CPACK_RPM_PACKAGE_LICENSE "ASL 2.0") # Apache Software License, Version 2.0
     SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
@@ -237,10 +217,10 @@ ELSE()
     SET(CPACK_RPM_PACKAGE_URL http://embree.github.io/)
 
     # post install and uninstall scripts
-    SET(CPACK_RPM_devel_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-    SET(CPACK_RPM_devel_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-    SET(CPACK_RPM_devel_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
-    SET(CPACK_RPM_devel_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_lib_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_lib_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_lib_xeonphi_POST_INSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
+    SET(CPACK_RPM_lib_xeonphi_POST_UNINSTALL_SCRIPT_FILE ${PROJECT_SOURCE_DIR}/common/cmake/rpm_ldconfig.sh)
   ELSE()
   
     SET(CPACK_GENERATOR TGZ)

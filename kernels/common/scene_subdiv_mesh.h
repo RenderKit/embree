@@ -18,8 +18,9 @@
 
 #include "geometry.h"
 #include "buffer.h"
-#include "algorithms/pmap.h"
-#include "algorithms/pset.h"
+#include "subdiv/tessellation_cache.h"
+#include "../algorithms/pmap.h"
+#include "../algorithms/pset.h"
 
 namespace embree
 {
@@ -49,19 +50,19 @@ namespace embree
     struct Edge 
     {
       /*! edge constructor */
-      __forceinline Edge(const uint32 v0, const uint32 v1)
+      __forceinline Edge(const uint32_t v0, const uint32_t v1)
 	: v0(v0), v1(v1) {}
 
       /*! create an 64 bit identifier that is unique for the not oriented edge */
-      __forceinline operator uint64() const       
+      __forceinline operator uint64_t() const       
       {
-	uint32 p0 = v0, p1 = v1;
+	uint32_t p0 = v0, p1 = v1;
 	if (p0<p1) std::swap(p0,p1);
-	return (((uint64)p0) << 32) | (uint64)p1;
+	return (((uint64_t)p0) << 32) | (uint64_t)p1;
       }
 
     public:
-      uint32 v0,v1;    //!< start and end vertex of the edge
+      uint32_t v0,v1;    //!< start and end vertex of the edge
     };
 
     class __aligned(32) HalfEdge
@@ -187,6 +188,33 @@ namespace embree
         return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH /* || patchType() == IRREGULAR_TRIANGLE_PATCH */;
       }
 
+      /*! tests if the base vertex of this half edge is a corner vertex */
+      __forceinline bool isCorner() const {
+        return !hasOpposite() && !prev()->hasOpposite();
+      }
+
+      /*! tests if the vertex is attached to any border */
+      __forceinline bool vertexHasBorder() const 
+      {
+        const HalfEdge* p = this;
+        do {
+          if (!p->hasOpposite()) return true;
+          p = p->rotate();
+        } while (p != this);
+        return false;
+      }
+
+      /*! tests if the face this half edge belongs to has some border */
+      __forceinline bool faceHasBorder() const 
+      {
+        const HalfEdge* p = this;
+        do {
+          if (p->vertexHasBorder()) return true;
+          p = p->next();
+        } while (p != this);
+        return false;
+      }
+      
       /*! calculates conservative bounds of a catmull clark subdivision face */
       __forceinline BBox3fa bounds(const BufferT<Vec3fa>& vertices) const
       {
@@ -317,11 +345,6 @@ namespace embree
         return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
       }
 
-      /*! tests if the edge has creases */
-      //__forceinline bool hasCreases() const {
-      //return max(edge_crease_weight,vertex_crease_weight) != 0.0f;
-      //}
-
     private:
       unsigned int vtx_index;         //!< index of edge start vertex
       int next_half_edge_ofs;         //!< relative offset to next half edge of face
@@ -340,10 +363,10 @@ namespace embree
     {
       KeyHalfEdge() {}
       
-      KeyHalfEdge (uint64 key, HalfEdge* edge) 
+      KeyHalfEdge (uint64_t key, HalfEdge* edge) 
       : key(key), edge(edge) {}
       
-      __forceinline operator uint64() const { 
+      __forceinline operator uint64_t() const { 
 	return key; 
       }
 
@@ -352,7 +375,7 @@ namespace embree
       }
       
     public:
-      uint64 key;
+      uint64_t key;
       HalfEdge* edge;
     };
 
@@ -366,6 +389,7 @@ namespace embree
     void enabling();
     void disabling();
     void setMask (unsigned mask);
+    void setBoundaryMode (RTCBoundaryMode mode);
     void setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride);
     void* map(RTCBufferType type);
     void unmap(RTCBufferType type);
@@ -374,7 +398,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
-    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
 
   public:
 
@@ -389,7 +413,11 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid */
-    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const {
+    __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
+    {
+      if (unlikely(boundary == RTC_BOUNDARY_NONE)) {
+        if (getHalfEdge(i)->faceHasBorder()) return false;
+      }
       if (bbox) *bbox = bounds(i);
       return getHalfEdge(i)->valid(vertices[0]) && !holeSet.lookup(i);
     }
@@ -425,12 +453,13 @@ namespace embree
     BBox3fa             displBounds;  //!< bounds for maximal displacement 
 
   private:
-    size_t numFaces;                  //!< number of faces
-    size_t numEdges;                  //!< number of edges
-    size_t numVertices;               //!< number of vertices
+    size_t numFaces;           //!< number of faces
+    size_t numEdges;           //!< number of edges
+    size_t numVertices;        //!< number of vertices
+    RTCBoundaryMode boundary;  //!< boundary interpolation mode
 
     /*! all buffers in this section are provided by the application */
-  private:
+  protected:
     
     /*! buffer containing the number of vertices for each face */
     BufferT<int> faceVertices;
@@ -439,7 +468,10 @@ namespace embree
     BufferT<unsigned> vertexIndices;
 
     /*! vertex buffer (one buffer for each time step) */
-    BufferT<Vec3fa> vertices[2];
+    array_t<BufferT<Vec3fa>,2> vertices;
+
+    /*! user data buffers */
+    array_t<std::unique_ptr<Buffer>,2> userbuffers;
 
     /*! edge crease buffer containing edges (pairs of vertices) that carry edge crease weights */
     BufferT<Edge> edge_creases;
@@ -466,17 +498,30 @@ namespace embree
     size_t numHalfEdges; 
 
     /*! fast lookup table to find the first half edge for some face */
-    mvector<uint32> faceStartEdge;
+    mvector<uint32_t> faceStartEdge;
 
     /*! Half edge structure. */
     mvector<HalfEdge> halfEdges;
 
     /*! set with all holes */
-    pset<uint32> holeSet;
+    pset<uint32_t> holeSet;
 
     /*! flag whether only the edge levels have changed and the mesh has no creases,
      *  allows for simple bvh update instead of full rebuild in cached mode */
     bool levelUpdate;
+
+    /*! interpolation cache */
+  public:
+    static __forceinline size_t numInterpolationSlots4(size_t stride) { return (stride+15)/16; }
+    static __forceinline size_t numInterpolationSlots8(size_t stride) { size_t r = stride-stride/32*32; return stride/32 + (r==0 ? 0 : (r+15)/16); }
+    static __forceinline size_t interpolationSlot4(size_t prim, size_t slot, size_t stride) {
+      const size_t slots = numInterpolationSlots4(stride); assert(slot < slots); return slots*prim+slot;
+    }
+    static __forceinline size_t interpolationSlot8(size_t prim, size_t slot, size_t stride) {
+      const size_t slots = numInterpolationSlots8(stride); assert(slot < slots); return slots*prim+slot;
+    }
+    std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
+    std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
 
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
@@ -487,15 +532,18 @@ namespace embree
     std::vector<KeyHalfEdge> halfEdges1;
 
     /*! map with all vertex creases */
-    pmap<uint32,float> vertexCreaseMap;
+    pmap<uint32_t,float> vertexCreaseMap;
 
     /*! map with all edge creases */
-    pmap<uint64,float> edgeCreaseMap;
+    pmap<uint64_t,float> edgeCreaseMap;
   };
 
   class SubdivMeshAVX : public SubdivMesh
   {
-    using SubdivMesh::SubdivMesh; // inherit all constructors
-    void interpolate(unsigned primID, float u, float v, const float* src, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats);
+  public:
+    //using SubdivMesh::SubdivMesh; // inherit all constructors // FIXME: compiler bug under VS2013
+    SubdivMeshAVX (Scene* parent, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
+                  size_t numCreases, size_t numCorners, size_t numHoles, size_t numTimeSteps);
+    void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
   };
 };

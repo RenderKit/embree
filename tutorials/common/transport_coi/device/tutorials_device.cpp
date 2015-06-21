@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tutorial/obj_loader.h"
-#include "transport/transport_host.h"
-#include "transport/transport_device.h"
-#include "transport_coi/common.h"
+#include "../../../common/tutorial/obj_loader.h"
+#include "../../transport/transport_host.h"
+#include "../../transport/transport_device.h"
+#include "../common.h"
 
 #include <sink/COIPipeline_sink.h>
 #include <sink/COIProcess_sink.h>
@@ -26,8 +26,8 @@
 #include <common/COIEvent_common.h>
 
 
-extern "C" int64 get_tsc() {
-  return read_tsc();
+extern "C" int64_t get_tsc() {
+return embree::read_tsc();
 }
 
 float g_debug = 0.0f;

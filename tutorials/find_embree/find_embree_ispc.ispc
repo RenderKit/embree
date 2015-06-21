@@ -14,4 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "mic.h"
+#include <embree2/rtcore.isph>
+
+export void ispcEntry()
+{
+  /* initialize Embree */
+  rtcInit();
+
+  /* cleanup Embree again */
+  rtcExit();
+}

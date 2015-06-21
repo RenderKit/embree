@@ -14,11 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sys/platform.h"
-#include "sys/ref.h"
-#include "embree2/rtcore.h"
-#include "embree2/rtcore_ray.h"
-#include "math/vec3.h"
+#include "../include/embree2/rtcore.h"
+#include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include <vector>
 

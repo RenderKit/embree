@@ -27,20 +27,20 @@ namespace embree
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
     template<typename LeafIntersector>
-    void BVH4mbIntersector16Hybrid<LeafIntersector>::intersect(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+    void BVH4mbIntersector16Hybrid<LeafIntersector>::intersect(int16* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* near and node stack */
-      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) float16   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1]; 
 
       /* load ray */
-      const mic_m valid0     = *(mic_i*)valid_i != mic_i(0);
-      const mic3f rdir16     = rcp_safe(ray16.dir);
-      const mic3f org_rdir16 = ray16.org * rdir16;
-      mic_f ray_tnear        = select(valid0,ray16.tnear,pos_inf);
-      mic_f ray_tfar         = select(valid0,ray16.tfar ,neg_inf);
-      const mic_f inf        = mic_f(pos_inf);
+      const bool16 valid0     = *(int16*)valid_i != int16(0);
+      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3f16 org_rdir16 = ray16.org * rdir16;
+      float16 ray_tnear        = select(valid0,ray16.tnear,pos_inf);
+      float16 ray_tfar         = select(valid0,ray16.tfar ,neg_inf);
+      const float16 inf        = float16(pos_inf);
       
       /* allocate stack and push root node */
       stack_node[0] = BVH4i::invalidNode;
@@ -48,7 +48,7 @@ namespace embree
       stack_node[1] = bvh->root;
       stack_dist[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      mic_f*   __restrict__ sptr_dist = stack_dist + 2;
+      float16*   __restrict__ sptr_dist = stack_dist + 2;
       
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
@@ -57,10 +57,10 @@ namespace embree
       {
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
-        mic_f curDist   = *(sptr_dist-1);
+        float16 curDist   = *(sptr_dist-1);
         sptr_node--;
         sptr_dist--;
-	const mic_m m_stackDist = ray_tfar > curDist;
+	const bool16 m_stackDist = ray_tfar > curDist;
 
 	/* stack emppty ? */
         if (unlikely(curNode == BVH4i::invalidNode))  break;
@@ -86,13 +86,13 @@ namespace embree
 		stack_node_single[1] = curNode;
 		size_t sindex = 2;
 
-		const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-		const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-		const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-		const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-		const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-		mic_f       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-		const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
+		const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+		const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+		const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+		const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+		const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+		float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+		const float16 time         = broadcast1to16f(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -143,8 +143,8 @@ namespace embree
 
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-	const mic_f time     = ray16.time;
-	const mic_f one_time = (mic_f::one() - time);
+	const float16 time     = ray16.time;
+	const float16 one_time = (float16::one() - time);
 
         while (1)
         {
@@ -172,27 +172,27 @@ namespace embree
           {
 	    const NodeRef child = node->lower[i].child;
 
-	    const mic_f lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
-	    const mic_f lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
-	    const mic_f lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
-	    const mic_f upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
-	    const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
-	    const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
+	    const float16 lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
+	    const float16 lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
+	    const float16 lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
+	    const float16 upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
+	    const float16 upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
+	    const float16 upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
 	    if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
-            const mic_f lclipMinX = msub(lower_x,rdir16.x,org_rdir16.x);
-            const mic_f lclipMinY = msub(lower_y,rdir16.y,org_rdir16.y);
-            const mic_f lclipMinZ = msub(lower_z,rdir16.z,org_rdir16.z);
-            const mic_f lclipMaxX = msub(upper_x,rdir16.x,org_rdir16.x);
-            const mic_f lclipMaxY = msub(upper_y,rdir16.y,org_rdir16.y);
-            const mic_f lclipMaxZ = msub(upper_z,rdir16.z,org_rdir16.z);
+            const float16 lclipMinX = msub(lower_x,rdir16.x,org_rdir16.x);
+            const float16 lclipMinY = msub(lower_y,rdir16.y,org_rdir16.y);
+            const float16 lclipMinZ = msub(lower_z,rdir16.z,org_rdir16.z);
+            const float16 lclipMaxX = msub(upper_x,rdir16.x,org_rdir16.x);
+            const float16 lclipMaxY = msub(upper_y,rdir16.y,org_rdir16.y);
+            const float16 lclipMaxZ = msub(upper_z,rdir16.z,org_rdir16.z);
 	    
-            const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);   
-	    const mic_f childDist = select(lhit,lnearP,inf);
-            const mic_m m_child_dist = childDist < curDist;
+            const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);   
+	    const float16 childDist = select(lhit,lnearP,inf);
+            const bool16 m_child_dist = childDist < curDist;
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
@@ -218,7 +218,7 @@ namespace embree
             }	      
           }
 #if SWITCH_ON_DOWN_TRAVERSAL == 1
-	  const mic_m curUtil = ray_tfar > curDist;
+	  const bool16 curUtil = ray_tfar > curDist;
 	  if (unlikely(countbits(curUtil) <= BVH4i::hybridSIMDUtilSwitchThreshold))
 	    {
 	      *sptr_node++ = curNode;
@@ -234,7 +234,7 @@ namespace embree
         
 
         /* intersect leaf */
-        const mic_m m_valid_leaf = ray_tfar > curDist;
+        const bool16 m_valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(m_valid_leaf),16);
 
 	LeafIntersector::intersect16(curNode,
@@ -251,21 +251,21 @@ namespace embree
     }
 
     template<typename LeafIntersector>    
-    void BVH4mbIntersector16Hybrid<LeafIntersector>::occluded(mic_i* valid_i, BVH4mb* bvh, Ray16& ray16)
+    void BVH4mbIntersector16Hybrid<LeafIntersector>::occluded(int16* valid_i, BVH4mb* bvh, Ray16& ray16)
     {
       /* allocate stack */
-      __aligned(64) mic_f   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) float16   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node_single[3*BVH4i::maxDepth+1];
 
       /* load ray */
-      const mic_m m_valid     = *(mic_i*)valid_i != mic_i(0);
-      mic_m m_terminated      = !m_valid;
-      const mic3f rdir16      = rcp_safe(ray16.dir);
-      const mic3f org_rdir16  = ray16.org * rdir16;
-      mic_f ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
-      mic_f ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
-      const mic_f inf = mic_f(pos_inf);
+      const bool16 m_valid     = *(int16*)valid_i != int16(0);
+      bool16 m_terminated      = !m_valid;
+      const Vec3f16 rdir16      = rcp_safe(ray16.dir);
+      const Vec3f16 org_rdir16  = ray16.org * rdir16;
+      float16 ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
+      float16 ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
+      const float16 inf = float16(pos_inf);
 
       
       /* push root node */
@@ -274,21 +274,21 @@ namespace embree
       stack_node[1] = bvh->root;
       stack_dist[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      mic_f*   __restrict__ sptr_dist = stack_dist + 2;
+      float16*   __restrict__ sptr_dist = stack_dist + 2;
       
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       while (1) pop:
       {
-	const mic_m m_active = !m_terminated;
+	const bool16 m_active = !m_terminated;
 
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
-        mic_f curDist   = *(sptr_dist-1);
+        float16 curDist   = *(sptr_dist-1);
         sptr_node--;
         sptr_dist--;
-	const mic_m m_stackDist = gt(m_active,ray_tfar,curDist);
+	const bool16 m_stackDist = gt(m_active,ray_tfar,curDist);
 
 	/* stack emppty ? */
         if (unlikely(curNode == BVH4i::invalidNode))  break;
@@ -308,13 +308,13 @@ namespace embree
 		stack_node_single[1] = curNode;
 		size_t sindex = 2;
 
-		const mic_f org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-		const mic_f dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-		const mic_f rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-		const mic_f org_rdir_xyz = org_xyz * rdir_xyz;
-		const mic_f min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-		const mic_f max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-		const mic_f time         = broadcast1to16f(&ray16.time[rayIndex]);
+		const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+		const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+		const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+		const float16 org_rdir_xyz = org_xyz * rdir_xyz;
+		const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+		const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+		const float16 time         = broadcast1to16f(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -339,7 +339,7 @@ namespace embree
 		    /* return if stack is empty */
 		    if (unlikely(curNode == BVH4i::invalidNode)) break;
 
-		    const mic_f zero = mic_f::zero();
+		    const float16 zero = float16::zero();
 
 		    /* intersect one ray against four triangles */
 
@@ -358,7 +358,7 @@ namespace embree
 
 		if (unlikely(all(m_terminated))) 
 		  {
-		    store16i(m_valid,&ray16.geomID,mic_i::zero());
+		    store16i(m_valid,&ray16.geomID,int16::zero());
 		    return;
 		  }      
 
@@ -372,8 +372,8 @@ namespace embree
 
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-	const mic_f time     = ray16.time;
-	const mic_f one_time = (mic_f::one() - time);
+	const float16 time     = ray16.time;
+	const float16 one_time = (float16::one() - time);
 
 
         while (1)
@@ -402,27 +402,27 @@ namespace embree
 	    {
 	      const NodeRef child = node->lower[i].child;
             
-	      const mic_f lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
-	      const mic_f lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
-	      const mic_f lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
-	      const mic_f upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
-	      const mic_f upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
-	      const mic_f upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
+	      const float16 lower_x =  one_time * nodeMB->lower[i].x + time * nodeMB->lower_t1[i].x;
+	      const float16 lower_y =  one_time * nodeMB->lower[i].y + time * nodeMB->lower_t1[i].y;
+	      const float16 lower_z =  one_time * nodeMB->lower[i].z + time * nodeMB->lower_t1[i].z;
+	      const float16 upper_x =  one_time * nodeMB->upper[i].x + time * nodeMB->upper_t1[i].x;
+	      const float16 upper_y =  one_time * nodeMB->upper[i].y + time * nodeMB->upper_t1[i].y;
+	      const float16 upper_z =  one_time * nodeMB->upper[i].z + time * nodeMB->upper_t1[i].z;
 
 	      if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 
-	      const mic_f lclipMinX = msub(lower_x,rdir16.x,org_rdir16.x);
-	      const mic_f lclipMinY = msub(lower_y,rdir16.y,org_rdir16.y);
-	      const mic_f lclipMinZ = msub(lower_z,rdir16.z,org_rdir16.z);
-	      const mic_f lclipMaxX = msub(upper_x,rdir16.x,org_rdir16.x);
-	      const mic_f lclipMaxY = msub(upper_y,rdir16.y,org_rdir16.y);
-	      const mic_f lclipMaxZ = msub(upper_z,rdir16.z,org_rdir16.z);
+	      const float16 lclipMinX = msub(lower_x,rdir16.x,org_rdir16.x);
+	      const float16 lclipMinY = msub(lower_y,rdir16.y,org_rdir16.y);
+	      const float16 lclipMinZ = msub(lower_z,rdir16.z,org_rdir16.z);
+	      const float16 lclipMaxX = msub(upper_x,rdir16.x,org_rdir16.x);
+	      const float16 lclipMaxY = msub(upper_y,rdir16.y,org_rdir16.y);
+	      const float16 lclipMaxZ = msub(upper_z,rdir16.z,org_rdir16.z);
 
-	      const mic_f lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-	      const mic_f lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-	      const mic_m lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-	      const mic_f childDist = select(lhit,lnearP,inf);
-	      const mic_m m_child_dist = childDist < curDist;
+	      const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+	      const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+	      const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+	      const float16 childDist = select(lhit,lnearP,inf);
+	      const bool16 m_child_dist = childDist < curDist;
             
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -449,7 +449,7 @@ namespace embree
 		}	      
 	    }
 #if SWITCH_ON_DOWN_TRAVERSAL == 1
-	  const mic_m curUtil = ray_tfar > curDist;
+	  const bool16 curUtil = ray_tfar > curDist;
 	  if (unlikely(countbits(curUtil) <= BVH4i::hybridSIMDUtilSwitchThreshold))
 	    {
 	      *sptr_node++ = curNode;
@@ -463,7 +463,7 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        mic_m m_valid_leaf = gt(m_active,ray_tfar,curDist);
+        bool16 m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(m_valid_leaf),16);
 
 	LeafIntersector::occluded16(curNode,
@@ -478,7 +478,7 @@ namespace embree
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
         if (unlikely(all(m_terminated))) break;
       }
-      store16i(m_valid & m_terminated,&ray16.geomID,mic_i::zero());
+      store16i(m_valid & m_terminated,&ray16.geomID,int16::zero());
     }
     
     DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16HybridMoeller, BVH4mbIntersector16Hybrid<Triangle1mbLeafIntersector>);

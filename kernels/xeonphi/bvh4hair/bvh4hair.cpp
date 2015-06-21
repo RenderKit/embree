@@ -16,8 +16,8 @@
 
 #include "bvh4hair.h"
 #include "bvh4hair_builder.h"
-#include "common/accelinstance.h"
-#include "geometry/triangle1.h"
+#include "../../common/accelinstance.h"
+#include "../geometry/triangle1.h"
 
 namespace embree
 {

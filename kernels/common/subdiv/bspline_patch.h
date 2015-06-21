@@ -56,6 +56,7 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) BSplinePatchT
     {
+      typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
       typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
       
     public:
@@ -249,8 +250,17 @@ namespace embree
       }
     public:
       
-      BSplinePatchT () {}
-      
+      __forceinline BSplinePatchT () {}
+
+      __forceinline BSplinePatchT (const CatmullClarkPatch& patch) {
+        init(patch);
+      }
+
+      template<typename Loader>
+        __forceinline BSplinePatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) {
+        init(edge,loader);
+      }
+
       __forceinline void init( FinalQuad& quad ) const
       {
         quad.vtx[0] = v[1][1];
@@ -272,67 +282,86 @@ namespace embree
         quad.vtx[2] = limit_v2;
         quad.vtx[3] = limit_v3;
       };
-      
-      
-      __forceinline void init(const CatmullClarkPatch& patch)
+
+      __forceinline Vertex hard_corner(const                    Vertex& v01, const Vertex& v02, 
+                                       const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                       const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        assert( patch.isRegular() );
-        assert( patch.ring[0].hasValidPositions() );
-        assert( patch.ring[1].hasValidPositions() );
-        assert( patch.ring[2].hasValidPositions() );
-        assert( patch.ring[3].hasValidPositions() );
-        
-        if (unlikely(patch.ring[0].hasBorder())) 
+        return 4.0f*v11 - 2.0f*(v12+v21) + v22;
+      }
+
+      __forceinline Vertex soft_convex_corner( const                    Vertex& v01, const Vertex& v02, 
+                                               const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                               const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      {
+        return -8.0f*v11 + 4.0f*(v12+v21) + v22;
+      }
+
+      __forceinline Vertex convex_corner(const float vertex_crease_weight, 
+                                         const                    Vertex& v01, const Vertex& v02, 
+                                         const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                         const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      {
+        if (std::isinf(vertex_crease_weight)) return hard_corner(v01,v02,v10,v11,v12,v20,v21,v22);
+        else                                  return soft_convex_corner(v01,v02,v10,v11,v12,v20,v21,v22);
+      }
+
+      __forceinline void init_border(const CatmullClarkRing& edge0,
+                                     Vertex& v01, Vertex& v02,
+                                     const Vertex& v11, const Vertex& v12,
+                                     const Vertex& v21, const Vertex& v22)
+      {
+        if (likely(edge0.has_opposite_back(0)))
         {
-          v[1][1] = patch.ring[0].vtx;
-          v[0][1] = patch.ring[0].regular_border_vertex_6();
-          v[0][0] = patch.ring[0].regular_border_vertex_5();
-          v[1][0] = patch.ring[0].regular_border_vertex_4();
+          v01 = edge0.back(2);
+          v02 = edge0.back(1);
         } else {
-          v[1][1] = patch.ring[0].vtx;
-          v[0][1] = patch.ring[0].ring[6];
-          v[0][0] = patch.ring[0].ring[5];
-          v[1][0] = patch.ring[0].ring[4];
+          v01 = 2.0f*v11-v21;
+          v02 = 2.0f*v12-v22;
         }
+      }
+
+      __forceinline void init_corner(const CatmullClarkRing& edge0,
+                                     Vertex& v00,       const Vertex& v01, const Vertex& v02, 
+                                     const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                     const Vertex& v20, const Vertex& v21, const Vertex& v22)
+      {
+        const bool has_back1 = edge0.has_opposite_back(1);
+        const bool has_back0 = edge0.has_opposite_back(0);
+        const bool has_front1 = edge0.has_opposite_front(1);
+        const bool has_front2 = edge0.has_opposite_front(2);
         
-        if (unlikely(patch.ring[1].hasBorder())) 
-        {
-          v[1][2] = patch.ring[1].vtx;
-          v[1][3] = patch.ring[1].regular_border_vertex_6();
-          v[0][3] = patch.ring[1].regular_border_vertex_5();
-          v[0][2] = patch.ring[1].regular_border_vertex_4();
-        } else {
-          v[1][2] = patch.ring[1].vtx;
-          v[1][3] = patch.ring[1].ring[6];
-          v[0][3] = patch.ring[1].ring[5];
-          v[0][2] = patch.ring[1].ring[4];
+        if (likely(has_back0)) {
+          if (likely(has_front1)) { assert(has_back1 && has_front2); v00 = edge0.back(3); }
+          else { assert(!has_back1); v00 = 2.0f*v01-v02; }
         }
+        else {
+          if (likely(has_front1)) { assert(!has_front2); v00 = 2.0f*v10-v20; }
+          else v00 = convex_corner(edge0.vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
+        }
+      }
+      
+      void init(const CatmullClarkPatch& patch)
+      {
+        assert( patch.isRegular1() );
         
-        if (unlikely(patch.ring[2].hasBorder())) 
-        {
-          v[2][2] = patch.ring[2].vtx;
-          v[3][2] = patch.ring[2].regular_border_vertex_6();
-          v[3][3] = patch.ring[2].regular_border_vertex_5();
-          v[2][3] = patch.ring[2].regular_border_vertex_4();
-        } else {
-          v[2][2] = patch.ring[2].vtx;
-          v[3][2] = patch.ring[2].ring[6];
-          v[3][3] = patch.ring[2].ring[5];
-          v[2][3] = patch.ring[2].ring[4];
-        }
+        /* fill inner vertices */
+        const Vertex v11 = v[1][1] = patch.ring[0].vtx;
+        const Vertex v12 = v[1][2] = patch.ring[1].vtx;
+        const Vertex v22 = v[2][2] = patch.ring[2].vtx; 
+        const Vertex v21 = v[2][1] = patch.ring[3].vtx; 
         
-        if (unlikely(patch.ring[3].hasBorder())) 
-        {
-          v[2][1] = patch.ring[3].vtx;
-          v[2][0] = patch.ring[3].regular_border_vertex_6();
-          v[3][0] = patch.ring[3].regular_border_vertex_5();
-          v[3][1] = patch.ring[3].regular_border_vertex_4();
-        } else {
-          v[2][1] = patch.ring[3].vtx;
-          v[2][0] = patch.ring[3].ring[6];
-          v[3][0] = patch.ring[3].ring[5];      
-          v[3][1] = patch.ring[3].ring[4];
-        }
+        /* fill border vertices */
+        init_border(patch.ring[0],v[0][1],v[0][2],v11,v12,v21,v22);
+        init_border(patch.ring[1],v[1][3],v[2][3],v12,v22,v11,v21);
+        init_border(patch.ring[2],v[3][2],v[3][1],v22,v21,v12,v11);
+        init_border(patch.ring[3],v[2][0],v[1][0],v21,v11,v22,v12);
+        
+        /* fill corner vertices */
+        init_corner(patch.ring[0],v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_corner(patch.ring[1],v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_corner(patch.ring[2],v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_corner(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
       template<typename Loader>
@@ -350,42 +379,42 @@ namespace embree
           v01 = 2.0f*v11-v21;
           v02 = 2.0f*v12-v22;
         }
-        
-        /* hard vertex crease rule */
-        //if (unlikely(edge0->vertex_crease_weight == float(inf)))
-        //  v01 = 2.0f*v11-v21;
-        //if (unlikely(edge0->next()->vertex_crease_weight == float(inf)))
-        //  v02 = 2.0f*v12-v22;
       }
       
       template<typename Loader>
-      __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0, Loader& load, Vertex& v00, 
-                                     const Vertex& v01, const Vertex& v02, 
-                                     const Vertex& v11, const Vertex& v22, 
-                                     const Vertex& v10, const Vertex& v20)
+      __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0, Loader& load,
+                                     Vertex& v00, const Vertex& v01, const Vertex& v02, 
+                                     const Vertex& v10, const Vertex& v11, const Vertex& v12, 
+                                     const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        const bool opposite0 = edge0->hasOpposite();
-        const bool opposite3 = edge0->prev()->hasOpposite();
-        if (likely(opposite0 && opposite3))
-        {
+        const bool has_back0 = edge0->hasOpposite();
+        const bool has_front1 = edge0->prev()->hasOpposite();
+
+        if (likely(has_back0))
+        { 
           const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
-          if (likely(e->hasOpposite()))
+          if (likely(has_front1))
+          {
+            assert(e->hasOpposite());
+            assert(edge0->prev()->opposite()->prev()->hasOpposite());
             v00 = load(e->opposite()->prev());
+          } 
           else {
-            assert(!edge0->prev()->opposite()->prev()->hasOpposite());
-            v00 = 2.0f*v11-v22;
+            assert(!e->hasOpposite());
+            v00 = 2.0f*v01-v02;
           }
-        } 
-        else if (!opposite0) v00 = 2.0f*v10-v20;
-        else if (!opposite3) v00 = 2.0f*v01-v02;
-        else {
-          if (edge0->vertex_crease_weight == 0.0f) v00 = 2.0f*v11-v22;
-          else                                     v00 = v11; // FIXME: does this create proper soft corners?
         }
-        
-        /* hard vertex crease rule */
-        //if (unlikely(edge0->vertex_crease_weight == float(inf))) 
-        //  v00 = 2.0f*v11-v22;
+        else
+        {
+          if (likely(has_front1)) {
+            assert(!edge0->prev()->opposite()->prev()->hasOpposite());
+            v00 = 2.0f*v10-v20;
+          }
+          else {
+            assert(edge0->vertex_crease_weight == 0.0f || std::isinf(edge0->vertex_crease_weight));
+            v00 = convex_corner(edge0->vertex_crease_weight,v01,v02,v10,v11,v12,v20,v21,v22);
+          }
+        }
       }
       
       template<typename Loader>
@@ -406,10 +435,10 @@ namespace embree
         init_border(edge3,load,v[2][0],v[1][0],v21,v11,v22,v12);
         
         /* fill corner vertices */
-        init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v11,v22,v[1][0],v[2][0]);
-        init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v12,v21,v[0][2],v[0][1]);
-        init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v22,v11,v[2][3],v[1][3]);
-        init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v21,v12,v[3][1],v[3][2]);
+        init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
       __forceinline BBox<Vertex> bounds() const
@@ -470,6 +499,13 @@ namespace embree
         return cross(tv,tu);
       }   
       
+      __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+      {
+        if (P)    *P    = eval(u,v); 
+        if (dPdu) *dPdu = tangentU(u,v)*dscale; 
+        if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+      }
+
       template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
       {
@@ -529,7 +565,7 @@ namespace embree
       
 #if defined(__MIC__)
       
-      __forceinline mic_f getRow(const size_t i) const
+      __forceinline float16 getRow(const size_t i) const
       {
         return load16f(&v[i][0]);
       }
@@ -542,47 +578,13 @@ namespace embree
         prefetch<PFHINT_L1>(&v[3][0]);
       }
       
-      static __forceinline mic4f eval_derivative(const mic_f u, const mic_m m_mask)
+      static __forceinline Vec4f16 eval_derivative(const float16 u, const bool16 m_mask)
       {
-        const mic4f e = CubicBSplineCurve::eval(u);
-        const mic4f d = CubicBSplineCurve::derivative(u);
-        return mic4f(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
+        const Vec4f16 e = CubicBSplineCurve::eval(u);
+        const Vec4f16 d = CubicBSplineCurve::derivative(u);
+        return Vec4f16(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
       }    
-      
-      __forceinline mic_f normal4(const float uu, const float vv) const
-      {
-        const mic4f v_e_d = eval_derivative(mic_f(vv),0x00ff);       // ev,ev,dv,dv
-        
-        const mic_f curve0 = v_e_d[0] * broadcast4to16f(&v[0][0]) + v_e_d[1] * broadcast4to16f(&v[1][0]) + v_e_d[2] * broadcast4to16f(&v[2][0]) + v_e_d[3] * broadcast4to16f(&v[3][0]);
-        const mic_f curve1 = v_e_d[0] * broadcast4to16f(&v[0][1]) + v_e_d[1] * broadcast4to16f(&v[1][1]) + v_e_d[2] * broadcast4to16f(&v[2][1]) + v_e_d[3] * broadcast4to16f(&v[3][1]);
-        const mic_f curve2 = v_e_d[0] * broadcast4to16f(&v[0][2]) + v_e_d[1] * broadcast4to16f(&v[1][2]) + v_e_d[2] * broadcast4to16f(&v[2][2]) + v_e_d[3] * broadcast4to16f(&v[3][2]);
-        const mic_f curve3 = v_e_d[0] * broadcast4to16f(&v[0][3]) + v_e_d[1] * broadcast4to16f(&v[1][3]) + v_e_d[2] * broadcast4to16f(&v[2][3]) + v_e_d[3] * broadcast4to16f(&v[3][3]);
-        
-        const mic4f u_e_d = eval_derivative(mic_f(uu),0xff00);       // du,du,eu,eu
-        
-        const mic_f tangentUV = (u_e_d[0] * curve0 + u_e_d[1] * curve1 + u_e_d[2] * curve2 + u_e_d[3] * curve3); // tu, tu, tv, tv
-        
-        const mic_f tangentU = permute<0,0,0,0>(tangentUV);
-        const mic_f tangentV = permute<2,2,2,2>(tangentUV);
-        
-        const mic_f n = lcross_xyz(tangentU,tangentV);
-        return n;
-      }
-      
-      __forceinline mic_f eval4(const mic_f uu, const mic_f vv) const
-      {
-        const mic4f v_n = CubicBSplineCurve::eval(vv); 
-        
-        const mic_f curve0 = v_n[0] * broadcast4to16f(&v[0][0]) + v_n[1] * broadcast4to16f(&v[1][0]) + v_n[2] * broadcast4to16f(&v[2][0]) + v_n[3] * broadcast4to16f(&v[3][0]);
-        const mic_f curve1 = v_n[0] * broadcast4to16f(&v[0][1]) + v_n[1] * broadcast4to16f(&v[1][1]) + v_n[2] * broadcast4to16f(&v[2][1]) + v_n[3] * broadcast4to16f(&v[3][1]);
-        const mic_f curve2 = v_n[0] * broadcast4to16f(&v[0][2]) + v_n[1] * broadcast4to16f(&v[1][2]) + v_n[2] * broadcast4to16f(&v[2][2]) + v_n[3] * broadcast4to16f(&v[3][2]);
-        const mic_f curve3 = v_n[0] * broadcast4to16f(&v[0][3]) + v_n[1] * broadcast4to16f(&v[1][3]) + v_n[2] * broadcast4to16f(&v[2][3]) + v_n[3] * broadcast4to16f(&v[3][3]);
-        
-        const mic4f u_n = CubicBSplineCurve::eval(uu); 
-        
-        return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * mic_f(1.0f/36.0f);
-      }
-      
+            
 #endif
       
       friend __forceinline std::ostream& operator<<(std::ostream& o, const BSplinePatchT& p)

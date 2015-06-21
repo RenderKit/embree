@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4.h"
-#include "common/ray8.h"
+#include "../../common/ray8.h"
 
 namespace embree
 {
@@ -35,8 +35,8 @@ namespace embree
       static const size_t stackSize = 4*BVH4::maxDepth+1;
       
     public:
-      static void intersect(avxb* valid, BVH4* bvh, Ray8& ray);
-      static void occluded (avxb* valid, BVH4* bvh, Ray8& ray);
+      static void intersect(bool8* valid, BVH4* bvh, Ray8& ray);
+      static void occluded (bool8* valid, BVH4* bvh, Ray8& ray);
     };
   }
 }

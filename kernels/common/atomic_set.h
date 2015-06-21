@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "sys/intrinsics.h"
+#include "../../common/sys/intrinsics.h"
 
 namespace embree
 {

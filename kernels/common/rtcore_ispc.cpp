@@ -29,7 +29,11 @@ namespace embree
   extern "C" void ispcExit() {
     rtcExit();
   }
-  
+
+  extern "C" void ispcSetParameter1i(const RTCParameter parm, ssize_t val) {
+    rtcSetParameter1i(parm,val);
+  }
+
   extern "C" RTCError ispcGetError() {
     return rtcGetError();
   }
@@ -128,6 +132,10 @@ namespace embree
 
   extern "C" void ispcSetRayMask (RTCScene scene, unsigned geomID, int mask) {
     rtcSetMask(scene,geomID,mask);
+  }
+
+  extern "C" void ispcSetBoundaryMode (RTCScene scene, unsigned geomID, RTCBoundaryMode mode) {
+    rtcSetBoundaryMode(scene,geomID,mode);
   }
   
   extern "C" void* ispcMapBuffer(RTCScene scene, unsigned geomID, RTCBufferType type) {
@@ -359,9 +367,9 @@ namespace embree
   
   extern "C" void ispcInterpolateN(RTCScene scene, unsigned int geomID, 
                                    const void* valid, const unsigned int* primIDs, const float* u, const float* v, size_t numUVs, 
-                                   const float* src, size_t byteStride, 
+                                   RTCBufferType buffer, 
                                    float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-    rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,src,byteStride,P,dPdu,dPdv,numFloats);
+    rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
   }
 }

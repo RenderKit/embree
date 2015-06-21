@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "tutorial/tutorial.h"
-#include "tutorial/obj_loader.h"
-#include "tutorial/xml_loader.h"
-#include "image/image.h"
+#include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/obj_loader.h"
+#include "../common/tutorial/xml_loader.h"
+#include "../common/image/image.h"
 
 namespace embree 
 {

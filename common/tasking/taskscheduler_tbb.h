@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/alloc.h"
-#include "sys/barrier.h"
-#include "sys/thread.h"
-//#include "tasking/taskscheduler.h"
+#include "../sys/platform.h"
+#include "../sys/alloc.h"
+#include "../sys/barrier.h"
+#include "../sys/thread.h"
+#include "../sys/mutex.h"
+#include "../sys/condition.h"
+#include "../sys/ref.h"
 #include "../../kernels/algorithms/range.h"
 
 #include <list>
@@ -31,9 +33,6 @@
 #define TBB_PREVIEW_TASK_ARENA 1
 #include "tbb/tbb.h"
 #endif
-
-#include "sys/mutex.h"
-#include "sys/condition.h"
 
 namespace embree
 {
@@ -49,7 +48,7 @@ namespace embree
 #  define SPAWN_END TaskSchedulerTBB::wait();
 #endif
 
-  struct TaskSchedulerTBB
+  struct TaskSchedulerTBB : public RefCount
   {
     ALIGNED_STRUCT;
 
@@ -201,7 +200,7 @@ namespace embree
     /*! thread local structure for each thread */
     struct Thread 
     {
-      Thread (size_t threadIndex, TaskSchedulerTBB* scheduler)
+      Thread (size_t threadIndex, const Ref<TaskSchedulerTBB>& scheduler)
       : threadIndex(threadIndex), scheduler(scheduler), task(nullptr) {}
 
       __forceinline size_t threadCount() {
@@ -211,7 +210,7 @@ namespace embree
       size_t threadIndex;              //!< ID of this thread
       TaskQueue tasks;                 //!< local task queue
       Task* task;                      //!< current active task
-      TaskSchedulerTBB* scheduler;     //!< pointer to task scheduler
+      Ref<TaskSchedulerTBB> scheduler;     //!< pointer to task scheduler
     };
 
     /*! pool of worker threads */
@@ -224,10 +223,10 @@ namespace embree
       __dllexport void startThreads();
 
       /*! adds a task scheduler object for scheduling */
-      __dllexport void add(TaskSchedulerTBB* scheduler);
+      __dllexport void add(const Ref<TaskSchedulerTBB>& scheduler);
 
       /*! remove the task scheduler object again */
-      __dllexport void remove(TaskSchedulerTBB* scheduler);
+      __dllexport void remove(const Ref<TaskSchedulerTBB>& scheduler);
 
       /*! returns number of threads of the thread pool */
       size_t size() const { return numThreads; }
@@ -244,7 +243,7 @@ namespace embree
     private:
       MutexSys mutex;
       ConditionSys condition;
-      std::list<TaskSchedulerTBB*> schedulers;
+      std::list<Ref<TaskSchedulerTBB> > schedulers;
     };
 
     TaskSchedulerTBB ();

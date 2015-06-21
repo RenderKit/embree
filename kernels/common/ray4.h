@@ -23,25 +23,25 @@ namespace embree
   /*! Ray structure for 4 rays. */
   struct Ray4
   {
-    typedef sseb simdb;
-    typedef ssef simdf;
-    typedef ssei simdi;
+    typedef bool4 simdb;
+    typedef float4 simdf;
+    typedef int4 simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray4() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray4(const sse3f& org, const sse3f& dir, 
-                       const ssef& tnear = zero, const ssef& tfar = inf, 
-                       const ssef& time = zero, const ssei& mask = -1)
+    __forceinline Ray4(const Vec3f4& org, const Vec3f4& dir, 
+                       const float4& tnear = zero, const float4& tfar = inf, 
+                       const float4& time = zero, const int4& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
 
     /*! returns the size of the ray */
     static __forceinline size_t size() { return 4; }
 
     /*! Tests if we hit something. */
-    __forceinline operator sseb() const { return geomID != ssei(-1); }
+    __forceinline operator bool4() const { return geomID != int4(-1); }
 
     /* converts ray packet to single rays */
     __forceinline void get(Ray ray[4]) const
@@ -72,20 +72,20 @@ namespace embree
     }
 
   public:
-    sse3f org;      //!< Ray origin
-    sse3f dir;      //!< Ray direction
-    ssef tnear;     //!< Start of ray segment 
-    ssef tfar;      //!< End of ray segment   
-    ssef time;      //!< Time of this ray for motion blur.
-    ssei mask;      //!< used to mask out objects during traversal
+    Vec3f4 org;      //!< Ray origin
+    Vec3f4 dir;      //!< Ray direction
+    float4 tnear;     //!< Start of ray segment 
+    float4 tfar;      //!< End of ray segment   
+    float4 time;      //!< Time of this ray for motion blur.
+    int4 mask;      //!< used to mask out objects during traversal
 
   public:
-    sse3f Ng;       //!< Geometry normal
-    ssef u;         //!< Barycentric u coordinate of hit
-    ssef v;         //!< Barycentric v coordinate of hit
-    ssei geomID;    //!< geometry ID
-    ssei primID;    //!< primitive ID
-    ssei instID;    //!< instance ID
+    Vec3f4 Ng;       //!< Geometry normal
+    float4 u;         //!< Barycentric u coordinate of hit
+    float4 v;         //!< Barycentric v coordinate of hit
+    int4 geomID;    //!< geometry ID
+    int4 primID;    //!< primitive ID
+    int4 instID;    //!< instance ID
   };
 
   /*! Outputs ray to stream. */

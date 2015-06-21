@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "state.h"
-#include "lexers/streamfilters.h"
+#include "../../common/lexers/streamfilters.h"
 
 namespace embree
 {
@@ -128,7 +128,7 @@ namespace embree
         else if (isa == "sse42") setCPUFeatures(SSE42);
         else if (isa == "sse4.2") setCPUFeatures(SSE42);
         else if (isa == "avx") setCPUFeatures(AVX);
-        else if (isa == "avxi") setCPUFeatures(AVXI);
+        else if (isa == "int8") setCPUFeatures(AVXI);
         else if (isa == "avx2") setCPUFeatures(AVX2);
       }
 

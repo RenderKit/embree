@@ -17,7 +17,7 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_rotate.h"
-#include "common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/feature_adaptive_gregory.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
 
@@ -34,6 +34,8 @@
 #define L2_PREFETCH_ITEMS 16
 
 //FIXME: use 8-bytes compact prim ref is used
+
+#define ENABLE_FEATURE_ADAPTIVE 1
 
 namespace embree
 {
@@ -140,28 +142,28 @@ PRINT(CORRECT_numPrims);
     right_o = PrimRef(cright,prim.geomID(), prim.primID());
   }
 
-  __forceinline mic_f box_sah( const mic_f &b_min,
-			       const mic_f &b_max) 
+  __forceinline float16 box_sah( const float16 &b_min,
+			       const float16 &b_max) 
   { 
-    const mic_f d = b_max - b_min;
-    const mic_f d_x = swAAAA(d);
-    const mic_f d_y = swBBBB(d);
-    const mic_f d_z = swCCCC(d);
+    const float16 d = b_max - b_min;
+    const float16 d_x = swAAAA(d);
+    const float16 d_y = swBBBB(d);
+    const float16 d_z = swCCCC(d);
     return (d_x*(d_y+d_z)+d_y*d_z)*2.0f; 
   }
 
-  __forceinline mic_f box_sah( const PrimRef &r) 
+  __forceinline float16 box_sah( const PrimRef &r) 
   { 
-    const mic_f bmin = broadcast4to16f(&r.lower);
-    const mic_f bmax = broadcast4to16f(&r.upper);
+    const float16 bmin = broadcast4to16f(&r.lower);
+    const float16 bmax = broadcast4to16f(&r.upper);
     return box_sah(bmin,bmax);
   }
 
-  __forceinline mic_f tri_sah( const mic_f &v0,
-			       const mic_f &v1,
-			       const mic_f &v2) 
+  __forceinline float16 tri_sah( const float16 &v0,
+			       const float16 &v1,
+			       const float16 &v2) 
   {
-    const mic_f n = lcross_xyz(v1-v0,v2-v0);
+    const float16 n = lcross_xyz(v1-v0,v2-v0);
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
   
@@ -312,14 +314,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 		  
 		  sahBox += area_box[0];
 		  sahTri += area_tri[0];
@@ -357,10 +359,10 @@ PRINT(CORRECT_numPrims);
     }
 
     // === start with first group containing startID ===
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int numTrisNoPreSplit = 0;
     unsigned int numTrisPreSplit = 0;
@@ -389,14 +391,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -404,8 +406,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    numTrisPreSplit++;
@@ -414,7 +416,7 @@ PRINT(CORRECT_numPrims);
 
 		  bounds_scene_min = min(bounds_scene_min,bmin);
 		  bounds_scene_max = max(bounds_scene_max,bmax);
-		  const mic_f centroid2 = bmin+bmax;
+		  const float16 centroid2 = bmin+bmax;
 		  bounds_centroid_min = min(bounds_centroid_min,centroid2);
 		  bounds_centroid_max = max(bounds_centroid_max,centroid2);
 		}
@@ -469,14 +471,14 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  mic_f bmin = min(min(v[0],v[1]),v[2]);
-		  mic_f bmax = max(max(v[0],v[1]),v[2]);
+		  float16 bmin = min(min(v[0],v[1]),v[2]);
+		  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-		  const mic_f area_box = box_sah(bmin,bmax);
-		  const mic_f factor = area_box * rcp(area_tri);
+		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const float16 area_box = box_sah(bmin,bmax);
+		  const float16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -484,8 +486,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const mic_m m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const mic_m m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    {
@@ -545,12 +547,12 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  prefetch<PFHINT_L1EX>(prims);
 
-	  mic_f bmin = min(min(v[0],v[1]),v[2]);
-	  mic_f bmax = max(max(v[0],v[1]),v[2]);
+	  float16 bmin = min(min(v[0],v[1]),v[2]);
+	  float16 bmax = max(max(v[0],v[1]),v[2]);
 
 	  prefetch<PFHINT_L2EX>(prims + L2_PREFETCH_ITEMS);
 
@@ -587,14 +589,14 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const mic3f v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  
-	  mic_f bmin = min(min(v[0],v[1]),v[2]);
-	  mic_f bmax = max(max(v[0],v[1]),v[2]);
+	  float16 bmin = min(min(v[0],v[1]),v[2]);
+	  float16 bmax = max(max(v[0],v[1]),v[2]);
 
-	  const mic_f area_tri = tri_sah(v[0],v[1],v[2]);
-	  const mic_f area_box = box_sah(bmin,bmax);
+	  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
+	  const float16 area_box = box_sah(bmin,bmax);
 
 	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
@@ -676,10 +678,10 @@ PRINT(CORRECT_numPrims);
     }
 
     /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -697,12 +699,12 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 			    
 	    const BBox3fa bounds = virtual_geometry->bounds(i);
-	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	    const mic_f bmax = broadcast4to16f(&bounds.upper);
+	    const float16 bmin = broadcast4to16f(&bounds.lower); 
+	    const float16 bmax = broadcast4to16f(&bounds.upper);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const mic_f centroid2 = bmin+bmax;
+	    const float16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
@@ -874,7 +876,15 @@ PRINT(CORRECT_numPrims);
     fastUpdateMode = true;
     fastUpdateMode_numFaces = 0;
 
-      /* initialize all half edge structures */
+    /* initialize all half edge structures */
+    //const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+    if (numPrimitives > 0 || scene->isInterpolatable()) {
+      Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+      for (size_t i=0; i<iter.size(); i++)
+        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+    }
+
+    /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
 
     DBG_CACHE_BUILDER( PRINT( iter.size() ) );
@@ -885,7 +895,7 @@ PRINT(CORRECT_numPrims);
 	  DBG_CACHE_BUILDER( PRINT( i ) );
 	  DBG_CACHE_BUILDER( PRINT( iter[i] ) );
 
-	  iter[i]->initializeHalfEdgeStructures();
+	  //iter[i]->initializeHalfEdgeStructures();
 	  fastUpdateMode_numFaces += iter[i]->size();
 	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
 	}
@@ -956,20 +966,30 @@ PRINT(CORRECT_numPrims);
     /* in fast update mode we know the number of primitives in advance */
     if (fastUpdateMode) return fastUpdateMode_numFaces;
 
+    TIMER(double msec = getSeconds());	
+
     PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
      {
        size_t s = 0;
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
+#if ENABLE_FEATURE_ADAPTIVE == 1
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 					       [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
 					       {
 						 s++;
-					       });	    
+					       });
+#else
+	      s++;
+#endif
+	    
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+
+    TIMER(msec = getSeconds()-msec);    
+    TIMER(std::cout << "getNumPrimitives " << 1000. * msec << " ms" << std::endl << std::flush);
 
     return pinfo.size();
     /* count total number of subdivision surface objects */
@@ -1014,16 +1034,16 @@ PRINT(CORRECT_numPrims);
 
       for (size_t i = 0; i<p.grid_size_simd_blocks; i++)
         {
-          const mic_f u = load16f(&u_array[i * 16]);
-          const mic_f v = load16f(&v_array[i * 16]);
+          const float16 u = load16f(&u_array[i * 16]);
+          const float16 v = load16f(&v_array[i * 16]);
 
-          mic3f vtx = p.eval16(u, v);
+          Vec3f16 vtx = p.eval16(u, v);
 
 
           /* eval displacement function */
           if (unlikely(mesh->displFunc != nullptr))
             {
-              mic3f normal = p.normal16(u, v);
+              Vec3f16 normal = p.normal16(u, v);
               normal = normalize(normal);
 
               const Vec2f uv0 = p.getUV(0);
@@ -1031,8 +1051,8 @@ PRINT(CORRECT_numPrims);
               const Vec2f uv2 = p.getUV(2);
               const Vec2f uv3 = p.getUV(3);
 
-              const mic_f patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const mic_f patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
+              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
 
               mesh->displFunc(mesh->userPtr,
                               p.geom,
@@ -1091,10 +1111,10 @@ PRINT(CORRECT_numPrims);
     const size_t endID     = (threadID+1)*numPrimitives/numThreads; 
     SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
 
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
+    float16 bounds_scene_min((float)pos_inf);
+    float16 bounds_scene_max((float)neg_inf);
+    float16 bounds_centroid_min((float)pos_inf);
+    float16 bounds_centroid_max((float)neg_inf);
 
     for (size_t i=startID;i<endID;i++)
       {
@@ -1123,12 +1143,12 @@ PRINT(CORRECT_numPrims);
 	assert(bounds.lower.y <= bounds.upper.y);
 	assert(bounds.lower.z <= bounds.upper.z);
 
-	const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	const mic_f bmax = broadcast4to16f(&bounds.upper);
+	const float16 bmin = broadcast4to16f(&bounds.lower); 
+	const float16 bmax = broadcast4to16f(&bounds.upper);
           
 	bounds_scene_min = min(bounds_scene_min,bmin);
 	bounds_scene_max = max(bounds_scene_max,bmax);
-	const mic_f centroid2 = bmin+bmax;
+	const float16 centroid2 = bmin+bmax;
 	bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	bounds_centroid_max = max(bounds_centroid_max,centroid2);
 
@@ -1168,6 +1188,8 @@ PRINT(CORRECT_numPrims);
 
 	  if (!fastUpdateMode) 
 	    {
+
+#if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(
 						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 						   [&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
@@ -1184,6 +1206,10 @@ PRINT(CORRECT_numPrims);
 
 						     const unsigned int patchIndex = base.size()+s.size();
 						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
+#else
+						     const unsigned int patchIndex = base.size()+s.size();
+                                                     subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
+#endif                                                     
 						   
 						     /* compute patch bounds */
 						     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
@@ -1193,7 +1219,10 @@ PRINT(CORRECT_numPrims);
 						     
 						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
 						     s.add(bounds);
+#if ENABLE_FEATURE_ADAPTIVE == 1            
 						   });
+#endif
+
 	    }
 	  else
 	    {
@@ -1231,117 +1260,6 @@ PRINT(CORRECT_numPrims);
   {
   }
 
-
-  /* FIXME: code is deprecated */
-  void BVH4iBuilderSubdivMesh::computePrimRefsSubdivMesh(const size_t threadID, const size_t numThreads) 
-  {
-    const size_t numTotalGroups = scene->size();
-
-
-    /* count total number of virtual objects */
-    const size_t numFaces  = numPrimitives;
-    const size_t startID   = (threadID+0)*numFaces/numThreads;
-    const size_t endID     = (threadID+1)*numFaces/numThreads; 
-    
-    PrimRef *__restrict__ const prims     = this->prims;
-
-    // === find first group containing startID ===
-    unsigned int g=0, numSkipped = 0;
-    for (; g<numTotalGroups; g++) {       
-      if (unlikely(scene->get(g) == nullptr)) continue;
-      if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
-      if (unlikely(!scene->get(g)->isEnabled())) continue;
-      const SubdivMesh* const geom = (SubdivMesh*) scene->get(g);
-      const size_t numPrims = geom->size();
-      if (numSkipped + numPrims > startID) break;
-      numSkipped += numPrims;
-    }
-
-    /* start with first group containing startID */
-    mic_f bounds_scene_min((float)pos_inf);
-    mic_f bounds_scene_max((float)neg_inf);
-    mic_f bounds_centroid_min((float)pos_inf);
-    mic_f bounds_centroid_max((float)neg_inf);
-
-    unsigned int num = 0;
-    unsigned int currentID = startID;
-    unsigned int offset = startID - numSkipped;
-
-    SubdivPatch1 *acc = (SubdivPatch1*)accel;
-
-    for (; g<numTotalGroups; g++) 
-      {
-	if (unlikely(scene->get(g) == nullptr)) continue;
-	if (unlikely((scene->get(g)->type != Geometry::SUBDIV_MESH ) /*&& (scene->get(g)->type != INSTANCES)*/)) continue;
-	if (unlikely(!scene->get(g)->isEnabled())) continue;
-
-	SubdivMesh *subdiv_mesh = (SubdivMesh *)scene->get(g);
-
-        size_t N = subdiv_mesh->size();
-        for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
-	  { 		
-	    assert( currentID < numFaces );
-
-	    prefetch<PFHINT_L2EX>(&prims[currentID]);
-
-	    CatmullClarkPatch3fa ipatch;
-            ipatch.init( subdiv_mesh->getHalfEdge(i),
-                         subdiv_mesh->getVertexBuffer() );
-	    
-            Vec2f uv[4];
-            uv[0] = Vec2f(0.0f,0.0f);
-            uv[1] = Vec2f(0.0f,1.0f);
-            uv[2] = Vec2f(1.0f,1.0f);
-            uv[3] = Vec2f(1.0f,0.0f);
-
-            float edge_level[4] = {
-              ipatch.ring[0].edge_level,
-              ipatch.ring[1].edge_level,
-              ipatch.ring[2].edge_level,
-              ipatch.ring[3].edge_level
-            };
-
-	    SubdivPatch1 tmp = SubdivPatch1(ipatch,
-					    g,
-					    i,
-					    subdiv_mesh,
-                                            uv,
-                                            edge_level);
-	    	    
-	    const BBox3fa bounds = getBounds(tmp,subdiv_mesh);
-	    
-	    tmp.store(&acc[currentID]);
-
-	    prefetch<PFHINT_L1EX>(&prims[currentID]);
-
-	    const mic_f bmin = broadcast4to16f(&bounds.lower); 
-	    const mic_f bmax = broadcast4to16f(&bounds.upper);
-          
-	    bounds_scene_min = min(bounds_scene_min,bmin);
-	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const mic_f centroid2 = bmin+bmax;
-	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-	    store4f(&prims[currentID].lower,bmin);
-	    store4f(&prims[currentID].upper,bmax);	
-	    prims[currentID].lower.a = currentID;
-	    prims[currentID].upper.a = 0;
-	  }
-        if (currentID == endID) break;
-        offset = 0;
-      }
-
-    /* update global bounds */
-    Centroid_Scene_AABB bounds;
-    
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
-    global_bounds.extend_atomic(bounds);    
-  }
 
 
   void BVH4iBuilderSubdivMesh::updateLeaves(const size_t threadIndex, const size_t threadCount)

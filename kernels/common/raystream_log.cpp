@@ -16,7 +16,7 @@
 
 #include "raystream_log.h"
 #include "scene.h"
-#include "sys/filename.h"
+#include "../../common/sys/filename.h"
 
 namespace embree
 {
@@ -84,7 +84,7 @@ namespace embree
 
     logRay16.type    = RAY_INTERSECT;
 #if defined(__MIC__)
-    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
+    logRay16.m_valid = *(int16*)valid_i != int16(0);
     logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */
@@ -106,7 +106,7 @@ namespace embree
 
     logRay16.type    = RAY_OCCLUDED;
 #if defined(__MIC__)
-    logRay16.m_valid = *(mic_i*)valid_i != mic_i(0);
+    logRay16.m_valid = *(int16*)valid_i != int16(0);
     logRay16.numRays = countbits(logRay16.m_valid);
 #endif
     /* ray16 before intersect */

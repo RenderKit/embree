@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "common/ray.h"
-#include "geometry/filter.h"
+#include "../../common/ray.h"
+#include "filter.h"
 
 /*! This intersector implements a modified version of the Moeller
  *  Trumbore intersector from the paper "Fast, Minimum Storage

@@ -184,8 +184,7 @@ namespace embree
   std::fstream fs;
 
   static const size_t ITER = 10;
-  //TaskSchedulerTBB* newscheduler = nullptr;
-
+ 
   struct box_benchmark
   {
     box_benchmark() 
@@ -658,7 +657,7 @@ namespace embree
       fflush(stdout);
 
       /* create task scheduler */
-      TaskSchedulerTBB* scheduler = new TaskSchedulerTBB;
+      Ref<TaskSchedulerTBB> scheduler = new TaskSchedulerTBB;
 
 #if 1
       struct Fib

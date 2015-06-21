@@ -27,6 +27,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <stdint.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// detect platform
@@ -142,6 +143,24 @@
     #endif
   #endif
 #endif
+#if defined(CONFIG_AVX512)
+  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+    #define __SSE3__
+    #define __SSSE3__
+    #define __SSE4_1__
+    #define __SSE4_2__
+    #if !defined(__AVX__)
+      #define __AVX__
+    #endif
+    #if !defined(__AVX2__)
+      #define __AVX2__
+    #endif
+    #if !defined(__AVX512__)
+      #define __AVX512__
+    #endif
+  #endif
+#endif
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -224,20 +243,12 @@
 /// Basic Types
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef          long long  int64;
-typedef unsigned long long uint64;
-typedef                int  int32;
-typedef unsigned       int uint32;
-typedef              short  int16;
-typedef unsigned     short uint16;
-typedef               char   int8;
-typedef unsigned      char  uint8;
-
-#ifdef __WIN32__
+/* windows does not have ssize_t */
+#if defined(__WIN32__)
 #if defined(__X86_64__)
-typedef int64 ssize_t;
+typedef int64_t ssize_t;
 #else
-typedef int32 ssize_t;
+typedef int32_t ssize_t;
 #endif
 #endif
 

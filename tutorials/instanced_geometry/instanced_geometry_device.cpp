@@ -20,7 +20,7 @@
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -132,7 +132,7 @@ unsigned int g_instance3 = -1;
 Vec3fa colors[4][4];
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
@@ -284,13 +284,13 @@ extern "C" void device_render (int* pixels,
 
   /* move instances */
   xfm.p = 2.0f*Vec3fa(+cos(t),0.0f,+sin(t));
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
+  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
   xfm.p = 2.0f*Vec3fa(-cos(t),0.0f,-sin(t));
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
+  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
   xfm.p = 2.0f*Vec3fa(-sin(t),0.0f,+cos(t));
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
+  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
   xfm.p = 2.0f*Vec3fa(+sin(t),0.0f,-cos(t));
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(float*)&xfm);
+  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
 
   /* update scene */
   rtcUpdate(g_scene,g_instance0);

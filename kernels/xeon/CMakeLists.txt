@@ -14,8 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
 SOURCE_GROUP("Source Files\\bvh4" "/bvh4/" )
 SOURCE_GROUP("Source Files\\bvh8" "/bvh8/" )
 SOURCE_GROUP("Source Files\\geometry" "/geometry/" )
@@ -228,6 +226,7 @@ IF (TARGET_AVX512)
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
+    bvh8/bvh8_intersector16_chunk.cpp
 )
   SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
   SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
@@ -236,11 +235,6 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
 
-IF (WIN32 AND ENABLE_ISPC_SUPPORT)
-  LIST(GET ISPC_TARGETS -1 MAX_ISA)
-  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS "/DEF:${CMAKE_CURRENT_SOURCE_DIR}/embree_${MAX_ISA}.def")
-ENDIF()
-
 IF (ENABLE_INSTALLER)
   SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
 ELSE()
@@ -248,11 +242,11 @@ ELSE()
 ENDIF()
 
 IF (WIN32)
-  INSTALL(TARGETS embree DESTINATION lib COMPONENT libraries)
+  INSTALL(TARGETS embree DESTINATION lib COMPONENT lib)
 ELSE()
-  INSTALL(TARGETS embree DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries NAMELINK_SKIP)
+  INSTALL(TARGETS embree DESTINATION lib LIBRARY DESTINATION lib COMPONENT lib NAMELINK_SKIP)
 ENDIF()
 
 IF (WIN32)
-    INSTALL(TARGETS embree DESTINATION bin COMPONENT tutorials)
+    INSTALL(TARGETS embree DESTINATION bin COMPONENT examples)
 ENDIF()

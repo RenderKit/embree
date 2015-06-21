@@ -38,7 +38,7 @@ renderPixelFunc renderPixel;
 Vec3fa old_p; 
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -160,6 +160,8 @@ unsigned int addCube (RTCScene scene_i)
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER, cube_vertex_crease_indices,0, sizeof(unsigned int));
   rtcSetBuffer(scene_i, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER,cube_vertex_crease_weights,0, sizeof(float));
 
+  rtcSetBuffer(scene_i, geomID, RTC_USER_VERTEX_BUFFER0, cube_colors, 0, sizeof(Vec3fa));
+
   float* level = (float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   for (size_t i=0; i<NUM_INDICES; i++) level[i] = EDGE_LEVEL;
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
@@ -214,10 +216,13 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
+
+  /* configure the size of the software cache used for subdivision geometry */
+  rtcSetParameter1i(RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -225,11 +230,11 @@ extern "C" void device_init (int8* cfg)
   /* create scene */
   g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);
 
-  /* add cube */
-  addCube(g_scene);
-
   /* add ground plane */
   addGroundPlane(g_scene);
+
+  /* add cube */
+  addCube(g_scene);
 
   /* commit changes to scene */
   rtcCommit (g_scene);
@@ -259,11 +264,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3fa diffuse = ray.geomID == 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
+    Vec3fa diffuse = ray.geomID != 0 ? Vec3fa(0.9f,0.6f,0.5f) : Vec3fa(0.8f,0.0f,0.0f);
 
-    /* interpolate color over geometry */
-    if (ray.geomID == 0) {
-      Vec3fa c; rtcInterpolate(g_scene,0,ray.primID,ray.u,ray.v,(const float*)&cube_colors,16,&c.x,nullptr,nullptr,3); diffuse = c;
+    Vec3fa Ng = ray.Ng;
+    if (ray.geomID > 0) {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ng = cross(dPdv,dPdu);
     }
 
     color = color + diffuse*0.5f; // FIXME: +=
@@ -285,7 +294,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
   }
   return color;
 }
@@ -333,7 +342,7 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& p)
 {
   /* recompute levels */
-  updateEdgeLevelBuffer(g_scene,0,p);
+  //updateEdgeLevelBuffer(g_scene,1,p);
     
   /* rebuild scene */
   rtcCommit (g_scene);

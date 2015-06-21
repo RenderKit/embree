@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "transport/transport_host.h"
-#include "transport_coi/common.h"
-#include "tutorial/obj_loader.h"
-#include "sys/string.h"
+#include "../../transport/transport_host.h"
+#include "../common.h"
+#include "../../../common/tutorial/obj_loader.h"
+#include "../../../../common/sys/string.h"
 
 #include <source/COIProcess_source.h>
 #include <source/COIEngine_source.h>
@@ -113,7 +113,7 @@ namespace embree
 
   }
 
-  void key_pressed(int32 key)
+  void key_pressed(int key)
   {
     KeyPressedData parms;
     parms.key = key;
@@ -496,7 +496,7 @@ namespace embree
 
   }
 
-  void resize(int32_t width, int32_t height)
+  void resize(int width, int height)
   {
     COIRESULT result;
     if (g_width == width && g_height == height)

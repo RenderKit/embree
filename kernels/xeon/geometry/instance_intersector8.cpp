@@ -20,14 +20,14 @@ namespace embree
 {
   namespace isa
   {
-    typedef AffineSpaceT<LinearSpace3<avx3f> > AffineSpace3faAVX;
+    typedef AffineSpaceT<LinearSpace3<Vec3f8> > AffineSpace3faAVX;
     
-    void FastInstanceIntersector8::intersect(avxb* valid, const Instance* instance, Ray8& ray, size_t item)
+    void FastInstanceIntersector8::intersect(bool8* valid, const Instance* instance, Ray8& ray, size_t item)
     {
-      const avx3f ray_org = ray.org;
-      const avx3f ray_dir = ray.dir;
-      const avxi ray_geomID = ray.geomID;
-      const avxi ray_instID = ray.instID;
+      const Vec3f8 ray_org = ray.org;
+      const Vec3f8 ray_dir = ray.dir;
+      const int8 ray_geomID = ray.geomID;
+      const int8 ray_instID = ray.instID;
       const AffineSpace3faAVX world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
@@ -36,16 +36,16 @@ namespace embree
       instance->object->intersect8(valid,(RTCRay8&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      avxb nohit = ray.geomID == avxi(-1);
+      bool8 nohit = ray.geomID == int8(-1);
       ray.geomID = select(nohit,ray_geomID,ray.geomID);
       ray.instID = select(nohit,ray_instID,ray.instID);
     }
     
-    void FastInstanceIntersector8::occluded (avxb* valid, const Instance* instance, Ray8& ray, size_t item)
+    void FastInstanceIntersector8::occluded (bool8* valid, const Instance* instance, Ray8& ray, size_t item)
     {
-      const avx3f ray_org = ray.org;
-      const avx3f ray_dir = ray.dir;
-      const avxi ray_geomID = ray.geomID;
+      const Vec3f8 ray_org = ray.org;
+      const Vec3f8 ray_dir = ray.dir;
+      const int8 ray_geomID = ray.geomID;
       const AffineSpace3faAVX world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);

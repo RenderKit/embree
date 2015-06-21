@@ -17,10 +17,34 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "bezier_patch.h"
 
 namespace embree
 {  
+  template<class T, class S> // FIXME: can be moved back to bezier_patch.h if bezier patch does no longer need Gregory for interpolation
+    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1 = one_minus_uu * v0   + uu * v1;
+    const T v1_1 = one_minus_uu * v1   + uu * v2;
+    const T v2_1 = one_minus_uu * v2   + uu * v3;      
+    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    return v0_3;
+  }
+  
+  template<class T, class S>
+    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1         = one_minus_uu * v0   + uu * v1;
+    const T v1_1         = one_minus_uu * v1   + uu * v2;
+    const T v2_1         = one_minus_uu * v2   + uu * v3;      
+    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    return S(3.0f)*(v1_2-v0_2);
+  }
+
   template<typename Vertex, typename Vertex_t = Vertex>
   class __aligned(64) GregoryPatchT
   {
@@ -30,7 +54,21 @@ namespace embree
   public:
     Vertex v[4][4];
     Vertex f[2][2];
-    
+
+    __forceinline GregoryPatchT() {}
+
+    __forceinline GregoryPatchT(const CatmullClarkPatch& patch) {
+      init(patch);
+    }
+
+    template<typename Loader>
+    __forceinline GregoryPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    {
+      CatmullClarkPatch ccpatch; 
+      ccpatch.init2(edge,loader); 
+      init(ccpatch);
+    }
+      
     __forceinline Vertex& p0() { return v[0][0]; }
     __forceinline Vertex& p1() { return v[0][3]; }
     __forceinline Vertex& p2() { return v[3][3]; }
@@ -89,10 +127,17 @@ namespace embree
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
     
-    void initFaceVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx, 
-                        const Vertex& e0_p_vtx, const Vertex& e1_m_vtx, const unsigned int face_valence_p1,
- 			const Vertex& e0_m_vtx,	const Vertex& e3_p_vtx,	const unsigned int face_valence_p3,
-			Vertex& f_p_vtx, Vertex& f_m_vtx)
+    void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
+			const size_t index, 
+			const Vertex& p_vtx, 
+                        const Vertex& e0_p_vtx, 
+			const Vertex& e1_m_vtx, 
+			const unsigned int face_valence_p1,
+ 			const Vertex& e0_m_vtx,	
+			const Vertex& e3_p_vtx,	
+			const unsigned int face_valence_p3,
+			Vertex& f_p_vtx, 
+			Vertex& f_m_vtx)
     {
       const unsigned int face_valence = irreg_patch.ring[index].face_valence;
       const unsigned int edge_valence = irreg_patch.ring[index].edge_valence;
@@ -139,10 +184,10 @@ namespace embree
       const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
       
       const Vertex r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
-      f_p_vtx =  1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);
-      
-      const Vertex r_e_m = 1.0f/3.0f * (e_i - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      const Vertex r_e_m = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
+
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);     
     }
 
     __noinline void init(const CatmullClarkPatch& patch)
@@ -176,18 +221,69 @@ namespace embree
       initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
       initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
+
     }
     
+    void computeGregoryPatchFacePoints(const unsigned int face_valence,
+				       const Vertex& r_e_p, 
+				       const Vertex& r_e_m, 					 
+				       const Vertex& p_vtx, 
+				       const Vertex& e0_p_vtx, 
+				       const Vertex& e1_m_vtx, 
+				       const unsigned int face_valence_p1,
+				       const Vertex& e0_m_vtx,	
+				       const Vertex& e3_p_vtx,	
+				       const unsigned int face_valence_p3,
+				       Vertex& f_p_vtx, 
+				       Vertex& f_m_vtx,
+                                       const float d = 3.0f)
+    {
+      const float c     = cosf(2.0*M_PI/(float)face_valence);
+      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
+      f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
+      f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);
+    }
+
     __noinline void init(const GeneralCatmullClarkPatch& patch)
     {
       assert(patch.size() == 4);
+#if 0
       CatmullClarkPatch qpatch; patch.init(qpatch);
       init(qpatch);
-    }
+#else
+      const float face_valence_p0 = patch.ring[0].face_valence;
+      const float face_valence_p1 = patch.ring[1].face_valence;
+      const float face_valence_p2 = patch.ring[2].face_valence;
+      const float face_valence_p3 = patch.ring[3].face_valence;
 
+      Vertex p0_r_p, p0_r_m;
+      patch.ring[0].computeGregoryPatchEdgePoints( p0(), e0_p(), e0_m(), p0_r_p, p0_r_m );
+
+      Vertex p1_r_p, p1_r_m;
+      patch.ring[1].computeGregoryPatchEdgePoints( p1(), e1_p(), e1_m(), p1_r_p, p1_r_m );
+      
+      Vertex p2_r_p, p2_r_m;
+      patch.ring[2].computeGregoryPatchEdgePoints( p2(), e2_p(), e2_m(), p2_r_p, p2_r_m );
+
+      Vertex p3_r_p, p3_r_m;
+      patch.ring[3].computeGregoryPatchEdgePoints( p3(), e3_p(), e3_m(), p3_r_p, p3_r_m );
+
+      computeGregoryPatchFacePoints(face_valence_p0, p0_r_p, p0_r_m, p0(), e0_p(), e1_m(), face_valence_p1, e0_m(), e3_p(), face_valence_p3, f0_p(), f0_m() );
+      computeGregoryPatchFacePoints(face_valence_p1, p1_r_p, p1_r_m, p1(), e1_p(), e2_m(), face_valence_p2, e1_m(), e0_p(), face_valence_p0, f1_p(), f1_m() );
+      computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e3_m(), face_valence_p3, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m() );
+      computeGregoryPatchFacePoints(face_valence_p3, p3_r_p, p3_r_m, p3(), e3_p(), e0_m(), face_valence_p0, e3_m(), e2_p(), face_valence_p3, f3_p(), f3_m() );
+
+#endif
+    }
+   
+    
     __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
     {
-      assert( patch.isRegular() );
+      assert( patch.isRegular1() );
       init( patch );
       f0_p() = (f0_p() + f0_m()) * 0.5f;
       f1_p() = (f1_p() + f1_m()) * 0.5f;
@@ -243,7 +339,7 @@ namespace embree
     {
       if (unlikely(uu == 0.0f || uu == 1.0f || vv == 0.0f || vv == 1.0f)) 
       {
-	matrix_11 = matrix[1][1]; // FIXME: this is wrong, should select between f0_p and f0_m
+	matrix_11 = matrix[1][1];
 	matrix_12 = matrix[1][2];
 	matrix_22 = matrix[2][2];
 	matrix_21 = matrix[2][1];	 
@@ -366,12 +462,19 @@ namespace embree
     __forceinline Vertex tangentV( const float uu, const float vv) const {
       return tangentV(v,f,uu,vv);
     }
+    
+    __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
+    {
+      if (P)    *P    = eval(u,v); 
+      if (dPdu) *dPdu = tangentU(u,v)*dscale; 
+      if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+    }
 
     template<class M, class T>
       static __forceinline Vec3<T> eval_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
+
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
       const Vec3<T> f1_p = Vec3<T>(matrix[1][2].x,matrix[1][2].y,matrix[1][2].z);
       const Vec3<T> f2_p = Vec3<T>(matrix[2][2].x,matrix[2][2].y,matrix[2][2].z);
@@ -458,8 +561,7 @@ namespace embree
 	(B0_u * matrix[1][0].z + B1_u * F0.z           + B2_u * F1.z           + B3_u * matrix[1][3].z) * B1_v + 
 	(B0_u * matrix[2][0].z + B1_u * F3.z           + B2_u * F2.z           + B3_u * matrix[2][3].z) * B2_v + 
 	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
-      
-      
+            
       return Vec3<T>(x,y,z);
     }
     
@@ -487,15 +589,15 @@ namespace embree
       const Vec3<T> f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
 
 #if 1
-      const M m_border0 = (uu == 0.0f) & (vv == 0.0f); // FIXME: why is eval different?
-      const M m_border1 = (uu == 1.0f) & (vv == 0.0f);
-      const M m_border2 = (uu == 1.0f) & (vv == 1.0f);
-      const M m_border3 = (uu == 0.0f) & (vv == 1.0f);
+      const M m_corner0 = (uu == 0.0f) & (vv == 0.0f);
+      const M m_corner1 = (uu == 1.0f) & (vv == 0.0f);
+      const M m_corner2 = (uu == 1.0f) & (vv == 1.0f);
+      const M m_corner3 = (uu == 0.0f) & (vv == 1.0f);
       
-      const Vec3<T> matrix_11( select(m_border0,f0_p.x,f0_i.x), select(m_border0,f0_p.y,f0_i.y), select(m_border0,f0_p.z,f0_i.z) );
-      const Vec3<T> matrix_12( select(m_border1,f1_p.x,f1_i.x), select(m_border1,f1_p.y,f1_i.y), select(m_border1,f1_p.z,f1_i.z) );
-      const Vec3<T> matrix_22( select(m_border2,f2_p.x,f2_i.x), select(m_border2,f2_p.y,f2_i.y), select(m_border2,f2_p.z,f2_i.z) );
-      const Vec3<T> matrix_21( select(m_border3,f3_p.x,f3_i.x), select(m_border3,f3_p.y,f3_i.y), select(m_border3,f3_p.z,f3_i.z) );
+      const Vec3<T> matrix_11( select(m_corner0,f0_p.x,f0_i.x), select(m_corner0,f0_p.y,f0_i.y), select(m_corner0,f0_p.z,f0_i.z) );
+      const Vec3<T> matrix_12( select(m_corner1,f1_p.x,f1_i.x), select(m_corner1,f1_p.y,f1_i.y), select(m_corner1,f1_p.z,f1_i.z) );
+      const Vec3<T> matrix_22( select(m_corner2,f2_p.x,f2_i.x), select(m_corner2,f2_p.y,f2_i.y), select(m_corner2,f2_p.z,f2_i.z) );
+      const Vec3<T> matrix_21( select(m_corner3,f3_p.x,f3_i.x), select(m_corner3,f3_p.y,f3_i.y), select(m_corner3,f3_p.z,f3_i.z) );
 #else
       const Vec3<T> matrix_11( select(m_border,f0_p.x,f0_i.x), select(m_border,f0_p.y,f0_i.y), select(m_border,f0_p.z,f0_i.z) );
       const Vec3<T> matrix_12( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );

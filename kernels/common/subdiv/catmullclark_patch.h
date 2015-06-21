@@ -28,6 +28,11 @@ namespace embree
 
     __forceinline CatmullClarkPatchT () {}
 
+  template<typename Loader>
+  __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+    init2(first_half_edge,loader);
+  }
+
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       init2(first_half_edge,
@@ -82,8 +87,11 @@ namespace embree
     }
 
     /*! returns true if the patch is a B-spline patch */
-    __forceinline bool isRegular() const {
-      return ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    __forceinline bool isRegular1() const {
+      return ring[0].isRegular1() && ring[1].isRegular1() && ring[2].isRegular1() && ring[3].isRegular1();
+    }
+  __forceinline bool isRegular2() const {
+      return ring[0].isRegular2() && ring[1].isRegular2() && ring[2].isRegular2() && ring[3].isRegular2();
     }
 
     __forceinline bool hasBorder() const {
@@ -95,17 +103,21 @@ namespace embree
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
-    /*! returns true if the patch is a B-spline patch or final Quad */
-    __forceinline bool isRegularOrFinal2(const size_t depth) const {
-      return ring[0].isRegularOrFinal2(depth) && ring[1].isRegularOrFinal2(depth) && ring[2].isRegularOrFinal2(depth) && ring[3].isRegularOrFinal2(depth);
-    }
-
     /*! returns true of the patch is a Gregory patch */
     __forceinline bool isGregoryOrFinal(const size_t depth) const {
       const bool ring0 = ring[0].isGregoryOrFinal(depth);
       const bool ring1 = ring[1].isGregoryOrFinal(depth);
       const bool ring2 = ring[2].isGregoryOrFinal(depth);
       const bool ring3 = ring[3].isGregoryOrFinal(depth);
+      return ring0 && ring1 && ring2 && ring3;
+    }
+
+    /*! returns true of the patch is a Gregory patch */
+    __forceinline bool isGregory() const {
+      const bool ring0 = ring[0].isGregory();
+      const bool ring1 = ring[1].isGregory();
+      const bool ring2 = ring[2].isGregory();
+      const bool ring3 = ring[3].isGregory();
       return ring0 && ring1 && ring2 && ring3;
     }
 
@@ -403,6 +415,11 @@ namespace embree
     __forceinline GeneralCatmullClarkPatchT () 
       : N(0) {}
 
+  template<typename Loader>
+  __forceinline GeneralCatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+    init2(first_half_edge,loader);
+  }
+
     __forceinline size_t size() const { 
       return N; 
     }
@@ -410,6 +427,12 @@ namespace embree
     __forceinline bool isQuadPatch() const {
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
+
+    __forceinline bool isRegular() const 
+    {
+      return (N == 4) && ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
+    }
+
 
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {

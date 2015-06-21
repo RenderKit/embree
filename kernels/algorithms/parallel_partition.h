@@ -16,10 +16,7 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-//#include "tasking/taskscheduler.h"
+#include "../common/default.h"
 
 #define DBG_PART(x) 
 #define DBG_PART2(x) 
@@ -117,20 +114,20 @@ namespace embree
       __forceinline bool needBothBlocks(const size_t mode) { return needLeftBlock(mode) && needRightBlock(mode); }
       
       /* get left/right atomic block id */
-      __forceinline int64 getBlockID(const size_t mode)
+      __forceinline int64_t getBlockID(const size_t mode)
       {
-        int64 v = 0;
+        int64_t v = 0;
         if (needLeftBlock(mode))  v |= 1;
-        if (needRightBlock(mode)) v |= (int64)1 << 32;
-        int64 val = blockID.add(v);
+        if (needRightBlock(mode)) v |= (int64_t)1 << 32;
+        int64_t val = blockID.add(v);
         return val;
       }
 
       /* get left index from block id */
-      __forceinline int32 getLeftBlockIndex(const int64 id) { return id & 0xffffffff; }
+      __forceinline int32_t getLeftBlockIndex(const int64_t id) { return id & 0xffffffff; }
 
       /* get right index from block id */
-      __forceinline int32 getRightBlockIndex(const int64 id) { return id >> 32; }
+      __forceinline int32_t getRightBlockIndex(const int64_t id) { return id >> 32; }
  
      /* get left array index from block index */
       __forceinline void getLeftArrayIndex(const size_t blockIndex, size_t &begin, size_t &end) 
@@ -147,7 +144,7 @@ namespace embree
       }
 
       /* is block id valid? */
-      __forceinline bool validBlockID(const int64 id)
+      __forceinline bool validBlockID(const int64_t id)
       {
         const size_t numLeftBlocks  = getLeftBlockIndex(id) + 1;
         const size_t numRightBlocks = getRightBlockIndex(id) + 1;
@@ -345,7 +342,7 @@ namespace embree
                      PRINT("NEXT ITERATION");
                      );
 
-            int64 id = getBlockID(mode);
+            int64_t id = getBlockID(mode);
 
             DBG_PART(
                      PRINT(id);

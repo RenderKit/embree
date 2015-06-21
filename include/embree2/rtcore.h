@@ -50,6 +50,12 @@ typedef int ssize_t;
   #define RTCORE_DEPRECATED
 #endif
 
+/*! Embree API version */
+#define RTCORE_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
+#define RTCORE_VERSION_MINOR @EMBREE_VERSION_MINOR@
+#define RTCORE_VERSION_PATCH @EMBREE_VERSION_PATCH@
+#define RTCORE_VERSION       @EMBREE_VERSION_NUMBER@
+
 #include "rtcore_scene.h"
 #include "rtcore_geometry.h"
 #include "rtcore_geometry_user.h"
@@ -88,6 +94,19 @@ RTCORE_API void rtcInit(const char* cfg = NULL);
   terminating. It is safe to call rtcInit again after an rtcExit
   call. */
 RTCORE_API void rtcExit();
+
+/*! \brief Parameters that can get configured using the rtcSetParameter functions. */
+enum RTCParameter {
+  RTC_SOFTWARE_CACHE_SIZE = 0      /*! Configures the software cache size (used
+                                     to cache subdivision surfaces for
+                                     instance). The size is specified as an
+                                     integer number of bytes. The software
+                                     cache cannot be configured during
+                                     rendering. */
+};
+
+/*! \brief Configures some parameters. */
+RTCORE_API void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {

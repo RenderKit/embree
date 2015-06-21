@@ -16,12 +16,11 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/ref.h"
-#include "math/math.h"
-#include "math/vec3.h"
-//#include "math/color.h"
-#include "math/affinespace.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/ref.h"
+#include "../../../common/math/math.h"
+#include "../../../common/math/vec3.h"
+#include "../../../common/math/affinespace.h"
 
 namespace embree
 {
@@ -84,8 +83,8 @@ namespace embree
       Vec3fa view = normalize(xfmVector(world2camera(),to - from));
       float theta = atan2f(view.x, view.z); theta += dtheta;
       float phi   = asinf (view.y);         phi   += dphi;
-      assert(isfinite(theta));
-      assert(isfinite(phi));
+      assert(std::isfinite(theta));
+      assert(std::isfinite(phi));
       float x = cosf(phi)*sinf(theta);
       float y = sinf(phi);
       float z = cosf(phi)*cosf(theta);

@@ -15,20 +15,19 @@
 // ======================================================================== //
 
 #include "bvh4.h"
-#include "common/profile.h"
 
-#include "builders/primrefgen.h"
-#include "builders/bvh_builder_sah.h"
+#include "../builders/primrefgen.h"
+#include "../builders/bvh_builder_sah.h"
 
-#include "algorithms/parallel_for_for.h"
-#include "algorithms/parallel_for_for_prefix_sum.h"
+#include "../../algorithms/parallel_for_for.h"
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
-#include "common/subdiv/feature_adaptive_gregory.h"
-#include "common/subdiv/feature_adaptive_bspline.h"
+#include "../../common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/feature_adaptive_bspline.h"
 
-#include "geometry/grid.h"
-#include "geometry/subdivpatch1.h"
-#include "geometry/subdivpatch1cached.h"
+#include "../geometry/grid.h"
+#include "../geometry/subdivpatch1.h"
+#include "../geometry/subdivpatch1cached.h"
 
 namespace embree
 {
@@ -72,8 +71,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -82,11 +88,6 @@ namespace embree
         bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH");
-
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene);
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
 
         prims.resize(numPrimitives);
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -124,8 +125,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -138,12 +146,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene);
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -261,8 +265,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -275,12 +286,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene);
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -384,8 +391,15 @@ namespace embree
 
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -398,12 +412,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
-        Scene::Iterator<SubdivMesh> iter(scene);
-        for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-          if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-        
         /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
@@ -532,17 +542,17 @@ namespace embree
       assert(patch.grid_size_simd_blocks >= 1);
 
 #if !defined(__AVX__)      
-      ssef bounds_min_x = pos_inf;
-      ssef bounds_min_y = pos_inf;
-      ssef bounds_min_z = pos_inf;
-      ssef bounds_max_x = neg_inf;
-      ssef bounds_max_y = neg_inf;
-      ssef bounds_max_z = neg_inf;
+      float4 bounds_min_x = pos_inf;
+      float4 bounds_min_y = pos_inf;
+      float4 bounds_min_z = pos_inf;
+      float4 bounds_max_x = neg_inf;
+      float4 bounds_max_y = neg_inf;
+      float4 bounds_max_z = neg_inf;
       for (size_t i = 0; i<patch.grid_size_simd_blocks * 2; i++)
         {
-          ssef x = load4f(&grid_x[i * 4]);
-          ssef y = load4f(&grid_y[i * 4]);
-          ssef z = load4f(&grid_z[i * 4]);
+          float4 x = load4f(&grid_x[i * 4]);
+          float4 y = load4f(&grid_y[i * 4]);
+          float4 z = load4f(&grid_z[i * 4]);
 	  bounds_min_x = min(bounds_min_x,x);
 	  bounds_min_y = min(bounds_min_y,y);
 	  bounds_min_z = min(bounds_min_z,z);
@@ -559,17 +569,17 @@ namespace embree
       b.upper.y = reduce_max(bounds_max_y);
       b.upper.z = reduce_max(bounds_max_z);
 #else
-      avxf bounds_min_x = pos_inf;
-      avxf bounds_min_y = pos_inf;
-      avxf bounds_min_z = pos_inf;
-      avxf bounds_max_x = neg_inf;
-      avxf bounds_max_y = neg_inf;
-      avxf bounds_max_z = neg_inf;
+      float8 bounds_min_x = pos_inf;
+      float8 bounds_min_y = pos_inf;
+      float8 bounds_min_z = pos_inf;
+      float8 bounds_max_x = neg_inf;
+      float8 bounds_max_y = neg_inf;
+      float8 bounds_max_z = neg_inf;
       for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
         {
-          avxf x = load8f(&grid_x[i * 8]);
-          avxf y = load8f(&grid_y[i * 8]);
-          avxf z = load8f(&grid_z[i * 8]);
+          float8 x = load8f(&grid_x[i * 8]);
+          float8 y = load8f(&grid_y[i * 8]);
+          float8 z = load8f(&grid_z[i * 8]);
 	  bounds_min_x = min(bounds_min_x,x);
 	  bounds_min_y = min(bounds_min_y,y);
 	  bounds_min_z = min(bounds_min_z,z);
@@ -737,9 +747,9 @@ namespace embree
         const BBox3fa bounds3 = refit(node->child(3));
         
         /* AOS to SOA transform */
-        BBox<sse3f> bounds;
-        transpose((ssef&)bounds0.lower,(ssef&)bounds1.lower,(ssef&)bounds2.lower,(ssef&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-        transpose((ssef&)bounds0.upper,(ssef&)bounds1.upper,(ssef&)bounds2.upper,(ssef&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+        BBox<Vec3f4> bounds;
+        transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+        transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
         
         /* set new bounds */
         node->lower_x = bounds.lower.x;
@@ -762,8 +772,15 @@ namespace embree
       
       void build(size_t, size_t) 
       {
+        /* initialize all half edge structures */
+        size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
         /* skip build for empty scene */
-	size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
@@ -782,10 +799,8 @@ namespace embree
         /* initialize all half edge structures */
         Scene::Iterator<SubdivMesh> iter(scene);
         for (size_t i=0; i<iter.size(); i++)
-          if (iter[i]) 
-          {
-            iter[i]->initializeHalfEdgeStructures();
-            fastUpdateMode_numFaces += iter[i]->size();
+          if (iter[i]) {
+            fastUpdateMode_numFaces += iter[i]->size(); // FIXME: same as numPrimitives above?
             if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
           }
         
@@ -914,6 +929,7 @@ namespace embree
 	  else
             {
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+              const size_t numEdges = first_half_edge->numEdges();
 
 	      float edge_level[4] = {
 		first_half_edge[0].edge_level,
@@ -921,7 +937,12 @@ namespace embree
 		first_half_edge[2].edge_level,
 		first_half_edge[3].edge_level
 	      };
-              
+
+              /* updating triangular bezier patch */
+              if (numEdges == 3) {
+                edge_level[3] = first_half_edge[1].edge_level;
+              }
+
 	      const unsigned int patchIndex = base.size()+s.size();
 	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
 	      subdiv_patches[patchIndex].resetRootRef();

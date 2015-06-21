@@ -17,11 +17,11 @@
 #pragma once
 
 #include "primitive.h"
-#include "common/scene_subdiv_mesh.h"
-#include "common/subdiv/bspline_patch.h"
-#include "common/subdiv/gregory_patch.h"
-#include "common/subdiv/tessellation.h"
-#include "common/subdiv/subdivpatch1base.h"
+#include "../../common/scene_subdiv_mesh.h"
+#include "../../common/subdiv/bspline_patch.h"
+#include "../../common/subdiv/gregory_patch.h"
+#include "../../common/subdiv/tessellation.h"
+#include "../../common/subdiv/subdivpatch1base.h"
 #include "bicubic_bezier_patch.h"
 
 namespace embree
@@ -39,6 +39,10 @@ namespace embree
     { 
     }
 
+    SubdivPatch1 (const unsigned int gID,
+                  const unsigned int pID,
+                  const SubdivMesh *const mesh) : SubdivPatch1Base(gID,pID,mesh) {}
+    
   };
 
 };

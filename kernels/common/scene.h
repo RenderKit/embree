@@ -40,6 +40,7 @@ namespace embree
   __forceinline bool isCoherent  (RTCSceneFlags flags) { return flags & RTC_SCENE_COHERENT; }
   __forceinline bool isIncoherent(RTCSceneFlags flags) { return flags & RTC_SCENE_INCOHERENT; }
   __forceinline bool isHighQuality(RTCSceneFlags flags) { return flags & RTC_SCENE_HIGH_QUALITY; }
+  __forceinline bool isInterpolatable(RTCAlgorithmFlags flags) { return flags & RTC_INTERPOLATE; }
 
   /*! Base class all scenes are derived from */
   class Scene : public Accel
@@ -53,14 +54,14 @@ namespace embree
       public:
       Iterator ()  {}
       
-      Iterator (Scene* scene) 
-      : scene(scene) {}
+      Iterator (Scene* scene, bool all = false) 
+      : scene(scene), all(all) {}
       
       __forceinline Ty* at(const size_t i)
       {
         Geometry* geom = scene->geometries[i];
         if (geom == nullptr) return nullptr;
-        if (!geom->isEnabled()) return nullptr;
+        if (!all && !geom->isEnabled()) return nullptr;
         if (geom->getType() != Ty::geom_type) return nullptr;
         if (geom->numTimeSteps != timeSteps) return nullptr;
         return (Ty*) geom;
@@ -91,6 +92,7 @@ namespace embree
       
     private:
       Scene* scene;
+      bool all;
     };
 
   public:
@@ -153,12 +155,8 @@ namespace embree
     /* determines if scene is modified */
     __forceinline bool isModified() const { return modified; }
 
- /* sets modified flag */
-    __forceinline void setModified(bool f = true) 
-    { 
-#if defined(TASKING_TBB_INTERNAL)
-      if (f) scheduler->reset();
-#endif
+    /* sets modified flag */
+    __forceinline void setModified(bool f = true) { 
       modified = f; 
     }
 
@@ -227,6 +225,7 @@ namespace embree
     __forceinline bool isCoherent() const { return embree::isCoherent(flags); }
     __forceinline bool isRobust() const { return embree::isRobust(flags); }
     __forceinline bool isHighQuality() const { return embree::isHighQuality(flags); }
+    __forceinline bool isInterpolatable() const { return embree::isInterpolatable(aflags); }
 
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
@@ -246,6 +245,7 @@ namespace embree
     bool needBezierIndices;
     bool needBezierVertices;
     bool needSubdivIndices;
+    bool needSubdivVertices;
     bool is_build;
     MutexSys buildMutex;
     AtomicMutex geometriesMutex;
@@ -255,7 +255,8 @@ namespace embree
 #if defined(TASKING_LOCKSTEP)
     __aligned(64) LockStepTaskScheduler lockstep_scheduler;
 #elif defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB* volatile scheduler;
+    MutexSys schedulerMutex;
+    Ref<TaskSchedulerTBB> scheduler;
 #else
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;

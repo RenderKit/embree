@@ -26,9 +26,9 @@ namespace embree
   struct TrianglePairs8
   {
 #if defined __AVX__
-    typedef avxb simdb;
-    typedef avxf simdf;
-    typedef avxi simdi;
+    typedef bool8 simdb;
+    typedef float8 simdf;
+    typedef int8 simdi;
 #endif
 
   public:
@@ -55,11 +55,11 @@ public:
     __forceinline TrianglePairs8 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline TrianglePairs8 (const avx3f& v0, const avx3f& v1, const avx3f& v2, const avxi& geomIDs, const avxi& primIDs)
+    __forceinline TrianglePairs8 (const Vec3f8& v0, const Vec3f8& v1, const Vec3f8& v2, const int8& geomIDs, const int8& primIDs)
       : v0(v0), e1(v0-v1), e2(v2-v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline avxb valid() const { return geomIDs != avxi(-1); }
+    __forceinline bool8 valid() const { return geomIDs != int8(-1); }
 
     /*! Returns if the specified triangle is valid. */
     __forceinline bool valid(const size_t i) const { assert(i<8); return geomIDs[i] != -1; }
@@ -68,28 +68,28 @@ public:
     __forceinline unsigned int size() const { return __bsf(~movemask(valid())); }
 
     /*! returns the geometry IDs */
-    __forceinline avxi geomID() const { return geomIDs; }
+    __forceinline int8 geomID() const { return geomIDs; }
     __forceinline int  geomID(const size_t i) const { assert(i<8); return geomIDs[i]; }
 
     /*! returns the primitive IDs */
-    __forceinline avxi primID() const { return primIDs; }
+    __forceinline int8 primID() const { return primIDs; }
     __forceinline int  primID(const size_t i) const { assert(i<8); return primIDs[i]; }
 
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      avx3f p0 = v0;
-      avx3f p1 = v0-e1;
-      avx3f p2 = v0+e2;
-      avx3f lower = min(p0,p1,p2);
-      avx3f upper = max(p0,p1,p2);
-      avxb mask = valid();
-      lower.x = select(mask,lower.x,avxf(pos_inf));
-      lower.y = select(mask,lower.y,avxf(pos_inf));
-      lower.z = select(mask,lower.z,avxf(pos_inf));
-      upper.x = select(mask,upper.x,avxf(neg_inf));
-      upper.y = select(mask,upper.y,avxf(neg_inf));
-      upper.z = select(mask,upper.z,avxf(neg_inf));
+      Vec3f8 p0 = v0;
+      Vec3f8 p1 = v0-e1;
+      Vec3f8 p2 = v0+e2;
+      Vec3f8 lower = min(p0,p1,p2);
+      Vec3f8 upper = max(p0,p1,p2);
+      bool8 mask = valid();
+      lower.x = select(mask,lower.x,float8(pos_inf));
+      lower.y = select(mask,lower.y,float8(pos_inf));
+      lower.z = select(mask,lower.z,float8(pos_inf));
+      upper.x = select(mask,upper.x,float8(neg_inf));
+      upper.y = select(mask,upper.y,float8(neg_inf));
+      upper.z = select(mask,upper.z,float8(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
                      Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
@@ -113,8 +113,8 @@ public:
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      avxi vgeomID = -1, vprimID = -1;
-      avx3f v0 = zero, v1 = zero, v2 = zero;
+      int8 vgeomID = -1, vprimID = -1;
+      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && prims; i++, prims++)
       {
@@ -138,8 +138,8 @@ public:
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      avxi vgeomID = -1, vprimID = -1;
-      avx3f v0 = zero, v1 = zero, v2 = zero;
+      int8 vgeomID = -1, vprimID = -1;
+      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && begin<end; i++, begin++)
       {
@@ -164,8 +164,8 @@ public:
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      avxi vgeomID = -1, vprimID = -1;
-      avx3f v0 = zero, v1 = zero, v2 = zero;
+      int8 vgeomID = -1, vprimID = -1;
+      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8; i++)
       {
@@ -188,11 +188,11 @@ public:
     }
 
   public:
-    avx3f v0;       //!< Base vertex of the triangles
-    avx3f e1;       //!< 1st edge of the triangles (v0-v1)
-    avx3f e2;       //!< 2nd edge of the triangles (v2-v0)
-    avxi geomIDs;   //!< geometry ID
-    avxi primIDs;   //!< primitive ID
+    Vec3f8 v0;       //!< Base vertex of the triangles
+    Vec3f8 e1;       //!< 1st edge of the triangles (v0-v1)
+    Vec3f8 e2;       //!< 2nd edge of the triangles (v2-v0)
+    int8 geomIDs;   //!< geometry ID
+    int8 primIDs;   //!< primitive ID
 #endif
   };
 }

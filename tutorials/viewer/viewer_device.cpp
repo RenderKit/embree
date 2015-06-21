@@ -28,8 +28,8 @@ bool g_subdiv_mode = false;
 
 #define SPP 1
 
-#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 2
+//#define FORCE_FIXED_EDGE_TESSELLATION
+#define FIXED_EDGE_TESSELLATION_VALUE 4
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -92,7 +92,7 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -116,7 +116,7 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);
@@ -242,7 +242,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   }
 #else
 
-  foreach_unique (geomID in ray.geomID) 
+  int geomID = ray.geomID;  
   {
     if (geomID_to_type[ray.geomID] == 0)
       {

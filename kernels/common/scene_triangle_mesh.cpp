@@ -47,6 +47,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
   }
 
   void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -64,20 +65,24 @@ namespace embree
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
-
-      /* test if array is properly padded */
-      if (vertices[0].size()) 
-        volatile int w = *((int*)vertices[0].getPtr(vertices[0].size()-1)+3); // FIXME: is failing hard avoidable?
-
+      vertices[0].checkPadding16();
       break;
     case RTC_VERTEX_BUFFER1: 
       vertices[1].set(ptr,offset,stride); 
-
-      /* test if array is properly padded */
-      if (vertices[1].size()) 
-        volatile int w = *((int*)vertices[1].getPtr(vertices[1].size()-1)+3); // FIXME: is failing hard avoidable?
-      
+      vertices[1].checkPadding16();
       break;
+
+    case RTC_USER_VERTEX_BUFFER0: 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1: 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
+      break;
+
     default: 
       throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type");
     }
@@ -111,8 +116,8 @@ namespace embree
 
   void TriangleMesh::immutable () 
   {
-    bool freeTriangles = !parent->needTriangleIndices;
-    bool freeVertices  = !parent->needTriangleVertices;
+    const bool freeTriangles = !parent->needTriangleIndices;
+    const bool freeVertices  = !parent->needTriangleVertices;
     if (freeTriangles) triangles.free(); 
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
@@ -143,39 +148,70 @@ namespace embree
     return true;
   }
 
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, const float* src_i, size_t byteStride, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
 
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[buffer&0xFFFF]->getPtr();
+      stride = userbuffers[buffer&0xFFFF]->getStride();
+    } else {
+      src    = vertices[buffer&0xFFFF].getPtr();
+      stride = vertices[buffer&0xFFFF].getStride();
+    }
+
 #if !defined(__MIC__) // FIXME: not working on MIC yet
-    const char* src = (const char*) src_i;
+
     for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
     {
+      size_t ofs = i*sizeof(float);
       if (i+4 > numFloats) 
       {
         const size_t n = numFloats-i;
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride],n);
-        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride],n);
-        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride],n);
-        if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2,n);
-        if (dPdu) ssef::storeu(dPdu+i,p1-p0,n);
-        if (dPdv) ssef::storeu(dPdv+i,p2-p0,n);
+        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs],n);
+        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs],n);
+        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs],n);
+        if (P   ) float4::storeu(P+i,w*p0 + u*p1 + v*p2,n);
+        if (dPdu) float4::storeu(dPdu+i,p1-p0,n);
+        if (dPdv) float4::storeu(dPdv+i,p2-p0,n);
       } else {
         const float w = 1.0f-u-v;
         const Triangle& tri = triangle(primID);
-        const ssef p0 = ssef::loadu((float*)&src[tri.v[0]*byteStride]);
-        const ssef p1 = ssef::loadu((float*)&src[tri.v[1]*byteStride]);
-        const ssef p2 = ssef::loadu((float*)&src[tri.v[2]*byteStride]);
-        if (P   ) ssef::storeu(P+i,w*p0 + u*p1 + v*p2);
-        if (dPdu) ssef::storeu(dPdu+i,p1-p0);
-        if (dPdv) ssef::storeu(dPdv+i,p2-p0);
+        const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs]);
+        const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs]);
+        const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs]);
+        if (P   ) float4::storeu(P+i,w*p0 + u*p1 + v*p2);
+        if (dPdu) float4::storeu(dPdu+i,p1-p0);
+        if (dPdv) float4::storeu(dPdv+i,p2-p0);
       }
     }
+
+#else
+
+    for (size_t i=0; i<numFloats; i+=16) 
+    {
+      size_t ofs = i*sizeof(float);
+      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      const float w = 1.0f-u-v;
+      const Triangle& tri = triangle(primID);
+      const float16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
+      const float16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
+      const float16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
+      if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
+      if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);
+    }
+
 #endif
   }
 

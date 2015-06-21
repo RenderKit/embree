@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <SubdivisionMesh>
+
+      <positions>
+        -1.0 -1.0 0.0
+         0.0 -1.0 0.0 
+        +1.0 -1.0 0.0
+        +2.0 -1.0 0.0
+
+        -1.0  0.0 0.0
+         0.0  0.0 0.0
+        +1.0  0.0 0.0
+        +2.0  0.0 0.0
+
+        -1.0 +1.0 0.0
+         0.0 +1.0 0.0
+        +1.0 +1.0 0.0
+        +2.0 +1.0 0.0
+
+        -1.0 +2.0 0.0
+         0.0 +2.0 0.0
+        +1.0 +2.0 0.0
+        +2.0 +2.0 0.0
+
+      </positions>
+
+      <position_indices>
+        0 1 5 4
+        1 2 6 5
+        2 3 7 6
+        4 5 9 8 
+        6 7 11 10
+        8 9 13 12
+        9 10 14 13
+        10 11 15 14
+      </position_indices>
+
+      <faces>
+        4 4 4 4 4 4 4 4
+      </faces>
+
+      <vertex_creases>
+        0 3 12 15
+        5 6 9 10 
+      </vertex_creases>
+
+      <vertex_crease_weights>
+        +inf +inf +inf +inf
+        +inf +inf +inf +inf
+      </vertex_crease_weights>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+
+    </SubdivisionMesh>
+  </Group>
+</scene>

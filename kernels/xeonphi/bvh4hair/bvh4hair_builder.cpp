@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "bvh4hair/bvh4hair_builder.h"
-#include "geometry/bezier1i.h"
-#include "bvh4hair/bvh4hair_statistics.h"
-#include "algorithms/parallel_partition.h"
+#include "../geometry/bezier1i.h"
+#include "../bvh4hair/bvh4hair_statistics.h"
+#include "../../algorithms/parallel_partition.h"
 
 namespace embree
 {
@@ -140,9 +140,9 @@ namespace embree
         size_t N = geom->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
-	  const mic2f b2 = geom->bounds_mic2f(i);
-	  const mic_f bmin = b2.x;
-	  const mic_f bmax = b2.y;
+	  const Vec2f16 b2 = geom->bounds_Vec2f16(i);
+	  const float16 bmin = b2.x;
+	  const float16 bmax = b2.y;
 	  bounds_cs.extend(bmin,bmax);	
           
 	  bptr[currentID].p = geom->fristVertexPtr(i); // FIXME: this does not support strides!!
@@ -472,9 +472,9 @@ namespace embree
 
     const BinMapping mapping(current.bounds);
 
-    mic_f leftArea[3];
-    mic_f rightArea[3];
-    mic_i leftNum[3];
+    float16 leftArea[3];
+    float16 rightArea[3];
+    int16 leftNum[3];
 
     fastbin<Bezier1i>(prims,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
@@ -962,12 +962,12 @@ namespace embree
     const float voxelArea = area(current.bounds.geometry);     
     const BinMapping mapping(current.bounds);
 
-    mic_f leftArea[3];
-    mic_f rightArea[3];
-    mic_i leftNum[3];
+    float16 leftArea[3];
+    float16 rightArea[3];
+    int16 leftNum[3];
 
 
-    const mic3f cmat = convert(current.xfm);
+    const Vec3f16 cmat = convert(current.xfm);
     
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
@@ -1048,24 +1048,24 @@ namespace embree
 
   __forceinline void BVH4HairBuilder::computeUnalignedSpaceBounds( BuildRecordOBB& current )
   {
-    const mic_f c0 = broadcast4to16f((float*)&current.xfm.vx);
-    const mic_f c1 = broadcast4to16f((float*)&current.xfm.vy);
-    const mic_f c2 = broadcast4to16f((float*)&current.xfm.vz);
+    const float16 c0 = broadcast4to16f((float*)&current.xfm.vx);
+    const float16 c1 = broadcast4to16f((float*)&current.xfm.vy);
+    const float16 c2 = broadcast4to16f((float*)&current.xfm.vz);
 
-    const mic_f p_inf( pos_inf );
-    const mic_f n_inf( neg_inf );
+    const float16 p_inf( pos_inf );
+    const float16 n_inf( neg_inf );
 
-    mic2f centroid2(p_inf, n_inf);
-    mic2f geometry(p_inf, n_inf);
+    Vec2f16 centroid2(p_inf, n_inf);
+    Vec2f16 geometry(p_inf, n_inf);
 
     for (size_t i=current.begin;i<current.end;i++)
       {
 	prefetch<PFHINT_NT>(&prims[i+4]);
 	prefetch<PFHINT_L2>(&prims[i+16]);
-	const mic2f b = prims[i].getBounds(c0,c1,c2);
-	const mic_f b_min = b.x;
-	const mic_f b_max = b.y;
-	const mic_f c2    = b_min + b_max;
+	const Vec2f16 b = prims[i].getBounds(c0,c1,c2);
+	const float16 b_min = b.x;
+	const float16 b_max = b.y;
+	const float16 c2    = b_min + b_max;
 	centroid2.x = min(centroid2.x, c2);
 	centroid2.y = max(centroid2.y, c2);
 	geometry.x  = min(geometry.x, b_min); 

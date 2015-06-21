@@ -16,6 +16,7 @@
 
 #include "scene_bezier_curves.h"
 #include "scene.h"
+#include "subdiv/bezier_curve.h"
 
 namespace embree
 {
@@ -47,6 +48,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get modified");
 
     this->mask = mask; 
+    Geometry::update();
   }
 
   void BezierCurves::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
@@ -67,10 +69,30 @@ namespace embree
 #endif
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : curves.set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER0: vertices[0].set(ptr,offset,stride); break;
-    case RTC_VERTEX_BUFFER1: vertices[1].set(ptr,offset,stride); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
+    case RTC_INDEX_BUFFER  : 
+      curves.set(ptr,offset,stride); 
+      break;
+    case RTC_VERTEX_BUFFER0: 
+      vertices[0].set(ptr,offset,stride); 
+      vertices[0].checkPadding16();
+      break;
+    case RTC_VERTEX_BUFFER1: 
+      vertices[1].set(ptr,offset,stride); 
+      vertices[1].checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER0  : 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[0]->set(ptr,offset,stride);  
+      userbuffers[0]->checkPadding16();
+      break;
+    case RTC_USER_VERTEX_BUFFER1  : 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); 
+      userbuffers[1]->set(ptr,offset,stride);  
+      userbuffers[1]->checkPadding16();
+      break;
+    default: 
+      throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); 
+      break;
     }
   }
 
@@ -104,8 +126,9 @@ namespace embree
 
   void BezierCurves::immutable () 
   {
-    if (!parent->needBezierIndices) curves.free();
-    bool freeVertices  = !parent->needBezierVertices;
+    const bool freeIndices = !parent->needBezierIndices;
+    const bool freeVertices  = !parent->needBezierVertices;
+    if (freeIndices) curves.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
   }
@@ -128,6 +151,85 @@ namespace embree
       }
     }
     return true;
+  }
+
+  void BezierCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
+
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[buffer&0xFFFF]->getPtr();
+      stride = userbuffers[buffer&0xFFFF]->getStride();
+    } else {
+      src    = vertices[buffer&0xFFFF].getPtr();
+      stride = vertices[buffer&0xFFFF].getStride();
+    }
+
+#if !defined(__MIC__) 
+
+    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    {
+      size_t ofs = i*sizeof(float);
+      if (i+4 > numFloats) 
+      {
+        const size_t n = numFloats-i;
+        const size_t curve = curves[primID];
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs],n);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs],n);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs],n);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs],n);
+
+        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
+
+        if (P   ) float4::storeu(P+i,Q,n);
+        if (dPdu) float4::storeu(dPdu+i,dQdu,n);
+
+      } else {
+        const size_t curve = curves[primID];
+        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs]);
+        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs]);
+        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
+        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
+
+        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
+
+        if (P   ) float4::storeu(P+i,Q);
+        if (dPdu) float4::storeu(dPdu+i,dQdu);
+      }
+    }
+
+#else
+
+    for (size_t i=0; i<numFloats; i+=16) 
+    {
+      size_t ofs = i*sizeof(float);
+      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      const size_t curve = curves[primID];
+      const float16 p0 = uload16f(mask,(float*)&src[(curve+0)*stride+ofs]);
+      const float16 p1 = uload16f(mask,(float*)&src[(curve+1)*stride+ofs]);
+      const float16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
+      const float16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
+
+      const BezierCurve<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      float16 Q, dQdu; bezier.eval(u,Q,dQdu);
+
+      if (P   ) compactustore16f(mask,P+i,Q);
+      if (dPdu) compactustore16f(mask,dPdu+i,dQdu);
+    }
+
+
+#endif
   }
 
   void BezierCurves::write(std::ofstream& file)

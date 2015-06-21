@@ -16,7 +16,7 @@
       </positions>
 
       <position_indices>
-        0 1 4 5 
+        0 1 5 4 
         1 2 6 5 
         2 3 7 6 
         0 4 7 3 
@@ -28,14 +28,10 @@
         4 4 4 4 4 4
       </faces>
 
-      <holes>
-        0
-      </holes>
-
       <material>
-        <code>"Matte"</code>
+        <code>"OBJ"</code>
         <parameters>
-          <float3 name="reflectance">1 1 1</float3>
+          <float3 name="Kd">1 1 1</float3>
         </parameters>
       </material>
 

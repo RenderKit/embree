@@ -22,66 +22,66 @@ namespace embree
 {
   //TODO: pre-multiply v with 1/127.0f
 
-  static __forceinline mic_f xfm_row_vector(const mic_f &row0,
-					    const mic_f &row1,
-					    const mic_f &row2,
-					    const mic_f &v)
+  static __forceinline float16 xfm_row_vector(const float16 &row0,
+					    const float16 &row1,
+					    const float16 &row2,
+					    const float16 &v)
   {
-    const mic_f x = swAAAA(v);
-    const mic_f y = swBBBB(v);
-    const mic_f z = swCCCC(v);
-    const mic_f ret = x * row0 + y * row1 + z * row2;
+    const float16 x = swAAAA(v);
+    const float16 y = swBBBB(v);
+    const float16 z = swCCCC(v);
+    const float16 ret = x * row0 + y * row1 + z * row2;
     return ret;
   }
 
-  static __forceinline mic_f xfm_row_point(const mic_f &row0,
-					   const mic_f &row1,
-					   const mic_f &row2,
-					   const mic_f &v)
+  static __forceinline float16 xfm_row_point(const float16 &row0,
+					   const float16 &row1,
+					   const float16 &row2,
+					   const float16 &v)
   {
-    const mic_f x = swAAAA(v);
-    const mic_f y = swBBBB(v);
-    const mic_f z = swCCCC(v);
-    const mic_f trans  = select(0x4444,swDDDD(row2),select(0x2222,swDDDD(row1),swDDDD(row0)));   
-    const mic_f ret = x * row0 + y * row1 + z * row2 + trans;
+    const float16 x = swAAAA(v);
+    const float16 y = swBBBB(v);
+    const float16 z = swCCCC(v);
+    const float16 trans  = select(0x4444,swDDDD(row2),select(0x2222,swDDDD(row1),swDDDD(row0)));   
+    const float16 ret = x * row0 + y * row1 + z * row2 + trans;
     return ret;
   }
 
-  static __forceinline mic_f xfm(const mic_f &v, const BVH4Hair::UnalignedNode &node)
+  static __forceinline float16 xfm(const float16 &v, const BVH4Hair::UnalignedNode &node)
   {
     // alternative: 'rows' at 'columns' for lane dot products
 
-    const mic_f x = ldot3_xyz(v,node.getRow(0));
-    const mic_f y = ldot3_xyz(v,node.getRow(1));
-    const mic_f z = ldot3_xyz(v,node.getRow(2));
-    const mic_f ret = select(0x4444,z,select(0x2222,y,x));
+    const float16 x = ldot3_xyz(v,node.getRow(0));
+    const float16 y = ldot3_xyz(v,node.getRow(1));
+    const float16 z = ldot3_xyz(v,node.getRow(2));
+    const float16 ret = select(0x4444,z,select(0x2222,y,x));
     return ret;
   }
 
   __forceinline void traverse_single_intersect(BVH4Hair::NodeRef &curNode,
 					       size_t &sindex,
-					       const mic_f &dir_xyz,
-					       const mic_f &org_xyz1,
-					       const mic_f &rdir_xyz,
-					       const mic_f &org_rdir_xyz,
-					       const mic_f &min_dist_xyz,
-					       const mic_f &max_dist_xyz,
+					       const float16 &dir_xyz,
+					       const float16 &org_xyz1,
+					       const float16 &rdir_xyz,
+					       const float16 &org_rdir_xyz,
+					       const float16 &min_dist_xyz,
+					       const float16 &max_dist_xyz,
 					       BVH4Hair::NodeRef *__restrict__ const stack_node,
 					       float   *__restrict__ const stack_dist,
 					       const void      * __restrict__ const nodes,
 					       const unsigned int leaf_mask,
 					       const unsigned int alignednode_mask)
   {
-    const mic_m m7777 = 0x7777; 
+    const bool16 m7777 = 0x7777; 
 
-    const mic_i invalidNode = mic_i::neg_one();
+    const int16 invalidNode = int16::neg_one();
 
     while (1) 
       {
 	if (unlikely(curNode.isLeaf(leaf_mask))) break;
 
-	mic_m hitm;
-	mic_f tNear,tFar;
+	bool16 hitm;
+	float16 tNear,tFar;
 
 	const BVH4Hair::UnalignedNode *__restrict__ const u_node = (BVH4Hair::UnalignedNode *)curNode.node(nodes);
 
@@ -93,21 +93,21 @@ namespace embree
 	  {	    
 	    u_node->prefetchNode<PFHINT_L1>();
 	    
-	    const mic_f row0 = u_node->getRow(0);
-	    const mic_f row1 = u_node->getRow(1);
-	    const mic_f row2 = u_node->getRow(2);
+	    const float16 row0 = u_node->getRow(0);
+	    const float16 row1 = u_node->getRow(1);
+	    const float16 row2 = u_node->getRow(2);
 		  	
-	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
-	    const mic_f xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); 
+	    const float16 xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	    const float16 xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); 
 
-	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
+	    const float16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		
-	    const mic_f xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
-	    const mic_f tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
-	    const mic_f tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+	    const float16 xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
+	    const float16 tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
+	    const float16 tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
 		   
-	    const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
-	    const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
+	    const float16 tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
+	    const float16 tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
 	    ref = u_node->nodeRefPtr();
 
 	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
@@ -123,8 +123,8 @@ namespace embree
 	  }
 	else
 	  {
-	    prefetch<PFHINT_L1>((mic_f*)u_node + 0);
-	    prefetch<PFHINT_L1>((mic_f*)u_node + 1);
+	    prefetch<PFHINT_L1>((float16*)u_node + 0);
+	    prefetch<PFHINT_L1>((float16*)u_node + 1);
 
 	    const BVH4Hair::AlignedNode* __restrict__ node = (BVH4Hair::AlignedNode*)((size_t)u_node ^ BVH4Hair::alignednode_mask);
 
@@ -139,10 +139,10 @@ namespace embree
 	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 
-	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-	    const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-	    const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const float16 tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	    const float16 tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const float16 tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const float16 tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
 
 	    /* if no child is hit, continue with early popped child */	    
@@ -153,7 +153,7 @@ namespace embree
 	  }
 
 	hitm = le(hitm,tNear,tFar);
-	const mic_f tNear_pos = select(hitm,tNear,inf);
+	const float16 tNear_pos = select(hitm,tNear,inf);
 
 	STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
@@ -210,15 +210,15 @@ namespace embree
 
 	/* continue with closest child and push all others */
 
-	const mic_f min_dist = set_min_lanes(tNear_pos);
+	const float16 min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 	assert(sindex < 3*BVH4Hair::maxDepth+1);
-	const mic_i children = load16i((const int*)ref); 
+	const int16 children = load16i((const int*)ref); 
         
-	const mic_m closest_child = eq(hitm,min_dist,tNear);
+	const bool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
-	const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+	const bool16 m_pos = andn(hitm,andn(closest_child,(bool16)((unsigned int)closest_child - 1)));
 	curNode = ref[closest_child_pos];
 
 	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
@@ -243,25 +243,25 @@ namespace embree
 
   __forceinline void traverse_single_occluded(BVH4Hair::NodeRef &curNode,
 					      size_t &sindex,
-					      const mic_f &dir_xyz,
-					      const mic_f &org_xyz1,
-					      const mic_f &rdir_xyz,
-					      const mic_f &org_rdir_xyz,
-					      const mic_f &min_dist_xyz,
-					      const mic_f &max_dist_xyz,
+					      const float16 &dir_xyz,
+					      const float16 &org_xyz1,
+					      const float16 &rdir_xyz,
+					      const float16 &org_rdir_xyz,
+					      const float16 &min_dist_xyz,
+					      const float16 &max_dist_xyz,
 					      BVH4Hair::NodeRef *__restrict__ const stack_node,
 					      const void      * __restrict__ const nodes,
 					      const unsigned int leaf_mask)
   {
-    const mic_m m7777 = 0x7777; 
-    const mic_i invalidNode = mic_i::neg_one();
+    const bool16 m7777 = 0x7777; 
+    const int16 invalidNode = int16::neg_one();
     
     while (1) 
       {
 	if (unlikely(curNode.isLeaf(leaf_mask))) break;
 		  
-	mic_m hitm;
-	mic_f tNear,tFar;
+	bool16 hitm;
+	float16 tNear,tFar;
 
 	const BVH4Hair::UnalignedNode *__restrict__ const u_node = (BVH4Hair::UnalignedNode *)curNode.node(nodes);
 
@@ -273,21 +273,21 @@ namespace embree
 	  {	    
 	    u_node->prefetchNode<PFHINT_L1>();
 	    
-	    const mic_f row0 = u_node->getRow(0);
-	    const mic_f row1 = u_node->getRow(1);
-	    const mic_f row2 = u_node->getRow(2);
+	    const float16 row0 = u_node->getRow(0);
+	    const float16 row1 = u_node->getRow(1);
+	    const float16 row2 = u_node->getRow(2);
 		  	
-	    const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
-	    const mic_f xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); 
+	    const float16 xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz);
+	    const float16 xfm_org_xyz = xfm_row_vector(row0,row1,row2,org_xyz1); 
 
-	    const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
+	    const float16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		
-	    const mic_f xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
-	    const mic_f tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
-	    const mic_f tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+	    const float16 xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
+	    const float16 tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
+	    const float16 tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
 		   
-	    const mic_f tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
-	    const mic_f tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
+	    const float16 tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
+	    const float16 tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
 
 	    /* early pop of next node */
 	    sindex--;
@@ -302,8 +302,8 @@ namespace embree
 	  }
 	else
 	  {
-	    prefetch<PFHINT_L1>((mic_f*)u_node + 0);
-	    prefetch<PFHINT_L1>((mic_f*)u_node + 1);
+	    prefetch<PFHINT_L1>((float16*)u_node + 0);
+	    prefetch<PFHINT_L1>((float16*)u_node + 1);
 
 	    const BVH4Hair::AlignedNode* __restrict__ node = (BVH4Hair::AlignedNode*)((size_t)u_node ^ BVH4Hair::alignednode_mask);
 
@@ -318,10 +318,10 @@ namespace embree
 	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 
-	    const mic_f tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	    const mic_f tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
-	    const mic_f tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
-	    const mic_f tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const float16 tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
+	    const float16 tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const float16 tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
+	    const float16 tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
 
 	    /* if no child is hit, continue with early popped child */	    
@@ -332,7 +332,7 @@ namespace embree
 	  }
 
 	hitm = le(hitm,tNear,tFar);
-	const mic_f tNear_pos = select(hitm,tNear,inf);
+	const float16 tNear_pos = select(hitm,tNear,inf);
 
 	STAT3(normal.trav_hit_boxes[countbits(hitm)],1,1,1);
 
@@ -387,15 +387,15 @@ namespace embree
 
 	/* continue with closest child and push all others */
 
-	const mic_f min_dist = set_min_lanes(tNear_pos);
+	const float16 min_dist = set_min_lanes(tNear_pos);
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 	assert(sindex < 3*BVH4Hair::maxDepth+1);
-	const mic_i children = load16i((const int*)ref); 
+	const int16 children = load16i((const int*)ref); 
         
-	const mic_m closest_child = eq(hitm,min_dist,tNear);
+	const bool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
-	const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1)));
+	const bool16 m_pos = andn(hitm,andn(closest_child,(bool16)((unsigned int)closest_child - 1)));
 	curNode = ref[closest_child_pos];
 
 	compactustore16i(m_pos,&stack_node[old_sindex],children);
@@ -408,7 +408,7 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 				float   *__restrict__ const stack_dist,
 				size_t &sindex,
 				const unsigned int current_dist,
-				const mic_f &max_dist_xyz)
+				const float16 &max_dist_xyz)
 {
 #if 0
   size_t new_sindex = 1;
@@ -425,11 +425,11 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
       {
 	if (likely(sindex < 16))
 	  {
-	    const unsigned int m_num_stack = mic_m::shift1[sindex] - 1;
-	    const mic_m m_num_stack_low  = toMask(m_num_stack);
-	    const mic_f snear_low  = load16f(stack_dist + 0);
-	    const mic_i snode_low  = load16i((int*)stack_node + 0);
-	    const mic_m m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (mic_m)1;
+	    const unsigned int m_num_stack = bool16::shift1[sindex] - 1;
+	    const bool16 m_num_stack_low  = toMask(m_num_stack);
+	    const float16 snear_low  = load16f(stack_dist + 0);
+	    const int16 snode_low  = load16i((int*)stack_node + 0);
+	    const bool16 m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (bool16)1;
 	    compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
 	    compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
 	    sindex = countbits(m_stack_compact_low);
@@ -437,35 +437,35 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	  }
 	else if (likely(sindex < 32))
 	  {
-	    const mic_m m_num_stack_high = toMask(mic_m::shift1[sindex-16] - 1); 
-	    const mic_f snear_low  = load16f(stack_dist + 0);
-	    const mic_f snear_high = load16f(stack_dist + 16);
-	    const mic_i snode_low  = load16i((int*)stack_node + 0);
-	    const mic_i snode_high = load16i((int*)stack_node + 16);
-	    const mic_m m_stack_compact_low  = le(snear_low,max_dist_xyz) | (mic_m)1;
-	    const mic_m m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
+	    const bool16 m_num_stack_high = toMask(bool16::shift1[sindex-16] - 1); 
+	    const float16 snear_low  = load16f(stack_dist + 0);
+	    const float16 snear_high = load16f(stack_dist + 16);
+	    const int16 snode_low  = load16i((int*)stack_node + 0);
+	    const int16 snode_high = load16i((int*)stack_node + 16);
+	    const bool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (bool16)1;
+	    const bool16 m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
 	    compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
 	    compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
 	    compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
 	    compactustore16i(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
-	    assert ((unsigned int )m_num_stack_high == ((mic_m::shift1[sindex] - 1) >> 16));
+	    assert ((unsigned int )m_num_stack_high == ((bool16::shift1[sindex] - 1) >> 16));
 
 	    sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
 	    assert(sindex < 32);
 	  }
 	else
 	  {
-	    const mic_m m_num_stack_32 = toMask(mic_m::shift1[sindex-32] - 1); 
+	    const bool16 m_num_stack_32 = toMask(bool16::shift1[sindex-32] - 1); 
 
-	    const mic_f snear_0  = load16f(stack_dist + 0);
-	    const mic_f snear_16 = load16f(stack_dist + 16);
-	    const mic_f snear_32 = load16f(stack_dist + 32);
-	    const mic_i snode_0  = load16i((int*)stack_node + 0);
-	    const mic_i snode_16 = load16i((int*)stack_node + 16);
-	    const mic_i snode_32 = load16i((int*)stack_node + 32);
-	    const mic_m m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (mic_m)1;
-	    const mic_m m_stack_compact_16 = le(               snear_16,max_dist_xyz);
-	    const mic_m m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
+	    const float16 snear_0  = load16f(stack_dist + 0);
+	    const float16 snear_16 = load16f(stack_dist + 16);
+	    const float16 snear_32 = load16f(stack_dist + 32);
+	    const int16 snode_0  = load16i((int*)stack_node + 0);
+	    const int16 snode_16 = load16i((int*)stack_node + 16);
+	    const int16 snode_32 = load16i((int*)stack_node + 32);
+	    const bool16 m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (bool16)1;
+	    const bool16 m_stack_compact_16 = le(               snear_16,max_dist_xyz);
+	    const bool16 m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
 
 	    sindex = 0;
 	    compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
@@ -487,20 +487,20 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
   
 };
 
-/* const mic_f xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz); */
-/* const mic_f xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1); // only use xfm_row_vector */
+/* const float16 xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz); */
+/* const float16 xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1); // only use xfm_row_vector */
 
-/* const mic_f rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz ); */
+/* const float16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz ); */
 
-/* const mic_f tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz); */
-/* const mic_f tUpperXYZ = (mic_f::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz; */
+/* const float16 tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz); */
+/* const float16 tUpperXYZ = (float16::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz; */
 
-/* const mic_f min_dist = set_min_lanes(tNear_pos); */
+/* const float16 min_dist = set_min_lanes(tNear_pos); */
 /* assert(sindex < 3*BVH4Hair::maxDepth+1); */
         
-/* const mic_m closest_child = eq(hitm,min_dist,tNear); */
+/* const bool16 closest_child = eq(hitm,min_dist,tNear); */
 /* const unsigned long closest_child_pos = bitscan64(closest_child); */
-/* const mic_m m_pos = andn(hitm,andn(closest_child,(mic_m)((unsigned int)closest_child - 1))); */
+/* const bool16 m_pos = andn(hitm,andn(closest_child,(bool16)((unsigned int)closest_child - 1))); */
 
 
 /* curNode = u_node->child_ref(closest_child_pos); */

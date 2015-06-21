@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "math/vec3.h"
+#include "../../../common/math/vec3.h"
 
 namespace embree
 {
@@ -36,10 +36,10 @@ namespace embree
   };
   
   extern "C" void device_init(const char* cfg);
-  extern "C" void device_key_pressed (int32 key);
+  extern "C" void device_key_pressed (int key);
 
   extern "C" void device_set_scene(Scene* scene);
-  extern "C" void device_resize(int32 width, int32 height);
+  extern "C" void device_resize(int width, int height);
   extern "C" bool device_pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos);
 
   extern "C" void device_render(int* pixels, const int width, const int height,

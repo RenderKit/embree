@@ -24,7 +24,7 @@ const int numSpheres = 64;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -134,7 +134,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 void lazyCreate(LazyGeometry* instance)
 {
   /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
-  if (atomic_cmpxchg((int32*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
+  if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
   {
     /* create the geometry */
     printf("creating sphere %i\n",instance->userID);
@@ -148,7 +148,7 @@ void lazyCreate(LazyGeometry* instance)
   else 
   {
     /* wait until the geometry got created */
-    while (atomic_cmpxchg((int32*)&instance->state,10,11) < LAZY_COMMIT) {
+    while (atomic_cmpxchg((int32_t*)&instance->state,10,11) < LAZY_COMMIT) {
       // instead of actively spinning here, best use a condition to let the thread sleep, or let it help in the creation stage
     }
   }
@@ -158,7 +158,7 @@ void lazyCreate(LazyGeometry* instance)
   rtcCommit(instance->object);
   
   /* switch to LAZY_VALID state */
-  atomic_cmpxchg((int32*)&instance->state,LAZY_COMMIT,LAZY_VALID);
+  atomic_cmpxchg((int32_t*)&instance->state,LAZY_COMMIT,LAZY_VALID);
 }
 
 void instanceIntersectFunc(LazyGeometry* instance, RTCRay& ray, size_t item)
@@ -228,7 +228,7 @@ unsigned int createGroundPlane (RTCScene scene)
 RTCScene g_scene  = nullptr;
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "math.h"
-#include "simd/mic.h"
+#include "../simd/avx512.h"
 
 namespace embree
 {
@@ -152,22 +152,22 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline Vec3ia& operator +=( Vec3ia& a, const Vec3ia_t& b ) { return a = a + b; }
-  __forceinline Vec3ia& operator +=( Vec3ia& a, const int32&   b ) { return a = a + b; }
+  __forceinline Vec3ia& operator +=( Vec3ia& a, const int&      b ) { return a = a + b; }
   
   __forceinline Vec3ia& operator -=( Vec3ia& a, const Vec3ia_t& b ) { return a = a - b; }
-  __forceinline Vec3ia& operator -=( Vec3ia& a, const int32&   b ) { return a = a - b; }
+  __forceinline Vec3ia& operator -=( Vec3ia& a, const int&      b ) { return a = a - b; }
   
   __forceinline Vec3ia& operator *=( Vec3ia& a, const Vec3ia_t& b ) { return a = a * b; }
-  __forceinline Vec3ia& operator *=( Vec3ia& a, const int32&   b ) { return a = a * b; }
+  __forceinline Vec3ia& operator *=( Vec3ia& a, const int&      b ) { return a = a * b; }
   
   __forceinline Vec3ia& operator &=( Vec3ia& a, const Vec3ia_t& b ) { return a = a & b; }
-  __forceinline Vec3ia& operator &=( Vec3ia& a, const int32&   b ) { return a = a & b; }
+  __forceinline Vec3ia& operator &=( Vec3ia& a, const int&      b ) { return a = a & b; }
   
   __forceinline Vec3ia& operator |=( Vec3ia& a, const Vec3ia_t& b ) { return a = a | b; }
-  __forceinline Vec3ia& operator |=( Vec3ia& a, const int32&   b ) { return a = a | b; }
+  __forceinline Vec3ia& operator |=( Vec3ia& a, const int&      b ) { return a = a | b; }
   
-  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int32&  b ) { return a = a << b; }
-  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int32&  b ) { return a = a >> b; }
+  __forceinline Vec3ia& operator <<=( Vec3ia& a, const int&  b ) { return a = a << b; }
+  __forceinline Vec3ia& operator >>=( Vec3ia& a, const int&  b ) { return a = a >> b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

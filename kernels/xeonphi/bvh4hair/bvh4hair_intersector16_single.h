@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "bvh4hair/bvh4hair.h"
-#include "common/ray16.h" 
-#include "common/accelset.h"
+#include "bvh4hair.h"
+#include "../../common/ray16.h" 
+#include "../../common/accelset.h"
 
 namespace embree
 {
@@ -29,8 +29,8 @@ namespace embree
     class BVH4HairIntersector16
     {
     public:
-      static void intersect(mic_i* valid, BVH4Hair* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4Hair* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH4Hair* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH4Hair* bvh, Ray16& ray);
     };
 
     template<typename LeafIntersector>

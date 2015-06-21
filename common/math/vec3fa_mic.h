@@ -17,7 +17,7 @@
 #pragma once
 
 #include "math.h"
-#include "simd/mic.h"
+#include "../simd/avx512.h"
 
 namespace embree
 {
@@ -82,8 +82,8 @@ namespace embree
     __forceinline operator const __m512&( void ) const { return m512; }
     __forceinline operator       __m512&( void )       { return m512; }
 
-    __forceinline operator const mic_f( void ) const { return mic_f(m512); }
-    __forceinline operator       mic_f( void )       { return mic_f(m512); }
+    __forceinline operator const float16( void ) const { return float16(m512); }
+    __forceinline operator       float16( void )       { return float16(m512); }
 
   public:
     __forceinline explicit Vec3fa_t ( float a ) 
@@ -91,6 +91,15 @@ namespace embree
     
     __forceinline Vec3fa_t( const Vec3fa& other ) { 
       m512 = _mm512_extload_ps(&other,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE); 
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Loading
+    ////////////////////////////////////////////////////////////////////////////////
+
+    static __forceinline Vec3fa_t loadu( const float* const a ) { 
+      const bool16 m_4f = 0xf;
+      return (__m512)permute<0,0,0,0>(uload16f(m_4f,a));
     }
   };
 
@@ -253,6 +262,9 @@ namespace embree
   __forceinline float  area       ( const Vec3fa& d )                    { return 2.0f*halfArea(d); }
   __forceinline Vec3fa_t reflect  ( const Vec3fa_t& V, const Vec3fa_t& N ) { return 2.0f*dot(V,N)*N-V; }
   
+  __forceinline Vec3fa_t normalize_safe( const Vec3fa_t& a ) { 
+    const float d = dot(a,a); if (unlikely(d == 0.0f)) return a; else return a*rsqrt(d);
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Select

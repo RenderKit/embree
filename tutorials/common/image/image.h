@@ -19,10 +19,10 @@
 #include <vector>
 #include <string>
 
-#include "sys/platform.h"
-#include "sys/ref.h"
-#include "sys/filename.h"
-#include "math/color.h"
+#include "../../../common/sys/platform.h"
+#include "../../../common/sys/ref.h"
+#include "../../../common/sys/filename.h"
+#include "../../../common/math/color.h"
 
 namespace embree
 {

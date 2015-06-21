@@ -27,6 +27,9 @@ namespace embree
 
     /*! Buffer construction */
     Buffer (); 
+
+    /*! Buffer construction */
+    Buffer (size_t num_in, size_t stride_in); 
     
     /*! Buffer destruction */
     ~Buffer ();
@@ -79,21 +82,33 @@ namespace embree
       return ptr; 
     }
 
+    /*! returns pointer to first element */
+    __forceinline const char* getPtr( size_t i = 0 ) const {
+      return ptr_ofs + i*stride;
+    }
+
+    /*! returns buffer stride */
+    __forceinline unsigned getStride() const {
+      return stride;
+    }
+
+    /*! checks padding to 16 byte check, fails hard */
+    __forceinline void checkPadding16() const 
+    {
+       if (size()) 
+         volatile int w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+    }
+
   protected:
     bool initialized;//!< true if buffer got initialized
-    char* ptr;       //!< pointer to buffer data
-    size_t bytes;    //!< size of buffer in bytes
-    char* ptr_ofs;   //!< base pointer plus offset
-
-#if defined(__MIC__)
-    unsigned int stride;
-#else
-    size_t stride;   //!< stride of the stream in bytes
-#endif
-    size_t num;      //!< number of elements in the stream
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified
+    unsigned stride; //!< stride of the stream in bytes
+    char* ptr;       //!< pointer to buffer data
+    char* ptr_ofs;   //!< base pointer plus offset
+    size_t bytes;    //!< size of buffer in bytes
+    size_t num;      //!< number of elements in the stream
   };
 
   /*! Implements a data stream inside a data buffer. */
@@ -152,7 +167,7 @@ namespace embree
 #if defined(__MIC__)
       return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
-      return Vec3fa(ssef::loadu((float*)(ptr_ofs + i*stride)));
+      return Vec3fa(float4::loadu((float*)(ptr_ofs + i*stride)));
 #endif
 #else
       return *(Vec3fa*)(ptr_ofs + i*sizeof(Vec3fa));

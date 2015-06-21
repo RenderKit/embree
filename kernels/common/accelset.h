@@ -204,8 +204,8 @@ namespace embree
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-	  const mic_i maski = *(mic_i*)valid;
-	  const __mmask16 mask = maski != mic_i(0);
+	  const int16 maski = *(int16*)valid;
+	  const __mmask16 mask = maski != int16(0);
 	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,mask);
 	}
         else
@@ -248,8 +248,8 @@ namespace embree
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-	  const mic_i maski = *(mic_i*)valid;
-	  const __mmask16 mask = maski != mic_i(0);
+	  const int16 maski = *(int16*)valid;
+	  const __mmask16 mask = maski != int16(0);
 	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,mask);
 	}
 	else

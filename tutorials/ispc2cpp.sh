@@ -23,7 +23,7 @@ sed -i.backup  's/one_over_pi/float(one_over_pi)/g' $2
 sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
-#sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
@@ -48,11 +48,15 @@ sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/new Vec3fa\[8\]/(Vec3fa\*) alignedMalloc(8\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
+sed -i.backup  's/delete\[\] face_colors/alignedFree(face_colors)/g' $2
+sed -i.backup  's/delete\[\] vertex_colors/alignedFree(vertex_colors)/g' $2
 
 sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*height\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/delete\[\] g_accu/alignedFree(g_accu)/g' $2
 
 sed -i.backup  's/if (id < 0 || id >= numMaterials) continue;//g' $2
+sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2
+
 sed -i.backup  's/foreach_unique (id in materialID)//g' $2
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
 sed -i.backup  's/\#define __device__//g' $2
@@ -69,3 +73,7 @@ sed -i.backup 's/LinearSpace3f/LinearSpace3fa/g' $2
 
 sed -i.backup 's/make_AffineSpace3f_rotate/AffineSpace3f::rotate/g' $2
 sed -i.backup 's/AffineSpace3f/AffineSpace3fa/g' $2
+
+sed -i.backup 's/int8/char/g' $2
+sed -i.backup 's/int16/int16_t/g' $2
+sed -i.backup 's/int32/int32_t/g' $2

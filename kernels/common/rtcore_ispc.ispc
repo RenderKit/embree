@@ -21,6 +21,7 @@
 
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
+extern "C" void ispcSetParameter1i(const uniform RTCParameter parm, uniform ssize_tt val);
 extern "C" uniform RTCError ispcGetError ();
 extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
@@ -63,6 +64,7 @@ extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform size_tt numTimeSteps);
 
 extern "C" void ispcSetRayMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
+extern "C" void ispcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform size_tt mask);
 extern "C" void* uniform ispcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcUnmapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type);
 extern "C" void ispcSetBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type, void* uniform ptr, uniform size_tt offset, uniform size_tt stride);
@@ -100,7 +102,7 @@ extern "C" void ispcSetDisplacementFunction (RTCScene scene, uniform unsigned in
 
 extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID, 
                                  const void* uniform valid, const uniform unsigned int* uniform primIDs, const uniform float* uniform u, const uniform float* uniform v, uniform size_tt numUVs, 
-                                 const uniform float* uniform src, uniform size_tt byteStride, 
+                                 uniform RTCBufferType buffer, 
                                  uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform size_tt numFloats);
 
 void rtcInit(const uniform int8* uniform cfg) {
@@ -109,6 +111,10 @@ void rtcInit(const uniform int8* uniform cfg) {
 
 void rtcExit() {
   ispcExit();
+}
+
+void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val) {
+  ispcSetParameter1i(parm,val);
 }
 
 uniform RTCError rtcGetError() {
@@ -242,6 +248,10 @@ void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask) 
   ispcSetRayMask(scene,geomID,mask);
 }
 
+void rtcSetBoundaryMode(RTCScene scene, uniform unsigned int geomID, uniform RTCBoundaryMode mode) {
+  ispcSetBoundaryMode(scene,geomID,mode);
+}
+
 void* uniform rtcMapBuffer(RTCScene scene, uniform unsigned int geomID, uniform RTCBufferType type) {
   return ispcMapBuffer(scene,geomID,type);
 }
@@ -347,8 +357,8 @@ void rtcSetDisplacementFunction (RTCScene scene, uniform unsigned int geomID, un
   ispcSetDisplacementFunction(scene,geomID,func,bounds);
 }
 
-void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, 
-                    varying float u, varying float v, const uniform float* uniform src, uniform size_t byteStride, 
+void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigned int primID, varying float u, varying float v, 
+                    uniform RTCBufferType buffer,
                     varying float* uniform P, varying float* uniform dPdu, varying float* uniform dPdv, uniform size_t numFloats)
 {
   varying bool mask = __mask;
@@ -356,6 +366,6 @@ void rtcInterpolate(RTCScene scene, uniform unsigned int geomID, varying unsigne
     varying int imask = mask ? -1 : 0;
   }
   ispcInterpolateN(scene,geomID,(const void* uniform)&imask,(const uniform unsigned int* uniform)&primID,
-                   (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,src,byteStride,
+                   (const uniform float* uniform)&u,(const uniform float* uniform)&v,sizeof(varying float)/4,buffer,
                    (uniform float* uniform)P,(uniform float* uniform)dPdu,(uniform float* uniform)dPdv,numFloats);
 }

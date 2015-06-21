@@ -21,6 +21,9 @@ namespace embree
 {
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
 
+  __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
+  ThreadWorkState* SharedLazyTessellationCache::current_t_state = nullptr;
+
   void resizeTessellationCache(const size_t new_size)
   {    
     if (new_size <= 1024 * 1024)
@@ -60,7 +63,7 @@ namespace embree
 #endif
 
     maxBlocks              = size/64;
-    index                  = 0; // 1
+    localTime              = 0; // 1
     next_block             = 0;
     numRenderThreads       = 0;
 #if FORCE_SIMPLE_FLUSH == 1
@@ -68,39 +71,38 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
-    numMaxRenderThreads = MAX_MIC_THREADS;
-    threadWorkState     = (ThreadWorkState*)malloc(sizeof(ThreadWorkState)*numMaxRenderThreads);
+    threadWorkState     = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState)*NUM_PREALLOC_THREAD_WORK_STATES,64);
 
-    for (size_t i=0;i<numMaxRenderThreads;i++)
+    for (size_t i=0;i<NUM_PREALLOC_THREAD_WORK_STATES;i++)
       threadWorkState[i].reset();
 
     reset_state.reset();
   }
 
-  size_t SharedLazyTessellationCache::getNextRenderThreadID() 
+  void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
-    mtx_threads.lock();
+    reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
-    if (numRenderThreads >= numMaxRenderThreads)
+    if (id >= NUM_PREALLOC_THREAD_WORK_STATES) 
       { 
-	numMaxRenderThreads *= 2;
-	threadWorkState      = (ThreadWorkState*)std::realloc(threadWorkState,sizeof(ThreadWorkState)*numMaxRenderThreads);
+        init_t_state = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState),64);
+        init_t_state->reset();
+      }   
+    else
+    {
+      init_t_state = &threadWorkState[id];
+    }
 
-	for (size_t i=id;i<numMaxRenderThreads;i++)
-	  threadWorkState[i].reset();
+    init_t_state->prev = current_t_state;
+    current_t_state = init_t_state;
 
-	assert( threadWorkState );
-	if (!threadWorkState)
-          THROW_RUNTIME_ERROR("realloc threadWorkState");
-      }    
-    mtx_threads.unlock();
-    return id;
+    reset_state.unlock();
   }
 
-  void SharedLazyTessellationCache::waitForUsersLessEqual(const unsigned int threadID,
+  void SharedLazyTessellationCache::waitForUsersLessEqual(ThreadWorkState *const t_state,
 							  const unsigned int users)
    {
-     while( !(threadWorkState[threadID].counter <= users) )
+     while( !(t_state->counter <= users) )
        {
 #if defined(__MIC__)
 	 _mm_delay_32(128);
@@ -115,34 +117,30 @@ namespace embree
 
   void SharedLazyTessellationCache::resetCache() 
   {
-#if NEW_TCACHE_SYNC == 1
-
     if (reset_state.try_lock())
       {
 	if (next_block >= switch_block_threshold)
 	  {
 	    //double msec = getSeconds();
 
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      lockThread(i);
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+            {
+	      if (lockThread(t) == 1)
+		waitForUsersLessEqual(t,1);
+            }
+
 
 	    addCurrentIndex();
-
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
 	    //PRINT("RESET TESS CACHE");
-
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      waitForUsersLessEqual(i,1);
-
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
 	    switch_block_threshold = maxBlocks;
 #else
-	    const size_t region = index % NUM_CACHE_SEGMENTS;
+	    const size_t region = localTime % NUM_CACHE_SEGMENTS;
 	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
 	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
-
 #if 0
 	    PRINT( region );
 	    PRINT( maxBlocks );
@@ -158,63 +156,8 @@ namespace embree
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
 
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      unlockThread(i);
-
-	    //msec = getSeconds()-msec;    
-	    //PRINT( 1000.0f * msec );
-
-	  }
-	reset_state.unlock();
-      }
-    else
-      reset_state.wait_until_unlocked();	   
-
-#else
-
-    if (reset_state.try_lock())
-      {
-	if (next_block >= switch_block_threshold)
-	  {
-	    //double msec = getSeconds();
-
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      //lockThread(i);
-	      if (lockThread(i) == 1)
-		waitForUsersLessEqual(i,1);
-
-	    //for (size_t i=0;i<numRenderThreads;i++)
-	    //waitForUsersLessEqual(i,1);
-
-	    addCurrentIndex();
-	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-	    //PRINT("RESET TESS CACHE");
-
-#if FORCE_SIMPLE_FLUSH == 1
-	    next_block = 0;
-	    switch_block_threshold = maxBlocks;
-#else
-	    const size_t region = index % NUM_CACHE_SEGMENTS;
-	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
-	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
-
-#if 0
-	    PRINT( region );
-	    PRINT( maxBlocks );
-	    PRINT( NUM_CACHE_SEGMENTS );
-	    PRINT( maxBlocks/NUM_CACHE_SEGMENTS );
-	    PRINT( next_block );
-	    PRINT( switch_block_threshold );
-#endif
-
-	    assert( switch_block_threshold <= maxBlocks );
-
-#endif
-
-	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
-
-	    for (size_t i=0;i<numRenderThreads;i++)
-	      unlockThread(i);
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+	      unlockThread(t);
 	    
 	    //msec = getSeconds()-msec;    
 	    //PRINT( 1000.0f * msec );
@@ -224,7 +167,6 @@ namespace embree
       }
     else
       reset_state.wait_until_unlocked();	   
-#endif 
   }
 
   void SharedLazyTessellationCache::realloc(const size_t new_size)

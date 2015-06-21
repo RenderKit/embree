@@ -16,19 +16,13 @@
 
 #pragma once
 
-#include "common/default.h"
-#include "subdivpatch1base.h"
+#include "../default.h"
+//#include "subdivpatch1base.h"
 
 #define CACHE_DBG(x) 
 
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0
-
-#if defined(__MIC__)
-#define NEW_TCACHE_SYNC 0
-#else
-#define NEW_TCACHE_SYNC 0
-#endif
 
 
 #if defined(DEBUG)
@@ -68,78 +62,216 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
 
+ struct __aligned(64) ThreadWorkState {
+   AtomicCounter counter;
+   ThreadWorkState *prev;
 
- struct LocalTessellationCacheThreadInfo
- {
-   unsigned int id;
-   LocalTessellationCacheThreadInfo(const unsigned int id) : id(id) {}  
+   __forceinline void reset() { counter = 0; prev = NULL; }   
+   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); reset(); }
  };
+
 
  class __aligned(64) SharedLazyTessellationCache 
  {
  public:
-   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 512*1024*1024; // 512 MB = 2^28, need 4 lowest bit for BVH node types
+   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
+#if defined(__MIC__)
+   static const size_t NUM_CACHE_SEGMENTS              = 4;
+#else
+   static const size_t NUM_CACHE_SEGMENTS              = 8;
+#endif
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
+   static const size_t COMMIT_INDEX_SHIFT              = 32+8;
+
+    /*! Per thread tessellation ref cache */
+   static __thread ThreadWorkState* init_t_state;
+   static ThreadWorkState* current_t_state;
+   
+   static __forceinline ThreadWorkState *threadState() 
+   {
+     if (unlikely(!init_t_state))
+       /* sets init_t_state, can't return pointer due to macosx icc bug*/
+       SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadWorkState();
+     return init_t_state;
+   }
+
+   struct Tag
+   {
+     __forceinline Tag() : data(0) {}
+
+     __forceinline Tag(void* ptr, size_t combinedTime)
+     {
+       int64_t new_root_ref = (int64_t) ptr;
+       new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
+       assert( new_root_ref <= 0xffffffff );
+       static const size_t REF_TAG      = 1;
+       assert( !(new_root_ref & REF_TAG) );
+       new_root_ref |= REF_TAG;
+       new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
+       data = new_root_ref;
+     }
+
+     volatile int64_t data;
+   };
+
+   static __forceinline size_t extractCommitIndex(const int64_t v) { return v >> SharedLazyTessellationCache::COMMIT_INDEX_SHIFT; }
+
+   struct CacheEntry
+   {
+     RWMutex mutex;
+     Tag tag;
+   };
 
  private:
-   struct __aligned(64) ThreadWorkState {
-     AtomicCounter counter;
-     ThreadWorkState() { counter = 0; }
-     __forceinline void reset() { counter = 0; }
-   };
 
    float *data;
    size_t size;
    size_t maxBlocks;
-   size_t numMaxRenderThreads;
    ThreadWorkState *threadWorkState;
       
-   __aligned(64) AtomicCounter index;
+   __aligned(64) AtomicCounter localTime;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
-   __aligned(64) AtomicMutex   mtx_threads;
-
 
 
  public:
 
-#if defined(__MIC__)
-   static const size_t NUM_CACHE_SEGMENTS = 4;
-#else
-   static const size_t NUM_CACHE_SEGMENTS = 8;
-   //static const size_t NUM_CACHE_SEGMENTS = 16;
-
-#endif
       
    SharedLazyTessellationCache();
 
-   size_t getNextRenderThreadID();
+   void getNextRenderThreadWorkState();
 
-   __forceinline size_t getCurrentIndex() { return index; }
-   __forceinline void   addCurrentIndex(const size_t i=1) { index.add(i); }
+   //__forceinline size_t getCurrentIndex() { return localTime; }
+   __forceinline void   addCurrentIndex(const size_t i=1) { localTime.add(i); }
 
-   __forceinline unsigned int lockThread  (const unsigned int threadID) { return threadWorkState[threadID].counter.add(1);  }
-   __forceinline unsigned int unlockThread(const unsigned int threadID) { return threadWorkState[threadID].counter.add(-1); }
+   __forceinline size_t getTime(const unsigned globalTime) {
+     return localTime+NUM_CACHE_SEGMENTS*globalTime;
+   }
 
-   __forceinline void prefetchThread(const unsigned int threadID) { 
+   __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
+   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
+   __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
+
+   static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
+   static __forceinline void unlock() { sharedLazyTessellationCache.unlockThread(threadState()); }
+
+   /* per thread lock */
+   __forceinline void lockThreadLoop (ThreadWorkState *const t_state) 
+   { 
+     while(1)
+     {
+       unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(t_state);
+       if (unlikely(lock == 1))
+       {
+         /* lock failed wait until sync phase is over */
+         sharedLazyTessellationCache.unlockThread(t_state);	       
+         sharedLazyTessellationCache.waitForUsersLessEqual(t_state,0);
+       }
+       else
+         break;
+     }
+   }
+
+   static __forceinline void* lookup(volatile Tag* tag, unsigned globalTime)
+   {
+     static const size_t REF_TAG      = 1;
+     static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+       
+     const int64_t subdiv_patch_root_ref = tag->data; 
+     
+     if (likely(subdiv_patch_root_ref)) 
+     {
+       const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
+       
+       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime) ))
+       {
+         CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+         return (void*) subdiv_patch_root;
+       }
+     }
+     CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+     return nullptr;
+   }
+
+   template<typename Constructor>
+     static __forceinline auto lookup (CacheEntry& entry, unsigned globalTime, const Constructor constructor) -> decltype(constructor())
+   {
+     ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
+
+     while (true)
+     {
+       sharedLazyTessellationCache.lockThreadLoop(t_state);
+       void* patch = SharedLazyTessellationCache::lookup(&entry.tag,globalTime);
+       if (patch) return (decltype(constructor())) patch;
+       
+       if (entry.mutex.try_write_lock())
+       {
+         if (!validTag(entry.tag,globalTime)) 
+         {
+           auto ret = constructor();
+           __memory_barrier();
+           //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+           entry.tag = SharedLazyTessellationCache::Tag(ret,sharedLazyTessellationCache.getTime(globalTime));
+           __memory_barrier();
+           entry.mutex.write_unlock();
+           return ret;
+         }
+         entry.mutex.write_unlock();
+       }
+       SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
+     }
+   }
+   
+   static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
+   {
+     static const size_t REF_TAG      = 1;
+     static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+       
+     const int64_t subdiv_patch_root_ref = tag->data; 
+     
+     if (likely(subdiv_patch_root_ref)) 
+     {
+       const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
+       const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
+       
+       if (likely( sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime) ))
+       {
+         CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
+         return subdiv_patch_root;
+       }
+     }
+     CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+     return -1;
+   }
+
+   __forceinline void prefetchThread(ThreadWorkState *const t_state) { 
 #if defined(__MIC__)
-     prefetch<PFHINT_L1EX>(&threadWorkState[threadID].counter);  
+     prefetch<PFHINT_L1EX>(&t_state->counter);  
 #endif
    }
 
-
-   __forceinline bool validCacheIndex(const size_t i)
+   __forceinline bool validCacheIndex(const size_t i, const unsigned globalTime)
    {
 #if FORCE_SIMPLE_FLUSH == 1
-     return i == index;
+     return i == getTime(globalTime);
 #else
-     return i+(NUM_CACHE_SEGMENTS-1) >= index;
+     return i+(NUM_CACHE_SEGMENTS-1) >= getTime(globalTime);
 #endif
    }
 
-   void waitForUsersLessEqual(const unsigned int threadID,
+    static __forceinline bool validTag(const Tag& tag, unsigned globalTime)
+    {
+      const int64_t subdiv_patch_root_ref = tag.data; 
+      if (subdiv_patch_root_ref == 0) return false;
+      const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
+      return sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index,globalTime);
+    }
+
+   void waitForUsersLessEqual(ThreadWorkState *const t_state,
 			      const unsigned int users);
     
    __forceinline size_t alloc(const size_t blocks)
@@ -147,6 +279,61 @@ namespace embree
      size_t index = next_block.add(blocks);
      if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
+   }
+
+   static __forceinline size_t allocIndexLoop(ThreadWorkState *const t_state, const size_t blocks)
+   {
+     size_t block_index = -1;
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc(blocks);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(t_state);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(t_state);
+         continue; 
+       }
+       break;
+     }
+     return block_index;
+   }
+
+   static __forceinline void* allocLoop(ThreadWorkState *const t_state, const size_t bytes)
+   {
+     size_t block_index = -1;
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(t_state);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(t_state);
+         continue; 
+       }
+       break;
+     }
+     return sharedLazyTessellationCache.getBlockPtr(block_index);
+   }
+
+   static __forceinline void* malloc(const size_t bytes)
+   {
+     size_t block_index = -1;
+     ThreadWorkState *const t_state = threadState();
+     while (true)
+     {
+       block_index = sharedLazyTessellationCache.alloc((bytes+63)/64);
+       if (block_index == (size_t)-1)
+       {
+         sharedLazyTessellationCache.unlockThread(t_state);		  
+         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.lockThread(t_state);
+         continue; 
+       }
+       break;
+     }
+     return sharedLazyTessellationCache.getBlockPtr(block_index);
    }
 
    __forceinline void *getBlockPtr(const size_t block_index)

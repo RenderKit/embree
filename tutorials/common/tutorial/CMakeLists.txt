@@ -62,14 +62,16 @@ IF (WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GLUT_DIR}/freeglut.dll $<TARGET_FILE_DIR:tutorial>
     COMMENT "Copy FreeGlut DLL" VERBATIM
   )
-  INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION bin COMPONENT tutorials)
+  INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION bin COMPONENT examples)
 ENDIF (WIN32)
 
 ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
+TARGET_LINK_LIBRARIES(tutorial_device tutorial)
 SET_PROPERTY(TARGET tutorial_device PROPERTY FOLDER tutorials/common)
 
 IF (ENABLE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_device_ispc STATIC tutorial_device.ispc)
+  TARGET_LINK_LIBRARIES(tutorial_device_ispc tutorial)
   SET_TARGET_PROPERTIES(tutorial_device_ispc PROPERTIES LINKER_LANGUAGE C)
   SET_PROPERTY(TARGET tutorial_device_ispc PROPERTY FOLDER tutorials/common)
 ENDIF()

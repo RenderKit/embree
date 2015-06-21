@@ -502,7 +502,7 @@ float noise(float x, float y)
   return lerp(v,lerp(u,g00,g10),lerp(u,g01,g11));
 }
 
-float noise(const Vec3fa& pos)  
+float noise(const Vec3f& pos)  
 {
   float x = pos.x;
   float y = pos.y;
@@ -549,12 +549,12 @@ float noise(const Vec3fa& pos)
               lerp(v,lerp(u,g001,g101),lerp(u,g011,g111)));
 }
 
-Vec3fa noise3D(const Vec3fa& p)
+Vec3f noise3D(const Vec3f& p)
 {
   float x = noise(p.x+128.0f);
   float y = noise(p.y+64.0f);
   float z = noise(p.z+192.0f);
-  return make_Vec3fa(x,y,z);
+  return make_Vec3f(x,y,z);
 }
 
 /* draws progress bar */

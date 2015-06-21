@@ -15,9 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial_device.h"
-#include "kernels/common/alloc.h"
-#include "kernels/xeon/builders/bvh_builder_sah.h"
-#include "kernels/xeon/builders/bvh_builder_morton.h"
+#include "../../kernels/common/alloc.h"
+#include "../../kernels/xeon/builders/bvh_builder_sah.h"
+#include "../../kernels/xeon/builders/bvh_builder_morton.h"
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -27,7 +27,7 @@ Vec3fa* colors = nullptr;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -202,8 +202,8 @@ void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
       [&]( isa::MortonBuildRecord<Node*>& current, FastAllocator::ThreadLocal* alloc, BBox3fa& box_o) -> Node*
       {
         assert(current.size() == 1);
-        const size_t id = morton_src[current.begin].index;
-        const BBox3fa bounds = prims[id].bounds(); // FIXME: dont use morton_src, should be input
+        const size_t id = morton_src[current.begin].index; // FIXME: dont use morton_src, should be input
+        const BBox3fa bounds = prims[id].bounds(); 
         Node* node = new (alloc->malloc(sizeof(LeafNode))) LeafNode(id,bounds);
         *current.parent = node;
         box_o = bounds;
@@ -231,7 +231,7 @@ void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize ray tracing core */
   rtcInit(cfg);

@@ -18,7 +18,7 @@
 
 #include "bvh4i.h"
 #include "bvh4i_traversal.h"
-#include "common/ray16.h" 
+#include "../../common/ray16.h" 
 
 namespace embree
 {
@@ -33,8 +33,8 @@ namespace embree
       typedef typename BVH4i::Node Node;
       
     public:
-      static void intersect(mic_i* valid, BVH4i* bvh, Ray16& ray);
-      static void occluded (mic_i* valid, BVH4i* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH4i* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH4i* bvh, Ray16& ray);
     };
 
   }

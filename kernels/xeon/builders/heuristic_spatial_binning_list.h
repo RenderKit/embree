@@ -17,7 +17,7 @@
 #pragma once
 
 #include "heuristic_spatial.h"
-#include "builders/primrefblock.h"
+#include "primrefblock.h"
 
 #include "heuristic_binning_list_aligned.h"
 #include "heuristic_spatial_list.h"

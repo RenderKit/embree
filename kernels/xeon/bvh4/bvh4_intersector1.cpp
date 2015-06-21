@@ -17,21 +17,21 @@
 #include "bvh4_intersector1.h"
 #include "bvh4_intersector_node.h"
 
-#include "geometry/triangle4.h"
-#include "geometry/triangle4v.h"
-#include "geometry/triangle4v_mb.h"
-#include "geometry/triangle4i.h"
-#include "geometry/triangle8.h"
-#include "geometry/intersector_iterators.h"
-#include "geometry/bezier1v_intersector.h"
-#include "geometry/bezier1i_intersector.h"
-#include "geometry/triangle_intersector_moeller.h"
-#include "geometry/triangle_intersector_pluecker.h"
-#include "geometry/triangle4i_intersector_pluecker.h"
-#include "geometry/subdivpatch1_intersector1.h"
-#include "geometry/subdivpatch1cached_intersector1.h"
-#include "geometry/grid_intersector1.h"
-#include "geometry/object_intersector1.h"
+#include "../geometry/triangle4.h"
+#include "../geometry/triangle4v.h"
+#include "../geometry/triangle4v_mb.h"
+#include "../geometry/triangle4i.h"
+#include "../geometry/triangle8.h"
+#include "../geometry/intersector_iterators.h"
+#include "../geometry/bezier1v_intersector.h"
+#include "../geometry/bezier1i_intersector.h"
+#include "../geometry/triangle_intersector_moeller.h"
+#include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/triangle4i_intersector_pluecker.h"
+#include "../geometry/subdivpatch1_intersector1.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
+#include "../geometry/grid_intersector1.h"
+#include "../geometry/object_intersector1.h"
 
 namespace embree
 { 
@@ -58,17 +58,17 @@ namespace embree
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
-      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const ssef  ray_near(ray.tnear);
-      ssef ray_far(ray.tfar);
+      const Vec3f4 org(ray.org.x,ray.org.y,ray.org.z);
+      const Vec3f4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const Vec3f4 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3f4 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const float4  ray_near(ray.tnear);
+      float4 ray_far(ray.tfar);
 
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(ssef) : 5*sizeof(ssef);
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
+      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
 
       /* pop loop */
       while (true) pop:
@@ -86,7 +86,7 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  ssef tNear;
+	  float4 tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;
@@ -198,17 +198,17 @@ namespace embree
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const sse3f org(ray.org.x,ray.org.y,ray.org.z);
-      const sse3f dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const sse3f rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const sse3f org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const ssef  ray_near(ray.tnear);
-      ssef ray_far(ray.tfar);
+      const Vec3f4 org(ray.org.x,ray.org.y,ray.org.z);
+      const Vec3f4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
+      const Vec3f4 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3f4 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const float4  ray_near(ray.tnear);
+      float4 ray_far(ray.tfar);
 
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(ssef) : 1*sizeof(ssef);
-      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(ssef) : 3*sizeof(ssef);
-      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(ssef) : 5*sizeof(ssef);      
+      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(float4) : 1*sizeof(float4);
+      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(float4) : 3*sizeof(float4);
+      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(float4) : 5*sizeof(float4);      
       
       /* pop loop */
       while (true) pop:
@@ -222,7 +222,7 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  ssef tNear;
+	  float4 tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;

@@ -17,16 +17,20 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "bvh4/bvh4.h"
-#include "bvh8/bvh8.h"
+#include "../xeon/bvh4/bvh4.h"
+#include "../xeon/bvh8/bvh8.h"
 #else
-#include "xeonphi/bvh4i/bvh4i.h"
-#include "xeonphi/bvh4mb/bvh4mb.h"
-#include "xeonphi/bvh4hair/bvh4hair.h"
+#include "../xeonphi/bvh4i/bvh4i.h"
+#include "../xeonphi/bvh4mb/bvh4mb.h"
+#include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
 namespace embree
 {
+#if TASKING_TBB
+  tbb::task_arena tbb_task_arena;
+#endif
+
   /* error raising rtcIntersect and rtcOccluded functions */
   void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
   void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
@@ -39,7 +43,7 @@ namespace embree
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
-      needSubdivIndices(false),
+      needSubdivIndices(false), needSubdivVertices(false),
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
@@ -51,8 +55,7 @@ namespace embree
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
-    //scheduler = nullptr;
-    scheduler = new TaskSchedulerTBB; // FIXME: should not be created for every scene
+    scheduler = nullptr;
 #else
     group = new tbb::task_group;
 #endif
@@ -65,7 +68,10 @@ namespace embree
     if (aflags & RTC_INTERPOLATE) {
       needTriangleIndices = true;
       needBezierIndices = true;
-      needSubdivIndices = true;
+      //needSubdivIndices = true; // not required for interpolation
+      needTriangleVertices = true;
+      needBezierVertices = true;
+      needSubdivVertices = true;
     }
 
 #if defined(__MIC__)
@@ -313,7 +319,6 @@ namespace embree
     else 
 #endif
       geom = new SubdivMesh(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
-
     return geom->id;
   }
 
@@ -491,10 +496,12 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
-    //{
-    //  Lock<MutexSys> lock(buildMutex);
-      //if (scheduler == nullptr) scheduler = new TaskSchedulerTBB(threadCount != 0);
-    //}
+    Ref<TaskSchedulerTBB> scheduler = nullptr;
+    {
+      Lock<MutexSys> lock(schedulerMutex);
+      scheduler = this->scheduler;
+      if (scheduler == null) this->scheduler = scheduler = new TaskSchedulerTBB;
+    }
 
     if (threadCount != 0) 
     {
@@ -505,43 +512,29 @@ namespace embree
         scheduler->wait_for_threads(threadCount);
     }
 
-    ///* allow only one build at a time */
-    //Lock<MutexSys> lock(buildMutex);
-
     /* try to obtain build lock */
     TryLock<MutexSys> lock(buildMutex);
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
       scheduler->join();
-      //buildMutex.lock();
-      //buildMutex.unlock();
       return;
     }
 
     if (!isModified()) {
+      this->scheduler = nullptr;
       return;
     }
 
     progress_monitor_counter = 0;
 
-    //if (isStatic() && isBuild()) {
-    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-    //  return;
-    //}
-
     if (!ready()) {
+      this->scheduler = nullptr;
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
-      return;
     }
 
-    //if (threadCount) {
     scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
-      //delete scheduler; scheduler = nullptr;
-      //}
-      //else {
-      //TaskSchedulerTBB::spawn([&]() { build_task(); });
-      //}
+    this->scheduler = nullptr;
   }
 
 #endif
@@ -564,11 +557,13 @@ namespace embree
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
-      group->wait();
+      tbb_task_arena.execute([&]{ group->wait(); });
+      //group->wait();
       while (!buildMutex.try_lock()) {
         __pause_cpu();
         yield();
-        group->wait();
+        tbb_task_arena.execute([&]{ group->wait(); });
+        //group->wait();
       }
       buildMutex.unlock();
       return;
@@ -592,14 +587,16 @@ namespace embree
     try {
     
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
-      ctx.set_priority(tbb::priority_high);
+      //ctx.set_priority(tbb::priority_high);
 
-      group->run([&]{
-        tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
-      }); 
-      if (threadCount) group_barrier.wait(threadCount);
-      group->wait();
-
+      tbb_task_arena.execute([&]{
+          group->run([&]{
+              tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
+            });
+          if (threadCount) group_barrier.wait(threadCount);
+          group->wait();
+        }); 
+      
       /* reset MXCSR register again */
 #if !defined(__MIC__)
       _mm_setcsr(mxcsr);

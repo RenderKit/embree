@@ -17,19 +17,19 @@
 #pragma once
 
 #include "subdivpatch1.h"
-#include "common/ray16.h"
-#include "geometry/filter.h"
+#include "../../common/ray16.h"
+#include "filter.h"
 
 namespace embree
 {
 
 #define FORCE_TRIANGLE_UV 0
 
-  __forceinline mic_f load3x5f_unalign(const void *__restrict__ const ptr0,
+  __forceinline float16 load3x5f_unalign(const void *__restrict__ const ptr0,
 				       const void *__restrict__ const ptr1,
 				       const void *__restrict__ const ptr2) 
   {
-    mic_f v = uload16f((float*)ptr0);
+    float16 v = uload16f((float*)ptr0);
     v = uload16f(v,0b1111100000,(float*)ptr1);
     v = uload16f(v,0b111110000000000,(float*)ptr2);
     return v;
@@ -42,8 +42,8 @@ namespace embree
     const static int tri_permute_v1[16];
     const static int tri_permute_v2[16];
 
-    mic3f vtx;
-    mic_f uv;
+    Vec3f16 vtx;
+    float16 uv;
 
     __forceinline void prefetchData() const
     {
@@ -53,16 +53,16 @@ namespace embree
       prefetch<PFHINT_NT>(&uv);
     }
     
-    __forceinline mic_f getU() const
+    __forceinline float16 getU() const
     {
-      const mic_i u = cast(uv) & 0xffff;
-      return mic_f(u) * 2.0f/65535.0f;
+      const int16 u = cast(uv) & 0xffff;
+      return float16(u) * 2.0f/65535.0f;
     }
 
-    __forceinline mic_f getV() const
+    __forceinline float16 getV() const
     {
-      const mic_i v = cast(uv) >> 16;
-      return mic_f(v) * 2.0f/65535.0f;
+      const int16 v = cast(uv) >> 16;
+      return float16(v) * 2.0f/65535.0f;
     }
 
     
@@ -86,55 +86,56 @@ namespace embree
     }
 
     __forceinline void intersect1_tri16_precise(const size_t rayIndex, 
-						const mic_f &dir_xyz,
-						const mic_f &org_xyz,
+						const float16 &dir_xyz,
+						const float16 &org_xyz,
 						Ray16& ray16,
 						const Precalculations &pre,
-						const unsigned int subdiv_patch_index) const
+						const unsigned int subdiv_patch_index,
+                                                const bool16 m_input = 0xffff) const
     {
-      const mic_i perm_v0 = load16i(tri_permute_v0);
-      const mic_i perm_v1 = load16i(tri_permute_v1);
-      const mic_i perm_v2 = load16i(tri_permute_v2);
+      const int16 perm_v0 = load16i(tri_permute_v0);
+      const int16 perm_v1 = load16i(tri_permute_v1);
+      const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const mic3f vtx_org = vtx - ray_org;
+      const Vec3f16 vtx_org = vtx - ray_org;
       
-      const mic3f v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const mic3f v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const mic3f v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
   
-      const mic3f e0 = v2 - v0;
-      const mic3f e1 = v0 - v1;	     
-      const mic3f e2 = v1 - v2;	     
+      const Vec3f16 e0 = v2 - v0;
+      const Vec3f16 e1 = v0 - v1;	     
+      const Vec3f16 e2 = v1 - v2;	     
 
-      const mic3f Ng1     = cross(e1,e0);
-      const mic3f Ng      = Ng1+Ng1;
-      const mic_f den     = dot(Ng,ray_dir);	      
-      const mic_f rcp_den = rcp(den);
+      const Vec3f16 Ng1     = cross(e1,e0);
+      const Vec3f16 Ng      = Ng1+Ng1;
+      const float16 den     = dot(Ng,ray_dir);	      
+      const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      mic_m m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      mic_m m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
-      const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+      const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, u, zero);
 
-      const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+      const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, v, zero);
 
-      const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+      const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
       m_valid       = ge( m_valid, w, zero);
 
       if (unlikely(none(m_valid))) return;
     
-      const mic_m m_den = ne(m_valid,den,zero);
-      const mic_f t = dot(v0,Ng) * rcp_den;
-      mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
-      mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+      const bool16 m_den = ne(m_valid,den,zero);
+      const float16 t = dot(v0,Ng) * rcp_den;
+      float16 max_dist_xyz = float16(ray16.tfar[rayIndex]);
+      bool16 m_final      = lt(lt(m_den,float16(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -142,28 +143,28 @@ namespace embree
 	{
 	  STAT3(normal.trav_prim_hits,1,1,1);
 	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
-	  const mic_f min_dist = vreduce_min(max_dist_xyz);
-	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	  const float16 min_dist = vreduce_min(max_dist_xyz);
+	  const bool16 m_dist = eq(min_dist,max_dist_xyz);
 	  const size_t index = bitscan(toInt(m_dist));
 
 #if FORCE_TRIANGLE_UV == 0
-	  const mic_f uu  = getU();
-	  const mic_f u0 = permute16f(perm_v0,uu);
-	  const mic_f u1 = permute16f(perm_v1,uu);
-	  const mic_f u2 = permute16f(perm_v2,uu);
-	  const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+	  const float16 uu  = getU();
+	  const float16 u0 = permute16f(perm_v0,uu);
+	  const float16 u1 = permute16f(perm_v1,uu);
+	  const float16 u2 = permute16f(perm_v2,uu);
+	  const float16 u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
 
-	  const mic_f vv = getV();
-	  const mic_f v0 = permute16f(perm_v0,vv); 
-	  const mic_f v1 = permute16f(perm_v1,vv);
-	  const mic_f v2 = permute16f(perm_v2,vv);
-	  const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+	  const float16 vv = getV();
+	  const float16 v0 = permute16f(perm_v0,vv); 
+	  const float16 v1 = permute16f(perm_v1,vv);
+	  const float16 v2 = permute16f(perm_v2,vv);
+	  const float16 v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
 #else
-	  const mic_f u_final = u;
-	  const mic_f v_final = v;
+	  const float16 u_final = u;
+	  const float16 v_final = v;
 #endif
 
-	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	  const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
                 
 	  prefetch<PFHINT_L1EX>(&ray16.tfar);  
 	  prefetch<PFHINT_L1EX>(&ray16.u);
@@ -174,10 +175,10 @@ namespace embree
 	  prefetch<PFHINT_L1EX>(&ray16.geomID);
 	  prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	  const mic_m m_neg = 0b0101010101010101;
-	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
-	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
-	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
+	  const bool16 m_neg = 0b0101010101010101;
+	  const float16 gnormalx(select(m_neg,float16(-Ng.x),float16(Ng.x)));
+	  const float16 gnormaly(select(m_neg,float16(-Ng.y),float16(Ng.y)));
+	  const float16 gnormalz(select(m_neg,float16(-Ng.z),float16(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	  compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -192,54 +193,55 @@ namespace embree
     };
 
     __forceinline bool occluded1_tri16_precise(const size_t rayIndex, 
-					       const mic_f &dir_xyz,
-					       const mic_f &org_xyz,
+					       const float16 &dir_xyz,
+					       const float16 &org_xyz,
 					       Ray16& ray16,
-					       const Precalculations &pre)
+					       const Precalculations &pre,
+                                               const bool16 m_input = 0xffff)
     {
-      const mic_i perm_v0 = load16i(tri_permute_v0);
-      const mic_i perm_v1 = load16i(tri_permute_v1);
-      const mic_i perm_v2 = load16i(tri_permute_v2);
+      const int16 perm_v0 = load16i(tri_permute_v0);
+      const int16 perm_v1 = load16i(tri_permute_v1);
+      const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const mic3f vtx_org = vtx - ray_org;
+      const Vec3f16 vtx_org = vtx - ray_org;
       
-      const mic3f v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const mic3f v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const mic3f v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
    
-      const mic3f e0 = v2 - v0;
-      const mic3f e1 = v0 - v1;	     
-      const mic3f e2 = v1 - v2;	     
+      const Vec3f16 e0 = v2 - v0;
+      const Vec3f16 e1 = v0 - v1;	     
+      const Vec3f16 e2 = v1 - v2;	     
 
-      const mic3f Ng1     = cross(e1,e0);
-      const mic3f Ng      = Ng1+Ng1;
-      const mic_f den     = dot(Ng,ray_dir);	      
-      const mic_f rcp_den = rcp(den);
+      const Vec3f16 Ng1     = cross(e1,e0);
+      const Vec3f16 Ng      = Ng1+Ng1;
+      const float16 den     = dot(Ng,ray_dir);	      
+      const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      mic_m m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      mic_m m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
-      const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+      const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, u, zero);
 
-      const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+      const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, v, zero);
 
-      const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+      const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
       m_valid       = ge( m_valid, w, zero);
 
       if (unlikely(none(m_valid))) return false;
     
-      const mic_m m_den = ne(m_valid,den,zero);
-      const mic_f t = dot(v0,Ng) * rcp_den;
-      mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
-      mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+      const bool16 m_den = ne(m_valid,den,zero);
+      const float16 t = dot(v0,Ng) * rcp_den;
+      float16 max_dist_xyz = float16(ray16.tfar[rayIndex]);
+      bool16 m_final      = lt(lt(m_den,float16(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -248,54 +250,55 @@ namespace embree
     };
 
 
-    __forceinline void intersect1_tri16_precise(const mic_f &dir_xyz,
-						const mic_f &org_xyz,
+    __forceinline void intersect1_tri16_precise(const float16 &dir_xyz,
+						const float16 &org_xyz,
 						Ray& ray,
 						const Precalculations &pre,
-						const unsigned int subdiv_patch_index) const
+						const unsigned int subdiv_patch_index,
+                                                const bool16 m_input = 0xffff) const
     {
-      const mic_i perm_v0 = load16i(tri_permute_v0);
-      const mic_i perm_v1 = load16i(tri_permute_v1);
-      const mic_i perm_v2 = load16i(tri_permute_v2);
+      const int16 perm_v0 = load16i(tri_permute_v0);
+      const int16 perm_v1 = load16i(tri_permute_v1);
+      const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const mic3f vtx_org = vtx - ray_org;
+      const Vec3f16 vtx_org = vtx - ray_org;
       
-      const mic3f v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const mic3f v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const mic3f v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
   
-      const mic3f e0 = v2 - v0;
-      const mic3f e1 = v0 - v1;	     
-      const mic3f e2 = v1 - v2;	     
-      const mic3f Ng1     = cross(e1,e0);
-      const mic3f Ng      = Ng1+Ng1;
-      const mic_f den     = dot(Ng,ray_dir);	      
-      const mic_f rcp_den = rcp(den);
+      const Vec3f16 e0 = v2 - v0;
+      const Vec3f16 e1 = v0 - v1;	     
+      const Vec3f16 e2 = v1 - v2;	     
+      const Vec3f16 Ng1     = cross(e1,e0);
+      const Vec3f16 Ng      = Ng1+Ng1;
+      const float16 den     = dot(Ng,ray_dir);	      
+      const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      mic_m m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      mic_m m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
-      const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+      const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, u, zero);
 
-      const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+      const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, v, zero);
 
-      const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+      const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
       m_valid       = ge( m_valid, w, zero);
 
       if (unlikely(none(m_valid))) return;
     
-      const mic_m m_den = ne(m_valid,den,zero);
-      const mic_f t = dot(v0,Ng) * rcp_den;
-      mic_f max_dist_xyz = mic_f(ray.tfar);
-      mic_m m_final      = lt(lt(m_den,mic_f(ray.tnear),t),t,max_dist_xyz);
+      const bool16 m_den = ne(m_valid,den,zero);
+      const float16 t = dot(v0,Ng) * rcp_den;
+      float16 max_dist_xyz = float16(ray.tfar);
+      bool16 m_final      = lt(lt(m_den,float16(ray.tnear),t),t,max_dist_xyz);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -303,35 +306,35 @@ namespace embree
 	{
 	  STAT3(normal.trav_prim_hits,1,1,1);
 	  max_dist_xyz  = select(m_final,t,max_dist_xyz);
-	  const mic_f min_dist = vreduce_min(max_dist_xyz);
-	  const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	  const float16 min_dist = vreduce_min(max_dist_xyz);
+	  const bool16 m_dist = eq(min_dist,max_dist_xyz);
 	  const size_t index = bitscan(toInt(m_dist));
 
 #if FORCE_TRIANGLE_UV == 0
-	  const mic_f uu  = getU();
-	  const mic_f u0 = permute16f(perm_v0,uu);
-	  const mic_f u1 = permute16f(perm_v1,uu);
-	  const mic_f u2 = permute16f(perm_v2,uu);
-	  const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+	  const float16 uu  = getU();
+	  const float16 u0 = permute16f(perm_v0,uu);
+	  const float16 u1 = permute16f(perm_v1,uu);
+	  const float16 u2 = permute16f(perm_v2,uu);
+	  const float16 u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
 
-	  const mic_f vv = getV();
-	  const mic_f v0 = permute16f(perm_v0,vv); 
-	  const mic_f v1 = permute16f(perm_v1,vv);
-	  const mic_f v2 = permute16f(perm_v2,vv);
-	  const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+	  const float16 vv = getV();
+	  const float16 v0 = permute16f(perm_v0,vv); 
+	  const float16 v1 = permute16f(perm_v1,vv);
+	  const float16 v2 = permute16f(perm_v2,vv);
+	  const float16 v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
 #else
-	  const mic_f u_final = u;
-	  const mic_f v_final = v;
+	  const float16 u_final = u;
+	  const float16 v_final = v;
 #endif
 
-	  const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	  const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
                 
 	  assert( countbits(m_tri) == 1);
 
-	  const mic_m m_neg = 0b0101010101010101;
-	  const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
-	  const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
-	  const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
+	  const bool16 m_neg = 0b0101010101010101;
+	  const float16 gnormalx(select(m_neg,float16(-Ng.x),float16(Ng.x)));
+	  const float16 gnormaly(select(m_neg,float16(-Ng.y),float16(Ng.y)));
+	  const float16 gnormalz(select(m_neg,float16(-Ng.z),float16(Ng.z)));
 		  
 	  compactustore16f_low(m_tri,&ray.tfar,min_dist);
 	  compactustore16f_low(m_tri,&ray.u,u_final); 
@@ -345,53 +348,54 @@ namespace embree
 	}
     };
 
-    __forceinline bool occluded1_tri16_precise(const mic_f &dir_xyz,
-					       const mic_f &org_xyz,
+    __forceinline bool occluded1_tri16_precise(const float16 &dir_xyz,
+					       const float16 &org_xyz,
 					       Ray& ray,
-					       const Precalculations &pre)
+					       const Precalculations &pre,
+                                               const bool16 m_input = 0xffff)
     {
-      const mic_i perm_v0 = load16i(tri_permute_v0);
-      const mic_i perm_v1 = load16i(tri_permute_v1);
-      const mic_i perm_v2 = load16i(tri_permute_v2);
+      const int16 perm_v0 = load16i(tri_permute_v0);
+      const int16 perm_v1 = load16i(tri_permute_v1);
+      const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const mic3f vtx_org = vtx - ray_org;
+      const Vec3f16 vtx_org = vtx - ray_org;
       
-      const mic3f v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const mic3f v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const mic3f v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
    
-      const mic3f e0 = v2 - v0;
-      const mic3f e1 = v0 - v1;	     
-      const mic3f e2 = v1 - v2;	     
-      const mic3f Ng1     = cross(e1,e0);
-      const mic3f Ng      = Ng1+Ng1;
-      const mic_f den     = dot(Ng,ray_dir);	      
-      const mic_f rcp_den = rcp(den);
+      const Vec3f16 e0 = v2 - v0;
+      const Vec3f16 e1 = v0 - v1;	     
+      const Vec3f16 e2 = v1 - v2;	     
+      const Vec3f16 Ng1     = cross(e1,e0);
+      const Vec3f16 Ng      = Ng1+Ng1;
+      const float16 den     = dot(Ng,ray_dir);	      
+      const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-      mic_m m_valid = m_active & (den > zero);
+      bool16 m_valid = m_input & (den > zero);
 #else
-      mic_m m_valid = 0xffff;
+      bool16 m_valid = m_input;
 #endif
 
-      const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+      const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, u, zero);
 
-      const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+      const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
       m_valid       = ge( m_valid, v, zero);
 
-      const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+      const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
       m_valid       = ge( m_valid, w, zero);
 
       if (unlikely(none(m_valid))) return false;
     
-      const mic_m m_den = ne(m_valid,den,zero);
-      const mic_f t = dot(v0,Ng) * rcp_den;
-      mic_f max_dist_xyz = mic_f(ray.tfar);
-      mic_m m_final      = lt(lt(m_den,mic_f(ray.tnear),t),t,max_dist_xyz);
+      const bool16 m_den = ne(m_valid,den,zero);
+      const float16 t = dot(v0,Ng) * rcp_den;
+      float16 max_dist_xyz = float16(ray.tfar);
+      bool16 m_final      = lt(lt(m_den,float16(ray.tnear),t),t,max_dist_xyz);
 
       //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -404,52 +408,52 @@ namespace embree
   };
 
   static __forceinline void intersect1_tri16(const size_t rayIndex, 
-					     const mic_f &dir_xyz,
-					     const mic_f &org_xyz,
+					     const float16 &dir_xyz,
+					     const float16 &org_xyz,
 					     Ray16& ray16,
-					     const mic3f &v0,
-					     const mic3f &v1,
-					     const mic3f &v2,
-					     const mic_f &u_grid,
-					     const mic_f &v_grid,
+					     const Vec3f16 &v0,
+					     const Vec3f16 &v1,
+					     const Vec3f16 &v2,
+					     const float16 &u_grid,
+					     const float16 &v_grid,
 					     const unsigned int offset_v0,
 					     const unsigned int offset_v1,
 					     const unsigned int offset_v2,
-					     const mic_m &m_active,
+					     const bool16 &m_active,
 					     const unsigned int subdiv_patch_index)
   {
-    const mic3f ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
-    const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
 
-    const mic3f e1      = v1 - v0;
-    const mic3f e2      = v0 - v2;	     
-    const mic3f normal  = cross(e1,e2);
-    const mic3f org     = v0 - ray_org;
-    const mic3f od      = cross(org,ray_dir); 
-    const mic_f den     = dot(normal,ray_dir);	      
-    const mic_f rcp_den = rcp(den);
-    const mic_f uu      = dot(e2,od); 
-    const mic_f vv      = dot(e1,od); 
-    const mic_f u       = uu * rcp_den;
-    const mic_f v       = vv * rcp_den;
+    const Vec3f16 e1      = v1 - v0;
+    const Vec3f16 e2      = v0 - v2;	     
+    const Vec3f16 normal  = cross(e1,e2);
+    const Vec3f16 org     = v0 - ray_org;
+    const Vec3f16 od      = cross(org,ray_dir); 
+    const float16 den     = dot(normal,ray_dir);	      
+    const float16 rcp_den = rcp(den);
+    const float16 uu      = dot(e2,od); 
+    const float16 vv      = dot(e1,od); 
+    const float16 u       = uu * rcp_den;
+    const float16 v       = vv * rcp_den;
 
 #if defined(RTCORE_BACKFACE_CULLING)
-    const mic_m m_init = m_active & (den > zero);
+    const bool16 m_init = m_active & (den > zero);
 #else
-    const mic_m m_init = m_active;
+    const bool16 m_init = m_active;
 #endif
 
-    const mic_m valid_u    = ge(m_init,u,zero);
-    const mic_m valid_v    = ge(valid_u,v,zero);
-    const mic_m m_aperture = le(valid_v,u+v,mic_f::one()); 
+    const bool16 valid_u    = ge(m_init,u,zero);
+    const bool16 valid_v    = ge(valid_u,v,zero);
+    const bool16 m_aperture = le(valid_v,u+v,float16::one()); 
 
-    const mic_f nom = dot(org,normal);
+    const float16 nom = dot(org,normal);
 
     if (unlikely(none(m_aperture))) return;
 
-    const mic_f t      = rcp_den*nom;
-    mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
-    mic_m m_final      = lt(lt(m_aperture,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+    const float16 t      = rcp_den*nom;
+    float16 max_dist_xyz = float16(ray16.tfar[rayIndex]);
+    bool16 m_final      = lt(lt(m_aperture,float16(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -457,26 +461,26 @@ namespace embree
       {
 	STAT3(normal.trav_prim_hits,1,1,1);
 	max_dist_xyz  = select(m_final,t,max_dist_xyz);
-	const mic_f min_dist = vreduce_min(max_dist_xyz);
-	const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	const float16 min_dist = vreduce_min(max_dist_xyz);
+	const bool16 m_dist = eq(min_dist,max_dist_xyz);
 	const size_t index = bitscan(toInt(m_dist));
 
 #if FORCE_TRIANGLE_UV == 0
-	const mic_f u0 = uload16f_low(&u_grid[offset_v0]);
-	const mic_f u1 = uload16f_low(&u_grid[offset_v1]);
-	const mic_f u2 = uload16f_low(&u_grid[offset_v2]);
-	const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+	const float16 u0 = uload16f_low(&u_grid[offset_v0]);
+	const float16 u1 = uload16f_low(&u_grid[offset_v1]);
+	const float16 u2 = uload16f_low(&u_grid[offset_v2]);
+	const float16 u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
 
-	const mic_f v0 = uload16f_low(&v_grid[offset_v0]);
-	const mic_f v1 = uload16f_low(&v_grid[offset_v1]);
-	const mic_f v2 = uload16f_low(&v_grid[offset_v2]);
-	const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+	const float16 v0 = uload16f_low(&v_grid[offset_v0]);
+	const float16 v1 = uload16f_low(&v_grid[offset_v1]);
+	const float16 v2 = uload16f_low(&v_grid[offset_v2]);
+	const float16 v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
 #else
-	const mic_f u_final = u;
-	const mic_f v_final = v;
+	const float16 u_final = u;
+	const float16 v_final = v;
 #endif
 
-	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
                 
 	prefetch<PFHINT_L1EX>(&ray16.tfar);  
 	prefetch<PFHINT_L1EX>(&ray16.u);
@@ -487,10 +491,10 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_m m_neg = 0b0101010101010101;
-	const mic_f gnormalx(select(m_neg,mic_f(-normal.x),mic_f(normal.x)));
-	const mic_f gnormaly(select(m_neg,mic_f(-normal.y),mic_f(normal.y)));
-	const mic_f gnormalz(select(m_neg,mic_f(-normal.z),mic_f(normal.z)));
+	const bool16 m_neg = 0b0101010101010101;
+	const float16 gnormalx(select(m_neg,float16(-normal.x),float16(normal.x)));
+	const float16 gnormaly(select(m_neg,float16(-normal.y),float16(normal.y)));
+	const float16 gnormalz(select(m_neg,float16(-normal.z),float16(normal.z)));
 
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
@@ -507,56 +511,56 @@ namespace embree
 
 
   static __forceinline void intersect1_tri16_precise(const size_t rayIndex, 
-						     const mic_f &dir_xyz,
-						     const mic_f &org_xyz,
+						     const float16 &dir_xyz,
+						     const float16 &org_xyz,
 						     Ray16& ray16,
-						     const mic3f &v0_org,
-						     const mic3f &v1_org,
-						     const mic3f &v2_org,
-						     const mic_f &u_grid,
-						     const mic_f &v_grid,
+						     const Vec3f16 &v0_org,
+						     const Vec3f16 &v1_org,
+						     const Vec3f16 &v2_org,
+						     const float16 &u_grid,
+						     const float16 &v_grid,
 						     const unsigned int offset_v0,
 						     const unsigned int offset_v1,
 						     const unsigned int offset_v2,
-						     const mic_m &m_active,
+						     const bool16 &m_active,
 						     const unsigned int subdiv_patch_index)
   {
-    const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const mic3f v0 = v0_org; // - ray_org;
-    const mic3f v1 = v1_org; // - ray_org;
-    const mic3f v2 = v2_org; // - ray_org;
+    const Vec3f16 v0 = v0_org; // - ray_org;
+    const Vec3f16 v1 = v1_org; // - ray_org;
+    const Vec3f16 v2 = v2_org; // - ray_org;
    
-    const mic3f e0 = v2 - v0;
-    const mic3f e1 = v0 - v1;	     
-    const mic3f e2 = v1 - v2;	     
+    const Vec3f16 e0 = v2 - v0;
+    const Vec3f16 e1 = v0 - v1;	     
+    const Vec3f16 e2 = v1 - v2;	     
 
-    const mic3f Ng1     = cross(e1,e0);
-    const mic3f Ng      = Ng1+Ng1;
-    const mic_f den     = dot(Ng,ray_dir);	      
-    const mic_f rcp_den = rcp(den);
+    const Vec3f16 Ng1     = cross(e1,e0);
+    const Vec3f16 Ng      = Ng1+Ng1;
+    const float16 den     = dot(Ng,ray_dir);	      
+    const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-    mic_m m_valid = m_active & (den > zero);
+    bool16 m_valid = m_active & (den > zero);
 #else
-    mic_m m_valid = m_active;
+    bool16 m_valid = m_active;
 #endif
 
-    const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+    const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
     m_valid       = ge( m_valid, u, zero);
 
-    const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+    const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
     m_valid       = ge( m_valid, v, zero);
 
-    const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+    const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
     m_valid       = ge( m_valid, w, zero);
 
     if (unlikely(none(m_valid))) return;
     
-    const mic_m m_den = ne(m_valid,den,zero);
-    const mic_f t = dot(v0,Ng) * rcp_den;
-    mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
-    mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+    const bool16 m_den = ne(m_valid,den,zero);
+    const float16 t = dot(v0,Ng) * rcp_den;
+    float16 max_dist_xyz = float16(ray16.tfar[rayIndex]);
+    bool16 m_final      = lt(lt(m_den,float16(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -564,26 +568,26 @@ namespace embree
       {
 	STAT3(normal.trav_prim_hits,1,1,1);
 	max_dist_xyz  = select(m_final,t,max_dist_xyz);
-	const mic_f min_dist = vreduce_min(max_dist_xyz);
-	const mic_m m_dist = eq(min_dist,max_dist_xyz);
+	const float16 min_dist = vreduce_min(max_dist_xyz);
+	const bool16 m_dist = eq(min_dist,max_dist_xyz);
 	const size_t index = bitscan(toInt(m_dist));
 
 #if FORCE_TRIANGLE_UV == 0
-	const mic_f u0 = uload16f_low(&u_grid[offset_v0]);
-	const mic_f u1 = uload16f_low(&u_grid[offset_v1]);
-	const mic_f u2 = uload16f_low(&u_grid[offset_v2]);
-	const mic_f u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
+	const float16 u0 = uload16f_low(&u_grid[offset_v0]);
+	const float16 u1 = uload16f_low(&u_grid[offset_v1]);
+	const float16 u2 = uload16f_low(&u_grid[offset_v2]);
+	const float16 u_final = u * u1 + v * u2 + (1.0f-u-v) * u0;
 
-	const mic_f v0 = uload16f_low(&v_grid[offset_v0]);
-	const mic_f v1 = uload16f_low(&v_grid[offset_v1]);
-	const mic_f v2 = uload16f_low(&v_grid[offset_v2]);
-	const mic_f v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
+	const float16 v0 = uload16f_low(&v_grid[offset_v0]);
+	const float16 v1 = uload16f_low(&v_grid[offset_v1]);
+	const float16 v2 = uload16f_low(&v_grid[offset_v2]);
+	const float16 v_final = u * v1 + v * v2 + (1.0f-u-v) * v0;
 #else
-	const mic_f u_final = u;
-	const mic_f v_final = v;
+	const float16 u_final = u;
+	const float16 v_final = v;
 #endif
 
-	const mic_m m_tri = m_dist^(m_dist & (mic_m)((unsigned int)m_dist - 1));
+	const bool16 m_tri = m_dist^(m_dist & (bool16)((unsigned int)m_dist - 1));
                 
 	prefetch<PFHINT_L1EX>(&ray16.tfar);  
 	prefetch<PFHINT_L1EX>(&ray16.u);
@@ -594,10 +598,10 @@ namespace embree
 	prefetch<PFHINT_L1EX>(&ray16.geomID);
 	prefetch<PFHINT_L1EX>(&ray16.primID);
 
-	const mic_m m_neg = 0b0101010101010101;
-	const mic_f gnormalx(select(m_neg,mic_f(-Ng.x),mic_f(Ng.x)));
-	const mic_f gnormaly(select(m_neg,mic_f(-Ng.y),mic_f(Ng.y)));
-	const mic_f gnormalz(select(m_neg,mic_f(-Ng.z),mic_f(Ng.z)));
+	const bool16 m_neg = 0b0101010101010101;
+	const float16 gnormalx(select(m_neg,float16(-Ng.x),float16(Ng.x)));
+	const float16 gnormaly(select(m_neg,float16(-Ng.y),float16(Ng.y)));
+	const float16 gnormalz(select(m_neg,float16(-Ng.z),float16(Ng.z)));
 		  
 	compactustore16f_low(m_tri,&ray16.tfar[rayIndex],min_dist);
 	compactustore16f_low(m_tri,&ray16.u[rayIndex],u_final); 
@@ -613,56 +617,56 @@ namespace embree
 
 
   static __forceinline bool occluded1_tri16_precise(const size_t rayIndex, 
-						    const mic_f &dir_xyz,
-						    const mic_f &org_xyz,
+						    const float16 &dir_xyz,
+						    const float16 &org_xyz,
 						    Ray16& ray16,
-						    const mic3f &v0_org,
-						    const mic3f &v1_org,
-						    const mic3f &v2_org,
-						    const mic_f &u_grid,
-						    const mic_f &v_grid,
+						    const Vec3f16 &v0_org,
+						    const Vec3f16 &v1_org,
+						    const Vec3f16 &v2_org,
+						    const float16 &u_grid,
+						    const float16 &v_grid,
 						    const unsigned int offset_v0,
 						    const unsigned int offset_v1,
 						    const unsigned int offset_v2,
-						    const mic_m &m_active,
+						    const bool16 &m_active,
 						    const unsigned int subdiv_patch_index)
   {
-    const mic3f ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const mic3f v0 = v0_org; // - ray_org;
-    const mic3f v1 = v1_org; // - ray_org;
-    const mic3f v2 = v2_org; // - ray_org;
+    const Vec3f16 v0 = v0_org; // - ray_org;
+    const Vec3f16 v1 = v1_org; // - ray_org;
+    const Vec3f16 v2 = v2_org; // - ray_org;
    
-    const mic3f e0 = v2 - v0;
-    const mic3f e1 = v0 - v1;	     
-    const mic3f e2 = v1 - v2;	     
+    const Vec3f16 e0 = v2 - v0;
+    const Vec3f16 e1 = v0 - v1;	     
+    const Vec3f16 e2 = v1 - v2;	     
 
-    const mic3f Ng1     = cross(e1,e0);
-    const mic3f Ng      = Ng1+Ng1;
-    const mic_f den     = dot(Ng,ray_dir);	      
-    const mic_f rcp_den = rcp(den);
+    const Vec3f16 Ng1     = cross(e1,e0);
+    const Vec3f16 Ng      = Ng1+Ng1;
+    const float16 den     = dot(Ng,ray_dir);	      
+    const float16 rcp_den = rcp(den);
 
 #if defined(RTCORE_BACKFACE_CULLING)
-    mic_m m_valid = m_active & (den > zero);
+    bool16 m_valid = m_active & (den > zero);
 #else
-    mic_m m_valid = m_active;
+    bool16 m_valid = m_active;
 #endif
 
-    const mic_f u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
+    const float16 u = dot(cross(v2+v0,e0),ray_dir) * rcp_den; 
     m_valid       = ge( m_valid, u, zero);
 
-    const mic_f v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
+    const float16 v       = dot(cross(v0+v1,e1),ray_dir) * rcp_den; 
     m_valid       = ge( m_valid, v, zero);
 
-    const mic_f w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
+    const float16 w       = dot(cross(v1+v2,e2),ray_dir) * rcp_den;  
     m_valid       = ge( m_valid, w, zero);
 
     if (unlikely(none(m_valid))) return false;
     
-    const mic_m m_den = ne(m_valid,den,zero);
-    const mic_f t = dot(v0,Ng) * rcp_den;
-    mic_f max_dist_xyz = mic_f(ray16.tfar[rayIndex]);
-    mic_m m_final      = lt(lt(m_den,mic_f(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
+    const bool16 m_den = ne(m_valid,den,zero);
+    const float16 t = dot(v0,Ng) * rcp_den;
+    float16 max_dist_xyz = float16(ray16.tfar[rayIndex]);
+    bool16 m_final      = lt(lt(m_den,float16(ray16.tnear[rayIndex]),t),t,max_dist_xyz);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 

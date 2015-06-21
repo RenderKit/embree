@@ -24,6 +24,9 @@
 ./motion_blur_geometry
 ./motion_blur_geometry_ispc
 
+./interpolation
+./interpolation_ispc
+
 ./dynamic_scene
 ./dynamic_scene_ispc
 

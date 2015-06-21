@@ -478,7 +478,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     if (material->map_Kd) 
       {
 #if ENABLE_PTEX == 1
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.u, dg.v);
+        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
 #else
         brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
@@ -696,7 +696,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
  void ThinDielectricMaterial__preprocess(ThinDielectricMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
 }
- 
+
  Vec3fa ThinDielectricMaterial__eval(ThinDielectricMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) {
   return Vec3fa(0.0f);
 }
@@ -809,6 +809,8 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
   return c;
 }
 
+#if !defined(CODE_DISABLED)
+
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
 ////////////////////////////////////////////////////////////////////////////////
@@ -830,7 +832,7 @@ void occlusionFilterReject(void* ptr, RTCRay& ray) {
 #endif
 
 /* error reporting function */
-void error_handler(const RTCError code, const int8* str)
+void error_handler(const RTCError code, const char* str)
 {
   printf("Embree: ");
   switch (code) {
@@ -862,7 +864,7 @@ Vec3fa g_accu_p;
 extern "C" bool g_changed;
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (int8* cfg)
+extern "C" void device_init (char* cfg)
 {
   /* initialize last seen camera */
   g_accu_vx = Vec3fa(0.0f);
@@ -883,6 +885,7 @@ extern "C" void device_init (int8* cfg)
 } // device_init
 
 
+#if ENABLE_DISPLACEMENTS
 void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
                       const float* u,      /*!< u coordinates (source) */
                       const float* v,      /*!< v coordinates (source) */
@@ -907,6 +910,7 @@ void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID,
 	pz[i] += nz[i] * displ;
       }
 }
+#endif
 
 void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
 {
@@ -1098,6 +1102,8 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   return scene_out;
 } // convertScene
 
+#endif
+
 /* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
    Mathematics of Computation, 65, 213 (1996), 203--213:
@@ -1157,7 +1163,7 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
 
   Vec3fa Ns = Vec3fa(0.0f);
   int materialID = 0;
-  foreach_unique (geomID in ray.geomID) 
+  int geomID = ray.geomID;  
   {
     if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
 
@@ -1188,6 +1194,54 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
 }
 #endif
 
+#if !defined(CODE_DISABLED)
+#if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
+inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
+{
+  int materialID = 0;
+  if (geomID_to_type[ray.geomID] == 0)
+    materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
+  else if (geomID_to_type[ray.geomID] == 1)       
+  {                      
+    materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
+#if ENABLE_TEXTURING == 1
+    const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
+#endif
+  }
+  else
+    materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
+  
+  return materialID;
+}
+#else 
+inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
+{
+  int materialID = 0;
+  int geomID = ray.geomID;  {
+    
+    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
+      if (geomID_to_type[geomID] == 0) 
+	materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+      else if (geomID_to_type[geomID] == 1)                
+      {             
+	materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
+#if ENABLE_TEXTURE_COORDINATES == 1
+	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
+	dg.u = st.x;
+	dg.v = st.y;
+#endif
+      }
+      else 
+	materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID;         
+    }
+  }
+  return materialID;
+}
+#endif
+#endif
+
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
 
@@ -1213,7 +1267,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
-#if 0
+#if 1
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
         L = L + Lw*AmbientLight__eval(g_ispc_scene->ambientLights[i],ray.dir); // FIXME: +=
@@ -1224,7 +1278,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
         L = L + Lw*DistantLight__eval(g_ispc_scene->distantLights[i],ray.dir); // FIXME: +=
 #endif
-      if (i==0) L = Vec3fa(1.0f);	
       break;
     }
 
@@ -1241,50 +1294,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.Ns = face_forward(ray.dir,_Ns);
 
     /* shade all rays that hit something */
-   int materialID = 0;
+    int materialID = getMaterialID(ray,dg);
 
-#if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-    if (geomID_to_type[ray.geomID] == 0)
-      materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-    else if (geomID_to_type[ray.geomID] == 1)       
-     {                      
-      materialID = ((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID])->materialID; 
-#if ENABLE_TEXTURING == 1
-	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
-	dg.u = st.x;
-	dg.v = st.y;
-#else
-	dg.u = ray.u;
-	dg.v = ray.v;	
-#endif
-     }
-    else
-      materialID = ((ISPCMesh*) geomID_to_mesh[ray.geomID])->meshMaterialID; 
-#else 
-    foreach_unique (geomID in ray.geomID) {
-     //printf("geomID %\n",geomID);
-     //printf("geomID_to_type[geomID] %\n",geomID_to_type[geomID]);
-     //printf("g_ispc_scene->numMeshes %\n",g_ispc_scene->numMeshes);
-
-      if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
-	if (geomID_to_type[geomID] == 0) 
-	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-	else if (geomID_to_type[geomID] == 1)                
-         {             
- 	  materialID = ((ISPCSubdivMesh*) geomID_to_mesh[geomID])->materialID; 
-#if ENABLE_TEXTURE_COORDINATES == 1
-	  const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
-	  dg.u = st.x;
-	  dg.v = st.y;
-#endif
-
-         }
-	else 
-	  materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->meshMaterialID;         
-      }
-    }
-    //printf("materialID %\n",materialID);
-#endif
     /*! Compute  simple volumetric effect. */
     Vec3fa c = Vec3fa(1.0f);
     const Vec3fa transmission = medium.transmission;
@@ -1309,6 +1320,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
+#if 1
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
@@ -1322,6 +1334,8 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
         L = L + Lw*L0;
       }
+#endif
+
 #if 0
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
@@ -1409,6 +1423,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
 }
+
+#if !defined(CODE_DISABLED)
   
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
@@ -1527,3 +1543,5 @@ extern "C" void device_cleanup ()
   rtcDeleteScene (g_scene);
   rtcExit();
 } // device_cleanup
+
+#endif

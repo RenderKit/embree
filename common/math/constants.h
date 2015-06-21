@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include "../sys/platform.h"
+
 #include <limits>
 
 #define _USE_MATH_DEFINES
-#include <math.h> // using cmake causes issues under Windows
+#include <math.h> // using cmath causes issues under Windows
 #include <cfloat>
 
 namespace embree

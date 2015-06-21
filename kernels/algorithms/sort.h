@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "sys/platform.h"
-#include "sys/sysinfo.h"
-#include "sys/barrier.h"
+#include "../../common/sys/platform.h"
+#include "../../common/sys/sysinfo.h"
+#include "../../common/sys/barrier.h"
 #include "parallel_for.h"
-#include "math/math.h"
+#include "../../common/math/math.h"
 #include <algorithm>
 
 #if defined(__MIC__)
- #include "simd/mic.h"
+ #include "../../common/simd/avx512.h"
 #endif
 
 namespace embree
@@ -269,7 +269,7 @@ namespace embree
 	  {
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&parent->radixCount[threadIndex][i*16],mic_i::zero());
+	      store16i(&parent->radixCount[threadIndex][i*16],int16::zero());
 	    
 	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
 
@@ -282,10 +282,10 @@ namespace embree
 
 	    parent->barrier.wait(threadIndex,threadCount);
 
-	    mic_i count[16];
+	    int16 count[16];
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      count[i] = mic_i::zero();
+	      count[i] = int16::zero();
 
 
 	    for (size_t i=0; i<threadIndex; i++)
@@ -351,9 +351,9 @@ namespace embree
 	const size_t startID = (threadIndex+0)*N/numThreads;
 	const size_t endID   = (threadIndex+1)*N/numThreads;
         
-	if (sizeof(Key) == sizeof(uint32)) 
+	if (sizeof(Key) == sizeof(uint32_t)) 
 	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,4);
-	else if (sizeof(Key) == sizeof(uint64)) 
+	else if (sizeof(Key) == sizeof(uint64_t)) 
 	  radixIteration(src,tmp,startID,endID,threadIndex,numThreads,8);
       }
       
@@ -433,13 +433,13 @@ namespace embree
 
       void tbbRadixSort(const size_t numTasks)
       {
-	if (sizeof(Key) == sizeof(uint32)) {
+	if (sizeof(Key) == sizeof(uint32_t)) {
 	  tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
 	  tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
 	  tbbRadixIteration(2*BITS,0,src,tmp,numTasks);
 	  tbbRadixIteration(3*BITS,1,tmp,src,numTasks);
 	}
-	else if (sizeof(Key) == sizeof(uint64))
+	else if (sizeof(Key) == sizeof(uint64_t))
 	{
 	  tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
 	  tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
@@ -503,12 +503,12 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
 
   template<typename Ty>
     void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
-    radix_sort<Ty,uint32>(src,tmp,N,blockSize);
+    radix_sort<Ty,uint32_t>(src,tmp,N,blockSize);
   }
 
   template<typename Ty>
     void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
-    radix_sort<Ty,uint64>(src,tmp,N,blockSize);
+    radix_sort<Ty,uint64_t>(src,tmp,N,blockSize);
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -626,16 +626,16 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
       
       void tbbRadixSort(const size_t numThreads)
       {
-	if (sizeof(Key) == sizeof(uint32)) {
+	if (sizeof(Key) == sizeof(uint32_t)) {
 	  tbbRadixIteration(0*BITS,0,src,dst,numThreads);
 	  tbbRadixIteration(1*BITS,0,dst,src,numThreads);
 	  tbbRadixIteration(2*BITS,1,src,dst,numThreads);
 	}
-	else if (sizeof(Key) == sizeof(uint64))
+	else if (sizeof(Key) == sizeof(uint64_t))
 	{
 	  Ty* src = this->src;
 	  Ty* dst = this->dst;
-	  for (uint64 shift=0*BITS; shift<64; shift+=BITS) {
+	  for (uint64_t shift=0*BITS; shift<64; shift+=BITS) {
 	    tbbRadixIteration(shift,0,src,dst,numThreads);
 	    std::swap(src,dst);
 	  }
@@ -688,11 +688,11 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
 
   template<typename Ty>
     void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
-    radix_sort_copy<Ty,uint32>(src,dst,N,blockSize);
+    radix_sort_copy<Ty,uint32_t>(src,dst,N,blockSize);
   }
 
   template<typename Ty>
     void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
-    radix_sort_copy<Ty,uint64>(src,dst,N,blockSize);
+    radix_sort_copy<Ty,uint64_t>(src,dst,N,blockSize);
   } 
 }

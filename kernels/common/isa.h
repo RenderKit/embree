@@ -17,11 +17,12 @@
 #pragma once
 
 #define DECLARE_SYMBOL(type,name)                                       \
-  namespace isa   { extern type name; }                                 \
-  namespace sse41 { extern type name; }                                 \
-  namespace sse42 { extern type name; }                                 \
-  namespace avx   { extern type name; }                                 \
-  namespace avx2  { extern type name; }                                 \
+  namespace isa    { extern type name; }                                 \
+  namespace sse41  { extern type name; }                                 \
+  namespace sse42  { extern type name; }                                 \
+  namespace avx    { extern type name; }                                 \
+  namespace avx2   { extern type name; }                                 \
+  namespace avx512 { extern type name; }                                 \
   void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name((type)name##_error);
 
@@ -69,6 +70,16 @@
   if ((features & AVX2) == AVX2) intersector = avx2::intersector;
 #else
 #define SELECT_SYMBOL_AVX2(features,intersector)
+#endif
+
+#if defined(__TARGET_AVX512__)
+#if !defined(__TARGET_SIMD16__)
+#define __TARGET_SIMD16__
+#endif
+#define SELECT_SYMBOL_AVX512(features,intersector) \
+  if ((features & AVX512) == AVX512) intersector = avx512::intersector;
+#else
+#define SELECT_SYMBOL_AVX512(features,intersector)
 #endif
 
 #if defined(__MIC__)

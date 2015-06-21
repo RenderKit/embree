@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "simd/sse.h"
 #include "math.h"
+#include "../simd/sse.h"
 
 namespace embree
 {
@@ -155,18 +155,18 @@ namespace embree
 
 #if defined(__SSE4_1__)
     __forceinline Vec3fa mini(const Vec3fa& a, const Vec3fa& b) {
-      const ssei ai = _mm_castps_si128(a);
-      const ssei bi = _mm_castps_si128(b);
-      const ssei ci = _mm_min_epi32(ai,bi);
+      const int4 ai = _mm_castps_si128(a);
+      const int4 bi = _mm_castps_si128(b);
+      const int4 ci = _mm_min_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
 #endif
     
 #if defined(__SSE4_1__)
     __forceinline Vec3fa maxi(const Vec3fa& a, const Vec3fa& b) {
-      const ssei ai = _mm_castps_si128(a);
-      const ssei bi = _mm_castps_si128(b);
-      const ssei ci = _mm_max_epi32(ai,bi);
+      const int4 ai = _mm_castps_si128(a);
+      const int4 bi = _mm_castps_si128(b);
+      const int4 ci = _mm_max_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
 #endif
@@ -249,10 +249,10 @@ namespace embree
 
   __forceinline Vec3fa cross ( const Vec3fa& a, const Vec3fa& b ) 
   {
-    ssef a0 = ssef(a);
-    ssef b0 = shuffle<1,2,0,3>(ssef(b));
-    ssef a1 = shuffle<1,2,0,3>(ssef(a));
-    ssef b1 = ssef(b);
+    float4 a0 = float4(a);
+    float4 b0 = shuffle<1,2,0,3>(float4(b));
+    float4 a1 = shuffle<1,2,0,3>(float4(a));
+    float4 b1 = float4(b);
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 

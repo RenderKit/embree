@@ -17,112 +17,11 @@
 #pragma once
 
 #include "primitive.h"
-#include "common/globals.h"
+#include "../../common/globals.h"
+#include "../../common/subdiv/bezier_curve.h"
 
 namespace embree
 {
-  struct BezierCurve3D // FIXME: to other file or remove
-  {
-    Vec3fa v0,v1,v2,v3;
-    float t0,t1;
-    int depth;
-
-    __forceinline BezierCurve3D() {}
-
-    __forceinline BezierCurve3D(const Vec3fa& v0, 
-                                const Vec3fa& v1, 
-                                const Vec3fa& v2, 
-                                const Vec3fa& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)
-      : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
-
-    __forceinline const BBox3fa bounds() const {
-      BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1),BBox3fa(v2),BBox3fa(v3));
-      return enlarge(b,Vec3fa(b.upper.w));
-    }
-
-    __forceinline void subdivide(BezierCurve3D& left, BezierCurve3D& right) const
-    {
-      const Vec3fa p00 = v0;
-      const Vec3fa p01 = v1;
-      const Vec3fa p02 = v2;
-      const Vec3fa p03 = v3;
-
-      const Vec3fa p10 = (p00 + p01) * 0.5f;
-      const Vec3fa p11 = (p01 + p02) * 0.5f;
-      const Vec3fa p12 = (p02 + p03) * 0.5f;
-      const Vec3fa p20 = (p10 + p11) * 0.5f;
-      const Vec3fa p21 = (p11 + p12) * 0.5f;
-      const Vec3fa p30 = (p20 + p21) * 0.5f;
-
-      const float t01 = (t0 + t1) * 0.5f;
-
-      left.v0 = p00;
-      left.v1 = p10;
-      left.v2 = p20;
-      left.v3 = p30;
-      left.t0 = t0;
-      left.t1 = t01;
-      left.depth = depth-1;
-        
-      right.v0 = p30;
-      right.v1 = p21;
-      right.v2 = p12;
-      right.v3 = p03;
-      right.t0 = t01;
-      right.t1 = t1;
-      right.depth = depth-1;
-    }
-
-    __forceinline void eval(const float t, Vec3fa& point, Vec3fa& tangent) const
-    {
-      const float t0 = 1.0f - t, t1 = t;
-
-      const Vec3fa p00 = v0;
-      const Vec3fa p01 = v1;
-      const Vec3fa p02 = v2;
-      const Vec3fa p03 = v3;
-
-      const Vec3fa p10 = p00 * t0 + p01 * t1;
-      const Vec3fa p11 = p01 * t0 + p02 * t1;
-      const Vec3fa p12 = p02 * t0 + p03 * t1;
-      const Vec3fa p20 = p10 * t0 + p11 * t1;
-      const Vec3fa p21 = p11 * t0 + p12 * t1;
-      const Vec3fa p30 = p20 * t0 + p21 * t1;
-
-      point = p30;
-      tangent = p21-p20;
-    }
-
-#if defined(__SSE__)
-    __forceinline sse4f eval(const ssef& c0, const ssef& c1, const ssef& c2, const ssef& c3) const
-    {
-      const sse4f p00 = sse4f(v0);
-      const sse4f p01 = sse4f(v1);
-      const sse4f p02 = sse4f(v2);
-      const sse4f p03 = sse4f(v3);
-      return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
-    }
-#endif
-
-#if defined(__AVX__)
-    __forceinline avx4f eval(const avxf& c0, const avxf& c1, const avxf& c2, const avxf& c3) const
-    {
-      const avx4f p00 = avx4f(v0);
-      const avx4f p01 = avx4f(v1);
-      const avx4f p02 = avx4f(v2);
-      const avx4f p03 = avx4f(v3);
-      return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
-    }
-#endif
-
-    friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve3D& curve) {
-      return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
-    }
-  };
-
   struct Bezier1v
   {
     struct Type : public PrimitiveType 
@@ -210,11 +109,11 @@ namespace embree
     __forceinline const BBox3fa bounds() const 
     {
 #if 1
-      const BezierCurve3D curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
+      const BezierCurve3fa curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
 #if defined(__AVX__)
-      const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 #else
-      const sse4f pi = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+      const sse4f pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
@@ -234,11 +133,11 @@ namespace embree
       Vec3fa b2 = xfmPoint(space,p2); b2.w = p2.w;
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
 #if 1
-      const BezierCurve3D curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
+      const BezierCurve3fa curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
 #if defined(__AVX__)
-      const avx4f pi = curve2D.eval(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+      const avx4f pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 #else
-      const sse4f pi = curve2D.eval(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+      const sse4f pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
 #endif
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
@@ -336,8 +235,8 @@ namespace embree
       return true;
     }
 
-    __forceinline uint64 id64() const {
-      return (((uint64)prim) << 32) + (uint64)geom;
+    __forceinline uint64_t id64() const {
+      return (((uint64_t)prim) << 32) + (uint64_t)geom;
     }
 
     friend __forceinline bool operator<(const Bezier1v& p0, const Bezier1v& p1) {

@@ -14,10 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "embree2/rtcore.h"
-#include "tutorial/tutorial.h"
-#include "kernels/xeon/bvh4/bvh4.h"
-#include "kernels/xeon/geometry/triangle4v.h"
+#include "../common/tutorial/tutorial.h"
+#include "../../include/embree2/rtcore.h"
+#include "../../kernels/xeon/bvh4/bvh4.h"
+#include "../../kernels/xeon/geometry/triangle4v.h"
 
 namespace embree
 {
@@ -27,7 +27,7 @@ namespace embree
   struct Triangle { int v0, v1, v2; };
 
   /* error reporting function */
-  void error_handler(const RTCError code, const int8* str)
+  void error_handler(const RTCError code, const char* str)
   {
     printf("Embree: ");
     switch (code) {
@@ -126,11 +126,11 @@ namespace embree
   {
     unsigned int geomID = rtcNewHairGeometry (scene_i, RTC_GEOMETRY_STATIC, 1, 4, 1);
 
-    ssef* pos = (ssef*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
-    pos[0] = ssef(0.0f,0.0f,0.0f,0.1f);
-    pos[1] = ssef(0.0f,1.0f,0.0f,0.1f);
-    pos[2] = ssef(0.0f,2.0f,0.0f,0.1f);
-    pos[3] = ssef(0.0f,3.0f,0.0f,0.1f);
+    float4* pos = (float4*) rtcMapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
+    pos[0] = float4(0.0f,0.0f,0.0f,0.1f);
+    pos[1] = float4(0.0f,1.0f,0.0f,0.1f);
+    pos[2] = float4(0.0f,2.0f,0.0f,0.1f);
+    pos[3] = float4(0.0f,3.0f,0.0f,0.1f);
     rtcUnmapBuffer(scene_i,geomID,RTC_VERTEX_BUFFER);
 
     int* index = (int*) rtcMapBuffer(scene_i,geomID,RTC_INDEX_BUFFER);

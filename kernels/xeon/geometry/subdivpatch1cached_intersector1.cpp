@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+ 
 #include "subdivpatch1cached_intersector1.h"
-#include "xeon/bvh4/bvh4.h"
-#include "xeon/bvh4/bvh4_intersector1.h"
+#include "../bvh4/bvh4.h"
+#include "../bvh4/bvh4_intersector1.h"
 
 #define TIMER(x) 
 #define DBG(x) 
@@ -25,11 +25,6 @@ namespace embree
 {
   namespace isa
   {  
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    __thread LocalTessellationCacheThreadInfo* SubdivPatch1CachedIntersector1::localThreadInfo = nullptr;
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void verifySubTreeBVH(const BVH4::NodeRef ref)
@@ -111,121 +106,61 @@ namespace embree
         }
     }
 
-    // void copyTessellationCacheTag(TessellationCacheTag *dest, TessellationCacheTag *source)
-    // {
-    //   assert( dest->getNumBlocks() >= source->getNumBlocks() );
-    //   const size_t needed_blocks = source->getNumBlocks();
-      
-    //   memcpy(dest->getPtr(),source->getPtr(),64*needed_blocks);
-    //   size_t source_root = source->getRootRef();
-    //   updateBVH4Refs(source_root,(size_t)source->getPtr(),(size_t)dest->getPtr());
-    //   dest->updateRootRef( ((size_t)source_root - (size_t)source->getPtr()) + (size_t)dest->getPtr() );
-
-    //   const size_t l1_range0 = (size_t)dest->getPtr();
-    //   const size_t l1_range1 = l1_range0 + 64*needed_blocks;
-    //   size_t l1_blocks = countBlocks(BVH4::NodeRef(dest->getRootRef()),l1_range0,l1_range1);
-              
-    //   assert(l1_blocks >= needed_blocks);              
-    // }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /* build lazy subtree over patch */
     size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
 							  SubdivPatch1Cached* const subdiv_patch, 
-							  const void* geom)
+							  const Scene* scene)
     {
       /* unlock previous patch */
       if (pre.current_patch)
-	{
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);
-	}
+      {
+        assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(pre.t_state));
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);
+      }
 
       while(1)
-	{
-	  /* per thread lock */
-	  while(1)
-	    {
-	      unsigned int lock = SharedLazyTessellationCache::sharedLazyTessellationCache.lockThread(pre.threadID);	       
-	      if (unlikely(lock == 1))
-		{
-		  /* lock failed wait until sync phase is over */
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);	       
-		  SharedLazyTessellationCache::sharedLazyTessellationCache.waitForUsersLessEqual(pre.threadID,0);
-		}
-	      else
-		break;
-	    }
-      
-	  static const size_t REF_TAG      = 1;
-	  static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
+      {
 
-	  /* fast path for cache hit */
-	  {
-	    CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref; 
-	    
-	    if (likely(subdiv_patch_root_ref)) 
-	      {
-		const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-		const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-		
-		if (likely( SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index) ))
-		  {
-		    CACHE_STATS(SharedTessellationCacheStats::cache_hits++);
-		    return subdiv_patch_root;
-		  }
-	      }
-	  }
+        SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(pre.t_state);
+       
+        const size_t globalTime = scene->commitCounter;
+        if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref,globalTime))
+            return (size_t) ptr;
+        
+        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.t_state);		  
 
-	  /* cache miss */
-	  CACHE_STATS(SharedTessellationCacheStats::cache_misses++);
+        if (subdiv_patch->try_write_lock())
+        {
+          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
+          {
+            /* generate vertex grid, lock and allocate memory in the cache */
+            size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,pre.t_state,scene->getSubdivMesh(subdiv_patch->geom));                                
+            
+            /* get current commit index */
+            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
+            const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
 
-	  subdiv_patch->write_lock();
-	  {
-	    const int64 subdiv_patch_root_ref    = subdiv_patch->root_ref;
-	    const size_t subdiv_patch_cache_index = subdiv_patch_root_ref >> 32;
-
-	    /* do we still need to create the subtree data? */
-	    if (subdiv_patch_root_ref == 0 || !SharedLazyTessellationCache::sharedLazyTessellationCache.validCacheIndex(subdiv_patch_cache_index))
-	      {	      
-		size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.alloc(subdiv_patch->grid_subtree_size_64b_blocks);
-		if (block_index == (size_t)-1)
-		  {
-		    /* cannot allocate => flush the cache */
-		    subdiv_patch->write_unlock();
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
-		    SharedLazyTessellationCache::sharedLazyTessellationCache.resetCache();
-		    continue;
-		  }
-		BVH4::Node* node = (BVH4::Node*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
-#if COMPACT == 1
-                int64 new_root_ref = (int64)buildSubdivPatchTreeCompact(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));                                
-
-#else                
-		size_t new_root_ref = (size_t)buildSubdivPatchTree(*subdiv_patch,node,((Scene*)geom)->getSubdivMesh(subdiv_patch->geom));
-#endif
-		void *test = (void*)new_root_ref;
-
-		new_root_ref -= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-		assert( new_root_ref <= 0xffffffff );
-		assert( !(new_root_ref & REF_TAG) );
-		new_root_ref |= REF_TAG;
-		new_root_ref |= (int64)SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex() << 32; 
-		subdiv_patch->root_ref = new_root_ref;
-
+            __memory_barrier();
+            /* write new root ref */
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
+            
 #if _DEBUG
-		const size_t patchIndex = subdiv_patch - pre.array;
-		assert(patchIndex < pre.numPrimitives);
-		CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
-		//SharedTessellationCacheStats::newDeletePatchPtr(patchIndex,pre.numPrimitives,subdiv_patch->grid_subtree_size_64b_blocks*64);
+            const size_t patchIndex = subdiv_patch - pre.array;
+            assert(patchIndex < pre.numPrimitives);
+            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
 #endif
-	      }
-	  }
-	  subdiv_patch->write_unlock();
-	  SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(pre.threadID);		  
-	}
-      
+            assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(pre.t_state));
+
+            /* unlock current patch */
+            subdiv_patch->write_unlock();
+
+            /* memory region still locked, forward progress guaranteed */
+            return new_root_ref;
+          }
+          /* unlock current patch */
+          subdiv_patch->write_unlock();
+        }
+      }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -233,49 +168,71 @@ namespace embree
     
     
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-									      void *const lazymem,
+                                                                              ThreadWorkState *t_state,
 									      const SubdivMesh* const geom)
     {      
-      TIMER(double msec = 0.0);
-      TIMER(msec = getSeconds());
-      TIMER(uint64 cycles = rdtsc());
       assert( patch.grid_size_simd_blocks >= 1 );
 
       const size_t array_elements = patch.grid_size_simd_blocks * 8;
-
-#if 0
-      PRINT( patch.grid_u_res );
-      PRINT( patch.grid_v_res );
-      PRINT( array_elements );
-      PRINT( patch.grid_size_simd_blocks );
-      PRINT( patch.grid_subtree_size_64b_blocks );
-#endif
  
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float grid_u[array_elements+16]; 
-      __aligned(64) float grid_v[array_elements+16];
-     
+      __aligned(64) float local_grid_u[array_elements+16]; 
+      __aligned(64) float local_grid_v[array_elements+16];
+      __aligned(64) float local_grid_x[array_elements+16];
+      __aligned(64) float local_grid_y[array_elements+16];
+      __aligned(64) float local_grid_z[array_elements+16];
 #else
 #define MAX_GRID_SIZE 64*64
-      __aligned(64) float local_grid_u[MAX_GRID_SIZE];
-      __aligned(64) float local_grid_v[MAX_GRID_SIZE];
-	  float *const grid_u = (patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE) ? local_grid_u : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-	  float *const grid_v = (patch.grid_size_simd_blocks * 8 < MAX_GRID_SIZE) ? local_grid_v : (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+      __aligned(64) float tmp_grid_u[MAX_GRID_SIZE];
+      __aligned(64) float tmp_grid_v[MAX_GRID_SIZE];
+      __aligned(64) float tmp_grid_x[MAX_GRID_SIZE];
+      __aligned(64) float tmp_grid_y[MAX_GRID_SIZE];
+      __aligned(64) float tmp_grid_z[MAX_GRID_SIZE];
+
+      float *local_grid_u = tmp_grid_u;
+      float *local_grid_v = tmp_grid_v;
+      float *local_grid_x = tmp_grid_x;
+      float *local_grid_y = tmp_grid_y;
+      float *local_grid_z = tmp_grid_z;
+      if (unlikely(array_elements >= MAX_GRID_SIZE))
+      { 
+        local_grid_u = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+        local_grid_v = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+        local_grid_x = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+        local_grid_y = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+        local_grid_z = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
+      }
 #endif   
+
+
+      /* compute vertex grid (+displacement) */
+      evalGrid(patch,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+
+      /* lock the cache */
+      SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
+
+      /* allocate memory in cache and get current commit index */
+
+      void *const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*patch.grid_subtree_size_64b_blocks);
+
+      /* copy temporary data to tessellation cache */
+
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
       float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
       float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
       float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
-
       assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
-      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
+      memcpy(grid_x ,local_grid_x ,array_elements*sizeof(float));
+      memcpy(grid_y ,local_grid_y ,array_elements*sizeof(float));
+      memcpy(grid_z ,local_grid_z ,array_elements*sizeof(float));
 
       for (size_t i=0;i<array_elements;i++)
-        grid_uv[i] = (((int)(grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(grid_u[i] * 65535.0f/2.0f)); 
+        grid_uv[i] = (((int)(local_grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(local_grid_u[i] * 65535.0f/2.0f)); 
       
+      /* build bvh tree */
       BVH4::NodeRef subtree_root = 0;
       unsigned int currentIndex = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
@@ -296,26 +253,16 @@ namespace embree
       
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
 
-      TIMER(cycles = rdtsc() - cycles);
-      TIMER(msec = getSeconds()-msec);            
-      TIMER(double throughput = 1.0 / (1000*msec));
-      TIMER(double throughput2 = (2300*1E3) / (double)cycles);
-
-      TIMER(PRINT(throughput));
-      TIMER(PRINT(throughput2));
-
-      TIMER(PRINT(1000*msec));
-      TIMER(PRINT(patch.grid_u_res));
-      TIMER(PRINT(patch.grid_v_res));
-      TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
-
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 	
-	  if (patch.grid_size_simd_blocks * 8 >= MAX_GRID_SIZE)
-	  {
-	    _mm_free(grid_u);
-		_mm_free(grid_v);
-	  }
+      if (array_elements >= MAX_GRID_SIZE)
+      {
+        _mm_free(local_grid_u);
+        _mm_free(local_grid_v);
+        _mm_free(local_grid_x);
+        _mm_free(local_grid_y);
+        _mm_free(local_grid_z);       
+      }
 #endif
       return subtree_root;
     }
@@ -429,217 +376,5 @@ namespace embree
       
       return bounds;
     }
-
-    BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTree(const SubdivPatch1Cached &patch,
-                                                                       void *const lazymem,
-                                                                       const SubdivMesh* const geom)
-    {      
-      TIMER(double msec = 0.0);
-      TIMER(msec = getSeconds());
-        
-      assert( patch.grid_size_simd_blocks >= 1 );
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
-      __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
-        
-      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
-     
-#else
-      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-
-      float *grid_x = &grid_arrays[array_elements * 0];
-      float *grid_y = &grid_arrays[array_elements * 1];
-      float *grid_z = &grid_arrays[array_elements * 2];
-      float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];
-
-        
-#endif   
-      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-     
-      BVH4::NodeRef subtree_root = BVH4::encodeNode( (BVH4::Node*)lazymem);
-      unsigned int currentIndex = 0;
-      BBox3fa bounds = createSubTree( subtree_root,
-				      (float*)lazymem,
-				      patch,
-				      grid_x,
-				      grid_y,
-				      grid_z,
-				      grid_u,
-				      grid_v,
-				      GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-				      currentIndex,
-				      geom);
-        
-      assert(currentIndex == patch.grid_subtree_size_64b_blocks);
-
-      TIMER(msec = getSeconds()-msec);    
-	{
-         TIMER(PRINT(1000*msec));
-         TIMER(PRINT(patch.grid_u_res));
-         TIMER(PRINT(patch.grid_v_res));
-         TIMER(PRINT(patch.grid_subtree_size_64b_blocks*64));
-        }
-
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif
-      return subtree_root;
-    }
-
-    
-    
-    
-    BBox3fa SubdivPatch1CachedIntersector1::createSubTree(BVH4::NodeRef &curNode,
-                                                          float *const lazymem,
-                                                          const SubdivPatch1Cached &patch,
-                                                          const float *const grid_x_array,
-                                                          const float *const grid_y_array,
-                                                          const float *const grid_z_array,
-                                                          const float *const grid_u_array,
-                                                          const float *const grid_v_array,
-                                                          const GridRange &range,
-                                                          unsigned int &localCounter,
-                                                          const SubdivMesh* const geom)
-    {
-      if (range.hasLeafSize())
-	{
-	  const unsigned int u_start = range.u_start;
-	  const unsigned int u_end   = range.u_end;
-	  const unsigned int v_start = range.v_start;
-	  const unsigned int v_end   = range.v_end;
-        
-	  const unsigned int u_size = u_end-u_start+1;
-	  const unsigned int v_size = v_end-v_start+1;
-        
-	  assert(u_size >= 1);
-	  assert(v_size >= 1);
-        
-	  assert(u_size*v_size <= 9);
-        
-	  const unsigned int currentIndex = localCounter;
-	  localCounter +=  (sizeof(Quad2x2)+63) / 64; 
-        
-	  Quad2x2 *qquad = (Quad2x2*)&lazymem[currentIndex*16];
-                
-	  ssef leaf_x_array[3];
-	  ssef leaf_y_array[3];
-	  ssef leaf_z_array[3];
-	  ssef leaf_u_array[3];
-	  ssef leaf_v_array[3];
-        
-	  for (unsigned int v=v_start;v<=v_end;v++)
-	    {
-	      const size_t offset = v * patch.grid_u_res + u_start;
-	      const unsigned int local_v = v - v_start;
-	      leaf_x_array[local_v] = loadu4f(&grid_x_array[ offset ]);
-	      leaf_y_array[local_v] = loadu4f(&grid_y_array[ offset ]);
-	      leaf_z_array[local_v] = loadu4f(&grid_z_array[ offset ]);
-	      leaf_u_array[local_v] = loadu4f(&grid_u_array[ offset ]);
-	      leaf_v_array[local_v] = loadu4f(&grid_v_array[ offset ]);            
-	    }
-        
-	  /* set invalid grid u,v value to border elements */
-	  for (unsigned int x=u_size-1;x<3;x++)
-	    for (unsigned int y=0;y<3;y++)
-	      {
-		leaf_x_array[y][x] = leaf_x_array[y][u_size-1];
-		leaf_y_array[y][x] = leaf_y_array[y][u_size-1];
-		leaf_z_array[y][x] = leaf_z_array[y][u_size-1];
-		leaf_u_array[y][x] = leaf_u_array[y][u_size-1];
-		leaf_v_array[y][x] = leaf_v_array[y][u_size-1];
-	      }
-        
-	  for (unsigned int y=v_size-1;y<3;y++)
-	    for (unsigned int x=0;x<3;x++)
-	      {
-		leaf_x_array[y][x] = leaf_x_array[v_size-1][x];
-		leaf_y_array[y][x] = leaf_y_array[v_size-1][x];
-		leaf_z_array[y][x] = leaf_z_array[v_size-1][x];
-		leaf_u_array[y][x] = leaf_u_array[v_size-1][x];
-		leaf_v_array[y][x] = leaf_v_array[v_size-1][x];
-	      }
-        
-                
-	  qquad->init( leaf_x_array, 
-		       leaf_y_array, 
-		       leaf_z_array, 
-		       leaf_u_array, 
-		       leaf_v_array);
-        
-#if 0
-	  PRINT("LEAF");
-	  PRINT(u_start);
-	  PRINT(v_start);
-	  PRINT(u_end);
-	  PRINT(v_end);
-        
-	  for (unsigned int y=0;y<3;y++)
-	    for (unsigned int x=0;x<3;x++)
-	      std::cout << y << " " << x 
-			<< " ->  x = " << leaf_x_array[y][x] << " y = " << leaf_v_array[y][x] << " z = " << leaf_z_array[y][x]
-			<< "   u = " << leaf_u_array[y][x] << " v = " << leaf_v_array[y][x] << std::endl;
-        
-	  PRINT( *qquad );
-        
-#endif          
-        
-	  BBox3fa bounds = qquad->bounds();
-	  curNode = BVH4::encodeTypedLeaf(qquad,2);
-        
-	  return bounds;
-	}
-      
-      
-      /* allocate new bvh4 node */
-      const size_t currentIndex = localCounter;
-      
-      /* 128 bytes == 2 x 64 bytes cachelines */
-      localCounter += 2; 
-      
-      BVH4::Node *node = (BVH4::Node *)&lazymem[currentIndex*16];
-      
-      curNode = BVH4::encodeNode( node );
-      
-      node->clear();
-      
-      GridRange r[4];
-      
-      const unsigned int children = range.splitIntoSubRanges(r);
-      
-      /* create four subtrees */
-      BBox3fa bounds( empty );
-      
-      for (unsigned int i=0;i<children;i++)
-	{
-	  BBox3fa bounds_subtree = createSubTree( node->child(i), 
-						  lazymem, 
-						  patch, 
-						  grid_x_array,
-						  grid_y_array,
-						  grid_z_array,
-						  grid_u_array,
-						  grid_v_array,
-						  r[i],						  
-						  localCounter,
-						  geom);
-	  node->set(i, bounds_subtree);
-	  bounds.extend( bounds_subtree );
-	}
-      
-      return bounds;
-    }
-
-
-
-    void SubdivPatch1CachedIntersector1::createLocalThreadInfo()
-    {
-      localThreadInfo = new LocalTessellationCacheThreadInfo( SharedLazyTessellationCache::sharedLazyTessellationCache.getNextRenderThreadID() );	      
-    }
-
-  };
+  }
 }

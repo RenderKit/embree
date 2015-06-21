@@ -14,9 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE_DIRECTORIES     (${CMAKE_CURRENT_SOURCE_DIR}/common)
-INCLUDE_DIRECTORIES_ISPC(${CMAKE_CURRENT_SOURCE_DIR}/common)
-
 #OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
 
 IF (TUTORIAL_USE_PTEX)
@@ -42,6 +39,7 @@ ADD_SUBDIRECTORY(bvh_builder)
 ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
+ADD_SUBDIRECTORY(interpolation)
 
 IF (ENABLE_XEON_PHI_SUPPORT)
   SET (__XEON__ 0)
@@ -57,6 +55,7 @@ IF (ENABLE_XEON_PHI_SUPPORT)
   ADD_SUBDIRECTORY(subdivision_geometry subdivision_geometry_host)
   ADD_SUBDIRECTORY(displacement_geometry displacement_geometry_host)
   ADD_SUBDIRECTORY(motion_blur_geometry motion_blur_geometry_host)
+  ADD_SUBDIRECTORY(interpolation interpolation_host)
   SET (__HOST__ 0)
   ADD_SUBDIRECTORY(triangle_geometry triangle_geometry_device)
   ADD_SUBDIRECTORY(dynamic_scene dynamic_scene_device)
@@ -69,4 +68,5 @@ IF (ENABLE_XEON_PHI_SUPPORT)
   ADD_SUBDIRECTORY(subdivision_geometry subdivision_geometry_device)
   ADD_SUBDIRECTORY(displacement_geometry displacement_geometry_device)
   ADD_SUBDIRECTORY(motion_blur_geometry motion_blur_geometry_device)
+  ADD_SUBDIRECTORY(interpolation interpolation_device)
 ENDIF()

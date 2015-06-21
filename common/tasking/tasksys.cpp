@@ -14,15 +14,15 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "sys/platform.h"
-#include "kernels/algorithms/parallel_for.h" 
+#include "../sys/platform.h"
+#include "../../kernels/algorithms/parallel_for.h" 
 
 #if defined(TASKING_LOCKSTEP)
-#include "tasking/taskscheduler_mic.h"
+#include "taskscheduler_mic.h"
 #endif
 
 #if defined(TASKING_TBB_INTERNAL) || defined(TASKING_TBB)
-#include "tasking/taskscheduler_tbb.h"
+#include "taskscheduler_tbb.h"
 #endif
 
 namespace embree
@@ -59,7 +59,7 @@ namespace embree
     delete this;
   }
 
-  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) {
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment) {
     if (*taskPtr == nullptr) *taskPtr = new TaskScheduler::EventSync;
     return (char*)_mm_malloc(size,alignment); 
   }
@@ -78,7 +78,7 @@ namespace embree
 
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
 
-  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64 size, int32 alignment) 
+  extern "C" __dllexport void* ISPCAlloc(void** taskPtr, int64_t size, int32_t alignment) 
   {
     if (*taskPtr == nullptr) *taskPtr = new std::vector<void*>;
     std::vector<void*>* lst = (std::vector<void*>*)(*taskPtr);
