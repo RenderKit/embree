@@ -19,7 +19,7 @@
 #include "../builders/bvh_builder_sah.h"
 
 #define PROFILE 0
-#define MIN_OPEN_SIZE 2000 // FIXME: for many small dynamic instances this can significantly reduce build performance
+#define MAX_OPEN_SIZE 10000
 
 namespace embree
 {
@@ -131,10 +131,16 @@ namespace embree
       }
 
       /* open all large nodes */
-      open_sequential(); 
-      prims.resize(refs.size());
+      open_sequential(numPrimitives); 
+      
+      /* fast path for small geometries */
+      if (refs.size() == 1) { 
+        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        return;
+      }
 
       /* compute PrimRefs */
+      prims.resize(refs.size());
       const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(), size_t(1024), PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo
       {
         PrimInfo pinfo(empty);
@@ -197,12 +203,12 @@ namespace embree
       refs.clear();
     }
 
-    void BVH4BuilderTwoLevel::open_sequential()
+    void BVH4BuilderTwoLevel::open_sequential(size_t numPrimitives)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t N = max(2*refs.size(),size_t(MIN_OPEN_SIZE));
+      size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
       refs.reserve(N);
       
       std::make_heap(refs.begin(),refs.end());
