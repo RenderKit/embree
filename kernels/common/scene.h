@@ -258,6 +258,7 @@ namespace embree
     MutexSys schedulerMutex;
     Ref<TaskSchedulerTBB> scheduler;
 #else
+    //tbb::task_arena* arena;
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
 #endif

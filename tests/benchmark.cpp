@@ -17,6 +17,7 @@
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
+#include "../kernels/algorithms/parallel_for.h"
 #include <vector>
 
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE)
@@ -560,6 +561,61 @@ namespace embree
     }
   };
 
+  class update_scenes : public Benchmark
+  {
+  public:
+    RTCGeometryFlags flags; size_t numPhi; size_t numMeshes;
+    update_scenes(const std::string& name, RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
+      : Benchmark(name,"Mtris/s"), flags(flags), numPhi(numPhi), numMeshes(numMeshes) {}
+  
+    double run(size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+      std::vector<RTCScene> scenes;
+      
+      for (size_t i=0; i<numMeshes; i++) 
+      {
+        RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+	unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
+	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
+	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+	rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+	for (size_t i=0; i<mesh.vertices.size(); i++) {
+	  mesh.vertices[i].x += 1.0f;
+	  mesh.vertices[i].y += 1.0f;
+	  mesh.vertices[i].z += 1.0f;
+	}
+        scenes.push_back(scene);
+        rtcCommit (scene);
+      }
+            
+      double t0 = getSeconds();
+#if defined(__MIC__)
+      for (size_t i=0; i<scenes.size(); i++) {
+        rtcUpdate(scenes[i],0);
+        rtcCommit (scenes[i]);
+      }
+#else
+      parallel_for( scenes.size(), [&](size_t i) { 
+          rtcUpdate(scenes[i],0); 
+          rtcCommit (scenes[i]);
+        });
+#endif
+      
+      double t1 = getSeconds();
+      for (size_t i=0; i<scenes.size(); i++)
+        rtcDeleteScene(scenes[i]);
+      rtcExit();
+      
+      //return 1000.0f*(t1-t0);
+      size_t numTriangles = mesh.triangles.size() * numMeshes;
+      return 1E-6*double(numTriangles)/(t1-t0);
+    }
+  };
+
   void rtcore_coherent_intersect1(RTCScene scene)
   {
     size_t width = 1024;
@@ -828,6 +884,18 @@ namespace embree
     benchmarks.push_back(new update_geometry ("update_geometry_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
+
+    benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
+    benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
+    benchmarks.push_back(new update_scenes ("update_scenes_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
   }
 
