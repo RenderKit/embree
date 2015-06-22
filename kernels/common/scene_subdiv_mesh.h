@@ -180,12 +180,15 @@ namespace embree
 
       /*! tests if the face is a regular b-spline face */
       __forceinline bool isRegularFace() const {
-        return patchType() == REGULAR_QUAD_PATCH;
+        return type == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return patchType() == IRREGULAR_QUAD_PATCH || patchType() == REGULAR_QUAD_PATCH /* || patchType() == IRREGULAR_TRIANGLE_PATCH */;
+        return \
+          type == IRREGULAR_QUAD_PATCH || 
+          type == REGULAR_QUAD_PATCH;
+        //type == IRREGULAR_TRIANGLE_PATCH;
       }
 
       /*! tests if the base vertex of this half edge is a corner vertex */
