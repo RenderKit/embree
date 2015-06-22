@@ -490,7 +490,8 @@ namespace embree
                       const unsigned int pID,
                       const SubdivMesh *const mesh,
                       const Vec2f uv[4],
-                      const float edge_level[4]);
+                      const float edge_level[4],
+                      const int subdiv[4]);
 
     SubdivPatch1Base (const unsigned int gID,
                       const unsigned int pID,

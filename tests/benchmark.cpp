@@ -1016,7 +1016,10 @@ namespace embree
       numThreads -= 4;
 #endif
       if (g_num_threads_init != -1)
+      {
         numThreads = g_num_threads_init;
+        PRINT(numThreads);
+      }
 
       rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
       for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads,4);

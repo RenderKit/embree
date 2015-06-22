@@ -895,7 +895,13 @@ namespace embree
               
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
-                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, mesh->id, f, mesh, uv, edge_level);
+                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, 
+                                                                                                     mesh->id, 
+                                                                                                     f, 
+                                                                                                     mesh, 
+                                                                                                     uv, 
+                                                                                                     edge_level,
+                                                                                                     subdiv);
 #else
 						     const unsigned int patchIndex = base.size()+s.size();
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id, f, mesh);

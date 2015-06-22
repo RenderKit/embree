@@ -29,18 +29,35 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
+#if 0
+      // will be removed soon
+      if (!(primID == 4109 ||
+            primID == 4282 ||
+            primID == 4287))
+        return;
+      PRINT(primID);
+      PRINT(h->isGregoryFace());
+
+#endif
 
       /* fast path for regular input primitives */
-      //if (likely(h->isRegularFace()))
       if (likely(h->isGregoryFace()))
       {
 	CatmullClarkPatch3fa patch; 
         patch.init(h,vertices);
-        int neighborSubdiv[4] = { 0,0,0,0 };
+        int neighborSubdiv[4];
+        for (size_t i=0;i<4;i++)
+        {
+          neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; 
+          h = h->next();
+        }
+
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
         tessellator(patch,uv,neighborSubdiv);        
         return;
       }      
+
+
       /* slow path for everything else */
       int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       GeneralCatmullClarkPatch3fa patch;
@@ -51,6 +68,7 @@ namespace embree
 	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
       }
 
+      
       subdivide(patch,0,neighborSubdiv);
 
     }

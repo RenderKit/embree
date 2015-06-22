@@ -1205,7 +1205,7 @@ PRINT(CORRECT_numPrims);
 						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
 
 						     const unsigned int patchIndex = base.size()+s.size();
-						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
+						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level, subdiv);
 #else
 						     const unsigned int patchIndex = base.size()+s.size();
                                                      subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
