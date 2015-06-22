@@ -28,7 +28,7 @@ namespace embree
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
   __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
   __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
-  __dllexport TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
+  TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
 
   template<typename Predicate, typename Body>
   __forceinline void TaskSchedulerTBB::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
@@ -358,5 +358,17 @@ namespace embree
     }
 
     return false;
+  }
+
+  __dllexport void TaskSchedulerTBB::startThreads() {
+    threadPool->startThreads();
+  }
+
+  __dllexport void TaskSchedulerTBB::addScheduler(const Ref<TaskSchedulerTBB>& scheduler) {
+    threadPool->add(scheduler);
+  }
+
+  __dllexport void TaskSchedulerTBB::removeScheduler(const Ref<TaskSchedulerTBB>& scheduler) {
+    threadPool->remove(scheduler);
   }
 }

@@ -278,7 +278,7 @@ namespace embree
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (useThreadPool) threadPool->startThreads();
+      if (useThreadPool) startThreads();
       
       Thread thread(0,this);
       assert(threadLocal[0] == nullptr);
@@ -293,11 +293,11 @@ namespace embree
         condition.notify_all();
       }
       
-      if (useThreadPool) threadPool->add(this);
+      if (useThreadPool) addScheduler(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
-      if (useThreadPool) threadPool->remove(this);
+      if (useThreadPool) removeScheduler(this);
       
       threadLocal[0] = nullptr;
       swapThread(oldThread);
@@ -362,6 +362,15 @@ namespace embree
     /*! returns the taskscheduler object to be used by the master thread */
     __dllexport static TaskSchedulerTBB* instance();
 
+    /*! starts the threads */
+    __dllexport static void startThreads();
+
+    /*! adds a task scheduler object for scheduling */
+    __dllexport static void addScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+
+    /*! remove the task scheduler object again */
+    __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+
   private:
     Thread* threadLocal[MAX_THREADS];
     volatile atomic_t threadCounter;
@@ -373,7 +382,7 @@ namespace embree
   private:
     static __thread TaskSchedulerTBB* g_instance;
     static __thread Thread* thread_local_thread;
-    __dllexport static ThreadPool* threadPool;
+    static ThreadPool* threadPool;
   };
 };
 
