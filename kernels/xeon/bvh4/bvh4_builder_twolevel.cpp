@@ -19,7 +19,7 @@
 #include "../builders/bvh_builder_sah.h"
 
 #define PROFILE 0
-#define MIN_OPEN_SIZE 2000
+#define MIN_OPEN_SIZE 2000 // FIXME: for many small dynamic instances this can significantly reduce build performance
 
 namespace embree
 {
@@ -124,8 +124,14 @@ namespace embree
       
       refs.resize(nextRef);
 
+      /* fast path for single geometry scenes */
+      if (refs.size() == 1) { 
+        bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
+        return;
+      }
+
       /* open all large nodes */
-      open_sequential();
+      open_sequential(); 
       prims.resize(refs.size());
 
       /* compute PrimRefs */

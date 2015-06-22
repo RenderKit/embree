@@ -547,7 +547,6 @@ namespace embree
 	}
       }
       rtcCommit (scene);
-      
       double t0 = getSeconds();
       for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
       rtcCommit (scene);
@@ -886,6 +885,18 @@ namespace embree
     benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
 
+    benchmarks.push_back(new update_scenes ("refit_scenes_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
+    benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
+#endif
+
     benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
     benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
@@ -964,7 +975,7 @@ namespace embree
 	size_t numThreads = atoi(argv[++i]);
 	std::string name = argv[++i];
 	Benchmark* benchmark = getBenchmark(name);
-	benchmark->print(numThreads,64);
+	benchmark->print(numThreads,16);
       }
 
       /* skip unknown command line parameter */
