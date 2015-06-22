@@ -57,6 +57,7 @@ namespace embree
   LinearBarrierActive g_barrier_active;
   size_t g_num_mutex_locks = 100000;
   size_t g_num_threads = 0;
+  ssize_t g_num_threads_init = -1;
   atomic_t g_atomic_cntr = 0;
 
   class Benchmark
@@ -92,6 +93,7 @@ namespace embree
 
     static void benchmark_mutex_sys_thread(void* ptr) 
     {
+      g_barrier.wait();      
       while (true)
 	{
 	  if (atomic_add(&g_atomic_cntr,-1) < 0) break;
@@ -102,11 +104,12 @@ namespace embree
     
     double run (size_t numThreads)
     {
+      g_barrier.init(numThreads);
       g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_mutex_sys_thread,nullptr,1000000,i));
       //setAffinity(0);
-      
+
       double t0 = getSeconds();
       benchmark_mutex_sys_thread(nullptr);
       double t1 = getSeconds();
@@ -830,9 +833,10 @@ namespace embree
 
   void create_benchmarks()
   {
-    //benchmarks.push_back(new benchmark_mutex_sys());
-    //benchmarks.push_back(new benchmark_barrier_sys());
-    //benchmarks.push_back(new benchmark_barrier_active());
+    benchmarks.push_back(new benchmark_mutex_sys());
+    benchmarks.push_back(new benchmark_barrier_sys());
+    benchmarks.push_back(new benchmark_barrier_active());
+
     benchmarks.push_back(new benchmark_atomic_inc());
     benchmarks.push_back(new benchmark_osmalloc());
     benchmarks.push_back(new benchmark_bandwidth());
@@ -897,6 +901,7 @@ namespace embree
     benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
 #endif
 
+#if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
     benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
@@ -907,6 +912,7 @@ namespace embree
     benchmarks.push_back(new update_scenes ("update_scenes_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
 #endif
   }
 
@@ -978,6 +984,11 @@ namespace embree
 	benchmark->print(numThreads,16);
       }
 
+      else if (tag == "-threads" && i+1<argc) 
+      {
+	g_num_threads_init = atoi(argv[++i]);
+      }
+
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -998,12 +1009,15 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-    if (argc == 1) 
+    //if (argc == 1) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
       numThreads -= 4;
 #endif
+      if (g_num_threads_init != -1)
+        numThreads = g_num_threads_init;
+
       rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
       for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads,4);
     }
