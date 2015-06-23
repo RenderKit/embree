@@ -16,7 +16,7 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "subdiv/patch.h"
+#include "subdiv/patch_eval.h"
 
 namespace embree
 {
@@ -55,8 +55,8 @@ namespace embree
       if (i+8 > numFloats)
       {
         float4 Pt, dPdut, dPdvt; 
-        Patch<float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                            getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        PatchEval<float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
         if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
@@ -66,8 +66,8 @@ namespace embree
       else
       {
         float8 Pt, dPdut, dPdvt; 
-        Patch<float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                            getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        PatchEval<float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
                                      
         if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<i+8; j++) dPdu[j] = dPdut[j-i];

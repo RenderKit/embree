@@ -394,6 +394,10 @@ namespace embree
     bool verify ();
     void setDisplacementFunction (RTCDisplacementFunc func, RTCBounds* bounds);
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    void interpolateN(RTCScene scene, unsigned geomID, 
+                      const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                      RTCBufferType buffer,
+                      float* P, float* dPdu, float* dPdv, size_t numFloats);
 
   public:
 

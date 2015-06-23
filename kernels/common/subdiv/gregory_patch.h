@@ -17,34 +17,10 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_patch.h"
 
 namespace embree
 {  
-  template<class T, class S> // FIXME: can be moved back to bezier_patch.h if bezier patch does no longer need Gregory for interpolation
-    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-  {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1 = one_minus_uu * v0   + uu * v1;
-    const T v1_1 = one_minus_uu * v1   + uu * v2;
-    const T v2_1 = one_minus_uu * v2   + uu * v3;      
-    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-    return v0_3;
-  }
-  
-  template<class T, class S>
-    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-  {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1         = one_minus_uu * v0   + uu * v1;
-    const T v1_1         = one_minus_uu * v1   + uu * v2;
-    const T v2_1         = one_minus_uu * v2   + uu * v3;      
-    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
-    return S(3.0f)*(v1_2-v0_2);
-  }
-
   template<typename Vertex, typename Vertex_t = Vertex>
   class __aligned(64) GregoryPatchT
   {
@@ -462,23 +438,14 @@ namespace embree
       Vertex_t v_11, v_12, v_22, v_21;
       computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
       
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
+      const Vec4<float> Bu = BezierBasis::eval(uu);
+      const Vec4<float> Bv = BezierBasis::eval(vv);
       
       const Vertex_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
+	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
+	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
       
       return res;
     }
@@ -726,4 +693,26 @@ namespace embree
   };
 
   typedef GregoryPatchT<Vec3fa,Vec3fa_t> GregoryPatch3fa;
+
+  template<typename Vertex, typename Vertex_t>
+  template<typename Loader>
+    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+  {
+    CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
+    GregoryPatchT<Vertex,Vertex_t> gpatch; 
+    gpatch.init_bezier(patch); 
+    for (size_t y=0; y<4; y++)
+      for (size_t x=0; x<4; x++)
+        matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+  }
+  
+   template<typename Vertex, typename Vertex_t>
+    __forceinline BezierPatchT<Vertex,Vertex_t>::BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
+    {
+      GregoryPatchT<Vertex,Vertex_t> gpatch; 
+      gpatch.init_bezier(patch); 
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
 }

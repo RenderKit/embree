@@ -17,10 +17,63 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "gregory_patch.h"
 
 namespace embree
 {  
+  template<class T, class S>
+    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1 = one_minus_uu * v0   + uu * v1;
+    const T v1_1 = one_minus_uu * v1   + uu * v2;
+    const T v2_1 = one_minus_uu * v2   + uu * v3;      
+    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    return v0_3;
+  }
+  
+  template<class T, class S>
+    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1         = one_minus_uu * v0   + uu * v1;
+    const T v1_1         = one_minus_uu * v1   + uu * v2;
+    const T v2_1         = one_minus_uu * v2   + uu * v3;      
+    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    return S(3.0f)*(v1_2-v0_2);
+  }
+
+  class BezierBasis
+  {
+  public:
+
+    template<class T>
+      static __forceinline Vec4<T>  eval(const T& uu)
+    {
+      const T t  =  uu;
+      const T s = 1.0f - t;
+      const T n0 = s * s * s;
+      const T n1 = 3.0f * (s * t * s);
+      const T n2 = 3.0f * (t * s * t);
+      const T n3 = t * t * t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+    
+    template<class T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = 2.0f*(s*s);
+      const T n1 = 6.0f*(s*t) + 3.0f*(s*s);
+      const T n2 = 6.0f*(s*t) + 3.0f*(t*t);
+      const T n3 = 2.0f*(t*t);
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+  };
+
   template<typename Vertex, typename Vertex_t>
     class __aligned(64) BezierPatchT
   {
@@ -32,26 +85,9 @@ namespace embree
     __forceinline BezierPatchT() {}
 
     template<typename Loader>
-      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
-    {
-      CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
-    }
+      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader);
 
-    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
-    {
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
-    }
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch);
 
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
