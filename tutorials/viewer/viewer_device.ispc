@@ -30,6 +30,7 @@ uniform bool g_subdiv_mode = false;
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
+#define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -141,11 +142,14 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   geomID_to_type = uniform new uniform int[numGeometries];
 
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT| RTC_SCENE_ROBUST;
-
+  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
+#if USE_SMOOTH_NORMALS
+  scene_aflags |= RTC_INTERPOLATE;
+#endif
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -214,6 +218,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
   Vec3f Ns = ray.Ng;
+
+#if USE_SMOOTH_NORMALS
+  Vec3f dPdu,dPdv;
+  foreach_unique (geomID in ray.geomID) {
+    rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+  }
+  Ns = cross(dPdv,dPdu);
+#endif
 
   int materialID = 0;
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
