@@ -18,6 +18,7 @@
 
 #include "catmullclark_patch.h"
 #include "bezier_patch.h"
+#include "bezier_curve.h"
 
 namespace embree
 {  
@@ -26,6 +27,7 @@ namespace embree
   {
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
 
   public:
     Vertex v[4][4];
@@ -100,22 +102,23 @@ namespace embree
     }
     
     __forceinline Vertex initNegativeEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
 
     __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * irreg_patch.ring[index].getLimitTangent() + p_vtx;
+      CatmullClark1Ring3fa r0,r1,r2;
+      irreg_patch.ring[index].subdivide(r0);
+      r0.subdivide(r1);
+      r1.subdivide(r2);
+      return 8.0f/3.0f * r2.getLimitTangent() + p_vtx;
     }
     
     __forceinline Vertex initNegativeEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-      return 2.0f/3.0f * alpha * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
+      CatmullClark1Ring3fa r0,r1,r2;
+      irreg_patch.ring[index].subdivide(r0);
+      r0.subdivide(r1);
+      r1.subdivide(r2);
+      return 8.0f/3.0f * r2.getSecondLimitTangent() + p_vtx;
     }
     
     void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
@@ -237,17 +240,33 @@ namespace embree
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
 
-
-
 #if 0
-
       if (neighborSubdiv[1] == 1)
       {
         PRINT("neighborSubdiv[1]");
-        e1_p() = initPositiveEdgeVertex2(patch,1, p1());
-        e2_m() = initNegativeEdgeVertex2(patch,2, p2());        
-      }
+        array_t<CatmullClarkPatch,4> child; 
+        patch.subdivide(child);
+        Vertex b00 = p1();
+        Vertex b03 = p2();
+        Vertex b30 = child[1].ring[2].getLimitVertex();
 
+        //Vertex b01 = b00 + 1.0f/3.0f * patch.ring[1].getLimitTangent();
+        //Vertex b02 = b03 + 1.0f/3.0f * patch.ring[2].getSecondLimitTangent();
+        Vertex b10 = b00 + 1.0f/3.0f * child[1].ring[1].getLimitTangent();
+        Vertex b12 = b03 + 1.0f/3.0f * child[2].ring[2].getSecondLimitTangent();
+        //Vertex b20 = b30 + 1.0f/3.0f * child[1].ring[2].getSecondLimitTangent();
+        //Vertex b21 = b30 + 1.0f/3.0f * child[2].ring[1].getLimitTangent();
+
+        Vertex t0 = child[1].ring[1].getLimitTangent();
+        Vertex t1 = child[2].ring[2].getSecondLimitTangent();
+
+        Vertex left = 8.0f * b30 - 4.0f * (b00+b03);
+        Vertex right = t0 + t1; 
+
+        e1_p() = b00 + 1.0f/3.0f * left/right * t0;
+        e2_m() = b03 + 1.0f/3.0f * left/right * t1;
+        
+      }
 
       if (neighborSubdiv[0] == 1)
       {
@@ -271,6 +290,7 @@ namespace embree
         e0_m() = initNegativeEdgeVertex2(patch,0, p0());        
       }
 #endif
+
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;
       const unsigned int face_valence_p2 = patch.ring[2].face_valence;
