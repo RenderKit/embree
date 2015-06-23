@@ -446,15 +446,8 @@ namespace embree
       Vertex_t beta ( 0.0f );
       
       const float n = (float)face_valence;
-      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
-      //const float c0 = 2.0f/n * delta;
-      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
-
-      const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-      //Vertex_t c_alpha( 0.0f );
-      //Vertex_t c_beta ( 0.0f );
 
       assert(eval_start_index < face_valence);
 
@@ -466,22 +459,15 @@ namespace embree
         if (index >= face_valence) index -= face_valence;
         ////////////////////////////////////////////////
 
-#if 1
-        const Vertex_t ci = 0.25f * (vtx + getVertex(2*index+0) + getVertex(2*index+1) + getVertex(2*index+2));
-        const Vertex_t mi = 0.5f * ( vtx + getVertex(2*index+0) );
-        q += (1.0f - sigma * cosf(M_PI/n)) * cosf((2.0f*M_PI*index)/n) * mi + 2.0f * sigma * cosf((2.0f*M_PI*index+M_PI)/n) * ci;
-#else
 	const float a = c1 * cosf(2.0f*M_PI*index/n);
 	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); // FIXME: factor of 2 missing?
+
+
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
-
-#endif
       }
 
-
-      //return alpha + beta;
-      return 2.0f/n * q;
+      return alpha + beta;
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
@@ -509,20 +495,12 @@ namespace embree
       Vertex_t alpha( 0.0f );
       Vertex_t beta ( 0.0f );
       const float n = (float)face_valence;
-      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
-      //const float c0 = 2.0f/n * delta;
-      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
 
       const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
 
-      //Vertex_t c_alpha( 0.0f );
-      //Vertex_t c_beta ( 0.0f );
-
       assert(eval_start_index < face_valence);
-
-      Vertex_t q ( 0.0f );
 
       for (size_t i=0; i<face_valence; i++)
       {
@@ -533,24 +511,13 @@ namespace embree
 
         size_t prev_index = index == 0 ? face_valence-1 : index-1; // need to be bit-wise exact in cosf eval
 
-#if 1
-        const Vertex_t ci = 0.25f * (vtx + getVertex(2*index+0) + getVertex(2*index+1) + getVertex(2*index+2));
-        const Vertex_t mi = 0.5f * ( vtx + getVertex(2*index+0) );
-        q += (1.0f - sigma * cosf(M_PI/n)) * cosf((2.0f*M_PI*prev_index)/n) * mi + 2.0f * sigma * cosf((2.0f*M_PI*prev_index+M_PI)/n) * ci;
-#else
-
 	const float a = c1 * cosf(2.0f*M_PI*(float(prev_index))/n);
 	const float b = c0 * cosf((2.0f*M_PI*(float(prev_index))+M_PI)/n);
-        //alpha = ksum(alpha,c_alpha,a*ring[2*i]);
-        //beta  = ksum(beta ,c_beta ,b*ring[2*i+1]);
 	alpha += a * ring[2*index];
 	beta  += b * ring[2*index+1];
-#endif
       }
 
-      //return alpha + beta;      
-      return 2.0f/n * q;
-
+      return alpha + beta;      
     }
 
     /* gets surface normal */

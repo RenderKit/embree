@@ -107,7 +107,6 @@ namespace embree
 
     if (ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior */
     {
-
 #if 0
       /* bezier */
       BSplinePatch3fa tmp;
