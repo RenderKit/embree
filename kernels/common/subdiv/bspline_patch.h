@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  class CubicBSplineCurve
+  class BSplineBasis
   {
   public:
 
@@ -30,8 +30,8 @@ namespace embree
       const T t  = u;
       const T s  = T(1.0f) - u;
       const T n0 = s*s*s;
-      const T n1 = (4.0f*s*s*s+t*t*t) + (12.0f*s*t*s + 6.0*t*s*t);
-      const T n2 = (4.0f*t*t*t+s*s*s) + (12.0f*t*s*t + 6.0*s*t*s);
+      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0*((t*s)*t));
+      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0*((s*t)*s));
       const T n3 = t*t*t;
       return Vec4<T>(n0,n1,n2,n3);
     }
@@ -42,13 +42,9 @@ namespace embree
       const T t  =  u;
       const T s  =  1.0f - u;
       const T n0 = -s*s;
-      const T n1 = -t*t - 4.0f*t*s;
-      const T n2 =  s*s + 4.0f*s*t;
+      const T n1 = -t*t - 4.0f*(t*s);
+      const T n2 =  s*s + 4.0f*(s*t);
       const T n3 =  t*t;
-      /*const T n0 = -3.0f*s*s;
-      const T n1 = -3.0f*t*t - 12.0f*t*s;
-      const T n2 = +3.0f*s*s + 12.0f*t*s;
-      const T n3 = +3.0f*t*t;*/
       return Vec4<T>(3.0f*n0,3.0f*n1,3.0f*n2,3.0f*n3);
     }
   };
@@ -452,42 +448,42 @@ namespace embree
       
       __noinline Vertex eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
       {
-        const Vec4f v_n = CubicBSplineCurve::eval(vv);
+        const Vec4f v_n = BSplineBasis::eval(vv);
         
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
-        const Vec4f u_n = CubicBSplineCurve::eval(uu);
+        const Vec4f u_n = BSplineBasis::eval(uu);
         
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex tangentU(const float uu, const float vv) const
       {
-        const Vec4f v_n = CubicBSplineCurve::eval(vv);
+        const Vec4f v_n = BSplineBasis::eval(vv);
         
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
-        const Vec4f u_n = CubicBSplineCurve::derivative(uu);
+        const Vec4f u_n = BSplineBasis::derivative(uu);
         
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex tangentV(const float uu, const float vv) const
       {
-        const Vec4f v_n = CubicBSplineCurve::derivative(vv);
+        const Vec4f v_n = BSplineBasis::derivative(vv);
         
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
-        const Vec4f u_n = CubicBSplineCurve::eval(uu);
+        const Vec4f u_n = BSplineBasis::eval(uu);
         
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
@@ -520,18 +516,18 @@ namespace embree
       __forceinline void eval(const size_t N, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale = 1.0f) const
       {
         if (P) {
-          const Vec4<vfloat> v_n = CubicBSplineCurve::eval(vv); 
-          const Vec4<vfloat> u_n = CubicBSplineCurve::eval(uu); 
+          const Vec4<vfloat> v_n = BSplineBasis::eval(vv); 
+          const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
           for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n);
         }
         if (dPdu) {
-          const Vec4<vfloat> v_n = CubicBSplineCurve::derivative(vv);
-          const Vec4<vfloat> u_n = CubicBSplineCurve::eval(uu); 
+          const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
+          const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
           for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n)*dscale;
         }
         if (dPdv) {
-          const Vec4<vfloat> v_n = CubicBSplineCurve::eval(vv);
-          const Vec4<vfloat> u_n = CubicBSplineCurve::derivative(uu); 
+          const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
+          const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
           for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n)*dscale;
         }
       }
@@ -564,24 +560,24 @@ namespace embree
       template<typename T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv) const
       {
-        const Vec4<T> v_n = CubicBSplineCurve::eval(vv); // FIXME: precompute in table
-        const Vec4<T> u_n = CubicBSplineCurve::eval(uu); // FIXME: precompute in table
+        const Vec4<T> v_n = BSplineBasis::eval(vv); // FIXME: precompute in table
+        const Vec4<T> u_n = BSplineBasis::eval(uu); // FIXME: precompute in table
         return eval(uu,vv,u_n,v_n);
       }
 
       template<typename T>
       __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
       {
-        const Vec4<T> v_n = CubicBSplineCurve::derivative(vv); 
-        const Vec4<T> u_n = CubicBSplineCurve::eval(uu); 
+        const Vec4<T> v_n = BSplineBasis::derivative(vv); 
+        const Vec4<T> u_n = BSplineBasis::eval(uu); 
         return eval(uu,vv,u_n,v_n);      
       }
       
       template<typename T>
       __forceinline Vec3<T> tangentV(const T& uu, const T& vv) const
       {
-        const Vec4<T> v_n = CubicBSplineCurve::eval(vv); 
-        const Vec4<T> u_n = CubicBSplineCurve::derivative(uu); 
+        const Vec4<T> v_n = BSplineBasis::eval(vv); 
+        const Vec4<T> u_n = BSplineBasis::derivative(uu); 
         return eval(uu,vv,u_n,v_n);      
       }
       
@@ -610,8 +606,8 @@ namespace embree
       
       static __forceinline Vec4f16 eval_derivative(const float16 u, const bool16 m_mask)
       {
-        const Vec4f16 e = CubicBSplineCurve::eval(u);
-        const Vec4f16 d = CubicBSplineCurve::derivative(u);
+        const Vec4f16 e = BSplineBasis::eval(u);
+        const Vec4f16 d = BSplineBasis::derivative(u);
         return Vec4f16(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
       }    
             

@@ -20,7 +20,7 @@
 
 namespace embree
 {  
-  template<class T, class S> // FIXME: can be moved back to bezier_patch.h if bezier patch does no longer need Gregory for interpolation
+  template<class T, class S>
     static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
   {
     const S one_minus_uu = 1.0f - uu;      
@@ -44,6 +44,35 @@ namespace embree
     const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
     return S(3.0f)*(v1_2-v0_2);
   }
+
+  class BezierBasis
+  {
+  public:
+
+    template<class T>
+      static __forceinline Vec4<T>  eval(const T& uu)
+    {
+      const T t  =  uu;
+      const T s = 1.0f - t;
+      const T n0 = s * s * s;
+      const T n1 = 3.0f * (s * t * s);
+      const T n2 = 3.0f * (t * s * t);
+      const T n3 = t * t * t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+    
+    template<class T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = 2.0f*(s*s);
+      const T n1 = 6.0f*(s*t) + 3.0f*(s*s);
+      const T n2 = 6.0f*(s*t) + 3.0f*(t*t);
+      const T n3 = 2.0f*(t*t);
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+  };
 
   template<typename Vertex, typename Vertex_t>
     class __aligned(64) BezierPatchT

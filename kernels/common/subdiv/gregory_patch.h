@@ -344,23 +344,14 @@ namespace embree
       Vertex_t v_11, v_12, v_22, v_21;
       computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
       
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
+      const Vec4<float> Bu = BezierBasis::eval(uu);
+      const Vec4<float> Bv = BezierBasis::eval(vv);
       
       const Vertex_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
+	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
+	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
       
       return res;
     }
