@@ -32,34 +32,6 @@ namespace embree
     typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
     typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
     
-    static bool eval(const typename Patch::BilinearPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
-    {
-      This->patch.eval(u,v,P,dPdu,dPdv,dscale);
-      PATCH_DEBUG_SUBDIVISION(c,c,-1);
-      return true;
-    }
-        
-    static bool eval(const typename Patch::BSplinePatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
-    {
-      This->patch.eval(u,v,P,dPdu,dPdv,dscale);
-      PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-      return true;
-    }
-    
-    static bool eval(const typename Patch::BezierPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
-    {
-      This->patch.eval(u,v,P,dPdu,dPdv,dscale);
-      PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-      return true;
-    }
-      
-    static bool eval(const typename Patch::GregoryPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
-    {
-      This->patch.eval(u,v,P,dPdu,dPdv,dscale);
-      PATCH_DEBUG_SUBDIVISION(-1,-1,c);
-      return true;
-    }
-      
     static bool eval(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
     {
       const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
@@ -309,15 +281,41 @@ namespace embree
     {
       if (This == nullptr) return false;
       
-      switch (This->type) {
-      case Patch::BILINEAR_PATCH: return eval((typename Patch::BilinearPatch*)This,u,v,P,dPdu,dPdv,dscale); 
-      case Patch::BSPLINE_PATCH: return eval((typename Patch::BSplinePatch*)This,u,v,P,dPdu,dPdv,dscale);
-      case Patch::BEZIER_PATCH: return eval((typename Patch::BezierPatch*)This,u,v,P,dPdu,dPdv,dscale);
-      case Patch::GREGORY_PATCH: return eval((typename Patch::GregoryPatch*)This,u,v,P,dPdu,dPdv,dscale); 
-      case Patch::SUBDIVIDED_QUAD_PATCH: return eval((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
-      case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH:     { assert(dscale == 1.0f); return eval((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); }
-      case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { assert(dscale == 1.0f); return eval((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); }
-      default: assert(false); return false;
+      switch (This->type) 
+      {
+      case Patch::BILINEAR_PATCH: {
+        ((typename Patch::BilinearPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+        PATCH_DEBUG_SUBDIVISION(c,c,-1);
+        return true;
+      }
+      case Patch::BSPLINE_PATCH: {
+        ((typename Patch::BSplinePatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+        return true;
+      }
+      case Patch::BEZIER_PATCH: {
+        ((typename Patch::BezierPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+        return true;
+      }
+      case Patch::GREGORY_PATCH: {
+        ((typename Patch::GregoryPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+        PATCH_DEBUG_SUBDIVISION(-1,-1,c);
+        return true;
+      }
+      case Patch::SUBDIVIDED_QUAD_PATCH: 
+        return eval((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
+      case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
+        assert(dscale == 1.0f); 
+        return eval((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
+      }
+      case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
+        assert(dscale == 1.0f); 
+        return eval((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
+      }
+      default: 
+        assert(false); 
+        return false;
       }
     }
   };
