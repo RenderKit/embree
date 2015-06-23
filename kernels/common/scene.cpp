@@ -25,6 +25,8 @@
 #include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
+#define USE_TASK_ARENA 1
+
 namespace embree
 {
 #if TASKING_TBB
@@ -267,6 +269,7 @@ namespace embree
       delete geometries[i];
 
 #if TASKING_TBB
+    //delete arena; arena = nullptr;
     delete group; group = nullptr;
 #endif
   }
@@ -558,13 +561,19 @@ namespace embree
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
+#if USE_TASK_ARENA
       arena.execute([&]{ group->wait(); });
-      //group->wait();
+#else
+      group->wait();
+#endif
       while (!buildMutex.try_lock()) {
         __pause_cpu();
         yield();
+#if USE_TASK_ARENA
         arena.execute([&]{ group->wait(); });
-        //group->wait();
+#else
+        group->wait();
+#endif
       }
       buildMutex.unlock();
       return;
@@ -590,13 +599,17 @@ namespace embree
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
       //ctx.set_priority(tbb::priority_high);
 
+#if USE_TASK_ARENA
       arena.execute([&]{
+#endif
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
+#if USE_TASK_ARENA
         }); 
+#endif
      
       /* reset MXCSR register again */
 #if !defined(__MIC__)
