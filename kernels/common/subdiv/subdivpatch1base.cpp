@@ -90,7 +90,7 @@ namespace embree
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4],
-                                      const int subdiv[4]) 
+                                      const int neighborSubdiv[4]) 
     : geom(gID),prim(pID),flags(0)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
@@ -126,7 +126,7 @@ namespace embree
       /* greogy */
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
-      gpatch.init( ipatch ); 
+      gpatch.init_crackfix( ipatch, neighborSubdiv ); 
       gpatch.exportDenseConrolPoints( patch.v );
     }
   }

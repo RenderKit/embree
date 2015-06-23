@@ -29,7 +29,7 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-#if 0
+#if 1
       // will be removed soon
       if (!(primID == 4109 ||
             primID == 4282 ||

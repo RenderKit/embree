@@ -126,6 +126,39 @@ namespace embree
     __forceinline Vertex initNegativeEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
+
+    __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+      CatmullClark1Ring3fa r;
+      irreg_patch.ring[index].subdivide(r);
+      PING;
+      PRINT( irreg_patch.ring[index].face_valence );
+
+      PRINT( irreg_patch.ring[index].getLimitTangent() );
+      PRINT( r.getLimitTangent() );
+
+      PRINT( irreg_patch.ring[index].getLimitTangent() / r.getLimitTangent() );
+
+      const float n = irreg_patch.ring[index].face_valence;
+      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return 2.0f/3.0f * alpha * r.getLimitTangent() + p_vtx;
+    }
+    
+    __forceinline Vertex initNegativeEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+      CatmullClark1Ring3fa r;
+      irreg_patch.ring[index].subdivide(r);
+      PING;
+      PRINT( irreg_patch.ring[index].face_valence );
+
+      PRINT( irreg_patch.ring[index].getSecondLimitTangent() );
+      PRINT( r.getSecondLimitTangent() );
+      PRINT( irreg_patch.ring[index].getSecondLimitTangent() / r.getSecondLimitTangent() );
+
+      const float n = irreg_patch.ring[index].face_valence;
+      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return 2.0f/3.0f * alpha * r.getSecondLimitTangent() + p_vtx;
+    }
     
     void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
 			const size_t index, 
@@ -166,7 +199,7 @@ namespace embree
       }
       
       Vertex c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
+      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge)) // FIXME: face_valence correct?
       {
         /* mirror quad center and edge mid-point */
         c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -223,6 +256,69 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
 
     }
+
+    __noinline void init_crackfix(const CatmullClarkPatch& patch, const int neighborSubdiv[4])
+    {
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
+      
+      p0() = initCornerVertex(patch,0);
+      p1() = initCornerVertex(patch,1);
+      p2() = initCornerVertex(patch,2);
+      p3() = initCornerVertex(patch,3);
+
+      e0_p() = initPositiveEdgeVertex(patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(patch,3, p3());
+
+      e0_m() = initNegativeEdgeVertex(patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(patch,3, p3());
+#if 1
+      if (neighborSubdiv[0] == 1)
+      {
+        PRINT("neighborSubdiv[0]");
+        e0_p() = initPositiveEdgeVertex2(patch,0, p0());
+        e1_m() = initNegativeEdgeVertex2(patch,1, p1());        
+      }
+
+      if (neighborSubdiv[1] == 1)
+      {
+        PRINT("neighborSubdiv[1]");
+        e1_p() = initPositiveEdgeVertex2(patch,1, p1());
+        e2_m() = initNegativeEdgeVertex2(patch,2, p2());        
+      }
+
+      if (neighborSubdiv[2] == 1)
+      {
+        PRINT("neighborSubdiv[2]");
+        e2_p() = initPositiveEdgeVertex2(patch,2, p2());
+        e3_m() = initNegativeEdgeVertex2(patch,3, p3());        
+      }
+
+      if (neighborSubdiv[3] == 1)
+      {
+        PRINT("neighborSubdiv[3]");
+        e3_p() = initPositiveEdgeVertex2(patch,3, p3());
+        e0_m() = initNegativeEdgeVertex2(patch,0, p0());        
+      }
+#endif
+      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
+      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
+      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
+      
+      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e3_p(),face_valence_p3,f0_p(),f0_m() );
+      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
+      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
+      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
+
+    }
+
     
     void computeGregoryPatchFacePoints(const unsigned int face_valence,
 				       const Vertex& r_e_p, 
