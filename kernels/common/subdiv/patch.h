@@ -22,6 +22,7 @@
 #include "bezier_patch.h"
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
+#include "tessellation_cache.h"
 
 #if 1
 #define PATCH_DEBUG_SUBDIVISION(x,y,z)
@@ -279,12 +280,12 @@ namespace embree
     {
       /* creates the EvalPatch from a half edge */
       template<typename Allocator>
-      __noinline static EvalPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride) {
-        return new (alloc(sizeof(EvalPatch))) EvalPatch(edge,vertices,stride);
+      __noinline static EvalPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, Patch* child) {
+        return new (alloc(sizeof(EvalPatch))) EvalPatch(edge,vertices,stride,child);
       }
       
-      __forceinline EvalPatch (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
-        : type(EVAL_PATCH), edge(edge), vertices(vertices), stride(stride), child(nullptr) {}
+      __forceinline EvalPatch (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, Patch* child)
+        : type(EVAL_PATCH), edge(edge), vertices(vertices), stride(stride), child(child) {}
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
       {
@@ -309,12 +310,13 @@ namespace embree
     struct SubdividedGeneralTrianglePatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralTrianglePatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch;
+      __noinline static SubdividedGeneralTrianglePatch* create(const Allocator& alloc, Patch* children[3]) {
+        return new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch(children);
       }
       
-      __forceinline SubdividedGeneralTrianglePatch() 
-        : type(SUBDIVIDED_GENERAL_TRIANGLE_PATCH) {}
+      __forceinline SubdividedGeneralTrianglePatch(Patch* children[3]) : type(SUBDIVIDED_GENERAL_TRIANGLE_PATCH) {
+        for (size_t i=0; i<3; i++) child[i] = children[i];
+      }
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
@@ -372,11 +374,13 @@ namespace embree
     struct SubdividedQuadPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedQuadPatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch;
+      __noinline static SubdividedQuadPatch* create(const Allocator& alloc, Patch* children[4]) {
+        return new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch(children);
       }
       
-      __forceinline SubdividedQuadPatch() : type(SUBDIVIDED_QUAD_PATCH) {}
+      __forceinline SubdividedQuadPatch(Patch* children[4]) : type(SUBDIVIDED_QUAD_PATCH) {
+        for (size_t i=0; i<4; i++) child[i] = children[i];
+      }
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
       {
@@ -412,11 +416,13 @@ namespace embree
     struct SubdividedGeneralQuadPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralQuadPatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch;
+      __noinline static SubdividedGeneralQuadPatch* create(const Allocator& alloc, Patch* children[4]) {
+        return new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch(children);
       }
       
-      __forceinline SubdividedGeneralQuadPatch() : type(SUBDIVIDED_GENERAL_QUAD_PATCH) {}
+      __forceinline SubdividedGeneralQuadPatch(Patch* children[4]) : type(SUBDIVIDED_GENERAL_QUAD_PATCH) {
+        for (size_t i=0; i<4; i++) child[i] = children[i];
+      }
       
       bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
@@ -500,6 +506,18 @@ namespace embree
     /*! Default constructor. */
     __forceinline Patch () {}
     
+    static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
+                      const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+    {
+      Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
+          auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
+          return create(alloc,edge,vertices,stride);
+        });
+      if (patch) patch->eval(u,v,P,dPdu,dPdv);
+      else eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
+      SharedLazyTessellationCache::unlock();
+    }
+
     template<typename Allocator>
     __noinline static Patch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
     {
@@ -508,22 +526,23 @@ namespace embree
         return Vertex_t::loadu((float*)&vertices[vtx*stride]);
       };
       
-      EvalPatch* root = EvalPatch::create(alloc,edge,vertices,stride);
       if (PATCH_MAX_CACHE_DEPTH == 0) 
-        return (Patch*) root;
-      
+        return (Patch*) EvalPatch::create(alloc,edge,vertices,stride,nullptr);
+
+      Patch* child = nullptr;
       switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   root->child = (Patch*) RegularPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: root->child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: >child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
         GeneralCatmullClarkPatch patch(edge,loader);
-        root->child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
+        child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
         break;
       }
       }
-      return (Patch*) root;
+      
+      return (Patch*) EvalPatch::create(alloc,edge,vertices,stride,child);
     }
 
     static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
@@ -564,17 +583,20 @@ namespace embree
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
       
-      if (N == 3) {
-        SubdividedGeneralTrianglePatch* node = SubdividedGeneralTrianglePatch::create(alloc);
+      if (N == 3) 
+      {
+        Patch* child[3];
         for (size_t i=0; i<3; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
+
+        return (Patch*) SubdividedGeneralTrianglePatch::create(alloc,child);
       } 
-      else if (N == 4) {
-        SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
+      else if (N == 4) 
+      {
+        Patch* child[4];
         for (size_t i=0; i<4; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
+        return (Patch*) SubdividedGeneralQuadPatch::create(alloc,child);
       }
       
       return nullptr;
@@ -634,12 +656,12 @@ namespace embree
       
       else 
       {
-        SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
+        Patch* child[4];
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches);
         for (size_t i=0; i<4; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
+        return (Patch*) SubdividedQuadPatch::create(alloc,child);
       }
     }
 

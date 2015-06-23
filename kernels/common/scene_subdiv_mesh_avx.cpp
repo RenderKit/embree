@@ -54,13 +54,10 @@ namespace embree
     {
       if (i+8 > numFloats)
       {
-        SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float4>* patch = SharedLazyTessellationCache::lookup(entry,parent->commitCounter,[&] () {
-            return Patch<float4>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
-          });
         float4 Pt, dPdut, dPdvt; 
-        patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-        SharedLazyTessellationCache::unlock();
+        Patch<float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                            getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+
         if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
         if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
@@ -68,13 +65,10 @@ namespace embree
       }
       else
       {
-        SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot8(primID,slot,stride));
-        Patch<float8>* patch = SharedLazyTessellationCache::lookup(entry,parent->commitCounter,[&] () {
-            return Patch<float8>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
-          });
         float8 Pt, dPdut, dPdvt; 
-        patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-        SharedLazyTessellationCache::unlock();
+        Patch<float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                            getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+                                     
         if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<i+8; j++) dPdu[j] = dPdut[j-i];
         if (dPdv) for (size_t j=i; j<i+8; j++) dPdv[j] = dPdvt[j-i];
