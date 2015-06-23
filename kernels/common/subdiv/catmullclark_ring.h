@@ -317,30 +317,25 @@ namespace embree
 
     __forceinline bool isRegular2() const
     {
-      if (border_index == -1) 
-      {
-        if (face_valence != 4)
+      /* check if there is a vertex crease anywhere */
+      for (size_t i=1; i<face_valence; i++) {
+        if ((2*i != border_index) && (2*(i-1) != border_index) && crease_weight[i] > 0.0f) 
           return false;
-        if (vertex_crease_weight > 0.0f) 
+      }
+      if ((2*(face_valence-1) != border_index) && crease_weight[0] > 0.0f) 
           return false;
-      } 
-      else {
-        if (face_valence == 2 && vertex_crease_weight > 1E5); // FIXME: use inf
-        else if (face_valence == 3 && vertex_crease_weight == 0.0f);
-        else return false;
-	}
-      
-      for (size_t i=1; i<face_valence; i++)
-        if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-          return false;
-      
-      if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-        return false;
-      
-      if (!noForcedSubdivision)
-        return false;
-      
-      return true;
+
+      /* calculate if this vertex is regular */
+      bool hasBorder = border_index != -1;
+      if (face_valence == 2 && hasBorder) {
+        if      (vertex_crease_weight == 0.0f      ) return true;
+        else if (vertex_crease_weight == float(inf)) return true;
+        else                                         return false;
+      }
+      else if (vertex_crease_weight != 0.0f)         return false;
+      else if (face_valence == 3 &&  hasBorder)      return true;
+      else if (face_valence == 4 && !hasBorder)      return true;
+      else                                           return false;
     }
 
      /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */

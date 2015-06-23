@@ -212,13 +212,15 @@ namespace embree
        {
          if (!validTag(entry.tag,globalTime)) 
          {
+           auto time = sharedLazyTessellationCache.getTime(globalTime);
            auto ret = constructor();
            __memory_barrier();
            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
-           entry.tag = SharedLazyTessellationCache::Tag(ret,sharedLazyTessellationCache.getTime(globalTime));
+           entry.tag = SharedLazyTessellationCache::Tag(ret,time);
            __memory_barrier();
            entry.mutex.write_unlock();
-           return ret;
+           if (!validTag(entry.tag,globalTime)) return nullptr;
+           else return ret;
          }
          entry.mutex.write_unlock();
        }

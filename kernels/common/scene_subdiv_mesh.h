@@ -100,12 +100,12 @@ namespace embree
       {
 	const HalfEdge* p = this;
         size_t face_valence = 0;
-        bool isBorder = false;
+        bool hasBorder = false;
 
         do
         {
           /* we need subdivision to handle edge creases */
-          if (p->edge_crease_weight != 0.0f) 
+          if (p->hasOpposite() && p->edge_crease_weight > 0.0f) 
             return COMPLEX_PATCH;
 
           face_valence++;
@@ -126,28 +126,23 @@ namespace embree
           else
           {
             face_valence++;
-            isBorder = true;
+            hasBorder = true;
             p = this;
             while (p->hasOpposite()) 
               p = p->rotate();
           }
         } while (p != this); 
-
-        /* we support vertex_crease_weight = 0 and inf at corners of bezier and gregory patches */
-        const bool isCorner = !p->hasOpposite() && !p->prev()->hasOpposite();
-        if (unlikely(isCorner)) {
-          if (vertex_crease_weight != 0.0f && vertex_crease_weight != float(inf))
-            return COMPLEX_PATCH;
-        } else {
-          if (vertex_crease_weight != 0.0f)
-            return COMPLEX_PATCH;
+        
+        /* calculate vertex type */
+        if (face_valence == 2 && hasBorder) {
+          if      (vertex_crease_weight == 0.0f      ) return REGULAR_QUAD_PATCH;
+          else if (vertex_crease_weight == float(inf)) return REGULAR_QUAD_PATCH;
+          else                                         return COMPLEX_PATCH;
         }
-
-        /* test if vertex is regular */
-        if      (face_valence == 2 && isCorner) return REGULAR_QUAD_PATCH;
-        else if (face_valence == 3 && isBorder) return REGULAR_QUAD_PATCH;
-        else if (face_valence == 4            ) return REGULAR_QUAD_PATCH;
-        else                                    return IRREGULAR_QUAD_PATCH;
+        else if (vertex_crease_weight != 0.0f)         return COMPLEX_PATCH;
+        else if (face_valence == 3 &&  hasBorder)      return REGULAR_QUAD_PATCH;
+        else if (face_valence == 4 && !hasBorder)      return REGULAR_QUAD_PATCH;
+        else                                           return IRREGULAR_QUAD_PATCH;
       }
 
       /*! calculates the type of the patch */
@@ -185,10 +180,7 @@ namespace embree
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return \
-          type == IRREGULAR_QUAD_PATCH || 
-          type == REGULAR_QUAD_PATCH;
-        //type == IRREGULAR_TRIANGLE_PATCH;
+        return type == IRREGULAR_QUAD_PATCH || type == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the base vertex of this half edge is a corner vertex */
