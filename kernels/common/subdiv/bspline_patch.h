@@ -506,6 +506,36 @@ namespace embree
         if (dPdv) *dPdv = tangentV(u,v)*dscale; 
       }
 
+      template<class vfloat>
+      __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n) const
+      {
+        const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
+        const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(v[1][1][i]) + v_n[2] * vfloat(v[2][1][i]) + v_n[3] * vfloat(v[3][1][i]);
+        const vfloat curve2_x = v_n[0] * vfloat(v[0][2][i]) + v_n[1] * vfloat(v[1][2][i]) + v_n[2] * vfloat(v[2][2][i]) + v_n[3] * vfloat(v[3][2][i]);
+        const vfloat curve3_x = v_n[0] * vfloat(v[0][3][i]) + v_n[1] * vfloat(v[1][3][i]) + v_n[2] * vfloat(v[2][3][i]) + v_n[3] * vfloat(v[3][3][i]);
+        return (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * vfloat(1.0f/36.0f);
+      }
+        
+      template<class vfloat>
+      __forceinline void eval(const size_t N, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale = 1.0f) const
+      {
+        if (P) {
+          const Vec4<vfloat> v_n = CubicBSplineCurve::eval(vv); 
+          const Vec4<vfloat> u_n = CubicBSplineCurve::eval(uu); 
+          for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n);
+        }
+        if (dPdu) {
+          const Vec4<vfloat> v_n = CubicBSplineCurve::derivative(vv);
+          const Vec4<vfloat> u_n = CubicBSplineCurve::eval(uu); 
+          for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n)*dscale;
+        }
+        if (dPdv) {
+          const Vec4<vfloat> v_n = CubicBSplineCurve::eval(vv);
+          const Vec4<vfloat> u_n = CubicBSplineCurve::derivative(uu); 
+          for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv,u_n,v_n)*dscale;
+        }
+      }
+
       template<class T>
       __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
       {
@@ -538,7 +568,7 @@ namespace embree
         const Vec4<T> u_n = CubicBSplineCurve::eval(uu); // FIXME: precompute in table
         return eval(uu,vv,u_n,v_n);
       }
-      
+
       template<typename T>
       __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
       {

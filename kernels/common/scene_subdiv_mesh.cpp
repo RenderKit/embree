@@ -17,6 +17,7 @@
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
 #include "subdiv/patch_eval.h"
+#include "subdiv/patch_eval_simd.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
@@ -588,6 +589,62 @@ namespace embree
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
+    }
+  }
+
+  void SubdivMesh::interpolateN(RTCScene scene, unsigned geomID, 
+                                const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                RTCBufferType buffer,
+                                float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    size_t bufID = buffer&0xFFFF;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
+      baseEntry = &user_buffer_tags[bufID];
+    } else {
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
+      baseEntry = &vertex_buffer_tags[bufID];
+    }
+#if defined (__MIC__)
+#define float4 Vec3fa
+#define float4_t Vec3fa_t
+#else
+#define float4_t float4
+#endif
+
+    const int* valid = (const int*) valid_i;
+
+    for (size_t i=0; i<numUVs; i+=4) 
+    {
+      //if (valid && !valid[i]) continue;
+      //bool4 mask = true; // FIXME: wrong!
+      for (size_t j=0; j<numFloats; j+=4) 
+      {
+        const bool4 valid1 = int4::loadu(&valid[j]) == int4(-1);
+        const float4 uu = float4::loadu(&u[j]);
+        const float4 vv = float4::loadu(&v[j]);
+        const size_t primID = primIDs[i]; PING; // FIXME: wrong!!!!!! 
+        PatchEvalSimd<bool4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
+                                                 getHalfEdge(primID),src+i*sizeof(float),stride,
+                                                 valid1,uu,vv,
+                                                 (float4*)(P ? &P[i*numFloats+j] : nullptr), 
+                                                 (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
+                                                 (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
+                                                 min(size_t(4),numFloats-j));
+      }
     }
   }
 }
