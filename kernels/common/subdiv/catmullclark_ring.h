@@ -467,7 +467,9 @@ namespace embree
 	beta  +=  b * ring[2*index+1];
       }
 
-      return alpha + beta;
+      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return sigma * (alpha + beta);
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
@@ -498,8 +500,6 @@ namespace embree
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
 
-      const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-
       assert(eval_start_index < face_valence);
 
       for (size_t i=0; i<face_valence; i++)
@@ -517,7 +517,9 @@ namespace embree
 	beta  += b * ring[2*index+1];
       }
 
-      return alpha + beta;      
+      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return sigma* (alpha + beta);      
     }
 
     /* gets surface normal */

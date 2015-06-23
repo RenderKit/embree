@@ -96,24 +96,14 @@ namespace embree
     }
     
     __forceinline Vertex initPositiveEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
-
-      //CatmullClark1Ring3fa r;
-      //irreg_patch.ring[index].subdivide(r);
-
-      //PRINT( irreg_patch.ring[index].getLimitTangent() );
-      //PRINT( r.getLimitTangent() );
-      //PRINT( irreg_patch.ring[index].getLimitTangent() / r.getLimitTangent() );
-      const float n = irreg_patch.ring[index].face_valence;
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
-
-      return 2.0f/3.0f * alpha * irreg_patch.ring[index].getLimitTangent() + p_vtx;
+      return 1.0f/3.0f * irreg_patch.ring[index].getLimitTangent() + p_vtx;
     }
     
     __forceinline Vertex initNegativeEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
       const float n = irreg_patch.ring[index].face_valence;
       const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
 
-      return 2.0f/3.0f * alpha * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
+      return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
 
     __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
