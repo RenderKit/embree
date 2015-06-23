@@ -102,6 +102,10 @@ namespace embree
 
      __forceinline Tag(void* ptr, size_t combinedTime)
      {
+       if (ptr == nullptr) {
+         data = 0;
+         return;
+       }
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
        assert( new_root_ref <= 0xffffffff );

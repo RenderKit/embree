@@ -148,10 +148,9 @@ namespace embree
       BSPLINE_PATCH = 2,  
       BEZIER_PATCH = 3,  
       GREGORY_PATCH = 4,
-      EVAL_PATCH = 5,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 6,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 7,
-      SUBDIVIDED_QUAD_PATCH = 8
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
+      SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
+      SUBDIVIDED_QUAD_PATCH = 7
     };
 
     struct BilinearPatch 
@@ -274,37 +273,6 @@ namespace embree
     public:
       Type type;
       GregoryPatchT<Vertex,Vertex_t> patch;
-    };
-    
-    struct EvalPatch
-    {
-      /* creates the EvalPatch from a half edge */
-      template<typename Allocator>
-      __noinline static EvalPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, Patch* child) {
-        return new (alloc(sizeof(EvalPatch))) EvalPatch(edge,vertices,stride,child);
-      }
-      
-      __forceinline EvalPatch (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, Patch* child)
-        : type(EVAL_PATCH), edge(edge), vertices(vertices), stride(stride), child(child) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
-      {
-        /* first try to fast path using cached subdivision tree */
-        if (child && child->eval(u,v,P,dPdu,dPdv,1.0f)) 
-          return true;
-        
-        /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
-        Patch::eval_direct(edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
-        return true;
-      }
-      
-    public:
-      Type type;
-      const SubdivMesh::HalfEdge* const edge;
-      const char* const vertices;
-      const size_t stride;
-      Patch* child;
     };
     
     struct SubdividedGeneralTrianglePatch
@@ -513,9 +481,14 @@ namespace embree
           auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
           return create(alloc,edge,vertices,stride);
         });
-      if (patch) patch->eval(u,v,P,dPdu,dPdv);
-      else eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
+
+      if (patch && patch->eval(u,v,P,dPdu,dPdv,1.0f)) {
+         SharedLazyTessellationCache::unlock();
+        return;
+      }
       SharedLazyTessellationCache::unlock();
+      eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
+      PATCH_DEBUG_SUBDIVISION(c,-1,-1);
     }
 
     template<typename Allocator>
@@ -527,22 +500,20 @@ namespace embree
       };
       
       if (PATCH_MAX_CACHE_DEPTH == 0) 
-        return (Patch*) EvalPatch::create(alloc,edge,vertices,stride,nullptr);
+        return nullptr;
 
       Patch* child = nullptr;
       switch (edge->type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (Patch*) RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: >child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
         GeneralCatmullClarkPatch patch(edge,loader);
         child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
-        break;
       }
       }
-      
-      return (Patch*) EvalPatch::create(alloc,edge,vertices,stride,child);
+      return child;
     }
 
     static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
@@ -710,12 +681,6 @@ namespace embree
       }
     }
     
-    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
-    {
-      assert(type == EVAL_PATCH);
-      return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
-    }
-
   public:
     Type type;
   };
