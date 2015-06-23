@@ -38,6 +38,7 @@ namespace embree
   static size_t g_plot_max = 0;
   static size_t g_plot_step= 0;
   static std::string g_plot_test = "";
+  static bool executed_benchmarks = false;
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -982,6 +983,7 @@ namespace embree
 	std::string name = argv[++i];
 	Benchmark* benchmark = getBenchmark(name);
 	benchmark->print(numThreads,16);
+        executed_benchmarks = true;
       }
 
       else if (tag == "-threads" && i+1<argc) 
@@ -1009,7 +1011,7 @@ namespace embree
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-    //if (argc == 1) 
+    if (!executed_benchmarks) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
 #if defined (__MIC__)
