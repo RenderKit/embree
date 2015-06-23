@@ -16,7 +16,7 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "subdiv/patch.h"
+#include "subdiv/patch_eval.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
@@ -582,8 +582,8 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       float4 Pt, dPdut, dPdvt; 
-      Patch<float4,float4_t>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
-                                   getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+      PatchEval<float4,float4_t>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
+                                       getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
