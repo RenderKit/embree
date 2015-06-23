@@ -32,7 +32,7 @@ namespace embree
       typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
       
-      static bool eval(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      static bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
         const bool ac_abc = right_of_line_ac_abc(Vec2f(u,v));
@@ -81,7 +81,7 @@ namespace embree
         }
       }
       
-      static bool eval(const typename Patch::SubdividedQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
+      static bool eval_quad(const typename Patch::SubdividedQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
       {
         if (v < 0.5f) {
           if (u < 0.5f) return eval(This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
@@ -107,7 +107,7 @@ namespace embree
         }
       }
       
-      static bool eval(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      static bool eval_general_quad(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         if (v < 0.5f) {
           if (u < 0.5f) {
@@ -179,43 +179,6 @@ namespace embree
               *dPdu = dpdy; *dPdv = -dpdx;
             }
           }
-        }
-      }
-      
-      static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
-                        const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      {
-        Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
-            auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
-            return Patch::create(alloc,edge,vertices,stride);
-          });
-        
-        if (patch && eval(patch,u,v,P,dPdu,dPdv,1.0f)) {
-          SharedLazyTessellationCache::unlock();
-          return;
-        }
-        SharedLazyTessellationCache::unlock();
-        eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
-      }
-      
-      static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      {
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-        };
-        
-        switch (edge->type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#endif
-        default: {
-          GeneralCatmullClarkPatch patch(edge,loader);
-          eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
-          break;
-        }
         }
       }
       
@@ -304,19 +267,57 @@ namespace embree
           return true;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
-          return eval((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
+          return eval_quad((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
         case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_quad((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
         }
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
         }
         default: 
           assert(false); 
           return false;
         }
       }
+
+      static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+          const unsigned vtx = p->getStartVertexIndex();
+          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
+        };
+        
+        switch (edge->type) {
+        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+#if PATCH_USE_GREGORY == 2
+        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+#endif
+        default: {
+          GeneralCatmullClarkPatch patch(edge,loader);
+          eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
+          break;
+        }
+        }
+      }
+
+      static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
+                        const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
+            auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
+            return Patch::create(alloc,edge,vertices,stride);
+          });
+        
+        if (patch && eval(patch,u,v,P,dPdu,dPdv,1.0f)) {
+          SharedLazyTessellationCache::unlock();
+          return;
+        }
+        SharedLazyTessellationCache::unlock();
+        eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
+        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
+      }
+      
     };
 }
