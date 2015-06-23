@@ -293,9 +293,9 @@ namespace embree
         
         switch (edge->type) {
         case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
-//#if PATCH_USE_GREGORY == 2
-//        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-//#endif
+#if PATCH_USE_GREGORY == 2
+        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+#endif
         default: {
           //GeneralCatmullClarkPatch patch(edge,loader);
           //eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);

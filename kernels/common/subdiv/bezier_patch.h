@@ -17,10 +17,34 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "gregory_patch.h"
 
 namespace embree
 {  
+  template<class T, class S> // FIXME: can be moved back to bezier_patch.h if bezier patch does no longer need Gregory for interpolation
+    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1 = one_minus_uu * v0   + uu * v1;
+    const T v1_1 = one_minus_uu * v1   + uu * v2;
+    const T v2_1 = one_minus_uu * v2   + uu * v3;      
+    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    return v0_3;
+  }
+  
+  template<class T, class S>
+    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1         = one_minus_uu * v0   + uu * v1;
+    const T v1_1         = one_minus_uu * v1   + uu * v2;
+    const T v2_1         = one_minus_uu * v2   + uu * v3;      
+    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    return S(3.0f)*(v1_2-v0_2);
+  }
+
   template<typename Vertex, typename Vertex_t>
     class __aligned(64) BezierPatchT
   {
@@ -32,26 +56,9 @@ namespace embree
     __forceinline BezierPatchT() {}
 
     template<typename Loader>
-      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
-    {
-      CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
-    }
+      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader);
 
-    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
-    {
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
-    }
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch);
 
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
