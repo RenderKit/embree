@@ -105,7 +105,7 @@ namespace embree
         do
         {
           /* we need subdivision to handle edge creases */
-          if (p->edge_crease_weight != 0.0f) 
+          if (p->hasOpposite() && p->edge_crease_weight > 0.0f) 
             return COMPLEX_PATCH;
 
           face_valence++;
@@ -132,7 +132,7 @@ namespace embree
               p = p->rotate();
           }
         } while (p != this); 
-
+        
         /* calculate vertex type */
         if (face_valence == 2 && hasBorder) {
           if      (vertex_crease_weight == 0.0f      ) return REGULAR_QUAD_PATCH;
@@ -180,10 +180,7 @@ namespace embree
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return \
-          type == IRREGULAR_QUAD_PATCH || 
-          type == REGULAR_QUAD_PATCH;
-        //type == IRREGULAR_TRIANGLE_PATCH;
+        return type == IRREGULAR_QUAD_PATCH || type == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the base vertex of this half edge is a corner vertex */
