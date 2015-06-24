@@ -293,7 +293,8 @@ namespace embree
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = edge_level;
-          edge->type                   = COMPLEX_PATCH; // type gets updated below
+          edge->patch_type             = COMPLEX_PATCH; // type gets updated below
+          edge->vertex_type            = REGULAR_VERTEX;
 
 	  if (unlikely(holeSet.lookup(f))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
@@ -325,6 +326,7 @@ namespace embree
 
         /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {
+          halfEdges1[e].edge->edge_crease_weight = float(inf);
 	}
 
         /* standard edge shared between two faces */
@@ -337,7 +339,12 @@ namespace embree
         else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
+            halfEdges1[e+i].edge->vertex_type == NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->edge_crease_weight = inf;
+
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
+            halfEdges1[e+i].edge->next()->vertex_type == NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->next()->edge_crease_weight = inf;
 	  }
 	}
 	e+=N;
@@ -350,10 +357,10 @@ namespace embree
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
-        PatchType type = edge->patchType();
+        PatchType patch_type = edge->patchType();
         for (size_t i=0; i<faceVertices[f]; i++) 
         {
-          edge[i].type = type;
+          edge[i].patch_type = patch_type;
 
           /* calculate sharp corner vertices */
           if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge[i].isCorner()) 
@@ -391,17 +398,18 @@ namespace embree
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
-	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
+	  if (edge.hasOpposite()) // leave weight at inf for borders
+            edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
-	if (updateVertexCreases) {
+        if (updateVertexCreases && edge.vertex_type != NON_MANIFOLD_EDGE_VERTEX) {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
           if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
             edge.vertex_crease_weight = float(inf);
         }
 
         if (updateEdgeCreases || updateVertexCreases) {
-          edge.type = edge.patchType();
+          edge.patch_type = edge.patchType();
         }
       }
     });
@@ -503,7 +511,7 @@ namespace embree
 
       for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
-        switch (halfEdges[e].type) {
+        switch (halfEdges[e].patch_type) {
         case REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
         case IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
         case COMPLEX_PATCH       : numComplexFaces++;   break;

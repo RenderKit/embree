@@ -36,11 +36,16 @@ namespace embree
     static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
-    enum PatchType { 
+    enum PatchType : char { 
       REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
       IRREGULAR_QUAD_PATCH     = 1, //!< an irregular quad patch can be represented as a Gregory patch
       IRREGULAR_TRIANGLE_PATCH = 2, //!< an irregular triangle patch can be represented as a Gregory patch
       COMPLEX_PATCH            = 3  //!< these patches need subdivision and cannot be processed by the above fast code paths
+    };
+
+    enum VertexType : char { 
+      REGULAR_VERTEX           = 0, //!< regular vertex
+      NON_MANIFOLD_EDGE_VERTEX = 1, //!< vertex of a non-manifold edge
     };
 
     __forceinline friend PatchType max( const PatchType& ty0, const PatchType& ty1) {
@@ -72,7 +77,7 @@ namespace embree
 
       HalfEdge () 
         : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-          vertex_crease_weight(0), edge_level(0), type(COMPLEX_PATCH) 
+          vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX)
 	{
 	  static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
 	}
@@ -175,12 +180,12 @@ namespace embree
 
       /*! tests if the face is a regular b-spline face */
       __forceinline bool isRegularFace() const {
-        return type == REGULAR_QUAD_PATCH;
+        return patch_type == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the face can be diced (using bspline or gregory patch) */
       __forceinline bool isGregoryFace() const {
-        return type == IRREGULAR_QUAD_PATCH || type == REGULAR_QUAD_PATCH;
+        return patch_type == IRREGULAR_QUAD_PATCH || patch_type == REGULAR_QUAD_PATCH;
       }
 
       /*! tests if the base vertex of this half edge is a corner vertex */
@@ -350,7 +355,9 @@ namespace embree
       float edge_crease_weight;       //!< crease weight attached to edge
       float vertex_crease_weight;     //!< crease weight attached to start vertex
       float edge_level;               //!< subdivision factor for edge
-      PatchType type;                 //!< stores type of subdiv patch
+      PatchType patch_type;           //!< stores type of subdiv patch
+      VertexType vertex_type;         //!< stores type of the start vertex
+      char align[2];
     };
 
     /*! structure used to sort half edges using radix sort by their key */

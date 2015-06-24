@@ -308,7 +308,7 @@ namespace embree
         return nullptr;
 
       PatchT* child = nullptr;
-      switch (edge->type) {
+      switch (edge->patch_type) {
       case SubdivMesh::REGULAR_QUAD_PATCH:   child = (PatchT*) RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
       case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (PatchT*) GregoryPatch::create(alloc,edge,loader); break;

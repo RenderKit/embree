@@ -136,7 +136,8 @@ namespace embree
       do
       {
         vertex_level = max(vertex_level,p->edge_level);
-        crease_weight[i/2] = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+        crease_weight[i/2] = p->edge_crease_weight;
+        assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
 
         /* store first two vertices of face */
         p = p->next();
@@ -651,7 +652,8 @@ namespace embree
       {
         SubdivMesh::HalfEdge* p_prev = p->prev();
         SubdivMesh::HalfEdge* p_next = p->next();
-        const float crease_weight = p->hasOpposite() ? p->edge_crease_weight : float(inf);
+        const float crease_weight = p->edge_crease_weight;
+         assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
         vertex_level = max(vertex_level,p->edge_level);
 
         /* find minimal start vertex */
