@@ -37,7 +37,6 @@ namespace embree
         return;
       PRINT(primID);
       PRINT(h->isGregoryFace());
-
 #endif
 
       /* fast path for regular input primitives */

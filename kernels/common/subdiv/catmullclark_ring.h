@@ -104,6 +104,11 @@ namespace embree
       else return 2.0f*vtx-ring[2];
     }
 
+    __forceinline const Vertex& getVertex(size_t i) const {
+      if (i >= edge_valence) i -= edge_valence;
+      return ring[i];
+    }
+
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds ( vtx );
@@ -441,18 +446,12 @@ namespace embree
       Vertex_t beta ( 0.0f );
       
       const float n = (float)face_valence;
-      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
-      //const float c0 = 2.0f/n * delta;
-      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
 
-
-      //Vertex_t c_alpha( 0.0f );
-      //Vertex_t c_beta ( 0.0f );
-
       assert(eval_start_index < face_valence);
 
+      Vertex_t q( 0.0f );
       for (size_t i=0; i<face_valence; i++)
       {
         ////////////////////////////////////////////////
@@ -462,11 +461,15 @@ namespace embree
 
 	const float a = c1 * cosf(2.0f*M_PI*index/n);
 	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); // FIXME: factor of 2 missing?
+
+
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
       }
 
-      return alpha + beta;
+      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return sigma * (alpha + beta);
     }
     
     /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
@@ -494,14 +497,8 @@ namespace embree
       Vertex_t alpha( 0.0f );
       Vertex_t beta ( 0.0f );
       const float n = (float)face_valence;
-      //const float delta = 1.0f / sqrtf(4.0f + cos(M_PI/n)*cos(M_PI/n));
-      //const float c0 = 2.0f/n * delta;
-      //const float c1 = 1.0f/n * (1.0f - delta*cosf(M_PI/n));
       const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
       const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
-
-      //Vertex_t c_alpha( 0.0f );
-      //Vertex_t c_beta ( 0.0f );
 
       assert(eval_start_index < face_valence);
 
@@ -516,13 +513,13 @@ namespace embree
 
 	const float a = c1 * cosf(2.0f*M_PI*(float(prev_index))/n);
 	const float b = c0 * cosf((2.0f*M_PI*(float(prev_index))+M_PI)/n);
-        //alpha = ksum(alpha,c_alpha,a*ring[2*i]);
-        //beta  = ksum(beta ,c_beta ,b*ring[2*i+1]);
 	alpha += a * ring[2*index];
 	beta  += b * ring[2*index+1];
       }
 
-      return alpha + beta;      
+      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+
+      return sigma* (alpha + beta);      
     }
 
     /* gets surface normal */
@@ -569,6 +566,8 @@ namespace embree
       return o;
     } 
   };
+
+  typedef CatmullClark1RingT<Vec3fa,Vec3fa_t> CatmullClark1Ring3fa;
   
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) GeneralCatmullClark1RingT
