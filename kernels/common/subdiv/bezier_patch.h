@@ -64,12 +64,12 @@ namespace embree
     template<class T>
       static __forceinline Vec4<T>  derivative(const T& u)
     {
-      const T t  =  u;
+      const T t  = u;
       const T s  = 1.0f - u;
-      const T n0 = 2.0f*(s*s);
-      const T n1 = 6.0f*(s*t) + 3.0f*(s*s);
-      const T n2 = 6.0f*(s*t) + 3.0f*(t*t);
-      const T n3 = 2.0f*(t*t);
+      const T n0 = -3.0f*(s*s);
+      const T n1 = -6.0f*(s*t) + 3.0f*(s*s);
+      const T n2 = +6.0f*(s*t) - 3.0f*(t*t);
+      const T n3 = 3.0f*(t*t);
       return Vec4<T>(n0,n1,n2,n3);
     }
   };
