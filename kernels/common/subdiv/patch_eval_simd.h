@@ -196,36 +196,34 @@ namespace embree
       }
 #endif
 
-#if 0 
-      static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t depth) 
+      static void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t depth, const size_t N) 
       {
         /* convert into standard quad patch if possible */
         if (likely(patch.isQuadPatch())) 
         {
-          CatmullClarkPatch qpatch; patch.init(qpatch);
-          return eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
+          /*CatmullClarkPatch qpatch; patch.init(qpatch);
+            return eval_direct(valid,qpatch,uv,P,dPdu,dPdv,1.0f,depth,N); */
         }
         
         /* subdivide patch */
-        size_t N;
+        size_t Nc;
         array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
-        patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+        patch.subdivide(patches,Nc); // FIXME: only have to generate one of the patches
         
         /* parametrization for triangles */
-        if (N == 3) 
-          eval_general_triangle_direct(patches,uv,P,dPdu,dPdv,depth);
+        //if (Nc == 3) 
+        //eval_general_triangle_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
         
         /* parametrization for quads */
-        else if (N == 4) 
-          eval_general_quad_direct(patches,uv,P,dPdu,dPdv,depth);
+        //else if (Nc == 4) 
+        //  eval_general_quad_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
         
         /* parametrization for arbitrary polygons */
-        else {
-          const unsigned i = floorf(uv.x); assert(i<N);
-          eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
-        }
+        //else {
+        //  const unsigned i = floorf(uv.x); assert(i<Nc);
+        //  eval_direct(valid,patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1,N); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+        //}
       }
-#endif
 
 #if 0 
       static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth)
@@ -313,8 +311,8 @@ namespace embree
         case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
 #endif
         default: {
-          //GeneralCatmullClarkPatch patch(edge,loader);
-          //eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
+          GeneralCatmullClarkPatch patch(edge,loader);
+          eval_direct(valid,patch,Vec2<vfloat>(u,v),P,dPdu,dPdv,0,N);
           break;
         }
         }
