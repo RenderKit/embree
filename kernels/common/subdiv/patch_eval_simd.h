@@ -250,7 +250,7 @@ namespace embree
         }
 #endif
         else {
-          eval_quad_direct(valid,patch,uv,P,dPdu,dPdv,dscale,depth+1,N);
+          eval_quad_direct(valid,patch,uv,P,dPdu,dPdv,dscale,depth,N);
         }
       }  
  
