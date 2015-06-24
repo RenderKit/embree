@@ -32,12 +32,12 @@ namespace embree
       typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
 
-#if 0      
-      static bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v, vfloat* P, vfloat* dPdu, vfloat* dPdv)
+#if 0
+      static vbool eval_general_triangle(const vbool& valid, const typename Patch::SubdividedGeneralTrianglePatch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t N)
       {
-        const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
-        const bool ac_abc = right_of_line_ac_abc(Vec2f(u,v));
-        const bool bc_abc = right_of_line_bc_abc(Vec2f(u,v));
+        const vbool ab_abc = right_of_line_ab_abc(Vec2<vfloat>(u,v));
+        const vbool ac_abc = right_of_line_ac_abc(Vec2<vfloat>(u,v));
+        const vbool bc_abc = right_of_line_bc_abc(Vec2<vfloat>(u,v));
         
         const float w = 1.0f-u-v;
         if  (!ab_abc &&  ac_abc) {
@@ -57,8 +57,8 @@ namespace embree
         }
         return true;
       }
-#endif
-      
+#endif     
+ 
 #if 0
       static void eval_general_triangle_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
       {
@@ -290,7 +290,7 @@ namespace embree
         }
           /*case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_triangle(valid,(typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv,N); 
           }*/
         default: 
           assert(false); 

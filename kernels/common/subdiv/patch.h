@@ -51,85 +51,92 @@
 
 namespace embree
 {
-  __forceinline Vec2f map_tri_to_quad(const Vec2f& uv)
+  template<typename vfloat>
+  __forceinline Vec2<vfloat> map_tri_to_quad(const Vec2<vfloat>& uv)
   {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-    const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-    const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-    const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
-    return Vec2f(uu,vv);
+    const Vec2<vfloat> a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2<vfloat> ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    const Vec2<vfloat> A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
+    const vfloat AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
+    const vfloat vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+    const vfloat uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
+    return Vec2<vfloat>(uu,vv);
   }
   
-  __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+  template<typename vfloat>
+    __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
     return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
   }
   
-  __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
+  template<typename vfloat>
+    __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
     return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
   }
   
-  __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
-    return det(A-P,B-P) <= 0.0f;
+  template<typename vfloat>
+    __forceinline auto right_of_line(const Vec2f& A, const Vec2f& B, const Vec2<vfloat>& P) -> decltype(P.x<P.x) {
+    return det(Vec2<vfloat>(A)-P,Vec2<vfloat>(B)-P) <= 0.0f;
   }
   
-  __forceinline bool right_of_line_ab_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_ab_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(ab,abc,uv);
   }
   
-  __forceinline bool right_of_line_ac_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_ac_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(ac,abc,uv);
   }
   
-  __forceinline bool right_of_line_bc_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_bc_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(bc,abc,uv);
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad0_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad0_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad1_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad1_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad2_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad2_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
