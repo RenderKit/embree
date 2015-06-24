@@ -600,7 +600,7 @@ namespace embree
     }
   }
 
-#if 1
+#if 0
   void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
