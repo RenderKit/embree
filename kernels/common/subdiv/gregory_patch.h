@@ -443,6 +443,35 @@ namespace embree
       }
     } 
 
+    template<typename vfloat>
+    __forceinline void computeInnerVertices(size_t i, const vfloat uu, const vfloat vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
+    {
+      const auto m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+
+      const vfloat f0_p = v[1][1][i];
+      const vfloat f1_p = v[1][2][i];
+      const vfloat f2_p = v[2][2][i];
+      const vfloat f3_p = v[2][1][i];
+      
+      const vfloat f0_m = f[0][0];
+      const vfloat f1_m = f[0][1];
+      const vfloat f2_m = f[1][1];
+      const vfloat f3_m = f[1][0];
+      
+      const vfloat one_minus_uu = vfloat(1.0f) - uu;
+      const vfloat one_minus_vv = vfloat(1.0f) - vv;      
+      
+      const vfloat f0_i = (          uu * f0_p +           vv * f0_m) * rcp(uu+vv);
+      const vfloat f1_i = (one_minus_uu * f1_m +           vv * f1_p) * rcp(one_minus_uu+vv);
+      const vfloat f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * rcp(one_minus_uu+one_minus_vv);
+      const vfloat f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
+      
+      matrix_11 = select(m_border,f0_p,f0_i);
+      matrix_12 = select(m_border,f1_p,f1_i);
+      matrix_22 = select(m_border,f2_p,f2_i);
+      matrix_21 = select(m_border,f3_p,f3_i);
+    }
+
     static __forceinline Vertex eval(const Vertex matrix[4][4], const Vertex f[2][2], const float& uu, const float& vv) 
     {
       Vertex_t v_11, v_12, v_22, v_21;
@@ -539,6 +568,49 @@ namespace embree
       if (P)    *P    = eval(u,v); 
       if (dPdu) *dPdu = tangentU(u,v)*dscale; 
       if (dPdv) *dPdv = tangentV(u,v)*dscale; 
+    }
+
+    template<class vfloat>
+    __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n,
+                              vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
+    {
+      const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
+      const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(matrix_11 ) + v_n[2] * vfloat(matrix_21 ) + v_n[3] * vfloat(v[3][1][i]);
+      const vfloat curve2_x = v_n[0] * vfloat(v[0][2][i]) + v_n[1] * vfloat(matrix_12 ) + v_n[2] * vfloat(matrix_22 ) + v_n[3] * vfloat(v[3][2][i]);
+      const vfloat curve3_x = v_n[0] * vfloat(v[0][3][i]) + v_n[1] * vfloat(v[1][3][i]) + v_n[2] * vfloat(v[2][3][i]) + v_n[3] * vfloat(v[3][3][i]);
+      return u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x;
+    }
+    
+    template<class vfloat>
+    __forceinline void eval(const size_t N, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale = 1.0f) const
+    {
+      if (P) {
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
+          P[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21);
+        }
+      }
+      if (dPdu) {
+        const Vec4<vfloat> v_n = BezierBasis::derivative(vv);
+        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          P[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
+        }
+      }
+      if (dPdv) {
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv);
+        const Vec4<vfloat> u_n = BezierBasis::derivative(uu); 
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          P[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
+        }
+      }
     }
 
     template<class M, class T>

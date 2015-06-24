@@ -291,10 +291,10 @@ namespace embree
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
         
-        switch (edge->type) {
+        switch (edge->patch_type) {
         case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
 #if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
 #endif
         default: {
           //GeneralCatmullClarkPatch patch(edge,loader);
