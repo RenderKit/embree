@@ -61,31 +61,32 @@ namespace embree
         return ret;
       }
  
-#if 0
-      static void eval_general_triangle_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
+      static void eval_general_triangle_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth, const size_t N)
       {
-        const bool ab_abc = right_of_line_ab_abc(uv);
-        const bool ac_abc = right_of_line_ac_abc(uv);
-        const bool bc_abc = right_of_line_bc_abc(uv);
-        
-        const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-        if  (!ab_abc &&  ac_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-          eval_direct(patches[0],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
+        const vbool ab_abc = right_of_line_ab_abc(uv);
+        const vbool ac_abc = right_of_line_ac_abc(uv);
+        const vbool bc_abc = right_of_line_bc_abc(uv);
+        const vbool tri0_mask = valid & !ab_abc &  ac_abc;
+        const vbool tri1_mask = valid &  ab_abc & !bc_abc & !tri0_mask;
+        const vbool tri2_mask = valid & !tri1_mask;
+        const vfloat u = uv.x, v = uv.y, w = 1.0f-u-v;
+
+        if  (any(tri0_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
+          eval_direct(tri0_mask,patches[0],xy,P,dPdu,dPdv,1.0f,depth+1,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(xy,dPdu[i],dPdv[i]);
         }
-        else if ( ab_abc && !bc_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-          eval_direct(patches[1],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
+        if (any(tri1_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
+          eval_direct(tri1_mask,patches[1],xy,P,dPdu,dPdv,1.0f,depth+1,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(xy,dPdu[i],dPdv[i]);
         }
-        else {
-          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-          eval_direct(patches[2],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
+        if (any(tri2_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
+          eval_direct(tri2_mask,patches[2],xy,P,dPdu,dPdv,1.0f,depth+1,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(xy,dPdu[i],dPdv[i]);
         }
       }
-#endif
  
       static vbool eval_quad(const vbool& valid, const typename Patch::SubdividedQuadPatch* This, const vfloat u, const vfloat v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N)
       {
@@ -212,9 +213,9 @@ namespace embree
         patch.subdivide(patches,Nc); // FIXME: only have to generate one of the patches
         
         /* parametrization for triangles */
-        //if (Nc == 3) 
-        //eval_general_triangle_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
-        
+        if (Nc == 3) 
+          eval_general_triangle_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
+         
         /* parametrization for quads */
         //else if (Nc == 4) 
         //  eval_general_quad_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
