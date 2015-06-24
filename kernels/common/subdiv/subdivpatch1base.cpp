@@ -107,8 +107,7 @@ namespace embree
     updateEdgeLevels(edge_level,mesh);
     
     /* determine whether patch is regular or not */
-
-    if (ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior */
+    if (fas_depth == 0 && ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior and not FAS-based patches*/
     {
 #if 0
       /* bezier */
@@ -125,104 +124,14 @@ namespace embree
     }
     else
     {
-      /* greogy */
+      /* gregory patches */
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.exportDenseConrolPoints( patch.v );
     }
   }
-
   
-
-  
-  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
-                                      const unsigned int pID,
-                                      const SubdivMesh *const mesh) 
-    : geom(gID),prim(pID),flags(0)
-  {
-    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-    mtx.reset();
-
-    int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
-
-    const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
-
-    const size_t numEdges = h_start->numEdges();
-
-
-    const SubdivMesh::HalfEdge* h       = h_start;
-
-    int needAdaptiveSubdivision = 0;   
-    for (size_t i=0; i<numEdges; i++) {
-      neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-      needAdaptiveSubdivision += neighborSubdiv[i];
-    }
-    //assert(needAdaptiveSubdivision == 0);
-
-    if (numEdges == 4)
-      {
-	GeneralCatmullClarkPatch3fa cpatch;
-	cpatch.init(h_start,mesh->getVertexBuffer());
-	float edge_level[4] = {
-	  cpatch.ring[0].edge_level,
-	  cpatch.ring[1].edge_level,
-	  cpatch.ring[2].edge_level,
-	  cpatch.ring[3].edge_level
-	};
-        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-
-	for (size_t i=0; i<4; i++) {
-	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
-	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
-	}
-
-	updateEdgeLevels(edge_level,mesh);
-	
-	//new (this) SubdivPatch1Base(cpatch,gID,pID,mesh,uv,edge_level);
-	flags |= GREGORY_PATCH;
-	GregoryPatch3fa gpatch; 
-	gpatch.init( cpatch ); 
-	gpatch.exportDenseConrolPoints( patch.v );	
-
-      }
-    else if (numEdges == 3)
-      {
-	GeneralCatmullClarkPatch3fa cpatch;
-	cpatch.init(h_start,mesh->getVertexBuffer());
-
-	GregoryTrianglePatch3fa gpatch; 
-	gpatch.init( cpatch ); 
-	gpatch.exportConrolPoints( patch.v );	
-
-
-	float edge_level[4] = {
-	  cpatch.ring[0].edge_level,
-	  cpatch.ring[1].edge_level,
-	  cpatch.ring[2].edge_level,
-	  cpatch.ring[1].edge_level
-	};
-
-        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-
-	for (size_t i=0; i<4; i++) {
-	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
-	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
-	}
-
-       
-	updateEdgeLevels(edge_level,mesh);
-
-#if 0
-	gpatch.convertGregoryTrianglePatchToBezierPatch( patch.v );
-	flags |= BEZIER_PATCH;
-#else	
-	flags |= GREGORY_TRIANGLE_PATCH;
-#endif
-
-      }
-
-  }
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
   {

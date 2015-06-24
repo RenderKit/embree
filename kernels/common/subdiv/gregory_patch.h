@@ -246,43 +246,24 @@ namespace embree
 
       if (depth > 0 && border && border_flags != BORDER_BEZIER_CURVE_IGNORE)
       {
-        //PING;
-        //printBorderTags(border_flags);
 
         if (border_flags & BORDER_BEZIER_CURVE_FIRST)
         {         
-          //PRINT(p0());
-          //PRINT(e0_p());
-          //PRINT(e1_m());
-          //PRINT(p1());
-
           BezierCurve3fa l,r; 
           border[0].subdivide(l,r); 
-          //PRINT(border[0]);
-          //PRINT(l);
           e0_p() = l.v1; 
           e1_m() = l.v2; 
           p1()   = l.v3;
-          //exit(0);
         }
 
         if (border_flags & BORDER_BEZIER_CURVE_SECOND)
         {          
-          //PRINT(p0());
-          //PRINT(e0_m());
-          //PRINT(e3_p());
-          //PRINT(p3());
-
           BezierCurve3fa l,r; 
           border[1].subdivide(l,r); 
           e0_m() = r.v2; 
           e3_p() = r.v1; 
           p3()   = r.v0; 
-
-          //PRINT(border[1]);
-          //PRINT(r);
-          //exit(0);
-        }
+       }
       }
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;

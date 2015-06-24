@@ -32,10 +32,13 @@ namespace embree
     {
 #if 0
       // FIXME: will be removed soon
-      if (!(primID == 4109 ||
-            primID == 4282 ||
+
+      if (!(primID == 3945 ||
+            primID == 3937 ||
             primID == 4287))
         return;
+      PRINT(primID);
+      PRINT(h->isGregoryFace());
 #endif
 
       /* fast path for regular input primitives */
@@ -115,8 +118,6 @@ namespace embree
              patches[1].isGregoryOrFinal(depth+1) &&
              patches[2].isGregoryOrFinal(depth+1))
         {
-          //PRINT("FAS SUBDIVISION TRIANGLES");
-
           const Vec3fa t0_p = patch.ring[0].getLimitTangent();
           const Vec3fa t0_m = patch.ring[0].getSecondLimitTangent();
 
@@ -205,8 +206,6 @@ namespace embree
              patches[2].isGregoryOrFinal(depth+1) &&
              patches[3].isGregoryOrFinal(depth+1))
         {
-          //PRINT("FAS SUBDIVISION QUAD");
-
           const Vec3fa t0_p = patch.ring[0].getLimitTangent();
           const Vec3fa t0_m = patch.ring[0].getSecondLimitTangent();
 
@@ -282,7 +281,6 @@ namespace embree
             border_curves[1] = BezierCurve3fa(b33,b32,b31,b30);
             tessellator(patches[3],depth+1,uv3,neighborSubdiv3, border_curves, flags);
           }
-
 
         }
         else

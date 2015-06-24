@@ -496,10 +496,6 @@ namespace embree
                       const BezierCurve3fa *border, 
                       const int border_flags);
 
-    SubdivPatch1Base (const unsigned int gID,
-                      const unsigned int pID,
-                      const SubdivMesh *const mesh);
-
     __forceinline bool needsStitching() const
     {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      

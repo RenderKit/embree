@@ -45,10 +45,5 @@ namespace embree
                         const int subdiv[4],
                         const BezierCurve3fa *border, 
                         const int border_flags) : SubdivPatch1Base(ipatch,fas_depth,gID,pID,mesh,uv,edge_level,subdiv,border,border_flags) {}
-
-    SubdivPatch1Cached (const unsigned int gID,
-                        const unsigned int pID,
-                        const SubdivMesh *const mesh) : SubdivPatch1Base(gID,pID,mesh) {}
-
   };
 }

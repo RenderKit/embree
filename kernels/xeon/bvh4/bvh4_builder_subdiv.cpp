@@ -823,18 +823,11 @@ namespace embree
             for (size_t f=r.begin(); f!=r.end(); ++f) 
             {          
               if (!mesh->valid(f)) continue;
-#define ENABLE_FEATURE_ADAPTIVE 1
-
-#if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
                                                    [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 						     {
 						       s++;
 						     });
-#else
-	      s++;
-#endif
-
             }
             return PrimInfo(s,empty,empty);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -881,7 +874,6 @@ namespace embree
 
 	  if (unlikely(fastUpdateMode == false))
             {
-#if ENABLE_FEATURE_ADAPTIVE == 1            
               feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
                                                    {
                                                      float edge_level[4] = {
@@ -906,10 +898,6 @@ namespace embree
                                                                                                      subdiv,
                                                                                                      border,
                                                                                                      border_flags);
-#else
-						     const unsigned int patchIndex = base.size()+s.size();
-                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id, f, mesh);
-#endif
 
 						     subdiv_patches[patchIndex].resetRootRef();
 						     
@@ -932,9 +920,7 @@ namespace embree
 
                                                      prims[patchIndex] = PrimRef(bounds,patchIndex);
                                                      s.add(bounds);
-#if ENABLE_FEATURE_ADAPTIVE == 1            
 						   });
-#endif
             }
 	  else
             {
