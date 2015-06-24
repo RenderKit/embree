@@ -96,7 +96,7 @@ namespace embree
         const vbool u0v0_mask = valid & u0_mask & v0_mask;
         const vbool u0v1_mask = valid & u0_mask & v1_mask;
         const vbool u1v0_mask = valid & u1_mask & v0_mask;
-        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        const vbool u1v1_mask = valid & u1_mask & v1_mask;
         if (any(u0v0_mask)) ret |= eval(u0v0_mask,This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale,N);
         if (any(u1v0_mask)) ret |= eval(u1v0_mask,This->child[1],2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv,2.0f*dscale,N);
         if (any(u1v1_mask)) ret |= eval(u1v1_mask,This->child[2],2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale,N);
@@ -115,7 +115,7 @@ namespace embree
         const vbool u0v0_mask = valid & u0_mask & v0_mask;
         const vbool u0v1_mask = valid & u0_mask & v1_mask;
         const vbool u1v0_mask = valid & u1_mask & v0_mask;
-        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        const vbool u1v1_mask = valid & u1_mask & v1_mask;
         if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
         if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
         if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
@@ -303,9 +303,9 @@ namespace embree
         };
         
         switch (edge->patch_type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
+          case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
 #if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
+          case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
 #endif
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
