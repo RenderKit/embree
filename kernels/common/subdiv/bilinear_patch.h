@@ -92,7 +92,7 @@ namespace embree
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
-        return sy0*(v[1]-v[0]) + sy1*(v[2]-v[3]); 
+        return sy0*(v[1][i]-v[0][i]) + sy1*(v[2][i]-v[3][i]); 
       }
 
       template<class vfloat>
@@ -110,10 +110,10 @@ namespace embree
           for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv));
         }
         if (dPdu) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],tangentU(i,uu,vv)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdu[i],tangentU(i,uu,vv)*dscale);
         }
         if (dPdv) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],tangentV(i,uu,vv)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdv[i],tangentV(i,uu,vv)*dscale);
         }
       }
 

@@ -523,12 +523,12 @@ namespace embree
         if (dPdu) {
           const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdu[i],eval(i,uu,vv,u_n,v_n)*dscale);
         }
         if (dPdv) {
           const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
           const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdv[i],eval(i,uu,vv,u_n,v_n)*dscale);
         }
       }
 
