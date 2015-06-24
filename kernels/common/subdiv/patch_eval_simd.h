@@ -231,19 +231,19 @@ namespace embree
       static void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth, const size_t N)
       {
         if (unlikely(patch.isRegular2())) { 
-          assert(depth > 0); RegularPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+          assert(depth > 0); RegularPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,N); return;
         }
 #if PATCH_USE_GREGORY == 2
         else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
-          assert(depth > 0); GregoryPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+          assert(depth > 0); GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,N); return;
         }
 #else
         else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
         {
 #if PATCH_USE_GREGORY == 1
-          GregoryPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale);
+          GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,N);
 #else
-          BilinearPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale);
+          BilinearPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,N);
 #endif
           return;
         }
@@ -260,22 +260,22 @@ namespace embree
         switch (This->type) 
         {
         case Patch::BILINEAR_PATCH: {
-          ((typename Patch::BilinearPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale); 
+          ((typename Patch::BilinearPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N); 
           PATCH_DEBUG_SUBDIVISION(c,c,-1);
           return true;
         }
         case Patch::BSPLINE_PATCH: {
-          ((typename Patch::BSplinePatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale);
+          ((typename Patch::BSplinePatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
           return true;
         }
         case Patch::BEZIER_PATCH: {
-          ((typename Patch::BezierPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale);
+          ((typename Patch::BezierPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
           return true;
         }
         case Patch::GREGORY_PATCH: {
-          ((typename Patch::GregoryPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale); 
+          ((typename Patch::GregoryPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N); 
           PATCH_DEBUG_SUBDIVISION(-1,-1,c);
           return true;
         }
@@ -303,9 +303,9 @@ namespace embree
         };
         
         switch (edge->patch_type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
+        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
 #if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(N,u,v,P,dPdu,dPdv); break;
+        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,N); break;
 #endif
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);

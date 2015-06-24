@@ -130,7 +130,7 @@ namespace embree
 #endif
     }
     
-    static __forceinline void store ( const bool4& mask, float4* ptr, const float4& f ) 
+    static __forceinline void store ( const bool4& mask, void* ptr, const float4& f ) 
     { 
 #if defined (__AVX__)
       _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);

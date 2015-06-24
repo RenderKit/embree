@@ -103,17 +103,17 @@ namespace embree
         return sx0*(v[3][i]-v[0][i]) + sx1*(v[2][i]-v[1][i]);
       }
 
-      template<class vfloat>
-      __forceinline void eval(const size_t N, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale = 1.0f) const
+      template<typename vbool, typename vfloat>
+      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N) const
       {
         if (P) {
-          for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv));
         }
         if (dPdu) {
-          for (size_t i=0; i<N; i++) P[i] = tangentU(i,uu,vv)*dscale;
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],tangentU(i,uu,vv)*dscale);
         }
         if (dPdv) {
-          for (size_t i=0; i<N; i++) P[i] = tangentV(i,uu,vv)*dscale;
+          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],tangentV(i,uu,vv)*dscale);
         }
       }
 

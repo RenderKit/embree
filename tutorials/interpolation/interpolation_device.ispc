@@ -373,7 +373,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
         uniform int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
         rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,NULL,NULL,3); 
       }
-      //return diffuse;
+      return diffuse;
       diffuse = 0.5f*diffuse;
     }
 

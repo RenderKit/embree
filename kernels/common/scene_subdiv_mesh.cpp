@@ -636,6 +636,7 @@ namespace embree
     
     for (size_t i=0; i<numUVs; i+=4) 
     {
+      const size_t L = min(size_t(4),numUVs-i);
       const bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
       if (none(valid1)) continue;
       
@@ -657,9 +658,9 @@ namespace embree
           PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
                                                         getHalfEdge(primID),src+i*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
           
-          if (P   ) for (size_t k=0; k<M; k++) float4::store(&P[(j+k)*numUVs+i],P_tmp[k]);
-          if (dPdu) for (size_t k=0; k<M; k++) float4::store(&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
-          if (dPdv) for (size_t k=0; k<M; k++) float4::store(&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+          if (P   ) for (size_t k=0; k<M; k++) for (size_t l=0; l<L; l++) P[(j+k)*numUVs+i+l]= P_tmp[k][l];
+          if (dPdu) for (size_t k=0; k<M; k++) for (size_t l=0; l<L; l++) dPdu[(j+k)*numUVs+i+l] = dPdu_tmp[k][l];
+          if (dPdv) for (size_t k=0; k<M; k++) for (size_t l=0; l<L; l++) dPdv[(j+k)*numUVs+i+l] = dPdv_tmp[k][l];
         }
       });
     }
