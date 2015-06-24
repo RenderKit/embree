@@ -1132,24 +1132,7 @@ namespace embree
     RTCORE_TRACE(rtcInterpolateN);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
-    const int* valid = (const int*) valid_i;
-
-    __aligned(64) float P_tmp[256];
-    __aligned(64) float dPdu_tmp[256];
-    __aligned(64) float dPdv_tmp[256];
-    float* Pt = P ? P_tmp : nullptr;
-    float* dPdut = dPdu ? dPdu_tmp : nullptr;
-    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
-
-    for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
-    {
-      if (valid && !valid[i]) continue;
-      embree::rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
-      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
-      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
-      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
-    }
+    ((Scene*)scene)->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
   }
 }

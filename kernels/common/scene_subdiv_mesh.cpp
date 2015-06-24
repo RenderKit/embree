@@ -600,11 +600,9 @@ namespace embree
     }
   }
 
-#if 1
-  void SubdivMesh::interpolateN(RTCScene scene, unsigned geomID, 
-                                const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                RTCBufferType buffer,
-                                float* P, float* dPdu, float* dPdv, size_t numFloats)
+#if 0
+  void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
 #if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
@@ -638,22 +636,24 @@ namespace embree
 
     for (size_t i=0; i<numUVs; i+=4) 
     {
-      //if (valid && !valid[i]) continue;
-      //bool4 mask = true; // FIXME: wrong!
-      for (size_t j=0; j<numFloats; j+=4) 
+      const bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
+      if (none(valid1)) continue;
+      
+      const int4 primID = int4::loadu(&primIDs[i]);
+      const float4 uu = float4::loadu(&u[i]);
+      const float4 vv = float4::loadu(&v[i]);
+
+      foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) 
       {
-        const bool4 valid1 = int4::loadu(&valid[j]) == int4(-1);
-        const float4 uu = float4::loadu(&u[j]);
-        const float4 vv = float4::loadu(&v[j]);
-        const size_t primID = primIDs[i]; PING; // FIXME: wrong!!!!!! 
-        PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
-                                                      getHalfEdge(primID),src+i*sizeof(float),stride,
-                                                      valid1,uu,vv,
-                                                      (float4*)(P ? &P[i*numFloats+j] : nullptr), 
-                                                      (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
-                                                      (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
-                                                      min(size_t(4),numFloats-j));
-      }
+        for (size_t j=0; j<numFloats; j+=4) 
+          PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
+                                                        getHalfEdge(primID),src+i*sizeof(float),stride,
+                                                        valid1,uu,vv,
+                                                        (float4*)(P ? &P[i*numFloats+j] : nullptr), 
+                                                        (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
+                                                        (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
+                                                        min(size_t(4),numFloats-j));
+      });
     }
   }
 #endif
