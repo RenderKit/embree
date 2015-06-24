@@ -600,7 +600,7 @@ namespace embree
     }
   }
 
-#if 0
+#if 1
   void SubdivMesh::interpolateN(RTCScene scene, unsigned geomID, 
                                 const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer,

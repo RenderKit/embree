@@ -253,22 +253,22 @@ namespace embree
           PATCH_DEBUG_SUBDIVISION(c,c,-1);
           return true;
         }
-          /*case Patch::BSPLINE_PATCH: {
-          ((typename Patch::BSplinePatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+        case Patch::BSPLINE_PATCH: {
+          ((typename Patch::BSplinePatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
           return true;
         }
         case Patch::BEZIER_PATCH: {
-          ((typename Patch::BezierPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+          ((typename Patch::BezierPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
           return true;
         }
         case Patch::GREGORY_PATCH: {
-          ((typename Patch::GregoryPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+          ((typename Patch::GregoryPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale); 
           PATCH_DEBUG_SUBDIVISION(-1,-1,c);
           return true;
         }
-        case Patch::SUBDIVIDED_QUAD_PATCH: 
+          /*case Patch::SUBDIVIDED_QUAD_PATCH: 
           return eval_quad((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
         case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
