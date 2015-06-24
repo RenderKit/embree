@@ -32,32 +32,34 @@ namespace embree
       typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
 
-#if 0
       static vbool eval_general_triangle(const vbool& valid, const typename Patch::SubdividedGeneralTrianglePatch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t N)
       {
+        vbool ret = false;
         const vbool ab_abc = right_of_line_ab_abc(Vec2<vfloat>(u,v));
         const vbool ac_abc = right_of_line_ac_abc(Vec2<vfloat>(u,v));
         const vbool bc_abc = right_of_line_bc_abc(Vec2<vfloat>(u,v));
-        
-        const float w = 1.0f-u-v;
-        if  (!ab_abc &&  ac_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-          if (!eval(This->child[0],xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
+        const vbool tri0_mask = valid & !ab_abc &  ac_abc;
+        const vbool tri1_mask = valid &  ab_abc & !bc_abc & !tri0_mask;
+        const vbool tri2_mask = valid & !tri1_mask;
+        const vfloat w = 1.0f-u-v;
+
+        if  (any(tri0_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
+          ret |= eval(tri0_mask,This->child[0],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(xy,dPdu[i],dPdv[i]);
         }
-        else if ( ab_abc && !bc_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-          if (!eval(This->child[1],xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
+        if (any(tri1_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
+          ret |= eval(tri1_mask,This->child[1],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(xy,dPdu[i],dPdv[i]);
         }
-        else {
-          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-          if (!eval(This->child[2],xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
+        if (any(tri2_mask)) {
+          const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
+          ret |= eval(tri2_mask,This->child[2],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(xy,dPdu[i],dPdv[i]);
         }
-        return true;
+        return ret;
       }
-#endif     
  
 #if 0
       static void eval_general_triangle_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
@@ -288,10 +290,10 @@ namespace embree
           assert(dscale == 1.0f); 
           return eval_general_quad(valid,(typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv,N); 
         }
-          /*case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
+        case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle(valid,(typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv,N); 
-          }*/
+        }
         default: 
           assert(false); 
           return false;

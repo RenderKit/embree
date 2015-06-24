@@ -55,22 +55,22 @@ namespace embree
   __forceinline Vec2<vfloat> map_tri_to_quad(const Vec2<vfloat>& uv)
   {
     const Vec2<vfloat> a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2<vfloat> ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
+    const Vec2<vfloat> ab = vfloat(0.5f)*(a+b), ac = vfloat(0.5f)*(a+c), bc = vfloat(0.5f)*(b+c), abc = vfloat(1.0f/3.0f)*(a+b+c);
     const Vec2<vfloat> A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
     const vfloat AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-    const vfloat vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+    const vfloat vv = (-BB+sqrt(BB*BB-4.0f*AA*CC))/(2.0f*AA);
     const vfloat uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
     return Vec2<vfloat>(uu,vv);
   }
   
   template<typename vfloat>
-    __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
-    return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
+    __forceinline Vec2<vfloat> map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
+    return (1.0f-xy.y)*Vec2<vfloat>(ab-a) + xy.y*Vec2<vfloat>(abc-ac);
   }
   
   template<typename vfloat>
-    __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
-    return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
+    __forceinline Vec2<vfloat> map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
+    return (1.0f-xy.x)*Vec2<vfloat>(ac-a) + xy.x*Vec2<vfloat>(abc-ab);
   }
   
   template<typename vfloat>
