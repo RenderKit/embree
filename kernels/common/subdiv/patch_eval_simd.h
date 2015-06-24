@@ -40,7 +40,7 @@ namespace embree
         const vbool bc_abc = right_of_line_bc_abc(Vec2<vfloat>(u,v));
         const vbool tri0_mask = valid & !ab_abc &  ac_abc;
         const vbool tri1_mask = valid &  ab_abc & !bc_abc & !tri0_mask;
-        const vbool tri2_mask = valid & !tri1_mask;
+        const vbool tri2_mask = valid & !tri0_mask & !tri1_mask;
         const vfloat w = 1.0f-u-v;
 
         if  (any(tri0_mask)) {
@@ -68,7 +68,7 @@ namespace embree
         const vbool bc_abc = right_of_line_bc_abc(uv);
         const vbool tri0_mask = valid & !ab_abc &  ac_abc;
         const vbool tri1_mask = valid &  ab_abc & !bc_abc & !tri0_mask;
-        const vbool tri2_mask = valid & !tri1_mask;
+        const vbool tri2_mask = valid & !tri0_mask & !tri1_mask;
         const vfloat u = uv.x, v = uv.y, w = 1.0f-u-v;
 
         if  (any(tri0_mask)) {
