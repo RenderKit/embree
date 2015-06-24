@@ -118,46 +118,43 @@ namespace embree
       }
 #endif
 
-#if 0 
-      static bool eval_general_quad(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, vfloat* P, vfloat* dPdu, vfloat* dPdv)
+      static vbool eval_general_quad(const vbool& valid, const typename Patch::SubdividedGeneralQuadPatch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t N)
       {
-        if (v < 0.5f) {
-          if (u < 0.5f) {
-            if (!eval(This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdx; *dPdv = dpdy;
+        vbool ret = false;
+        const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
+        const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
+        const vbool u0v0_mask = valid & u0_mask & v0_mask;
+        const vbool u0v1_mask = valid & u0_mask & v1_mask;
+        const vbool u1v0_mask = valid & u1_mask & v0_mask;
+        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        if (any(u0v0_mask)) {
+          ret |= eval(u0v0_mask,This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f,N);
+          if (dPdu && dPdv) {
+            for (size_t i=0; i<N; i++) {
+              const vfloat dpdx = dPdu[i], dpdy = dPdv[i];  dPdu[i] = dpdx; dPdv[i] = dpdy;
             }
-            return true;
-          }
-          else {
-            if (!eval(This->child[1],2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdy; *dPdv = dpdx;
-            }
-            return true;
-          }
-        } else {
-          if (u > 0.5f) {
-            if (!eval(This->child[2],2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdx; *dPdv = -dpdy;
-            }
-            return true;
-          }
-          else {
-            if (!eval(This->child[3],2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdy; *dPdv = -dpdx;
-            }
-            return true;
           }
         }
+        if (any(u1v0_mask)) {
+          ret |= eval(u1v0_mask,This->child[1],2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv,2.0f,N);
+          for (size_t i=0; i<N; i++) {
+            const vfloat dpdx = dPdu[i], dpdy = dPdv[i]; dPdu[i] = -dpdy; dPdv[i] = dpdx;
+          }
+        }
+        if (any(u1v1_mask)) {
+          ret |= eval(u1v1_mask,This->child[2],2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv,2.0f,N);
+          for (size_t i=0; i<N; i++) {
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; dPdu[i] = -dpdx; dPdv[i] = -dpdy;
+          }
+        }
+        if (any(u0v1_mask)) {
+          ret |= eval(u0v1_mask,This->child[3],2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv,2.0f,N);
+          for (size_t i=0; i<N; i++) {
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; dPdu[i] = dpdy; dPdv[i] = -dpdx;
+          }
+        }
+        return ret;
       }
-#endif
 
 #if 0 
       static void eval_general_quad_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
@@ -287,11 +284,11 @@ namespace embree
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
           return eval_quad(valid,(typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale,N);
-          /*case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
+        case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general_quad((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_quad(valid,(typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv,N); 
         }
-        case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
+          /*case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
           }*/
