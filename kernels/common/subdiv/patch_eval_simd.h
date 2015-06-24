@@ -131,7 +131,7 @@ namespace embree
         const vbool u0v0_mask = valid & u0_mask & v0_mask;
         const vbool u0v1_mask = valid & u0_mask & v1_mask;
         const vbool u1v0_mask = valid & u1_mask & v0_mask;
-        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        const vbool u1v1_mask = valid & u1_mask & v1_mask;
         if (any(u0v0_mask)) {
           ret |= eval(u0v0_mask,This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f,N);
           if (dPdu && dPdv) {
@@ -169,7 +169,7 @@ namespace embree
         const vbool u0v0_mask = valid & u0_mask & v0_mask;
         const vbool u0v1_mask = valid & u0_mask & v1_mask;
         const vbool u1v0_mask = valid & u1_mask & v0_mask;
-        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        const vbool u1v1_mask = valid & u1_mask & v1_mask;
         if (any(u0v0_mask)) {
           eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1,N);
           if (dPdu && dPdv) {
@@ -263,22 +263,22 @@ namespace embree
         case Patch::BILINEAR_PATCH: {
           ((typename Patch::BilinearPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N); 
           PATCH_DEBUG_SUBDIVISION(c,c,-1);
-          return true;
+          return valid;
         }
         case Patch::BSPLINE_PATCH: {
           ((typename Patch::BSplinePatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-          return true;
+          return valid;
         }
         case Patch::BEZIER_PATCH: {
           ((typename Patch::BezierPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-          return true;
+          return valid;
         }
         case Patch::GREGORY_PATCH: {
           ((typename Patch::GregoryPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,N); 
           PATCH_DEBUG_SUBDIVISION(-1,-1,c);
-          return true;
+          return valid;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
           return eval_quad(valid,(typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale,N);
@@ -323,6 +323,9 @@ namespace embree
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
             return Patch::create(alloc,edge,vertices,stride);
           });
+
+        //for (size_t i=0; i<N; i++)
+        //vfloat::store(valid0,&P[i],one);
         
         /* use cached data structure for calculations */
         const vbool valid1 = patch ? eval(valid0,patch,u,v,P,dPdu,dPdv,1.0f,N) : vbool(false);
