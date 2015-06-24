@@ -205,7 +205,7 @@ namespace embree
           CatmullClarkPatch qpatch; patch.init(qpatch);
           return eval_direct(valid,qpatch,uv,P,dPdu,dPdv,1.0f,depth,N);
         }
-        
+
         /* subdivide patch */
         size_t Nc;
         array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 

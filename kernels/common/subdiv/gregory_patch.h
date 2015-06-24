@@ -599,7 +599,7 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          P[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
+          dPdu[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
         }
       }
       if (dPdv) {
@@ -608,7 +608,7 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          P[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
+          dPdv[i] = eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale;
         }
       }
     }

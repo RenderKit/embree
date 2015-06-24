@@ -105,7 +105,7 @@ namespace embree
     }
 #endif
 
-    static __forceinline void store ( float4* ptr, const float4& v ) {  
+    static __forceinline void store ( void* ptr, const float4& v ) {  
       _mm_store_ps((float*)ptr,v); 
     }
 

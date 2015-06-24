@@ -600,7 +600,7 @@ namespace embree
     }
   }
 
-#if 0
+#if 1
   void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
@@ -633,7 +633,7 @@ namespace embree
 #endif
 
     const int* valid = (const int*) valid_i;
-
+    
     for (size_t i=0; i<numUVs; i+=4) 
     {
       const bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
@@ -646,13 +646,21 @@ namespace embree
       foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) 
       {
         for (size_t j=0; j<numFloats; j+=4) 
+        {
+          __aligned(64) float4 P_tmp[4];
+          __aligned(64) float4 dPdu_tmp[4];
+          __aligned(64) float4 dPdv_tmp[4];
+          float4* Pt = P ? P_tmp : nullptr;
+          float4* dPdut = dPdu ? dPdu_tmp : nullptr;
+          float4* dPdvt = dPdv ? dPdv_tmp : nullptr;
+          const size_t M = min(size_t(4),numFloats-j);
           PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
-                                                        getHalfEdge(primID),src+i*sizeof(float),stride,
-                                                        valid1,uu,vv,
-                                                        (float4*)(P ? &P[i*numFloats+j] : nullptr), 
-                                                        (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
-                                                        (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
-                                                        min(size_t(4),numFloats-j));
+                                                        getHalfEdge(primID),src+i*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
+          
+          if (P   ) for (size_t k=0; k<M; k++) float4::store(&P[(j+k)*numUVs+i],P_tmp[k]);
+          if (dPdu) for (size_t k=0; k<M; k++) float4::store(&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
+          if (dPdv) for (size_t k=0; k<M; k++) float4::store(&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+        }
       });
     }
   }
