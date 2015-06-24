@@ -242,18 +242,18 @@ namespace embree
       }  
 #endif
       
-      static vbool eval(const vbool& valid, Patch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale) 
+      static vbool eval(const vbool& valid, Patch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, size_t N) 
       {
         if (This == nullptr) return false;
         
         switch (This->type) 
         {
-          /*case Patch::BILINEAR_PATCH: {
-          ((typename Patch::BilinearPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+        case Patch::BILINEAR_PATCH: {
+          ((typename Patch::BilinearPatch*)This)->patch.eval(N,u,v,P,dPdu,dPdv,dscale); 
           PATCH_DEBUG_SUBDIVISION(c,c,-1);
           return true;
         }
-        case Patch::BSPLINE_PATCH: {
+          /*case Patch::BSPLINE_PATCH: {
           ((typename Patch::BSplinePatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
           PATCH_DEBUG_SUBDIVISION(-1,c,-1);
           return true;
@@ -313,7 +313,7 @@ namespace embree
           });
         
         /* use cached data structure for calculations */
-        const vbool valid1 = patch ? eval(valid0,patch,u,v,P,dPdu,dPdv,1.0f) : vbool(false);
+        const vbool valid1 = patch ? eval(valid0,patch,u,v,P,dPdu,dPdv,1.0f,N) : vbool(false);
         SharedLazyTessellationCache::unlock();
         const vbool valid2 = valid0 & !valid1;
         if (any(valid2)) {

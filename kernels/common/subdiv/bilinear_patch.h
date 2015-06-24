@@ -78,6 +78,45 @@ namespace embree
         if (dPdu) *dPdu = tangentU(u,v)*dscale; 
         if (dPdv) *dPdv = tangentV(u,v)*dscale; 
       }
+
+       template<class vfloat>
+      __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        return sy0*(sx0*v[0][i]+sx1*v[1][i]) + sy1*(sx0*v[3][i]+sx1*v[2][i]);
+      }
+
+      template<class vfloat>
+      __forceinline vfloat tangentU(const size_t i, const vfloat uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        return sy0*(v[1]-v[0]) + sy1*(v[2]-v[3]); 
+      }
+
+      template<class vfloat>
+      __forceinline vfloat tangentV(const size_t i, const vfloat& uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        return sx0*(v[3][i]-v[0][i]) + sx1*(v[2][i]-v[1][i]);
+      }
+
+      template<class vfloat>
+      __forceinline void eval(const size_t N, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale = 1.0f) const
+      {
+        if (P) {
+          for (size_t i=0; i<N; i++) P[i] = eval(i,uu,vv);
+        }
+        if (dPdu) {
+          for (size_t i=0; i<N; i++) P[i] = tangentU(i,uu,vv)*dscale;
+        }
+        if (dPdv) {
+          for (size_t i=0; i<N; i++) P[i] = tangentV(i,uu,vv)*dscale;
+        }
+      }
+
     };
   
   typedef BilinearPatchT<Vec3fa,Vec3fa_t> BilinearPatch3fa;
