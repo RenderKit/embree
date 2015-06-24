@@ -373,8 +373,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
         int geom = geomID == quadCubeID ? quadCubeID2 : geomID; // use special interpolation mesh
         rtcInterpolate(g_scene,geom,ray.primID,ray.u,ray.v,RTC_USER_VERTEX_BUFFER0,&diffuse.x,nullptr,nullptr,3); 
       }
-      return diffuse;
-      //diffuse = 0.5f*diffuse;
+      //return diffuse;
+      diffuse = 0.5f*diffuse;
     }
 
     /* calculate smooth shading normal */
@@ -384,7 +384,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       int geomID = ray.geomID;  {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
-      //return dPdu;
+      return dPdu;
       Ng = cross(dPdv,dPdu);
     }
     Ng = normalize(Ng);

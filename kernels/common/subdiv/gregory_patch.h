@@ -585,8 +585,8 @@ namespace embree
     __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N) const
     {
       if (P) {
-        const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
         const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
@@ -594,8 +594,8 @@ namespace embree
         }
       }
       if (dPdu) {
-        const Vec4<vfloat> v_n = BezierBasis::derivative(vv);
-        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        const Vec4<vfloat> u_n = BezierBasis::derivative(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv);
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
@@ -603,8 +603,8 @@ namespace embree
         }
       }
       if (dPdv) {
-        const Vec4<vfloat> v_n = BezierBasis::eval(vv);
-        const Vec4<vfloat> u_n = BezierBasis::derivative(uu); 
+        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::derivative(vv);
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
