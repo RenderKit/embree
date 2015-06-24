@@ -453,10 +453,10 @@ namespace embree
       const vfloat f2_p = v[2][2][i];
       const vfloat f3_p = v[2][1][i];
       
-      const vfloat f0_m = f[0][0];
-      const vfloat f1_m = f[0][1];
-      const vfloat f2_m = f[1][1];
-      const vfloat f3_m = f[1][0];
+      const vfloat f0_m = f[0][0][i];
+      const vfloat f1_m = f[0][1][i];
+      const vfloat f2_m = f[1][1][i];
+      const vfloat f3_m = f[1][0][i];
       
       const vfloat one_minus_uu = vfloat(1.0f) - uu;
       const vfloat one_minus_vv = vfloat(1.0f) - vv;      
@@ -591,6 +591,9 @@ namespace embree
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
           vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
+          /*if (i == 0) vfloat::store(valid,&P[i],uu);
+          else if (i == 1) vfloat::store(valid,&P[i],vv);
+          else vfloat::store(valid,&P[i],1.0f-uu-vv);*/
         }
       }
       if (dPdu) {

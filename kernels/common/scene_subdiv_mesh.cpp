@@ -655,8 +655,8 @@ namespace embree
           float4* dPdut = dPdu ? dPdu_tmp : nullptr;
           float4* dPdvt = dPdv ? dPdv_tmp : nullptr;
           const size_t M = min(size_t(4),numFloats-j);
-          PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
-                                                        getHalfEdge(primID),src+i*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
+          PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,j/4,stride)),parent->commitCounter,
+                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
           
           if (P   ) for (size_t k=0; k<M; k++) for (size_t l=0; l<L; l++) P[(j+k)*numUVs+i+l]= P_tmp[k][l];
           if (dPdu) for (size_t k=0; k<M; k++) for (size_t l=0; l<L; l++) dPdu[(j+k)*numUVs+i+l] = dPdu_tmp[k][l];
