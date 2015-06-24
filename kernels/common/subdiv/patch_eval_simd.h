@@ -31,6 +31,7 @@ namespace embree
       typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
       typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
+      typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
 
       static vbool eval_general_triangle(const vbool& valid, const typename Patch::SubdividedGeneralTrianglePatch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t N)
       {
