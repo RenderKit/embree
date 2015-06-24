@@ -402,12 +402,6 @@ namespace embree
       Vertex_t F( 0.0f );
       Vertex_t E( 0.0f );
       
-      //Vertex_t c_F ( 0.0f );
-      //Vertex_t c_E ( 0.0f );
-
-      //F = ksum(F,c_F,ring[2*i+1]);
-      //E = ksum(E,c_E,ring[2*i]);
-
       assert(eval_start_index < face_valence);
 
       for (size_t i=0; i<face_valence; i++) {
@@ -432,10 +426,7 @@ namespace embree
 
       /* border vertex rule */
       if (unlikely(border_index != -1))
-      {
-	//if (unlikely(std::isinf(vertex_crease_weight)))
-        //return ring[0] - vtx;
-	
+      {	
 	if (border_index != edge_valence-2 ) { // && face_valence != 2
 	  return ring[0] - vtx; 
 	}
@@ -464,8 +455,7 @@ namespace embree
         ////////////////////////////////////////////////
 
 	const float a = c1 * cosf(2.0f*M_PI*index/n);
-	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); // FIXME: factor of 2 missing?
-
+	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); 
 
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
@@ -485,10 +475,6 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-        //if (unlikely(std::isinf(vertex_crease_weight)))
-        //return ring[2] - vtx;
-        
-        //if (border_index == 0 && face_valence != 2) {
         if (border_index != 2) { //edge_valence-2 ) { // && face_valence != 2
           return ring[2] - vtx;
         }
@@ -836,7 +822,39 @@ namespace embree
       assert( dst.hasValidPositions() );
     }
 
-    
+
+    /* gets limit tangent in the direction of egde vtx -> ring[0] */
+    __forceinline Vertex getLimitTangent() const 
+    {
+      CatmullClark1Ring cc_vtx;
+     
+      /* fast path for quad only rings */
+      if (only_quads)
+      {
+        convert(cc_vtx);
+        return cc_vtx.getLimitTangent();
+      }
+      
+      subdivide(cc_vtx);
+      return 2.0f * cc_vtx.getLimitTangent();
+    }
+
+    /* gets limit tangent in the direction of egde vtx -> ring[edge_valence-2] */
+    __forceinline Vertex getSecondLimitTangent() const 
+    {
+      CatmullClark1Ring cc_vtx;
+     
+      /* fast path for quad only rings */
+      if (only_quads)
+      {
+        convert(cc_vtx);
+        return cc_vtx.getSecondLimitTangent();
+      }
+      
+      subdivide(cc_vtx);
+      return 2.0f * cc_vtx.getSecondLimitTangent();
+    }
+
     void computeGregoryPatchEdgePoints(Vertex &p0,
                                        Vertex &e0_plus,
                                        Vertex &e0_minus,
