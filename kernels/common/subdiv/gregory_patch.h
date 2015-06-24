@@ -246,32 +246,32 @@ namespace embree
 
       if (depth > 0 && border && border_flags != BORDER_BEZIER_CURVE_IGNORE)
       {
-        PING;
-        printBorderTags(border_flags);
+        //PING;
+        //printBorderTags(border_flags);
 
         if (border_flags & BORDER_BEZIER_CURVE_FIRST)
         {         
-          PRINT(p0());
-          PRINT(e0_p());
-          PRINT(e1_m());
-          PRINT(p1());
+          //PRINT(p0());
+          //PRINT(e0_p());
+          //PRINT(e1_m());
+          //PRINT(p1());
 
           BezierCurve3fa l,r; 
           border[0].subdivide(l,r); 
-          PRINT(border[0]);
-          PRINT(l);
+          //PRINT(border[0]);
+          //PRINT(l);
           e0_p() = l.v1; 
           e1_m() = l.v2; 
           p1()   = l.v3;
           //exit(0);
         }
-#if 1
+
         if (border_flags & BORDER_BEZIER_CURVE_SECOND)
         {          
-          PRINT(p0());
-          PRINT(e0_m());
-          PRINT(e3_p());
-          PRINT(p3());
+          //PRINT(p0());
+          //PRINT(e0_m());
+          //PRINT(e3_p());
+          //PRINT(p3());
 
           BezierCurve3fa l,r; 
           border[1].subdivide(l,r); 
@@ -279,55 +279,11 @@ namespace embree
           e3_p() = r.v1; 
           p3()   = r.v0; 
 
-          PRINT(border[1]);
-          PRINT(r);
+          //PRINT(border[1]);
+          //PRINT(r);
           //exit(0);
         }
-#endif
-          /* PRINT(p0()); */
-          /* PRINT(e0_p()); */
-          /* PRINT(e1_m()); */
-          /* PRINT(p1()); */
-          /* PRINT(border[0]); */
-          /* PRINT(l); */
-
-        //if (border_flags & BORDER_BEZIER_CURVE_TOP_SUBCURVE_1)
-        //{
-        //  BezierCurve3fa l,r; border[0].subdivide(l,r); e0_p() = r.v1; e1_m() = r.v2;
-        //}
-
-
       }
-#if 0
-      if (neighborSubdiv[1] == 1)
-      {
-        PRINT("neighborSubdiv[1]");
-        array_t<CatmullClarkPatch,4> child; 
-        patch.subdivide(child);
-        Vertex b00 = p1();
-        Vertex b03 = p2();
-        Vertex b30 = child[1].ring[2].getLimitVertex();
-
-        //Vertex b01 = b00 + 1.0f/3.0f * patch.ring[1].getLimitTangent();
-        //Vertex b02 = b03 + 1.0f/3.0f * patch.ring[2].getSecondLimitTangent();
-        Vertex b10 = b00 + 1.0f/3.0f * child[1].ring[1].getLimitTangent();
-        Vertex b12 = b03 + 1.0f/3.0f * child[2].ring[2].getSecondLimitTangent();
-        //Vertex b20 = b30 + 1.0f/3.0f * child[1].ring[2].getSecondLimitTangent();
-        //Vertex b21 = b30 + 1.0f/3.0f * child[2].ring[1].getLimitTangent();
-
-        Vertex t0 = child[1].ring[1].getLimitTangent();
-        Vertex t1 = child[2].ring[2].getSecondLimitTangent();
-
-        Vertex left = 8.0f * b30 - 4.0f * (b00+b03);
-        Vertex right = t0 + t1; 
-
-        e1_p() = b00 + 1.0f/3.0f * left/right * t0;
-        e2_m() = b03 + 1.0f/3.0f * left/right * t1;
-        
-      }
-
-#endif
-
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;
       const unsigned int face_valence_p1 = patch.ring[1].face_valence;
       const unsigned int face_valence_p2 = patch.ring[2].face_valence;
