@@ -38,7 +38,7 @@
 
 #define PATCH_MAX_CACHE_DEPTH 0
 #define PATCH_MAX_EVAL_DEPTH 3     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 0        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 2        // 0 = no gregory, 1 = fill, 2 = as early as possible
 #define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of gregory patches
 
 #if PATCH_USE_BEZIER_PATCH
@@ -144,7 +144,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad0_to_tri(const vbool& valid, const Vec2<vfloat>& xy, vfloat& dPdu, vfloat& dPdv)
   {
-    vfloat dPdut, dPdvt; 
+    vfloat dPdut = dPdu, dPdvt = dPdv; 
     map_quad0_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,&dPdu,dPdut);
     vfloat::store(valid,&dPdv,dPdvt);
@@ -153,7 +153,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad1_to_tri(const vbool& valid, const Vec2<vfloat>& xy, vfloat& dPdu, vfloat& dPdv)
   {
-    vfloat dPdut, dPdvt; 
+    vfloat dPdut = dPdu, dPdvt = dPdv;
     map_quad1_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,&dPdu,dPdut);
     vfloat::store(valid,&dPdv,dPdvt);
@@ -162,7 +162,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad2_to_tri(const vbool& valid, const Vec2<vfloat>& xy, vfloat& dPdu, vfloat& dPdv)
   {
-    vfloat dPdut, dPdvt; 
+    vfloat dPdut = dPdu, dPdvt = dPdv;
     map_quad2_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,&dPdu,dPdut);
     vfloat::store(valid,&dPdv,dPdvt);

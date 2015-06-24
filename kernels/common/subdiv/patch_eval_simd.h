@@ -47,17 +47,17 @@ namespace embree
         if  (any(tri0_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
           ret |= eval(tri0_mask,This->child[0],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(tri0_mask,xy,dPdu[i],dPdv[i]);
         }
         if (any(tri1_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
           ret |= eval(tri1_mask,This->child[1],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(tri1_mask,xy,dPdu[i],dPdv[i]);
         }
         if (any(tri2_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
           ret |= eval(tri2_mask,This->child[2],xy.x,xy.y,P,dPdu,dPdv,1.0f,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(tri2_mask,xy,dPdu[i],dPdv[i]);
         }
         return ret;
       }
@@ -75,17 +75,17 @@ namespace embree
         if  (any(tri0_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
           eval_direct(tri0_mask,patches[0],xy,P,dPdu,dPdv,1.0f,depth+1,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(tri0_mask,xy,dPdu[i],dPdv[i]);
         }
         if (any(tri1_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
           eval_direct(tri1_mask,patches[1],xy,P,dPdu,dPdv,1.0f,depth+1,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(tri1_mask,xy,dPdu[i],dPdv[i]);
         }
         if (any(tri2_mask)) {
           const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
           eval_direct(tri2_mask,patches[2],xy,P,dPdu,dPdv,1.0f,depth+1,N);
-          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(valid,xy,dPdu[i],dPdv[i]);
+          if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(tri2_mask,xy,dPdu[i],dPdv[i]);
         }
       }
  
@@ -136,26 +136,30 @@ namespace embree
           ret |= eval(u0v0_mask,This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f,N);
           if (dPdu && dPdv) {
             for (size_t i=0; i<N; i++) {
-              const vfloat dpdx = dPdu[i], dpdy = dPdv[i];  vfloat::store(valid,&dPdu[i],dpdx); vfloat::store(valid,&dPdv[i],dpdy);
+              const vfloat dpdx = dPdu[i], dpdy = dPdv[i];  
+              vfloat::store(u0v0_mask,&dPdu[i],dpdx); vfloat::store(u0v0_mask,&dPdv[i],dpdy);
             }
           }
         }
         if (any(u1v0_mask)) {
           ret |= eval(u1v0_mask,This->child[1],2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv,2.0f,N);
           for (size_t i=0; i<N; i++) {
-            const vfloat dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],-dpdy); vfloat::store(valid,&dPdv[i],dpdx);
+            const vfloat dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u1v0_mask,&dPdu[i],-dpdy); vfloat::store(u1v0_mask,&dPdv[i],dpdx);
           }
         }
         if (any(u1v1_mask)) {
           ret |= eval(u1v1_mask,This->child[2],2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv,2.0f,N);
           for (size_t i=0; i<N; i++) {
-            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],-dpdx); vfloat::store(valid,&dPdv[i],-dpdy);
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u1v1_mask,&dPdu[i],-dpdx); vfloat::store(u1v1_mask,&dPdv[i],-dpdy);
           }
         }
         if (any(u0v1_mask)) {
           ret |= eval(u0v1_mask,This->child[3],2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv,2.0f,N);
           for (size_t i=0; i<N; i++) {
-            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],dpdy); vfloat::store(valid,&dPdv[i],-dpdx);
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u0v1_mask,&dPdu[i],dpdy); vfloat::store(u0v1_mask,&dPdv[i],-dpdx);
           }
         }
         return ret;
@@ -174,26 +178,30 @@ namespace embree
           eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1,N);
           if (dPdu && dPdv) {
             for (size_t i=0; i<N; i++) {
-              const vfloat dpdx = dPdu[i], dpdy = dPdv[i];  vfloat::store(valid,&dPdu[i],dpdx); vfloat::store(valid,&dPdv[i],dpdy);
+              const vfloat dpdx = dPdu[i], dpdy = dPdv[i];  
+              vfloat::store(u0v0_mask,&dPdu[i],dpdx); vfloat::store(u0v0_mask,&dPdv[i],dpdy);
             }
           }
         }
         if (any(u1v0_mask)) {
           eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*v,2.0f-2.0f*u),P,dPdu,dPdv,2.0f,depth+1,N);
           for (size_t i=0; i<N; i++) {
-            const vfloat dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],-dpdy); vfloat::store(valid,&dPdv[i],dpdx);
+            const vfloat dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u1v0_mask,&dPdu[i],-dpdy); vfloat::store(u1v0_mask,&dPdv[i],dpdx);
           }
         }
         if (any(u1v1_mask)) {
           eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f-2.0f*u,2.0f-2.0f*v),P,dPdu,dPdv,2.0f,depth+1,N);
           for (size_t i=0; i<N; i++) {
-            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],-dpdx); vfloat::store(valid,&dPdv[i],-dpdy);
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u1v1_mask,&dPdu[i],-dpdx); vfloat::store(u1v1_mask,&dPdv[i],-dpdy);
           }
         }
         if (any(u0v1_mask)) {
           eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f-2.0f*v,2.0f*u),P,dPdu,dPdv,2.0f,depth+1,N);
           for (size_t i=0; i<N; i++) {
-            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; vfloat::store(valid,&dPdu[i],dpdy); vfloat::store(valid,&dPdv[i],-dpdx);
+            const Vertex dpdx = dPdu[i], dpdy = dPdv[i]; 
+            vfloat::store(u0v1_mask,&dPdu[i],dpdy); vfloat::store(u0v1_mask,&dPdv[i],-dpdx);
           }
         }
       }
