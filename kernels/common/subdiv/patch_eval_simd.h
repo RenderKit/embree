@@ -57,7 +57,9 @@ namespace embree
         }
         return true;
       }
+#endif
       
+#if 0
       static void eval_general_triangle_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
       {
         const bool ab_abc = right_of_line_ab_abc(uv);
@@ -81,18 +83,25 @@ namespace embree
           if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
         }
       }
-      
-      static bool eval_quad(const typename Patch::SubdividedQuadPatch* This, const float u, const float v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale)
+#endif
+ 
+      static vbool eval_quad(const vbool& valid, const typename Patch::SubdividedQuadPatch* This, const vfloat u, const vfloat v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N)
       {
-        if (v < 0.5f) {
-          if (u < 0.5f) return eval(This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
-          else          return eval(This->child[1],2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
-        } else {
-          if (u > 0.5f) return eval(This->child[2],2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
-          else          return eval(This->child[3],2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
-        }
+        vbool ret = false;
+        const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
+        const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
+        const vbool u0v0_mask = valid & u0_mask & v0_mask;
+        const vbool u0v1_mask = valid & u0_mask & v1_mask;
+        const vbool u1v0_mask = valid & u1_mask & v0_mask;
+        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        if (any(u0v0_mask)) ret |= eval(u0v0_mask,This->child[0],2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale,N);
+        if (any(u1v0_mask)) ret |= eval(u1v0_mask,This->child[1],2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv,2.0f*dscale,N);
+        if (any(u1v1_mask)) ret |= eval(u1v1_mask,This->child[2],2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale,N);
+        if (any(u0v1_mask)) ret |= eval(u0v1_mask,This->child[3],2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale,N);
+        return ret;
       }
       
+#if 0
       __forceinline static void eval_quad_direct(CatmullClarkPatch& patch, Vec2f& uv, float& dscale)
       {
         array_t<CatmullClarkPatch,4> patches; 
@@ -107,7 +116,9 @@ namespace embree
           else          { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); dscale *= 2.0f; }
         }
       }
-      
+#endif
+
+#if 0 
       static bool eval_general_quad(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, vfloat* P, vfloat* dPdu, vfloat* dPdv)
       {
         if (v < 0.5f) {
@@ -146,7 +157,9 @@ namespace embree
           }
         }
       }
-      
+#endif
+
+#if 0 
       static void eval_general_quad_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, size_t depth)
       {
         float u = uv.x, v = uv.y;
@@ -182,7 +195,9 @@ namespace embree
           }
         }
       }
-      
+#endif
+
+#if 0 
       static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t depth) 
       {
         /* convert into standard quad patch if possible */
@@ -211,7 +226,9 @@ namespace embree
           eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
         }
       }
-      
+#endif
+
+#if 0 
       static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth)
       {
         while (true) 
@@ -241,7 +258,7 @@ namespace embree
         }
       }  
 #endif
-      
+ 
       static vbool eval(const vbool& valid, Patch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, size_t N) 
       {
         if (This == nullptr) return false;
@@ -268,9 +285,9 @@ namespace embree
           PATCH_DEBUG_SUBDIVISION(-1,-1,c);
           return true;
         }
-          /*case Patch::SUBDIVIDED_QUAD_PATCH: 
-          return eval_quad((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
-        case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
+        case Patch::SUBDIVIDED_QUAD_PATCH: 
+          return eval_quad(valid,(typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale,N);
+          /*case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_quad((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
         }
