@@ -591,9 +591,6 @@ namespace embree
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
           vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
-          /*if (i == 0) vfloat::store(valid,&P[i],uu);
-          else if (i == 1) vfloat::store(valid,&P[i],vv);
-          else vfloat::store(valid,&P[i],1.0f-uu-vv);*/
         }
       }
       if (dPdu) {
