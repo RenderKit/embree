@@ -315,15 +315,23 @@ namespace embree
       return false;
     }
 
-    __forceinline bool isRegular2() const
+    __forceinline bool hasEdgeCrease() const
     {
-      /* check if there is a vertex crease anywhere */
+      /* check if there is an edge crease anywhere */
       for (size_t i=1; i<face_valence; i++) {
         if ((2*i != border_index) && (2*(i-1) != border_index) && crease_weight[i] > 0.0f) 
-          return false;
+          return true;
       }
       if ((2*(face_valence-1) != border_index) && crease_weight[0] > 0.0f) 
-          return false;
+          return true;
+
+      return false;
+    }
+    
+    __forceinline bool isRegular2() const
+    {
+      /* check if there is an edge crease anywhere */
+      if (hasEdgeCrease()) return false;
 
       /* calculate if this vertex is regular */
       bool hasBorder = border_index != -1;
@@ -346,23 +354,18 @@ namespace embree
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregory() const 
     {
-      if (vertex_crease_weight == (float)pos_inf) 
-        return true; // FIXME: wrong !!!!!
+      /* check if there is an edge crease anywhere */
+      if (hasEdgeCrease()) return false;
 
-      if (vertex_crease_weight > 0.0f) 
-        return false;
-      
-      for (size_t i=1; i<face_valence; i++) 
-        if (crease_weight[i] > 0.0f && (2*i != border_index) && (2*(i-1) != border_index)) 
-          return false;
-      
-      if (crease_weight[0] > 0.0f && (2*(face_valence-1) != border_index)) 
-        return false;
-      
-      if (!noForcedSubdivision)
-        return false;
-
-      return true;
+      /* calculate if this vertex is regular */
+      bool hasBorder = border_index != -1;
+      if (face_valence == 2 && hasBorder) {
+        if      (vertex_crease_weight == 0.0f      ) return true;
+        else if (vertex_crease_weight == float(inf)) return true;
+        else                                         return false;
+      }
+      else if (vertex_crease_weight != 0.0f)         return false;
+      else                                           return true;
     }
 
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
