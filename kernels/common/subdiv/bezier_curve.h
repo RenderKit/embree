@@ -30,12 +30,12 @@ namespace embree
     __forceinline BezierCurve() {}
 
     __forceinline BezierCurve(const Vertex& v0, 
-                                const Vertex& v1, 
-                                const Vertex& v2, 
-                                const Vertex& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)
+                              const Vertex& v1, 
+                              const Vertex& v2, 
+                              const Vertex& v3,
+                              const float t0 = 0.0f,
+                              const float t1 = 1.0f,
+                              const int depth = 0)
       : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
 
     __forceinline const BBox3fa bounds() const {
@@ -106,7 +106,7 @@ namespace embree
     //using BezierCurve<Vec3fa>::BezierCurve; // FIXME: not supported by VS2010
 
 	__forceinline BezierCurve3fa() {}
-	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0, const float t1, const int depth)
+	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
       : BezierCurve<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
 #if defined(__SSE__)

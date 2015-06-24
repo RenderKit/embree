@@ -855,6 +855,20 @@ namespace embree
       return 2.0f * cc_vtx.getSecondLimitTangent();
     }
 
+
+    /* gets limit vertex */
+    __forceinline Vertex getLimitVertex() const 
+    {
+      CatmullClark1Ring cc_vtx;
+     
+      /* fast path for quad only rings */
+      if (only_quads)
+        convert(cc_vtx);
+      else 
+        subdivide(cc_vtx);
+      return cc_vtx.getLimitVertex();
+    }
+
     void computeGregoryPatchEdgePoints(Vertex &p0,
                                        Vertex &e0_plus,
                                        Vertex &e0_minus,

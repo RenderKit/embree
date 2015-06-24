@@ -30,13 +30,16 @@ namespace embree
   struct __aligned(64) SubdivPatch1 : public SubdivPatch1Base
   {
     SubdivPatch1 (const CatmullClarkPatch3fa &ipatch,
+                  const int fas_depth,
 		  const unsigned int geomID,
 		  const unsigned int primID,
 		  const SubdivMesh *const mesh, 
                   const Vec2f uv[4],
                   const float edge_level[4],
-                  const int subdiv[4]) 
-      : SubdivPatch1Base(ipatch,geomID,primID,mesh,uv,edge_level,subdiv)
+                  const int subdiv[4],
+                  const BezierCurve3fa *border, 
+                  const int border_flags) 
+      : SubdivPatch1Base(ipatch,fas_depth,geomID,primID,mesh,uv,edge_level,subdiv, border, border_flags)
     { 
     }
 

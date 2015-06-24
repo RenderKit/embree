@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_curve.h"
 
 
 namespace embree
@@ -52,7 +53,7 @@ namespace embree
         }
 
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-        tessellator(patch,uv,neighborSubdiv);        
+        tessellator(patch,0,uv,neighborSubdiv, nullptr, 0);        
         return;
       }      
 
@@ -89,12 +90,16 @@ namespace embree
       array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
 
+      PRINT( N );
+
       /* check if subpatches need further subdivision */
       bool childSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
       for (size_t i=0; i<N; i++) {
         assert( patches[i].checkPositions() );
         childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+        PRINT( childSubdiv[i] );
       }
+
 
       /* parametrization for triangles */
       if (N == 3) {
@@ -135,10 +140,88 @@ namespace embree
 	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
 	const int neighborSubdiv2[4] = { false,childSubdiv[3],childSubdiv[1],false };
 	const int neighborSubdiv3[4] = { false,childSubdiv[0],childSubdiv[2],false };
-	subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
-	subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
-	subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
-	subdivide(patches[3],depth+1, uv3, neighborSubdiv3);
+
+        if ( patches[0].isGregoryOrFinal(depth+1) &&
+             patches[0].isGregoryOrFinal(depth+1) &&
+             patches[0].isGregoryOrFinal(depth+1) &&
+             patches[0].isGregoryOrFinal(depth+1))
+        {
+          PRINT("FAS SUBDIVISION");
+
+          const Vec3fa t0_p = patch.ring[0].getLimitTangent();
+          const Vec3fa t0_m = patch.ring[0].getSecondLimitTangent();
+
+          const Vec3fa t1_p = patch.ring[1].getLimitTangent();
+          const Vec3fa t1_m = patch.ring[1].getSecondLimitTangent();
+
+          const Vec3fa t2_p = patch.ring[2].getLimitTangent();
+          const Vec3fa t2_m = patch.ring[2].getSecondLimitTangent();
+
+          const Vec3fa t3_p = patch.ring[3].getLimitTangent();
+          const Vec3fa t3_m = patch.ring[3].getSecondLimitTangent();
+
+          const Vec3fa b00 = patch.ring[0].getLimitVertex();
+          const Vec3fa b03 = patch.ring[1].getLimitVertex();
+          const Vec3fa b33 = patch.ring[2].getLimitVertex();
+          const Vec3fa b30 = patch.ring[3].getLimitVertex();
+
+          PRINT(b00);
+          PRINT(b03);
+          PRINT(b33);
+          PRINT(b30);
+
+          const Vec3fa b01 = b00 + 1.0/3.0f * t0_p;
+          const Vec3fa b10 = b00 + 1.0/3.0f * t0_m;
+
+          const Vec3fa b13 = b03 + 1.0/3.0f * t1_p;
+          const Vec3fa b02 = b03 + 1.0/3.0f * t1_m;
+
+          const Vec3fa b32 = b33 + 1.0/3.0f * t2_p;
+          const Vec3fa b23 = b33 + 1.0/3.0f * t2_m;
+
+          const Vec3fa b20 = b30 + 1.0/3.0f * t3_p;
+          const Vec3fa b31 = b30 + 1.0/3.0f * t3_m;
+            
+
+          const int f0 = BORDER_BEZIER_CURVE_IGNORE;
+          const int f1 = BORDER_BEZIER_CURVE_FIRST | BORDER_BEZIER_CURVE_SECOND;
+
+          {
+            BezierCurve3fa border_curves[2];
+            border_curves[0] = BezierCurve3fa(b00,b01,b02,b03);
+            border_curves[1] = BezierCurve3fa(b30,b20,b10,b00);
+            tessellator(patches[0],depth+1,uv0,neighborSubdiv0, border_curves, f1);
+          }
+
+          {
+            BezierCurve3fa border_curves[2];
+            border_curves[0] = BezierCurve3fa(b03,b13,b23,b33);
+            border_curves[1] = BezierCurve3fa(b00,b01,b02,b03);
+            tessellator(patches[1],depth+1,uv1,neighborSubdiv1, border_curves, f1);
+          }
+          
+          {
+            BezierCurve3fa border_curves[2];
+            border_curves[0] = BezierCurve3fa(b33,b32,b31,b30);
+            border_curves[1] = BezierCurve3fa(b03,b13,b23,b33);            
+            tessellator(patches[2],depth+1,uv2,neighborSubdiv2, border_curves, f1);
+          }
+
+          {
+            BezierCurve3fa border_curves[2];
+            border_curves[0] = BezierCurve3fa(b30,b20,b10,b00);
+            border_curves[1] = BezierCurve3fa(b33,b32,b31,b30);
+            tessellator(patches[3],depth+1,uv3,neighborSubdiv3, border_curves, f1);
+          }
+
+        }
+        else
+        {
+          subdivide(patches[0],depth+1, uv0, neighborSubdiv0);
+          subdivide(patches[1],depth+1, uv1, neighborSubdiv1);
+          subdivide(patches[2],depth+1, uv2, neighborSubdiv2);
+          subdivide(patches[3],depth+1, uv3, neighborSubdiv3);
+        }
       } 
 
       /* parametrization for arbitrary polygons */
@@ -153,11 +236,11 @@ namespace embree
       }
     }
 
-    void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4])
+    void subdivide(const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int neighborSubdiv[4])
     {
       if (depth <= 1)
 	if (patch.isGregoryOrFinal(depth))
-	  return tessellator(patch,uv,neighborSubdiv);
+	  return tessellator(patch,depth,uv,neighborSubdiv, nullptr, 0);
        
       array_t<CatmullClarkPatch3fa,4> patches; 
       patch.subdivide(patches);
@@ -185,16 +268,16 @@ namespace embree
       const int neighborSubdiv3[4] = { childSubdiv0,childSubdiv2,false,false };
       
       if (childSubdiv0) subdivide  (patches[0],depth+1, uv0, neighborSubdivf);
-      else              tessellator(patches[0],         uv0, neighborSubdiv0);
+      else              tessellator(patches[0],depth+1, uv0, neighborSubdiv0, nullptr, 0);
 
       if (childSubdiv1) subdivide  (patches[1],depth+1, uv1, neighborSubdivf);
-      else              tessellator(patches[1],         uv1, neighborSubdiv1);
+      else              tessellator(patches[1],depth+1, uv1, neighborSubdiv1, nullptr, 0);
       
       if (childSubdiv2) subdivide  (patches[2],depth+1, uv2, neighborSubdivf);
-      else              tessellator(patches[2],         uv2, neighborSubdiv2);
+      else              tessellator(patches[2],depth+1, uv2, neighborSubdiv2, nullptr, 0);
       
       if (childSubdiv3) subdivide  (patches[3],depth+1, uv3, neighborSubdivf);
-      else              tessellator(patches[3],         uv3, neighborSubdiv3);
+      else              tessellator(patches[3],depth+1, uv3, neighborSubdiv3, nullptr, 0);
     }
   };
 
@@ -204,18 +287,4 @@ namespace embree
      FeatureAdaptiveSubdivisionGregory<Tessellator>(primID,h,vertices,tessellator);
    }
 
-   inline bool needsAdaptiveSubdivision(int primID, const SubdivMesh::HalfEdge* h_start, const BufferT<Vec3fa>& vertices)
-   {
-     int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
-     int subdiv = 0;
-     const SubdivMesh::HalfEdge* h = h_start;
-     size_t valence = 0;
-     do {
-       neighborSubdiv[valence] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-       subdiv += neighborSubdiv[valence];
-       valence++;
-
-     } while( h != h_start );
-     return (subdiv != 0 || valence > 4);
-   }
 }

@@ -24,6 +24,7 @@
 
 #include "../../common/subdiv/feature_adaptive_gregory.h"
 #include "../../common/subdiv/feature_adaptive_bspline.h"
+#include "../../common/subdiv/bezier_curve.h"
 
 #include "../geometry/grid.h"
 #include "../geometry/subdivpatch1.h"
@@ -157,7 +158,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 	    {
               //if (!patch.isRegular()) { s++; return; }
               const float l0 = patch.ring[0].edge_level;
@@ -191,7 +192,7 @@ namespace embree
             if (!mesh->valid(f)) continue;
             
             feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                 [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+                                                 [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
             {
               /*if (!patch.isRegular())
                 {
@@ -826,7 +827,7 @@ namespace embree
 
 #if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						     [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+                                                   [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 						     {
 						       s++;
 						     });
@@ -881,7 +882,7 @@ namespace embree
 	  if (unlikely(fastUpdateMode == false))
             {
 #if ENABLE_FEATURE_ADAPTIVE == 1            
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
+              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
                                                    {
                                                      float edge_level[4] = {
                                                        ipatch.ring[0].edge_level,
@@ -896,12 +897,15 @@ namespace embree
                                                      const unsigned int patchIndex = base.size()+s.size();
                                                      assert(patchIndex < numPrimitives);
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, 
+                                                                                                     depth,
                                                                                                      mesh->id, 
                                                                                                      f, 
                                                                                                      mesh, 
                                                                                                      uv, 
                                                                                                      edge_level,
-                                                                                                     subdiv);
+                                                                                                     subdiv,
+                                                                                                     border,
+                                                                                                     border_flags);
 #else
 						     const unsigned int patchIndex = base.size()+s.size();
                                                      subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id, f, mesh);

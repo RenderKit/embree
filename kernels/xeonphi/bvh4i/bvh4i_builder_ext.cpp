@@ -976,7 +976,7 @@ PRINT(CORRECT_numPrims);
           if (!mesh->valid(f)) continue;
 #if ENABLE_FEATURE_ADAPTIVE == 1
 	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
+					       [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 					       {
 						 s++;
 					       });
@@ -1192,7 +1192,7 @@ PRINT(CORRECT_numPrims);
 #if ENABLE_FEATURE_ADAPTIVE == 1
 	      feature_adaptive_subdivision_gregory(
 						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
+						   [&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 						   {
 						     float edge_level[4] = {
 						       ipatch.ring[0].edge_level,
@@ -1205,7 +1205,7 @@ PRINT(CORRECT_numPrims);
 						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
 
 						     const unsigned int patchIndex = base.size()+s.size();
-						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level, subdiv);
+						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, depth, mesh->id, f, mesh, uv, edge_level, subdiv, border, border_flags);
 #else
 						     const unsigned int patchIndex = base.size()+s.size();
                                                      subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);

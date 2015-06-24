@@ -218,7 +218,11 @@ namespace embree
 
     }
 
-    __noinline void init_crackfix(const CatmullClarkPatch& patch, const int neighborSubdiv[4])
+    __noinline void init_crackfix(const CatmullClarkPatch& patch, 
+                                  const int depth,
+                                  const int neighborSubdiv[4],
+                                  const BezierCurve3fa *border, 
+                                  const int border_flags)
     {
       assert( patch.ring[0].hasValidPositions() );
       assert( patch.ring[1].hasValidPositions() );
@@ -240,6 +244,60 @@ namespace embree
       e2_m() = initNegativeEdgeVertex(patch,2, p2());
       e3_m() = initNegativeEdgeVertex(patch,3, p3());
 
+      if (depth > 0 && border && border_flags != BORDER_BEZIER_CURVE_IGNORE)
+      {
+        PING;
+        printBorderTags(border_flags);
+
+        if (border_flags & BORDER_BEZIER_CURVE_FIRST)
+        {         
+          PRINT(p0());
+          PRINT(e0_p());
+          PRINT(e1_m());
+          PRINT(p1());
+
+          BezierCurve3fa l,r; 
+          border[0].subdivide(l,r); 
+          PRINT(border[0]);
+          PRINT(l);
+          e0_p() = l.v1; 
+          e1_m() = l.v2; 
+          p1()   = l.v3;
+          //exit(0);
+        }
+#if 1
+        if (border_flags & BORDER_BEZIER_CURVE_SECOND)
+        {          
+          PRINT(p0());
+          PRINT(e0_m());
+          PRINT(e3_p());
+          PRINT(p3());
+
+          BezierCurve3fa l,r; 
+          border[1].subdivide(l,r); 
+          e0_m() = r.v2; 
+          e3_p() = r.v1; 
+          p3()   = r.v0; 
+
+          PRINT(border[1]);
+          PRINT(r);
+          //exit(0);
+        }
+#endif
+          /* PRINT(p0()); */
+          /* PRINT(e0_p()); */
+          /* PRINT(e1_m()); */
+          /* PRINT(p1()); */
+          /* PRINT(border[0]); */
+          /* PRINT(l); */
+
+        //if (border_flags & BORDER_BEZIER_CURVE_TOP_SUBCURVE_1)
+        //{
+        //  BezierCurve3fa l,r; border[0].subdivide(l,r); e0_p() = r.v1; e1_m() = r.v2;
+        //}
+
+
+      }
 #if 0
       if (neighborSubdiv[1] == 1)
       {
@@ -268,27 +326,6 @@ namespace embree
         
       }
 
-      if (neighborSubdiv[0] == 1)
-      {
-        PRINT("neighborSubdiv[0]");
-        e0_p() = initPositiveEdgeVertex2(patch,0, p0());
-        e1_m() = initNegativeEdgeVertex2(patch,1, p1());        
-      }
-
-
-      if (neighborSubdiv[2] == 1)
-      {
-        PRINT("neighborSubdiv[2]");
-        e2_p() = initPositiveEdgeVertex2(patch,2, p2());
-        e3_m() = initNegativeEdgeVertex2(patch,3, p3());        
-      }
-
-      if (neighborSubdiv[3] == 1)
-      {
-        PRINT("neighborSubdiv[3]");
-        e3_p() = initPositiveEdgeVertex2(patch,3, p3());
-        e0_m() = initNegativeEdgeVertex2(patch,0, p0());        
-      }
 #endif
 
       const unsigned int face_valence_p0 = patch.ring[0].face_valence;

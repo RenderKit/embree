@@ -85,12 +85,15 @@ namespace embree
   
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
+                                      const int fas_depth,
                                       const unsigned int gID,
                                       const unsigned int pID,
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4],
-                                      const int neighborSubdiv[4]) 
+                                      const int neighborSubdiv[4],
+                                      const BezierCurve3fa *border, 
+                                      const int border_flags) 
     : geom(gID),prim(pID),flags(0)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
@@ -125,7 +128,7 @@ namespace embree
       /* greogy */
       flags |= GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
-      gpatch.init_crackfix( ipatch, neighborSubdiv ); 
+      gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.exportDenseConrolPoints( patch.v );
     }
   }
