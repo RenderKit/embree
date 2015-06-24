@@ -294,12 +294,10 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const float8 round_even( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
-  __forceinline const float8 round_down( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
-  __forceinline const float8 round_up  ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
-  __forceinline const float8 round_zero( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO       ); }
   __forceinline const float8 floor     ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline const float8 ceil      ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline const float8 trunc     ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+  __forceinline const float8 frac      ( const float8& a ) { return a-trunc(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions

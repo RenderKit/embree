@@ -38,3 +38,20 @@
 #else
 #define AVX_ZERO_UPPER()
 #endif
+
+/* foreach unique */
+namespace embree
+{
+  template<typename vbool, typename vint, typename Closure>
+    __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure) 
+  {
+    vbool valid1 = valid0;
+    while (any(valid1)) {
+      const int j = __bsf(movemask(valid1));
+      const int i = vi[j];
+      const vbool valid2 = valid1 & (i == vi);
+      valid1 = valid1 & !valid2;
+      closure(valid2,i);
+    }
+  }
+}

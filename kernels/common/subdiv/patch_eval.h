@@ -207,8 +207,8 @@ namespace embree
         
         /* parametrization for arbitrary polygons */
         else {
-          const unsigned i = floorf(uv.x); assert(i<N);
-          eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+          const unsigned i = floor(uv.x); assert(i<N);
+          eval_direct(patches[i],Vec2f(frac(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
         }
       }
       

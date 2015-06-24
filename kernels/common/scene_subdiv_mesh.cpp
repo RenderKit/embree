@@ -646,13 +646,13 @@ namespace embree
         const float4 uu = float4::loadu(&u[j]);
         const float4 vv = float4::loadu(&v[j]);
         const size_t primID = primIDs[i]; PING; // FIXME: wrong!!!!!! 
-        PatchEvalSimd<bool4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
-                                                 getHalfEdge(primID),src+i*sizeof(float),stride,
-                                                 valid1,uu,vv,
-                                                 (float4*)(P ? &P[i*numFloats+j] : nullptr), 
-                                                 (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
-                                                 (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
-                                                 min(size_t(4),numFloats-j));
+        PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,i/4,stride)),parent->commitCounter,
+                                                      getHalfEdge(primID),src+i*sizeof(float),stride,
+                                                      valid1,uu,vv,
+                                                      (float4*)(P ? &P[i*numFloats+j] : nullptr), 
+                                                      (float4*)(dPdu ? &dPdu[i*numFloats+j] : nullptr), 
+                                                      (float4*)(dPdv ? &dPdv[i*numFloats+j] : nullptr),
+                                                      min(size_t(4),numFloats-j));
       }
     }
   }

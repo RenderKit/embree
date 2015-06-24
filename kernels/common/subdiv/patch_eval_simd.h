@@ -20,7 +20,7 @@
 
 namespace embree
 {
-  template<typename vbool, typename vfloat, typename Vertex, typename Vertex_t = Vertex>
+  template<typename vbool, typename vint, typename vfloat, typename Vertex, typename Vertex_t = Vertex>
     struct PatchEvalSimd
     {
     public:
@@ -220,10 +220,12 @@ namespace embree
           eval_general_quad_direct(valid,patches,uv,P,dPdu,dPdv,depth,N);
         
         /* parametrization for arbitrary polygons */
-        //else {
-        //  const unsigned i = floorf(uv.x); assert(i<Nc);
-        //  eval_direct(valid,patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1,N); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
-        //}
+        else {
+          const vint i = (vint)floor(uv.x); assert(all(valid,i<Nc));
+          foreach_unique(valid,i,[&](const vbool& valid, const int i) {
+              eval_direct(valid,patches[i],Vec2<vfloat>(frac(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1,N); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+            });
+        }
       }
 
       static void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth, const size_t N)

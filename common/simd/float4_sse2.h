@@ -319,13 +319,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE4_1__)
-  __forceinline const float4 round_even( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
-  __forceinline const float4 round_down( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
-  __forceinline const float4 round_up  ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
-  __forceinline const float4 round_zero( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
   __forceinline const float4 floor     ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline const float4 ceil      ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline const float4 trunc     ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+#else
+  __forceinline const float4 floor     ( const float4& a ) { return float4(floorf(a[0]),floorf(a[1]),floorf(a[2]),floorf(a[3]));  }
+  __forceinline const float4 ceil      ( const float4& a ) { return float4(ceilf (a[0]),ceilf (a[1]),ceilf (a[2]),ceilf (a[3])); }
+  __forceinline const float4 trunc     ( const float4& a ) { return float4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
 #endif
+  __forceinline const float4 frac      ( const float4& a ) { return a-trunc(a); }
 
   __forceinline int4 floori (const float4& a) {
 #if defined (__SSE4_1__)

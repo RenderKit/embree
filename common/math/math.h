@@ -107,6 +107,7 @@ namespace embree
   __forceinline float floor( const float x ) { return ::floorf (x); }
   __forceinline float ceil ( const float x ) { return ::ceilf (x); }
 #endif
+  __forceinline float frac ( const float x ) { return x-floor(x); }
 
   __forceinline double abs  ( const double x ) { return ::fabs(x); }
   __forceinline double sign ( const double x ) { return x<0?-1.0:1.0; }
