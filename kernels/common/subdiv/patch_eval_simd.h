@@ -102,23 +102,24 @@ namespace embree
         if (any(u0v1_mask)) ret |= eval(u0v1_mask,This->child[3],2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale,N);
         return ret;
       }
-      
-#if 0
-      __forceinline static void eval_quad_direct(CatmullClarkPatch& patch, Vec2f& uv, float& dscale)
+     
+      __forceinline static void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth, const size_t N)
       {
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches); // FIXME: only have to generate one of the patches
-        
-        const float u = uv.x, v = uv.y;
-        if (v < 0.5f) {
-          if (u < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); dscale *= 2.0f; }
-          else          { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); dscale *= 2.0f; }
-        } else {
-          if (u > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); dscale *= 2.0f; }
-          else          { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); dscale *= 2.0f; }
-        }
+      
+        const vfloat u = uv.x, v = uv.y;
+        const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
+        const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
+        const vbool u0v0_mask = valid & u0_mask & v0_mask;
+        const vbool u0v1_mask = valid & u0_mask & v1_mask;
+        const vbool u1v0_mask = valid & u1_mask & v0_mask;
+        const vbool u1v1_mask = valid & u0_mask & v0_mask;
+        if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
+        if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
+        if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
+        if (any(u0v1_mask)) eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f*u,2.0f*v-1.0f),P,dPdu,dPdv,2.0f*dscale,depth+1,N);
       }
-#endif
 
       static vbool eval_general_quad(const vbool& valid, const typename Patch::SubdividedGeneralQuadPatch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const size_t N)
       {
@@ -201,8 +202,8 @@ namespace embree
         /* convert into standard quad patch if possible */
         if (likely(patch.isQuadPatch())) 
         {
-          /*CatmullClarkPatch qpatch; patch.init(qpatch);
-            return eval_direct(valid,qpatch,uv,P,dPdu,dPdv,1.0f,depth,N); */
+          CatmullClarkPatch qpatch; patch.init(qpatch);
+          return eval_direct(valid,qpatch,uv,P,dPdu,dPdv,1.0f,depth,N);
         }
         
         /* subdivide patch */
@@ -225,36 +226,30 @@ namespace embree
         //}
       }
 
-#if 0 
-      static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth)
+      static void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, vfloat* P, vfloat* dPdu, vfloat* dPdv, float dscale, size_t depth, const size_t N)
       {
-        while (true) 
-        {
-          if (unlikely(patch.isRegular2())) { 
-            assert(depth > 0); RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
-          }
+        if (unlikely(patch.isRegular2())) { 
+          assert(depth > 0); RegularPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+        }
 #if PATCH_USE_GREGORY == 2
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
-            assert(depth > 0); GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
-          }
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
+          assert(depth > 0); GregoryPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+        }
 #else
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-          {
+        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+        {
 #if PATCH_USE_GREGORY == 1
-            GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+          GregoryPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale);
 #else
-            BilinearPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
+          BilinearPatch(patch).eval(N,uv.x,uv.y,P,dPdu,dPdv,dscale);
 #endif
-            return;
-          }
+          return;
+        }
 #endif
-          else {
-            eval_quad_direct(patch,uv,dscale);
-            depth++;
-          }
+        else {
+          eval_quad_direct(valid,patch,uv,P,dPdu,dPdv,dscale,depth+1,N);
         }
       }  
-#endif
  
       static vbool eval(const vbool& valid, Patch* This, const vfloat& u, const vfloat& v, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, size_t N) 
       {
