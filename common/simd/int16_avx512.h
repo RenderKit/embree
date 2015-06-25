@@ -69,6 +69,14 @@ namespace embree
     __forceinline static int16 one () { return _mm512_set_1to16_epi32(1); }
     __forceinline static int16 neg_one () { return _mm512_set_1to16_epi32(-1); }
 
+
+    static __forceinline int16 loadu(const void* addr) 
+    {
+      int16 r = _mm512_undefined_epi32();
+      r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+      return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////

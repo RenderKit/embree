@@ -74,6 +74,13 @@ namespace embree
     __forceinline static float16 inf () { return _mm512_set_1to16_ps((float)pos_inf); }
     __forceinline static float16 minus_inf () { return _mm512_set_1to16_ps((float)neg_inf); }
 
+    static __forceinline float16 loadu(const void* addr) 
+    {
+      float16 r = float16::undefined();
+      r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      return _mm512_extloadunpackhi_ps(r, (float*)addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -97,12 +104,7 @@ namespace embree
   __forceinline const float16 sqr  ( const float16& a ) { return _mm512_mul_ps(a,a); }
   __forceinline const float16 sqrt ( const float16& a ) { return _mm512_sqrt_ps(a); }
   __forceinline const float16 rsqrt( const float16& a ) { return _mm512_invsqrt_ps(a); }
-  
 
-  //__forceinline float16 floor(const float16& a) { return _mm512_floor_ps(a); }
-  //__forceinline float16 ceil(const float16& a) { return _mm512_ceil_ps(a); }
-  __forceinline float16 trunc(const float16& a) { return _mm512_trunc_ps(a); } 
-  
   __forceinline float16 exp(const float16& a) { return _mm512_exp_ps(a); }
   __forceinline float16 exp2(const float16& a) { return _mm512_exp2_ps(a); }
   __forceinline float16 pow(const float16& a, float16 b) { return _mm512_pow_ps(a,b); }
@@ -297,6 +299,8 @@ namespace embree
   
   __forceinline float16 floor(const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); }
   __forceinline float16 ceil (const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); }
+  __forceinline float16 trunc(const float16& a) { return _mm512_trunc_ps(a); } 
+  __forceinline float16 frac( const float16& a ) { return a-trunc(a); }
 
   __forceinline const float16 rcp_nr  ( const float16& a ) { 
     const float16 ra = _mm512_rcp23_ps(a); 

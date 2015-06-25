@@ -144,7 +144,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad0_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
   {
-    vfloat dPdut = vfloat::load(dPdu+i*dstride), dPdvt = vfloat::load(dPdv+i*dstride);
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
     map_quad0_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,dPdu+i*dstride,dPdut);
     vfloat::store(valid,dPdv+i*dstride,dPdvt);
@@ -153,7 +153,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad1_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
   {
-    vfloat dPdut = vfloat::load(dPdu+i*dstride), dPdvt = vfloat::load(dPdv+i*dstride);
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
     map_quad1_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,dPdu+i*dstride,dPdut);
     vfloat::store(valid,dPdv+i*dstride,dPdvt);
@@ -162,7 +162,7 @@ namespace embree
   template<typename vbool, typename vfloat>
     __forceinline void map_quad2_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
   {
-    vfloat dPdut = vfloat::load(dPdu+i*dstride), dPdvt = vfloat::load(dPdv+i*dstride);
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
     map_quad2_to_tri(xy,dPdut,dPdvt); 
     vfloat::store(valid,dPdu+i*dstride,dPdut);
     vfloat::store(valid,dPdv+i*dstride,dPdvt);

@@ -624,15 +624,32 @@ namespace embree
       stride = vertices[bufID].getStride();
       baseEntry = &vertex_buffer_tags[bufID];
     }
-#if defined (__MIC__)
-#define float4 Vec3fa
-#define float4_t Vec3fa_t
-#else
-#define float4_t float4
-#endif
 
     const int* valid = (const int*) valid_i;
     
+#if defined (__MIC__)
+    for (size_t i=0; i<numUVs; i+=16) 
+    {
+      bool16 valid1 = int16(i)+int16(step) < int16(numUVs);
+      if (valid) valid1 &= int16::loadu(&valid[i]) == int16(-1);
+      if (none(valid1)) continue;
+      
+      const int16 primID = int16::loadu(&primIDs[i]);
+      const float16 uu = float16::loadu(&u[i]);
+      const float16 vv = float16::loadu(&v[i]);
+
+      foreach_unique(valid1,primID,[&](const bool16& valid1, const int primID) 
+      {
+        for (size_t j=0; j<numFloats; j+=4) 
+        {
+          const size_t M = min(size_t(4),numFloats-j);
+          PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>::eval(baseEntry->at(interpolationSlot4(primID,j/4,stride)),parent->commitCounter,
+                                                                    getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                    P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+        }
+      });
+    }
+#else
     for (size_t i=0; i<numUVs; i+=4) 
     {
       bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
@@ -654,5 +671,6 @@ namespace embree
         }
       });
     }
+#endif
   }
 }
