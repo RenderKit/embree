@@ -204,7 +204,6 @@ namespace embree
       }
 #endif   
 
-
       /* compute vertex grid (+displacement) */
       evalGrid(patch,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
