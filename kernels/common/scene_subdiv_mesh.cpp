@@ -339,11 +339,11 @@ namespace embree
         else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
-            halfEdges1[e+i].edge->vertex_type == NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->vertex_type = NON_MANIFOLD_EDGE_VERTEX;
             halfEdges1[e+i].edge->edge_crease_weight = inf;
 
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
-            halfEdges1[e+i].edge->next()->vertex_type == NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->next()->vertex_type = NON_MANIFOLD_EDGE_VERTEX;
             halfEdges1[e+i].edge->next()->edge_crease_weight = inf;
 	  }
 	}
