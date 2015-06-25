@@ -63,11 +63,9 @@ namespace embree
 #endif
           
       /* resize object array if scene got larger */
-      if (objects.size() < N) {
-        objects.resize(N);
-        builders.resize(N);
-        refs.resize(N);
-      }
+      if (objects.size()  < N) objects.resize(N);
+      if (builders.size() < N) builders.resize(N);
+      if (refs.size()     < N) refs.resize(N);
       nextRef = 0;
       
       /* create of acceleration structures */
@@ -122,15 +120,14 @@ namespace embree
         }
       });
       
-      refs.resize(nextRef);
-
       /* fast path for single geometry scenes */
-      if (refs.size() == 1) { 
+      if (nextRef == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
       }
 
       /* open all large nodes */
+      refs.resize(nextRef);
       open_sequential(numPrimitives); 
       
       /* fast path for small geometries */
