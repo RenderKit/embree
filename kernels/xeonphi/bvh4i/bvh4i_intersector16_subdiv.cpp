@@ -464,11 +464,13 @@ namespace embree
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
               bool16 m_quad3x5 = 0xffff; 
-              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
                 m_quad3x5 = m_row | (m_row << 8);
               }
+              if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
+
 	      // ----------------------------------------------------------------------------------------------------
 
 	      STAT3(normal.trav_prims,1,1,1);
@@ -628,11 +630,12 @@ namespace embree
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
               bool16 m_quad3x5 = 0xffff; 
-              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
                 m_quad3x5 = m_row | (m_row << 8);
               }
+              if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 
 	      // ----------------------------------------------------------------------------------------------------
 
@@ -765,11 +768,12 @@ namespace embree
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
           bool16 m_quad3x5 = 0xffff; 
-          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
             m_quad3x5 = m_row | (m_row << 8);
           }
+          if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 
 	  // ----------------------------------------------------------------------------------------------------
 
@@ -910,11 +914,12 @@ namespace embree
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
           bool16 m_quad3x5 = 0xffff; 
-          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
             m_quad3x5 = m_row | (m_row << 8);
-          }          
+          }
+          if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 	  // ----------------------------------------------------------------------------------------------------
 
 
