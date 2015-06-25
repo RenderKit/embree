@@ -106,41 +106,82 @@ namespace embree
 
     const int* valid = (const int*) valid_i;
     
-    for (size_t i=0; i<numUVs; i+=8) 
+    for (size_t i=0; i<numUVs;) 
     {
-      const size_t L = min(size_t(8),numUVs-i);
-      bool8 valid1 = valid ? int8::loadu(&valid[i]) == int8(-1) : bool4(false);
-      valid1 &= int8(i)+int8(step) < int8(numUVs);
-      if (none(valid1)) continue;
-      
-      const int8 primID = int8::loadu(&primIDs[i]);
-      const float8 uu = float8::loadu(&u[i]);
-      const float8 vv = float8::loadu(&v[i]);
-
-      foreach_unique(valid1,primID,[&](const bool8& valid1, const int primID) 
+      if (i+4 >= numUVs)
       {
-        for (size_t j=0,slot=0; j<numFloats; slot++)
+        const size_t L = min(size_t(4),numUVs-i);
+        bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
+        valid1 &= int4(i)+int4(step) < int4(numUVs);
+        if (none(valid1)) continue;
+        
+        const int4 primID = int4::loadu(&primIDs[i]);
+        const float4 uu = float4::loadu(&u[i]);
+        const float4 vv = float4::loadu(&v[i]);
+        
+        foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) 
         {
-          if (j+4 >= numFloats)
+          for (size_t j=0,slot=0; j<numFloats; slot++)
           {
-            const size_t M = min(size_t(4),numFloats-j);
-            PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                          getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                          P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-            
+            if (j+4 >= numFloats)
+            {
+              const size_t M = min(size_t(4),numFloats-j);
+              PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                            getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                            P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+              
             j+=4;
+            }
+            else
+            {
+              const size_t M = min(size_t(8),numFloats-j);
+              PatchEvalSimd<bool4,int4,float4,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                            getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                            P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+              
+              j+=8;
+            }
           }
-          else
+        });
+        i+=4;
+      }
+      else
+      {
+        const size_t L = min(size_t(8),numUVs-i);
+        bool8 valid1 = valid ? int8::loadu(&valid[i]) == int8(-1) : bool8(false);
+        valid1 &= int8(i)+int8(step) < int8(numUVs);
+        if (none(valid1)) continue;
+        
+        const int8 primID = int8::loadu(&primIDs[i]);
+        const float8 uu = float8::loadu(&u[i]);
+        const float8 vv = float8::loadu(&v[i]);
+        
+        foreach_unique(valid1,primID,[&](const bool8& valid1, const int primID) 
+        {
+          for (size_t j=0,slot=0; j<numFloats; slot++)
           {
-            const size_t M = min(size_t(8),numFloats-j);
-            PatchEvalSimd<bool8,int8,float8,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                          getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                          P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-            
-            j+=8;
+            if (j+4 >= numFloats)
+            {
+              const size_t M = min(size_t(4),numFloats-j);
+              PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                            getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                            P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+              
+            j+=4;
+            }
+            else
+            {
+              const size_t M = min(size_t(8),numFloats-j);
+              PatchEvalSimd<bool8,int8,float8,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                            getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                            P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+              
+              j+=8;
+            }
           }
-        }
-      });
+        });
+        i+=8;
+      }
     }
     AVX_ZERO_UPPER();
   }
