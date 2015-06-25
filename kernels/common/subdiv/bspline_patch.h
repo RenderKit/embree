@@ -513,22 +513,22 @@ namespace embree
       }
         
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
           const Vec4<vfloat> v_n = BSplineBasis::eval(vv); 
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n));
+          for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n));
         }
         if (dPdu) {
           const Vec4<vfloat> u_n = BSplineBasis::derivative(uu); 
           const Vec4<vfloat> v_n = BSplineBasis::eval(vv);
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdu[i],eval(i,uu,vv,u_n,v_n)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
         }
         if (dPdv) {
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 
           const Vec4<vfloat> v_n = BSplineBasis::derivative(vv);
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdv[i],eval(i,uu,vv,u_n,v_n)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
         }
       }
 

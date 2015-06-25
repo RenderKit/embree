@@ -556,7 +556,7 @@ namespace embree
     }
     
     template<typename vbool, typename vfloat>
-    __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N) const
+    __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
     {
       if (P) {
         const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
@@ -564,7 +564,7 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
-          vfloat::store(valid,&P[i],eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
+          vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
         }
       }
       if (dPdu) {
@@ -573,7 +573,7 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          vfloat::store(valid,&dPdu[i],eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+          vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
         }
       }
       if (dPdv) {
@@ -582,7 +582,7 @@ namespace embree
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
           computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          vfloat::store(valid,&dPdv[i],eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+          vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
         }
       }
     }

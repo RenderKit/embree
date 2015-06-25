@@ -104,16 +104,16 @@ namespace embree
       }
 
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, vfloat* P, vfloat* dPdu, vfloat* dPdv, const float dscale, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&P[i],eval(i,uu,vv));
+          for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv));
         }
         if (dPdu) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdu[i],tangentU(i,uu,vv)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,tangentU(i,uu,vv)*dscale);
         }
         if (dPdv) {
-          for (size_t i=0; i<N; i++) vfloat::store(valid,&dPdv[i],tangentV(i,uu,vv)*dscale);
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,tangentV(i,uu,vv)*dscale);
         }
       }
 

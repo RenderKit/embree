@@ -648,19 +648,10 @@ namespace embree
       {
         for (size_t j=0; j<numFloats; j+=4) 
         {
-          __aligned(64) float4 P_tmp[4];
-          __aligned(64) float4 dPdu_tmp[4];
-          __aligned(64) float4 dPdv_tmp[4];
-          float4* Pt = P ? P_tmp : nullptr;
-          float4* dPdut = dPdu ? dPdu_tmp : nullptr;
-          float4* dPdvt = dPdv ? dPdv_tmp : nullptr;
           const size_t M = min(size_t(4),numFloats-j);
           PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot4(primID,j/4,stride)),parent->commitCounter,
-                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
-          
-          if (P   ) for (size_t k=0; k<M; k++) float4::store(valid1,&P[(j+k)*numUVs+i],P_tmp[k]);
-          if (dPdu) for (size_t k=0; k<M; k++) float4::store(valid1,&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
-          if (dPdv) for (size_t k=0; k<M; k++) float4::store(valid1,&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                        P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
       });
     }
