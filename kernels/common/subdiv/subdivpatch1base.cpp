@@ -156,7 +156,7 @@ namespace embree
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
     
-    /* workaround for 2x2 / 3x5 intersection stencil */
+    /* workaround for 2x2 intersection stencil */
 #if !defined(__MIC__)    
     grid_u_res = max(grid_u_res,3);
     grid_v_res = max(grid_v_res,3);
