@@ -25,6 +25,7 @@ namespace embree
     Vec3fa vtx[4];
   };
 
+
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {

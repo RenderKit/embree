@@ -19,6 +19,7 @@
 #include "catmullclark_patch.h"
 #include "bezier_patch.h"
 #include "bezier_curve.h"
+#include "catmullclark_coefficients.h"
 
 namespace embree
 {  
@@ -173,10 +174,14 @@ namespace embree
       }      
       
       const float d = 3.0f;
-      const float c     = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
-      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+      //const float c     = cosf(2.0f*M_PI/(float)face_valence);
+      //const float c_e_p = cosf(2.0f*M_PI/(float)face_valence_p1);
+      //const float c_e_m = cosf(2.0f*M_PI/(float)face_valence_p3);
       
+      const float c     = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence);
+      const float c_e_p = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p1);
+      const float c_e_m = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p3);
+
       const Vertex r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
       const Vertex r_e_m = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
 
@@ -292,10 +297,15 @@ namespace embree
 				       Vertex& f_m_vtx,
                                        const float d = 3.0f)
     {
-      const float c     = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
-      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
-      
+      //const float c     = cosf(2.0*M_PI/(float)face_valence);
+      //const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      //const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+
+      const float c     = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence);
+      const float c_e_p = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p1);
+      const float c_e_m = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p3);
+
+
       f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
       f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
