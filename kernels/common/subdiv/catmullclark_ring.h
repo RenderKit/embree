@@ -18,6 +18,7 @@
 
 #include "../geometry.h"
 #include "../scene_subdiv_mesh.h"
+#include "catmullclark_coefficients.h"
 
 namespace embree
 {
@@ -441,9 +442,11 @@ namespace embree
       Vertex_t alpha( 0.0f );
       Vertex_t beta ( 0.0f );
       
-      const float n = (float)face_valence;
-      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-      const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
+      const size_t n = face_valence;
+
+      //const float n = (float)face_valence;
+      //const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
+      //const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
 
       assert(eval_start_index < face_valence);
 
@@ -455,11 +458,14 @@ namespace embree
         if (index >= face_valence) index -= face_valence;
         ////////////////////////////////////////////////
 
-	const float a = c1 * cosf(2.0f*M_PI*index/n);
-	const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); 
+	//const float a = c1 * cosf(2.0f*M_PI*index/n);
+	//const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); 
+        const float a = CatmullClarkPrecomputedCoefficients::table.limittangent_a(index,n);
+        const float b = CatmullClarkPrecomputedCoefficients::table.limittangent_b(index,n);
 
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
+
       }
 
       const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
@@ -487,9 +493,12 @@ namespace embree
       
       Vertex_t alpha( 0.0f );
       Vertex_t beta ( 0.0f );
-      const float n = (float)face_valence;
-      const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-      const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
+
+      const size_t n = face_valence;
+
+      //const float n = (float)face_valence;
+      //const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
+      //const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
 
       assert(eval_start_index < face_valence);
 
@@ -502,8 +511,11 @@ namespace embree
 
         size_t prev_index = index == 0 ? face_valence-1 : index-1; // need to be bit-wise exact in cosf eval
 
-	const float a = c1 * cosf(2.0f*M_PI*(float(prev_index))/n);
-	const float b = c0 * cosf((2.0f*M_PI*(float(prev_index))+M_PI)/n);
+	//const float a = c1 * cosf(2.0f*M_PI*(float(prev_index))/n);
+	//const float b = c0 * cosf((2.0f*M_PI*(float(prev_index))+M_PI)/n);
+        const float a = CatmullClarkPrecomputedCoefficients::table.limittangent_a(prev_index,n);
+        const float b = CatmullClarkPrecomputedCoefficients::table.limittangent_b(prev_index,n);
+
 	alpha += a * ring[2*index];
 	beta  += b * ring[2*index+1];
       }
