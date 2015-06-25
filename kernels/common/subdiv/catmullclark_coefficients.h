@@ -29,7 +29,26 @@ namespace embree
     
     float table_cos_2PI_div_n[MAX_VALENCE];
 
+    float *table_limittangent_a[MAX_VALENCE];
+    float *table_limittangent_b[MAX_VALENCE];
+    float table_limittangent_c[MAX_VALENCE];
+
     __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*M_PI/(float)n); }
+
+    __forceinline float set_limittangent_a(const size_t i, const size_t n)  { 
+      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));  
+      const float c1 = (1.0f/(float)n + cosf(M_PI/(float)n) * c0); 
+      return cosf(2.0f*M_PI*(float)i/(float)n) * c1;
+    }
+
+    __forceinline float set_limittangent_b(const size_t i, const size_t n)  { 
+      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));  
+      return cosf((2.0f*M_PI*i+M_PI)/(float)n) * c0;
+    }
+
+    __forceinline float set_limittangent_c(const size_t n)  { 
+      return 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/(float)n) + cosf(M_PI/(float)n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/(float)n)));
+    }
 
   public:
 
@@ -41,6 +60,26 @@ namespace embree
         return table_cos_2PI_div_n[n];
       else
         return set_cos_2PI_div_n(n);
+    }
+
+    __forceinline float limittangent_a(const size_t i, const size_t n)
+    {
+      assert(n < MAX_VALENCE);
+      assert(i < n);
+      return table_limittangent_a[n][i];
+    }
+
+    __forceinline float limittangent_b(const size_t i, const size_t n)
+    {
+      assert(n < MAX_VALENCE);
+      assert(i < n);
+      return table_limittangent_b[n][i];
+    }
+
+    __forceinline float limittangent_c(const size_t n)
+    {
+      assert(n < MAX_VALENCE);
+      return table_limittangent_c[n];
     }
 
     static CatmullClarkPrecomputedCoefficients table;
