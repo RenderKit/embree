@@ -172,7 +172,7 @@ namespace embree
           break;
 
           case /*0b01*/ 1: 
-#if defined (__TARGET_AVX2__)
+#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
             if (hasISA(AVX2))
               accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
             else
