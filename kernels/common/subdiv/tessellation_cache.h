@@ -75,6 +75,7 @@ namespace embree
  {
  public:
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29
+   
    static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 #if defined(__MIC__)
    static const size_t NUM_CACHE_SEGMENTS              = 4;
@@ -282,6 +283,11 @@ namespace embree
     
    __forceinline size_t alloc(const size_t blocks)
    {
+     if (unlikely(blocks >= switch_block_threshold))
+     {
+       throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
+     }
+     assert(blocks < switch_block_threshold);
      size_t index = next_block.add(blocks);
      if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
