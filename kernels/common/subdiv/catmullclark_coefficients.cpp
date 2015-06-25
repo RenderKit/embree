@@ -23,7 +23,6 @@ namespace embree
 
   CatmullClarkPrecomputedCoefficients::CatmullClarkPrecomputedCoefficients()
   {
-    PING;
     /* precompute cosf(2.0f*M_PI/n) */
     for (size_t i=0;i<MAX_VALENCE;i++)
       table_cos_2PI_div_n[i] = set_cos_2PI_div_n(i);
