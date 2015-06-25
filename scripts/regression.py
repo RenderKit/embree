@@ -264,7 +264,7 @@ def render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, scene,
 
 def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -i tutorials/pathtracer/" + scene + '.xml',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -i tutorials/models/" + scene + '.xml',scene,flags)
   else:
     render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
