@@ -635,9 +635,8 @@ namespace embree
     
     for (size_t i=0; i<numUVs; i+=4) 
     {
-      const size_t L = min(size_t(4),numUVs-i);
-      bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
-      valid1 &= int4(i)+int4(step) < int4(numUVs);
+      bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
+      if (valid) valid1 &= int4::loadu(&valid[i]) == int4(-1);
       if (none(valid1)) continue;
       
       const int4 primID = int4::loadu(&primIDs[i]);

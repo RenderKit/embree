@@ -78,15 +78,11 @@ namespace embree
     }
     AVX_ZERO_UPPER();
   }
-
-  void SubdivMeshAVX::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
-                                   RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+  
+  template<typename vbool, typename vint, typename vfloat>
+  void SubdivMeshAVX::interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
+                                        RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
-    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
-#endif
-
     /* calculate base pointer and stride */
     assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
            (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
@@ -104,83 +100,56 @@ namespace embree
       baseEntry = &vertex_buffer_tags[bufID];
     }
 
+    foreach_unique(valid1,primID,[&](const vbool& valid1, const int primID) 
+    {
+      for (size_t j=0,slot=0; j<numFloats; slot++)
+      {
+        if (j+4 >= numFloats)
+        {
+          const size_t M = min(size_t(4),numFloats-j);
+          PatchEvalSimd<vbool,vint,vfloat,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
+          j+=4;
+        }
+        else
+        {
+          const size_t M = min(size_t(8),numFloats-j);
+          PatchEvalSimd<vbool,vint,vfloat,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
+          j+=8;
+        }
+      }
+    });
+  }
+
+  void SubdivMeshAVX::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                   RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
     const int* valid = (const int*) valid_i;
     
     for (size_t i=0; i<numUVs;) 
     {
       if (i+4 >= numUVs)
       {
-        const size_t L = min(size_t(4),numUVs-i);
-        bool4 valid1 = valid ? int4::loadu(&valid[i]) == int4(-1) : bool4(false);
-        valid1 &= int4(i)+int4(step) < int4(numUVs);
+        bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
+        if (valid) valid1 &= int4::loadu(&valid[i]) == int4(-1);
         if (none(valid1)) continue;
-        
-        const int4 primID = int4::loadu(&primIDs[i]);
-        const float4 uu = float4::loadu(&u[i]);
-        const float4 vv = float4::loadu(&v[i]);
-        
-        for (size_t j=0,slot=0; j<numFloats; slot++)
-        {
-          if (j+4 >= numFloats)
-          {
-            const size_t M = min(size_t(4),numFloats-j);
-            foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) {
-                PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                              getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                              P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-              });
-            
-            j+=4;
-          }
-          else
-          {
-            const size_t M = min(size_t(8),numFloats-j);
-            foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) {
-                PatchEvalSimd<bool4,int4,float4,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                              getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                              P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-              });
-            
-            j+=8;
-          }
-        }
+        interpolateHelper(valid1,int4::loadu(&primIDs[i]),float4::loadu(&u[i]),float4::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
         i+=4;
       }
       else
       {
-        const size_t L = min(size_t(8),numUVs-i);
-        bool8 valid1 = valid ? int8::loadu(&valid[i]) == int8(-1) : bool8(false);
-        valid1 &= int8(i)+int8(step) < int8(numUVs);
+        bool8 valid1 = int8(i)+int8(step) < int8(numUVs);
+        if (valid) valid1 &= int8::loadu(&valid[i]) == int8(-1);
         if (none(valid1)) continue;
-        
-        const int8 primID = int8::loadu(&primIDs[i]);
-        const float8 uu = float8::loadu(&u[i]);
-        const float8 vv = float8::loadu(&v[i]);
-        
-        for (size_t j=0,slot=0; j<numFloats; slot++)
-        {
-          if (j+4 >= numFloats)
-          {
-            const size_t M = min(size_t(4),numFloats-j);
-            foreach_unique(valid1,primID,[&](const bool8& valid1, const int primID) {
-                PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                              getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                              P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-              });
-            
-            j+=4;
-          }
-          else
-          {
-            const size_t M = min(size_t(8),numFloats-j);
-            foreach_unique(valid1,primID,[&](const bool8& valid1, const int primID) {
-                PatchEvalSimd<bool8,int8,float8,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
-                                                              getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                              P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
-              });
-            j+=8;
-          }
-        }
+        interpolateHelper(valid1,int8::loadu(&primIDs[i]),float8::loadu(&u[i]),float8::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
         i+=8;
       }
     }

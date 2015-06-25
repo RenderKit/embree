@@ -552,5 +552,9 @@ namespace embree
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
     void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                       RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+
+    template<typename vbool, typename vint, typename vfloat>
+      void interpolateHelper(const vbool& valid1, const vint& primID, const vfloat& uu, const vfloat& vv, size_t numUVs, 
+                             RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
   };
 };
