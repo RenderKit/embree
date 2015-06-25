@@ -182,6 +182,14 @@ namespace embree
           }
         }
       }
+
+      static bool eval_general(const typename Patch::SubdividedGeneralPatch* This, const float U, const float V, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        const unsigned l = floor(4.0f*U); const float u = 2.0f*frac(4.0f*U); 
+        const unsigned h = floor(4.0f*V); const float v = 2.0f*frac(4.0f*V); 
+        const unsigned i = 4*h+l; assert(i<This->N);
+        return eval(This->child[i],u,v,P,dPdu,dPdv,8.0f);
+      }
       
       static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
       {
@@ -210,7 +218,7 @@ namespace embree
           const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
           const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
           const unsigned i = 4*h+l; assert(i<N);
-          eval_direct(patches[i],Vec2f(u,v),P,dPdu,dPdv,1.0f,depth+1);
+          eval_direct(patches[i],Vec2f(u,v),P,dPdu,dPdv,8.0f,depth+1);
         }
       }
       
@@ -278,6 +286,10 @@ namespace embree
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
+        }
+          case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+          assert(dscale == 1.0f); 
+          return eval_general((typename Patch::SubdividedGeneralPatch*)This,u,v,P,dPdu,dPdv); 
         }
         default: 
           assert(false); 

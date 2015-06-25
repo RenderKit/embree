@@ -184,7 +184,8 @@ namespace embree
       GREGORY_PATCH = 4,
       SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
       SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
-      SUBDIVIDED_QUAD_PATCH = 7
+      SUBDIVIDED_GENERAL_PATCH = 7,
+      SUBDIVIDED_QUAD_PATCH = 8
     };
 
     struct BilinearPatch 
@@ -326,6 +327,22 @@ namespace embree
       Type type;
       PatchT* child[4];
     };
+
+    struct SubdividedGeneralPatch
+    {
+      template<typename Allocator>
+      __noinline static SubdividedGeneralPatch* create(const Allocator& alloc, PatchT** children, const size_t N) {
+        return new (alloc(sizeof(SubdividedGeneralPatch))) SubdividedGeneralPatch(children,N);
+      }
+      
+      __forceinline SubdividedGeneralPatch(PatchT** children, const size_t N) : type(SUBDIVIDED_GENERAL_PATCH), N(N) {
+        for (size_t i=0; i<N; i++) child[i] = children[i];
+      }
+      
+      Type type;
+      size_t N;
+      PatchT* child[SubdivMesh::MAX_VALENCE];
+    };
     
     /*! Default constructor. */
     __forceinline PatchT () {}
@@ -387,6 +404,14 @@ namespace embree
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
         return (PatchT*) SubdividedGeneralQuadPatch::create(alloc,child);
+      }
+      else 
+      {
+        assert(N<SubdivMesh::MAX_VALENCE);
+        PatchT* child[SubdivMesh::MAX_VALENCE];
+        for (size_t i=0; i<N; i++)
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+        return (PatchT*) SubdividedGeneralPatch::create(alloc,child,N);
       }
       
       return nullptr;

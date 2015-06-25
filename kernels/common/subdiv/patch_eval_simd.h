@@ -206,6 +206,18 @@ namespace embree
         }
       }
 
+      static vbool eval_general(const vbool& valid, const typename Patch::SubdividedGeneralPatch* This, const vfloat U, const vfloat V, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+      {
+        vbool ret = false;
+        const vint l = (vint)floor(4.0f*U); const vfloat u = 2.0f*frac(4.0f*U); 
+        const vint h = (vint)floor(4.0f*V); const vfloat v = 2.0f*frac(4.0f*V); 
+        const vint i = (h<<2)+l; assert(all(valid,i<This->N));
+        foreach_unique(valid,i,[&](const vbool& valid, const int i) {
+            ret |= eval(valid,This->child[i],u,v,P,dPdu,dPdv,8.0f,dstride,N);
+          });
+        return ret;
+      }
+
       static void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, const size_t depth, const size_t dstride, const size_t N) 
       {
         /* convert into standard quad patch if possible */
@@ -234,7 +246,7 @@ namespace embree
           const vint h = (vint)floor(4.0f*uv.y); const vfloat v = 2.0f*frac(4.0f*uv.y); 
           const vint i = (h<<2)+l; assert(all(valid,i<Nc));
           foreach_unique(valid,i,[&](const vbool& valid, const int i) {
-              eval_direct(valid,patches[i],Vec2<vfloat>(u,v),P,dPdu,dPdv,1.0f,depth+1,dstride,N);
+              eval_direct(valid,patches[i],Vec2<vfloat>(u,v),P,dPdu,dPdv,8.0f,depth+1,dstride,N);
             });
         }
       }
@@ -299,6 +311,10 @@ namespace embree
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle(valid,(typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv,dstride,N); 
+        }
+        case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+          assert(dscale == 1.0f); 
+          return eval_general(valid,(typename Patch::SubdividedGeneralPatch*)This,u,v,P,dPdu,dPdv,dstride,N); 
         }
         default: 
           assert(false); 
