@@ -527,9 +527,10 @@ namespace embree
       return Vec3fa( zero );
     }
 
-    template<typename simdf, typename simdb = typename simdf::Mask>
+    template<typename simdf>
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
+      typedef typename simdf::Mask simdb;
       if (likely(isBezierPatch()))
         return BezierPatch3fa::eval( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))
@@ -541,9 +542,10 @@ namespace embree
       return Vec3<simdf>( zero );
     }
 
-    template<typename simdf, typename simdb = typename simdf::Mask>
+    template<typename simdf>
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
+      typedef typename simdf::Mask simdb;
       if (likely(isBezierPatch()))
         return BezierPatch3fa::normal( patch.v, uu, vv );
       else if (likely(isBSplinePatch()))

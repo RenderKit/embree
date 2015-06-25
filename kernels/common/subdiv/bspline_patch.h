@@ -513,7 +513,7 @@ namespace embree
       }
         
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           const Vec4<vfloat> u_n = BSplineBasis::eval(uu); 

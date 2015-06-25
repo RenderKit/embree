@@ -88,7 +88,7 @@ namespace embree
       }
 
       template<class vfloat>
-      __forceinline vfloat tangentU(const size_t i, const vfloat uu, const vfloat& vv) const
+      __forceinline vfloat tangentU(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
         const vfloat sx1 = uu, sx0 = 1.0f-sx1;
         const vfloat sy1 = vv, sy0 = 1.0f-sy1;
@@ -104,7 +104,7 @@ namespace embree
       }
 
       template<typename vbool, typename vfloat>
-      __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
       {
         if (P) {
           for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv));

@@ -89,7 +89,7 @@ namespace embree
         }
       }
  
-      static vbool eval_quad(const vbool& valid, const typename Patch::SubdividedQuadPatch* This, const vfloat u, const vfloat v, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N)
+      static vbool eval_quad(const vbool& valid, const typename Patch::SubdividedQuadPatch* This, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N)
       {
         vbool ret = false;
         const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
@@ -206,7 +206,7 @@ namespace embree
         }
       }
 
-      static vbool eval_general(const vbool& valid, const typename Patch::SubdividedGeneralPatch* This, const vfloat U, const vfloat V, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+      static vbool eval_general(const vbool& valid, const typename Patch::SubdividedGeneralPatch* This, const vfloat& U, const vfloat& V, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
       {
         vbool ret = false;
         const vint l = (vint)floor(4.0f*U); const vfloat u = 2.0f*frac(4.0f*U); 

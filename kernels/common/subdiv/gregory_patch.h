@@ -428,7 +428,7 @@ namespace embree
     } 
 
     template<typename vfloat>
-    __forceinline void computeInnerVertices(size_t i, const vfloat uu, const vfloat vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
+    __forceinline void computeInnerVertices(size_t i, const vfloat& uu, const vfloat& vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
     {
       const auto m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
@@ -566,7 +566,7 @@ namespace embree
     }
     
     template<typename vbool, typename vfloat>
-    __forceinline void eval(const vbool& valid, const vfloat uu, const vfloat vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+    __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
     {
       if (P) {
         const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
