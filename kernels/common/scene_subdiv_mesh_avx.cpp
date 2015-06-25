@@ -53,7 +53,7 @@ namespace embree
     
     for (size_t i=0,slot=0; i<numFloats; slot++)
     {
-      if (i+8 > numFloats)
+      if (i+4 >= numFloats)
       {
         float4 Pt, dPdut, dPdvt; 
         PatchEval<float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
@@ -121,7 +121,7 @@ namespace embree
       {
         for (size_t j=0,slot=0; j<numFloats; slot++)
         {
-          if (j+8 > numFloats)
+          if (j+4 >= numFloats)
           {
             const size_t M = min(size_t(4),numFloats-j);
             PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
