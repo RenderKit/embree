@@ -310,7 +310,7 @@ namespace embree
     return all((a >= float4(-FLT_MAX) & (a <= float4(+FLT_MAX))));
   }
 
-  __forceinline bool is_finite ( const bool4 valid, const float4& a ) { 
+  __forceinline bool is_finite ( const bool4& valid, const float4& a ) { 
     return all(valid, a >= float4(-FLT_MAX) & (a <= float4(+FLT_MAX)));
   }
   

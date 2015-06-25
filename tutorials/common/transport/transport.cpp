@@ -88,7 +88,7 @@ namespace embree
     out->numHoles = in->holes.size();
     out->materialID = in->materialID;
     out->geomID = -1;
-    out->colors = new Vec3fa[in->positions.size()];
+    out->colors = (Vec3fa*) alignedMalloc(in->positions.size()*sizeof(Vec3fa));
     for (size_t i=0; i<in->positions.size(); i++)
       out->colors[i] = Vec3fa(drand48(),drand48(),drand48());
 
