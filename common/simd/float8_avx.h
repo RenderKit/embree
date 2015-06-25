@@ -84,7 +84,7 @@ namespace embree
       return _mm256_load_ps(a); 
     }
     
-    static __forceinline void store(float8* ptr, const float8& f ) { 
+    static __forceinline void store(void* ptr, const float8& f ) { 
       return _mm256_store_ps((float*)ptr,f);
     }
 
@@ -104,7 +104,7 @@ namespace embree
       else return float8(float4::loadu(a,n));
     }
     
-    static __forceinline void store( const bool8& mask, float8* ptr, const float8& f ) { 
+    static __forceinline void store( const bool8& mask, void* ptr, const float8& f ) { 
       return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
     }
     

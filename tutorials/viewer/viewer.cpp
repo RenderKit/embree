@@ -225,15 +225,14 @@ namespace embree
     g_rtcore += g_subdiv_mode;
 
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-      {
-	if (g_subdiv_mode != "") {
-	  std::cout << "enabling subdiv mode" << std::endl;
-	  loadOBJ(filename,one,g_obj_scene,true);	
-	}
-	else
-	  loadOBJ(filename,one,g_obj_scene);
+    if (strlwr(filename.ext()) == std::string("obj")) {
+      if (g_subdiv_mode != "") {
+        std::cout << "enabling subdiv mode" << std::endl;
+        loadOBJ(filename,one,g_obj_scene,true);	
       }
+      else
+        loadOBJ(filename,one,g_obj_scene);
+    }
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
