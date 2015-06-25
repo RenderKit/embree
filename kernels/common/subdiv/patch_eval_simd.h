@@ -230,9 +230,11 @@ namespace embree
         
         /* parametrization for arbitrary polygons */
         else {
-          const vint i = (vint)floor(uv.x); assert(all(valid,i<Nc));
+          const vint l = (vint)floor(4.0f*uv.x); const vfloat u = 2.0f*frac(4.0f*uv.x); 
+          const vint h = (vint)floor(4.0f*uv.y); const vfloat v = 2.0f*frac(4.0f*uv.y); 
+          const vint i = (h<<2)+l; assert(all(valid,i<Nc));
           foreach_unique(valid,i,[&](const vbool& valid, const int i) {
-              eval_direct(valid,patches[i],Vec2<vfloat>(frac(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1,dstride,N); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+              eval_direct(valid,patches[i],Vec2<vfloat>(u,v),P,dPdu,dPdv,1.0f,depth+1,dstride,N);
             });
         }
       }

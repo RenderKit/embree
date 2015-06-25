@@ -152,9 +152,11 @@ namespace embree
 
 #if defined(__SSE4_1__)
   __forceinline const int4 operator *( const int4& a, const int4& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
+#else
+  __forceinline const int4 operator *( const int4& a, const int4& b ) { return int4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
+#endif
   __forceinline const int4 operator *( const int4& a, const int&  b ) { return a * int4(b); }
   __forceinline const int4 operator *( const int&  a, const int4& b ) { return int4(a) * b; }
-#endif
 
   __forceinline const int4 operator &( const int4& a, const int4& b ) { return _mm_and_si128(a.m128, b.m128); }
   __forceinline const int4 operator &( const int4& a, const int&  b ) { return a & int4(b); }

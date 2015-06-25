@@ -32,7 +32,7 @@ namespace embree
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
 
-    static const size_t MAX_VALENCE = 6;                //!< maximal number of vertices of a patch
+    static const size_t MAX_VALENCE = 16;               //!< maximal number of vertices of a patch
     static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
     static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 

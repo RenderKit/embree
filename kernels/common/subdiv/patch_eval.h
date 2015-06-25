@@ -207,8 +207,10 @@ namespace embree
         
         /* parametrization for arbitrary polygons */
         else {
-          const unsigned i = floor(uv.x); assert(i<N);
-          eval_direct(patches[i],Vec2f(frac(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
+          const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
+          const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
+          const unsigned i = 4*h+l; assert(i<N);
+          eval_direct(patches[i],Vec2f(u,v),P,dPdu,dPdv,1.0f,depth+1);
         }
       }
       

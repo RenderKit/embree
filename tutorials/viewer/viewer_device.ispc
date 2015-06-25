@@ -30,7 +30,7 @@ uniform bool g_subdiv_mode = false;
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
-#define USE_SMOOTH_NORMALS 0
+#define USE_SMOOTH_NORMALS 1
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
