@@ -40,5 +40,8 @@ namespace embree
       }      
     }
 
+    for (size_t n=0;n<MAX_VALENCE;n++)
+      table_limittangent_c[n] = set_limittangent_c(n);
+
   }
 };

@@ -468,7 +468,8 @@ namespace embree
 
       }
 
-      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+      //const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+      const float sigma = CatmullClarkPrecomputedCoefficients::table.limittangent_c(n);
 
       return sigma * (alpha + beta);
     }
@@ -520,7 +521,8 @@ namespace embree
 	beta  += b * ring[2*index+1];
       }
 
-      const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+      //const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
+      const float sigma = CatmullClarkPrecomputedCoefficients::table.limittangent_c(n);
 
       return sigma* (alpha + beta);      
     }
@@ -882,162 +884,6 @@ namespace embree
       return cc_vtx.getLimitVertex();
     }
 
-    void computeGregoryPatchEdgePoints(Vertex &p0,
-                                       Vertex &e0_plus,
-                                       Vertex &e0_minus,
-                                       Vertex &r0_plus,
-                                       Vertex &r0_minus) const
-    {
-      Vertex cm_ring[2*MAX_FACE_VALENCE];
-      Vertex first_border_vertex, second_border_vertex;
-
-      const size_t border_index = border_face == -1 ? -1 : 2*border_face; 
-
-      /* calculate face centroids and edge midpoints */
-      for (size_t f=0, v=0; f<face_valence; f++) {
-        Vertex_t F = vtx;
-        for (size_t k=v; k<=v+faces[f].size; k++)
-          F += ring[k%edge_valence];
-        cm_ring[2*f+1] = F/float(faces[f].size+2);
-	cm_ring[2*f] = 0.5f*(vtx+ring[v]);
-	if (unlikely(2*f == border_index))
-	  {
-	    first_border_vertex  = ring[v];
-	    second_border_vertex = ring[(v+faces[f].size) % edge_valence];
-	  }
-        v+=faces[f].size;
-      }
-
-      const float N = face_valence;
-
-      /* limit Vertex p0 */
-      if (unlikely(std::isinf(vertex_crease_weight)))
-	p0 = vtx;
-      else if (unlikely(border_index != -1))
-	p0 = (4.0f * vtx + first_border_vertex + second_border_vertex) * 1.0f/6.0f;
-      else
-	{
-	  p0 = Vertex( zero );
-	  for (size_t face=0; face<face_valence; face++)
-	    {
-	      size_t f = (face + eval_start_face_index)%face_valence;
-	      p0 += cm_ring[2*f] + cm_ring[2*f+1];
-	    }
-	  p0 *= 4.0f / (N * (N + 5.0f));
-	  p0 += (N - 3.0f) / (N + 5.0f) * vtx;
-	}
-
-      const float sigma = 1.0f / sqrtf(4.0f + cosf(M_PI/N) * cosf(M_PI/N));  
-      const float alpha = 1.0f/16.0f * (5.0f + cosf(2.0f*M_PI/N) + cosf(M_PI/N) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/N)));
-
-      /* tangent q0 */
-      Vertex q0( zero );
-      if (unlikely(std::isinf(vertex_crease_weight)))
-        q0 = ring[0] - vtx;
-      else if (unlikely(border_index != -1))
-	{
-	  if (border_index == edge_valence-2 || face_valence == 2)
-          { 
-	    q0 = ring[0] - vtx;
-          }
-	  else
-          {
-	    q0 = (second_border_vertex - first_border_vertex) * 0.5f;
-          }
-	}
-      else
-	{
-	  for (size_t face=0; face<face_valence; face++)
-	    {
-	      const size_t index = (face + eval_start_face_index)%face_valence;
-	      const Vertex m_i = cm_ring[2*index+0];
-	      const Vertex c_i = cm_ring[2*index+1];        
-	      q0 += (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index)/N) * m_i +
-	            (2.0f * sigma * cosf((2.0f*M_PI*index+M_PI)/N)) * c_i;
-	    }
-	  q0 *= 2.0f / N; 
-	}
-
-      /* tangent q1 */
-      Vertex q1( zero );
-      if (unlikely(std::isinf(vertex_crease_weight)))
-        q1 = ring[faces[0].size] - vtx;
-      else if (unlikely(border_index != -1))
-	{
-	  if (border_index == 2 || face_valence == 2) 
-          {
-	    q1 = ring[faces[0].size] - vtx;
-          }
-	  else
-          {
-	    q1 = (first_border_vertex - second_border_vertex) * 0.5f;
-          }
-	}
-      else
-	{
-	  for (ssize_t face=0; face<face_valence; face++)
-	    {
-	      const ssize_t f = (face + eval_start_face_index)%face_valence;
-
-	      const ssize_t index1 = (f-1) % face_valence;
-	      const ssize_t index0 = f;
-	      const Vertex m_i = cm_ring[2*index0+0];
-	      const Vertex c_i = cm_ring[2*index0+1];        
-	      q1 += \
-	      (1.0f - sigma * cosf(M_PI/N)) * cosf((2.0f*M_PI*index1)/N) * m_i + 
-	      (2.0f * sigma * cosf((2.0f*M_PI*index1+M_PI)/N)) * c_i;	      
-	    }
-	  q1 *= 2.0f / N;
-	}
-      
-      /* e0_plus */
-      //e0_plus  = p0 + 2.0f/3.0f * alpha * q0;
-      e0_plus  = p0 + 1.0f/3.0f * q0;
-
-
-      /* e0_minus */
-      //e0_minus = p0 + 2.0f/3.0f * alpha * q1;
-      e0_minus = p0 + 1.0f/3.0f * q1;
-
-      /* r0_plus, r0_minus */
-      const Vertex e_i      = cm_ring[0];
-      const Vertex c_i_m_1  = cm_ring[1];
-      const Vertex e_i_m_1  = cm_ring[2];
-      
-      Vertex c_i, e_i_p_1;
-      const bool hasHardEdge =			\
-      std::isinf(vertex_crease_weight) &&
-      std::isinf(faces[0].crease_weight);
-                
-      if (unlikely(border_index == face_valence-2) || hasHardEdge)
-        {
-          /* mirror quad center and edge mid-point */
-          c_i     = c_i_m_1 + 2 * (e_i - c_i_m_1);
-          e_i_p_1 = e_i_m_1 + 2 * (vtx - e_i_m_1);
-        }
-      else
-        {
-          c_i     = cm_ring[2*(face_valence-1)+1];
-          e_i_p_1 = cm_ring[2*(face_valence-1)+0];
-        }
-      
-      Vertex c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
-      {
-        /* mirror quad center and edge mid-point */
-        c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
-        e_i_m_2  = e_i + 2 * (vtx - e_i);	  
-      }
-      else
-      {
-        c_i_m_2  = cm_ring[2*1+1];
-        e_i_m_2  = cm_ring[2*2+0];
-      }      
-      
-
-      r0_plus  = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);      
-      r0_minus = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
-    }
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {
