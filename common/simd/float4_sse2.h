@@ -325,9 +325,9 @@ namespace embree
 #else
   __forceinline const float4 floor     ( const float4& a ) { return float4(floorf(a[0]),floorf(a[1]),floorf(a[2]),floorf(a[3]));  }
   __forceinline const float4 ceil      ( const float4& a ) { return float4(ceilf (a[0]),ceilf (a[1]),ceilf (a[2]),ceilf (a[3])); }
-  __forceinline const float4 trunc     ( const float4& a ) { return float4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
+  //__forceinline const float4 trunc     ( const float4& a ) { return float4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
 #endif
-  __forceinline const float4 frac      ( const float4& a ) { return a-trunc(a); }
+  __forceinline const float4 frac      ( const float4& a ) { return a-floor(a); }
 
   __forceinline int4 floori (const float4& a) {
 #if defined (__SSE4_1__)
