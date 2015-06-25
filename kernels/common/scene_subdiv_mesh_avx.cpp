@@ -119,21 +119,42 @@ namespace embree
 
       foreach_unique(valid1,primID,[&](const bool8& valid1, const int primID) 
       {
-        for (size_t j=0; j<numFloats; j+=4) 
+        for (size_t j=0,slot=0; j<numFloats; slot++)
         {
-          __aligned(64) float8 P_tmp[4];
-          __aligned(64) float8 dPdu_tmp[4];
-          __aligned(64) float8 dPdv_tmp[4];
-          float8* Pt = P ? P_tmp : nullptr;
-          float8* dPdut = dPdu ? dPdu_tmp : nullptr;
-          float8* dPdvt = dPdv ? dPdv_tmp : nullptr;
-          const size_t M = min(size_t(4),numFloats-j);
-          PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,j/4,stride)),parent->commitCounter,
-                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
-          
-          if (P   ) for (size_t k=0; k<M; k++) float8::store(valid1,&P[(j+k)*numUVs+i],P_tmp[k]);
-          if (dPdu) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
-          if (dPdv) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+          if (j+8 > numFloats)
+          {
+            __aligned(64) float8 P_tmp[4];
+            __aligned(64) float8 dPdu_tmp[4];
+            __aligned(64) float8 dPdv_tmp[4];
+            float8* Pt = P ? P_tmp : nullptr;
+            float8* dPdut = dPdu ? dPdu_tmp : nullptr;
+            float8* dPdvt = dPdv ? dPdv_tmp : nullptr;
+            const size_t M = min(size_t(4),numFloats-j);
+            PatchEvalSimd<bool8,int8,float8,float4>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                          getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
+            
+            if (P   ) for (size_t k=0; k<M; k++) float8::store(valid1,&P[(j+k)*numUVs+i],P_tmp[k]);
+            if (dPdu) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
+            if (dPdv) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+            j+=4;
+          }
+          else
+          {
+            __aligned(64) float8 P_tmp[4];
+            __aligned(64) float8 dPdu_tmp[4];
+            __aligned(64) float8 dPdv_tmp[4];
+            float8* Pt = P ? P_tmp : nullptr;
+            float8* dPdut = dPdu ? dPdu_tmp : nullptr;
+            float8* dPdvt = dPdv ? dPdv_tmp : nullptr;
+            const size_t M = min(size_t(8),numFloats-j);
+            PatchEvalSimd<bool8,int8,float8,float8>::eval(baseEntry->at(interpolationSlot8(primID,slot,stride)),parent->commitCounter,
+                                                          getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,Pt,dPdut,dPdvt,M);
+            
+            if (P   ) for (size_t k=0; k<M; k++) float8::store(valid1,&P[(j+k)*numUVs+i],P_tmp[k]);
+            if (dPdu) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdu[(j+k)*numUVs+i],dPdu_tmp[k]);
+            if (dPdv) for (size_t k=0; k<M; k++) float8::store(valid1,&dPdv[(j+k)*numUVs+i],dPdv_tmp[k]);
+            j+=8;
+          }
         }
       });
     }
