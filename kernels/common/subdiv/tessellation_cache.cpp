@@ -74,11 +74,11 @@ namespace embree
       threadWorkState[i].reset();
 
     reset_state.reset();
+    linkedlist_mtx.reset();
   }
 
   void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
-    reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
     if (id >= NUM_PREALLOC_THREAD_WORK_STATES) 
       { 
@@ -90,10 +90,14 @@ namespace embree
       init_t_state = &threadWorkState[id];
     }
 
+    /* critical section for updating link list with new thread state */
+
+    linkedlist_mtx.lock();
+
     init_t_state->prev = current_t_state;
     current_t_state = init_t_state;
 
-    reset_state.unlock();
+    linkedlist_mtx.unlock();
   }
 
   void SharedLazyTessellationCache::waitForUsersLessEqual(ThreadWorkState *const t_state,
@@ -118,18 +122,20 @@ namespace embree
       {
 	if (next_block >= switch_block_threshold)
 	  {
-	    //double msec = getSeconds();
+            /* lock the linked list of thread states */
 
+            linkedlist_mtx.lock();
+
+            /* block all threads */
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
-            {
 	      if (lockThread(t) == 1)
 		waitForUsersLessEqual(t,1);
-            }
 
+
+            /* switch to the next segment */
 
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-	    //PRINT("RESET TESS CACHE");
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
@@ -153,11 +159,15 @@ namespace embree
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
 
+            /* release all blocked threads */
+
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
 	      unlockThread(t);
+
+            /* unlock the linked list of thread states */
+
+            linkedlist_mtx.unlock();
 	    
-	    //msec = getSeconds()-msec;    
-	    //PRINT( 1000.0f * msec );
 
 	  }
 	reset_state.unlock();
