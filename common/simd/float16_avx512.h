@@ -98,14 +98,20 @@ namespace embree
   __forceinline const float16 operator -( const float16& a ) { return _mm512_mul_ps(a,float16(-1)); }
   __forceinline const float16 abs       ( const float16& a ) { 
 #if defined(__AVX512__)
-    return _mm512_maxabs_ps(a,a); 
+    return _mm512_abs_ps(a); 
 #else
     return _mm512_gmaxabs_ps(a,a); 
 #endif
   }
   __forceinline const float16 signmsk   ( const float16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
-  __forceinline const float16 rcp  ( const float16& a ) { return _mm512_rcp23_ps(a); };
+  __forceinline const float16 rcp  ( const float16& a ) { 
+#if defined(__AVX512__)
+    return _mm512_rcp28_ps(a); 
+#else
+    return _mm512_rcp23_ps(a); 
+#endif
+  };
 
   __forceinline const float16 sqr  ( const float16& a ) { return _mm512_mul_ps(a,a); }
   __forceinline const float16 sqrt ( const float16& a ) { return _mm512_sqrt_ps(a); }
