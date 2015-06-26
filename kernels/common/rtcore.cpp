@@ -286,6 +286,28 @@ namespace embree
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
 #endif
 
+    /* here we verify that CPP files compiled for a specific ISA only
+     * call that same ISA version of non-inlined class member
+     * functions */
+#if !defined (__MIC__) && defined(DEBUG)
+    assert(isa::getISA() == ISA);
+#if defined(__TARGET_SSE41__)
+    assert(sse41::getISA() == SSE41);
+#endif
+#if defined(__TARGET_SSE42__)
+    assert(sse42::getISA() == SSE42);
+#endif
+#if defined(__TARGET_AVX__)
+    assert(avx::getISA() == AVX);
+#endif
+#if defined(__TARGET_AVX2__)
+    assert(avx2::getISA() == AVX2);
+#endif
+#if defined (__TARGET_AVX512__)
+    assert(avx512::getISA() == AVX512);
+#endif
+#endif
+
 #if !defined(__MIC__)
     BVH4Register();
 #else

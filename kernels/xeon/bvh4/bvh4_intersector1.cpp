@@ -37,6 +37,10 @@ namespace embree
 { 
   namespace isa
   {
+    int getISA() { 
+      return VerifyMultiTargetLinking::getISA(); 
+    }
+
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
