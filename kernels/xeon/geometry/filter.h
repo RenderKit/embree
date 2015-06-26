@@ -28,6 +28,10 @@
 #include "../../common/ray8.h"
 #endif
 
+#if defined(__AVX512__)
+#include "../../common/ray16.h"
+#endif
+
 namespace embree
 {
   namespace isa
