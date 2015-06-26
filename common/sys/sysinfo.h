@@ -28,6 +28,9 @@
 #if defined(__MIC__)
 #define isa knc
 #  define ISA KNC
+#elif defined (__AVX512__)
+#define isa avx512
+#  define ISA AVX512
 #elif defined (__AVX2__)
 #define isa avx2
 #  define ISA AVX2
@@ -77,7 +80,8 @@ namespace embree
     CPU_CORE2,
     CPU_CORE_NEHALEM,
     CPU_CORE_SANDYBRIDGE,
-    CPU_KNC
+    CPU_KNC,
+    CPU_KNL
   };
 
   /*! get the full path to the running executable */
