@@ -839,8 +839,10 @@ namespace embree
     benchmarks.push_back(new benchmark_barrier_active());
 
     benchmarks.push_back(new benchmark_atomic_inc());
+#if defined(__X86_64__)
     benchmarks.push_back(new benchmark_osmalloc());
     benchmarks.push_back(new benchmark_bandwidth());
+#endif
  
     benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
