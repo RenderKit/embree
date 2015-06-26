@@ -280,7 +280,7 @@ namespace embree
   }
 
   __forceinline float16  lerp(const float16& a, const float16& b, const float16& t) {
-    return madd(t, b, madd(-t, a, a))
+    return madd(t, b, madd(-t, a, a));
   }
 
   __forceinline void xchg(bool16 m, float16& a, float16& b) 

@@ -304,7 +304,7 @@ namespace embree
 
   __forceinline float4  lerp(const float4& a, const float4& b, const float4& t) {
 #if defined(__AVX2__)
-    return madd(t, b, madd(-t, a, a))
+    return madd(t, b, madd(-t, a, a));
 #else
     return a + t*(b-a);
 #endif
