@@ -796,7 +796,7 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__) || 1 // defined(__TARGET_AVX512__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     rtcore_coherent_intersect16(scene);
 #endif
 
