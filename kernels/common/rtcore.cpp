@@ -160,6 +160,11 @@ namespace embree
     std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
     std::cout << "  Config   : ";
+#if defined(DEBUG)
+    std::cout << "Debug ";
+#else
+    std::cout << "Release ";
+#endif
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     if (State::instance()->verbosity(2)) 
