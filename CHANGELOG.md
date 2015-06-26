@@ -1,21 +1,36 @@
 Version History
 ---------------
 
+### New Features in Embree 2.6.0
+
+-   Added `rtcInterpolate` function to interpolate per vertex
+    attributes
+-   Added `rtcSetBoundaryMode` function that can be used to select the
+    boundary handling for subdivision surfaces
+-   Fixed a traversal bug that caused rays with very small ray
+    direction components to miss geometry
+-   Performance improvements for the robust traversal mode
+-   Fixed deadlock when calling rtcCommit from multiple
+    threads on same scene.
+
 ### New Features in Embree 2.5.1
 
 -   On dual socket workstations, the initial BVH build performance
     almost doubled through a better memory allocation scheme
 -   Reduced memory usage for subdivision surface objects with crease
     features
--   rtcCommit performance is robust against unset "flush to zero" and
+-   `rtcCommit` performance is robust against unset "flush to zero" and
     "denormals are zero" flags. However, enabling these flags in your
-    application is still recommended.
--   Internal cleanups and bugfixes
+    application is still recommended
+-   Reduced memory usage for subdivision surfaces with borders and
+    infinitely sharp creases
+-   Lots of internal cleanups and bug fixes for both Intel® Xeon® and
+    Intel® Xeon Phi™
 
 ### New Features in Embree 2.5.0
 
--   Improved hierarchy build performance on both Intel® Xeon® and Intel®
-    Xeon Phi™
+-   Improved hierarchy build performance on both Intel Xeon and Intel
+    Xeon Phi
 -   Vastly improved tessellation cache for ray tracing subdivision
     surfaces
 -   Added `rtcGetUserData` API call to query per geometry user pointer
@@ -38,7 +53,7 @@ Version History
     primitives)
 -   Support for vector displacements on Catmull Clark subdivision
     surfaces
--   Various bugfixes (e.g. 4-byte alignment of vertex buffers works)
+-   Various bug fixes (e.g. 4-byte alignment of vertex buffers works)
 
 ### New Features in Embree 2.3.3
 
