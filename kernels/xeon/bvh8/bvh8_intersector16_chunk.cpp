@@ -160,7 +160,7 @@ namespace embree
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
-      assert(all(valid0,ray.tnear > -FLT_MIN));
+      assert(all(valid,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       bool16 terminated = !valid;
