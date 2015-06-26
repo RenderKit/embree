@@ -36,9 +36,11 @@ namespace embree
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const bool8 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
       
       /* load ray */
@@ -242,9 +244,11 @@ namespace embree
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const bool8 valid = *valid_i;
-      assert(all(valid,ray.tnear >= 0.0f));
-      assert(all(valid,ray.tnear <= ray.tfar));
+      bool8 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */

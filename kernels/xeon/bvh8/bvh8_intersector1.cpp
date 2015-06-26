@@ -31,10 +31,6 @@ namespace embree
     template<bool robust, typename PrimitiveIntersector>
     void BVH8Intersector1<robust,PrimitiveIntersector>::intersect(const BVH8* bvh, Ray& ray)
     {
-      /* verify correct input */
-      assert(ray.tnear >= 0.0f);
-      assert(ray.tnear <= ray.tfar);
-
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -44,7 +40,16 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr = bvh->root;
       stack[0].dist = neg_inf;
-      
+
+      /* filter out invalid rays */
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      if (!ray.valid()) return;
+#endif
+
+      /* verify correct input */
+      assert(ray.tnear > -FLT_MIN);
+      //assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
       /*! load the ray into SIMD registers */
       const Vec3f8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
@@ -196,10 +201,6 @@ namespace embree
     template<bool robust, typename PrimitiveIntersector>
     void BVH8Intersector1<robust,PrimitiveIntersector>::occluded(const BVH8* bvh, Ray& ray)
     {
-      /* verify correct input */
-      assert(ray.tnear >= 0.0f);
-      assert(ray.tnear <= ray.tfar);
-
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -208,7 +209,16 @@ namespace embree
       NodeRef* stackPtr = stack+1;        //!< current stack pointer
       NodeRef* stackEnd = stack+stackSize;
       stack[0] = bvh->root;
-            
+        
+      /* filter out invalid rays */
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      if (!ray.valid()) return;
+#endif
+
+      /* verify correct input */
+      assert(ray.tnear > -FLT_MIN);
+      //assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
       /*! load the ray into SIMD registers */
       const Vec3f8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);

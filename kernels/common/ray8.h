@@ -44,6 +44,16 @@ namespace embree
     /*! Tests if we hit something. */
     __forceinline operator bool8() const { return geomID != int8(-1); }
 
+    /*! calculates if this is a valid ray that does not cause issues during traversal */
+    __forceinline bool8 valid() const {
+      const bool8 vx = abs(org.x) < float8(inf) & abs(dir.x) < float8(inf);
+      const bool8 vy = abs(org.y) < float8(inf) & abs(dir.y) < float8(inf);
+      const bool8 vz = abs(org.z) < float8(inf) & abs(dir.z) < float8(inf);
+      const bool8 vn = abs(tnear) <= float8(inf);
+      const bool8 vf = abs(tfar) <= float8(inf);
+      return vx & vy & vz & vn & vf;
+    }
+
     /* converts ray packet to single rays */
     __forceinline void get(Ray ray[8]) const
     {

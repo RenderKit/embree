@@ -35,6 +35,11 @@ namespace embree
     /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != -1; }
 
+    /*! calculates if this is a valid ray that does not cause issues during traversal */
+    __forceinline bool valid() const {
+      return all(lt_mask(abs(org),Vec3fa(inf)) & lt_mask(abs(dir),Vec3fa(inf))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
+    }
+
   public:
     Vec3fa org;        //!< Ray origin
     Vec3fa dir;        //!< Ray direction

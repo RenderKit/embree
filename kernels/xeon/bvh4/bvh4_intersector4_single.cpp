@@ -31,9 +31,11 @@ namespace embree
     void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
 
       /* load ray */
       Vec3f4 ray_org = ray.org;
@@ -65,9 +67,11 @@ namespace embree
     void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
 
       /* load ray */
       const bool4 valid = *valid_i;
