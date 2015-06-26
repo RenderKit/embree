@@ -286,6 +286,9 @@ namespace embree
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
 #endif
 
+    /* verify that calculations stay in range */
+    assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
+
     /* here we verify that CPP files compiled for a specific ISA only
      * call that same ISA version of non-inlined class member
      * functions */
