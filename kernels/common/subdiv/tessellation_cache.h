@@ -138,6 +138,7 @@ namespace embree
    __aligned(64) AtomicCounter localTime;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
+   __aligned(64) AtomicMutex   linkedlist_mtx;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
 
