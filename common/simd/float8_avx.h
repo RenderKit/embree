@@ -278,6 +278,14 @@ namespace embree
   }
 #endif
 
+  __forceinline float8  lerp(const float8& a, const float8& b, const float8& t) {
+#if defined(__AVX2__)
+    return madd(t, b, madd(-t, a, a));
+#else
+    return a + t*(b-a);
+#endif
+  }
+
   __forceinline bool isvalid ( const float8& v ) {
     return all((v > float8(-FLT_LARGE)) & (v < float8(+FLT_LARGE)));
   }

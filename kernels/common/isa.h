@@ -16,6 +16,8 @@
 
 #pragma once
 
+namespace embree
+{
 #define DECLARE_SYMBOL(type,name)                                       \
   namespace isa    { extern type name; }                                 \
   namespace sse41  { extern type name; }                                 \
@@ -129,3 +131,13 @@
   SELECT_SYMBOL_SSE41(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
+  struct VerifyMultiTargetLinking {
+    static __noinline int getISA() { return ISA; }
+  };
+  namespace isa    { int getISA(); };
+  namespace sse41  { int getISA(); };
+  namespace sse42  { int getISA(); };
+  namespace avx    { int getISA(); };
+  namespace avx2   { int getISA(); };
+  namespace avx512 { int getISA(); };
+}

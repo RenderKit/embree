@@ -160,6 +160,11 @@ namespace embree
     std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
     std::cout << "  Config   : ";
+#if defined(DEBUG)
+    std::cout << "Debug ";
+#else
+    std::cout << "Release ";
+#endif
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     if (State::instance()->verbosity(2)) 
@@ -279,6 +284,28 @@ namespace embree
 #if !defined (__MIC__)
     if (!hasISA(SSE2)) 
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
+#endif
+
+    /* here we verify that CPP files compiled for a specific ISA only
+     * call that same ISA version of non-inlined class member
+     * functions */
+#if !defined (__MIC__) && defined(DEBUG)
+    assert(isa::getISA() == ISA);
+#if defined(__TARGET_SSE41__)
+    assert(sse41::getISA() == SSE41);
+#endif
+#if defined(__TARGET_SSE42__)
+    assert(sse42::getISA() == SSE42);
+#endif
+#if defined(__TARGET_AVX__)
+    assert(avx::getISA() == AVX);
+#endif
+#if defined(__TARGET_AVX2__)
+    assert(avx2::getISA() == AVX2);
+#endif
+#if defined (__TARGET_AVX512__)
+    assert(avx512::getISA() == AVX512);
+#endif
 #endif
 
 #if !defined(__MIC__)
