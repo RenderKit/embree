@@ -19,6 +19,7 @@
 #include "primitive.h"
 #include "discrete_tessellation.h"
 #include "../../common/subdiv/feature_adaptive_eval.h"
+#include "../../common/subdiv/patch_eval.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 
@@ -679,6 +680,26 @@ namespace embree
       return bounds;
     }
 
+    __forceinline BBox3fa calculatePositionAndNormal(SubdivMesh* mesh, unsigned primID, unsigned subPrim, Vec2f luv[17*17], Vec3fa Ng[17*17])
+    {
+      char* src = mesh->getVertexBuffer(0).getPtr();
+      size_t stride = mesh->getVertexBuffer(0).getStride();
+      SharedLazyTessellationCache::CacheEntry& entry = mesh->vertex_buffer_tags[0][mesh->interpolationSlot4(primID,0,stride)];
+
+      BBox3fa bounds = empty;
+      for (int y=0; y<height; y++) {
+        for (int x=0; x<width; x++) {
+	  const Vec2f& uv = luv[y*width+x];
+          float4 P,dPdu,dPdv;
+          PatchEval<float4>::eval(entry,mesh->parent->commitCounter,mesh->getHalfEdge(primID),subPrim,src,stride,uv.x,uv.y,&P,&dPdu,&dPdv);
+	  bounds.extend((Vec3fa)P);
+	  point(x,y) = (Vec3fa) P;
+	  Ng[y*width+x] = normalize_safe(cross((Vec3fa)dPdv,(Vec3fa)dPdu)); // FIXME: enable only for displacement mapping
+        }
+      }
+      return bounds;
+    }
+
     template<typename Patch>
     __forceinline void calculatePositionAndNormal(const Patch& patch, 
 						  const size_t x0, const size_t x1,
@@ -785,6 +806,39 @@ namespace embree
 	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
+    __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID, unsigned subPatch,
+			     const size_t x0, const size_t x1,
+			     const size_t y0, const size_t y1,
+			     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
+			     const DiscreteTessellationPattern& pattern0, 
+			     const DiscreteTessellationPattern& pattern1, 
+			     const DiscreteTessellationPattern& pattern2, 
+			     const DiscreteTessellationPattern& pattern3, 
+			     const DiscreteTessellationPattern& pattern_x,
+			     const DiscreteTessellationPattern& pattern_y)
+    {
+      /* calculate local UVs */
+      Vec2f luv[17*17]; 
+      calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
+      
+      /* stitch local UVs */
+      stitchLocalUVs(x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv);
+
+      /* evaluate position and normal */
+      Vec3fa Ng[17*17];
+      calculatePositionAndNormal(mesh,primID,subPatch,luv,Ng);
+      //calculatePositionAndNormal(mesh,primID,x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,Ng);
+
+      /* calculate global UVs */
+      Vec2f guv[17*17]; 
+      calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
+
+      /* perform displacement */
+      //SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+      if (mesh->displFunc) 
+	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+    }
+
     __forceinline BBox3fa buildLazyBounds(Scene* scene, const CatmullClarkPatch3fa& patch,
 					  const size_t x0, const size_t x1,
 					  const size_t y0, const size_t y1,
@@ -855,6 +909,37 @@ namespace embree
       }
       return N;
     }
+
+    static size_t createEager(Scene* scene, SubdivMesh* mesh, unsigned primID, unsigned subPatch,
+			      FastAllocator::ThreadLocal& alloc, PrimRef* prims,
+			      const size_t x0, const size_t x1,
+			      const size_t y0, const size_t y1,
+			      const Vec2f uv[4], 
+			      const DiscreteTessellationPattern& pattern0, 
+			      const DiscreteTessellationPattern& pattern1, 
+			      const DiscreteTessellationPattern& pattern2, 
+			      const DiscreteTessellationPattern& pattern3, 
+			      const DiscreteTessellationPattern& pattern_x,
+			      const DiscreteTessellationPattern& pattern_y)
+    {
+      size_t N = 0;
+      for (size_t y=y0; y<y1; y+=16)
+      {
+	for (size_t x=x0; x<x1; x+=16) 
+	{
+	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
+	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
+	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
+	  leaf->build(scene,mesh,primID,subPatch,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
+	  prims += n;
+	  N += n;
+	}
+      }
+      return N;
+    }
+
+
 
     std::pair<BBox3fa,BVH4::NodeRef> createLazyPrims(FastAllocator::ThreadLocal& alloc,
 						     const size_t x0, const size_t x1,

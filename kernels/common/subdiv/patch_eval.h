@@ -33,6 +33,19 @@ namespace embree
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
       typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
       
+      __forceinline static bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, size_t subPatch, const float x, const float y, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        assert(subPatch < 3);
+        if (!eval(This->child[subPatch],x,y,P,dPdu,dPdv,1.0f)) return false;
+        if (!dPdu || !dPdv) return true; 
+        switch (subPatch) {
+        case 0: map_quad0_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
+        case 1: map_quad1_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
+        case 2: map_quad2_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
+        }
+        return true;
+      }
+
       static bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
@@ -183,6 +196,12 @@ namespace embree
         }
       }
 
+      __forceinline static bool eval_general(const typename Patch::SubdividedGeneralPatch* This, size_t subPatch, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        assert(subPatch < This->N);
+        return eval(This->child[subPatch],u,v,P,dPdu,dPdv,1.0f);
+      }
+
       static bool eval_general(const typename Patch::SubdividedGeneralPatch* This, const float U, const float V, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         const unsigned l = floor(4.0f*U); const float u = 2.0f*frac(4.0f*U); 
@@ -220,6 +239,33 @@ namespace embree
           const unsigned i = 4*h+l; assert(i<N);
           eval_direct(patches[i],Vec2f(u,v),P,dPdu,dPdv,8.0f,depth+1);
         }
+      }
+
+      static void eval_direct(const GeneralCatmullClarkPatch& patch, size_t subPatch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
+      {
+        /* convert into standard quad patch if possible */
+        if (likely(patch.isQuadPatch())) 
+        {
+          CatmullClarkPatch qpatch; patch.init(qpatch);
+          return eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
+        }
+        
+        /* subdivide patch */
+        size_t N;
+        array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+        patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+        
+        /* parametrization for triangles */
+        if (N == 3) 
+          eval_direct(patches[subPatch],uv,P,dPdu,dPdv,1.0f,depth+1);
+        
+        /* parametrization for quads */
+        else if (N == 4) 
+          eval_general_quad_direct(patches,uv,P,dPdu,dPdv,depth);
+        
+        /* parametrization for arbitrary polygons */
+        else
+          eval_direct(patches[subPatch],uv,P,dPdu,dPdv,1.0f,depth+1);
       }
       
       static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, float dscale, size_t depth)
@@ -297,6 +343,26 @@ namespace embree
         }
       }
 
+      static bool eval(Patch* This, size_t subPatch, const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
+      {
+        if (This == nullptr) return false;
+        
+        switch (This->type) 
+        {
+        case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
+          assert(dscale == 1.0f); 
+          return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,subPatch,u,v,P,dPdu,dPdv); 
+        }
+          case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+          assert(dscale == 1.0f); 
+          return eval_general((typename Patch::SubdividedGeneralPatch*)This,subPatch,u,v,P,dPdu,dPdv); 
+        }
+        default: 
+          assert(subPatch == 0);
+          return eval(This,u,v,P,dPdu,dPdv,dscale);
+        }
+      }
+
       static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
@@ -312,6 +378,26 @@ namespace embree
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
           eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
+          break;
+        }
+        }
+      }
+
+      static void eval_direct (const SubdivMesh::HalfEdge* edge, size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+          const unsigned vtx = p->getStartVertexIndex();
+          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
+        };
+        
+        switch (edge->patch_type) {
+        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+#if PATCH_USE_GREGORY == 2
+        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+#endif
+        default: {
+          GeneralCatmullClarkPatch patch(edge,loader);
+          eval_direct(patch,subPatch,Vec2f(u,v),P,dPdu,dPdv,0);
           break;
         }
         }
@@ -333,6 +419,54 @@ namespace embree
         eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
         PATCH_DEBUG_SUBDIVISION(c,-1,-1);
       }
+
+      static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
+                        const SubdivMesh::HalfEdge* edge, const size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      {
+        Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
+            auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
+            return Patch::create(alloc,edge,vertices,stride);
+          });
+        
+        if (patch && eval(patch,subPatch,u,v,P,dPdu,dPdv,1.0f)) {
+          SharedLazyTessellationCache::unlock();
+          return;
+        }
+        SharedLazyTessellationCache::unlock();
+        eval_direct (edge,subPatch,vertices,stride,u,v,P,dPdu,dPdv);
+        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
+      }
       
     };
+
+  template<typename Tessellator>
+    inline void patch_eval_subdivision (const SubdivMesh::HalfEdge* h, Tessellator tessellator)
+  {
+    const size_t N = h->numEdges();
+    int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t
+    float levels[GeneralCatmullClarkPatch3fa::SIZE];
+    for (size_t i=0; i<N; i++) {
+      assert(i<GeneralCatmullClarkPatch3fa::SIZE);
+      neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->patch_type == SubdivMesh::COMPLEX_PATCH : 0; 
+      levels[i] = h->edge_level;
+      h = h->next();
+    }
+    
+    if (N == 4)
+    {
+      const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+      tessellator(uv,neighborSubdiv,levels,0);
+    }
+    else
+    {
+      for (size_t i=0; i<N; i++) 
+      {
+        const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+        //const int neighborSubdiv1[4] = { false,neighborSubdiv[(i+1)%N],neighborSubdiv[(i-1)%N],false }; ????????????
+        const int neighborSubdiv1[4] = { max(0,neighborSubdiv[(i+0)%N]-1), 0, 0, max(0,neighborSubdiv[(i-1)%N]-1) }; 
+        const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i+1)%N], 0.5f*levels[(i+1)%N] };
+        tessellator(uv,neighborSubdiv1,levels1,i);
+      }
+    }
+  }
 }
