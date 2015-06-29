@@ -247,7 +247,7 @@ namespace embree
   class benchmark_osmalloc : public Benchmark
   {
   public:
-    enum { N = 1000000000 };
+    enum { N = 1024*1024*1024 };
 
     static char* ptr;
 
@@ -268,7 +268,7 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      ptr = (char*) os_malloc(N);
+      ptr = (char*) os_reserve(N);
 
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
