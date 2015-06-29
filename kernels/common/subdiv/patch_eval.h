@@ -469,4 +469,21 @@ namespace embree
       }
     }
   }
+
+  __forceinline void interpolate( SubdivMesh* mesh, SharedLazyTessellationCache::CacheEntry& entry, char* src, size_t stride, 
+                                  unsigned primID, unsigned subPrim, float u, float v, Vec3fa& P, Vec3fa& dPdu, Vec3fa& dPdv)
+  {
+#if defined(__AVX__)
+    if (stride > 4) {
+      float8 P8,dPdu8,dPdv8;
+      PatchEval<float8>::eval(entry,mesh->parent->commitCounter,mesh->getHalfEdge(primID),subPrim,src,stride,u,v,&P8,&dPdu8,&dPdv8);
+      P = (Vec3fa) extract<0>(P8); dPdu = (Vec3fa) extract<0>(dPdu8); dPdv = (Vec3fa) extract<0>(dPdv8);
+    } else 
+#endif
+    {
+      float4 P4,dPdu4,dPdv4;
+      PatchEval<float4>::eval(entry,mesh->parent->commitCounter,mesh->getHalfEdge(primID),subPrim,src,stride,u,v,&P4,&dPdu4,&dPdv4);
+      P = (Vec3fa) P4; dPdu = (Vec3fa) dPdu4; dPdv = (Vec3fa) dPdv4;
+    }
+  }
 }

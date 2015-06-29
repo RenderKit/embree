@@ -691,19 +691,7 @@ namespace embree
         for (int x=0; x<width; x++) {
 	  const Vec2f& uv = luv[y*width+x];
           Vec3fa P,dPdu,dPdv;
-#if defined(__AVX__)
-          if (stride > 4) {
-            float8 P8,dPdu8,dPdv8;
-            PatchEval<float8>::eval(entry,mesh->parent->commitCounter,mesh->getHalfEdge(primID),subPrim,src,stride,uv.x,uv.y,&P8,&dPdu8,&dPdv8);
-            P = (Vec3fa) extract<0>(P8); dPdu = (Vec3fa) extract<0>(dPdu8); dPdv = (Vec3fa) extract<0>(dPdv8);
-          } else 
-#else
-          {
-            float4 P4,dPdu4,dPdv4;
-            PatchEval<float4>::eval(entry,mesh->parent->commitCounter,mesh->getHalfEdge(primID),subPrim,src,stride,uv.x,uv.y,&P4,&dPdu4,&dPdv4);
-            P = (Vec3fa) P4; dPdu = (Vec3fa) dPdu4; dPdv = (Vec3fa) dPdv4;
-          }
-#endif
+          interpolate(mesh,entry,src,stride,primID,subPrim,uv.x,uv.y,P,dPdu,dPdv);
 	  bounds.extend((Vec3fa)P);
 	  point(x,y) = (Vec3fa) P;
 	  Ng[y*width+x] = normalize_safe(cross((Vec3fa)dPdv,(Vec3fa)dPdu)); // FIXME: enable only for displacement mapping
