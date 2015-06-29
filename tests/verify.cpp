@@ -3477,7 +3477,7 @@ namespace embree
 
 #endif
 
-#if defined(__FIX_RAYS__) // FIXME: this mode is deactivated, did never really work
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
     rtcore_nan("nan_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
     rtcore_inf("inf_test_1",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1);
 

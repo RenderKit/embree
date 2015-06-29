@@ -181,7 +181,11 @@ namespace embree
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
-      const bool8 valid0 = *valid_i;
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       Vec3f8 ray_org = ray.org;
       Vec3f8 ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -463,7 +467,11 @@ namespace embree
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
-      const bool8 valid = *valid_i;
+      bool8 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       bool8 terminated = !valid;
       Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;

@@ -33,7 +33,13 @@ namespace embree
 #if defined(__AVX512__)
       
       /* load ray */
-      const bool16 valid0 = *valid_i;
+      bool16 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
+      //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+
       const Vec3f16 rdir = rcp_safe(ray.dir);
       const Vec3f16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
@@ -151,6 +157,12 @@ namespace embree
       
       /* load ray */
       const bool16 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
+      //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+
       bool16 terminated = !valid;
       const Vec3f16 rdir = rcp_safe(ray.dir);
       const Vec3f16 org_rdir = ray.org * rdir;

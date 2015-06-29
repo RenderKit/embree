@@ -96,10 +96,22 @@ namespace embree
   __forceinline const float16 cast      (const __m512i& a) { return _mm512_castsi512_ps(a); }
   __forceinline const float16 operator +( const float16& a ) { return a; }
   __forceinline const float16 operator -( const float16& a ) { return _mm512_mul_ps(a,float16(-1)); }
-  __forceinline const float16 abs       ( const float16& a ) { return _mm512_gmaxabs_ps(a,a); }
+  __forceinline const float16 abs       ( const float16& a ) { 
+#if defined(__AVX512__)
+    return _mm512_abs_ps(a); 
+#else
+    return _mm512_gmaxabs_ps(a,a); 
+#endif
+  }
   __forceinline const float16 signmsk   ( const float16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
-  __forceinline const float16 rcp  ( const float16& a ) { return _mm512_rcp23_ps(a); };
+  __forceinline const float16 rcp  ( const float16& a ) { 
+#if defined(__AVX512__)
+    return _mm512_rcp28_ps(a); 
+#else
+    return _mm512_rcp23_ps(a); 
+#endif
+  };
 
   __forceinline const float16 sqr  ( const float16& a ) { return _mm512_mul_ps(a,a); }
   __forceinline const float16 sqrt ( const float16& a ) { return _mm512_sqrt_ps(a); }
@@ -154,17 +166,65 @@ namespace embree
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
   
-  __forceinline const float16 min( const float16& a, const float16& b ) { return _mm512_gmin_ps(a,b); }
-  __forceinline const float16 min( const float16& a, const float& b ) { return _mm512_gmin_ps(a,float16(b)); }
-  __forceinline const float16 min( const float& a, const float16& b ) { return _mm512_gmin_ps(float16(a),b); }
+  __forceinline const float16 min( const float16& a, const float16& b ) { 
+#if defined(__AVX512__)
+    return _mm512_min_ps(a,b); 
+#else
+    return _mm512_gmin_ps(a,b); 
+#endif
+  }
+  __forceinline const float16 min( const float16& a, const float& b ) { 
+#if defined(__AVX512__)
+    return _mm512_min_ps(a,float16(b)); 
+#else    
+    return _mm512_gmin_ps(a,float16(b)); 
+#endif
+  }
+  __forceinline const float16 min( const float& a, const float16& b ) { 
+#if defined(__AVX512__)
+    return _mm512_min_ps(float16(a),b); 
+#else
+    return _mm512_gmin_ps(float16(a),b); 
+#endif
+  }
 
-  __forceinline const float16 max( const float16& a, const float16& b ) { return _mm512_gmax_ps(a,b); }
-  __forceinline const float16 max( const float16& a, const float& b ) { return _mm512_gmax_ps(a,float16(b)); }
-  __forceinline const float16 max( const float& a, const float16& b ) { return _mm512_gmax_ps(float16(a),b); }
+  __forceinline const float16 max( const float16& a, const float16& b ) { 
+#if defined(__AVX512__)
+    return _mm512_max_ps(a,b); 
+#else
+    return _mm512_gmax_ps(a,b); 
+#endif
+  }
+  __forceinline const float16 max( const float16& a, const float& b ) { 
+#if defined(__AVX512__)
+    return _mm512_max_ps(a,float16(b)); 
+#else
+    return _mm512_gmax_ps(a,float16(b)); 
+#endif
+  }
+  __forceinline const float16 max( const float& a, const float16& b ) { 
+#if defined(__AVX512__)
+    return _mm512_max_ps(float16(a),b); 
+#else
+    return _mm512_gmax_ps(float16(a),b); 
+#endif
+  }
 
   __forceinline float16 mask_add(const bool16& mask, const float16& c, const float16& a, const float16& b) { return _mm512_mask_add_ps (c,mask,a,b); }; 
-  __forceinline float16 mask_min(const bool16& mask, const float16& c, const float16& a, const float16& b) { return _mm512_mask_gmin_ps(c,mask,a,b); }; 
-  __forceinline float16 mask_max(const bool16& mask, const float16& c, const float16& a, const float16& b) { return _mm512_mask_gmax_ps(c,mask,a,b); }; 
+  __forceinline float16 mask_min(const bool16& mask, const float16& c, const float16& a, const float16& b) { 
+#if defined(__AVX512__)
+    return _mm512_mask_min_ps(c,mask,a,b); 
+#else
+    return _mm512_mask_gmin_ps(c,mask,a,b); 
+#endif
+  }; 
+  __forceinline float16 mask_max(const bool16& mask, const float16& c, const float16& a, const float16& b) { 
+#if defined(__AVX512__)
+    return _mm512_mask_max_ps(c,mask,a,b); 
+#else
+    return _mm512_mask_gmax_ps(c,mask,a,b); 
+#endif
+  }; 
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
@@ -384,8 +444,21 @@ namespace embree
 
   __forceinline float reduce_add(float16 a) { return _mm512_reduce_add_ps(a); }
   __forceinline float reduce_mul(float16 a) { return _mm512_reduce_mul_ps(a); }
-  __forceinline float reduce_min(float16 a) { return _mm512_reduce_gmin_ps(a); }
-  __forceinline float reduce_max(float16 a) { return _mm512_reduce_gmax_ps(a); }
+  __forceinline float reduce_min(float16 a) { 
+#if defined(__AVX512__)
+    return _mm512_reduce_min_ps(a); 
+#else
+    return _mm512_reduce_gmin_ps(a); 
+#endif
+  }
+  __forceinline float reduce_max(float16 a) { 
+#if defined(__AVX512__)
+    return _mm512_reduce_max_ps(a); 
+#else
+    return _mm512_reduce_gmax_ps(a); 
+#endif
+
+  }
 
   __forceinline float16 vreduce_min2(float16 x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline float16 vreduce_min4(float16 x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }

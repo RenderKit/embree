@@ -34,7 +34,11 @@
 #endif
 
 #if defined (__AVX__)
+#if defined(__AVX512__)
+#define AVX_ZERO_UPPER()
+#else
 #define AVX_ZERO_UPPER() _mm256_zeroupper()
+#endif
 #else
 #define AVX_ZERO_UPPER()
 #endif
