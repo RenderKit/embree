@@ -152,7 +152,7 @@ namespace embree
       file = fopen(fileName.c_str(),"r");
       if (file == nullptr) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
     }
-    ~FileStream() { fclose(file); }
+    ~FileStream() { if (file) fclose(file); }
 
   public:
     ParseLocation location() {
