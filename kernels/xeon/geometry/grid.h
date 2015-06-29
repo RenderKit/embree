@@ -684,7 +684,7 @@ namespace embree
     {
       char* src = mesh->getVertexBuffer(0).getPtr();
       size_t stride = mesh->getVertexBuffer(0).getStride();
-      SharedLazyTessellationCache::CacheEntry& entry = mesh->vertex_buffer_tags[0][mesh->interpolationSlot4(primID,0,stride)];
+      SharedLazyTessellationCache::CacheEntry& entry = mesh->vertex_buffer_tags[0][mesh->interpolationSlot(primID,0,stride)];
 
       BBox3fa bounds = empty;
       for (int y=0; y<height; y++) {
