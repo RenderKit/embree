@@ -518,15 +518,18 @@ namespace embree
   public:
     static __forceinline size_t numInterpolationSlots4(size_t stride) { return (stride+15)/16; }
     static __forceinline size_t numInterpolationSlots8(size_t stride) { return (stride+31)/32; }
-    static __forceinline size_t interpolationSlot4(size_t prim, size_t slot, size_t stride) {
-      const size_t slots = numInterpolationSlots4(stride); assert(slot < slots); return slots*prim+slot;
-    }
-    static __forceinline size_t interpolationSlot8(size_t prim, size_t slot, size_t stride) {
-      const size_t slots = numInterpolationSlots8(stride); assert(slot < slots); return slots*prim+slot;
+    static __forceinline size_t interpolationSlot(size_t prim, size_t slot, size_t stride) {
+#if defined (__AVX__)
+      const size_t slots = numInterpolationSlots8(stride); 
+#else
+      const size_t slots = numInterpolationSlots4(stride); 
+#endif
+      assert(slot < slots); 
+      return slots*prim+slot;
     }
     std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
     std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
-
+      
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */
   private:

@@ -37,7 +37,7 @@
 #endif
 
 #define PATCH_MAX_CACHE_DEPTH 4
-#define PATCH_MAX_EVAL_DEPTH 8     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_MAX_EVAL_DEPTH 4     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
 #define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
 #define PATCH_USE_BEZIER_PATCH 0   // enable use of bezier instead of gregory patches
 
