@@ -427,6 +427,23 @@ namespace embree
           }
           return !valid0;
         }
+
+        static __forceinline void intersect(Precalculations& pre, Ray16& ray, size_t k, const Primitive* prim, size_t num, Scene* scene)
+        {
+          for (size_t i=0; i<num; i++) {
+            Intersector::intersect(pre,ray,k,prim[i],scene);
+          }
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, Ray16& ray, size_t k, const Primitive* prim, size_t num, Scene* scene) 
+        {
+          for (size_t i=0; i<num; i++) {
+            if (Intersector::occluded(pre,ray,k,prim[i],scene))
+              return true;
+          }
+          return false;
+        }
+
       };
 
 #endif

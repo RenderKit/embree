@@ -39,8 +39,8 @@ class BVH8Intersector16Hybrid
       static const size_t stackSizeSingle = 1+3*BVH8::maxDepth;
       static const size_t stackSizeChunk = 4*BVH8::maxDepth+1;
 
-      static void intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray, const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ);
-      static bool occluded1 (const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray, const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ);
+      static void intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray, const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ);
+      static bool occluded1 (const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray, const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ);
 
 
     public:

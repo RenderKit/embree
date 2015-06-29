@@ -30,7 +30,7 @@ namespace embree
   {    
 
     template<typename PrimitiveIntersector16>
-    __forceinline void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ)
+    __forceinline void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -88,17 +88,10 @@ namespace embree
           const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
 
-#if defined(__AVX2__)
-          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
-          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
-          const bool8 vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xff;
-#else
           const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
           const bool8 vmask = tNear <= tFar;
           size_t mask = movemask(vmask);
-#endif
           
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
@@ -186,6 +179,8 @@ namespace embree
       assert(all(valid0,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
+      const Vec3f16 ray_org = ray.org;
+      const Vec3f16 ray_dir = ray.dir;
       const Vec3f16 rdir = rcp_safe(ray.dir);
       const Vec3f16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
@@ -193,16 +188,23 @@ namespace embree
       const float16 inf = float16(pos_inf);
       Precalculations pre(valid0,ray);
       
+      /* compute near/far per ray */
+      Vec3i16 nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,int16(0*(int)sizeof(float8)),int16(1*(int)sizeof(float8)));
+      nearXYZ.y = select(rdir.y >= 0.0f,int16(2*(int)sizeof(float8)),int16(3*(int)sizeof(float8)));
+      nearXYZ.z = select(rdir.z >= 0.0f,int16(4*(int)sizeof(float8)),int16(5*(int)sizeof(float8)));
+
       /* allocate stack and push root node */
-      float16    stack_near[3*BVH8::maxDepth+1];
-      NodeRef stack_node[3*BVH8::maxDepth+1];
+      float16 stack_near[stackSizeChunk];
+      NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
-      NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float16*    __restrict__ sptr_near = stack_near + 2;
-      
+      NodeRef* stackEnd = stack_node+stackSizeChunk;
+      NodeRef*  __restrict__ sptr_node = stack_node + 2;
+      float16*  __restrict__ sptr_near = stack_near + 2;
+
       while (1)
       {
         /* pop next node from stack */
@@ -214,8 +216,20 @@ namespace embree
         
         /* cull node if behind closest hit point */
         float16 curDist = *sptr_near;
-        if (unlikely(none(ray_tfar > curDist))) 
+        const bool16 active = curDist < ray_tfar;
+        if (unlikely(none(active)))
           continue;
+
+        
+        /* switch to single ray traversal */
+        size_t bits = movemask(active);
+        if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
+          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+            intersect1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
+          }
+          ray_tfar = ray.tfar;
+          continue;
+        }
         
         while (1)
         {
@@ -302,7 +316,7 @@ namespace embree
 
 
     template<typename PrimitiveIntersector16>
-    __forceinline bool BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ)
+    __forceinline bool BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed

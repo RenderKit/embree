@@ -38,6 +38,9 @@ namespace embree
                         const float16& time = zero, const int16& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), mask(mask), time(time) {}
 
+    /*! returns the size of the ray */
+    static __forceinline size_t size() { return 16; }
+
     /*! Tests if we hit something. */
     __forceinline operator bool16() const { return geomID != int16(-1); }
 
