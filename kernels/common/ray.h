@@ -37,7 +37,7 @@ namespace embree
 
     /*! calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(lt_mask(abs(org),Vec3fa(inf)) & lt_mask(abs(dir),Vec3fa(inf))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
+      return all(le_mask(abs(org),Vec3fa(FLT_LARGE)) & le_mask(abs(dir),Vec3fa(FLT_LARGE))) && fabs(tnear) <= float(inf) && fabs(tfar) <= float(inf);
     }
 
   public:

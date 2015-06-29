@@ -43,9 +43,9 @@ namespace embree
 
     /*! calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool16 valid() const {
-      const bool16 vx = abs(org.x) < float16(inf) & abs(dir.x) < float16(inf);
-      const bool16 vy = abs(org.y) < float16(inf) & abs(dir.y) < float16(inf);
-      const bool16 vz = abs(org.z) < float16(inf) & abs(dir.z) < float16(inf);
+      const bool16 vx = abs(org.x) <= float16(FLT_LARGE) & abs(dir.x) <= float16(FLT_LARGE);
+      const bool16 vy = abs(org.y) <= float16(FLT_LARGE) & abs(dir.y) <= float16(FLT_LARGE);
+      const bool16 vz = abs(org.z) <= float16(FLT_LARGE) & abs(dir.z) <= float16(FLT_LARGE);
       const bool16 vn = abs(tnear) <= float16(inf);
       const bool16 vf = abs(tfar) <= float16(inf);
       return vx & vy & vz & vn & vf;
