@@ -499,6 +499,7 @@ namespace embree
     }
   }
 
+#if !defined(__MIC__)
   __forceinline void interpolate( SubdivMesh* mesh, SharedLazyTessellationCache::CacheEntry& entry, char* src, size_t stride, 
                                   unsigned primID, unsigned subPrim, float u, float v, Vec3fa& P, Vec3fa& dPdu, Vec3fa& dPdv)
   {
@@ -515,4 +516,5 @@ namespace embree
       P = (Vec3fa) P4; dPdu = (Vec3fa) dPdu4; dPdv = (Vec3fa) dPdv4;
     }
   }
+#endif
 }
