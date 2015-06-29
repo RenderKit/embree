@@ -785,6 +785,9 @@ namespace embree
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
 
+    //rtcore_coherent_intersect16(scene);
+    //exit(0);
+
     rtcore_coherent_intersect1(scene);
 #if !defined(__MIC__)
     rtcore_coherent_intersect4(scene);

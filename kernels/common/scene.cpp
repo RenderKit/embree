@@ -160,8 +160,20 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (hasISA(AVX))
 	  {
-            if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
-            else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) {
+#if defined (__TARGET_AVX512__)
+              accels.add(BVH8::BVH8Triangle8SpatialSplit(this)); 
+#else
+              accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+#endif
+            }
+            else {
+#if defined (__TARGET_AVX512__)
+              accels.add(BVH8::BVH8Triangle8ObjectSplit(this)); 
+#else
+              accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+#endif
+            }
           }
           else 
 #endif
