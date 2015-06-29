@@ -333,7 +333,7 @@ namespace embree
           assert(dscale == 1.0f); 
           return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
         }
-          case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+        case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general((typename Patch::SubdividedGeneralPatch*)This,u,v,P,dPdu,dPdv); 
         }
@@ -353,7 +353,7 @@ namespace embree
           assert(dscale == 1.0f); 
           return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,subPatch,u,v,P,dPdu,dPdv); 
         }
-          case Patch::SUBDIVIDED_GENERAL_PATCH: { 
+        case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general((typename Patch::SubdividedGeneralPatch*)This,subPatch,u,v,P,dPdu,dPdv); 
         }
@@ -457,11 +457,40 @@ namespace embree
       const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
       tessellator(uv,neighborSubdiv,levels,0);
     }
+    else if (N == 3)
+    {
+      const Vec2f uv_0(0.0f,0.0f);
+      const Vec2f uv01(0.5f,0.0f);
+      const Vec2f uv_1(1.0f,0.0f);
+      const Vec2f uv12(0.5f,0.5f);
+      const Vec2f uv_2(0.0f,1.0f);
+      const Vec2f uv20(0.0f,0.5f);
+      const Vec2f uvcc(1.0f/3.0f);
+      const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
+      const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
+      const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
+      const int neighborSubdiv0[4] = { false,neighborSubdiv[1],neighborSubdiv[2],false };  // ????????????????
+      const int neighborSubdiv1[4] = { false,neighborSubdiv[2],neighborSubdiv[0],false };
+      const int neighborSubdiv2[4] = { false,neighborSubdiv[0],neighborSubdiv[1],false };
+      const float levels0[4] = { 0.5f*levels[0], 0.5f*levels[0], 0.5f*levels[1], 0.5f*levels[1] };
+      const float levels1[4] = { 0.5f*levels[1], 0.5f*levels[1], 0.5f*levels[2], 0.5f*levels[2] };
+      const float levels2[4] = { 0.5f*levels[2], 0.5f*levels[2], 0.5f*levels[0], 0.5f*levels[0] };
+      tessellator(uv0, neighborSubdiv0, levels0, 0);
+      tessellator(uv1, neighborSubdiv1, levels1, 1);
+      tessellator(uv2, neighborSubdiv2, levels2, 2);
+    }
     else
     {
       for (size_t i=0; i<N; i++) 
       {
-        const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+        assert(i<SubdivMesh::MAX_VALENCE);
+        static_assert(SubdivMesh::MAX_VALENCE <= 16, "MAX_VALENCE > 16");
+        const int h = (i >> 2) & 3, l = i & 3;
+        const Vec2f uv[4] = { (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.0f)),
+                              (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),
+                              (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
+                              (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
+        //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
         //const int neighborSubdiv1[4] = { false,neighborSubdiv[(i+1)%N],neighborSubdiv[(i-1)%N],false }; ????????????
         const int neighborSubdiv1[4] = { max(0,neighborSubdiv[(i+0)%N]-1), 0, 0, max(0,neighborSubdiv[(i-1)%N]-1) }; 
         const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i+1)%N], 0.5f*levels[(i+1)%N] };
