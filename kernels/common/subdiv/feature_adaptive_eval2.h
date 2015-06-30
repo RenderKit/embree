@@ -56,70 +56,25 @@ namespace embree
       size_t N;
       array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
       patch.subdivide(patches,N);
-      assert(subPatch < N);
-      eval(patches[subPatch], srange, erange, 0);
-    }
 
-    void dice(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange)
-    {
-      int lx0 = ceilf (erange.lower.x);
-      int lx1 = floorf(erange.upper.x); if (lx1 == x1) lx1++;
-      int ly0 = ceilf (erange.lower.y);
-      int ly1 = floorf(erange.upper.y); if (ly1 == y1) ly1++;
-      if (lx0 >= lx1 || ly0 >= ly1) return;
-
-      const float scale_x = rcp(srange.upper.x-srange.lower.x);
-      const float scale_y = rcp(srange.upper.y-srange.lower.y);
-
-      if (patch.isGregory1())
+      if (N == 4)
       {
-	//BSplinePatch3fa patcheval; patcheval.init(patch);
-	GregoryPatch patcheval; patcheval.init(patch);
-
-        //gridUVTessellator(patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    const float fx = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x;
-	    const float fy = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y;
-
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
-
-	    P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
-	  }
-	}
+        const Vec2f c = srange.center();
+        const BBox2f srange0(srange.lower,c);
+        const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
+        const BBox2f srange2(c,srange.upper);
+        const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
+        
+        GeneralCatmullClarkPatch3fa::fix_quad_ring_order(patches);
+        eval(patches[0],srange0,intersect(srange0,erange),depth+1);
+        eval(patches[1],srange1,intersect(srange1,erange),depth+1);
+        eval(patches[2],srange2,intersect(srange2,erange),depth+1);
+        eval(patches[3],srange3,intersect(srange3,erange),depth+1);
       }
-      else 
+      else
       {
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    
-	    const float sx1 = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x, sx0 = 1.0f-sx1;
-	    const float sy1 = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y, sy0 = 1.0f-sy1;
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
-
-	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
-	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
-	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
-	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    P [(iy-y0)*dwidth+(ix-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-
-	    const Vec3fa Ng0 = patch.ring[0].getNormal();
-	    const Vec3fa Ng1 = patch.ring[1].getNormal();
-	    const Vec3fa Ng2 = patch.ring[2].getNormal();
-	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2));
-	  }
-	}
+        assert(subPatch < N);
+        eval(patches[subPatch], srange, erange, 1);
       }
     }
 
@@ -127,24 +82,106 @@ namespace embree
     {
       if (erange.empty())
 	return;
+
+      int lx0 = ceilf (erange.lower.x);
+      int lx1 = floorf(erange.upper.x); if (lx1 == x1) lx1++;
+      int ly0 = ceilf (erange.lower.y);
+      int ly1 = floorf(erange.upper.y); if (ly1 == y1) ly1++;
+      if (lx0 >= lx1 || ly0 >= ly1) return;
       
-      //if (patch.isRegularOrFinal(depth))
-      if (patch.isGregoryOrFinal(depth))
-	return dice(patch,srange,erange);
+      if (unlikely(patch.isRegular2()))
+      {
+        const float scale_x = rcp(srange.upper.x-srange.lower.x);
+        const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
-      array_t<CatmullClarkPatch3fa,4> patches; 
-      patch.subdivide(patches);
+        //assert(depth > 0);
+        RegularPatch rpatch(patch);
+        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
+            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = rpatch.eval(u,v);
+            const vint ofs = (iy-y0)*dwidth+(ix-x0);
+            vfloat::store(valid,Px,ofs,p.x);
+            vfloat::store(valid,Py,ofs,p.y);
+            vfloat::store(valid,Pz,ofs,p.z);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
+          });
+        return;
+      }
+#if PATCH_USE_GREGORY == 2
+      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
+      {
+        const float scale_x = rcp(srange.upper.x-srange.lower.x);
+        const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
-      const Vec2f c = srange.center();
-      const BBox2f srange0(srange.lower,c);
-      const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
-      const BBox2f srange2(c,srange.upper);
-      const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
+        //assert(depth > 0);
+        GregoryPatch gpatch(patch);
+        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
+            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = gpatch.eval(u,v);
+            const vint ofs = (iy-y0)*dwidth+(ix-x0);
+            vfloat::store(valid,Px,ofs,p.x);
+            vfloat::store(valid,Py,ofs,p.y);
+            vfloat::store(valid,Pz,ofs,p.z);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
+          });
+        return;
+      }
+#else
+      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+      {
+        const float scale_x = rcp(srange.upper.x-srange.lower.x);
+        const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
-      eval(patches[0],srange0,intersect(srange0,erange),depth+1);
-      eval(patches[1],srange1,intersect(srange1,erange),depth+1);
-      eval(patches[2],srange2,intersect(srange2,erange),depth+1);
-      eval(patches[3],srange3,intersect(srange3,erange),depth+1);
+#if PATCH_USE_GREGORY == 1
+        GregoryPatch gpatch(patch);
+        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
+            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = gpatch.eval(u,v);
+            const vint ofs = (iy-y0)*dwidth+(ix-x0);
+            vfloat::store(valid,Px,ofs,p.x);
+            vfloat::store(valid,Py,ofs,p.y);
+            vfloat::store(valid,Pz,ofs,p.z);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
+          });
+#else
+        BilinearPatch bpatch(patch);
+        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
+            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = bpatch.eval(u,v);
+            const vint ofs = (iy-y0)*dwidth+(ix-x0);
+            vfloat::store(valid,Px,ofs,p.x);
+            vfloat::store(valid,Py,ofs,p.y);
+            vfloat::store(valid,Pz,ofs,p.z);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
+          });
+#endif
+        return;
+      }
+#endif
+      else
+      {
+        array_t<CatmullClarkPatch3fa,4> patches; 
+        patch.subdivide(patches);
+        
+        const Vec2f c = srange.center();
+        const BBox2f srange0(srange.lower,c);
+        const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
+        const BBox2f srange2(c,srange.upper);
+        const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
+        
+        eval(patches[0],srange0,intersect(srange0,erange),depth+1);
+        eval(patches[1],srange1,intersect(srange1,erange),depth+1);
+        eval(patches[2],srange2,intersect(srange2,erange),depth+1);
+        eval(patches[3],srange3,intersect(srange3,erange),depth+1);
+      }
     }
   };
 

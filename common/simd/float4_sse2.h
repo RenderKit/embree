@@ -138,8 +138,21 @@ namespace embree
       *(float4*)ptr = select(mask,f,*(float4*)ptr);
 #endif
     }
-   
 
+    static __forceinline void store ( const bool4& mask, void* ptr, const int4& ofs, const float4& v, const int scale = 1 )
+    {
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+    }
+    static __forceinline void store ( const bool4& mask, char* ptr, const int4& ofs, const float4& v ) {
+      store(mask,ptr,ofs,v,1);
+    }
+    static __forceinline void store ( const bool4& mask, float* ptr, const int4& ofs, const float4& v ) {
+      store(mask,ptr,ofs,v,4);
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
