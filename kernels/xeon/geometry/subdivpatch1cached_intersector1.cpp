@@ -211,11 +211,9 @@ namespace embree
       SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
 
       /* allocate memory in cache and get current commit index */
-
       void *const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*patch.grid_subtree_size_64b_blocks);
 
       /* copy temporary data to tessellation cache */
-
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
       float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;

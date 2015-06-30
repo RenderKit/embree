@@ -25,6 +25,7 @@
 #include "../../common/subdiv/feature_adaptive_gregory.h"
 #include "../../common/subdiv/feature_adaptive_bspline.h"
 #include "../../common/subdiv/bezier_curve.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
 
 #include "../geometry/grid.h"
 #include "../geometry/subdivpatch1.h"
@@ -998,8 +999,11 @@ namespace embree
 	{
           if (!mesh->valid(f)) continue;
 
+          //while (true)
 	  if (unlikely(fastUpdateMode == false))
             {
+              //double t0 = getSeconds(); s.end = 0;
+
               feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
                                                    {
                                                      float edge_level[4] = {
@@ -1025,6 +1029,9 @@ namespace embree
                                                                                                      border,
                                                                                                      border_flags);
 
+                                                     SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh);
+                                                     SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(SharedLazyTessellationCache::threadState());	
+
 						     subdiv_patches[patchIndex].resetRootRef();
 						     
 						     //subdiv_patches[patchIndex].prim = patchIndex;
@@ -1047,6 +1054,7 @@ namespace embree
                                                      prims[patchIndex] = PrimRef(bounds,patchIndex);
                                                      s.add(bounds);
 						   });
+              //double t1 = getSeconds(); PRINT(1000.0f*(t1-t0));
             }
 	  else
             {
