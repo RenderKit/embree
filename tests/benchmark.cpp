@@ -786,6 +786,7 @@ namespace embree
     rtcCommit (scene);
 
     //rtcore_coherent_intersect16(scene);
+    //rtcore_incoherent_intersect16(scene);
     //exit(0);
 
     rtcore_coherent_intersect1(scene);

@@ -41,9 +41,10 @@ namespace embree
 
   // FIXME: implement large pages under Windows
   
-  void* os_malloc(size_t bytes) 
+  void* os_malloc(size_t bytes, const int additional_flags) 
   {
-    char* ptr = (char*) VirtualAlloc(nullptr,bytes,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);
+    int flags = MEM_COMMIT|MEM_RESERVE|additional_flags;
+    char* ptr = (char*) VirtualAlloc(nullptr,bytes,flags,PAGE_READWRITE);
     if (ptr == nullptr) throw std::bad_alloc();
     return ptr;
   }
@@ -112,9 +113,9 @@ namespace embree
     free((void*)ptr);
   }
 
-  void* os_malloc(size_t bytes)
+  void* os_malloc(size_t bytes, const int additional_flags)
   {
-    int flags = MAP_PRIVATE | MAP_ANON;
+    int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
 #if USE_HUGE_PAGES
     if (bytes > 16*4096) {
       flags |= MAP_HUGETLB;
