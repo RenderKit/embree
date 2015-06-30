@@ -563,6 +563,12 @@ namespace embree
     }
     
     DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA true> > >);
+
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA false> > >);
+
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA true> > >);
+
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
+
   }
 }  

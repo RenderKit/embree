@@ -705,6 +705,7 @@ namespace embree
         }
         __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
         rtcIntersect16(valid16,scene,ray16);
+        exit(0);
       }
     }
     double t1 = getSeconds();
@@ -784,7 +785,7 @@ namespace embree
     RTCScene scene = rtcNewScene(flags,aflags);
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
-
+    
     //rtcore_coherent_intersect16(scene);
     //rtcore_incoherent_intersect16(scene);
     //exit(0);
