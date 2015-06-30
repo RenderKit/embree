@@ -58,4 +58,31 @@ namespace embree
       closure(valid2,i);
     }
   }
+
+  template<typename vbool, typename vint, typename vfloat, typename Closure>
+    __forceinline void foreach2(int x0, int x1, int y0, int y1, const Closure& closure) 
+  {
+    __aligned(64) int U[128];
+    __aligned(64) int V[128];
+    int index = 0;
+    for (int y=y0; y<y1; y++) {
+      const bool lasty = y+1>=y1;
+      const vint vy = y;
+      for (int x=x0; x<x1; ) { //x+=vfloat::size) {
+        const bool lastx = x+vfloat::size >= x1;
+        vint vx = x+vint(step);
+        vint::storeu(&U[index],vx);
+        vint::storeu(&V[index],vy);
+        const int dx = min(x1-x,vfloat::size);
+        index += dx;
+        x += dx;
+        if (index >= vfloat::size || (lastx && lasty)) {
+          const vbool valid = vint(step) < vint(index);
+          closure(valid,vint::load(U),vint::load(V));
+          x-= max(0,index-vfloat::size);
+          index = 0;
+        }
+      }
+    }
+  }
 }
