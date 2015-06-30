@@ -79,7 +79,7 @@ namespace embree
     };
 
   /*! allocates pages directly from OS */
-  void* os_malloc (size_t bytes);
+  void* os_malloc (size_t bytes, const int additional_flags = 0);
   void* os_reserve(size_t bytes);
   void  os_commit (void* ptr, size_t bytes);
   void  os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
