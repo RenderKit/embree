@@ -311,7 +311,7 @@ namespace embree
       break;
     }
 #endif
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -352,7 +352,7 @@ namespace embree
       break;
     }
 #endif
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     case 16: {
       RTCRay16 ray16;
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
@@ -1353,7 +1353,7 @@ namespace embree
         }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
         RTCRay16 ray16; 
         setRay(ray16,0,ray0);
         setRay(ray16,1,ray1);
@@ -1465,7 +1465,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1583,7 +1583,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1760,7 +1760,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1834,7 +1834,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1922,7 +1922,7 @@ namespace embree
       }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
       __aligned(64) RTCRay16 ray16; 
       memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
@@ -2406,7 +2406,7 @@ namespace embree
       ray = backfacing;  rtcIntersectN(scene,ray,8); if (ray.geomID != -1) passed = false;
     }
 #endif
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
     ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
     ray = backfacing;  rtcOccludedN(scene,ray,16); if (ray.geomID != -1) passed = false;
@@ -2511,7 +2511,7 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     RTCRay16 ray16;
     for (size_t j=0; j<16; j++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -3470,7 +3470,7 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     rtcore_watertight_closed16("sphere",pos);
     rtcore_watertight_closed16("cube",pos);
     rtcore_watertight_plane16(100000);
@@ -3493,7 +3493,7 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
     rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
     rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
 #endif
