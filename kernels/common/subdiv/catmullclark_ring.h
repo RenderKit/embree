@@ -884,6 +884,7 @@ namespace embree
       return cc_vtx.getLimitVertex();
     }
 
+    //__forceinline CatmullClark1Ring& operator=(const CatmullClark1Ring& other); // FIXME: implement
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {

@@ -118,6 +118,24 @@ namespace embree
       _mm256_stream_ps(ptr,v);
     }
 
+    static __forceinline void store ( const bool8& mask, void* ptr, const int8& ofs, const float8& v, const int scale = 1 )
+    {
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      if (likely(mask[4])) *(float*)(((char*)ptr)+scale*ofs[4]) = v[4];
+      if (likely(mask[5])) *(float*)(((char*)ptr)+scale*ofs[5]) = v[5];
+      if (likely(mask[6])) *(float*)(((char*)ptr)+scale*ofs[6]) = v[6];
+      if (likely(mask[7])) *(float*)(((char*)ptr)+scale*ofs[7]) = v[7];
+    }
+    static __forceinline void store ( const bool8& mask, char* ptr, const int8& ofs, const float8& v ) {
+      store(mask,ptr,ofs,v,1);
+    }
+    static __forceinline void store ( const bool8& mask, float* ptr, const int8& ofs, const float8& v ) {
+      store(mask,ptr,ofs,v,4);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////

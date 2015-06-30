@@ -95,5 +95,4 @@ namespace embree
   typedef Vec3<float16> Vec3f16;
   typedef Vec4<float16> Vec4f16;
 #endif
-
 }

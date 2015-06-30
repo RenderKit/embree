@@ -43,9 +43,23 @@
 #define AVX_ZERO_UPPER()
 #endif
 
-/* foreach unique */
 namespace embree
 {
+#if defined (__AVX512__) || defined (__MIC__)
+  typedef bool16 vbool;
+  typedef int16 vint;
+  typedef float16 vfloat;
+#elif defined(__AVX__)
+  typedef bool8 vbool;
+  typedef int8 vint;
+  typedef float8 vfloat;
+#else
+  typedef bool4 vbool;
+  typedef int4 vint;
+  typedef float4 vfloat;
+#endif
+
+  /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
     __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure) 
   {
@@ -59,7 +73,7 @@ namespace embree
     }
   }
 
-  template<typename vbool, typename vint, typename vfloat, typename Closure>
+  template<typename Closure>
     __forceinline void foreach2(int x0, int x1, int y0, int y1, const Closure& closure) 
   {
     __aligned(64) int U[128];
