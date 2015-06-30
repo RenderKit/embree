@@ -258,7 +258,6 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH8Triangle8Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH8Triangle8Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Triangle8Intersector16HybridMoellerNoFilter;
-
     return intersectors;
   }
 

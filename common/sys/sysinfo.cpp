@@ -154,9 +154,10 @@ namespace embree
   static const int CPU_FEATURE_BIT_LZCNT = 1 << 5;
 
   /* cpuid[eax=7,ecx=0].ebx */
-  static const int CPU_FEATURE_BIT_BMI1  = 1 << 3;
-  static const int CPU_FEATURE_BIT_AVX2  = 1 << 5;
-  static const int CPU_FEATURE_BIT_BMI2  = 1 << 8;
+  static const int CPU_FEATURE_BIT_BMI1    = 1 << 3;
+  static const int CPU_FEATURE_BIT_AVX2    = 1 << 5;
+  static const int CPU_FEATURE_BIT_BMI2    = 1 << 8;
+  static const int CPU_FEATURE_BIT_AVX512  = 1 << 16;
 
   __noinline bool check_xcr0_ymm() 
   {
@@ -236,6 +237,8 @@ namespace embree
     if (info7[1] & CPU_FEATURE_BIT_BMI1) cpu_features |= CPU_FEATURE_BMI1;
     if (info7[1] & CPU_FEATURE_BIT_BMI2) cpu_features |= CPU_FEATURE_BMI2;
 
+    if (has_ymm && info7[1] & CPU_FEATURE_BIT_AVX512) cpu_features |= CPU_FEATURE_AVX512;
+
 #if defined(__MIC__)
     cpu_features |= CPU_FEATURE_KNC;
 #endif
@@ -265,6 +268,8 @@ namespace embree
     if (features & CPU_FEATURE_BMI1  ) str += "BMI1 ";
     if (features & CPU_FEATURE_BMI2  ) str += "BMI2 ";
     if (features & CPU_FEATURE_KNC   ) str += "KNC ";
+    if (features & CPU_FEATURE_AVX512) str += "AVX512 ";
+
     return str;
   }
 
@@ -286,6 +291,7 @@ namespace embree
     if (isa == AVXI) return "AVXI";
     if (isa == AVX2) return "AVX2";
     if (isa == KNC) return "KNC";
+    if (isa == AVX512) return "AVX512";
     return "UNKNOWN";
   }
 }

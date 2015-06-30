@@ -705,7 +705,6 @@ namespace embree
         }
         __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
         rtcIntersect16(valid16,scene,ray16);
-        exit(0);
       }
     }
     double t1 = getSeconds();
