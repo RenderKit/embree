@@ -34,7 +34,13 @@
 namespace embree
 {
 #if !defined(__MIC__)
-  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8);
+  RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 
+                                                  | RTC_INTERSECT4 
+                                                  | RTC_INTERSECT8 
+#if defined(__TARGET_AVX512__)
+                                                  | RTC_INTERSECT16 
+#endif
+    );
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
 #endif
