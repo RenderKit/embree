@@ -677,8 +677,6 @@ namespace embree
 
   static void fix_quad_ring_order (array_t<CatmullClarkPatch,GeneralCatmullClarkPatchT::SIZE> patches)
   {
-    assert(patches.size() == 4);
-
     CatmullClark1Ring patches1ring3 = patches[1].ring[3];
     patches[1].ring[3] = patches[1].ring[0];
     patches[1].ring[0] = patches[1].ring[1];
