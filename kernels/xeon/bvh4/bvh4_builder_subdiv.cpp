@@ -642,7 +642,7 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
-    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh) // FIXME: remove
+    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
 
@@ -758,85 +758,6 @@ namespace embree
       return b;
     }
 
-    void debugGridBorders1(const SubdivPatch1Base &patch, // FIXME: remove
-                          const SubdivMesh* const geom)
-    {
-      assert( patch.grid_size_simd_blocks >= 1 );
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
-      __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8]; 
-        
-      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
-     
-#else
-      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-
-      float *grid_x = &grid_arrays[array_elements * 0];
-      float *grid_y = &grid_arrays[array_elements * 1];
-      float *grid_z = &grid_arrays[array_elements * 2];
-      float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];
-
-        
-#endif   
-
-      PRINT( patch.grid_size_simd_blocks );
-
-      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,geom);
-
-      PRINT(patch.grid_u_res);
-      PRINT(patch.grid_v_res);
-      
-      PRINT("top");
-      for (size_t x=0;x<patch.grid_u_res;x++)
-        {
-          const size_t offset = patch.gridOffset(0,x);
-          std::cout << x << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
-          std::cout << " / ";
-          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
-          std::cout << std::endl;
-        }
-
-      PRINT("right");
-      for (size_t y=0;y<patch.grid_v_res;y++)
-        {
-          const size_t offset = patch.gridOffset(y,patch.grid_u_res-1);
-          std::cout << y << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
-          std::cout << " / ";
-          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
-          std::cout << std::endl;
-        }
-
-      PRINT("buttom");
-      for (ssize_t x=patch.grid_u_res-1;x>=0;x--)
-        {
-          const size_t offset = patch.gridOffset(patch.grid_v_res-1,x);
-          std::cout << x << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
-          std::cout << " / ";
-          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
-          std::cout << std::endl;
-        }
-
-
-      PRINT("left");
-      for (ssize_t y=patch.grid_v_res-1;y>=0;y--)
-        {
-          const size_t offset = patch.gridOffset(y,0);
-          std::cout << y << " -> " << Vec2f(grid_u[offset],grid_v[offset]) << " ";
-          std::cout << " / ";
-          std::cout << Vec3f(grid_x[offset],grid_y[offset],grid_z[offset]) << " ";
-          std::cout << std::endl;
-        }
-
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif      
-    }
-
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
@@ -918,26 +839,19 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
 
-        bool fastUpdateMode = true;
-        size_t fastUpdateMode_numFaces = 0;
-
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        /* initialize all half edge structures */
+        /* if only edge levels have changed, we use fastUpdateMode */
+        bool fastUpdateMode = true;
+        size_t fastUpdateMode_numFaces = 0;
         Scene::Iterator<SubdivMesh> iter(scene);
         for (size_t i=0; i<iter.size(); i++)
           if (iter[i]) {
             fastUpdateMode_numFaces += iter[i]->size(); // FIXME: same as numPrimitives above?
             if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
           }
-        
-        this->bvh->scene = this->scene; // FIXME: remove
-        
-        /* deactivate fast update mode */
-        if (bvh->numPrimitives == 0 || 
-            bvh->numPrimitives != fastUpdateMode_numFaces ||
-            bvh->root          == BVH4::emptyNode)
+        if (bvh->numPrimitives == 0 || bvh->numPrimitives != fastUpdateMode_numFaces || bvh->root == BVH4::emptyNode)
           fastUpdateMode = false;
         
         /* initialize allocator and parallel_for_for_prefix_sum */
@@ -971,26 +885,22 @@ namespace embree
         
       /* Allocate memory for gregory and b-spline patches */
      if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
-        {
-         DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
-          if (this->bvh->data_mem) 
-            os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = nullptr;
-          this->bvh->size_data_mem = 0;
-        }
+     {
+       DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
+       if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+       this->bvh->data_mem      = nullptr;
+       this->bvh->size_data_mem = 0;
+     }
 
      if (bvh->data_mem == nullptr)
-       {
-         DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
-         this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-         //PRINT(this->bvh->size_data_mem);
-	 if ( this->bvh->size_data_mem != 0)
-	   this->bvh->data_mem      = os_malloc( this->bvh->size_data_mem );        
-	 else
-	   this->bvh->data_mem      = nullptr;
-       }
+     {
+       DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
+       this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+       if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
+       else                                this->bvh->data_mem = nullptr;
+     }
      assert(this->bvh->data_mem);
-      SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+     SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
       {
