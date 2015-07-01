@@ -857,7 +857,8 @@ namespace embree
         /* initialize allocator and parallel_for_for_prefix_sum */
         pstate.init(iter,size_t(1024));
         numPrimitives = fastUpdateMode_numFaces;
-        if (!fastUpdateMode) {
+        if (!fastUpdateMode) 
+        {
           PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
           { 
             size_t s = 0;
@@ -865,10 +866,8 @@ namespace embree
             {          
               if (!mesh->valid(f)) continue;
 	      feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-                                                   [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
-						     {
-						       s++;
-						     });
+                                                   [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], 
+                                                       const BezierCurve3fa *border, const int border_flags) { s++; });
             }
             return PrimInfo(s,empty,empty);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -902,70 +901,40 @@ namespace embree
      assert(this->bvh->data_mem);
      SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
 
-      PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-      {
-        PrimInfo s(empty);
-        for (size_t f=r.begin(); f!=r.end(); ++f) 
-	{
-          if (!mesh->valid(f)) continue;
-
-          //while (true)
-	  if (unlikely(fastUpdateMode == false))
-            {
-              //double t0 = getSeconds(); s.end = 0;
-
-              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
-                                                   {
-                                                     float edge_level[4] = {
-                                                       ipatch.ring[0].edge_level,
-                                                       ipatch.ring[1].edge_level,
-                                                       ipatch.ring[2].edge_level,
-                                                       ipatch.ring[3].edge_level
-                                                     };
-
-                                                     for (size_t i=0;i<4;i++)
-						     edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-              
-                                                     const unsigned int patchIndex = base.size()+s.size();
-                                                     assert(patchIndex < numPrimitives);
-                                                     subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch, 
-                                                                                                     depth,
-                                                                                                     mesh->id, 
-                                                                                                     f, 
-                                                                                                     mesh, 
-                                                                                                     uv, 
-                                                                                                     edge_level,
-                                                                                                     subdiv,
-                                                                                                     border,
-                                                                                                     border_flags);
-
-                                                     SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh);
-                                                     SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(SharedLazyTessellationCache::threadState());	
-
-						     subdiv_patches[patchIndex].resetRootRef();
-						     
-						     //subdiv_patches[patchIndex].prim = patchIndex;
-
-						     
-                                                     /* compute patch bounds */
-                                                     const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
-                                                     assert(bounds.lower.x <= bounds.upper.x);
-                                                     assert(bounds.lower.y <= bounds.upper.y);
-                                                     assert(bounds.lower.z <= bounds.upper.z);
-              
-						     assert( std::isfinite(bounds.lower.x) );
-						     assert( std::isfinite(bounds.lower.y) );
-						     assert( std::isfinite(bounds.lower.z) );
-						     
-						     assert( std::isfinite(bounds.upper.x) );
-						     assert( std::isfinite(bounds.upper.y) );
-						     assert( std::isfinite(bounds.upper.z) );
-
-                                                     prims[patchIndex] = PrimRef(bounds,patchIndex);
-                                                     s.add(bounds);
-						   });
-              //double t1 = getSeconds(); PRINT(1000.0f*(t1-t0));
-            }
+     PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+     {
+       PrimInfo s(empty);
+       for (size_t f=r.begin(); f!=r.end(); ++f) 
+       {
+         if (!mesh->valid(f)) continue;
+         
+         if (unlikely(fastUpdateMode == false))
+         {
+           feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], 
+                                                                                                   const BezierCurve3fa *border, const int border_flags)
+           {
+             float edge_level[4] = {
+               ipatch.ring[0].edge_level,
+               ipatch.ring[1].edge_level,
+               ipatch.ring[2].edge_level,
+               ipatch.ring[3].edge_level
+             };
+             
+             for (size_t i=0;i<4;i++)
+               edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+             
+             const unsigned int patchIndex = base.size()+s.size();
+             assert(patchIndex < numPrimitives);
+             subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
+             
+             subdiv_patches[patchIndex].resetRootRef();
+             
+             /* compute patch bounds */
+             const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+             prims[patchIndex] = PrimRef(bounds,patchIndex);
+             s.add(bounds);
+           });
+         }
 	  else
             {
 	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
