@@ -966,26 +966,6 @@ namespace embree
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
         
-#if 0
-        // to dump tessellated patches in obj format
-        {
-	  size_t numTotalTriangles = 0;
-          std::cout << "# OBJ FILE" << std::endl;
-          std::cout << "# " << numPrimitives << " base primitives" << std::endl;
-          SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-          size_t vertex_index = 0;
-          for (size_t i=0;i<numPrimitives;i++)
-            subdiv_patches[i].evalToOBJ(scene,vertex_index,numTotalTriangles);
-          std::cout << "# " << vertex_index << " vertices " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
-          
-          std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
-          std::cout << "# " << numTotalTriangles << " numTotalTriangles" << std::endl;
-          
-          //exit(0);
-        }
-        
-#endif
-        
         if (fastUpdateMode)
         {
           if (bvh->root != BVH4::emptyNode)
