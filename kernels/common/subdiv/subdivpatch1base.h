@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #define USE_RANGE_EVAL 0
 #else
-#define USE_RANGE_EVAL 0
+#define USE_RANGE_EVAL RTCORE_USE_RANGE_EVAL
 #endif
 
 #if USE_RANGE_EVAL

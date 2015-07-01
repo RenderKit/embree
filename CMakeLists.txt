@@ -92,6 +92,8 @@ OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
 OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal.")
 OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+OPTION(RTCORE_USE_RANGE_EVAL "FIXME: remove" OFF)
+
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
