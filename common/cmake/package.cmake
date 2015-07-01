@@ -91,6 +91,12 @@ ENDIF()
 ##############################################################
 # Install Embree CMake Configuration
 ##############################################################
+IF (ENABLE_INSTALLER)
+  SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION})
+ELSE()
+  SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION_MAJOR})
+ENDIF()
+
 IF (WIN32)
   CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
 ELSEIF (APPLE)

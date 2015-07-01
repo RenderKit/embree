@@ -15,6 +15,6 @@
 ## ======================================================================== ##
 
 SET(EMBREE_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/../../../include)
-SET(EMBREE_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/../../libembree.@EMBREE_VERSION@.dylib)
+SET(EMBREE_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/../../libembree.@EMBREE_CONFIG_VERSION@.dylib)
 
 MARK_AS_ADVANCED(embree_DIR)
