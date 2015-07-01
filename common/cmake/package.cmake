@@ -105,10 +105,8 @@ ENDIF()
 
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
-IF (ENABLE_INSTALLER)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-ENDIF()
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 
 ##############################################################
 # CPack specific stuff
