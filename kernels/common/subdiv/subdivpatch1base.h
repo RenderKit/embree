@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #define USE_RANGE_EVAL 0
 #else
-#define USE_RANGE_EVAL 0
+#define USE_RANGE_EVAL 1
 #endif
 
 #if USE_RANGE_EVAL
@@ -777,13 +777,18 @@ namespace embree
     const size_t SIMD_WIDTH = 8;
 #endif
     /* set last elements in u,v array to 1.0f */
+    const float last_u = grid_u[patch.grid_u_res*patch.grid_v_res-1];
+    const float last_v = grid_v[patch.grid_u_res*patch.grid_v_res-1];
+    const float last_x = grid_x[patch.grid_u_res*patch.grid_v_res-1];
+    const float last_y = grid_y[patch.grid_u_res*patch.grid_v_res-1];
+    const float last_z = grid_z[patch.grid_u_res*patch.grid_v_res-1];
     for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
       {
-	grid_u[i] = 1.0f;
-	grid_v[i] = 1.0f;
-        grid_x[i] = 0.0f;
-        grid_y[i] = 0.0f;
-        grid_z[i] = 0.0f;
+	grid_u[i] = last_u;
+	grid_v[i] = last_v;
+        grid_x[i] = last_x;
+        grid_y[i] = last_y;
+        grid_z[i] = last_z;
       }
   }
 

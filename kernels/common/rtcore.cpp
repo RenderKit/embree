@@ -437,7 +437,7 @@ namespace embree
     Stat::clear();
 #endif
 
-#if defined(DEBUG) && 0
+#if defined(DEBUG) && 1
     extern void printTessCacheStats();
     printTessCacheStats();
 #endif

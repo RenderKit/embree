@@ -34,6 +34,32 @@
 
 namespace embree
 {
+////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////
+
+
+ class SharedTessellationCacheStats
+ {
+ public:
+    /* stats */
+   static AtomicCounter cache_accesses;
+   static AtomicCounter cache_hits;
+   static AtomicCounter cache_misses;
+   static AtomicCounter cache_flushes;                
+   static AtomicCounter *cache_patch_builds;                
+   static size_t        cache_num_patches;
+   static float **      cache_new_delete_ptr;  
+   __aligned(64) static AtomicMutex mtx;
+
+    /* print stats for debugging */                 
+    static void printStats();
+    static void clearStats();
+    static void incPatchBuild(const size_t ID, const size_t numPatches);
+    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
+
+ };
+
   void resizeTessellationCache(const size_t new_size);
   void clearTessellationCache();
 
@@ -187,6 +213,7 @@ namespace embree
      static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
        
      const int64_t subdiv_patch_root_ref = tag->data; 
+     CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
      if (likely(subdiv_patch_root_ref)) 
      {
@@ -241,6 +268,7 @@ namespace embree
        
      const int64_t subdiv_patch_root_ref = tag->data; 
      
+     CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      if (likely(subdiv_patch_root_ref)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
@@ -365,32 +393,6 @@ namespace embree
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
     
- };
-
- ////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
-
-
- class SharedTessellationCacheStats
- {
- public:
-    /* stats */
-   static AtomicCounter cache_accesses;
-   static AtomicCounter cache_hits;
-   static AtomicCounter cache_misses;
-   static AtomicCounter cache_flushes;                
-   static AtomicCounter *cache_patch_builds;                
-   static size_t        cache_num_patches;
-   static float **      cache_new_delete_ptr;  
-   __aligned(64) static AtomicMutex mtx;
-
-    /* print stats for debugging */                 
-    static void printStats();
-    static void clearStats();
-    static void incPatchBuild(const size_t ID, const size_t numPatches);
-    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
-
  };
 
   // =========================================================================================================
