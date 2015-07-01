@@ -447,7 +447,7 @@ namespace embree
     float levels[GeneralCatmullClarkPatch3fa::SIZE];
     for (size_t i=0; i<N; i++) {
       assert(i<GeneralCatmullClarkPatch3fa::SIZE);
-      neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->patch_type == SubdivMesh::COMPLEX_PATCH : 0; 
+      neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->numEdges() != 4 : 0; 
       levels[i] = h->edge_level;
       h = h->next();
     }
@@ -469,9 +469,9 @@ namespace embree
       const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
       const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
       const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
-      const int neighborSubdiv0[4] = { false,neighborSubdiv[1],neighborSubdiv[2],false };  // ????????????????
-      const int neighborSubdiv1[4] = { false,neighborSubdiv[2],neighborSubdiv[0],false };
-      const int neighborSubdiv2[4] = { false,neighborSubdiv[0],neighborSubdiv[1],false };
+      const int neighborSubdiv0[4] = { 0,0,0,0 };
+      const int neighborSubdiv1[4] = { 0,0,0,0 };
+      const int neighborSubdiv2[4] = { 0,0,0,0 };
       const float levels0[4] = { 0.5f*levels[0], 0.5f*levels[0], 0.5f*levels[1], 0.5f*levels[1] };
       const float levels1[4] = { 0.5f*levels[1], 0.5f*levels[1], 0.5f*levels[2], 0.5f*levels[2] };
       const float levels2[4] = { 0.5f*levels[2], 0.5f*levels[2], 0.5f*levels[0], 0.5f*levels[0] };
@@ -490,9 +490,7 @@ namespace embree
                               (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),
                               (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
                               (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
-        //const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
-        //const int neighborSubdiv1[4] = { false,neighborSubdiv[(i+1)%N],neighborSubdiv[(i-1)%N],false }; ????????????
-        const int neighborSubdiv1[4] = { max(0,neighborSubdiv[(i+0)%N]-1), 0, 0, max(0,neighborSubdiv[(i-1)%N]-1) }; 
+        const int neighborSubdiv1[4] = { 0,0,0,0 }; 
         const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i+1)%N], 0.5f*levels[(i+1)%N] };
         tessellator(uv,neighborSubdiv1,levels1,i);
       }
