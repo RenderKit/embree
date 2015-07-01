@@ -24,7 +24,6 @@
 #include "gregory_triangle_patch.h"
 #include "tessellation.h"
 #include "tessellation_cache.h"
-//#include "feature_adaptive_eval2.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
@@ -34,6 +33,10 @@
 #define USE_RANGE_EVAL 0
 #else
 #define USE_RANGE_EVAL 0
+#endif
+
+#if USE_RANGE_EVAL
+#include "feature_adaptive_eval2.h"
 #endif
 
 namespace embree
@@ -492,16 +495,13 @@ namespace embree
     __forceinline SubdivPatch1Base () {}
 
 #if USE_RANGE_EVAL
-    SubdivPatch1Base (const int fas_depth,
-                      const unsigned int gID,
+    SubdivPatch1Base (const unsigned int gID,
                       const unsigned int pID,
                       const unsigned int subPatch,
                       const SubdivMesh *const mesh,
                       const Vec2f uv[4],
                       const float edge_level[4],
-                      const int subdiv[4],
-                      const BezierCurve3fa *border, 
-                      const int border_flags);
+                      const int subdiv[4]);
 #else
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
@@ -521,6 +521,7 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
+#if !USE_RANGE_EVAL
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(isBezierPatch()))
@@ -599,7 +600,7 @@ namespace embree
         return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
     }
 #endif
-
+#endif
 
     __forceinline bool isBSplinePatch() const
     {
@@ -766,7 +767,7 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
-    feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->vertices[0],
+    feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
                             0,patch.grid_u_res,0,patch.grid_v_res,patch.grid_u_res,patch.grid_v_res,
                             grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
   }

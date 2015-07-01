@@ -758,6 +758,152 @@ namespace embree
       return b;
     }
 
+#if USE_RANGE_EVAL
+
+    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
+    {
+      ALIGNED_STRUCT;
+
+      BVH4* bvh;
+      Scene* scene;
+      mvector<PrimRef> prims; 
+      ParallelForForPrefixSumState<PrimInfo> pstate;
+      
+      BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+
+      void build(size_t, size_t) 
+      {
+        /* initialize all half edge structures */
+        size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
+        if (numPrimitives > 0 || scene->isInterpolatable()) {
+          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
+          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
+            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        }
+
+        /* skip build for empty scene */
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+        bvh->alloc.reset();
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
+
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
+        /* initialize allocator and parallel_for_for_prefix_sum */
+        Scene::Iterator<SubdivMesh> iter(scene);
+        pstate.init(iter,size_t(1024));
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        { 
+          size_t s = 0;
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {          
+            if (!mesh->valid(f)) continue;
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch) { s++; });
+          }
+          return PrimInfo(s,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
+        numPrimitives = pinfo.size();
+        
+        if (numPrimitives == 0) {
+          prims.resize(numPrimitives);
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
+        
+        prims.resize(numPrimitives);
+        
+        /* Allocate memory for gregory and b-spline patches */
+        if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
+        {
+          DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
+          if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+          this->bvh->data_mem      = nullptr;
+          this->bvh->size_data_mem = 0;
+        }
+        
+        if (bvh->data_mem == nullptr)
+        {
+          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
+          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+          if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
+          else                                this->bvh->data_mem = nullptr;
+        }
+        assert(this->bvh->data_mem);
+        SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+        
+        pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              float edge_levels[4];
+              for (size_t i=0;i<4;i++)
+                edge_levels[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+              
+              const unsigned int patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_levels,subdiv);
+              
+              /* compute patch bounds */
+              const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+              prims[patchIndex] = PrimRef(bounds,patchIndex);
+              s.add(bounds);
+            });
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+        
+        DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
+        DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
+        
+        if (numPrimitives)
+        {
+          DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
+          
+          BVH4::NodeRef root;
+          BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+            (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
+             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+              size_t items = current.pinfo.size();
+              assert(items == 1);
+              const unsigned int patchIndex = prims[current.prims.begin()].ID();
+              SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+              *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+              return 0;
+            },
+             progress,
+             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+          bvh->set(root,pinfo.geomBounds,pinfo.size());
+          DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
+          
+        }
+        else
+          bvh->set(BVH4::emptyNode,empty,0);	  
+        
+	/* clear temporary data for static geometry */
+	bool staticGeom = scene->isStatic();
+	if (staticGeom) prims.clear();
+        bvh->alloc.cleanup();
+        bvh->postBuild(t0);
+      }
+      
+      void clear() {
+        prims.clear();
+      }
+    };
+
+#else
+
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
@@ -1009,6 +1155,8 @@ namespace embree
         prims.clear();
       }
     };
+
+#endif
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivPatch1BuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1BuilderBinnedSAHClass((BVH4*)bvh,scene); }

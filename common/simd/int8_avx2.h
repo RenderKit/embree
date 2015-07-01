@@ -85,6 +85,10 @@ namespace embree
     static __forceinline void store( const bool8& mask, void *ptr, const int8& i ) { 
       _mm256_maskstore_epi32((int*)ptr,mask,i);
     }
+
+    static __forceinline void storeu(void* ptr, const int8& f ) { 
+      _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f));
+    }
     
 #if defined (__AVX2__)
     static __forceinline int8 load_nt(void* ptr) {

@@ -654,7 +654,18 @@ namespace embree
             
       return Vec3<T>(x,y,z);
     }
-    
+
+    template<typename M, class T>
+    __forceinline Vec3<T> eval(const T& uu, const T& vv) const 
+    {
+      Vec3<T> ff[2][2];
+      ff[0][0] = Vec3<T>(f[0][0]);
+      ff[0][1] = Vec3<T>(f[0][1]);
+      ff[1][1] = Vec3<T>(f[1][1]);
+      ff[1][0] = Vec3<T>(f[1][0]);
+      return eval_t<M>(v,ff,uu,vv);
+    }
+
     template<class M, class T>
       static __forceinline Vec3<T> normal_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {

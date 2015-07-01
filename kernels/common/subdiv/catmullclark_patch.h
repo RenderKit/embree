@@ -455,6 +455,7 @@ namespace embree
   {
   public:
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
     static const size_t SIZE = SubdivMesh::MAX_VALENCE;
     array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
     size_t N;
@@ -678,20 +679,20 @@ namespace embree
   {
     assert(patches.size() == 4);
 
-    GeneralCatmullClark1Ring patches1ring3 = patches[1].ring[3];
+    CatmullClark1Ring patches1ring3 = patches[1].ring[3];
     patches[1].ring[3] = patches[1].ring[0];
     patches[1].ring[0] = patches[1].ring[1];
     patches[1].ring[1] = patches[1].ring[2];
     patches[1].ring[2] = patches1ring3;
 
-    GeneralCatmullClark1Ring patches2ring2 = patches[2].ring[2];
+    CatmullClark1Ring patches2ring2 = patches[2].ring[2];
     patches[2].ring[2] = patches[2].ring[0];
     patches[2].ring[0] = patches2ring2;
-    GeneralCatmullClark1Ring patches2ring3 = patches[2].ring[3];
+    CatmullClark1Ring patches2ring3 = patches[2].ring[3];
     patches[2].ring[3] = patches[2].ring[1];
     patches[2].ring[1] = patches2ring3;
 
-    GeneralCatmullClark1Ring patches3ring1 = patches[3].ring[1];
+    CatmullClark1Ring patches3ring1 = patches[3].ring[1];
     patches[3].ring[1] = patches[3].ring[0];
     patches[3].ring[0] = patches[3].ring[3];
     patches[3].ring[3] = patches[3].ring[2];

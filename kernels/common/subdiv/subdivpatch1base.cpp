@@ -85,19 +85,16 @@ namespace embree
 
 #if USE_RANGE_EVAL
 
-  SubdivPatch1Base::SubdivPatch1Base (const int fas_depth,
-                                      const unsigned int gID,
+  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
                                       const unsigned int pID,
                                       const unsigned int subPatch,
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4],
-                                      const int subdiv[4],
-                                      const BezierCurve3fa *border, 
-                                      const int border_flags)
+                                      const int subdiv[4])
   : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0)
   {
-    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
     for (size_t i=0; i<4; i++) {

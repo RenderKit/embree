@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "patch.h"
 #include "catmullclark_patch.h"
 #include "bspline_patch.h"
 #include "gregory_patch.h"
@@ -35,6 +36,10 @@ namespace embree
     float* const V;
     const size_t dwidth,dheight;
     
+    typedef BSplinePatch3fa BSplinePatch;
+    typedef BezierPatch3fa BezierPatch;
+    typedef GregoryPatch3fa GregoryPatch;
+    
     __forceinline FeatureAdaptiveEval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
                                         const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                         float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
@@ -48,7 +53,7 @@ namespace embree
       if (likely(patch.isQuadPatch())) 
       {
         CatmullClarkPatch3fa qpatch; patch.init(qpatch);
-        eval(patch, srange, erange, 0);
+        eval(qpatch, srange, erange, 0);
         return;
       }
 
@@ -66,10 +71,10 @@ namespace embree
         const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
         
         GeneralCatmullClarkPatch3fa::fix_quad_ring_order(patches);
-        eval(patches[0],srange0,intersect(srange0,erange),depth+1);
-        eval(patches[1],srange1,intersect(srange1,erange),depth+1);
-        eval(patches[2],srange2,intersect(srange2,erange),depth+1);
-        eval(patches[3],srange3,intersect(srange3,erange),depth+1);
+        eval(patches[0],srange0,intersect(srange0,erange),1);
+        eval(patches[1],srange1,intersect(srange1,erange),1);
+        eval(patches[2],srange2,intersect(srange2,erange),1);
+        eval(patches[3],srange3,intersect(srange3,erange),1);
       }
       else
       {
@@ -97,8 +102,8 @@ namespace embree
         //assert(depth > 0);
         RegularPatch rpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
-            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
             const Vec3<vfloat> p = rpatch.eval(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
@@ -118,8 +123,8 @@ namespace embree
         //assert(depth > 0);
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
-            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
             const Vec3<vfloat> p = gpatch.eval(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
@@ -139,9 +144,9 @@ namespace embree
 #if PATCH_USE_GREGORY == 1
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
-            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = gpatch.eval(u,v);
+            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
@@ -152,8 +157,8 @@ namespace embree
 #else
         BilinearPatch bpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const float u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(x)-srange.lower.x)*scale_x);
-            const float v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(y)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
             const Vec3<vfloat> p = bpatch.eval(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
@@ -191,7 +196,7 @@ namespace embree
   {
     GeneralCatmullClarkPatch3fa patch;
     patch.init(h,vertices);
-    FeatureAdaptiveEval2(patch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,dwidth,dheight);
+    FeatureAdaptiveEval2(patch,subPatch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,dwidth,dheight);
   }
 }
 
