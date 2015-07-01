@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #define USE_RANGE_EVAL 0
 #else
-#define USE_RANGE_EVAL 1
+#define USE_RANGE_EVAL 0
 #endif
 
 #if USE_RANGE_EVAL
