@@ -770,6 +770,21 @@ namespace embree
     feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
                             0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
                             grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
+
+#if defined(__MIC__)
+    const size_t SIMD_WIDTH = 16;
+#else
+    const size_t SIMD_WIDTH = 8;
+#endif
+    /* set last elements in u,v array to 1.0f */
+    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
+      {
+	grid_u[i] = 1.0f;
+	grid_v[i] = 1.0f;
+        grid_x[i] = 0.0f;
+        grid_y[i] = 0.0f;
+        grid_z[i] = 0.0f;
+      }
   }
 
 #else
@@ -784,16 +799,12 @@ namespace embree
                                      const SubdivMesh* const geom)
   {
     /* grid_u, grid_v need to be padded as we write with SIMD granularity */
-    gridUVTessellator(patch.level,
-                      patch.grid_u_res,
-                      patch.grid_v_res,
-                      grid_u,
-                      grid_v);
+    gridUVTessellator(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
 
 #if defined(__MIC__)
     const size_t SIMD_WIDTH = 16;
 #else
-    const size_t SIMD_WIDTH = 8;
+    const size_t SIMD_WIDTH = 8; // FIXME: why always 8???
 #endif
 
     /* set last elements in u,v array to 1.0f */

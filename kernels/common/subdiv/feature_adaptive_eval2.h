@@ -29,6 +29,7 @@ namespace embree
     const size_t x0,x1;
     const size_t y0,y1;
     const size_t swidth,sheight;
+    const float rcp_swidth, rcp_sheight;
     float* const Px;
     float* const Py;
     float* const Pz;
@@ -43,7 +44,7 @@ namespace embree
     __forceinline FeatureAdaptiveEval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
                                         const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                         float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
-      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), Px(Px), Py(Py), Pz(Pz), U(U), V(V), dwidth(dwidth), dheight(dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), Px(Px), Py(Py), Pz(Pz), U(U), V(V), dwidth(dwidth), dheight(dheight)
     {
       assert(swidth < (2<<20) && sheight < (2<<20));
       const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
@@ -116,8 +117,8 @@ namespace embree
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
+            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
+            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
           });
         return;
       }
@@ -144,8 +145,8 @@ namespace embree
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
+            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
+            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
           });
         return;
       }
@@ -172,8 +173,8 @@ namespace embree
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
+            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
+            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
           });
 #else
         BilinearPatch bpatch(patch);
@@ -185,8 +186,8 @@ namespace embree
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
+            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
+            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
           });
 #endif
         return;
