@@ -185,9 +185,9 @@ namespace embree
     }
   };
 
-  __forceinline void feature_adaptive_eval (const SubdivMesh::HalfEdge* h, size_t subPatch, const BufferT<Vec3fa>& vertices,
-					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-					    float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
+  __forceinline void feature_adaptive_eval2 (const SubdivMesh::HalfEdge* h, size_t subPatch, const BufferT<Vec3fa>& vertices,
+                                             const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                                             float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
   {
     GeneralCatmullClarkPatch3fa patch;
     patch.init(h,vertices);

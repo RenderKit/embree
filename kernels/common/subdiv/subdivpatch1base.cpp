@@ -82,7 +82,34 @@ namespace embree
     dest[2][2] = computeCornerBezierControlPoint(source,2,2,-1,-1);
     dest[2][1] = computeCornerBezierControlPoint(source,2,1,-1, 1);        
   }
-  
+
+#if USE_RANGE_EVAL
+
+  SubdivPatch1Base::SubdivPatch1Base (const int fas_depth,
+                                      const unsigned int gID,
+                                      const unsigned int pID,
+                                      const unsigned int subPatch,
+                                      const SubdivMesh *const mesh,
+                                      const Vec2f uv[4],
+                                      const float edge_level[4],
+                                      const int subdiv[4],
+                                      const BezierCurve3fa *border, 
+                                      const int border_flags)
+  : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0)
+  {
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    mtx.reset();
+
+    for (size_t i=0; i<4; i++) {
+      u[i] = (unsigned short)(uv[i].x * 65535.0f);
+      v[i] = (unsigned short)(uv[i].y * 65535.0f);
+    }
+
+    updateEdgeLevels(edge_level,mesh);
+  }
+
+#else
+
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const int fas_depth,
@@ -132,6 +159,7 @@ namespace embree
     }
   }
   
+#endif
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
   {
@@ -205,104 +233,4 @@ namespace embree
       flags |= HAS_DISPLACEMENT;
 
   }
-
-
-
-  void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
-  {
-#if defined(__MIC__)
-    THROW_RUNTIME_ERROR("EVALTOOBJ NOT SUPPORTED ON MIC");
-#else
-
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-    __aligned(64) float grid_x[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_y[(grid_size_simd_blocks+1)*8];
-    __aligned(64) float grid_z[(grid_size_simd_blocks+1)*8]; 
-    
-    __aligned(64) float grid_u[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_v[(grid_size_simd_blocks+1)*8];
-
-    __aligned(64) float grid_nx[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_ny[(grid_size_simd_blocks+1)*8];
-    __aligned(64) float grid_nz[(grid_size_simd_blocks+1)*8]; 
- 
-#else
-      const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(8 * array_elements * sizeof(float) + 64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-
-      float *grid_x = &grid_arrays[array_elements * 0];
-      float *grid_y = &grid_arrays[array_elements * 1];
-      float *grid_z = &grid_arrays[array_elements * 2];
-      float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];
-
-      float *grid_nx = &grid_arrays[array_elements * 5];
-      float *grid_ny = &grid_arrays[array_elements * 6];
-      float *grid_nz = &grid_arrays[array_elements * 7];
-
-#endif
-      SubdivMesh *mesh = (SubdivMesh *)scene->getSubdivMesh(geom);
-  
-      evalGrid(*this,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
-
-#if defined(__AVX__)
-    for (size_t i=0;i<grid_size_simd_blocks;i++)
-      {
-        float8 uu = load8f(&grid_u[8*i]);
-        float8 vv = load8f(&grid_v[8*i]);
-        Vec3f8 normal = normalize(patch.normal(uu,vv));
-        *(float8*)&grid_nx[8*i] = normal.x;
-        *(float8*)&grid_ny[8*i] = normal.y;
-        *(float8*)&grid_nz[8*i] = normal.z;        
-      }
-#else
-    for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
-      {
-        float4 uu      = load4f(&grid_u[4*i]);
-        float4 vv      = load4f(&grid_v[4*i]);
-        Vec3f4 normal = normalize(patch.normal(uu,vv));
-        *(float4*)&grid_nx[4*i] = normal.x;
-        *(float4*)&grid_ny[4*i] = normal.y;
-        *(float4*)&grid_nz[4*i] = normal.z;        
-      }
-#endif
-      
-      std::cout << "# grid_u_res " << grid_u_res << std::endl;
-      std::cout << "# grid_v_res " << grid_v_res << std::endl;
-
-      /* vertex */
-      for (size_t v=0;v<grid_v_res;v++)
-        for (size_t u=0;u<grid_u_res;u++)
-          {
-            size_t offset = v * grid_u_res + u;
-            std::cout << "v " << grid_x[offset] << " " << grid_y[offset] << " " << grid_z[offset] << std::endl;
-          }
-
-      /* normal */
-      for (size_t v=0;v<grid_v_res;v++)
-        for (size_t u=0;u<grid_u_res;u++)
-          {
-            size_t offset = v * grid_u_res + u;
-            std::cout << "vn " << grid_nx[offset] << " " << grid_ny[offset] << " " << grid_nz[offset] << std::endl;
-          }
-
-      for (size_t v=0;v<grid_v_res-1;v++)
-        for (size_t u=0;u<grid_u_res-1;u++)
-          {
-            size_t offset0 = vertex_index + v * grid_u_res + u;
-            size_t offset1 = offset0 + grid_u_res;
-            //std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
-            std::cout << "f " << offset0+1 << "//" << offset0+1 << " " << offset0+2<< "//" << offset0+2 << " " << offset1+2<< "//" << offset1+2 << " " << offset1+1<< "//" << offset1+1 << std::endl;
-	    numTotalTriangles += 2;
-          }
-      vertex_index += grid_u_res*grid_v_res;
-      
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif      
-
-#endif
-  }
-
 }

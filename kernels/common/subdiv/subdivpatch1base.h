@@ -24,10 +24,17 @@
 #include "gregory_triangle_patch.h"
 #include "tessellation.h"
 #include "tessellation_cache.h"
+//#include "feature_adaptive_eval2.h"
 
 #define FORCE_TESSELLATION_BOUNDS 1
 #define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
 #define DISCRETIZED_UV 1
+
+#if defined(__MIC__)
+#define USE_RANGE_EVAL 0
+#else
+#define USE_RANGE_EVAL 0
+#endif
 
 namespace embree
 {
@@ -484,6 +491,18 @@ namespace embree
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
+#if USE_RANGE_EVAL
+    SubdivPatch1Base (const int fas_depth,
+                      const unsigned int gID,
+                      const unsigned int pID,
+                      const unsigned int subPatch,
+                      const SubdivMesh *const mesh,
+                      const Vec2f uv[4],
+                      const float edge_level[4],
+                      const int subdiv[4],
+                      const BezierCurve3fa *border, 
+                      const int border_flags);
+#else
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                       const int fas_depth,
@@ -495,6 +514,7 @@ namespace embree
                       const int subdiv[4],
                       const BezierCurve3fa *border, 
                       const int border_flags);
+#endif
 
     __forceinline bool needsStitching() const
     {
@@ -718,16 +738,40 @@ namespace embree
     RWMutex mtx;
     SharedLazyTessellationCache::Tag root_ref;
 
+#if USE_RANGE_EVAL
+    const SubdivMesh::HalfEdge* edge;
+    size_t subPatch;
+#else
     __aligned(64) BSplinePatch3fa patch;
+#endif
   };
 
   __forceinline std::ostream& operator<<(std::ostream& o, const SubdivPatch1Base& p)
   {
     o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
+#if !USE_RANGE_EVAL
     o << " patch " << p.patch;
-
+#endif
     return o;
   } 
+
+#if USE_RANGE_EVAL
+
+  /* eval grid over patch and stich edges when required */      
+  static __forceinline void evalGrid(const SubdivPatch1Base& patch,
+                                     float *__restrict__ const grid_x,
+                                     float *__restrict__ const grid_y,
+                                     float *__restrict__ const grid_z,
+                                     float *__restrict__ const grid_u,
+                                     float *__restrict__ const grid_v,
+                                     const SubdivMesh* const geom)
+  {
+    feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->vertices[0],
+                            0,patch.grid_u_res,0,patch.grid_v_res,patch.grid_u_res,patch.grid_v_res,
+                            grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
+  }
+
+#else
 
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base& patch,
@@ -892,6 +936,6 @@ namespace embree
 #endif
 #endif        
   }
-
+#endif
 
 }
