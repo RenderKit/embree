@@ -93,7 +93,11 @@ namespace embree
         while (mask) {
           size_t k = __bscf(mask);
           if (occluded(pre,ray,k,curve,scene))
+#if !defined(__AVX512__)
             valid_o[k] = -1;
+#else
+            valid_o |= 1 << k;
+#endif
         }
         return valid_o;
       }

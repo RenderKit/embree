@@ -78,7 +78,7 @@ namespace embree
             break;
           
           const bool16 valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+          STAT3(normal.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (BVH8::Node*)cur.node();
           
           /* pop of next node */
@@ -141,7 +141,7 @@ namespace embree
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
         const bool16 valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
+        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         PrimitiveIntersector16::intersect(valid_leaf,pre,ray,tri,items,bvh->scene);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
@@ -202,7 +202,7 @@ namespace embree
             break;
           
           const bool16 valid_node = ray_tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
+          STAT3(shadow.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (Node*)cur.node();
           
           /* pop of next node */
@@ -260,7 +260,7 @@ namespace embree
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
         const bool16 valid_leaf = ray_tfar > curDist;
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
+        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         terminated |= PrimitiveIntersector16::occluded(!terminated,pre,ray,tri,items,bvh->scene);
         if (all(terminated)) break;

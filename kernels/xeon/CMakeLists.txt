@@ -214,6 +214,7 @@ IF (TARGET_AVX512)
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
+    geometry/instance_intersector16.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/subdivpatch1cached_intersector1.cpp
 
@@ -225,6 +226,7 @@ IF (TARGET_AVX512)
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
     bvh4/bvh4_intersector16_single.cpp
+    bvh4/bvh4_intersector16_chunk.cpp
     bvh4/bvh4_intersector16_hybrid.cpp
 
     bvh8/bvh8_intersector1.cpp
