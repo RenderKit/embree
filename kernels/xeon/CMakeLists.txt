@@ -224,6 +224,8 @@ IF (TARGET_AVX512)
     bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
+    bvh4/bvh4_intersector16_single.cpp
+    bvh4/bvh4_intersector16_hybrid.cpp
 
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp

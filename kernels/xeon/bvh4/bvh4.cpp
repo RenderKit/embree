@@ -94,6 +94,33 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridLazyIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
 
+
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1vIntersector16Chunk);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1iIntersector16Chunk);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1vIntersector16Single_OBB);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1iIntersector16Single_OBB);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1iMBIntersector16Single_OBB);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4Intersector16ChunkMoeller);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4Intersector16ChunkMoellerNoFilter);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle16Intersector16ChunkMoeller);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle16Intersector16ChunkMoellerNoFilter);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle16Intersector16HybridMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle16Intersector16HybridMoellerNoFilter);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4vIntersector16ChunkPluecker);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4vIntersector16HybridPluecker);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4iIntersector16ChunkPluecker);
+  //DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4vMBIntersector16ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1Intersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4GridIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4GridLazyIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
+
+
+
+
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
@@ -260,6 +287,31 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4GridIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4GridLazyIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
+
+
+    /* select intersectors16 */
+    //SELECT_SYMBOL_AVX512(features,BVH4Bezier1vIntersector16Chunk);
+    //SELECT_SYMBOL_AVX512(features,BVH4Bezier1iIntersector16Chunk);
+    SELECT_SYMBOL_AVX512(features,BVH4Bezier1vIntersector16Single_OBB);
+    SELECT_SYMBOL_AVX512(features,BVH4Bezier1iIntersector16Single_OBB);
+    SELECT_SYMBOL_AVX512(features,BVH4Bezier1iMBIntersector16Single_OBB);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle4Intersector16ChunkMoeller);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle4Intersector16ChunkMoellerNoFilter);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle8Intersector16ChunkMoeller);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle8Intersector16ChunkMoellerNoFilter);
+    SELECT_SYMBOL_AVX512(features,BVH4Triangle4Intersector16HybridMoeller);
+    SELECT_SYMBOL_AVX512(features,BVH4Triangle4Intersector16HybridMoellerNoFilter);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle8Intersector16HybridMoeller);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle8Intersector16HybridMoellerNoFilter);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle4vIntersector16ChunkPluecker);
+    SELECT_SYMBOL_AVX512(features,BVH4Triangle4vIntersector16HybridPluecker);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle4iIntersector16ChunkPluecker);
+    //SELECT_SYMBOL_AVX512(features,BVH4Triangle4vMBIntersector16ChunkMoeller);
+    SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1Intersector16);
+    SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
+    SELECT_SYMBOL_AVX512(features,BVH4GridIntersector16);
+    SELECT_SYMBOL_AVX512(features,BVH4GridLazyIntersector16);
+    //SELECT_SYMBOL_AVX512(features,BVH4VirtualIntersector16Chunk);
   }
 
   BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)

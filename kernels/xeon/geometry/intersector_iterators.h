@@ -446,6 +446,47 @@ namespace embree
 
       };
 
+
+    template<typename Intersector>
+      struct ArrayIntersector16_1
+      {
+        typedef typename Intersector::Primitive Primitive;
+        typedef typename Intersector::Precalculations Precalculations;
+        
+        static __forceinline void intersect(const bool16& valid, Precalculations& pre, Ray16& ray, const Primitive* prim, size_t num, Scene* scene)
+        {
+          for (size_t i=0; i<num; i++) {
+            Intersector::intersect(valid,pre,ray,prim[i],scene);
+          }
+        }
+        
+        static __forceinline bool16 occluded(const bool16& valid, Precalculations& pre, Ray16& ray, const Primitive* prim, size_t num, Scene* scene) 
+        {
+          bool16 valid0 = valid;
+          for (size_t i=0; i<num; i++) {
+            valid0 &= !Intersector::occluded(valid0,pre,ray,prim[i],scene);
+            if (none(valid0)) break;
+          }
+          return !valid0;
+        }
+        
+        static __forceinline void intersect(Precalculations& pre, Ray16& ray, size_t k, const Primitive* prim, size_t num, Scene* scene)
+        {
+          for (size_t i=0; i<num; i++) {
+            Intersector::intersect(pre,ray,k,prim[i],scene);
+          }
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, Ray16& ray, size_t k, const Primitive* prim, size_t num, Scene* scene) 
+        {
+          for (size_t i=0; i<num; i++) {
+            if (Intersector::occluded(pre,ray,k,prim[i],scene))
+              return true;
+          }
+          return false;
+        }
+      };
+
 #endif
   }
 }

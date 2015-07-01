@@ -24,6 +24,8 @@ namespace embree
   public:
     typedef bool16 Mask;    // mask type for us
 
+    enum   { size = 16 };  // number of SIMD elements
+
     union  { 
       __m512 v; 
       float f[16]; 
