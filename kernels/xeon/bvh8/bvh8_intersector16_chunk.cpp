@@ -28,12 +28,12 @@ namespace embree
   {    
     
     template<typename PrimitiveIntersector16>    
-    void BVH8Intersector16Chunk<PrimitiveIntersector16>::intersect(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Chunk<PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
       /* load ray */
-      bool16 valid0 = *valid_i;
+      bool16 valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -151,12 +151,12 @@ namespace embree
     }
     
      template<typename PrimitiveIntersector16>
-    void BVH8Intersector16Chunk<PrimitiveIntersector16>::occluded(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Chunk<PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
       /* load ray */
-      const bool16 valid = *valid_i;
+      const bool16 valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif

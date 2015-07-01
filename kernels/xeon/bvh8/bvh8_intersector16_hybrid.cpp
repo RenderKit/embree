@@ -17,8 +17,11 @@
 #include "bvh8_intersector16_hybrid.h"
 #include "../geometry/triangle4.h"
 #include "../geometry/triangle8.h"
+#include "../geometry/triangle8v.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
+#include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/triangle_intersector_pluecker2.h"
 
 #define DBG(x) 
 
@@ -167,12 +170,11 @@ namespace embree
 
     
     template<typename PrimitiveIntersector16>    
-    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
-#if defined(__AVX512__)
-      
+#if defined(__AVX512__)      
       /* load ray */
-      bool16 valid0 = *valid_i;
+      bool16 valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -442,12 +444,12 @@ namespace embree
 
     
      template<typename PrimitiveIntersector16>
-    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
       /* load ray */
-      const bool16 valid = *valid_i;
+      const bool16 valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
@@ -569,6 +571,9 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA true> > >);
 
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
+
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
 
   }
 }  

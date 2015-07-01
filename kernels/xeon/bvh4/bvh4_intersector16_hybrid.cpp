@@ -33,10 +33,10 @@ namespace embree
   namespace isa
   {
     template<int types, bool robust, typename PrimitiveIntersector16>
-    void BVH4Intersector16Hybrid<types,robust,PrimitiveIntersector16>::intersect(bool16* valid_i, BVH4* bvh, Ray16& ray)
+    void BVH4Intersector16Hybrid<types,robust,PrimitiveIntersector16>::intersect(int16* valid_i, BVH4* bvh, Ray16& ray)
     {
       /* verify correct input */
-      bool16 valid0 = *valid_i;
+      bool16 valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -241,10 +241,10 @@ namespace embree
 
     
     template<int types, bool robust, typename PrimitiveIntersector16>
-    void BVH4Intersector16Hybrid<types,robust,PrimitiveIntersector16>::occluded(bool16* valid_i, BVH4* bvh, Ray16& ray)
+    void BVH4Intersector16Hybrid<types,robust,PrimitiveIntersector16>::occluded(int16* valid_i, BVH4* bvh, Ray16& ray)
     {
       /* verify correct input */
-      bool16 valid = *valid_i;
+      bool16 valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif

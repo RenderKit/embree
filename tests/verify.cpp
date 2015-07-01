@@ -3397,6 +3397,7 @@ namespace embree
 
 #if 1
 
+#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
@@ -3444,6 +3445,7 @@ namespace embree
     POSITIVE("interpolate_hair15",               rtcore_interpolate_hair(15));
 
     rtcore_build();
+#endif
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();

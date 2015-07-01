@@ -31,8 +31,8 @@ namespace embree
     class BVH4Intersector16FromIntersector1
     {
     public:
-      static void intersect(bool16* valid, BVH4* bvh, Ray16& ray);
-      static void occluded (bool16* valid, BVH4* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH4* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH4* bvh, Ray16& ray);
     };
 
     /*! Single ray traversal for packets. */
@@ -281,8 +281,8 @@ namespace embree
       return false;
     }
 
-      static void intersect(bool16* valid, BVH4* bvh, Ray16& ray);
-      static void occluded (bool16* valid, BVH4* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH4* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH4* bvh, Ray16& ray);
     };
   }
 }

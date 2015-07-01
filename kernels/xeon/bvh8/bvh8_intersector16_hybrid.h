@@ -44,8 +44,8 @@ class BVH8Intersector16Hybrid
 
 
     public:
-      static void intersect(bool16* valid, BVH8* bvh, Ray16& ray);
-      static void occluded (bool16* valid, BVH8* bvh, Ray16& ray);
+      static void intersect(int16* valid, BVH8* bvh, Ray16& ray);
+      static void occluded (int16* valid, BVH8* bvh, Ray16& ray);
     };
   }
 }
