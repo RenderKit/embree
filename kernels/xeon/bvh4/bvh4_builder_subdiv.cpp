@@ -853,7 +853,7 @@ namespace embree
           }
         if (bvh->numPrimitives == 0 || bvh->numPrimitives != fastUpdateMode_numFaces || bvh->root == BVH4::emptyNode)
           fastUpdateMode = false;
-        
+         
         /* initialize allocator and parallel_for_for_prefix_sum */
         pstate.init(iter,size_t(1024));
         numPrimitives = fastUpdateMode_numFaces;
@@ -879,111 +879,95 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-
+        
         prims.resize(numPrimitives);
         
-      /* Allocate memory for gregory and b-spline patches */
-     if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
-     {
-       DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
-       if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-       this->bvh->data_mem      = nullptr;
-       this->bvh->size_data_mem = 0;
-     }
-
-     if (bvh->data_mem == nullptr)
-     {
-       DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
-       this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
-       if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
-       else                                this->bvh->data_mem = nullptr;
-     }
-     assert(this->bvh->data_mem);
-     SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-
-     PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-     {
-       PrimInfo s(empty);
-       for (size_t f=r.begin(); f!=r.end(); ++f) 
-       {
-         if (!mesh->valid(f)) continue;
-         
-         if (unlikely(fastUpdateMode == false))
-         {
-           feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], 
-                                                                                                   const BezierCurve3fa *border, const int border_flags)
-           {
-             float edge_level[4] = {
-               ipatch.ring[0].edge_level,
-               ipatch.ring[1].edge_level,
-               ipatch.ring[2].edge_level,
-               ipatch.ring[3].edge_level
-             };
-             
-             for (size_t i=0;i<4;i++)
-               edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-             
-             const unsigned int patchIndex = base.size()+s.size();
-             assert(patchIndex < numPrimitives);
-             subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
-             
-             subdiv_patches[patchIndex].resetRootRef();
-             
-             /* compute patch bounds */
-             const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
-             prims[patchIndex] = PrimRef(bounds,patchIndex);
-             s.add(bounds);
-           });
-         }
-	  else
+        /* Allocate memory for gregory and b-spline patches */
+        if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
+        {
+          DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
+          if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
+          this->bvh->data_mem      = nullptr;
+          this->bvh->size_data_mem = 0;
+        }
+        
+        if (bvh->data_mem == nullptr)
+        {
+          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
+          this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
+          if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
+          else                                this->bvh->data_mem = nullptr;
+        }
+        assert(this->bvh->data_mem);
+        SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+        
+        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+        {
+          PrimInfo s(empty);
+          for (size_t f=r.begin(); f!=r.end(); ++f) 
+          {
+            if (!mesh->valid(f)) continue;
+            
+            if (unlikely(fastUpdateMode == false))
             {
-	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+              feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),[&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], 
+                                                                                                      const BezierCurve3fa *border, const int border_flags)
+              {
+                float edge_level[4] = {
+                  ipatch.ring[0].edge_level,
+                  ipatch.ring[1].edge_level,
+                  ipatch.ring[2].edge_level,
+                  ipatch.ring[3].edge_level
+                };
+                
+                for (size_t i=0;i<4;i++)
+                  edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
+                
+                const unsigned int patchIndex = base.size()+s.size();
+                assert(patchIndex < numPrimitives);
+                subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
+                
+                /* compute patch bounds */
+                const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+                prims[patchIndex] = PrimRef(bounds,patchIndex);
+                s.add(bounds);
+              });
+            }
+            else
+            {
+              const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
               const size_t numEdges = first_half_edge->numEdges();
-
-	      float edge_level[4] = {
-		first_half_edge[0].edge_level,
-		first_half_edge[1].edge_level,
-		first_half_edge[2].edge_level,
-		first_half_edge[3].edge_level
-	      };
-
+              
+              float edge_level[4] = {
+                first_half_edge[0].edge_level,
+                first_half_edge[1].edge_level,
+                first_half_edge[2].edge_level,
+                first_half_edge[3].edge_level
+              };
+              
               /* updating triangular bezier patch */
               if (numEdges == 3) {
                 edge_level[3] = first_half_edge[1].edge_level;
               }
-
-	      const unsigned int patchIndex = base.size()+s.size();
-	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
-	      subdiv_patches[patchIndex].resetRootRef();
               
-	      /* compute patch bounds */
-	      const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
-
-	      assert(bounds.lower.x <= bounds.upper.x);
-	      assert(bounds.lower.y <= bounds.upper.y);
-	      assert(bounds.lower.z <= bounds.upper.z);
-
-	      assert( std::isfinite(bounds.lower.x) );
-	      assert( std::isfinite(bounds.lower.y) );
-	      assert( std::isfinite(bounds.lower.z) );
-	      
-	      assert( std::isfinite(bounds.upper.x) );
-	      assert( std::isfinite(bounds.upper.y) );
-	      assert( std::isfinite(bounds.upper.z) );
-
-	      
-	      prims[patchIndex] = PrimRef(bounds,patchIndex);
-	      s.add(bounds);	      
-	    }
-        }
-        return s;
-      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-
-      DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
-      DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
-
- #if 0
-      // to dump tessellated patches in obj format
+              const unsigned int patchIndex = base.size()+s.size();
+              subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+              subdiv_patches[patchIndex].resetRootRef();
+              
+              /* compute patch bounds */
+              const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+              prims[patchIndex] = PrimRef(bounds,patchIndex);
+              s.add(bounds);	      
+            }
+          }
+          return s;
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+        
+        DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
+        DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
+        
+#if 0
+        // to dump tessellated patches in obj format
         {
 	  size_t numTotalTriangles = 0;
           std::cout << "# OBJ FILE" << std::endl;
@@ -993,26 +977,26 @@ namespace embree
           for (size_t i=0;i<numPrimitives;i++)
             subdiv_patches[i].evalToOBJ(scene,vertex_index,numTotalTriangles);
           std::cout << "# " << vertex_index << " vertices " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
-
+          
           std::cout << "# " << vertex_index << " normals " << (double)vertex_index * sizeof(Vec3fa) / 1024.0 / 1024.0f << " MB " << std::endl;
           std::cout << "# " << numTotalTriangles << " numTotalTriangles" << std::endl;
- 
+          
           //exit(0);
         }
-
+        
 #endif
-     
-      if (fastUpdateMode)
-      {
-        if (bvh->root != BVH4::emptyNode)
-          refit(bvh->root);
-      }
-      else
-      {
-	if (numPrimitives)
+        
+        if (fastUpdateMode)
+        {
+          if (bvh->root != BVH4::emptyNode)
+            refit(bvh->root);
+        }
+        else
+        {
+          if (numPrimitives)
 	  {
 	    DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
-
+            
 	    BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
 	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
@@ -1028,19 +1012,19 @@ namespace embree
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
 	    DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
-
+            
 	  }
-	else
-	  bvh->set(BVH4::emptyNode,empty,0);	  
-      }
-      
+          else
+            bvh->set(BVH4::emptyNode,empty,0);	  
+        }
+        
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.clear();
         bvh->alloc.cleanup();
         bvh->postBuild(t0);
       }
-
+      
       void clear() {
         prims.clear();
       }
