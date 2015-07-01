@@ -667,13 +667,13 @@ namespace embree
       //PRINT2(patch.grid_u_res,patch.grid_v_res);
       evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
       
-      PING;
+      /*PING;
       for (size_t y=0; y<patch.grid_v_res; y++) {
         for (size_t x=0; x<patch.grid_u_res; x++) {
         Vec3f v(grid_x[y*patch.grid_u_res+x],grid_y[y*patch.grid_u_res+x],grid_z[y*patch.grid_u_res+x]);
           PRINT3(x,y,v);
         }
-      }
+        }*/
 
       BBox3fa b(empty);
       assert(patch.grid_size_simd_blocks >= 1);

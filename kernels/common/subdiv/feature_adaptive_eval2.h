@@ -90,9 +90,9 @@ namespace embree
 	return;
 
       int lx0 = ceilf(erange.lower.x);
-      int lx1 = ceilf(erange.upper.x); /*if (lx1 == x1)*/ lx1++;
+      int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1);
       int ly0 = ceilf(erange.lower.y);
-      int ly1 = ceilf(erange.upper.y); /*if (ly1 == y1)*/ ly1++;
+      int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1);
       //PRINT4(lx0,lx1,ly0,ly1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
 
@@ -107,9 +107,11 @@ namespace embree
         //assert(depth > 0);
         RegularPatch rpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            //PRINT2(u,v);
             const Vec3<vfloat> p = rpatch.eval(u,v);
+            //PRINT(p);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
@@ -132,9 +134,12 @@ namespace embree
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
             //PRINT3(valid,ix,iy);
-            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            //PRINT(u);
+            //PRINT(v);
             const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);
+            //PRINT(p);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
@@ -151,11 +156,18 @@ namespace embree
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
 #if PATCH_USE_GREGORY == 1
+        //PRINT("gregory");
+        //PRINT4(lx0,lx1,ly0,ly1);
+
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);
+            //PRINT3(valid,ix,iy);
+            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            //PRINT(u);
+            //PRINT(v);
+            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);    
+            //PRINT(p);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
@@ -166,8 +178,8 @@ namespace embree
 #else
         BilinearPatch bpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
             const Vec3<vfloat> p = bpatch.eval(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
