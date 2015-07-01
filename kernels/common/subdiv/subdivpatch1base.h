@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #define USE_RANGE_EVAL 0
 #else
-#define USE_RANGE_EVAL 0
+#define USE_RANGE_EVAL 1
 #endif
 
 #if USE_RANGE_EVAL
@@ -768,7 +768,7 @@ namespace embree
                                      const SubdivMesh* const geom)
   {
     feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
-                            0,patch.grid_u_res,0,patch.grid_v_res,patch.grid_u_res,patch.grid_v_res,
+                            0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
                             grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
   }
 

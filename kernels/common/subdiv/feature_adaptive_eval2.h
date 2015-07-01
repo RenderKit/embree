@@ -85,17 +85,22 @@ namespace embree
 
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
+      //PRINT3(depth,srange,erange);
       if (erange.empty())
 	return;
 
-      int lx0 = ceilf (erange.lower.x);
-      int lx1 = floorf(erange.upper.x); if (lx1 == x1) lx1++;
-      int ly0 = ceilf (erange.lower.y);
-      int ly1 = floorf(erange.upper.y); if (ly1 == y1) ly1++;
+      int lx0 = ceilf(erange.lower.x);
+      int lx1 = ceilf(erange.upper.x); /*if (lx1 == x1)*/ lx1++;
+      int ly0 = ceilf(erange.lower.y);
+      int ly1 = ceilf(erange.upper.y); /*if (ly1 == y1)*/ ly1++;
+      //PRINT4(lx0,lx1,ly0,ly1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
-      
+
       if (unlikely(patch.isRegular2()))
       {
+        //PRINT("regular");
+        //PRINT4(lx0,lx1,ly0,ly1);
+
         const float scale_x = rcp(srange.upper.x-srange.lower.x);
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
@@ -117,15 +122,19 @@ namespace embree
 #if PATCH_USE_GREGORY == 2
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
       {
+        //PRINT("gregory");
+        //PRINT4(lx0,lx1,ly0,ly1);
+
         const float scale_x = rcp(srange.upper.x-srange.lower.x);
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
         //assert(depth > 0);
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+            //PRINT3(valid,ix,iy);
             const vfloat u = select(ix == srange.upper.x, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
             const vfloat v = select(iy == srange.upper.y, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = gpatch.eval(u,v);
+            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
