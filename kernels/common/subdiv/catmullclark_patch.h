@@ -675,13 +675,13 @@ namespace embree
       ring[3].convert(patch.ring[3]);
     }
 
-  static void fix_quad_ring_order (array_t<CatmullClarkPatch,GeneralCatmullClarkPatchT::SIZE> patches)
+  static void fix_quad_ring_order (array_t<CatmullClarkPatch,GeneralCatmullClarkPatchT::SIZE>& patches)
   {
-    CatmullClark1Ring patches1ring3 = patches[1].ring[3];
-    patches[1].ring[3] = patches[1].ring[0];
-    patches[1].ring[0] = patches[1].ring[1];
-    patches[1].ring[1] = patches[1].ring[2];
-    patches[1].ring[2] = patches1ring3;
+    CatmullClark1Ring patches1ring1 = patches[1].ring[1];
+    patches[1].ring[1] = patches[1].ring[0];
+    patches[1].ring[0] = patches[1].ring[3];
+    patches[1].ring[3] = patches[1].ring[2];
+    patches[1].ring[2] = patches1ring1;
 
     CatmullClark1Ring patches2ring2 = patches[2].ring[2];
     patches[2].ring[2] = patches[2].ring[0];
@@ -690,11 +690,11 @@ namespace embree
     patches[2].ring[3] = patches[2].ring[1];
     patches[2].ring[1] = patches2ring3;
 
-    CatmullClark1Ring patches3ring1 = patches[3].ring[1];
-    patches[3].ring[1] = patches[3].ring[0];
-    patches[3].ring[0] = patches[3].ring[3];
-    patches[3].ring[3] = patches[3].ring[2];
-    patches[3].ring[2] = patches3ring1;
+    CatmullClark1Ring patches3ring3 = patches[3].ring[3];
+    patches[3].ring[3] = patches[3].ring[0];
+    patches[3].ring[0] = patches[3].ring[1];
+    patches[3].ring[1] = patches[3].ring[2];
+    patches[3].ring[2] = patches3ring3;
   }
 
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
