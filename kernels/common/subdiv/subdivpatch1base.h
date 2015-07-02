@@ -174,34 +174,29 @@ namespace embree
                       const int border_flags);
 #endif
 
-    __forceinline bool needsStitching() const
-    {
-      return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
-    }
-
 #if !USE_RANGE_EVAL
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
         return patch.eval(uu,vv);
-      else if (likely(isGregoryPatch()))
+      else if (likely(type == GREGORY_PATCH))
 	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::eval( patch.v, uu, vv );
       return Vec3fa( zero );
     }
 
     __forceinline Vec3fa normal(const float& uu, const float& vv) const
     {
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
         return patch.normal(uu,vv);
-      else if (likely(isGregoryPatch()))
+      else if (likely(type == GREGORY_PATCH))
 	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::normal( patch.v, uu, vv );
       return Vec3fa( zero );
     }
@@ -210,13 +205,13 @@ namespace embree
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
       typedef typename simdf::Mask simdb;
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
         return patch.eval(uu,vv);
-      else if (likely(isGregoryPatch()))
+      else if (likely(type == GREGORY_PATCH))
 	return DenseGregoryPatch3fa::eval_t<simdb>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
         return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch.v, uu * (1.0f - vv), vv );
       return Vec3<simdf>( zero );
     }
@@ -225,13 +220,13 @@ namespace embree
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
       typedef typename simdf::Mask simdb;
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
         return patch.normal(uu,vv);
-      else if (likely(isGregoryPatch()))
+      else if (likely(type == GREGORY_PATCH))
 	return DenseGregoryPatch3fa::normal_t<simdb>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch.v, uu, vv );
       return Vec3<simdf>( zero );
     }
@@ -240,9 +235,9 @@ namespace embree
 
     __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
     {
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
         return patch.eval(uu,vv);
       else 
         return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
@@ -250,9 +245,9 @@ namespace embree
 
     __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
     {
-      if (likely(isBezierPatch()))
+      if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
+      else if (likely(type == BSPLINE_PATCH))
 	return patch.normal(uu,vv);
       else
         return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
@@ -260,29 +255,12 @@ namespace embree
 #endif
 #endif
 
-    __forceinline bool isBSplinePatch() const
-    {
-      return type == BSPLINE_PATCH;
-    }
-
-    __forceinline bool isBezierPatch() const
-    {
-      return type == BEZIER_PATCH;
-    }
-
-    __forceinline bool isGregoryPatch() const
-    {
-      return type == GREGORY_PATCH;
-    }
-
-    __forceinline bool isGregoryTrianglePatch() const
-    {
-      return type == GREGORY_TRIANGLE_PATCH;
-    }
-
-    __forceinline bool hasDisplacement() const
-    {
+    __forceinline bool hasDisplacement() const {
       return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
+    }
+
+    __forceinline bool needsStitching() const {
+      return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
     __forceinline void prefetchData() const
@@ -403,15 +381,6 @@ namespace embree
     __aligned(64) BSplinePatch3fa patch;
 #endif
   };
-
-  __forceinline std::ostream& operator<<(std::ostream& o, const SubdivPatch1Base& p)
-  {
-    o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
-#if !USE_RANGE_EVAL
-    o << " patch " << p.patch;
-#endif
-    return o;
-  } 
 
 #if USE_RANGE_EVAL
 
