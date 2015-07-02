@@ -81,7 +81,7 @@ namespace embree
 	pavg = pavg + p/double(N);
       }
 
-      printf("%30s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
+      printf("%40s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
       fflush(stdout);
     }
   };
@@ -118,7 +118,7 @@ namespace embree
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
       return 1000.0f*(t1-t0)/double(g_num_mutex_locks);
     }
@@ -154,7 +154,7 @@ namespace embree
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
     
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
       return 1000.0f*(t1-t0)/double(N);
     }
@@ -196,7 +196,7 @@ namespace embree
       
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
       return 1E9*(t1-t0)/double(N);
     }
@@ -238,7 +238,7 @@ namespace embree
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
       return 1E9*(t1-t0)/double(N);
     }
@@ -291,6 +291,16 @@ namespace embree
   };
 
   char* benchmark_osmalloc::ptr = nullptr;
+
+
+
+  // -------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------
+
+
+
+
 
   class benchmark_bandwidth : public Benchmark
   {
@@ -619,6 +629,83 @@ namespace embree
     }
   };
 
+
+  class benchmark_rtcore_intersect_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*256 };
+
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect_throughput () 
+     : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
+
+    static void benchmark_rtcore_intersect1_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+
+
+      for (size_t i=0; i<N; i++) {
+        RTCRay ray = makeRay(zero,numbers[i]);
+        rtcIntersect(scene,ray);
+      }
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      delete [] numbers;
+    }
+    
+    double run (size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      int numPhi = 501;
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcNewScene(flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0,numThreads);
+      double t0 = getSeconds();
+
+      benchmark_rtcore_intersect1_throughput_thread(0);
+
+      g_barrier_active.wait(0,numThreads);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcExit();
+      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect_throughput::scene = nullptr;
+
   void rtcore_coherent_intersect1(RTCScene scene)
   {
     size_t width = 1024;
@@ -634,7 +721,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
     fflush(stdout);
   }
 
@@ -659,7 +746,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -684,7 +771,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -709,7 +796,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -722,7 +809,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect1",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect1",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -739,7 +826,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -756,7 +843,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -773,7 +860,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -833,11 +920,16 @@ namespace embree
     rtcDeleteScene(scene);
     rtcExit();
   }
+
+
+
   
   std::vector<Benchmark*> benchmarks;
 
   void create_benchmarks()
   {
+    benchmarks.push_back(new benchmark_rtcore_intersect_throughput());
+
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
     benchmarks.push_back(new benchmark_barrier_active());
@@ -847,6 +939,7 @@ namespace embree
     benchmarks.push_back(new benchmark_osmalloc());
     benchmarks.push_back(new benchmark_bandwidth());
 #endif
+
  
     benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
@@ -1011,7 +1104,7 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    printf("%30s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
+    printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
 
     create_benchmarks();
 
@@ -1032,6 +1125,7 @@ namespace embree
       }
 
       rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
+
       for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads,4);
     }
 
