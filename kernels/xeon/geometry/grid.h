@@ -544,7 +544,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng_y0,1,17);
+      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng ? Ng_y0 : nullptr,1,17);
 
       Vec2f luv_y0[17];
       int y = y0-y_ofs;
@@ -553,7 +553,7 @@ namespace embree
 	const float fx = coarse(xs);
 	luv[x*width+y].y = fx;
 	P  [x*width+y] = p_y0 [xs-x0s];
-	Ng [x*width+y] = Ng_y0[xs-x0s];
+	if (Ng) Ng [x*width+y] = Ng_y0[xs-x0s];
       }
       return true;
     }
@@ -570,7 +570,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng_y0,17,1);
+      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng ? Ng_y0 : nullptr,17,1);
       
       Vec2f luv_y0[17];
       int y = y0-y_ofs;
@@ -579,7 +579,7 @@ namespace embree
 	const float fx = coarse(xs);
 	luv[y*width+x].x = fx;
 	P  [y*width+x] = p_y0 [xs-x0s];
-	Ng [y*width+x] = Ng_y0[xs-x0s];
+	if (Ng) Ng [y*width+x] = Ng_y0[xs-x0s];
       }
       return true;
     }
@@ -674,7 +674,7 @@ namespace embree
 	  const Vec3fa P = patch.eval(uv.x,uv.y);
 	  bounds.extend(P);
 	  point(x,y)    = P;
-	  Ng[y*width+x] = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
+	  if (Ng) Ng[y*width+x] = normalize_safe(patch.normal(luv[y*width+x].x, luv[y*width+x].y)); // FIXME: enable only for displacement mapping
         }
       }
       return bounds;
@@ -694,7 +694,7 @@ namespace embree
           interpolate(mesh,entry,src,stride,primID,subPrim,uv.x,uv.y,P,dPdu,dPdv);
 	  bounds.extend((Vec3fa)P);
 	  point(x,y) = (Vec3fa) P;
-	  Ng[y*width+x] = normalize_safe(cross((Vec3fa)dPdv,(Vec3fa)dPdu)); // FIXME: enable only for displacement mapping
+	  if (Ng) Ng[y*width+x] = normalize_safe(cross((Vec3fa)dPdv,(Vec3fa)dPdu)); // FIXME: enable only for displacement mapping
         }
       }
       return bounds;
@@ -722,7 +722,7 @@ namespace embree
       const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
       const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
       const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
-      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng+st*width+sl,width,height);
+      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng ? Ng+st*width+sl : nullptr,width,height);
 #endif
     }
 
@@ -756,6 +756,8 @@ namespace embree
 			     const DiscreteTessellationPattern& pattern_x,
 			     const DiscreteTessellationPattern& pattern_y)
     {
+      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
+
       /* calculate local UVs */
       Vec2f luv[17*17]; 
       calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
@@ -765,16 +767,16 @@ namespace embree
       
       /* evaluate position and normal */
       Vec3fa Ng[17*17];
-      calculatePositionAndNormal(patch,luv,Ng);
+      Vec3fa* pNg = mesh->displFunc ? Ng : nullptr;
+      calculatePositionAndNormal(patch,luv,pNg);
 
       /* calculate global UVs */
       Vec2f guv[17*17]; 
       calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
 
       /* perform displacement */
-      SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
       if (mesh->displFunc) 
-	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,pNg);
     }
 
     __forceinline void build(Scene* scene, const CatmullClarkPatch3fa& patch,
