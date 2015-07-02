@@ -630,13 +630,13 @@ namespace embree
   };
 
 
-  class benchmark_rtcore_intersect_throughput : public Benchmark
+  class benchmark_rtcore_intersect1_throughput : public Benchmark
   {
   public:
     enum { N = 1024*128 };
     static RTCScene scene;
 
-    benchmark_rtcore_intersect_throughput () 
+    benchmark_rtcore_intersect1_throughput () 
       : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
 
     virtual void trace(Vec3f* numbers)
@@ -705,7 +705,85 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect_throughput::scene;
+  RTCScene benchmark_rtcore_intersect1_throughput::scene;
+
+
+  class benchmark_rtcore_intersect16_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect16_throughput () 
+      : Benchmark("incoherent_intersect16_throughput","MRays/s (all HW threads)") {}
+
+    static void benchmark_rtcore_intersect16_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+
+      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      for (size_t i=0; i<N; i+16) {
+        RTCRay16 ray16;
+        for (size_t j=0;j<16;j++)
+          setRay(ray16,j,makeRay(zero,numbers[i+j]));
+        rtcIntersect16(valid16,scene,ray16);
+      }        
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      delete [] numbers;
+    }
+    
+    double run (size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      int numPhi = 501;
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcNewScene(flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0,numThreads);
+      double t0 = getSeconds();
+
+      benchmark_rtcore_intersect16_throughput_thread(0);
+
+      g_barrier_active.wait(0,numThreads);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcExit();
+      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect16_throughput::scene;
+
+
 
   void rtcore_coherent_intersect1(RTCScene scene)
   {
@@ -929,7 +1007,11 @@ namespace embree
 
   void create_benchmarks()
   {
-    benchmarks.push_back(new benchmark_rtcore_intersect_throughput());
+    benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
+
+#if defined(__TARGET_AVX512__) || defined(__MIC__)
+    benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
+#endif
 
     benchmarks.push_back(new benchmark_mutex_sys());
     benchmarks.push_back(new benchmark_barrier_sys());
