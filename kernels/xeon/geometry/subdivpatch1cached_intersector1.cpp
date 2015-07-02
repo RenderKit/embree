@@ -169,7 +169,7 @@ namespace embree
     
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
                                                                               ThreadWorkState *t_state,
-									      const SubdivMesh* const geom)
+									      const SubdivMesh* const geom, BBox3fa* bounds_o)
     {      
       assert( patch.grid_size_simd_blocks >= 1 );
 
@@ -239,6 +239,7 @@ namespace embree
 					     array_elements,
 					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
 					     currentIndex);
+      if (bounds_o) *bounds_o = bounds;
 
       assert( std::isfinite(bounds.lower.x) );
       assert( std::isfinite(bounds.lower.y) );

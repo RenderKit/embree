@@ -561,7 +561,7 @@ namespace embree
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
 						       ThreadWorkState *t_state,
-						       const SubdivMesh* const scene);
+						       const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,

@@ -863,9 +863,15 @@ namespace embree
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
               subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_levels,subdiv);
-
-              /* compute patch bounds */
+#if 0
+              BBox3fa bounds;
+              size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);
+              const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(scene->commitCounter+1);
+              subdiv_patches[patchIndex].root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
+              SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(SharedLazyTessellationCache::threadState());
+#else
               const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+#endif
               prims[patchIndex] = PrimRef(bounds,patchIndex);
               s.add(bounds);
             });
