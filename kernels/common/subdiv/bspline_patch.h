@@ -253,7 +253,7 @@ namespace embree
       }
 
       template<typename Loader>
-        __forceinline BSplinePatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) {
+        __forceinline BSplinePatchT (const SubdivMesh::HalfEdge* edge, const Loader& loader) {
         init(edge,loader);
       }
 

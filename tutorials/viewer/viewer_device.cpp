@@ -29,7 +29,7 @@ bool g_subdiv_mode = false;
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 128
+#define FIXED_EDGE_TESSELLATION_VALUE 300
 #define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -43,8 +43,8 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
-  //return FIXED_EDGE_TESSELLATION_VALUE; 
-  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+  return FIXED_EDGE_TESSELLATION_VALUE; 
+  //return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )

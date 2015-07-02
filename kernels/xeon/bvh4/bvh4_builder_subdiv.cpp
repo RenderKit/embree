@@ -846,7 +846,7 @@ namespace embree
         assert(this->bvh->data_mem);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
         
-        //double T0 = getSeconds();
+        double T0 = getSeconds();
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -874,8 +874,8 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-        //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0))
+        double T1 = getSeconds();
+        PRINT(1000.0f*(T1-T0))
 
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
@@ -1013,7 +1013,7 @@ namespace embree
           }
         if (bvh->numPrimitives == 0 || bvh->numPrimitives != fastUpdateMode_numFaces || bvh->root == BVH4::emptyNode)
           fastUpdateMode = false;
-         
+
         /* initialize allocator and parallel_for_for_prefix_sum */
         pstate.init(iter,size_t(1024));
         numPrimitives = fastUpdateMode_numFaces;
@@ -1061,7 +1061,7 @@ namespace embree
         assert(this->bvh->data_mem);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
         
-        //double T0 = getSeconds();
+        double T0 = getSeconds();
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -1127,8 +1127,8 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-        //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0));
+        double T1 = getSeconds();
+        PRINT(1000.0f*(T1-T0));
 
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);

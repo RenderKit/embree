@@ -111,7 +111,7 @@ namespace embree
     }
     
     static __forceinline void storeu( const bool8& mask, void* ptr, const float8& f ) { 
-      return _mm256_storeu_ps((float*)ptr,_mm256_blendv_ps(f,_mm256_loadu_ps((float*)ptr),mask));
+      return _mm256_storeu_ps((float*)ptr,_mm256_blendv_ps(_mm256_loadu_ps((float*)ptr),f,mask));
     }
     
 #if defined (__AVX2__)

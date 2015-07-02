@@ -127,7 +127,7 @@ namespace embree
       int ly0 = ceilf(erange.lower.y);
       int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
-
+      
       if (unlikely(patch.isRegular2())) {
         RegularPatch rpatch(patch);
         evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
