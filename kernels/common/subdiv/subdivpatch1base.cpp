@@ -102,7 +102,7 @@ namespace embree
       v[i] = (unsigned short)(uv[i].y * 65535.0f);
     }
 
-    updateEdgeLevels(edge_level,mesh);
+    updateEdgeLevels(edge_level,subdiv,mesh);
   }
 
 #else
@@ -128,7 +128,7 @@ namespace embree
       v[i] = (unsigned short)(uv[i].y * 65535.0f);
     }
 
-    updateEdgeLevels(edge_level,mesh);
+    updateEdgeLevels(edge_level,neighborSubdiv,mesh);
     
     /* determine whether patch is regular or not */
     if (fas_depth == 0 && ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior and not FAS-based patches*/
@@ -158,7 +158,7 @@ namespace embree
   
 #endif
 
-  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
+  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh)
   {
     /* init discrete edge tessellation levels and grid resolution */
 
@@ -172,11 +172,15 @@ namespace embree
 #else
     const size_t SIMD_WIDTH = 8;
 #endif
+    level[0] = adjustTessellationLevel(edge_level[0],subdiv[0]);
+    level[1] = adjustTessellationLevel(edge_level[1],subdiv[1]);
+    level[2] = adjustTessellationLevel(edge_level[2],subdiv[2]);
+    level[3] = adjustTessellationLevel(edge_level[3],subdiv[3]);
 
-    level[0] = max(ceilf(edge_level[0]),1.0f);
-    level[1] = max(ceilf(edge_level[1]),1.0f);
-    level[2] = max(ceilf(edge_level[2]),1.0f);
-    level[3] = max(ceilf(edge_level[3]),1.0f);
+    level[0] = max(ceilf(level[0]),1.0f);
+    level[1] = max(ceilf(level[1]),1.0f);
+    level[2] = max(ceilf(level[2]),1.0f);
+    level[3] = max(ceilf(level[3]),1.0f);
 
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;

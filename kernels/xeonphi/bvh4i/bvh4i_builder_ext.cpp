@@ -1144,14 +1144,21 @@ PRINT(CORRECT_numPrims);
 	const SubdivMesh* const mesh = (SubdivMesh*) scene->get(subdiv_patch.geom);
 	const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(subdiv_patch.prim);
 
-	float edge_level[4] = {
+	const float edge_level[4] = {
 	  first_half_edge[0].edge_level,
 	  first_half_edge[1].edge_level,
 	  first_half_edge[2].edge_level,
 	  first_half_edge[3].edge_level
 	};
+
+        const int neighborSubdiv[4] = {
+          feature_adaptive_gregory_neighbor_subdiv(first_half_edge[0]),
+          feature_adaptive_gregory_neighbor_subdiv(first_half_edge[1]),
+          feature_adaptive_gregory_neighbor_subdiv(first_half_edge[2]),
+          feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
+        };
  
-	subdiv_patch.updateEdgeLevels(edge_level,mesh);
+	subdiv_patch.updateEdgeLevels(edge_level,neighborSubdiv,mesh);
 	subdiv_patch.resetRootRef();
 	const BBox3fa bounds = getBounds(subdiv_patch,mesh);
 
@@ -1217,9 +1224,6 @@ PRINT(CORRECT_numPrims);
 						       ipatch.ring[3].edge_level
 						     };
 
-						     for (size_t i=0;i<4;i++)
-						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-
 						     const unsigned int patchIndex = base.size()+s.size();
 						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, depth, mesh->id, f, mesh, uv, edge_level, subdiv, border, border_flags);
 #else
@@ -1250,10 +1254,16 @@ PRINT(CORRECT_numPrims);
 		first_half_edge[2].edge_level,
 		first_half_edge[3].edge_level
 	      };
+              const int neighborSubdiv[4] = {
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[0]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[1]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[2]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
+              };
 	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
 	      prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
  
-	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh);
 	      subdiv_patches[patchIndex].resetRootRef();
 	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);

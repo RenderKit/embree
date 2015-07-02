@@ -201,7 +201,7 @@ namespace embree
     }
 #endif
 
-    void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
+    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh);
 
     __forceinline size_t gridOffset(const size_t y, const size_t x) const
     {

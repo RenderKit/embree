@@ -22,6 +22,10 @@
 
 namespace embree
 {
+  __forceinline int feature_adaptive_gregory_neighbor_subdiv(const SubdivMesh::HalfEdge& h) {
+   return h.hasOpposite() ? !h.opposite()->isGregoryFace() : 0;  
+  }
+
   template<typename Tessellator>
   struct FeatureAdaptiveSubdivisionGregory
   {
@@ -30,28 +34,18 @@ namespace embree
     __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
-#if 0
-      // FIXME: will be removed soon
-
-      if (!(primID == 3945 ||
-            primID == 3937 ||
-            primID == 4287))
-        return;
-      PRINT(primID);
-      PRINT(h->isGregoryFace());
-#endif
-
       /* fast path for regular input primitives */
       if (likely(h->isGregoryFace()))
       {
 	CatmullClarkPatch3fa patch; 
         patch.init(h,vertices);
-        int neighborSubdiv[4];
-        for (size_t i=0;i<4;i++)
-        {
-          neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; 
-          h = h->next();
-        }
+
+        int neighborSubdiv[4] = {
+          feature_adaptive_gregory_neighbor_subdiv(h[0]),
+          feature_adaptive_gregory_neighbor_subdiv(h[1]),
+          feature_adaptive_gregory_neighbor_subdiv(h[2]),
+          feature_adaptive_gregory_neighbor_subdiv(h[3])
+        };
 
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
         tessellator(patch,0,uv,neighborSubdiv, nullptr, 0);        
