@@ -40,43 +40,6 @@
 
 namespace embree
 {
-
-
-#if defined(__AVX__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f8 &v)
-  {
-    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
-#if defined(__SSE__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f4 &v)
-  {
-    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
-#if defined(__MIC__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f16 &v, const bool16 m_valid = 0xffff)
-  {
-    const float16 x_min = select(m_valid,v.x,float16::inf());
-    const float16 y_min = select(m_valid,v.y,float16::inf());
-    const float16 z_min = select(m_valid,v.z,float16::inf());
-
-    const float16 x_max = select(m_valid,v.x,float16::minus_inf());
-    const float16 y_max = select(m_valid,v.y,float16::minus_inf());
-    const float16 z_max = select(m_valid,v.z,float16::minus_inf());
-    
-    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
-    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
   struct __aligned(16) GridRange
   {
     unsigned int u_start;

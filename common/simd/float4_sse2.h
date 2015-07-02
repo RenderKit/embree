@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define EMBREE_FLOAT4
+
 namespace embree
 {
   /*! 4-wide SSE float type. */

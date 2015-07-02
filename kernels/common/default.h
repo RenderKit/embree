@@ -30,6 +30,7 @@
 #include "../../common/sys/regression.h"
 
 #include "../../common/math/math.h"
+#include "../../common/simd/simd.h"
 #include "../../common/math/vec2.h"
 #include "../../common/math/vec3.h"
 #include "../../common/math/vec4.h"
@@ -38,7 +39,6 @@
 #include "../../common/math/linearspace2.h"
 #include "../../common/math/linearspace3.h"
 #include "../../common/math/affinespace.h"
-#include "../../common/simd/simd.h"
 #include "../../common/lexers/tokenstream.h"
 
 #if defined(TASKING_LOCKSTEP)

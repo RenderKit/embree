@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define EMBREE_FLOAT8
+
 namespace embree
 {
   /*! 8-wide AVX float type. */
