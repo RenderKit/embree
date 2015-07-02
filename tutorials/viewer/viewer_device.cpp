@@ -29,7 +29,7 @@ bool g_subdiv_mode = false;
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 300
+#define FIXED_EDGE_TESSELLATION_VALUE 128
 #define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 64.0f
