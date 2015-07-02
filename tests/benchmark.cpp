@@ -633,12 +633,15 @@ namespace embree
   class benchmark_rtcore_intersect_throughput : public Benchmark
   {
   public:
-    enum { N = 1024*256 };
-
+    enum { N = 1024*128 };
     static RTCScene scene;
 
     benchmark_rtcore_intersect_throughput () 
-     : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
+      : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
+
+    virtual void trace(Vec3f* numbers)
+    {
+    }
 
     static void benchmark_rtcore_intersect1_throughput_thread(void* arg) 
     {
@@ -654,16 +657,14 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 
-
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
 
-
       for (size_t i=0; i<N; i++) {
         RTCRay ray = makeRay(zero,numbers[i]);
         rtcIntersect(scene,ray);
-      }
+      }        
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
 
@@ -704,7 +705,7 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect_throughput::scene = nullptr;
+  RTCScene benchmark_rtcore_intersect_throughput::scene;
 
   void rtcore_coherent_intersect1(RTCScene scene)
   {
