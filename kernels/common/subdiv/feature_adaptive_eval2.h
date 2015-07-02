@@ -86,7 +86,6 @@ namespace embree
 
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
-      //PRINT3(depth,srange,erange);
       if (erange.empty())
 	return;
 
@@ -94,59 +93,50 @@ namespace embree
       int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1);
       int ly0 = ceilf(erange.lower.y);
       int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1);
-      //PRINT4(lx0,lx1,ly0,ly1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
 
       if (unlikely(patch.isRegular2()))
       {
-        //PRINT("regular");
-        //PRINT4(lx0,lx1,ly0,ly1);
-
         const float scale_x = rcp(srange.upper.x-srange.lower.x);
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
         //assert(depth > 0);
         RegularPatch rpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            //PRINT2(u,v);
-            const Vec3<vfloat> p = rpatch.eval(u,v);
-            //PRINT(p);
+            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = rpatch.eval(lu,lv);
+            const vfloat u = vfloat(ix)*rcp_swidth;
+            const vfloat v = vfloat(iy)*rcp_sheight;
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
-            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
           });
         return;
       }
 #if PATCH_USE_GREGORY == 2
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
       {
-        //PRINT("gregory");
-        //PRINT4(lx0,lx1,ly0,ly1);
-
         const float scale_x = rcp(srange.upper.x-srange.lower.x);
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
         //assert(depth > 0);
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            //PRINT3(valid,ix,iy);
-            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            //PRINT(u);
-            //PRINT(v);
-            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);
-            //PRINT(p);
+            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = gpatch.eval<vbool>(lu,lv);
+            const vfloat u = vfloat(ix)*rcp_swidth;
+            const vfloat v = vfloat(iy)*rcp_sheight;
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
-            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
           });
         return;
       }
@@ -157,37 +147,34 @@ namespace embree
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
 
 #if PATCH_USE_GREGORY == 1
-        //PRINT("gregory");
-        //PRINT4(lx0,lx1,ly0,ly1);
-
         GregoryPatch gpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            //PRINT3(valid,ix,iy);
-            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            //PRINT(u);
-            //PRINT(v);
-            const Vec3<vfloat> p = gpatch.eval<vbool>(u,v);    
-            //PRINT(p);
+            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = gpatch.eval<vbool>(lu,lv);    
+            const vfloat u = vfloat(ix)*rcp_swidth;
+            const vfloat v = vfloat(iy)*rcp_sheight;
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
-            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
           });
 #else
         BilinearPatch bpatch(patch);
         foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat u = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat v = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = bpatch.eval(u,v);
+            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloat> p = bpatch.eval(lu,lv);
+            const vfloat u = vfloat(ix)*rcp_swidth;
+            const vfloat v = vfloat(iy)*rcp_sheight;
             const vint ofs = (iy-y0)*dwidth+(ix-x0);
             vfloat::store(valid,Px,ofs,p.x);
             vfloat::store(valid,Py,ofs,p.y);
             vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,vfloat(ix)*rcp_swidth);
-            vfloat::store(valid,V,ofs,vfloat(iy)*rcp_sheight);
+            vfloat::store(valid,U,ofs,u);
+            vfloat::store(valid,V,ofs,v);
           });
 #endif
         return;
