@@ -1051,8 +1051,8 @@ PRINT(CORRECT_numPrims);
               const Vec2f uv2 = p.getUV(2);
               const Vec2f uv3 = p.getUV(3);
 
-              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+              const float16 patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
+              const float16 patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
 
               mesh->displFunc(mesh->userPtr,
                               p.geom,

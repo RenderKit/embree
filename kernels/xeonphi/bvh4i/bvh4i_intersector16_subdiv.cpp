@@ -553,8 +553,8 @@ namespace embree
 	  const Vec2f uv2 = subdiv_patch.getUV(2);
 	  const Vec2f uv3 = subdiv_patch.getUV(3);
 	  
-	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray16.v[rayIndex],ray16.u[rayIndex]);
-	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.v[rayIndex],ray16.u[rayIndex]);
+	  const float patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,ray16.v[rayIndex],ray16.u[rayIndex]);
+	  const float patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,ray16.v[rayIndex],ray16.u[rayIndex]);
 	  ray16.u[rayIndex] = patch_u;
 	  ray16.v[rayIndex] = patch_v;
 #endif
@@ -842,8 +842,8 @@ namespace embree
 	  const Vec2f uv2 = subdiv_patch.getUV(2);
 	  const Vec2f uv3 = subdiv_patch.getUV(3);
 	  
-	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray.v,ray.u);
-	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray.v,ray.u);
+	  const float patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,ray.v,ray.u);
+	  const float patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,ray.v,ray.u);
 	  ray.u = patch_u;
 	  ray.v = patch_v;
 #endif

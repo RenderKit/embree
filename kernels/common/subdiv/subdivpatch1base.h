@@ -41,14 +41,6 @@
 
 namespace embree
 {
-
-  template<class T> 
-    __forceinline T bilinear_interpolate(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v)
-    {
-      return (1.0f-u) * (1.0f-v) * x0 + u * (1.0f-v) * x1 + u * v * x2 + (1.0f-u) * v * x3; 
-    }
-
-
   template<class T>
     __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64) // FIXME: move to different place
     {
@@ -847,8 +839,8 @@ namespace embree
               const Vec2f uv2 = patch.getUV(2);
               const Vec2f uv3 = patch.getUV(3);
 
-              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
+              const float16 patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
+              const float16 patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
 
               ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
 					     patch.geom,
@@ -891,8 +883,8 @@ namespace embree
             Vec3f8 normal = patch.normal(uu,vv);
             normal = normalize_safe(normal) ;
             
-            const float8 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const float8 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            const float8 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
+            const float8 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
@@ -929,8 +921,8 @@ namespace embree
             Vec3f4 normal = patch.normal(uu,vv);
             normal = normalize_safe(normal);
 
-            const float4 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const float4 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
+            const float4 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
+            const float4 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
             
             ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
                                            patch.geom,
