@@ -92,7 +92,7 @@ namespace embree
                                       const Vec2f uv[4],
                                       const float edge_level[4],
                                       const int subdiv[4])
-  : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0)
+    : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0),type(0)
   {
     //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
@@ -138,18 +138,18 @@ namespace embree
       BSplinePatch3fa tmp;
       tmp.init( ipatch );
       convertToBicubicBezierPatch(tmp.v,patch.v);
-      flags |= BEZIER_PATCH;
+      type = BEZIER_PATCH;
 #else
       /* bspline */
 
-      flags |= BSPLINE_PATCH;
+      type = BSPLINE_PATCH;
       patch.init( ipatch );
 #endif      
     }
     else
     {
       /* gregory patches */
-      flags |= GREGORY_PATCH;
+      type = GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.exportDenseConrolPoints( patch.v );

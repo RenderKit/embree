@@ -137,11 +137,14 @@ namespace embree
   {
   public:
 
-    enum {
+    enum Type {
       BSPLINE_PATCH          = 1,  
       BEZIER_PATCH           = 2,  
       GREGORY_PATCH          = 4,
-      GREGORY_TRIANGLE_PATCH = 8,
+      GREGORY_TRIANGLE_PATCH = 8
+    };
+
+    enum Flags {
       TRANSITION_PATCH       = 16,  // needs stiching?
       HAS_DISPLACEMENT       = 32   // 0 => no displacments
     };
@@ -259,22 +262,22 @@ namespace embree
 
     __forceinline bool isBSplinePatch() const
     {
-      return (flags & BSPLINE_PATCH) == BSPLINE_PATCH;
+      return type == BSPLINE_PATCH;
     }
 
     __forceinline bool isBezierPatch() const
     {
-      return (flags & BEZIER_PATCH) == BEZIER_PATCH;
+      return type == BEZIER_PATCH;
     }
 
     __forceinline bool isGregoryPatch() const
     {
-      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
+      return type == GREGORY_PATCH;
     }
 
     __forceinline bool isGregoryTrianglePatch() const
     {
-      return (flags & GREGORY_TRIANGLE_PATCH) == GREGORY_TRIANGLE_PATCH;
+      return type == GREGORY_TRIANGLE_PATCH;
     }
 
     __forceinline bool hasDisplacement() const
@@ -379,7 +382,8 @@ namespace embree
     unsigned short v[4];
     float level[4];
 
-    unsigned short flags;
+    unsigned char flags;
+    unsigned char type;
     unsigned short grid_bvh_size_64b_blocks;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
