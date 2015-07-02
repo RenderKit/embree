@@ -735,9 +735,9 @@ namespace embree
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
 
-      for (size_t i=0; i<N; i+16) {
+      for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
-        for (size_t j=0;j<16;j++)
+        for (size_t j=0;j<16;j++)        
           setRay(ray16,j,makeRay(zero,numbers[i+j]));
         rtcIntersect16(valid16,scene,ray16);
       }        
