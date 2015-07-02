@@ -47,10 +47,11 @@ namespace embree
   public:
 
     enum Type {
+      INVALID_PATCH          = 0,
       BSPLINE_PATCH          = 1,  
       BEZIER_PATCH           = 2,  
-      GREGORY_PATCH          = 4,
-      GREGORY_TRIANGLE_PATCH = 8
+      GREGORY_PATCH          = 3,
+      GREGORY_TRIANGLE_PATCH = 4
     };
 
     enum Flags {

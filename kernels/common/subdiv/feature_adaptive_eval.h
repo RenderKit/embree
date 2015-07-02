@@ -69,8 +69,8 @@ namespace embree
 	    const size_t ix = (size_t) x, iy = (size_t) y;
 	    assert(ix-x0 < dwidth && iy-y0 < dheight);
 
-	    P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
+	    if (P)  P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
+	    if (Ng) Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
 	  }
 	}
       }
@@ -91,13 +91,13 @@ namespace embree
 	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
 	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
 	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    P [(iy-y0)*dwidth+(ix-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+	    if (P) P [(iy-y0)*dwidth+(ix-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
 
 	    const Vec3fa Ng0 = patch.ring[0].getNormal();
 	    const Vec3fa Ng1 = patch.ring[1].getNormal();
 	    const Vec3fa Ng2 = patch.ring[2].getNormal();
 	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2));
+	    if (Ng) Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2));
 	  }
 	}
       }

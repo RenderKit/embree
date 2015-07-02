@@ -92,7 +92,7 @@ namespace embree
                                       const Vec2f uv[4],
                                       const float edge_level[4],
                                       const int subdiv[4])
-    : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0),type(0)
+    : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
     //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();

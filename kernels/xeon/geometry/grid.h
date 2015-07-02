@@ -534,7 +534,7 @@ namespace embree
 
     __forceinline bool stitch_x(const CatmullClarkPatch3fa& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
-				Vec2f luv[17*17], Vec3fa Ng[17*17])
+				Vec2f* luv, Vec3fa* Ng)
     {
       if (unlikely(y0 != border || fine.size() == coarse.size()))
 	return false;
@@ -560,7 +560,7 @@ namespace embree
 
     __forceinline bool stitch_y(const CatmullClarkPatch3fa& patch, const size_t y0, const size_t y_ofs, const size_t border, const size_t x0, const size_t x1,
 				const DiscreteTessellationPattern& fine, const DiscreteTessellationPattern& coarse, 
-				Vec2f luv[17*17], Vec3fa Ng[17*17])
+				Vec2f* luv, Vec3fa* Ng)
     {
       if (unlikely(y0 != border || fine.size() == coarse.size()))
 	return false;
@@ -588,7 +588,7 @@ namespace embree
 					 const size_t y0, const size_t y1,
 					 const DiscreteTessellationPattern& pattern_x,
 					 const DiscreteTessellationPattern& pattern_y,
-					 Vec2f luv[17*17])
+					 Vec2f* luv)
     {
       for (int y=0; y<height; y++) {
         const float fy = pattern_y(y0+y);
@@ -607,7 +607,7 @@ namespace embree
 				      const DiscreteTessellationPattern& pattern3, 
 				      const DiscreteTessellationPattern& pattern_x,
 				      const DiscreteTessellationPattern& pattern_y,
-				      Vec2f luv[17*17])
+				      Vec2f* luv)
     {
       if (unlikely(y0 == 0 && pattern_x.size() != pattern0.size())) {
         const float fy = pattern_y(y0);
@@ -647,7 +647,7 @@ namespace embree
     }
 
     __forceinline void calculateGlobalUVs(const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3, 
-					  Vec2f luv[17*17], Vec2f guv[17*17])
+					  Vec2f* luv, Vec2f* guv)
     {
       for (int y=0; y<height; y++) {
         for (int x=0; x<width; x++) {
@@ -665,7 +665,7 @@ namespace embree
     }
 
     template<typename Patch>
-    __forceinline BBox3fa calculatePositionAndNormal(const Patch& patch, Vec2f luv[17*17], Vec3fa Ng[17*17])
+    __forceinline BBox3fa calculatePositionAndNormal(const Patch& patch, Vec2f* luv, Vec3fa* Ng)
     {
       BBox3fa bounds = empty;
       for (int y=0; y<height; y++) {
@@ -680,7 +680,7 @@ namespace embree
       return bounds;
     }
 
-    __forceinline BBox3fa calculatePositionAndNormal(SubdivMesh* mesh, unsigned primID, unsigned subPrim, Vec2f luv[17*17], Vec3fa Ng[17*17])
+    __forceinline BBox3fa calculatePositionAndNormal(SubdivMesh* mesh, unsigned primID, unsigned subPrim, Vec2f* luv, Vec3fa* Ng)
     {
       char* src = mesh->getVertexBuffer(0).getPtr();
       size_t stride = mesh->getVertexBuffer(0).getStride();
@@ -710,7 +710,7 @@ namespace embree
 						  const DiscreteTessellationPattern& pattern3, 
 						  const DiscreteTessellationPattern& pattern_x,
 						  const DiscreteTessellationPattern& pattern_y,
-						  Vec2f luv[17*17], Vec3fa Ng[17*17])
+						  Vec2f* luv, Vec3fa* Ng)
     {
       /* evaluate position and normal */
       size_t swidth  = pattern_x.size()+1;
