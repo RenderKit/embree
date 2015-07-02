@@ -84,6 +84,39 @@ namespace embree
       }
     }
 
+    template<typename Patch>
+    __forceinline void evalLocalGrid(const Patch& patch, const BBox2f& srange, const int lx0, const int lx1, const int ly0, const int ly1)
+    {
+      const float scale_x = rcp(srange.upper.x-srange.lower.x);
+      const float scale_y = rcp(srange.upper.y-srange.lower.y);
+
+      foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
+          const vfloat lu = select(ix == swidth -1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
+          const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
+          const Vec3<vfloat> p = patch.eval(lu,lv);
+          const vfloat u = vfloat(ix)*rcp_swidth;
+          const vfloat v = vfloat(iy)*rcp_sheight;
+          const vint ofs = (iy-y0)*dwidth+(ix-x0);
+          if (likely(all(valid)) && all(iy==iy[0])) {
+            const size_t ofs2 = ofs[0];
+            vfloat::storeu(Px+ofs2,p.x);
+            vfloat::storeu(Py+ofs2,p.y);
+            vfloat::storeu(Pz+ofs2,p.z);
+            vfloat::storeu(U+ofs2,u);
+            vfloat::storeu(V+ofs2,v);
+          } else {
+            foreach_unique_index(valid,iy,[&](const vbool& valid, const int iy0, const int j) {
+                const size_t ofs2 = ofs[j]-j;
+                vfloat::storeu(valid,Px+ofs2,p.x);
+                vfloat::storeu(valid,Py+ofs2,p.y);
+                vfloat::storeu(valid,Pz+ofs2,p.z);
+                vfloat::storeu(valid,U+ofs2,u);
+                vfloat::storeu(valid,V+ofs2,v);
+              });
+          }
+        });
+    }
+
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
       if (erange.empty())
@@ -95,87 +128,26 @@ namespace embree
       int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1);
       if (lx0 >= lx1 || ly0 >= ly1) return;
 
-      if (unlikely(patch.isRegular2()))
-      {
-        const float scale_x = rcp(srange.upper.x-srange.lower.x);
-        const float scale_y = rcp(srange.upper.y-srange.lower.y);
-
-        //assert(depth > 0);
+      if (unlikely(patch.isRegular2())) {
         RegularPatch rpatch(patch);
-        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = rpatch.eval(lu,lv);
-            const vfloat u = vfloat(ix)*rcp_swidth;
-            const vfloat v = vfloat(iy)*rcp_sheight;
-            const vint ofs = (iy-y0)*dwidth+(ix-x0);
-            vfloat::store(valid,Px,ofs,p.x);
-            vfloat::store(valid,Py,ofs,p.y);
-            vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
-          });
+        evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
         return;
       }
 #if PATCH_USE_GREGORY == 2
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory()))
-      {
-        const float scale_x = rcp(srange.upper.x-srange.lower.x);
-        const float scale_y = rcp(srange.upper.y-srange.lower.y);
-
-        //assert(depth > 0);
+      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
         GregoryPatch gpatch(patch);
-        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = gpatch.eval<vbool>(lu,lv);
-            const vfloat u = vfloat(ix)*rcp_swidth;
-            const vfloat v = vfloat(iy)*rcp_sheight;
-            const vint ofs = (iy-y0)*dwidth+(ix-x0);
-            vfloat::store(valid,Px,ofs,p.x);
-            vfloat::store(valid,Py,ofs,p.y);
-            vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
-          });
+        evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
         return;
       }
 #else
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
       {
-        const float scale_x = rcp(srange.upper.x-srange.lower.x);
-        const float scale_y = rcp(srange.upper.y-srange.lower.y);
-
 #if PATCH_USE_GREGORY == 1
         GregoryPatch gpatch(patch);
-        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = gpatch.eval<vbool>(lu,lv);    
-            const vfloat u = vfloat(ix)*rcp_swidth;
-            const vfloat v = vfloat(iy)*rcp_sheight;
-            const vint ofs = (iy-y0)*dwidth+(ix-x0);
-            vfloat::store(valid,Px,ofs,p.x);
-            vfloat::store(valid,Py,ofs,p.y);
-            vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
-          });
+        evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
 #else
         BilinearPatch bpatch(patch);
-        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat lu = select(ix == swidth-1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = bpatch.eval(lu,lv);
-            const vfloat u = vfloat(ix)*rcp_swidth;
-            const vfloat v = vfloat(iy)*rcp_sheight;
-            const vint ofs = (iy-y0)*dwidth+(ix-x0);
-            vfloat::store(valid,Px,ofs,p.x);
-            vfloat::store(valid,Py,ofs,p.y);
-            vfloat::store(valid,Pz,ofs,p.z);
-            vfloat::store(valid,U,ofs,u);
-            vfloat::store(valid,V,ofs,v);
-          });
+        evalLocalGrid(bpatch,srange,lx0,lx1,ly0,ly1);
 #endif
         return;
       }

@@ -110,6 +110,10 @@ namespace embree
       return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
     }
     
+    static __forceinline void storeu( const bool8& mask, void* ptr, const float8& f ) { 
+      return _mm256_storeu_ps((float*)ptr,_mm256_blendv_ps(f,_mm256_loadu_ps((float*)ptr),mask));
+    }
+    
 #if defined (__AVX2__)
     static __forceinline float8 load_nt(void* ptr) {
       return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));

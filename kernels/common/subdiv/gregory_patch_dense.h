@@ -51,7 +51,7 @@ namespace embree
       f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
       f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
       f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-      return GregoryPatch3fa::eval_t<M>(matrix,f,uu,vv);
+      return GregoryPatch3fa::eval_t(matrix,f,uu,vv);
     }
     
      template<class M, class T>
