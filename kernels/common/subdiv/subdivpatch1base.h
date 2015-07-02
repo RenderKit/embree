@@ -303,7 +303,7 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
-#if 1 && defined(__AVX__)
+#if 0 && defined(__AVX__)
 
     const BufferT<Vec3fa>& vertices = geom->getVertexBuffer(0);
     auto loader = [&](const SubdivMesh::HalfEdge* p) { 
@@ -353,7 +353,7 @@ namespace embree
         });
 
 #else
-    feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+    isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
                             0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
                             grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
 #endif

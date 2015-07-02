@@ -24,6 +24,7 @@
 
 namespace embree
 {
+  namespace isa {
   struct FeatureAdaptiveEval2
   {
     const size_t x0,x1;
@@ -178,6 +179,7 @@ namespace embree
     GeneralCatmullClarkPatch3fa patch;
     patch.init(h,vertices);
     FeatureAdaptiveEval2(patch,subPatch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,dwidth,dheight);
+  }
   }
 }
 
