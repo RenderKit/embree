@@ -147,7 +147,6 @@ namespace embree
 						       const float *const grid_z,
 						       const float *const grid_uv,
 						       const size_t line_offset,
-						       const void* geom,
 						       Precalculations &pre)
       {
 	const size_t offset0 = 0 * line_offset;
@@ -251,8 +250,7 @@ namespace embree
 						      const float *const grid_y,
 						      const float *const grid_z,
 						      const float *const grid_uv,
-						      const size_t line_offset,
-						      const void* geom)
+						      const size_t line_offset)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -354,7 +352,6 @@ namespace embree
 						       const float *const grid_z,
 						       const float *const grid_uv,
 						       const size_t line_offset,
-						       const void* geom,
 						       Precalculations &pre)
       {
 	const size_t offset0 = 0 * line_offset;
@@ -499,8 +496,7 @@ namespace embree
 							const float *const grid_y,
 							const float *const grid_z,
 							const float *const grid_uv,
-							const size_t line_offset,
-							const void* geom)
+							const size_t line_offset)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -566,7 +562,6 @@ namespace embree
       template<class M, class T>
         static __forceinline void intersect1_precise(Ray& ray,
                                                      const Quad2x2 &qquad,
-                                                     const void* geom,
                                                      Precalculations &pre,
                                                      const size_t delta = 0)
       {
@@ -668,7 +663,6 @@ namespace embree
       template<class M, class T>
         static __forceinline bool occluded1_precise(Ray& ray,
                                                     const Quad2x2 &qquad,
-                                                    const void* geom,
 						    const size_t delta = 0)
       {
         const Vec3<T> v0_org = qquad.getVtx( 0, delta );
@@ -726,7 +720,7 @@ namespace embree
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
 						       ThreadWorkState *t_state,
-						       const SubdivMesh* const geom);
+						       const SubdivMesh* const scene);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
@@ -744,7 +738,7 @@ namespace embree
       
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* geom, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) 
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -759,23 +753,23 @@ namespace embree
           const float *const grid_z  = grid_x + 2 * dim_offset;
           const float *const grid_uv = grid_x + 3 * dim_offset;
 #if defined(__AVX__)
-	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, (SubdivMesh*)geom,pre);
+	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre);
 #else
-	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom,pre); // FIXME: geom is the scene not a subdiv mesh
-	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom,pre);
+	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre);
+	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre);
 #endif
 
         }
         else 
         {
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
 	  assert(lazy_node);
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* geom, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) 
       {
         STAT3(shadow.trav_prims,1,1,1);
         
@@ -791,16 +785,16 @@ namespace embree
           const float *const grid_uv = grid_x + 3 * dim_offset;
 
 #if defined(__AVX__)
-	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, (SubdivMesh*)geom);
+	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset);
 #else
-	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, (SubdivMesh*)geom)) return true;
-	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, (SubdivMesh*)geom)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset)) return true;
 #endif
 
         }
         else 
         {
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, geom);
+	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
