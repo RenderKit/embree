@@ -23,6 +23,7 @@
 #include "../../common/subdiv/tessellation.h"
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
+#include "quad2x2.h"
 
 /* returns u,v based on individual triangles instead relative to original patch */
 #define FORCE_TRIANGLE_UV 0

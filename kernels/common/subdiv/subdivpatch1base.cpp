@@ -17,6 +17,9 @@
 #include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
 #include "../scene.h"
+#if !defined(__MIC__)
+#include "../../xeon/geometry/quad2x2.h" // FIXME: remove?
+#endif
 
 namespace embree
 {
@@ -193,7 +196,7 @@ namespace embree
 #else
     /* 8-wide SIMD is default on Xeon */
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
+    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2 // FIXME: ???????????????
 
 #endif
     /* need stiching? */
