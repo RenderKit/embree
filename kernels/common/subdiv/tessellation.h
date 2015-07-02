@@ -18,6 +18,14 @@
 
 namespace embree
 {
+  /* adjust discret tessellation level for feature-adaptive pre-subdivision */
+  __forceinline float adjustDiscreteTessellationLevel(float l, const int sublevel = 0)
+  {
+    for (size_t i=0; i<sublevel; i++) l *= 0.5f;
+    float r = ceilf(l);      
+    for (size_t i=0; i<sublevel; i++) r *= 2.0f;
+    return r;
+  }
   
   __forceinline void stitchGridEdges(const unsigned int low_rate,
 				    const unsigned int high_rate,

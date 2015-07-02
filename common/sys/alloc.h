@@ -48,6 +48,12 @@ namespace embree
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align = 64);
   void alignedFree(const void* ptr);
+  
+  /*! alloca that returns aligned data */
+  template<class T>
+    __forceinline T* aligned_alloca(size_t elements, const size_t alignment = 64) {
+    return (T*)ALIGN_PTR(alloca(elements * sizeof(T) + alignment),alignment);
+  }
 
   /*! allocator that performs aligned allocations */
   template<typename T, size_t alignment = 64>

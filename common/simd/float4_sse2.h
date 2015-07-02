@@ -105,6 +105,10 @@ namespace embree
     }
 #endif
 
+    static __forceinline float4 load(const unsigned short* const ptr) {
+      return _mm_mul_ps(float4(int4::load(ptr)),float4(1.0f/65535.0f));
+    } 
+
     static __forceinline void store ( void* ptr, const float4& v ) {  
       _mm_store_ps((float*)ptr,v); 
     }

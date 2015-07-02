@@ -71,6 +71,15 @@ namespace embree
     }
 #endif
 
+    static __forceinline int4 load(const unsigned short* const ptr)
+    {
+#if defined (__SSE4_1__)
+      return _mm_cvtepu16_epi32(_mm_loadu_si128((__m128i*)ptr));
+#else
+      return int4(ptr[0],ptr[1],ptr[2],ptr[3]);
+#endif
+    } 
+
     static  __forceinline int4 load( const void* const a ) { 
       return _mm_load_si128((__m128i*)a); 
     }

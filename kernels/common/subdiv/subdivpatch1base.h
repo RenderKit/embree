@@ -41,22 +41,6 @@
 
 namespace embree
 {
-  template<class T>
-    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64) // FIXME: move to different place
-    {
-      void *ptr = alloca(elements * sizeof(T) + alignment);
-      return (T*)ALIGN_PTR(ptr,alignment);
-    }
-  
-  /* adjust discret tessellation level for feature-adaptive pre-subdivision */
-    __forceinline float adjustDiscreteTessellationLevel(float l, const int sublevel = 0)
-    {
-      for (size_t i=0; i<sublevel; i++) l *= 0.5f;
-      float r = ceilf(l);      
-      for (size_t i=0; i<sublevel; i++) r *= 2.0f;
-      return r;
-    }
-
 #if !defined(__MIC__)
 
   /* 3x3 point grid => 2x2 quad grid */
@@ -84,21 +68,8 @@ namespace embree
     float vtx_u[12];
     float vtx_v[12];
 #endif
-
-    static __forceinline int4 u16_to_int4(const unsigned short* const source) // FIXME: move to int4 header
-    {
-#if defined (__SSE4_1__)
-      return _mm_cvtepu16_epi32(loadu4i(source));
-#else
-      return int4(source[0],source[1],source[2],source[3]);
-#endif
-    } 
-
-    static __forceinline float4 u16_to_float4(const unsigned short* const source) {
-      return float4(u16_to_int4(source)) * 1.0f/65535.0f;
-    } 
-
-    static __forceinline float u16_to_float(const unsigned short source) { return (float)source * 1.0f/65535.0f; } 
+    
+    static __forceinline float u16_to_float(const unsigned short source) { return (float)source * (1.0f/65535.0f); } 
     static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
     static __forceinline int4 float_to_u16(const float4 &f) { return (int4)(f*65535.0f); }
 
@@ -134,8 +105,7 @@ namespace embree
       dest[11] = v22;
     }
 
-    __forceinline void initFrom3x3Grid( const float4 source[3],
-                                        float *const dest)
+    __forceinline void initFrom3x3Grid( const float4 source[3], float *const dest)
     {
       const float4 row0_a = unpacklo(source[0],source[1]); 
       const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
@@ -148,8 +118,7 @@ namespace embree
       storeu4f(&dest[6], row1_a);
     }
 
-    __forceinline void initFrom3x3Grid_discretized( const float4 source[3],
-                                                    unsigned short *const dest)
+    __forceinline void initFrom3x3Grid_discretized( const float4 source[3], unsigned short *const dest)
     {
       const float4 row0_a = unpacklo(source[0],source[1]); 
       const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
@@ -168,11 +137,8 @@ namespace embree
 
     }
 
-    __forceinline void initFrom3x3Grid_discretized( const float *const source,
-                                                    unsigned short *const dest,
-                                                    const size_t offset_line0,
-                                                    const size_t offset_line1,
-                                                    const size_t offset_line2)
+    __forceinline void initFrom3x3Grid_discretized( const float *const source, unsigned short *const dest,
+                                                    const size_t offset_line0, const size_t offset_line1, const size_t offset_line2)
     {
       const float v00 = source[offset_line0 + 0];
       const float v01 = source[offset_line0 + 1];
@@ -223,17 +189,12 @@ namespace embree
     }
 
     /* init from 3x3 point grid */
-    void init( const float4 grid_x[3],
-               const float4 grid_y[3],
-               const float4 grid_z[3],
-               const float4 grid_u[3],
-               const float4 grid_v[3])
+    void init( const float4 grid_x[3], const float4 grid_y[3], const float4 grid_z[3], const float4 grid_u[3], const float4 grid_v[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
       initFrom3x3Grid( grid_z, vtx_z);
 #if DISCRETIZED_UV == 1
-      
       initFrom3x3Grid_discretized( grid_u, vtx_u);
       initFrom3x3Grid_discretized( grid_v, vtx_v);
 #else
@@ -242,10 +203,8 @@ namespace embree
 #endif
     }
 
-        /* init from 3x3 point grid */
-    void init_xyz( const float4 grid_x[3],
-		   const float4 grid_y[3],
-		   const float4 grid_z[3])
+    /* init from 3x3 point grid */
+    void init_xyz( const float4 grid_x[3], const float4 grid_y[3], const float4 grid_z[3])
     {
       initFrom3x3Grid( grid_x, vtx_x);
       initFrom3x3Grid( grid_y, vtx_y);
@@ -260,7 +219,7 @@ namespace embree
     }
 
     __forceinline int8 combine_discretized( const unsigned short *const source, const size_t offset) const {  
-      return int8( u16_to_int4(&source[0+offset]), u16_to_int4(&source[6+offset]) );            
+      return int8( int4::load(&source[0+offset]), int4::load(&source[6+offset]) );            
     }
 
     __forceinline Vec3f8 getVtx( const size_t offset, const size_t delta = 0 ) const {
@@ -269,7 +228,7 @@ namespace embree
 
     __forceinline Vec2f8 getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRETIZED_UV == 1
-      return Vec2f8(  float8(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, float8(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
+      return Vec2f8(  float8(combine_discretized(vtx_u,offset)) * (1.0f/65535.0f), float8(combine_discretized(vtx_v,offset)) * (1.0f/65535.0f) )  ;
 #else
       return Vec2f8(  combine(vtx_u,offset), combine(vtx_v,offset) );
 #endif
@@ -283,7 +242,7 @@ namespace embree
 
     __forceinline Vec2f4 getUV( const size_t offset, const size_t delta = 0 ) const {
 #if DISCRETIZED_UV == 1
-      return Vec2f4( u16_to_float4(&vtx_u[offset+delta]), u16_to_float4(&vtx_v[offset+delta]) );
+      return Vec2f4( float4::load(&vtx_u[offset+delta]), float4::load(&vtx_v[offset+delta]) );
 #else
       return Vec2f4(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
 #endif
@@ -631,7 +590,7 @@ namespace embree
 
     __forceinline Vec2f getUV(const size_t i) const
     {
-      return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
+      return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
     }
 
 
