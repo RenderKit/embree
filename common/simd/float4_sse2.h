@@ -145,6 +145,10 @@ namespace embree
 #endif
     }
 
+    static __forceinline void storeu( const bool4& mask, void* ptr, const float4& f ) { 
+      return _mm_storeu_ps((float*)ptr,select(mask,f,_mm_loadu_ps((float*)ptr)));
+    }
+
     static __forceinline void store ( const bool4& mask, void* ptr, const int4& ofs, const float4& v, const int scale = 1 )
     {
       if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];

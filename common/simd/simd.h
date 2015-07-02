@@ -73,6 +73,20 @@ namespace embree
     }
   }
 
+  /* foreach unique */
+  template<typename vbool, typename vint, typename Closure>
+    __forceinline void foreach_unique_index(const vbool& valid0, const vint& vi, const Closure& closure) 
+  {
+    vbool valid1 = valid0;
+    while (any(valid1)) {
+      const int j = __bsf(movemask(valid1));
+      const int i = vi[j];
+      const vbool valid2 = valid1 & (i == vi);
+      valid1 = valid1 & !valid2;
+      closure(valid2,i,j);
+    }
+  }
+
   template<typename Closure>
     __forceinline void foreach2(int x0, int x1, int y0, int y1, const Closure& closure) 
   {

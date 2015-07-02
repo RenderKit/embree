@@ -597,9 +597,10 @@ namespace embree
       }
     }
 
-    template<class M, class T>
+    template<class T>
       static __forceinline Vec3<T> eval_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
+      typedef typename T::Mask M;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
@@ -655,7 +656,7 @@ namespace embree
       return Vec3<T>(x,y,z);
     }
 
-    template<typename M, class T>
+    template<class T>
     __forceinline Vec3<T> eval(const T& uu, const T& vv) const 
     {
       Vec3<T> ff[2][2];
@@ -663,7 +664,7 @@ namespace embree
       ff[0][1] = Vec3<T>(f[0][1]);
       ff[1][1] = Vec3<T>(f[1][1]);
       ff[1][0] = Vec3<T>(f[1][0]);
-      return eval_t<M>(v,ff,uu,vv);
+      return eval_t(v,ff,uu,vv);
     }
 
     template<class M, class T>

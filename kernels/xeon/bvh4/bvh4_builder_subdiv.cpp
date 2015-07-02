@@ -856,13 +856,9 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              float edge_levels[4];
-              for (size_t i=0;i<4;i++)
-                edge_levels[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-              
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_levels,subdiv);
+              subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
 #if 0
               BBox3fa bounds;
               size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);
@@ -1017,7 +1013,7 @@ namespace embree
           }
         if (bvh->numPrimitives == 0 || bvh->numPrimitives != fastUpdateMode_numFaces || bvh->root == BVH4::emptyNode)
           fastUpdateMode = false;
-         
+
         /* initialize allocator and parallel_for_for_prefix_sum */
         pstate.init(iter,size_t(1024));
         numPrimitives = fastUpdateMode_numFaces;
@@ -1085,9 +1081,6 @@ namespace embree
                   ipatch.ring[3].edge_level
                 };
                 
-                for (size_t i=0;i<4;i++)
-                  edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-                
                 const unsigned int patchIndex = base.size()+s.size();
                 assert(patchIndex < numPrimitives);
                 subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
@@ -1109,14 +1102,21 @@ namespace embree
                 first_half_edge[2].edge_level,
                 first_half_edge[3].edge_level
               };
-              
+
+              const int neighborSubdiv[4] = {
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[0]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[1]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[2]),
+                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
+              };
+
               /* updating triangular bezier patch */
-              if (numEdges == 3) {
+              if (numEdges == 3) { // FIXME: buggy, for triangle the above code accesses half edge array out of bounds
                 edge_level[3] = first_half_edge[1].edge_level;
               }
               
               const unsigned int patchIndex = base.size()+s.size();
-              subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
+              subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh);
               subdiv_patches[patchIndex].resetRootRef();
               
               /* compute patch bounds */
