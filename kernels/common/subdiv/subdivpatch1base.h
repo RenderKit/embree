@@ -55,48 +55,36 @@ namespace embree
     };
 #endif
 
-    __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
+    __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) 
+      : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
 
     __forceinline bool hasLeafSize() const
     {
-
 #if defined(__MIC__)
-      return u_end-u_start <= 1 && v_end-v_start <= 1;
+      return u_end-u_start <= 1 && v_end-v_start <= 1; // FIXME: what does this ???
 #else
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
       assert(u_size >= 1);
       assert(v_size >= 1);
-
       return u_size <= 3 && v_size <= 3;
 #endif
     }
 
-
     static __forceinline unsigned int split(unsigned int start,unsigned int end)
     {
-      const unsigned int size = end-start+1;
+      const unsigned int center = (start+end)/2;
 #if defined(__MIC__)
-      //assert( size > 4 );
-      //const unsigned int blocks4 = (end-start+1+4-1)/4;
-      //const unsigned int center  = (start + (blocks4/2)*4)-1; 
-      //assert ((center-start+1) % 4 == 0);
-      const unsigned int center = (start+end)/2;
       assert(center<end);
-      return center;
 #else
-      // FIXME: for xeon the divide is 3!
-      const unsigned int center = (start+end)/2;
-#endif
-
       assert (center > start);
       assert (center < end);
+#endif
       return center;
     }
 
-    __forceinline void split(GridRange &r0, GridRange &r1) const
+    __forceinline void split(GridRange& r0, GridRange& r1) const
     {
-      //if (hasLeafSize()) return false;
       assert( hasLeafSize() == false );
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;
@@ -104,20 +92,17 @@ namespace embree
       r1 = *this;
 
       if (u_size >= v_size)
-        {
-          //assert(u_size >= 3);
-          const unsigned int u_mid = split(u_start,u_end);
-          r0.u_end   = u_mid;
-          r1.u_start = u_mid;
-        }
+      {
+        const unsigned int u_mid = split(u_start,u_end);
+        r0.u_end   = u_mid;
+        r1.u_start = u_mid;
+      }
       else
-        {
-          //assert(v_size >= 3);
-          const unsigned int v_mid = split(v_start,v_end);
-          r0.v_end   = v_mid;
-          r1.v_start = v_mid;
-        }
-
+      {
+        const unsigned int v_mid = split(v_start,v_end);
+        r0.v_end   = v_mid;
+        r1.v_start = v_mid;
+      }
     }
 
     __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
@@ -126,36 +111,27 @@ namespace embree
       size_t children = 0;
       GridRange first,second;
       split(first,second);
-      if (first.hasLeafSize())
-	{
-	  children = 1;
-	  r[0] = first;
-	}
-      else
-	{
-	  first.split(r[0],r[1]);
-	  children = 2;
-	}
 
-      if (second.hasLeafSize())
-	{
-	  r[children] = second;
-	  children++;
-	}
-      else
-	{
-	  second.split(r[children+0],r[children+1]);
-	  children += 2;
-	}
+      if (first.hasLeafSize()) {
+        r[0] = first;
+        children++;
+      } 
+      else {
+        first.split(r[0],r[1]);
+        children += 2;
+      }
+
+      if (second.hasLeafSize())	{
+        r[children] = second;
+        children++;
+      }
+      else {
+        second.split(r[children+0],r[children+1]);
+        children += 2;
+      }
       return children;      
     }
-
   };
-
-  inline std::ostream& operator<<(std::ostream& cout, const GridRange& r) {
-    cout << "range: u_start " << r.u_start << " u_end " << r.u_end << " v_start " << r.v_start << " v_end " << r.v_end << std::endl;
-    return cout;
-  }
 
   struct __aligned(64) SubdivPatch1Base
   {
@@ -341,8 +317,6 @@ namespace embree
       return grid_u_res*y+x;
     }
 
-    void evalToOBJ(Scene *scene, size_t& vertex_index,size_t& numTotalTriangles);
-    
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange& range,
