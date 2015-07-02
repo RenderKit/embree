@@ -17,9 +17,6 @@
 #include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
 #include "../scene.h"
-#if !defined(__MIC__)
-#include "../../xeon/geometry/quad2x2.h" // FIXME: remove?
-#endif
 
 namespace embree
 {
@@ -194,9 +191,10 @@ namespace embree
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
     grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
 #else
+    const size_t sizeof_Quad2x2 = 192; // FIXME: !!!!!!!
     /* 8-wide SIMD is default on Xeon */
     grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2 // FIXME: ???????????????
+    grid_subtree_size_64b_blocks = (sizeof_Quad2x2+63) / 64; // single Quad2x2 // FIXME: ???????????????
 
 #endif
     /* need stiching? */
@@ -219,7 +217,7 @@ namespace embree
 #if defined(__MIC__)
     const size_t leafBlocks = 4;
 #else
-    const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
+    const size_t leafBlocks = (sizeof_Quad2x2+63) / 64;
 #endif
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
