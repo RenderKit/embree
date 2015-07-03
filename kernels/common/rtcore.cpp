@@ -338,6 +338,14 @@ namespace embree
     TaskSchedulerTBB::create(g_numThreads);
 #endif
 
+#if defined(__TARGET_AVX512__)
+    if (g_numThreads == 0) {
+      if (State::instance()->verbosity(2)) 
+        std::cout << "Pre-initialize TBB threads..." << std::endl;
+      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+    } 
+#endif
+
 #if defined(TASKING_TBB)
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
