@@ -325,7 +325,7 @@ namespace embree
     double run (size_t numThreads)
     {
       int flags = 0;
-#if defined(__UNIX__)
+#if defined(__UNIX__) && !defined(__APPLE__)
       flags |= MAP_POPULATE;
 #endif
       size_t startN = 1024*1024*16;
