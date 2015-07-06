@@ -252,7 +252,7 @@ namespace embree
     static char* ptr;
 
     benchmark_pagefaults () 
-     : Benchmark("osmalloc","GB/s") {}
+     : Benchmark("pagefaults","GB/s") {}
 
     static void benchmark_pagefaults_thread(void* arg) 
     {
@@ -292,6 +292,58 @@ namespace embree
 
   char* benchmark_pagefaults::ptr = nullptr;
 
+
+#if defined(__UNIX__)
+
+#include <sys/mman.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#endif
+
+  class benchmark_osmalloc_with_page_commit : public Benchmark
+  {
+  public:
+    enum { N = 1024*1024*1024 };
+
+    static char* ptr;
+
+    benchmark_osmalloc_with_page_commit () 
+     : Benchmark("osmalloc_with_page_commit","GB/s") {}
+
+    static void benchmark_osmalloc_with_page_commit_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+    }
+    
+    double run (size_t numThreads)
+    {
+      int flags = 0;
+#if defined(__UNIX__)
+      flags |= MAP_POPULATE;
+#endif
+      size_t startN = 1024*1024*16;
+
+      double t = 0.0f;
+      size_t iterations = 0;
+      for (size_t i=startN;i<=N;i*=2,iterations++)
+      {
+        double t0 = getSeconds();
+        char *ptr = (char*) os_malloc(i,flags);
+        double t1 = getSeconds();
+        os_free(ptr,i);
+        t += 1E-9*double(i)/(t1-t0);        
+      }      
+      
+      return t / (double)iterations;
+    }
+  };
 
 
   // -------------------------------------------------------------------------------------
@@ -967,7 +1019,9 @@ namespace embree
 #endif
 
 #if defined(__MIC__) || defined(__TARGET_AVX512__)
-    rtcore_coherent_intersect16(scene);
+    if (hasISA(AVX512)) {    
+      rtcore_coherent_intersect16(scene);
+    }
 #endif
 
     size_t N = 1024*1024;
@@ -991,7 +1045,9 @@ namespace embree
 #endif
 
 #if defined(__MIC__) || defined(__TARGET_AVX512__)
-    rtcore_incoherent_intersect16(scene,numbers,N);
+    if (hasISA(AVX512)) {
+      rtcore_incoherent_intersect16(scene,numbers,N);
+    }
 #endif
 
     delete numbers;
@@ -1010,7 +1066,9 @@ namespace embree
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
 #if defined(__TARGET_AVX512__) || defined(__MIC__)
-    benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
+    if (hasISA(AVX512)) {
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
+    }
 #endif
 
     benchmarks.push_back(new benchmark_mutex_sys());
@@ -1019,6 +1077,7 @@ namespace embree
 
     benchmarks.push_back(new benchmark_atomic_inc());
 #if defined(__X86_64__)
+    benchmarks.push_back(new benchmark_osmalloc_with_page_commit());
     benchmarks.push_back(new benchmark_pagefaults());
     benchmarks.push_back(new benchmark_bandwidth());
 #endif
