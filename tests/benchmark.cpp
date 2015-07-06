@@ -244,17 +244,17 @@ namespace embree
     }
   };
 
-  class benchmark_osmalloc : public Benchmark
+  class benchmark_pagefaults : public Benchmark
   {
   public:
     enum { N = 1024*1024*1024 };
 
     static char* ptr;
 
-    benchmark_osmalloc () 
+    benchmark_pagefaults () 
      : Benchmark("osmalloc","GB/s") {}
 
-    static void benchmark_osmalloc_thread(void* arg) 
+    static void benchmark_pagefaults_thread(void* arg) 
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
@@ -273,12 +273,12 @@ namespace embree
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
+	g_threads.push_back(createThread(benchmark_pagefaults_thread,(void*)i,1000000,i));
       //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      benchmark_osmalloc_thread(0);
+      benchmark_pagefaults_thread(0);
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
@@ -290,7 +290,7 @@ namespace embree
     }
   };
 
-  char* benchmark_osmalloc::ptr = nullptr;
+  char* benchmark_pagefaults::ptr = nullptr;
 
 
 
@@ -1019,7 +1019,7 @@ namespace embree
 
     benchmarks.push_back(new benchmark_atomic_inc());
 #if defined(__X86_64__)
-    benchmarks.push_back(new benchmark_osmalloc());
+    benchmarks.push_back(new benchmark_pagefaults());
     benchmarks.push_back(new benchmark_bandwidth());
 #endif
 
