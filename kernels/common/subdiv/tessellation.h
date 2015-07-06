@@ -27,6 +27,10 @@ namespace embree
     return r;
   }
   
+  __forceinline int stitch(const int x, const int fine, const int coarse) {
+    return (2*x+1)*coarse/(2*fine);
+  }
+
   __forceinline void stitchGridEdges(const unsigned int low_rate,
 				    const unsigned int high_rate,
 				    float * __restrict__ const uv_array,

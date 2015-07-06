@@ -303,60 +303,14 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
-#if 0 && defined(__AVX__)
-
-    const BufferT<Vec3fa>& vertices = geom->getVertexBuffer(0);
-    auto loader = [&](const SubdivMesh::HalfEdge* p) { 
-      return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex());
-    };
-    BSplinePatch3fa rpatch(patch.edge,loader);
-
-    /* grid_u, grid_v need to be padded as we write with SIMD granularity */
-    /*gridUVTessellator(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-
-    for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
-    {
-      float8 uu = load8f(&grid_u[8*i]);
-      float8 vv = load8f(&grid_v[8*i]);
-      Vec3f8 vtx = rpatch.eval(uu,vv);
-      *(float8*)&grid_x[8*i] = vtx.x;
-      *(float8*)&grid_y[8*i] = vtx.y;
-      *(float8*)&grid_z[8*i] = vtx.z;        
-      }*/
-
-    const float scale_x = rcp((float)(patch.grid_u_res-1));
-    const float scale_y = rcp((float)(patch.grid_v_res-1));
-    foreach2(0,patch.grid_u_res,0,patch.grid_v_res,[&](const vbool& valid, const vint& ix, const vint& iy) {
-          const vfloat lu = vfloat(ix)*scale_x;
-          const vfloat lv = vfloat(iy)*scale_y;
-          const Vec3<vfloat> p = rpatch.eval(lu,lv);
-          const vfloat u = vfloat(ix)*scale_x;
-          const vfloat v = vfloat(iy)*scale_y;
-          const vint ofs = iy*patch.grid_u_res+ix;
-          if (likely(all(valid)) && all(iy==iy[0])) {
-            const size_t ofs2 = ofs[0];
-            vfloat::storeu(grid_x+ofs2,p.x);
-            vfloat::storeu(grid_y+ofs2,p.y);
-            vfloat::storeu(grid_z+ofs2,p.z);
-            vfloat::storeu(grid_u+ofs2,u);
-            vfloat::storeu(grid_v+ofs2,v);
-          } else {
-            foreach_unique_index(valid,iy,[&](const vbool& valid, const int iy0, const int j) {
-                const size_t ofs2 = ofs[j]-j;
-                vfloat::storeu(valid,grid_x+ofs2,p.x);
-                vfloat::storeu(valid,grid_y+ofs2,p.y);
-                vfloat::storeu(valid,grid_z+ofs2,p.z);
-                vfloat::storeu(valid,grid_u+ofs2,u);
-                vfloat::storeu(valid,grid_v+ofs2,v);
-            });
-          }
-        });
-
-#else
-    isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
-                            0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
-                            grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
-#endif
+    if (unlikely(patch.needsStitching()))
+      isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
+                                   0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
+                                   grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
+    else
+      isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+                                   0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
+                                   grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
 
 
 #if defined(__MIC__)

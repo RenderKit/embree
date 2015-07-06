@@ -180,6 +180,77 @@ namespace embree
     patch.init(h,vertices);
     FeatureAdaptiveEval2(patch,subPatch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,dwidth,dheight);
   }
+
+  static __forceinline bool stitch_col(const GeneralCatmullClarkPatch3fa& patch, int subPatch,
+                                       const bool right, const size_t y0, const size_t y1, const int fine_y, const int coarse_y, 
+                                       float* Px, float* Py, float* Pz, float* U, float* V, const size_t dx0, const size_t dwidth, const size_t dheight)
+  {
+    assert(coarse_y <= fine_y);
+    if (likely(fine_y == coarse_y))
+      return false;
+    
+    const size_t y0s = stitch(y0,fine_y,coarse_y);
+    const size_t y1s = stitch(y1,fine_y,coarse_y);
+    assert(y1s-y0s < 4097);
+    
+    float px[4097], py[4097], pz[4097], u[4097], v[4097]; // FIXME: limits maximal level
+    FeatureAdaptiveEval2(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, 1,4097);
+    
+    for (int y=y0; y<=y1; y++) {
+      const size_t ys = stitch(y,fine_y,coarse_y)-y0s;
+      Px[(y-y0)*dwidth+dx0] = px[ys];
+      Py[(y-y0)*dwidth+dx0] = py[ys];
+      Pz[(y-y0)*dwidth+dx0] = pz[ys];
+      U [(y-y0)*dwidth+dx0] = u[ys];
+      V [(y-y0)*dwidth+dx0] = v[ys];
+    }
+    return true;
+  }
+  
+  static __forceinline bool stitch_row(const GeneralCatmullClarkPatch3fa& patch, int subPatch,
+                                     const bool bottom, const size_t x0, const size_t x1, const int fine_x, const int coarse_x, 
+                                     float* Px, float* Py, float* Pz, float* U, float* V, const size_t dy0, const size_t dwidth, const size_t dheight)
+    {
+      assert(coarse_x <= fine_x);
+      if (likely(fine_x == coarse_x))
+	return false;
+
+      const size_t x0s = stitch(x0,fine_x,coarse_x);
+      const size_t x1s = stitch(x1,fine_x,coarse_x);
+      assert(x1s-x0s < 4097);
+      
+      float px[4097], py[4097], pz[4097], u[4097], v[4097]; // FIXME: limits maximal level
+      FeatureAdaptiveEval2(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, 4097,1);
+      
+      for (int x=x0; x<=x1; x++) {
+	const size_t xs = stitch(x,fine_x,coarse_x)-x0s;
+	Px[dy0*dwidth+x-x0] = px[xs];
+        Py[dy0*dwidth+x-x0] = py[xs];
+        Pz[dy0*dwidth+x-x0] = pz[xs];
+        U [dy0*dwidth+x-x0] = u[xs];
+        V [dy0*dwidth+x-x0] = v[xs];
+      }
+      return true;
+    }
+  
+  __forceinline void feature_adaptive_eval2 (const SubdivMesh::HalfEdge* h, size_t subPatch, const float levels[4], const BufferT<Vec3fa>& vertices,
+                                             const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                                             float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
+  {
+    GeneralCatmullClarkPatch3fa patch;
+    patch.init(h,vertices);
+    
+    const bool sl = x0 == 0         && stitch_col(patch,subPatch,0,y0,y1,sheight-1,levels[3], Px,Py,Pz,U,V, 0    ,dwidth,dheight);
+    const bool sr = x1 == swidth-1  && stitch_col(patch,subPatch,1,y0,y1,sheight-1,levels[1], Px,Py,Pz,U,V, x1-x0,dwidth,dheight);
+    
+    const bool st = y0 == 0         && stitch_row(patch,subPatch,0,x0,x1,swidth-1,levels[0], Px,Py,Pz,U,V, 0    ,dwidth,dheight);
+    const bool sb = y1 == sheight-1 && stitch_row(patch,subPatch,1,x0,x1,swidth-1,levels[2], Px,Py,Pz,U,V, y1-y0,dwidth,dheight);
+
+    const size_t ofs = st*dwidth+sl;
+    FeatureAdaptiveEval2(patch,subPatch,x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, Px+ofs,Py+ofs,Pz+ofs,U+ofs,V+ofs, dwidth,dheight);
+  }
+
+
   }
 }
 
