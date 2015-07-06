@@ -24,7 +24,7 @@
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
 
-#define FORCE_TRIANGLE_UV 1                //!< returns u,v based on individual triangles instead relative to original patch 
+#define FORCE_TRIANGLE_UV 0                //!< returns u,v based on individual triangles instead relative to original patch 
 #define ENABLE_NORMALIZED_INTERSECTION 0  // FIXME: still required? remove
 
 #if FORCE_TRIANGLE_UV
