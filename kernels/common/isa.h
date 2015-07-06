@@ -132,7 +132,10 @@ namespace embree
   SELECT_SYMBOL_AVX(features,intersector);                        
 
   struct VerifyMultiTargetLinking {
-    static __noinline int getISA() { return ISA; }
+    static __noinline int getISA(int depth = 5) { 
+      if (depth == 0) return ISA; 
+      else return getISA(depth-1); 
+    }
   };
   namespace isa    { int getISA(); };
   namespace sse41  { int getISA(); };
