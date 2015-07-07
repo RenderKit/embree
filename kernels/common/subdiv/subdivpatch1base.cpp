@@ -92,10 +92,41 @@ namespace embree
                                       const Vec2f uv[4],
                                       const float edge_level[4],
                                       const int subdiv[4])
-    : edge(mesh->getHalfEdge(pID)), subPatch(subPatch), geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
+    : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
     //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
+
+    const SubdivMesh::HalfEdge* edge = mesh->getHalfEdge(pID);
+
+    if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
+    {
+      CatmullClarkPatch3fa ccpatch;
+      ccpatch.init(edge,mesh->getVertexBuffer());
+      BSplinePatch3fa tmp(ccpatch ); // FIXME: initialize directly from half edges
+#if 0
+      type = BEZIER_PATCH;
+      convertToBicubicBezierPatch(tmp.v,patch_v);
+#else
+      type = BSPLINE_PATCH;
+      tmp.exportControlPoints(patch_v);
+#endif      
+    }
+    else if (edge->patch_type == SubdivMesh::IRREGULAR_QUAD_PATCH) 
+    {
+      type = GREGORY_PATCH;
+      CatmullClarkPatch3fa ccpatch;
+      ccpatch.init(edge,mesh->getVertexBuffer());
+      GregoryPatch3fa gpatch; 
+      //gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
+      gpatch.init( ccpatch ); 
+      gpatch.exportDenseConrolPoints( patch_v );
+    }
+    else {
+      type = EVAL_PATCH;
+      this->edge = mesh->getHalfEdge(pID);
+      this->subPatch = subPatch;
+    }
 
     for (size_t i=0; i<4; i++) {
       u[i] = (unsigned short)(uv[i].x * 65535.0f);
@@ -103,7 +134,7 @@ namespace embree
     }
 
     updateEdgeLevels(edge_level,subdiv,mesh);
-  }
+    }
 
 #else
 
@@ -120,7 +151,7 @@ namespace embree
                                       const int border_flags) 
     : geom(gID),prim(pID),flags(0)
   {
-    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+      static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
     for (size_t i=0; i<4; i++) {
@@ -137,13 +168,15 @@ namespace embree
       /* bezier */
       BSplinePatch3fa tmp;
       tmp.init( ipatch );
-      convertToBicubicBezierPatch(tmp.v,patch.v);
+      convertToBicubicBezierPatch(tmp.v,patch_v);
       type = BEZIER_PATCH;
 #else
       /* bspline */
 
       type = BSPLINE_PATCH;
-      patch.init( ipatch );
+      BSplinePatch3fa tmp;
+      tmp.init( ipatch );
+      tmp.exportControlPoints(patch_v);
 #endif      
     }
     else
@@ -152,7 +185,7 @@ namespace embree
       type = GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
-      gpatch.exportDenseConrolPoints( patch.v );
+      gpatch.exportDenseConrolPoints( patch_v );
     }
   }
   

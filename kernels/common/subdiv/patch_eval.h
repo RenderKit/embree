@@ -439,6 +439,13 @@ namespace embree
       
     };
 
+  __forceinline size_t patch_eval_subdivision_count (const SubdivMesh::HalfEdge* h)
+  {
+    const size_t N = h->numEdges();
+    if (N == 4) return 1;
+    else return N;
+  }
+
   template<typename Tessellator>
     inline void patch_eval_subdivision (const SubdivMesh::HalfEdge* h, Tessellator tessellator)
   {

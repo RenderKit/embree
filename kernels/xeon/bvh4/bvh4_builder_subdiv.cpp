@@ -687,7 +687,7 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {          
             if (!mesh->valid(f)) continue;
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch) { s++; });
+            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));
           }
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -732,7 +732,7 @@ namespace embree
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              subdiv_patches[patchIndex] = SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
+              new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
 #if 0
               BBox3fa bounds;
               size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);
@@ -957,7 +957,7 @@ namespace embree
                 
                 const unsigned int patchIndex = base.size()+s.size();
                 assert(patchIndex < numPrimitives);
-                subdiv_patches[patchIndex] = SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
+                new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
                 
                 /* compute patch bounds */
                 const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
