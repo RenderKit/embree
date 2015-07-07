@@ -59,10 +59,9 @@ namespace embree
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
 
       for (size_t i=0; i<patch.size(); i++)
-        neighborSubdiv[i] = feature_adaptive_gregory_neighbor_subdiv(h[i]),
+        neighborSubdiv[i] = feature_adaptive_gregory_neighbor_subdiv(h[i]);
       
       subdivide(patch,0,neighborSubdiv);
-
     }
 
 
