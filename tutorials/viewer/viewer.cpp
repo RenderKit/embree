@@ -255,7 +255,7 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
+      enterWindowRunLoop(g_anim_mode);
     }
 
     return 0;
