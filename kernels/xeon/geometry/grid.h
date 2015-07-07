@@ -20,6 +20,7 @@
 #include "discrete_tessellation.h"
 #include "../../common/subdiv/feature_adaptive_eval.h"
 #include "../../common/subdiv/patch_eval.h"
+#include "../../common/subdiv/subdivpatch1base.h"
 
 #define GRID_COMPRESS_BOUNDS 1
 
@@ -808,37 +809,45 @@ namespace embree
 	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
-    __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID, unsigned subPatch,
+    __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID, 
+                             const SubdivPatch1Base& patch, 
 			     const size_t x0, const size_t x1,
-			     const size_t y0, const size_t y1,
-			     const Vec2f& uv0, const Vec2f& uv1, const Vec2f& uv2, const Vec2f& uv3,
-			     const DiscreteTessellationPattern& pattern0, 
-			     const DiscreteTessellationPattern& pattern1, 
-			     const DiscreteTessellationPattern& pattern2, 
-			     const DiscreteTessellationPattern& pattern3, 
-			     const DiscreteTessellationPattern& pattern_x,
-			     const DiscreteTessellationPattern& pattern_y)
+			     const size_t y0, const size_t y1)
     {
-      /* calculate local UVs */
-      Vec2f luv[17*17]; 
-      calculateLocalUVs(x0,x1,y0,y1,pattern_x,pattern_y,luv);
-      
-      /* stitch local UVs */
-      stitchLocalUVs(x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv);
+      assert(x0 == 0 && x1 == width-1);
+      assert(y0 == 0 && y1 == height-1);
+      __aligned(64) float grid_x[17*17+16]; 
+      __aligned(64) float grid_y[17*17+16];
+      __aligned(64) float grid_z[17*17+16];         
+      __aligned(64) float grid_u[17*17+16]; 
+      __aligned(64) float grid_v[17*17+16];
+      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
 
-      /* evaluate position and normal */
-      Vec3fa Ng[17*17];
-      calculatePositionAndNormal(mesh,primID,subPatch,luv,Ng);
-      //calculatePositionAndNormal(mesh,primID,x0,x1,y0,y1,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y,luv,Ng);
-
-      /* calculate global UVs */
-      Vec2f guv[17*17]; 
-      calculateGlobalUVs(uv0,uv1,uv2,uv3,luv,guv);
-
-      /* perform displacement */
-      //SubdivMesh* mesh = (SubdivMesh*) scene->get(geomID);
-      if (mesh->displFunc) 
-	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
+      size_t i;
+      for (i=0; i+3<patch.grid_u_res*patch.grid_v_res; i+=4) 
+      {
+        const float4 xi = float4::load(&grid_x[i]);
+        const float4 yi = float4::load(&grid_y[i]);
+        const float4 zi = float4::load(&grid_z[i]);
+        const int4   ui = (int4)clamp(float4::load(&grid_u[i]) * 0xFFFF, float4(0.0f), float4(0xFFFF)); 
+        const int4   vi = (int4)clamp(float4::load(&grid_v[i]) * 0xFFFF, float4(0.0f), float4(0xFFFF)); 
+        const float4 uv = cast((vi << 16) | ui);
+        float4 xyzuv0, xyzuv1, xyzuv2, xyzuv3;
+        transpose(xi,yi,zi,uv,xyzuv0, xyzuv1, xyzuv2, xyzuv3);
+        P[i+0] = Vec3fa(xyzuv0); 
+        P[i+1] = Vec3fa(xyzuv1); 
+        P[i+2] = Vec3fa(xyzuv2);
+        P[i+3] = Vec3fa(xyzuv3);
+      }
+      for (i; i<patch.grid_u_res*patch.grid_v_res; i++) 
+      {
+        const float xi = grid_x[i];
+        const float yi = grid_y[i];
+        const float zi = grid_z[i];
+        const int   ui = clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
+        const int   vi = clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
+        P[i] = Vec3fa(xi,yi,zi,(vi << 16) | ui);
+      }
     }
 
     __forceinline BBox3fa buildLazyBounds(Scene* scene, const CatmullClarkPatch3fa& patch,
@@ -912,19 +921,12 @@ namespace embree
       return N;
     }
 
-    static size_t createEager(Scene* scene, SubdivMesh* mesh, unsigned primID, unsigned subPatch,
-			      FastAllocator::ThreadLocal& alloc, PrimRef* prims,
-			      const size_t x0, const size_t x1,
-			      const size_t y0, const size_t y1,
-			      const Vec2f uv[4], 
-			      const DiscreteTessellationPattern& pattern0, 
-			      const DiscreteTessellationPattern& pattern1, 
-			      const DiscreteTessellationPattern& pattern2, 
-			      const DiscreteTessellationPattern& pattern3, 
-			      const DiscreteTessellationPattern& pattern_x,
-			      const DiscreteTessellationPattern& pattern_y)
+    static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
     {
       size_t N = 0;
+      const size_t x0 = 0, x1 = patch.grid_u_res-1;
+      const size_t y0 = 0, y1 = patch.grid_v_res-1;
+
       for (size_t y=y0; y<y1; y+=16)
       {
 	for (size_t x=x0; x<x1; x+=16) 
@@ -932,7 +934,7 @@ namespace embree
 	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
 	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
 	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
-	  leaf->build(scene,mesh,primID,subPatch,lx0,lx1,ly0,ly1,uv[0],uv[1],uv[2],uv[3],pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
+	  leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
 	  size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
 	  prims += n;
 	  N += n;
