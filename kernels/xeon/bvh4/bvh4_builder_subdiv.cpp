@@ -323,6 +323,7 @@ namespace embree
           return;
         }
 
+        //double T0 = getSeconds();
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
@@ -354,6 +355,8 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+        //double T1 = getSeconds();
+        //PRINT(1000.0f*(T1-T0));
         
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
@@ -749,7 +752,7 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
         //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0))
+        //PRINT(1000.0f*(T1-T0));
 
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);

@@ -37,6 +37,7 @@ namespace embree
     float* const U;
     float* const V;
     const size_t dwidth,dheight;
+    size_t count;
     
     typedef BSplinePatch3fa BSplinePatch;
     typedef BezierPatch3fa BezierPatch;
@@ -45,7 +46,7 @@ namespace embree
     __forceinline FeatureAdaptiveEval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
                                         const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                         float* Px, float* Py, float* Pz, float* U, float* V, const size_t dwidth, const size_t dheight)
-      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), Px(Px), Py(Py), Pz(Pz), U(U), V(V), dwidth(dwidth), dheight(dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), Px(Px), Py(Py), Pz(Pz), U(U), V(V), dwidth(dwidth), dheight(dheight), count(0)
     {
       assert(swidth < (2<<20) && sheight < (2<<20));
       const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
@@ -56,6 +57,7 @@ namespace embree
       {
         CatmullClarkPatch3fa qpatch; patch.init(qpatch);
         eval(qpatch, srange, erange, 0);
+        assert(count == (x1-x0+1)*(y1-y0+1));
         return;
       }
 
@@ -83,6 +85,7 @@ namespace embree
         assert(subPatch < N);
         eval(patches[subPatch], srange, erange, 1);
       }
+      assert(count == (x1-x0+1)*(y1-y0+1));
     }
 
     template<typename Patch>
@@ -90,6 +93,7 @@ namespace embree
     {
       const float scale_x = rcp(srange.upper.x-srange.lower.x);
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
+      count += (lx1-lx0)*(ly1-ly0);
 
       foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
           const vfloat lu = select(ix == swidth -1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
@@ -124,9 +128,9 @@ namespace embree
 	return;
 
       int lx0 = ceilf(erange.lower.x);
-      int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1);
+      int lx1 = ceilf(erange.upper.x) + (erange.upper.x == x1 && (srange.lower.x < erange.upper.x || erange.upper.x == 0));
       int ly0 = ceilf(erange.lower.y);
-      int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1);
+      int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
       if (lx0 >= lx1 || ly0 >= ly1) return;
       
       if (unlikely(patch.isRegular2())) {

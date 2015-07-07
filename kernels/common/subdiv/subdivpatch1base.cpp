@@ -122,7 +122,8 @@ namespace embree
       gpatch.init( ccpatch ); 
       gpatch.exportDenseConrolPoints( patch_v );
     }
-    else {
+    else 
+    {
       type = EVAL_PATCH;
       this->edge = mesh->getHalfEdge(pID);
       this->subPatch = subPatch;
@@ -217,10 +218,10 @@ namespace embree
 
     grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
     grid_v_res = max(level[1],level[3])+1;
-    
+
     /* workaround for 2x2 intersection stencil */
 #if !defined(__MIC__)    
-    grid_u_res = max(grid_u_res,3);
+    grid_u_res = max(grid_u_res,3); // FIXME: this triggers stitching
     grid_v_res = max(grid_v_res,3);
 #endif
 
@@ -235,19 +236,18 @@ namespace embree
 
 #endif
     /* need stiching? */
-
     flags &= ~TRANSITION_PATCH;
 
     const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
     const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
     const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
     const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
-      
     if (int_edge_points0 < (unsigned int)grid_u_res ||
 	int_edge_points2 < (unsigned int)grid_u_res ||
 	int_edge_points1 < (unsigned int)grid_v_res ||
-	int_edge_points3 < (unsigned int)grid_v_res)
+	int_edge_points3 < (unsigned int)grid_v_res) {
       flags |= TRANSITION_PATCH;
+    }
 
     /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
 
