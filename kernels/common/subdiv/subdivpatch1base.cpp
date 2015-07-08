@@ -216,19 +216,13 @@ namespace embree
     grid_u_res = max(grid_u_res,3); // FIXME: this triggers stitching
     grid_v_res = max(grid_v_res,3);
 #endif
+    grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
+    grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
+    const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
+    grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
 
-#if defined(__MIC__)    
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
-    grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
-#else
-    const size_t sizeof_Quad2x2 = 192; // FIXME: !!!!!!!
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
-    grid_subtree_size_64b_blocks = (sizeof_Quad2x2+63) / 64; // single Quad2x2 // FIXME: ???????????????
-
-#endif
     /* need stiching? */
     flags &= ~TRANSITION_PATCH;
-
     const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
     const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
     const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
@@ -240,23 +234,9 @@ namespace embree
       flags |= TRANSITION_PATCH;
     }
 
-    /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
-
-#if defined(__MIC__)
-    const size_t leafBlocks = 4;
-#else
-    const size_t leafBlocks = (sizeof_Quad2x2+63) / 64;
-#endif
-    grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
-    
-    const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
-    grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
-
-
     /* has displacements? */
     flags &= ~HAS_DISPLACEMENT;
     if (mesh->displFunc != nullptr)
       flags |= HAS_DISPLACEMENT;
-
   }
 }
