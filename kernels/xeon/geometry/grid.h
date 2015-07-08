@@ -545,7 +545,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng ? Ng_y0 : nullptr,1,17);
+      isa::feature_adaptive_eval (patch, y0!=0,y0!=0,x0s,x1s,2,coarse.size()+1, p_y0,Ng ? Ng_y0 : nullptr,1,17);
 
       Vec2f luv_y0[17];
       int y = y0-y_ofs;
@@ -571,7 +571,7 @@ namespace embree
       assert(x1s-x0s < 17);
       
       Vec3fa p_y0[17], Ng_y0[17];
-      feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng ? Ng_y0 : nullptr,17,1);
+      isa::feature_adaptive_eval (patch, x0s,x1s,y0!=0,y0!=0,coarse.size()+1,2, p_y0,Ng ? Ng_y0 : nullptr,17,1);
       
       Vec2f luv_y0[17];
       int y = y0-y_ofs;
@@ -717,13 +717,13 @@ namespace embree
       size_t swidth  = pattern_x.size()+1;
       size_t sheight = pattern_y.size()+1;
 #if 0
-      feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, P,Ng,width,height);
+      isa::feature_adaptive_eval (patch, x0,x1,y0,y1, swidth,sheight, P,Ng,width,height);
 #else
       const bool st = stitch_y(patch,y0,y0,0        ,x0,x1,pattern_x,pattern0,luv,Ng);
       const bool sr = stitch_x(patch,x1,x0,swidth-1 ,y0,y1,pattern_y,pattern1,luv,Ng);
       const bool sb = stitch_y(patch,y1,y0,sheight-1,x0,x1,pattern_x,pattern2,luv,Ng);
       const bool sl = stitch_x(patch,x0,x0,0        ,y0,y1,pattern_y,pattern3,luv,Ng);
-      feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng ? Ng+st*width+sl : nullptr,width,height);
+      isa::feature_adaptive_eval (patch, x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, P+st*width+sl,Ng ? Ng+st*width+sl : nullptr,width,height);
 #endif
     }
 
@@ -1026,7 +1026,7 @@ namespace embree
 	SubdivMesh* mesh = scene->getSubdivMesh(geomID);
 	BVH4::NodeRef node = BVH4::emptyNode;
 
-	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
+        isa::feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID) return;
@@ -1071,7 +1071,7 @@ namespace embree
         
 	FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
 	
-	feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
+        isa::feature_adaptive_subdivision_eval(mesh->getHalfEdge(primID),mesh->getVertexBuffer(), // FIXME: only recurse into one sub-quad
 					  [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4], const int id)
 	{
 	  if (id != quadID || node != BVH4::emptyNode) return;
