@@ -283,14 +283,14 @@ namespace embree
 
         PrimInfo pinfo1 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         { 
-          size_t s = 0;
+          size_t p = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) {          
             if (!mesh->valid(f)) continue;
-            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));
+            p += patch_eval_subdivision_count (mesh->getHalfEdge(f));
           }
-          return PrimInfo(s,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
-        size_t numSubPatches = pinfo1.size();
+          return PrimInfo(p,0,empty,empty);
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
+        size_t numSubPatches = pinfo1.begin;
 
         /* Allocate memory for gregory and b-spline patches */
         if (this->bvh->size_data_mem < sizeof(SubdivPatch1Base) * numSubPatches) 
@@ -351,9 +351,9 @@ namespace embree
             {
               const unsigned int patchIndex = base.begin+s.begin;
               assert(patchIndex < numSubPatches);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              //new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
               size_t N = Grid::createEager(subdiv_patches[patchIndex],scene,mesh,f,alloc,&prims[base.end+s.end]);
-              assert(N == Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1));
+              N = Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1);
               for (size_t i=0; i<N; i++)
                 s.add(prims[base.end+s.end].bounds());
               s.begin++;
@@ -365,7 +365,6 @@ namespace embree
         //double T1 = getSeconds();
         //PRINT(1000.0f*(T1-T0));
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
-
         
         BVH4::NodeRef root;
         BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
