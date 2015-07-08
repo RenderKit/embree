@@ -63,7 +63,6 @@ namespace embree
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
-#if USE_RANGE_EVAL
     SubdivPatch1Base (const unsigned int gID,
                       const unsigned int pID,
                       const unsigned int subPatch,
@@ -71,7 +70,7 @@ namespace embree
                       const Vec2f uv[4],
                       const float edge_level[4],
                       const int subdiv[4]);
-#else
+
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                       const int fas_depth,
@@ -83,7 +82,6 @@ namespace embree
                       const int subdiv[4],
                       const BezierCurve3fa *border, 
                       const int border_flags);
-#endif
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {

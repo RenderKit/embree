@@ -83,8 +83,6 @@ namespace embree
     dest[2][1] = computeCornerBezierControlPoint(source,2,1,-1, 1);        
   }
 
-#if USE_RANGE_EVAL
-
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
                                       const unsigned int pID,
                                       const unsigned int subPatch,
@@ -137,8 +135,6 @@ namespace embree
     updateEdgeLevels(edge_level,subdiv,mesh);
     }
 
-#else
-
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                                       const int fas_depth,
@@ -189,8 +185,6 @@ namespace embree
       gpatch.exportDenseConrolPoints( patch_v );
     }
   }
-  
-#endif
 
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh)
   {
