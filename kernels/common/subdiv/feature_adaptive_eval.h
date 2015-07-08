@@ -71,6 +71,15 @@ namespace embree
       }
     }
 
+    __forceinline bool final(const CatmullClarkPatch3fa& patch, size_t depth) 
+    {
+#if PATCH_MIN_RESOLUTION
+      return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=PATCH_MAX_EVAL_DEPTH;
+#else
+      return depth>=PATCH_MAX_EVAL_DEPTH;
+#endif
+    }
+
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
     {
       if (erange.empty())
@@ -88,14 +97,13 @@ namespace embree
         return;
       }
 #if PATCH_USE_GREGORY == 2
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
+      else if (unlikely(final(patch,depth) || patch.isGregory())) {
         GregoryPatch gpatch(patch);
         evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
         return;
       }
 #else
-      //else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-      else if (unlikely(patch.isFinalResolution() || depth>=PATCH_MAX_EVAL_DEPTH))
+      else if (unlikely(final(patch,depth)))
       {
 #if PATCH_USE_GREGORY == 1
         GregoryPatch gpatch(patch);
