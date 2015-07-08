@@ -96,7 +96,7 @@ namespace embree
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
       count += (lx1-lx0)*(ly1-ly0);
 
-#if 1
+#if 0
       for (size_t iy=ly0; iy<ly1; iy++) {
         for (size_t ix=lx0; ix<lx1; ix++) {
           const float lu = select(ix == swidth -1, float(1.0f), (float(ix)-srange.lower.x)*scale_x);

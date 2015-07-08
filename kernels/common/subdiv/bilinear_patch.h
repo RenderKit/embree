@@ -83,6 +83,17 @@ namespace embree
         if (dPdv) *dPdv = tangentV(u,v)*dscale; 
       }
 
+      template<class vfloat>
+      __forceinline Vec3<vfloat> eval(const vfloat& uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        const vfloat x = sy0*(sx0*v[0].x+sx1*v[1].x) + sy1*(sx0*v[3].x+sx1*v[2].x);
+        const vfloat y = sy0*(sx0*v[0].y+sx1*v[1].y) + sy1*(sx0*v[3].y+sx1*v[2].y);
+        const vfloat z = sy0*(sx0*v[0].z+sx1*v[1].z) + sy1*(sx0*v[3].z+sx1*v[2].z);
+        return Vec3<vfloat>(x,y,z);
+      }
+
        template<class vfloat>
       __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv) const
       {

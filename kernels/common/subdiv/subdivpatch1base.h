@@ -309,9 +309,6 @@ namespace embree
     const size_t dwidth  = x1-x0+1;
     const size_t dheight = y1-y0+1;
     const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
-    assert(dwidth == patch.grid_u_res);
-    assert(dheight == patch.grid_v_res);
-    assert(grid_size_simd_blocks == patch.grid_size_simd_blocks);
 
 #if USE_RANGE_EVAL
     if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
