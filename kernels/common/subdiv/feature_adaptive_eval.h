@@ -31,6 +31,7 @@ namespace embree
     Vec3fa* const P;
     Vec3fa* const Ng;
     const size_t dwidth,dheight;
+    size_t count;
 
     typedef BSplinePatch3fa BSplinePatch;
     typedef BezierPatch3fa BezierPatch;
@@ -39,12 +40,13 @@ namespace embree
     __forceinline FeatureAdaptiveEval (const CatmullClarkPatch3fa& patch, 
 				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
-      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight), count(0)
     {
       assert(swidth < (2<<20) && sheight < (2<<20));
       const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
       const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
       eval(patch, srange, erange, 0);
+      //assert(count == (x1-x0+1)*(y1-y0+1));
     }
 
     void dice(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange)
