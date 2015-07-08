@@ -95,6 +95,23 @@ namespace embree
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
       count += (lx1-lx0)*(ly1-ly0);
 
+#if 1
+      for (size_t iy=ly0; iy<ly1; iy++) {
+        for (size_t ix=lx0; ix<lx1; ix++) {
+          const float lu = select(ix == swidth -1, float(1.0f), (float(ix)-srange.lower.x)*scale_x);
+          const float lv = select(iy == sheight-1, float(1.0f), (float(iy)-srange.lower.y)*scale_y);
+          const Vec3fa p = patch.eval(lu,lv);
+          const float u = float(ix)*rcp_swidth;
+          const float v = float(iy)*rcp_sheight;
+          const int ofs = (iy-y0)*dwidth+(ix-x0);
+          Px[ofs] = p.x;
+          Py[ofs] = p.y;
+          Pz[ofs] = p.z;
+          U[ofs] = u;
+          V[ofs] = v;
+        }
+      }
+#else
       foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
           const vfloat lu = select(ix == swidth -1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
           const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
@@ -120,6 +137,7 @@ namespace embree
               });
           }
         });
+#endif
     }
 
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)

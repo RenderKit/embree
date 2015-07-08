@@ -30,6 +30,11 @@ namespace embree
     Vec3fa* const P;
     Vec3fa* const Ng;
     const size_t dwidth,dheight;
+
+    typedef BSplinePatch3fa BSplinePatch;
+    typedef BezierPatch3fa BezierPatch;
+    typedef GregoryPatch3fa GregoryPatch;
+    
     
     __forceinline FeatureAdaptiveEval (const CatmullClarkPatch3fa& patch, 
 				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 

@@ -353,7 +353,6 @@ namespace embree
               const unsigned int patchIndex = base.begin+s.begin;
               assert(patchIndex < numSubPatches);
               new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
-              //size_t N = Grid::createEagerSOA(mesh->id,f,subPatch,scene,alloc,&prims[base.size()+s.size()],0,nx,0,ny,uv,pattern0,pattern1,pattern2,pattern3,pattern_x,pattern_y);
               size_t N = Grid::createEager(subdiv_patches[patchIndex],scene,mesh,f,alloc,&prims[base.end+s.end]);
               assert(N==1);
               assert(N == Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1));
