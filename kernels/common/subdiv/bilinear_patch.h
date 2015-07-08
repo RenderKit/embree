@@ -71,6 +71,10 @@ namespace embree
         const float sy1 = vv, sy0 = 1.0f-sy1;
         return sx0*(v[3]-v[0]) + sx1*(v[2]-v[1]);
       }
+
+      __forceinline Vertex normal(const float uu, const float vv) const {
+        return cross(tangentV(uu,vv),tangentU(uu,vv));
+      }
       
       __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
       {
