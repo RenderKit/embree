@@ -41,10 +41,10 @@ namespace embree
 #if 1
     const float inv_low_rate = rcp((float)(low_rate-1));
     for (size_t x=x0; x<=x1; x++) {
-      uv_array[x*uv_array_step] = float(stitch(x,high_rate-1,low_rate-1))*inv_low_rate;
+      uv_array[(x-x0)*uv_array_step] = float(stitch(x,high_rate-1,low_rate-1))*inv_low_rate;
     }
     if (unlikely(x1 == high_rate-1))
-      uv_array[x1*uv_array_step] = 1.0f;
+      uv_array[(x1-x0)*uv_array_step] = 1.0f;
 #else
     assert(low_rate < high_rate);
     assert(high_rate >= 2);
