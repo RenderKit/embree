@@ -150,6 +150,10 @@ namespace embree
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
+    __forceinline bool isFinalResolution(const size_t depth) const {
+      return ring[0].isFinalResolution() && ring[1].isFinalResolution() && ring[2].isFinalResolution() && ring[3].isFinalResolution();
+    }
+
     /*! returns true of the patch is a Gregory patch */
     __forceinline bool isGregoryOrFinal(const size_t depth) const {
       const bool ring0 = ring[0].isGregoryOrFinal(depth);
