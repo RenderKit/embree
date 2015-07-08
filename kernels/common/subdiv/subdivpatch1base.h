@@ -292,8 +292,8 @@ namespace embree
     };
   };
 
-
-
+  namespace isa
+  {
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base& patch,
                                      const size_t x0, const size_t x1,
@@ -405,7 +405,7 @@ namespace embree
         float8 uu = load8f(&grid_u[8*i]);
         float8 vv = load8f(&grid_v[8*i]);
         Vec3f8 vtx = patch.eval(uu,vv);
-        
+
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
         {
           const Vec2f uv0 = patch.getUV(0);
@@ -443,7 +443,6 @@ namespace embree
         float4 vv = load4f(&grid_v[4*i]);
         Vec3f4 vtx = patch.eval(uu,vv);
         
-        
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
         {
           const Vec2f uv0 = patch.getUV(0);
@@ -478,5 +477,6 @@ namespace embree
 #endif
 #endif        
     }
+  }
   }
 }

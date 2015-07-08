@@ -809,24 +809,22 @@ namespace embree
 	displace(scene,mesh->displFunc,mesh->userPtr,luv,guv,Ng);
     }
 
-    __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID, 
+    __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID,
                              const SubdivPatch1Base& patch, 
 			     const size_t x0, const size_t x1,
 			     const size_t y0, const size_t y1)
     {
-      //assert(x0 == 0 && x1 == width-1);
-      //assert(y0 == 0 && y1 == height-1);
-      assert(x1-x0+1 == patch.grid_u_res);
-      assert(y1-y0+1 == patch.grid_v_res);
       __aligned(64) float grid_x[17*17+16]; 
       __aligned(64) float grid_y[17*17+16];
       __aligned(64) float grid_z[17*17+16];         
       __aligned(64) float grid_u[17*17+16]; 
       __aligned(64) float grid_v[17*17+16];
-      evalGrid(patch,x0,x1,y0,y1,width,height,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+      isa::evalGrid(patch,x0,x1,y0,y1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
 
+      const size_t dwidth  = x1-x0+1;
+      const size_t dheight = y1-y0+1;
       size_t i;
-      for (i=0; i+3<patch.grid_u_res*patch.grid_v_res; i+=4) 
+      for (i=0; i+3<dwidth*dheight; i+=4) 
       {
         const float4 xi = float4::load(&grid_x[i]);
         const float4 yi = float4::load(&grid_y[i]);
@@ -841,7 +839,7 @@ namespace embree
         P[i+2] = Vec3fa(xyzuv2);
         P[i+3] = Vec3fa(xyzuv3);
       }
-      for (i; i<patch.grid_u_res*patch.grid_v_res; i++) 
+      for (i; i<dwidth*dheight; i++) 
       {
         const float xi = grid_x[i];
         const float yi = grid_y[i];
@@ -923,7 +921,7 @@ namespace embree
       return N;
     }
 
-    static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
+    __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
     {
       size_t N = 0;
       const size_t x0 = 0, x1 = patch.grid_u_res-1;
