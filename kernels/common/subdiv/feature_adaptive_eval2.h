@@ -39,6 +39,7 @@ namespace embree
     const size_t dwidth,dheight;
     size_t count;
     
+    typedef BilinearPatch3fa BilinearPatch;
     typedef BSplinePatch3fa BSplinePatch;
     typedef BezierPatch3fa BezierPatch;
     typedef GregoryPatch3fa GregoryPatch;
@@ -163,7 +164,8 @@ namespace embree
         return;
       }
 #else
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+      //else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
+      else if (unlikely(patch.isFinalResolution() || depth>=PATCH_MAX_EVAL_DEPTH))
       {
 #if PATCH_USE_GREGORY == 1
         GregoryPatch gpatch(patch);
