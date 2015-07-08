@@ -550,7 +550,7 @@ namespace embree
       float *grid_u = &grid_arrays[array_elements * 3];
       float *grid_v = &grid_arrays[array_elements * 4];
 #endif
-      evalGrid(patch,0,0,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
       
       BBox3fa b(empty);
       assert(patch.grid_size_simd_blocks >= 1);

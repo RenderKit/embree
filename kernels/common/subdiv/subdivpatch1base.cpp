@@ -51,7 +51,7 @@ namespace embree
     return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
   }
 
-  void convertToBicubicBezierPatch(const Vec3fa source[4][4],
+  void convertToBicubicBezierPatch(const Vec3fa source[4][4], // FIXME: move this function to different place
                                    Vec3fa dest[4][4])
   {
     /* compute inner bezier control points */

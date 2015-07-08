@@ -823,7 +823,7 @@ namespace embree
       __aligned(64) float grid_z[17*17+16];         
       __aligned(64) float grid_u[17*17+16]; 
       __aligned(64) float grid_v[17*17+16];
-      evalGrid(patch,x0,y0,width,height,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+      evalGrid(patch,x0,x1,y0,y1,width,height,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
 
       size_t i;
       for (i=0; i+3<patch.grid_u_res*patch.grid_v_res; i+=4) 

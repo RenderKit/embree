@@ -205,7 +205,7 @@ namespace embree
 #endif   
 
       /* compute vertex grid (+displacement) */
-      evalGrid(patch,0,0,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
       /* lock the cache */
       SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
