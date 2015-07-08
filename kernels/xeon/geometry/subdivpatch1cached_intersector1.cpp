@@ -173,7 +173,7 @@ namespace embree
     {      
       assert( patch.grid_size_simd_blocks >= 1 );
 
-      const size_t array_elements = patch.grid_size_simd_blocks * 8;
+      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
  
 #if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
       __aligned(64) float local_grid_u[array_elements+16]; 

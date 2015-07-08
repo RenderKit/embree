@@ -586,7 +586,7 @@ namespace embree
         if (likely(ty == 2))
         {
 
-          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
+          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * vfloat::size;
           const size_t line_offset   = pre.current_patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
@@ -617,7 +617,7 @@ namespace embree
         if (likely(ty == 2))
         {
 
-          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * 8;
+          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * vfloat::size;
           const size_t line_offset   = pre.current_patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());

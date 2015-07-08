@@ -89,7 +89,8 @@ namespace embree
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
                                       const float edge_level[4],
-                                      const int subdiv[4])
+                                      const int subdiv[4],
+                                      const int simd_width)
     : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
     //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
@@ -132,7 +133,7 @@ namespace embree
       v[i] = (unsigned short)(uv[i].y * 65535.0f);
     }
 
-    updateEdgeLevels(edge_level,subdiv,mesh);
+    updateEdgeLevels(edge_level,subdiv,mesh,simd_width);
   }
 
 
@@ -146,7 +147,8 @@ namespace embree
                                       const float edge_level[4],
                                       const int neighborSubdiv[4],
                                       const BezierCurve3fa *border, 
-                                      const int border_flags) 
+                                      const int border_flags,
+                                      const int simd_width) 
     : geom(gID),prim(pID),flags(0)
   {
       static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
@@ -157,7 +159,7 @@ namespace embree
       v[i] = (unsigned short)(uv[i].y * 65535.0f);
     }
 
-    updateEdgeLevels(edge_level,neighborSubdiv,mesh);
+    updateEdgeLevels(edge_level,neighborSubdiv,mesh,simd_width);
     
     /* determine whether patch is regular or not */
     if (fas_depth == 0 && ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior and not FAS-based patches*/
@@ -187,7 +189,7 @@ namespace embree
     }
   }
 
-  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh)
+  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
   {
     /* init discrete edge tessellation levels and grid resolution */
 
@@ -196,11 +198,6 @@ namespace embree
     assert( edge_level[2] >= 0.0f );
     assert( edge_level[3] >= 0.0f );
 
-#if defined(__MIC__)
-    const size_t SIMD_WIDTH = 16;
-#else
-    const size_t SIMD_WIDTH = 8;
-#endif
     level[0] = adjustTessellationLevel(edge_level[0],subdiv[0]);
     level[1] = adjustTessellationLevel(edge_level[1],subdiv[1]);
     level[2] = adjustTessellationLevel(edge_level[2],subdiv[2]);
@@ -215,7 +212,7 @@ namespace embree
     grid_v_res = max(level[1],level[3])+1;
 
     /* workaround for 2x2 intersection stencil */
-#if !defined(__MIC__)    
+#if !defined(__MIC__)
     grid_u_res = max(grid_u_res,3); // FIXME: this triggers stitching
     grid_v_res = max(grid_v_res,3);
 #endif
@@ -225,8 +222,7 @@ namespace embree
     grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
 #else
     const size_t sizeof_Quad2x2 = 192; // FIXME: !!!!!!!
-    /* 8-wide SIMD is default on Xeon */
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
+    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
     grid_subtree_size_64b_blocks = (sizeof_Quad2x2+63) / 64; // single Quad2x2 // FIXME: ???????????????
 
 #endif
@@ -253,7 +249,7 @@ namespace embree
 #endif
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     
-    const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
+    const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
 
 

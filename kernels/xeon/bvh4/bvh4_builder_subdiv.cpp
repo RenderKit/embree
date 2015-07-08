@@ -321,7 +321,7 @@ namespace embree
             {
               const unsigned int patchIndex = base.begin+p;
               assert(patchIndex < numSubPatches);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
+              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
               size_t N = Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1);
               g+=N;
               p++;
@@ -351,7 +351,7 @@ namespace embree
             {
               const unsigned int patchIndex = base.begin+s.begin;
               assert(patchIndex < numSubPatches);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
+              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
               size_t N = Grid::createEager(subdiv_patches[patchIndex],scene,mesh,f,alloc,&prims[base.end+s.end]);
               assert(N == Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1));
               for (size_t i=0; i<N; i++)
@@ -562,7 +562,7 @@ namespace embree
       float4 bounds_max_x = neg_inf;
       float4 bounds_max_y = neg_inf;
       float4 bounds_max_z = neg_inf;
-      for (size_t i = 0; i<patch.grid_size_simd_blocks * 2; i++)
+      for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
         {
           float4 x = load4f(&grid_x[i * 4]);
           float4 y = load4f(&grid_y[i * 4]);
@@ -735,7 +735,7 @@ namespace embree
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv);
+              new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
 #if 0
               BBox3fa bounds;
               size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);
@@ -960,7 +960,7 @@ namespace embree
                 
                 const unsigned int patchIndex = base.size()+s.size();
                 assert(patchIndex < numPrimitives);
-                new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags);
+                new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags,vfloat::size);
                 
                 /* compute patch bounds */
                 const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
@@ -993,7 +993,7 @@ namespace embree
               }
               
               const unsigned int patchIndex = base.size()+s.size();
-              subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh);
+              subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh,vfloat::size);
               subdiv_patches[patchIndex].resetRootRef();
               
               /* compute patch bounds */

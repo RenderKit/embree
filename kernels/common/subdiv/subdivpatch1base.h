@@ -69,7 +69,8 @@ namespace embree
                       const SubdivMesh *const mesh,
                       const Vec2f uv[4],
                       const float edge_level[4],
-                      const int subdiv[4]);
+                      const int subdiv[4],
+                      const int simd_width);
 
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
@@ -81,7 +82,8 @@ namespace embree
                       const float edge_level[4],
                       const int subdiv[4],
                       const BezierCurve3fa *border, 
-                      const int border_flags);
+                      const int border_flags,
+                      const int simd_width);
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
@@ -198,7 +200,7 @@ namespace embree
     }
 #endif
 
-    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh);
+    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
     __forceinline size_t gridOffset(const size_t y, const size_t x) const
     {
@@ -318,18 +320,13 @@ namespace embree
                                      grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
       
       
-#if defined(__MIC__)
-      const size_t SIMD_WIDTH = 16;
-#else
-      const size_t SIMD_WIDTH = 8;
-#endif
       /* set last elements in u,v array to 1.0f */
       const float last_u = grid_u[patch.grid_u_res*patch.grid_v_res-1];
       const float last_v = grid_v[patch.grid_u_res*patch.grid_v_res-1];
       const float last_x = grid_x[patch.grid_u_res*patch.grid_v_res-1];
       const float last_y = grid_y[patch.grid_u_res*patch.grid_v_res-1];
       const float last_z = grid_z[patch.grid_u_res*patch.grid_v_res-1];
-      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
+      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*vfloat::size;i++)
       {
 	grid_u[i] = last_u;
 	grid_v[i] = last_v;
@@ -344,16 +341,10 @@ namespace embree
       /* grid_u, grid_v need to be padded as we write with SIMD granularity */
       gridUVTessellator(patch.level,swidth,sheight,x0,y0,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
       
-#if defined(__MIC__)
-      const size_t SIMD_WIDTH = 16;
-#else
-      const size_t SIMD_WIDTH = 8; // FIXME: why always 8???
-#endif
-
       /* set last elements in u,v array to last valid point */
       const float last_u = grid_u[patch.grid_u_res*patch.grid_v_res-1];
       const float last_v = grid_v[patch.grid_u_res*patch.grid_v_res-1];
-      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++) {
+      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*vfloat::size;i++) {
 	grid_u[i] = last_u;
 	grid_v[i] = last_v;
       }
@@ -368,10 +359,6 @@ namespace embree
       {
         const float16 u = load16f(&grid_u[i * 16]);
         const float16 v = load16f(&grid_v[i * 16]);
-        
-        //prefetch<PFHINT_L2EX>(&grid_x[16*i]);
-        //prefetch<PFHINT_L2EX>(&grid_y[16*i]);
-        //prefetch<PFHINT_L2EX>(&grid_z[16*i]);
         
         Vec3f16 vtx = patch.eval16(u, v);
         
@@ -403,10 +390,6 @@ namespace embree
                                          16);
           
         }
-        //prefetch<PFHINT_L1EX>(&grid_x[16*i]);
-        //prefetch<PFHINT_L1EX>(&grid_y[16*i]);
-        //prefetch<PFHINT_L1EX>(&grid_z[16*i]);
-        
         store16f_ngo(&grid_x[16*i],vtx.x);
         store16f_ngo(&grid_y[16*i],vtx.y);
         store16f_ngo(&grid_z[16*i],vtx.z);
@@ -451,7 +434,7 @@ namespace embree
         *(float8*)&grid_z[8*i] = vtx.z;        
       }
 #else
-      for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
+      for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
       {
         float4 uu = load4f(&grid_u[4*i]);
         float4 vv = load4f(&grid_v[4*i]);
