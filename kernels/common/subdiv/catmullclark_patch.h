@@ -150,7 +150,7 @@ namespace embree
       return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
     }
 
-    __forceinline bool isFinalResolution(const size_t depth) const {
+    __forceinline bool isFinalResolution() const {
       return ring[0].isFinalResolution() && ring[1].isFinalResolution() && ring[2].isFinalResolution() && ring[3].isFinalResolution();
     }
 
