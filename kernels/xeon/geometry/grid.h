@@ -814,14 +814,16 @@ namespace embree
 			     const size_t x0, const size_t x1,
 			     const size_t y0, const size_t y1)
     {
-      assert(x0 == 0 && x1 == width-1);
-      assert(y0 == 0 && y1 == height-1);
+      //assert(x0 == 0 && x1 == width-1);
+      //assert(y0 == 0 && y1 == height-1);
+      assert(x1-x0+1 == patch.grid_u_res);
+      assert(y1-y0+1 == patch.grid_v_res);
       __aligned(64) float grid_x[17*17+16]; 
       __aligned(64) float grid_y[17*17+16];
       __aligned(64) float grid_z[17*17+16];         
       __aligned(64) float grid_u[17*17+16]; 
       __aligned(64) float grid_v[17*17+16];
-      evalGrid(patch,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+      evalGrid(patch,x0,y0,width,height,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
 
       size_t i;
       for (i=0; i+3<patch.grid_u_res*patch.grid_v_res; i+=4) 

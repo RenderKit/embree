@@ -133,7 +133,8 @@ namespace embree
     }
 
     updateEdgeLevels(edge_level,subdiv,mesh);
-    }
+  }
+
 
   /*! Construction from vertices and IDs. */
   SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,

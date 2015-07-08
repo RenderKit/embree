@@ -294,6 +294,8 @@ namespace embree
 
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base& patch,
+                                     const size_t x0, const size_t y0,
+                                     const size_t swidth, const size_t sheight,
                                      float *__restrict__ const grid_x,
                                      float *__restrict__ const grid_y,
                                      float *__restrict__ const grid_z,
@@ -301,16 +303,18 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
+    const size_t x1 = x0+patch.grid_u_res-1;
+    const size_t y1 = y0+patch.grid_v_res-1;
 #if USE_RANGE_EVAL
     if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
     {
       if (unlikely(patch.needsStitching()))
         isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
-                                     0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
+                                     x0,x1,y0,y1,swidth,sheight,
                                      grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
       else
         isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
-                                     0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
+                                     x0,x1,y0,y1,swidth,sheight,
                                      grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
       
       
@@ -338,24 +342,25 @@ namespace embree
 #endif
     {
       /* grid_u, grid_v need to be padded as we write with SIMD granularity */
-      gridUVTessellator(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+      gridUVTessellator(patch.level,swidth,sheight,x0,y0,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
       
 #if defined(__MIC__)
       const size_t SIMD_WIDTH = 16;
 #else
       const size_t SIMD_WIDTH = 8; // FIXME: why always 8???
 #endif
-      
-      /* set last elements in u,v array to 1.0f */
-      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
-      {
-	grid_u[i] = 1.0f;
-	grid_v[i] = 1.0f;
+
+      /* set last elements in u,v array to last valid point */
+      const float last_u = grid_u[patch.grid_u_res*patch.grid_v_res-1];
+      const float last_v = grid_v[patch.grid_u_res*patch.grid_v_res-1];
+      for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++) {
+	grid_u[i] = last_u;
+	grid_v[i] = last_v;
       }
-      
+
       /* stitch edges if necessary */
       if (unlikely(patch.needsStitching()))
-        stitchUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+        stitchUVGrid(patch.level,swidth,sheight,x0,y0,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
       
 #if defined(__MIC__)
       
