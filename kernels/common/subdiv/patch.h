@@ -25,13 +25,13 @@
 #include "tessellation_cache.h"
 
 #if 1
-#define PATCH_DEBUG_SUBDIVISION(x,y,z)
+#define PATCH_DEBUG_SUBDIVISION(ptr,x,y,z)
 #else
-#define PATCH_DEBUG_SUBDIVISION(x,y,z)                  \
+#define PATCH_DEBUG_SUBDIVISION(ptr,x,y,z)            \
   {                                                   \
-    size_t hex = (size_t)this;                          \
+    size_t hex = (size_t)ptr;                          \
     for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);  \
-    const float c = (float)(hex&0xff)/255.0f;           \
+    const float c = (float)(((hex >> 0) ^ (hex >> 4) ^ (hex >> 8) ^ (hex >> 12) ^ (hex >> 16))&0xf)/15.0f; \
     if (P) *P = Vertex(0.5f+0.5f*x,0.5f+0.5f*y,0.5f+0.5f*z,0.0f);         \
     }               
 #endif

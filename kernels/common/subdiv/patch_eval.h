@@ -305,22 +305,22 @@ namespace embree
         {
         case Patch::BILINEAR_PATCH: {
           ((typename Patch::BilinearPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
-          PATCH_DEBUG_SUBDIVISION(c,c,-1);
+          PATCH_DEBUG_SUBDIVISION(This,c,c,-1);
           return true;
         }
         case Patch::BSPLINE_PATCH: {
           ((typename Patch::BSplinePatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
-          PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+          PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return true;
         }
         case Patch::BEZIER_PATCH: {
           ((typename Patch::BezierPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
-          PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+          PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return true;
         }
         case Patch::GREGORY_PATCH: {
           ((typename Patch::GregoryPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
-          PATCH_DEBUG_SUBDIVISION(-1,-1,c);
+          PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
           return true;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
@@ -417,7 +417,7 @@ namespace embree
         }
         SharedLazyTessellationCache::unlock();
         eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
+        PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
       }
 
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
@@ -434,7 +434,7 @@ namespace embree
         }
         SharedLazyTessellationCache::unlock();
         eval_direct (edge,subPatch,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
+        PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
       }
       
     };

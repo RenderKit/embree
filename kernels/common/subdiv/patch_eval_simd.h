@@ -284,22 +284,22 @@ namespace embree
         {
         case Patch::BILINEAR_PATCH: {
           ((typename Patch::BilinearPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N); 
-          PATCH_DEBUG_SUBDIVISION(c,c,-1);
+          //PATCH_DEBUG_SUBDIVISION(This,c,c,-1);
           return valid;
         }
         case Patch::BSPLINE_PATCH: {
           ((typename Patch::BSplinePatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N);
-          PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+          //PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return valid;
         }
         case Patch::BEZIER_PATCH: {
           ((typename Patch::BezierPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N);
-          PATCH_DEBUG_SUBDIVISION(-1,c,-1);
+          //PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return valid;
         }
         case Patch::GREGORY_PATCH: {
           ((typename Patch::GregoryPatch*)This)->patch.eval(valid,u,v,P,dPdu,dPdv,dscale,dstride,N); 
-          PATCH_DEBUG_SUBDIVISION(-1,-1,c);
+          //PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
           return valid;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
@@ -356,7 +356,7 @@ namespace embree
         const vbool valid2 = valid0 & !valid1;
         if (any(valid2)) {
           eval_direct (edge,vertices,stride,valid2,u,v,P,dPdu,dPdv,dstride,N);
-          PATCH_DEBUG_SUBDIVISION(c,-1,-1);
+          //PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
         }
       }
       
