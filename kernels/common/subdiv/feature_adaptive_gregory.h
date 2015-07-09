@@ -58,13 +58,10 @@ namespace embree
       patch.init(h,vertices);
       assert( patch.size() <= GeneralCatmullClarkPatch3fa::SIZE);
 
-      for (size_t i=0; i<patch.size(); i++) {
-	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-      }
-
+      for (size_t i=0; i<patch.size(); i++)
+        neighborSubdiv[i] = feature_adaptive_gregory_neighbor_subdiv(h[i]);
       
       subdivide(patch,0,neighborSubdiv);
-
     }
 
 

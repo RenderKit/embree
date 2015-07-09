@@ -279,6 +279,13 @@ namespace embree
         quad.vtx[3] = limit_v3;
       };
 
+      __forceinline void exportControlPoints( Vertex matrix[4][4] ) const
+      {
+        for (size_t y=0; y<4; y++)
+          for (size_t x=0; x<4; x++)
+            matrix[y][x] = (Vertex_t)v[y][x];
+      }
+
       __forceinline Vertex hard_corner(const                    Vertex& v01, const Vertex& v02, 
                                        const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                        const Vertex& v20, const Vertex& v21, const Vertex& v22)

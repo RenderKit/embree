@@ -349,6 +349,10 @@ namespace embree
       else                                           return false;
     }
 
+    __forceinline bool isFinalResolution(float res) const {
+      return vertex_level <= res;
+    }
+
      /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
     __forceinline bool isRegularOrFinal(const size_t depth) const {
       return (depth >= MAX_DEPTH_SUBDIVISION) || (vertex_level <= 1.0f) || isRegular2();

@@ -51,7 +51,8 @@ namespace embree
       BSPLINE_PATCH          = 1,  
       BEZIER_PATCH           = 2,  
       GREGORY_PATCH          = 3,
-      GREGORY_TRIANGLE_PATCH = 4
+      GREGORY_TRIANGLE_PATCH = 4,
+      EVAL_PATCH             = 5,
     };
 
     enum Flags {
@@ -62,15 +63,15 @@ namespace embree
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
-#if USE_RANGE_EVAL
     SubdivPatch1Base (const unsigned int gID,
                       const unsigned int pID,
                       const unsigned int subPatch,
                       const SubdivMesh *const mesh,
                       const Vec2f uv[4],
                       const float edge_level[4],
-                      const int subdiv[4]);
-#else
+                      const int subdiv[4],
+                      const int simd_width);
+
     /*! Construction from vertices and IDs. */
     SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
                       const int fas_depth,
@@ -81,33 +82,32 @@ namespace embree
                       const float edge_level[4],
                       const int subdiv[4],
                       const BezierCurve3fa *border, 
-                      const int border_flags);
-#endif
+                      const int border_flags,
+                      const int simd_width);
 
-#if !USE_RANGE_EVAL
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-        return patch.eval(uu,vv);
+        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval( patch_v, uu, vv );
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::eval( patch.v, uu, vv );
+	return GregoryTrianglePatch3fa::eval( patch_v, uu, vv );
       return Vec3fa( zero );
     }
 
     __forceinline Vec3fa normal(const float& uu, const float& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-        return patch.normal(uu,vv);
+        return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal( patch_v, uu, vv );
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::normal( patch.v, uu, vv );
+	return GregoryTrianglePatch3fa::normal( patch_v, uu, vv );
       return Vec3fa( zero );
     }
 
@@ -116,13 +116,13 @@ namespace embree
     {
       typedef typename simdf::Mask simdb;
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-        return patch.eval(uu,vv);
+        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::eval_t<simdb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::eval_t<simdb>( patch_v, uu, vv );
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-        return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch.v, uu * (1.0f - vv), vv );
+        return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch_v, uu * (1.0f - vv), vv );
       return Vec3<simdf>( zero );
     }
 
@@ -131,13 +131,13 @@ namespace embree
     {
       typedef typename simdf::Mask simdb;
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-        return patch.normal(uu,vv);
+        return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::normal_t<simdb>( patch.v, uu, vv );
+	return DenseGregoryPatch3fa::normal_t<simdb>( patch_v, uu, vv );
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch.v, uu, vv );
+	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch_v, uu, vv );
       return Vec3<simdf>( zero );
     }
 
@@ -146,23 +146,22 @@ namespace embree
     __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
+        return BezierPatch3fa::eval( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-        return patch.eval(uu,vv);
+        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else 
-        return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
+        return DenseGregoryPatch3fa::eval16( patch_v, uu, vv );
     }
 
     __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
+        return BezierPatch3fa::normal( patch_v, uu, vv );
       else if (likely(type == BSPLINE_PATCH))
-	return patch.normal(uu,vv);
+	return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else
-        return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
+        return DenseGregoryPatch3fa::normal16( patch_v, uu, vv );
     }
-#endif
 #endif
 
     __forceinline bool hasDisplacement() const {
@@ -201,7 +200,7 @@ namespace embree
     }
 #endif
 
-    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh);
+    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
     __forceinline size_t gridOffset(const size_t y, const size_t x) const
     {
@@ -284,18 +283,22 @@ namespace embree
     RWMutex mtx;
     SharedLazyTessellationCache::Tag root_ref;
 
-#if USE_RANGE_EVAL
-    const SubdivMesh::HalfEdge* edge;
-    size_t subPatch;
-#else
-    __aligned(64) BSplinePatch3fa patch;
-#endif
+    union {
+      struct {
+        const SubdivMesh::HalfEdge* edge;
+        size_t subPatch;
+      };
+      Vec3fa patch_v[4][4];
+    };
   };
 
-#if USE_RANGE_EVAL
-
+  namespace isa
+  {
   /* eval grid over patch and stich edges when required */      
   static __forceinline void evalGrid(const SubdivPatch1Base& patch,
+                                     const size_t x0, const size_t x1,
+                                     const size_t y0, const size_t y1,
+                                     const size_t swidth, const size_t sheight,
                                      float *__restrict__ const grid_x,
                                      float *__restrict__ const grid_y,
                                      float *__restrict__ const grid_z,
@@ -303,28 +306,30 @@ namespace embree
                                      float *__restrict__ const grid_v,
                                      const SubdivMesh* const geom)
   {
-    if (unlikely(patch.needsStitching()))
-      isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
-                                   0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
-                                   grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
-    else
-      isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
-                                   0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
-                                   grid_x,grid_y,grid_z,grid_u,grid_v,patch.grid_u_res,patch.grid_v_res);
+    const size_t dwidth  = x1-x0+1;
+    const size_t dheight = y1-y0+1;
+    const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
 
-
-#if defined(__MIC__)
-    const size_t SIMD_WIDTH = 16;
-#else
-    const size_t SIMD_WIDTH = 8;
-#endif
-    /* set last elements in u,v array to 1.0f */
-    const float last_u = grid_u[patch.grid_u_res*patch.grid_v_res-1];
-    const float last_v = grid_v[patch.grid_u_res*patch.grid_v_res-1];
-    const float last_x = grid_x[patch.grid_u_res*patch.grid_v_res-1];
-    const float last_y = grid_y[patch.grid_u_res*patch.grid_v_res-1];
-    const float last_z = grid_z[patch.grid_u_res*patch.grid_v_res-1];
-    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
+#if USE_RANGE_EVAL
+    if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
+    {
+      if (unlikely(patch.needsStitching()))
+        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
+                                     x0,x1,y0,y1,swidth,sheight,
+                                     grid_x,grid_y,grid_z,grid_u,grid_v,dwidth,dheight);
+      else
+        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+                                     x0,x1,y0,y1,swidth,sheight,
+                                     grid_x,grid_y,grid_z,grid_u,grid_v,dwidth,dheight);
+      
+      
+      /* set last elements in u,v array to 1.0f */
+      const float last_u = grid_u[dwidth*dheight-1];
+      const float last_v = grid_v[dwidth*dheight-1];
+      const float last_x = grid_x[dwidth*dheight-1];
+      const float last_y = grid_y[dwidth*dheight-1];
+      const float last_z = grid_z[dwidth*dheight-1];
+      for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++)
       {
 	grid_u[i] = last_u;
 	grid_v[i] = last_v;
@@ -332,169 +337,146 @@ namespace embree
         grid_y[i] = last_y;
         grid_z[i] = last_z;
       }
-  }
-
-#else
-
-  /* eval grid over patch and stich edges when required */      
-  static __forceinline void evalGrid(const SubdivPatch1Base& patch,
-                                     float *__restrict__ const grid_x,
-                                     float *__restrict__ const grid_y,
-                                     float *__restrict__ const grid_z,
-                                     float *__restrict__ const grid_u,
-                                     float *__restrict__ const grid_v,
-                                     const SubdivMesh* const geom)
-  {
-    /* grid_u, grid_v need to be padded as we write with SIMD granularity */
-    gridUVTessellator(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-
-#if defined(__MIC__)
-    const size_t SIMD_WIDTH = 16;
-#else
-    const size_t SIMD_WIDTH = 8; // FIXME: why always 8???
+    }
+    else
 #endif
-
-    /* set last elements in u,v array to 1.0f */
-    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
-      {
-	grid_u[i] = 1.0f;
-	grid_v[i] = 1.0f;
+    {
+      /* grid_u, grid_v need to be padded as we write with SIMD granularity */
+      gridUVTessellator(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
+      /* set last elements in u,v array to last valid point */
+      const float last_u = grid_u[dwidth*dheight-1];
+      const float last_v = grid_v[dwidth*dheight-1];
+      for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++) {
+	grid_u[i] = last_u;
+	grid_v[i] = last_v;
       }
 
-    /* stitch edges if necessary */
-    if (unlikely(patch.needsStitching()))
-      stitchUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
-        
+      /* stitch edges if necessary */
+      if (unlikely(patch.needsStitching()))
+        stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
 #if defined(__MIC__)
-
-       for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
+      
+      for (size_t i = 0; i<grid_size_simd_blocks; i++)
+      {
+        const float16 u = load16f(&grid_u[i * 16]);
+        const float16 v = load16f(&grid_v[i * 16]);
+        
+        Vec3f16 vtx = patch.eval16(u, v);
+        
+        /* eval displacement function */
+        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
         {
-          const float16 u = load16f(&grid_u[i * 16]);
-          const float16 v = load16f(&grid_v[i * 16]);
-
-	  //prefetch<PFHINT_L2EX>(&grid_x[16*i]);
-	  //prefetch<PFHINT_L2EX>(&grid_y[16*i]);
-	  //prefetch<PFHINT_L2EX>(&grid_z[16*i]);
-
-          Vec3f16 vtx = patch.eval16(u, v);
-
-          /* eval displacement function */
-	  if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-            {
-              Vec3f16 normal = patch.normal16(u, v);
-              normal = normalize(normal);
-
-              const Vec2f uv0 = patch.getUV(0);
-              const Vec2f uv1 = patch.getUV(1);
-              const Vec2f uv2 = patch.getUV(2);
-              const Vec2f uv3 = patch.getUV(3);
-
-              const float16 patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
-              const float16 patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
-
-              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-					     patch.geom,
-					     patch.prim,
-					     (const float*)&patch_uu,
-					     (const float*)&patch_vv,
-					     (const float*)&normal.x,
-					     (const float*)&normal.y,
-					     (const float*)&normal.z,
-					     (float*)&vtx.x,
-					     (float*)&vtx.y,
-					     (float*)&vtx.z,
-					     16);
-
-            }
-	  //prefetch<PFHINT_L1EX>(&grid_x[16*i]);
-	  //prefetch<PFHINT_L1EX>(&grid_y[16*i]);
-	  //prefetch<PFHINT_L1EX>(&grid_z[16*i]);
-
-	  store16f_ngo(&grid_x[16*i],vtx.x);
-	  store16f_ngo(&grid_y[16*i],vtx.y);
-	  store16f_ngo(&grid_z[16*i],vtx.z);
+          Vec3f16 normal = patch.normal16(u, v);
+          normal = normalize(normal);
+          
+          const Vec2f uv0 = patch.getUV(0);
+          const Vec2f uv1 = patch.getUV(1);
+          const Vec2f uv2 = patch.getUV(2);
+          const Vec2f uv3 = patch.getUV(3);
+          
+          const float16 patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
+          const float16 patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
+          
+          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                         patch.geom,
+                                         patch.prim,
+                                         (const float*)&patch_uu,
+                                         (const float*)&patch_vv,
+                                         (const float*)&normal.x,
+                                         (const float*)&normal.y,
+                                         (const float*)&normal.z,
+                                         (float*)&vtx.x,
+                                         (float*)&vtx.y,
+                                         (float*)&vtx.z,
+                                         16);
+          
         }
-   
+        store16f_ngo(&grid_x[16*i],vtx.x);
+        store16f_ngo(&grid_y[16*i],vtx.y);
+        store16f_ngo(&grid_z[16*i],vtx.z);
+      }
+      
 #else        
 #if defined(__AVX__)
-    for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
+      for (size_t i=0;i<grid_size_simd_blocks;i++)
       {
         float8 uu = load8f(&grid_u[8*i]);
         float8 vv = load8f(&grid_v[8*i]);
         Vec3f8 vtx = patch.eval(uu,vv);
-                 
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-          {
-	    const Vec2f uv0 = patch.getUV(0);
-	    const Vec2f uv1 = patch.getUV(1);
-	    const Vec2f uv2 = patch.getUV(2);
-	    const Vec2f uv3 = patch.getUV(3);
 
-            Vec3f8 normal = patch.normal(uu,vv);
-            normal = normalize_safe(normal) ;
-            
-            const float8 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
-            const float8 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           8);
-          }
+        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
+        {
+          const Vec2f uv0 = patch.getUV(0);
+          const Vec2f uv1 = patch.getUV(1);
+          const Vec2f uv2 = patch.getUV(2);
+          const Vec2f uv3 = patch.getUV(3);
+          
+          Vec3f8 normal = patch.normal(uu,vv);
+          normal = normalize_safe(normal) ;
+          
+          const float8 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
+          const float8 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
+          
+          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                         patch.geom,
+                                         patch.prim,
+                                         (const float*)&patch_uu,
+                                         (const float*)&patch_vv,
+                                         (const float*)&normal.x,
+                                         (const float*)&normal.y,
+                                         (const float*)&normal.z,
+                                         (float*)&vtx.x,
+                                         (float*)&vtx.y,
+                                         (float*)&vtx.z,
+                                         8);
+        }
         *(float8*)&grid_x[8*i] = vtx.x;
         *(float8*)&grid_y[8*i] = vtx.y;
         *(float8*)&grid_z[8*i] = vtx.z;        
       }
 #else
-    for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
+      for (size_t i=0;i<grid_size_simd_blocks;i++)
       {
         float4 uu = load4f(&grid_u[4*i]);
         float4 vv = load4f(&grid_v[4*i]);
         Vec3f4 vtx = patch.eval(uu,vv);
-          
-          
+        
         if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-          {
-	    const Vec2f uv0 = patch.getUV(0);
-	    const Vec2f uv1 = patch.getUV(1);
-	    const Vec2f uv2 = patch.getUV(2);
-	    const Vec2f uv3 = patch.getUV(3);
-
-            Vec3f4 normal = patch.normal(uu,vv);
-            normal = normalize_safe(normal);
-
-            const float4 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
-            const float4 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           4);
-          }
+        {
+          const Vec2f uv0 = patch.getUV(0);
+          const Vec2f uv1 = patch.getUV(1);
+          const Vec2f uv2 = patch.getUV(2);
+          const Vec2f uv3 = patch.getUV(3);
           
+          Vec3f4 normal = patch.normal(uu,vv);
+          normal = normalize_safe(normal);
+          
+          const float4 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
+          const float4 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
+          
+          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
+                                         patch.geom,
+                                         patch.prim,
+                                         (const float*)&patch_uu,
+                                         (const float*)&patch_vv,
+                                         (const float*)&normal.x,
+                                         (const float*)&normal.y,
+                                         (const float*)&normal.z,
+                                         (float*)&vtx.x,
+                                         (float*)&vtx.y,
+                                         (float*)&vtx.z,
+                                         4);
+        }
+        
         *(float4*)&grid_x[4*i] = vtx.x;
         *(float4*)&grid_y[4*i] = vtx.y;
         *(float4*)&grid_z[4*i] = vtx.z;        
       }
 #endif
 #endif        
+    }
   }
-#endif
-
+  }
 }

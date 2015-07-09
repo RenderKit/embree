@@ -148,9 +148,8 @@ namespace embree
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivPatch1BuilderBinnedSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
-  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridBuilderBinnedSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridEagerBuilderBinnedSAH);
-  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridEagerEvalBuilderBinnedSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridEagerSOABuilderBinnedSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4SubdivGridLazyBuilderBinnedSAH);
 
   DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
@@ -200,9 +199,8 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1BuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerEvalBuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerSOABuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridLazyBuilderBinnedSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitSAH);
@@ -913,19 +911,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4SubdivGrid(Scene* scene)
-  {
-    BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
-    Accel::Intersectors intersectors;
-    intersectors.ptr = accel; 
-    intersectors.intersector1  = BVH4GridIntersector1;
-    intersectors.intersector4  = BVH4GridIntersector4;
-    intersectors.intersector8  = BVH4GridIntersector8;
-    intersectors.intersector16 = BVH4GridIntersector16;
-    Builder* builder = BVH4SubdivGridBuilderBinnedSAH(accel,scene,LeafMode);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
   Accel* BVH4::BVH4SubdivGridEager(Scene* scene)
   {
     BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
@@ -939,7 +924,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4::BVH4SubdivGridEagerEval(Scene* scene)
+  Accel* BVH4::BVH4SubdivGridEagerSOA(Scene* scene)
   {
     BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
     Accel::Intersectors intersectors;
@@ -948,7 +933,7 @@ namespace embree
     intersectors.intersector4  = BVH4GridIntersector4;
     intersectors.intersector8  = BVH4GridIntersector8;
     intersectors.intersector16 = BVH4GridIntersector16;
-    Builder* builder = BVH4SubdivGridEagerEvalBuilderBinnedSAH(accel,scene,LeafMode);
+    Builder* builder = BVH4SubdivGridEagerSOABuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }
 

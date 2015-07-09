@@ -19,9 +19,11 @@
 #include "catmullclark_patch.h"
 #include "bspline_patch.h"
 #include "gregory_patch.h"
+#include "patch.h"
 
 namespace embree
 {
+  namespace isa {
   struct FeatureAdaptiveEval
   {
     const size_t x0,x1;
@@ -30,77 +32,53 @@ namespace embree
     Vec3fa* const P;
     Vec3fa* const Ng;
     const size_t dwidth,dheight;
+    size_t count;
+
+    typedef BilinearPatch3fa BilinearPatch;
+    typedef BSplinePatch3fa BSplinePatch;
+    typedef BezierPatch3fa BezierPatch;
+    typedef GregoryPatch3fa GregoryPatch;
     
     __forceinline FeatureAdaptiveEval (const CatmullClarkPatch3fa& patch, 
 				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
 				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
-      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight), count(0)
     {
       assert(swidth < (2<<20) && sheight < (2<<20));
       const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
       const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
       eval(patch, srange, erange, 0);
+      //assert(count == (x1-x0+1)*(y1-y0+1));
     }
 
-    void dice(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange)
+    template<typename Patch>
+    __forceinline void evalLocalGrid(const Patch& patch, const BBox2f& srange, const float lx0, const float lx1, const float ly0, const float ly1)
     {
-      float lx0 = ceilf (erange.lower.x);
-      float lx1 = erange.upper.x + (erange.upper.x >= x1);
-      float ly0 = ceilf (erange.lower.y);
-      float ly1 = erange.upper.y + (erange.upper.y >= y1);
-      if (lx0 >= lx1 || ly0 >= ly1) return;
-
       const float scale_x = rcp(srange.upper.x-srange.lower.x);
       const float scale_y = rcp(srange.upper.y-srange.lower.y);
+      count += (lx1-lx0)*(ly1-ly0);
 
-      if (patch.isRegular1())
-      //if (true)
-      {
-	BSplinePatch3fa patcheval; patcheval.init(patch);
-	//GregoryPatch patcheval; patcheval.init(patch);
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    const float fx = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x;
-	    const float fy = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y;
-
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
-
-	    if (P)  P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
-	    if (Ng) Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
-	  }
-	}
+      for (float fy=ly0; fy<ly1; fy++) {
+        for (float fx=lx0; fx<lx1; fx++) {
+          assert(fx<swidth && fy<sheight);
+          const float lu = select(fx == swidth -1, float(1.0f), (float(fx)-srange.lower.x)*scale_x);
+          const float lv = select(fy == sheight-1, float(1.0f), (float(fy)-srange.lower.y)*scale_y);
+          const size_t ix = (size_t) fx, iy = (size_t) fy;
+          assert(ix-x0 < dwidth && iy-y0 < dheight);
+          const int ofs = (iy-y0)*dwidth+(ix-x0);
+          if (P ) P [ofs] = patch.eval(lu,lv);
+          if (Ng) Ng[ofs] = normalize_safe(patch.normal(lu,lv));
+        }
       }
-      else 
-      {
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    
-	    const float sx1 = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x, sx0 = 1.0f-sx1;
-	    const float sy1 = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y, sy0 = 1.0f-sy1;
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
+    }
 
-	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
-	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
-	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
-	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    if (P) P [(iy-y0)*dwidth+(ix-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
-
-	    const Vec3fa Ng0 = patch.ring[0].getNormal();
-	    const Vec3fa Ng1 = patch.ring[1].getNormal();
-	    const Vec3fa Ng2 = patch.ring[2].getNormal();
-	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    if (Ng) Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2));
-	  }
-	}
-      }
+    __forceinline bool final(const CatmullClarkPatch3fa& patch, size_t depth) 
+    {
+#if PATCH_MIN_RESOLUTION
+      return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=PATCH_MAX_EVAL_DEPTH;
+#else
+      return depth>=PATCH_MAX_EVAL_DEPTH;
+#endif
     }
 
     void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
@@ -108,22 +86,52 @@ namespace embree
       if (erange.empty())
 	return;
       
-      if (patch.isRegularOrFinal(depth))
-	return dice(patch,srange,erange);
-
-      array_t<CatmullClarkPatch3fa,4> patches; 
-      patch.subdivide(patches);
-
-      const Vec2f c = srange.center();
-      const BBox2f srange0(srange.lower,c);
-      const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
-      const BBox2f srange2(c,srange.upper);
-      const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
-
-      eval(patches[0],srange0,intersect(srange0,erange),depth+1);
-      eval(patches[1],srange1,intersect(srange1,erange),depth+1);
-      eval(patches[2],srange2,intersect(srange2,erange),depth+1);
-      eval(patches[3],srange3,intersect(srange3,erange),depth+1);
+      float lx0 = ceilf (erange.lower.x);
+      float lx1 = erange.upper.x + (erange.upper.x >= x1);
+      float ly0 = ceilf (erange.lower.y);
+      float ly1 = erange.upper.y + (erange.upper.y >= y1);
+      if (lx0 >= lx1 || ly0 >= ly1) return;
+      
+      if (unlikely(patch.isRegular2())) {
+        RegularPatch rpatch(patch);
+        evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
+        return;
+      }
+#if PATCH_USE_GREGORY == 2
+      else if (unlikely(final(patch,depth) || patch.isGregory())) {
+        GregoryPatch gpatch(patch);
+        evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
+        return;
+      }
+#else
+      else if (unlikely(final(patch,depth)))
+      {
+#if PATCH_USE_GREGORY == 1
+        GregoryPatch gpatch(patch);
+        evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
+#else
+        BilinearPatch bpatch(patch);
+        evalLocalGrid(bpatch,srange,lx0,lx1,ly0,ly1);
+#endif
+        return;
+      }
+#endif
+      else
+      {
+        array_t<CatmullClarkPatch3fa,4> patches; 
+        patch.subdivide(patches);
+        
+        const Vec2f c = srange.center();
+        const BBox2f srange0(srange.lower,c);
+        const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
+        const BBox2f srange2(c,srange.upper);
+        const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
+        
+        eval(patches[0],srange0,intersect(srange0,erange),depth+1);
+        eval(patches[1],srange1,intersect(srange1,erange),depth+1);
+        eval(patches[2],srange2,intersect(srange2,erange),depth+1);
+        eval(patches[3],srange3,intersect(srange3,erange),depth+1);
+      }
     }
   };
 
@@ -245,5 +253,6 @@ namespace embree
    {
      FeatureAdaptiveEvalSubdivision<Tessellator>(h,vertices,tessellator);
    }
+  }
 }
 

@@ -1033,10 +1033,10 @@ PRINT(CORRECT_numPrims);
       __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
 
       const unsigned int real_grid_size = p.grid_u_res*p.grid_v_res;
-      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, 0, 0, p.grid_u_res, p.grid_v_res, u_array, v_array);
 
       if (unlikely(p.needsStitching()))
-        stitchUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
+        stitchUVGrid(p.level, p.grid_u_res, p.grid_v_res, 0, 0, p.grid_u_res, p.grid_v_res, u_array, v_array);
 
       // FIXME: remove
       for (size_t i = real_grid_size; i<p.grid_size_simd_blocks * 16; i++)
@@ -1158,7 +1158,7 @@ PRINT(CORRECT_numPrims);
           feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
         };
  
-	subdiv_patch.updateEdgeLevels(edge_level,neighborSubdiv,mesh);
+	subdiv_patch.updateEdgeLevels(edge_level,neighborSubdiv,mesh,vfloat::size);
 	subdiv_patch.resetRootRef();
 	const BBox3fa bounds = getBounds(subdiv_patch,mesh);
 
@@ -1263,7 +1263,7 @@ PRINT(CORRECT_numPrims);
 	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
 	      prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
  
-	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh);
+	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh,vfloat::size);
 	      subdiv_patches[patchIndex].resetRootRef();
 	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
 	      assert(bounds.lower.x <= bounds.upper.x);

@@ -39,7 +39,7 @@ namespace embree
                   const int subdiv[4],
                   const BezierCurve3fa *border, 
                   const int border_flags) 
-      : SubdivPatch1Base(ipatch,fas_depth,geomID,primID,mesh,uv,edge_level,subdiv, border, border_flags)
+      : SubdivPatch1Base(ipatch,fas_depth,geomID,primID,mesh,uv,edge_level,subdiv, border, border_flags, 16)
     { 
     }
     

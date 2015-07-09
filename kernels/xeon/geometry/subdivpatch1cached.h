@@ -43,8 +43,9 @@ namespace embree
                         const SubdivMesh *const mesh,
                         const Vec2f uv[4],
                         const float edge_level[4],
-                        const int subdiv[4]) 
-      : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv) {}
+                        const int subdiv[4],
+                        const int simd_width) 
+      : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
 #else
 
     /*! constructor for cached subdiv patch */
@@ -57,7 +58,9 @@ namespace embree
                         const float edge_level[4],
                         const int subdiv[4],
                         const BezierCurve3fa *border, 
-                        const int border_flags) : SubdivPatch1Base(ipatch,fas_depth,gID,pID,mesh,uv,edge_level,subdiv,border,border_flags) {}
+                        const int border_flags,
+                        const int simd_width) 
+      : SubdivPatch1Base(ipatch,fas_depth,gID,pID,mesh,uv,edge_level,subdiv,border,border_flags,simd_width) {}
 #endif
   };
 }
