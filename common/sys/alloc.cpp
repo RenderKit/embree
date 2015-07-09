@@ -124,7 +124,7 @@ namespace embree
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 #endif
-#if __MIC__
+#if 1 // __MIC__
     flags |= MAP_POPULATE;
 #endif
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
@@ -143,6 +143,10 @@ namespace embree
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 #endif
+#if 1 // __MIC__
+    flags |= MAP_POPULATE;
+#endif
+
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
     return ptr;

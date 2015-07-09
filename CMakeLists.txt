@@ -115,7 +115,7 @@ CONFIGURE_FILE(
 # ISA configuration
 ##############################################################
 
-SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+SET(XEON_ISA "AVX512" CACHE STRING "Selects highest ISA to support.")
 SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512)
 
 IF (XEON_ISA STREQUAL "SSE2")

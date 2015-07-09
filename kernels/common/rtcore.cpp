@@ -61,14 +61,49 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
 #if defined(TASKING_TBB)
+
+  template <typename R, typename S>
+  R tbb_pi( S num_steps )
+  {
+    const R step = R(1) / num_steps;
+    return step * tbb::parallel_reduce( tbb::blocked_range<S>( 0, num_steps ), R(0),
+                                        [step] ( const tbb::blocked_range<S> r, R local_sum ) -> R {
+                                          for ( S i = r.begin(); i < r.end(); ++i ) {
+                                            R x = (i + R(0.5)) * step;
+                                            local_sum += R(4) / (R(1) + x*x);
+                                          }
+                                          return local_sum;
+                                        },
+                                        std::plus<R>()
+      );
+  }
+
   bool g_tbb_threads_initialized = false;
   tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
+    tbb::atomic<int> num_threads;
+
     void on_scheduler_entry( bool ) {
+      ++num_threads;
       setAffinity(TaskSchedulerTBB::threadIndex());
+      //PING;
+      //PRINT(num_threads);
     }
+
+    void on_scheduler_exit( bool ) { 
+      --num_threads; 
+      //PING;
+      //PRINT(num_threads);
+    }
+  public:
+    
+    TBBAffinity() { num_threads = 0; }
+
+    int  get_concurrency()      { return num_threads; }
+    void set_concurrency(int i) { num_threads = i; }
+
   } tbb_affinity;
 #endif
 
@@ -339,11 +374,13 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX512__)
-    if (g_numThreads == 0) {
-      if (State::instance()->verbosity(2)) 
-        std::cout << "Pre-initialize TBB threads..." << std::endl;
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
-    } 
+    if (hasISA(AVX512)) {
+      if (g_numThreads == 0) {
+        if (State::instance()->verbosity(2)) 
+          std::cout << "Pre-initialize TBB threads..." << std::endl;
+        g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      } 
+    }
 #endif
 
 #if defined(TASKING_TBB)
@@ -353,7 +390,14 @@ namespace embree
     } else {
       g_tbb_threads_initialized = true;
       tbb_threads.initialize(g_numThreads);
+      tbb_affinity.set_concurrency(0);
       tbb_affinity.observe(true); 
+
+      const size_t N = 1024*1024;
+      //PRINT(g_numThreads );
+      while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
+        tbb_pi<double> (N);
+      //PRINT( tbb_affinity.get_concurrency() );
     }
 #endif
 
@@ -392,7 +436,9 @@ namespace embree
 
 #if defined(TASKING_TBB)
     if (g_tbb_threads_initialized)
+    {
       tbb_threads.terminate();
+    }
 #endif
     State::instance()->clear();
     g_initialized = false;
