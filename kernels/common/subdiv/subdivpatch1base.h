@@ -166,18 +166,6 @@ namespace embree
     }
 
 
-#if defined(__MIC__)
-    __forceinline void store(void *mem)
-    {
-      const float16 *const src = (float16*)this;
-      assert(sizeof(SubdivPatch1Base) % 64 == 0);
-      float16 *const dst = (float16*)mem;
-#pragma unroll
-      for (size_t i=0;i<sizeof(SubdivPatch1Base) / 64;i++)
-	store16f_ngo(&dst[i],src[i]);
-    }
-#endif
-
     void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
     __forceinline size_t gridOffset(const size_t y, const size_t x) const
