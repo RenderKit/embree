@@ -49,8 +49,7 @@ namespace embree
     };
 
     enum Flags {
-      TRANSITION_PATCH       = 16,  // needs stiching?
-      HAS_DISPLACEMENT       = 32   // 0 => no displacments
+      TRANSITION_PATCH       = 16, 
     };
 
     /*! Default constructor. */
@@ -156,10 +155,6 @@ namespace embree
         return DenseGregoryPatch3fa::normal16( patch_v, uu, vv );
     }
 #endif
-
-    __forceinline bool hasDisplacement() const {
-      return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
-    }
 
     __forceinline bool needsStitching() const {
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      

@@ -235,10 +235,5 @@ namespace embree
 	int_edge_points3 < (unsigned int)grid_v_res) {
       flags |= TRANSITION_PATCH;
     }
-
-    /* has displacements? */
-    flags &= ~HAS_DISPLACEMENT;
-    if (mesh->displFunc != nullptr)
-      flags |= HAS_DISPLACEMENT;
   }
 }
