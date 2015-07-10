@@ -166,10 +166,6 @@ namespace embree
 
     void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
-    /*__forceinline size_t gridOffset(const size_t y, const size_t x) const {
-      return grid_u_res*y+x;
-      }*/
-
   private:
 
     size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
@@ -202,27 +198,19 @@ namespace embree
 #endif
     }
 
-    __forceinline void read_lock()      { mtx.read_lock();    }
-    __forceinline void read_unlock()    { mtx.read_unlock();  }
     __forceinline void write_lock()     { mtx.write_lock();   }
     __forceinline void write_unlock()   { mtx.write_unlock(); }
-    
     __forceinline bool try_write_lock() { return mtx.try_write_lock(); }
     __forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
-    
-    __forceinline void upgrade_read_to_write_lock() { mtx.upgrade_read_to_write_lock(); }
-    __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
 
-    __forceinline void resetRootRef()
-    {
+    __forceinline void resetRootRef() {
       assert( mtx.hasInitialState() );
       root_ref = SharedLazyTessellationCache::Tag();
     }
 
 
-    // 16bit discretized u,v coordinates
-
-    unsigned short u[4]; 
+  public:    
+    unsigned short u[4];                        //!< 16bit discretized u,v coordinates
     unsigned short v[4];
     float level[4];
 
