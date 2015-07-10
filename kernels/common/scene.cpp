@@ -270,7 +270,6 @@ namespace embree
     else if (State::instance()->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
     else if (State::instance()->subdiv_accel == "bvh4.grid.eager_aos"    ) accels.add(BVH4::BVH4SubdivGridEager(this));
     else if (State::instance()->subdiv_accel == "bvh4.grid.eager_soa"    ) accels.add(BVH4::BVH4SubdivGridEagerSOA(this));
-    else if (State::instance()->subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
     else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->subdiv_accel);
   }
 

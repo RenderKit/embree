@@ -24,24 +24,6 @@ namespace embree
 {
   namespace isa
   {
-    struct GridLazyIntersector1
-    {
-      typedef Grid::LazyLeaf Primitive;
-      
-      struct Precalculations {
-        __forceinline Precalculations (const Ray& ray, const void *ptr) {}
-      };
-      
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
-        lazy_node = prim.initialize();
-      }
-      
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, Primitive& prim, const Scene* scene, size_t& lazy_node) {
-        lazy_node = prim.initialize();
-        return false;
-      }
-    };
-    
     struct GridIntersector1
     {
       typedef Grid::EagerLeaf Primitive;
