@@ -54,10 +54,6 @@ namespace embree
       v = _mm512_cvtfxpnt_round_adjustps_epi32(f,_MM_FROUND_FLOOR,_MM_EXPADJ_NONE);
 #endif
     }
-
-    static __forceinline void store(const bool16& mask, void* __restrict__ addr, const int16& v2) {
-      _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
-    }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -87,11 +83,29 @@ namespace embree
     }
 
     static __forceinline void storeu(int* ptr, const int16& f ) { 
-      _mm512_storeu_si512(ptr,f);
+#if defined(__AVX512__)
+       _mm512_storeu_si512(ptr,f);
+#else
+       _mm512_extpackstorelo_ps(ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+       _mm512_extpackstorehi_ps(ptr+16 ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+#endif
     }
 
-    static __forceinline void storeu(const bool16& mask,int* ptr, const int16& f ) { 
+    static __forceinline void storeu(const bool16& mask, int* ptr, const int16& f ) { 
+#if defined(__AVX512__)
       _mm512_mask_storeu_epi32(ptr,mask,f);
+#else
+      __m512 r = _mm512_undefined();
+      r = _mm512_extloadunpacklo_ps(r, ptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r = _mm512_mask_blend_ps(mask,r,_mm512_castsi512_ps(f));
+      _mm512_extpackstorelo_ps(ptr,    r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
+
+    static __forceinline void store(const bool16& mask, void* addr, const int16& v2) {
+      store(mask,(int*)addr,v2);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

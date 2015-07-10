@@ -62,13 +62,26 @@ namespace embree
     }
 
     static __forceinline void storeu(float* ptr, const float16& f ) { 
+#if defined(__AVX512__)
       _mm512_storeu_ps(ptr,f);
+#else
+    _mm512_extpackstorelo_ps(ptr+0  ,f, _MM_DOWNCONV_PS_NONE , 0);
+    _mm512_extpackstorehi_ps(ptr+16 ,f, _MM_DOWNCONV_PS_NONE , 0);
+#endif
     }
 
     static __forceinline void storeu(const bool16& mask,float* ptr, const float16& f ) { 
+#if defined(__AVX512__)
       _mm512_mask_storeu_ps(ptr,mask,f);
+#else
+      float16 r = float16::undefined();
+      r = _mm512_extloadunpacklo_ps(r, ptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r = _mm512_mask_blend_ps(mask,r,f);
+      _mm512_extpackstorelo_ps(ptr,    r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
+#endif
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
