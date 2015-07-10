@@ -160,40 +160,31 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
-    __forceinline Vec2f getUV(const size_t i) const
-    {
+    __forceinline Vec2f getUV(const size_t i) const {
       return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
     }
 
-
     void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
-    __forceinline size_t gridOffset(const size_t y, const size_t x) const
-    {
+    /*__forceinline size_t gridOffset(const size_t y, const size_t x) const {
       return grid_u_res*y+x;
-    }
+      }*/
 
   private:
 
-    size_t get64BytesBlocksForGridSubTree(const GridRange& range,
-                                          const unsigned int leafBlocks)
+    size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
     {
-      if (range.hasLeafSize()) return leafBlocks;
+      if (range.hasLeafSize()) 
+        return leafBlocks;
 
       __aligned(64) GridRange r[4];
-
       const unsigned int children = range.splitIntoSubRanges(r);
 
       size_t blocks = 2; /* 128 bytes bvh4 node layout */
-
       for (unsigned int i=0;i<children;i++)
-	blocks += get64BytesBlocksForGridSubTree(r[i],
-						 leafBlocks);
+	blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
       return blocks;    
     }
-
-
-    
 
   public:
     __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
