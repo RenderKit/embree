@@ -743,7 +743,18 @@ namespace embree
       const Vec3<T> n = cross(tangentV,tangentU);
       return n;
     }
-    
+
+     template<class T>
+    __forceinline Vec3<T> normal(const T& uu, const T& vv) const 
+    {
+      Vec3<T> ff[2][2];
+      ff[0][0] = Vec3<T>(f[0][0]);
+      ff[0][1] = Vec3<T>(f[0][1]);
+      ff[1][1] = Vec3<T>(f[1][1]);
+      ff[1][0] = Vec3<T>(f[1][0]);
+      return normal_t<T::Mask>(v,ff,uu,vv);
+    }
+
     __forceinline BBox<Vertex> bounds() const
     {
       const Vertex *const cv = &v[0][0];

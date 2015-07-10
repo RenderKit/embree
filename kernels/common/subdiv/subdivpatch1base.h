@@ -227,7 +227,7 @@ namespace embree
     }
 
 
-
+    
 
   public:
     __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
@@ -313,16 +313,29 @@ namespace embree
 #if USE_RANGE_EVAL
     if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
     {
+      const bool displ = geom->displFunc;
+      const size_t N = displ ? dwidth*dheight+16 : 0;
+      dynamic_stack_array(float,grid_Ng_x,N);
+      dynamic_stack_array(float,grid_Ng_y,N);
+      dynamic_stack_array(float,grid_Ng_z,N);
+
       if (unlikely(patch.needsStitching()))
         isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
                                      x0,x1,y0,y1,swidth,sheight,
-                                     grid_x,grid_y,grid_z,grid_u,grid_v,dwidth,dheight);
+                                     grid_x,grid_y,grid_z,grid_u,grid_v,
+                                     displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+                                     dwidth,dheight);
       else
         isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
                                      x0,x1,y0,y1,swidth,sheight,
-                                     grid_x,grid_y,grid_z,grid_u,grid_v,dwidth,dheight);
-      
-      
+                                     grid_x,grid_y,grid_z,grid_u,grid_v,
+                                     displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+                                     dwidth,dheight);
+
+      /* call displacement shader */
+      if (geom->displFunc) 
+        geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+
       /* set last elements in u,v array to 1.0f */
       const float last_u = grid_u[dwidth*dheight-1];
       const float last_v = grid_v[dwidth*dheight-1];

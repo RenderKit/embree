@@ -94,6 +94,33 @@ namespace embree
         return Vec3<vfloat>(x,y,z);
       }
 
+      template<class vfloat>
+      __forceinline Vec3<vfloat> tangentU(const vfloat& uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        const vfloat x = sy0*(v[1].x-v[0].x) + sy1*(v[2].x-v[3].x); 
+        const vfloat y = sy0*(v[1].y-v[0].y) + sy1*(v[2].y-v[3].y); 
+        const vfloat z = sy0*(v[1].z-v[0].z) + sy1*(v[2].z-v[3].z); 
+        return Vec3<vfloat>(x,y,z);
+      }
+
+      template<class vfloat>
+      __forceinline Vec3<vfloat> tangentV(const vfloat& uu, const vfloat& vv) const
+      {
+        const vfloat sx1 = uu, sx0 = 1.0f-sx1;
+        const vfloat sy1 = vv, sy0 = 1.0f-sy1;
+        const vfloat x = sx0*(v[3].x-v[0].x) + sx1*(v[2].x-v[1].x);
+        const vfloat y = sx0*(v[3].y-v[0].y) + sx1*(v[2].y-v[1].y);
+        const vfloat z = sx0*(v[3].z-v[0].z) + sx1*(v[2].z-v[1].z);
+        return Vec3<vfloat>(x,y,z);
+      }
+
+      template<typename vfloat>
+      __forceinline Vec3<vfloat> normal(const vfloat& uu, const vfloat& vv) const {
+        return cross(tangentV(uu,vv),tangentU(uu,vv));
+      }
+
        template<class vfloat>
       __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv) const
       {
