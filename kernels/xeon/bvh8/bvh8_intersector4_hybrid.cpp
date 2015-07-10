@@ -250,7 +250,7 @@ namespace embree
           cur = *sptr_node; 
           curDist = *sptr_near;
           
-#pragma unroll(4)
+#pragma unroll(8)
           for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
@@ -530,7 +530,7 @@ namespace embree
           cur = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
+#pragma unroll(8)
           for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
