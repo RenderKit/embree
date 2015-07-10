@@ -160,16 +160,6 @@ namespace embree
       return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
     }
 
-    __forceinline void prefetchData() const
-    {
-      const char *const t = (char*)this;
-      prefetchL1(t + 0*64);
-      prefetchL1(t + 1*64);
-      prefetchL1(t + 2*64);
-      prefetchL1(t + 3*64);
-      prefetchL1(t + 4*64);
-    }
-
     __forceinline Vec2f getUV(const size_t i) const
     {
       return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
