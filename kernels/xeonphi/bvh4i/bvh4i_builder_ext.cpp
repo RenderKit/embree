@@ -1048,13 +1048,13 @@ PRINT(CORRECT_numPrims);
           const float16 u = load16f(&u_array[i * 16]);
           const float16 v = load16f(&v_array[i * 16]);
 
-          Vec3f16 vtx = p.eval16(u, v);
+          Vec3f16 vtx = p.eval(u, v);
 
 
           /* eval displacement function */
           if (unlikely(mesh->displFunc != nullptr))
             {
-              Vec3f16 normal = p.normal16(u, v);
+              Vec3f16 normal = p.normal(u, v);
               normal = normalize(normal);
 
               const Vec2f uv0 = p.getUV(0);

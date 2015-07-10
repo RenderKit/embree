@@ -57,6 +57,10 @@ namespace embree
 #endif
     }
 
+    static __forceinline void store(void* addr, const float16& v2) {
+      _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_NONE,0);
+    }
+
     static __forceinline void store(const bool16& mask, void* addr, const float16& v2) {
       _mm512_mask_extstore_ps(addr,mask,v2,_MM_DOWNCONV_PS_NONE,0);
     }
@@ -70,7 +74,7 @@ namespace embree
 #endif
     }
 
-    static __forceinline void storeu(const bool16& mask,float* ptr, const float16& f ) { 
+    static __forceinline void storeu(const bool16& mask, float* ptr, const float16& f ) { 
 #if defined(__AVX512__)
       _mm512_mask_storeu_ps(ptr,mask,f);
 #else
@@ -106,6 +110,10 @@ namespace embree
       float16 r = float16::undefined();
       r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
       return _mm512_extloadunpackhi_ps(r, (float*)addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+    }
+
+    static __forceinline float16 load(const void *f) { 
+      return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
     }
 
     ////////////////////////////////////////////////////////////////////////////////

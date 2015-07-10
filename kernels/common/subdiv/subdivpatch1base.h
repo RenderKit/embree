@@ -136,7 +136,7 @@ namespace embree
 
 #if defined(__MIC__)
 
-    __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
+    __forceinline Vec3f16 eval(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::eval( patch_v, uu, vv );
@@ -146,7 +146,7 @@ namespace embree
         return DenseGregoryPatch3fa::eval16( patch_v, uu, vv );
     }
 
-    __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
+    __forceinline Vec3f16 normal(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
         return BezierPatch3fa::normal( patch_v, uu, vv );
@@ -362,126 +362,36 @@ namespace embree
       if (unlikely(patch.needsStitching()))
         stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
       
-#if defined(__MIC__)
-      
-      for (size_t i = 0; i<grid_size_simd_blocks; i++)
+      /* iterates over all grid points */
+      for (size_t i=0; i<grid_size_simd_blocks; i++)
       {
-        const float16 u = load16f(&grid_u[i * 16]);
-        const float16 v = load16f(&grid_v[i * 16]);
+        const vfloat u = vfloat::load(&grid_u[i*vfloat::size]);
+        const vfloat v = vfloat::load(&grid_v[i*vfloat::size]);
+        Vec3<vfloat> vtx = patch.eval(u,v);
         
-        Vec3f16 vtx = patch.eval16(u, v);
-        
-        /* eval displacement function */
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
+        /* evaluate displacement function */
+        if (unlikely(geom->displFunc != nullptr))
         {
-          Vec3f16 normal = patch.normal16(u, v);
-          normal = normalize(normal);
+          Vec3<vfloat> normal = patch.normal(u, v);
+          normal = normalize(normal); // FIXME: use normalize_safe
           
           const Vec2f uv0 = patch.getUV(0);
           const Vec2f uv1 = patch.getUV(1);
           const Vec2f uv2 = patch.getUV(2);
           const Vec2f uv3 = patch.getUV(3);
           
-          const float16 patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
-          const float16 patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
+          const vfloat patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
+          const vfloat patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
           
-          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                         patch.geom,
-                                         patch.prim,
-                                         (const float*)&patch_uu,
-                                         (const float*)&patch_vv,
-                                         (const float*)&normal.x,
-                                         (const float*)&normal.y,
-                                         (const float*)&normal.z,
-                                         (float*)&vtx.x,
-                                         (float*)&vtx.y,
-                                         (float*)&vtx.z,
-                                         16);
+          geom->displFunc(geom->userPtr,patch.geom,patch.prim,
+                          &patch_uu[0],&patch_vv[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                          &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloat::size);
           
         }
-        store16f_ngo(&grid_x[16*i],vtx.x);
-        store16f_ngo(&grid_y[16*i],vtx.y);
-        store16f_ngo(&grid_z[16*i],vtx.z);
+        vfloat::store(&grid_x[i*vfloat::size],vtx.x);
+        vfloat::store(&grid_y[i*vfloat::size],vtx.y);
+        vfloat::store(&grid_z[i*vfloat::size],vtx.z);
       }
-      
-#else        
-#if defined(__AVX__)
-      for (size_t i=0;i<grid_size_simd_blocks;i++)
-      {
-        float8 uu = load8f(&grid_u[8*i]);
-        float8 vv = load8f(&grid_v[8*i]);
-        Vec3f8 vtx = patch.eval(uu,vv);
-
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-        {
-          const Vec2f uv0 = patch.getUV(0);
-          const Vec2f uv1 = patch.getUV(1);
-          const Vec2f uv2 = patch.getUV(2);
-          const Vec2f uv3 = patch.getUV(3);
-          
-          Vec3f8 normal = patch.normal(uu,vv);
-          normal = normalize_safe(normal) ;
-          
-          const float8 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
-          const float8 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
-          
-          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                         patch.geom,
-                                         patch.prim,
-                                         (const float*)&patch_uu,
-                                         (const float*)&patch_vv,
-                                         (const float*)&normal.x,
-                                         (const float*)&normal.y,
-                                         (const float*)&normal.z,
-                                         (float*)&vtx.x,
-                                         (float*)&vtx.y,
-                                         (float*)&vtx.z,
-                                         8);
-        }
-        *(float8*)&grid_x[8*i] = vtx.x;
-        *(float8*)&grid_y[8*i] = vtx.y;
-        *(float8*)&grid_z[8*i] = vtx.z;        
-      }
-#else
-      for (size_t i=0;i<grid_size_simd_blocks;i++)
-      {
-        float4 uu = load4f(&grid_u[4*i]);
-        float4 vv = load4f(&grid_v[4*i]);
-        Vec3f4 vtx = patch.eval(uu,vv);
-        
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-        {
-          const Vec2f uv0 = patch.getUV(0);
-          const Vec2f uv1 = patch.getUV(1);
-          const Vec2f uv2 = patch.getUV(2);
-          const Vec2f uv3 = patch.getUV(3);
-          
-          Vec3f4 normal = patch.normal(uu,vv);
-          normal = normalize_safe(normal);
-          
-          const float4 patch_uu = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,uu,vv);
-          const float4 patch_vv = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,uu,vv);
-          
-          ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                         patch.geom,
-                                         patch.prim,
-                                         (const float*)&patch_uu,
-                                         (const float*)&patch_vv,
-                                         (const float*)&normal.x,
-                                         (const float*)&normal.y,
-                                         (const float*)&normal.z,
-                                         (float*)&vtx.x,
-                                         (float*)&vtx.y,
-                                         (float*)&vtx.z,
-                                         4);
-        }
-        
-        *(float4*)&grid_x[4*i] = vtx.x;
-        *(float4*)&grid_y[4*i] = vtx.y;
-        *(float4*)&grid_z[4*i] = vtx.z;        
-      }
-#endif
-#endif        
     }
   }
   }
