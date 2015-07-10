@@ -98,6 +98,7 @@ namespace embree
 
     const SubdivMesh::HalfEdge* edge = mesh->getHalfEdge(pID);
 
+#if 1 // FIXME: enable
     if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
     {
       CatmullClarkPatch3fa ccpatch;
@@ -122,6 +123,7 @@ namespace embree
       gpatch.exportDenseConrolPoints( patch_v );
     }
     else 
+#endif
     {
       type = EVAL_PATCH;
       this->edge = mesh->getHalfEdge(pID);

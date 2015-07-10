@@ -399,25 +399,12 @@ namespace embree
     BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
     {
 #if FORCE_TESSELLATION_BOUNDS == 1
+      dynamic_stack_array(float,grid_x,(patch.grid_size_simd_blocks+1)*8);
+      dynamic_stack_array(float,grid_y,(patch.grid_size_simd_blocks+1)*8);
+      dynamic_stack_array(float,grid_z,(patch.grid_size_simd_blocks+1)*8);
+      dynamic_stack_array(float,grid_u,(patch.grid_size_simd_blocks+1)*8);
+      dynamic_stack_array(float,grid_v,(patch.grid_size_simd_blocks+1)*8);
 
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float grid_x[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_y[(patch.grid_size_simd_blocks+1)*8];
-      __aligned(64) float grid_z[(patch.grid_size_simd_blocks+1)*8];         
-      __aligned(64) float grid_u[(patch.grid_size_simd_blocks+1)*8]; 
-      __aligned(64) float grid_v[(patch.grid_size_simd_blocks+1)*8];
-
-#else
-      const size_t array_elements = (patch.grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(5 * array_elements * sizeof(float) + 64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-
-      float *grid_x = &grid_arrays[array_elements * 0];
-      float *grid_y = &grid_arrays[array_elements * 1];
-      float *grid_z = &grid_arrays[array_elements * 2];
-      float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];
-#endif
       evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
       
       BBox3fa b(empty);
@@ -506,9 +493,6 @@ namespace embree
         }
 #endif
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif
       return b;
     }
 

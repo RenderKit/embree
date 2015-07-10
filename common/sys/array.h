@@ -123,4 +123,31 @@ namespace embree
       size_t M;
       T items[N];
     };
+
+  /*! dynamic sized array that is allocated on the stack */
+#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#define dynamic_stack_array(Ty,Name,N) __aligned(64) Ty Name[N]
+#else
+#define dynamic_stack_array(Ty,Name,N) StackArray<Ty> Name(N)
+  template<typename Ty>
+    struct __aligned(64) StackArray
+  {
+    __forceinline StackArray (const size_t N) 
+      : ptr(_malloca(N*sizeof(Ty) + 64)), data((Ty*)ALIGN_PTR(ptr,64)) {}
+
+    __forceinline ~StackArray () {
+      _freea(ptr);
+    }
+
+    __forceinline operator       Ty* ()       { return data; }
+    __forceinline operator const Ty* () const { return data; }
+
+    __forceinline       Ty& operator[](const size_t i)       { return data[i]; }
+    __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
+
+  private:
+    void* ptr;
+    Ty* data;
+  };
+#endif
 }
