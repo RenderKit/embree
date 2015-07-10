@@ -269,7 +269,6 @@ namespace embree
 
     BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
     {
-#if FORCE_TESSELLATION_BOUNDS == 1
       dynamic_stack_array(float,grid_x,(patch.grid_size_simd_blocks+1)*8);
       dynamic_stack_array(float,grid_y,(patch.grid_size_simd_blocks+1)*8);
       dynamic_stack_array(float,grid_z,(patch.grid_size_simd_blocks+1)*8);
@@ -352,17 +351,6 @@ namespace embree
       assert(b.lower.x <= b.upper.x);
       assert(b.lower.y <= b.upper.y);
       assert(b.lower.z <= b.upper.z);
-
-#else
-      BBox3fa b = patch.bounds();
-      if (unlikely(isGregoryPatch()))
-        {
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 0));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 1));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 2));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 3));
-        }
-#endif
 
       return b;
     }

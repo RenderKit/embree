@@ -25,9 +25,7 @@
 #include "tessellation.h"
 #include "tessellation_cache.h"
 #include "gridrange.h"
-
-#define FORCE_TESSELLATION_BOUNDS 1
-#define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
+#include "feature_adaptive_eval2.h"
 
 #if defined(__MIC__)
 #define USE_RANGE_EVAL 0
@@ -35,13 +33,8 @@
 #define USE_RANGE_EVAL RTCORE_USE_RANGE_EVAL
 #endif
 
-#if USE_RANGE_EVAL
-#include "feature_adaptive_eval2.h"
-#endif
-
 namespace embree
 {
-  
   struct __aligned(64) SubdivPatch1Base
   {
   public:

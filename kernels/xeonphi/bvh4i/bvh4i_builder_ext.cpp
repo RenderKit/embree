@@ -1022,13 +1022,8 @@ PRINT(CORRECT_numPrims);
   }
 
 
-#define FORCE_TESSELLATION_BOUNDS 1
-
     BBox3fa getBounds(const SubdivPatch1Base &p,const SubdivMesh* const mesh)
     {
-      
-#if FORCE_TESSELLATION_BOUNDS == 1
-       
       __aligned(64) float u_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
       __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
 
@@ -1100,21 +1095,6 @@ PRINT(CORRECT_numPrims);
       std::isfinite(b.upper.x);
       std::isfinite(b.upper.y);
       std::isfinite(b.upper.z);
-#endif
-
-#else
-      BBox3fa b = patch.bounds();
-      if (unlikely(isGregoryPatch()))
-        {
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 0));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 1));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 2));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 3));
-        }
-#endif
-
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
 #endif
 
       return b;
