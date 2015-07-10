@@ -97,12 +97,6 @@ namespace embree
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
 
-      else if (tag == "-pregenerate_aos") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager_aos";
-      
-      else if (tag == "-pregenerate_soa") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager_soa";
-
       else if (tag == "-loop") 
 	g_loop_mode = true;
 
