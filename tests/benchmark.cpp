@@ -205,7 +205,7 @@ namespace embree
   class benchmark_atomic_inc : public Benchmark
   {
   public:
-    enum { N = 1000000 };
+    enum { N = 10000000 };
 
     benchmark_atomic_inc () 
      : Benchmark("atomic_inc","ns") {}
@@ -215,8 +215,11 @@ namespace embree
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      __memory_barrier();
       while (atomic_add(&g_atomic_cntr,-1) > 0);
+      __memory_barrier();
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      
     }
     
     double run (size_t numThreads)
@@ -227,17 +230,20 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
-      //setAffinity(0);
+      setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
+      size_t c0 = rdtsc();
       benchmark_atomic_inc_thread(nullptr);
+      size_t c1 = rdtsc();
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
-      
+      //PRINT(double(c1-c0)/N);
+
       //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
       return 1E9*(t1-t0)/double(N);
