@@ -372,11 +372,22 @@ namespace embree
       void build(size_t, size_t) 
       {
         /* initialize all half edge structures */
+        bool fastUpdateMode = true;
         size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
           Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
           for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+            if (iter[i]) {
+              fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
+              fastUpdateMode &= !iter[i]->faceVertices.isModified();
+              fastUpdateMode &= !iter[i]->holes.isModified();
+              //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
+              //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
+              //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
+              //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
+              fastUpdateMode &= iter[i]->levels.isModified();
+              iter[i]->initializeHalfEdgeStructures();
+            }
         }
 
         /* skip build for empty scene */
@@ -446,7 +457,13 @@ namespace embree
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              if (likely(fastUpdateMode)) {
+                subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                subdiv_patches[patchIndex].resetRootRef();
+              }
+              else {
+                new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              }
 #if 0
               BBox3fa bounds;
               size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);

@@ -463,7 +463,7 @@ namespace embree
     RTCBoundaryMode boundary;  //!< boundary interpolation mode
 
     /*! all buffers in this section are provided by the application */
-  protected:
+  public:
     
     /*! buffer containing the number of vertices for each face */
     BufferT<int> faceVertices;
