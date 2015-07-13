@@ -98,7 +98,7 @@ namespace embree
 
     const SubdivMesh::HalfEdge* edge = mesh->getHalfEdge(pID);
 
-#if 0
+#if 1
     if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
     {
       CatmullClarkPatch3fa ccpatch;

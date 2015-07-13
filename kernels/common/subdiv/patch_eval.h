@@ -479,9 +479,9 @@ namespace embree
       const int neighborSubdiv0[4] = { 0,0,0,0 };
       const int neighborSubdiv1[4] = { 0,0,0,0 };
       const int neighborSubdiv2[4] = { 0,0,0,0 };
-      const float levels0[4] = { 0.5f*levels[0], 0.5f*levels[0], 0.5f*levels[1], 0.5f*levels[1] };
-      const float levels1[4] = { 0.5f*levels[1], 0.5f*levels[1], 0.5f*levels[2], 0.5f*levels[2] };
-      const float levels2[4] = { 0.5f*levels[2], 0.5f*levels[2], 0.5f*levels[0], 0.5f*levels[0] };
+      const float levels0[4] = { 0.5f*levels[0], 0.5f*levels[0], 0.5f*levels[2], 0.5f*levels[2] };
+      const float levels1[4] = { 0.5f*levels[1], 0.5f*levels[1], 0.5f*levels[0], 0.5f*levels[0] };
+      const float levels2[4] = { 0.5f*levels[2], 0.5f*levels[2], 0.5f*levels[1], 0.5f*levels[1] };
       tessellator(uv0, neighborSubdiv0, levels0, 0);
       tessellator(uv1, neighborSubdiv1, levels1, 1);
       tessellator(uv2, neighborSubdiv2, levels2, 2);
@@ -498,7 +498,7 @@ namespace embree
                               (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
                               (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
         const int neighborSubdiv1[4] = { 0,0,0,0 }; 
-        const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i+1)%N], 0.5f*levels[(i+1)%N] };
+        const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i-1)%N], 0.5f*levels[(i-1)%N] };
         tessellator(uv,neighborSubdiv1,levels1,i);
       }
     }
