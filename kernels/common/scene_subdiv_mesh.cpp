@@ -249,6 +249,7 @@ namespace embree
 #endif
 
     /* allocate temporary array */
+    invalidFace.resize(numFaces);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
@@ -358,6 +359,8 @@ namespace embree
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
         PatchType patch_type = edge->patchType();
+        invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(f);
+          
         for (size_t i=0; i<faceVertices[f]; i++) 
         {
           edge[i].patch_type = patch_type;

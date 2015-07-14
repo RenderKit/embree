@@ -423,7 +423,7 @@ namespace embree
         if (getHalfEdge(i)->faceHasBorder()) return false;
       }
       if (bbox) *bbox = bounds(i);
-      return getHalfEdge(i)->valid(vertices[0]) && !holeSet.lookup(i);
+      return !invalidFace[i];
     }
 
     /*! initializes the half edge data structure */
@@ -509,6 +509,9 @@ namespace embree
 
     /*! set with all holes */
     pset<uint32_t> holeSet;
+
+    /*! fast lookup table to detect invalid faces */
+    mvector<char> invalidFace;
 
     /*! flag whether only the edge levels have changed and the mesh has no creases,
      *  allows for simple bvh update instead of full rebuild in cached mode */
