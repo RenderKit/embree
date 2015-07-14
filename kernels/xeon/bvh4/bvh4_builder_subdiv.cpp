@@ -355,9 +355,7 @@ namespace embree
       return b;
     }
 
-#if USE_RANGE_EVAL
-
-    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
+    struct BVH4SubdivPatch1CachedEvalBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
 
@@ -366,7 +364,7 @@ namespace embree
       mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+      BVH4SubdivPatch1CachedEvalBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
 
       void build(size_t, size_t) 
@@ -520,8 +518,6 @@ namespace embree
         prims.clear();
       }
     };
-
-#else
 
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
@@ -781,12 +777,11 @@ namespace embree
         prims.clear();
       }
     };
-
-#endif
     
     /* entry functions for the scene builder */
     Builder* BVH4SubdivPatch1BuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1BuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridEagerBuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1CachedBuilderBinnedSAHClass((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedEvalBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1CachedEvalBuilderBinnedSAHClass((BVH4*)bvh,scene); }
   }
 }

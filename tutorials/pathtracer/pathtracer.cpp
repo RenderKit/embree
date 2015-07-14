@@ -99,6 +99,10 @@ namespace embree
       else if (tag == "-cache") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
 
+      /* subdivision mode */
+      else if (tag == "-cache_eval") 
+	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached_eval";
+
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
       

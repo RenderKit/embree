@@ -267,6 +267,7 @@ namespace embree
     }
     else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+    else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1cached_eval") accels.add(BVH4::BVH4SubdivPatch1CachedEval(this));
     else if (State::instance()->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
     else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->subdiv_accel);
   }

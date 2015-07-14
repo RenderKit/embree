@@ -27,12 +27,6 @@
 #include "gridrange.h"
 #include "feature_adaptive_eval2.h"
 
-#if defined(__MIC__)
-#define USE_RANGE_EVAL 0
-#else
-#define USE_RANGE_EVAL RTCORE_USE_RANGE_EVAL
-#endif
-
 namespace embree
 {
   struct __aligned(64) SubdivPatch1Base
@@ -255,7 +249,6 @@ namespace embree
     const size_t dheight = y1-y0+1;
     const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
 
-#if USE_RANGE_EVAL
     if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
     {
       const bool displ = geom->displFunc;
@@ -297,7 +290,6 @@ namespace embree
       }
     }
     else
-#endif
     {
       /* grid_u, grid_v need to be padded as we write with SIMD granularity */
       gridUVTessellator(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);

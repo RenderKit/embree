@@ -34,8 +34,6 @@ namespace embree
 
   public:
 
-#if USE_RANGE_EVAL
-
     /*! constructor for cached subdiv patch */
     SubdivPatch1Cached (const unsigned int gID,
                         const unsigned int pID,
@@ -46,7 +44,6 @@ namespace embree
                         const int subdiv[4],
                         const int simd_width) 
       : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
-#else
 
     /*! constructor for cached subdiv patch */
     SubdivPatch1Cached (const CatmullClarkPatch3fa& ipatch,
@@ -61,6 +58,6 @@ namespace embree
                         const int border_flags,
                         const int simd_width) 
       : SubdivPatch1Base(ipatch,fas_depth,gID,pID,mesh,uv,edge_level,subdiv,border,border_flags,simd_width) {}
-#endif
+
   };
 }
