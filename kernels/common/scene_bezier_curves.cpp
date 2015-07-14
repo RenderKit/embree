@@ -188,7 +188,7 @@ namespace embree
         const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs],n);
         const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs],n);
 
-        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
         float4 Q, dQdu; bezier.eval(u,Q,dQdu);
 
         if (P   ) float4::storeu(P+i,Q,n);
@@ -201,7 +201,7 @@ namespace embree
         const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
         const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
 
-        const BezierCurve<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+        const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
         float4 Q, dQdu; bezier.eval(u,Q,dQdu);
 
         if (P   ) float4::storeu(P+i,Q);
@@ -221,7 +221,7 @@ namespace embree
       const float16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
       const float16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
 
-      const BezierCurve<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      const BezierCurveT<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
       float16 Q, dQdu; bezier.eval(u,Q,dQdu);
 
       if (P   ) compactustore16f(mask,P+i,Q);

@@ -128,6 +128,7 @@ namespace embree
       type = EVAL_PATCH;
       this->edge = mesh->getHalfEdge(pID);
       this->subPatch = subPatch;
+      for (size_t i=0; i<4; i++) this->subdiv[i] = subdiv[i];
     }
 
     for (size_t i=0; i<4; i++) {

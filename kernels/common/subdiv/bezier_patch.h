@@ -210,6 +210,11 @@ namespace embree
       return Vec3<T>(x,y,z);
     }
 
+    template<typename vfloat>
+      __forceinline Vec3<vfloat> eval(const vfloat& uu, const vfloat& vv) const {     
+      return eval(matrix,uu,vv);
+    }
+
     template<class T>
       static __forceinline Vec3<T> normal(const Vertex matrix[4][4], const T& uu, const T& vv) 
     {
@@ -253,6 +258,11 @@ namespace embree
       /* normal = tangentU x tangentV */
       const Vec3<T> n = cross(tangentV,tangentU);
       return n;
+    }
+
+    template<typename vfloat>
+      __forceinline Vec3<vfloat> normal(const vfloat& uu, const vfloat& vv) const {     
+      return normal(matrix,uu,vv);
     }
   };
 

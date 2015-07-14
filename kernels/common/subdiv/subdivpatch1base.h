@@ -226,6 +226,7 @@ namespace embree
       struct {
         const SubdivMesh::HalfEdge* edge;
         size_t subPatch;
+        int subdiv[4];
       };
       Vec3fa patch_v[4][4];
     };
@@ -258,13 +259,13 @@ namespace embree
       dynamic_stack_array(float,grid_Ng_z,N);
 
       if (unlikely(patch.needsStitching()))
-        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
+        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.subdiv, patch.level, geom->getVertexBuffer(0),
                                      x0,x1,y0,y1,swidth,sheight,
                                      grid_x,grid_y,grid_z,grid_u,grid_v,
                                      displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
                                      dwidth,dheight);
       else
-        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+        isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.subdiv, geom->getVertexBuffer(0),
                                      x0,x1,y0,y1,swidth,sheight,
                                      grid_x,grid_y,grid_z,grid_u,grid_v,
                                      displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,

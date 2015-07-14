@@ -29,6 +29,7 @@ namespace embree
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
+    typedef BezierCurveT<Vertex> BezierCurve;
 
   public:
     Vertex v[4][4];
@@ -38,6 +39,10 @@ namespace embree
 
     __forceinline GregoryPatchT(const CatmullClarkPatch& patch) {
       init(patch);
+    }
+
+    __forceinline GregoryPatchT(const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+      init_crackfix(patch,border0,border1,border2,border3);
     }
 
     template<typename Loader>
@@ -223,10 +228,10 @@ namespace embree
 
     }
 
-    __noinline void init_crackfix(const CatmullClarkPatch& patch, 
+    __noinline void init_crackfix(const CatmullClarkPatch& patch,  // FIXME: remove
                                   const int depth,
                                   const int neighborSubdiv[4],
-                                  const BezierCurve3fa *border, 
+                                  const BezierCurve* border, 
                                   const int border_flags)
     {
       assert( patch.ring[0].hasValidPositions() );
@@ -254,7 +259,7 @@ namespace embree
 
         if (border_flags & BORDER_BEZIER_CURVE_FIRST)
         {         
-          BezierCurve3fa l,r; 
+          BezierCurve l,r; 
           border[0].subdivide(l,r); 
           e0_p() = l.v1; 
           e1_m() = l.v2; 
@@ -263,7 +268,7 @@ namespace embree
 
         if (border_flags & BORDER_BEZIER_CURVE_SECOND)
         {          
-          BezierCurve3fa l,r; 
+          BezierCurve l,r; 
           border[1].subdivide(l,r); 
           e0_m() = r.v2; 
           e3_p() = r.v1; 
@@ -280,6 +285,75 @@ namespace embree
       initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
 
+    }
+    
+    __noinline void init_crackfix(const CatmullClarkPatch& patch, 
+                                  const BezierCurve* border0, 
+                                  const BezierCurve* border1,
+                                  const BezierCurve* border2, 
+                                  const BezierCurve* border3)
+    {
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
+      
+      p0() = initCornerVertex(patch,0);
+      p1() = initCornerVertex(patch,1);
+      p2() = initCornerVertex(patch,2);
+      p3() = initCornerVertex(patch,3);
+
+      e0_p() = initPositiveEdgeVertex(patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(patch,3, p3());
+
+      e0_m() = initNegativeEdgeVertex(patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(patch,3, p3());
+
+      if (unlikely(border0 != nullptr)) 
+      {         
+        p0()   = border0->v0;
+        e0_p() = border0->v1; 
+        e1_m() = border0->v2; 
+        p1()   = border0->v3;
+      }
+      
+      if (unlikely(border1 != nullptr))
+      {          
+        p1()   = border1->v0; 
+        e1_p() = border1->v1; 
+        e2_m() = border1->v2; 
+        p2()   = border1->v3; 
+      }
+
+      if (unlikely(border2 != nullptr))
+      {          
+        p2()   = border2->v0; 
+        e2_p() = border2->v1; 
+        e3_m() = border2->v2; 
+        p3()   = border2->v3; 
+      }
+
+      if (unlikely(border3 != nullptr))
+      {          
+        p3()   = border3->v0; 
+        e3_p() = border3->v1; 
+        e0_m() = border3->v2; 
+        p0()   = border3->v3; 
+      }
+
+      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
+      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
+      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
+      
+      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e3_p(),face_valence_p3,f0_p(),f0_m() );
+      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
+      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
+      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
     }
 
     
