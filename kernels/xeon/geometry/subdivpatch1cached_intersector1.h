@@ -84,7 +84,7 @@ namespace embree
           {
 
 #if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-	    if (likely(!hit_patch->hasDisplacement()))
+	    //if (likely(!hit_patch->hasDisplacement()))
 	      {		 
 		Vec3fa normal = hit_patch->normal(r.v,r.u);
 		r.Ng = normal;
