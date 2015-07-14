@@ -18,7 +18,6 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
-#include "../../common/subdiv/feature_adaptive_eval.h"
 #include "../../common/subdiv/patch_eval.h"
 #include "../../common/subdiv/subdivpatch1base.h"
 

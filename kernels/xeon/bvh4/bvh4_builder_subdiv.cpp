@@ -23,7 +23,6 @@
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
 
 #include "../../common/subdiv/feature_adaptive_gregory.h"
-#include "../../common/subdiv/feature_adaptive_bspline.h"
 #include "../../common/subdiv/bezier_curve.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 

@@ -309,7 +309,117 @@ namespace embree
     FeatureAdaptiveEval2(patch,subPatch,x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, Px+ofs,Py+ofs,Pz+ofs,U+ofs,V+ofs,Nx?Nx+ofs:nullptr,Ny?Ny+ofs:nullptr,Nz?Nz+ofs:nullptr, dwidth,dheight);
   }
 
+  template<typename Tessellator>
+  struct FeatureAdaptiveEvalSubdivision
+  {
+    Tessellator& tessellator;
 
+    __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
+      : tessellator(tessellator)
+    {
+      int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t
+      GeneralCatmullClarkPatch3fa patch;
+      patch.init(h,vertices);
+      for (size_t i=0; i<patch.size(); i++) {
+	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
+      }
+      subdivide(patch,0,neighborSubdiv);
+    }
+
+    void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
+    {
+      /* convert into standard quad patch if possible */
+      if (likely(patch.isQuadPatch())) 
+      {
+	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
+	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
+	subdivide(qpatch,depth,uv,neighborSubdiv,0);
+	return;
+      }
+
+      /* subdivide patch */
+      size_t N;
+      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
+      patch.subdivide(patches,N);
+
+      /* check if subpatches need further subdivision */
+      array_t<bool,GeneralCatmullClarkPatch3fa::SIZE> childSubdiv;
+      for (size_t i=0; i<N; i++)
+        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
+
+      /* parametrization for triangles */
+      if (N == 3) {
+	const Vec2f uv_0(0.0f,0.0f);
+	const Vec2f uv01(0.5f,0.0f);
+	const Vec2f uv_1(1.0f,0.0f);
+	const Vec2f uv12(0.5f,0.5f);
+	const Vec2f uv_2(0.0f,1.0f);
+	const Vec2f uv20(0.0f,0.5f);
+	const Vec2f uvcc(1.0f/3.0f);
+	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
+	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
+	const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
+	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[2],false };
+	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
+	const int neighborSubdiv2[4] = { false,childSubdiv[0],childSubdiv[1],false };
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
+      } 
+
+      /* parametrization for quads */
+      else if (N == 4) { 
+	const Vec2f uv_0(0.0f,0.0f);
+	const Vec2f uv01(0.5f,0.0f);
+	const Vec2f uv_1(1.0f,0.0f);
+	const Vec2f uv12(1.0f,0.5f);
+	const Vec2f uv_2(1.0f,1.0f);
+	const Vec2f uv23(0.5f,1.0f);
+	const Vec2f uv_3(0.0f,1.0f);
+	const Vec2f uv30(0.0f,0.5f);
+	const Vec2f uvcc(0.5f,0.5f);
+	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv30 };
+	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
+	const Vec2f uv2[4] = { uv_2,uv23,uvcc,uv12 };
+	const Vec2f uv3[4] = { uv_3,uv30,uvcc,uv23 };
+	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[3],false };
+	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
+	const int neighborSubdiv2[4] = { false,childSubdiv[3],childSubdiv[1],false };
+	const int neighborSubdiv3[4] = { false,childSubdiv[0],childSubdiv[2],false };
+	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
+	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
+	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
+	subdivide(patches[3],depth+1, uv3, neighborSubdiv3, 3);
+      } 
+
+      /* parametrization for arbitrary polygons */
+      else 
+      {
+	for (size_t i=0; i<N; i++) 
+	{
+          assert(i<SubdivMesh::MAX_VALENCE);
+          static_assert(SubdivMesh::MAX_VALENCE <= 16, "MAX_VALENCE > 16");
+          const int h = (i >> 2) & 3, l = i & 3;
+	  const Vec2f uv[4] = { (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.0f)),
+                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),
+                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.5f)),
+                                (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.5f)) };
+	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
+	  subdivide(patches[i],depth+1,uv,neighborSubdiv, i);
+	}
+      }
+    }
+    
+    void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4], const int id) {
+      return tessellator(patch,uv,neighborSubdiv,id);
+    }
+  };
+
+   template<typename Tessellator>
+     inline void feature_adaptive_subdivision_eval (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
+   {
+     FeatureAdaptiveEvalSubdivision<Tessellator>(h,vertices,tessellator);
+   }
   }
 }
 
