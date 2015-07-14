@@ -161,6 +161,10 @@ namespace embree
           return PrimInfo(p,0,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
         size_t numSubPatches = pinfo1.begin;
+        if (numSubPatches == 0) {
+          bvh->set(BVH4::emptyNode,empty,0);
+          return;
+        }
 
         /* Allocate memory for gregory and b-spline patches */
         if (this->bvh->size_data_mem < sizeof(SubdivPatch1Base) * numSubPatches) 
@@ -440,8 +444,6 @@ namespace embree
           return;
         }
         bvh->alloc.reset();
-        //PRINT(fastUpdateMode);
-
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
 
