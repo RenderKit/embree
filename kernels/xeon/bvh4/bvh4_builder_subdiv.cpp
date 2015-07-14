@@ -208,7 +208,6 @@ namespace embree
           return;
         }
 
-        //double T0 = getSeconds();
         PrimInfo pinfo3 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           FastAllocator::ThreadLocal& alloc = *bvh->alloc.threadLocal();
@@ -232,8 +231,6 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-        //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0));
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
         BVH4::NodeRef root;
@@ -362,9 +359,58 @@ namespace embree
       Scene* scene;
       mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
-      
+
       BVH4SubdivPatch1CachedEvalBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene) {}
+
+            BBox3fa refit(BVH4::NodeRef& ref)
+      {
+        /* this is a empty node */
+        if (unlikely(ref == BVH4::emptyNode))
+          return BBox3fa( empty );
+        
+        assert(ref != BVH4::invalidNode);
+        
+        /* this is a leaf node */
+        if (unlikely(ref.isLeaf()))
+        {
+          size_t num;
+          SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
+          const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
+          //assert(index < numPrimitives);
+          return prims[index].bounds(); 
+        }
+      
+        /* recurse if this is an internal node */
+        BVH4::Node* node = ref.node();
+        const BBox3fa bounds0 = refit(node->child(0));
+        const BBox3fa bounds1 = refit(node->child(1));
+        const BBox3fa bounds2 = refit(node->child(2));
+        const BBox3fa bounds3 = refit(node->child(3));
+        
+        /* AOS to SOA transform */
+        BBox<Vec3f4> bounds;
+        transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+        transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+        
+        /* set new bounds */
+        node->lower_x = bounds.lower.x;
+        node->lower_y = bounds.lower.y;
+        node->lower_z = bounds.lower.z;
+        node->upper_x = bounds.upper.x;
+        node->upper_y = bounds.upper.y;
+        node->upper_z = bounds.upper.z;
+        
+        /* return merged bounds */
+        const float lower_x = reduce_min(bounds.lower.x);
+        const float lower_y = reduce_min(bounds.lower.y);
+        const float lower_z = reduce_min(bounds.lower.z);
+        const float upper_x = reduce_max(bounds.upper.x);
+        const float upper_y = reduce_max(bounds.upper.y);
+        const float upper_z = reduce_max(bounds.upper.z);
+        return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
+                       Vec3fa(upper_x,upper_y,upper_z));
+      }
 
       void build(size_t, size_t) 
       {
@@ -394,6 +440,8 @@ namespace embree
           return;
         }
         bvh->alloc.reset();
+        //PRINT(fastUpdateMode);
+
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
 
@@ -442,7 +490,6 @@ namespace embree
         assert(this->bvh->data_mem);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
         
-        //double T0 = getSeconds();
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -476,35 +523,41 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-        //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0));
 
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
-        
-        if (numPrimitives)
+
+        if (fastUpdateMode)
         {
-          DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
-          
-          BVH4::NodeRef root;
-          BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-            (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-              size_t items = current.pinfo.size();
-              assert(items == 1);
-              const unsigned int patchIndex = prims[current.prims.begin()].ID();
-              SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-              *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-              return 0;
-            },
-             progress,
-             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-          bvh->set(root,pinfo.geomBounds,pinfo.size());
-          DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
-          
+          if (bvh->root != BVH4::emptyNode)
+            refit(bvh->root);
         }
         else
-          bvh->set(BVH4::emptyNode,empty,0);	  
+        {
+          if (numPrimitives)
+          {
+            DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
+            
+            BVH4::NodeRef root;
+            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+              (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
+               [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+                size_t items = current.pinfo.size();
+                assert(items == 1);
+                const unsigned int patchIndex = prims[current.prims.begin()].ID();
+                SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+                *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+                return 0;
+              },
+               progress,
+               prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+            bvh->set(root,pinfo.geomBounds,pinfo.size());
+            DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
+            
+          }
+          else
+            bvh->set(BVH4::emptyNode,empty,0);	  
+        }
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
@@ -661,7 +714,6 @@ namespace embree
         assert(this->bvh->data_mem);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
         
-        //double T0 = getSeconds();
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -727,8 +779,6 @@ namespace embree
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
-        //double T1 = getSeconds();
-        //PRINT(1000.0f*(T1-T0));
 
         DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
         DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
@@ -764,7 +814,7 @@ namespace embree
           else
             bvh->set(BVH4::emptyNode,empty,0);	  
         }
-        
+
 	/* clear temporary data for static geometry */
 	bool staticGeom = scene->isStatic();
 	if (staticGeom) prims.clear();
