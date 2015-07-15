@@ -33,21 +33,30 @@ namespace embree
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
     
-     static __forceinline Vec3fa eval(const Vec3fa matrix[4][4], const float &uu, const float &vv) 
+    __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      Vec3fa f[2][2];
-      f[0][0] = extract_f_m_Vec3fa( matrix, 0 );
-      f[0][1] = extract_f_m_Vec3fa( matrix, 1 );
-      f[1][1] = extract_f_m_Vec3fa( matrix, 2 );
-      f[1][0] = extract_f_m_Vec3fa( matrix, 3 );
-      return GregoryPatch3fa::eval(matrix,f,uu,vv);
+#if defined(__MIC__)
+      const float16 row0 = load16f(&matrix[0][0]);
+      const float16 row1 = load16f(&matrix[1][0]);
+      const float16 row2 = load16f(&matrix[2][0]);
+      const float16 row3 = load16f(&matrix[3][0]);
+      
+      __aligned(64) Vec3fa f_m[2][2];
+      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
+      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
+      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
+      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
+#else
+      __aligned(64) Vec3fa f_m[2][2];
+      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
+      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
+      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
+      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
+#endif      
+      return GregoryPatch3fa::eval(matrix,f_m,uu,vv);
     }
 
-     __forceinline Vec3fa eval(const float &uu, const float &vv) {
-      return eval(matrix,uu,vv);
-    }
-
-     static __forceinline Vec3fa normal(const Vec3fa matrix[4][4],  const float uu, const float vv) 
+    __forceinline Vec3fa normal(const float uu, const float vv) const
     {
 #if defined(__MIC__)
       const float16 row0 = load16f(&matrix[0][0]);
@@ -70,10 +79,6 @@ namespace embree
       return GregoryPatch3fa::normal(matrix,f_m,uu,vv);
     }
 
-     __forceinline Vec3fa normal(const float &uu, const float &vv) {
-      return normal(matrix,uu,vv);
-    }
-
     template<class T>
       static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const T &uu, const T &vv) 
     {
@@ -86,7 +91,7 @@ namespace embree
     }
 
     template<class T>
-      __forceinline Vec3<T> eval(const T &uu, const T &vv) {
+      __forceinline Vec3<T> eval(const T &uu, const T &vv) const {
       return eval_t(matrix,uu,vv);
     }
     
@@ -102,24 +107,8 @@ namespace embree
     }
 
      template<class T>
-      __forceinline Vec3<T> normal(const T &uu, const T &vv) {
+      __forceinline Vec3<T> normal(const T &uu, const T &vv) const {
       return normal_t(matrix,uu,vv);
     }
-     
-#if defined(__MIC__)
-     
-     static __forceinline float16 extract_f_m_float16(const Vec3fa matrix[4][4], const size_t n)
-     {
-       const float16 row = load16f(&matrix[n][0]);
-       __aligned(64) float xyzw[16];
-      compactustore16f_low(0x8888,xyzw,row);
-      return broadcast4to16f(xyzw);
-    }
-     
-     static __forceinline Vec3f16 extract_f_m_Vec3f16(const Vec3fa matrix[4][4], const size_t n) {
-       return Vec3f16( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
-    }
-    
-#endif
   };
 }
