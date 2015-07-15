@@ -51,11 +51,7 @@ namespace embree
     else if (edge->patch_type == SubdivMesh::IRREGULAR_QUAD_PATCH) 
     {
       type = GREGORY_PATCH;
-      CatmullClarkPatch3fa ccpatch(edge,mesh->getVertexBuffer());
-      GregoryPatch3fa gpatch; 
-      //gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
-      gpatch.init( ccpatch ); 
-      new (patch_v) DenseGregoryPatch3fa(gpatch);
+      new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
     }
     else
 #endif 
@@ -111,7 +107,6 @@ namespace embree
     }
     else
     {
-      /* gregory patches */
       type = GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
