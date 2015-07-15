@@ -75,6 +75,37 @@ namespace embree
     }
   };
 
+  template<typename Vertex>
+    __forceinline Vertex computeInnerBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeTopEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y-1][x+1]));
+  }
+
+  template<typename Vertex>
+    __forceinline Vertex computeBottomEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y+1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y+1][x-1] + v[y+1][x+1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeLeftEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x-1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x-1] + v[y+1][x-1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeRightEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x+1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x+1] + v[y+1][x+1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeCornerBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x, const ssize_t delta_y, const ssize_t delta_x)
+  {
+    return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
+  }
+
   template<typename Vertex, typename Vertex_t>
     class __aligned(64) BezierPatchT
   {
@@ -96,6 +127,37 @@ namespace embree
                                const BezierCurveT<Vertex>* border2,
                                const BezierCurveT<Vertex>* border3);
                                
+    __forceinline BezierPatchT(const BSplinePatchT<Vertex,Vertex_t>& source)
+    {
+      /* compute inner bezier control points */
+      matrix[0][0] = computeInnerBezierControlPoint(source.v,1,1);
+      matrix[0][3] = computeInnerBezierControlPoint(source.v,1,2);
+      matrix[3][3] = computeInnerBezierControlPoint(source.v,2,2);
+      matrix[3][0] = computeInnerBezierControlPoint(source.v,2,1);
+      
+      /* compute top edge control points */
+      matrix[0][1] = computeRightEdgeBezierControlPoint(source.v,1,1);
+      matrix[0][2] = computeLeftEdgeBezierControlPoint(source.v,1,2); 
+      
+      /* compute buttom edge control points */
+      matrix[3][1] = computeRightEdgeBezierControlPoint(source.v,2,1);
+      matrix[3][2] = computeLeftEdgeBezierControlPoint(source.v,2,2);
+      
+      /* compute left edge control points */
+      matrix[1][0] = computeBottomEdgeBezierControlPoint(source.v,1,1);
+      matrix[2][0] = computeTopEdgeBezierControlPoint(source.v,2,1);
+      
+      /* compute right edge control points */
+      matrix[1][3] = computeBottomEdgeBezierControlPoint(source.v,1,2);
+      matrix[2][3] = computeTopEdgeBezierControlPoint(source.v,2,2);
+      
+      /* compute corner control points */
+      matrix[1][1] = computeCornerBezierControlPoint(source.v,1,1, 1, 1);
+      matrix[1][2] = computeCornerBezierControlPoint(source.v,1,2, 1,-1);
+      matrix[2][2] = computeCornerBezierControlPoint(source.v,2,2,-1,-1);
+      matrix[2][1] = computeCornerBezierControlPoint(source.v,2,1,-1, 1);      
+    }
+
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
       const Vec4f Bu = BezierBasis::eval(uu);
