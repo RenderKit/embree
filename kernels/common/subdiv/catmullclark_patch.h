@@ -74,11 +74,15 @@ namespace embree
     array_t<CatmullClark1RingT<Vertex,Vertex_t>,4> ring;
 
     __forceinline CatmullClarkPatchT () {}
-
-  template<typename Loader>
-  __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
-    init2(first_half_edge,loader);
-  }
+  
+    template<typename Loader>
+    __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+      init2(first_half_edge,loader);
+    }
+  
+    __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
+      init(first_half_edge,vertices);
+    }
 
     __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {

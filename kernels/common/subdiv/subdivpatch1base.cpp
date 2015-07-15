@@ -40,21 +40,18 @@ namespace embree
 #if 1
     if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
     {
-      CatmullClarkPatch3fa ccpatch;
-      ccpatch.init(edge,mesh->getVertexBuffer());
 #if 0
       type = BEZIER_PATCH;
-      new (patch_v) BezierPatch3fa(BSplinePatch3fa(ccpatch));
+      new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
 #else
       type = BSPLINE_PATCH;
-      new (patch_v) BSplinePatch3fa(ccpatch);
+      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer()));
 #endif      
     }
     else if (edge->patch_type == SubdivMesh::IRREGULAR_QUAD_PATCH) 
     {
       type = GREGORY_PATCH;
-      CatmullClarkPatch3fa ccpatch;
-      ccpatch.init(edge,mesh->getVertexBuffer());
+      CatmullClarkPatch3fa ccpatch(edge,mesh->getVertexBuffer());
       GregoryPatch3fa gpatch; 
       //gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.init( ccpatch ); 
