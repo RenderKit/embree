@@ -14,14 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
-#include "../scene.h"
 
 namespace embree
 {
-
- 
   SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
                                       const unsigned int pID,
                                       const unsigned int subPatch,
