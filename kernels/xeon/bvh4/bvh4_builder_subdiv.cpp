@@ -267,98 +267,6 @@ namespace embree
 
 #define DBG_CACHE_BUILDER(x) 
 
-    BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
-    {
-#if 1
-      return evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-#else
-      dynamic_stack_array(float,grid_x,(patch.grid_size_simd_blocks+1)*8);
-      dynamic_stack_array(float,grid_y,(patch.grid_size_simd_blocks+1)*8);
-      dynamic_stack_array(float,grid_z,(patch.grid_size_simd_blocks+1)*8);
-      dynamic_stack_array(float,grid_u,(patch.grid_size_simd_blocks+1)*8);
-      dynamic_stack_array(float,grid_v,(patch.grid_size_simd_blocks+1)*8);
-
-      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
-      
-      BBox3fa b(empty);
-      assert(patch.grid_size_simd_blocks >= 1);
-
-#if !defined(__AVX__)      
-      float4 bounds_min_x = pos_inf;
-      float4 bounds_min_y = pos_inf;
-      float4 bounds_min_z = pos_inf;
-      float4 bounds_max_x = neg_inf;
-      float4 bounds_max_y = neg_inf;
-      float4 bounds_max_z = neg_inf;
-      for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
-        {
-          float4 x = load4f(&grid_x[i * 4]);
-          float4 y = load4f(&grid_y[i * 4]);
-          float4 z = load4f(&grid_z[i * 4]);
-	  bounds_min_x = min(bounds_min_x,x);
-	  bounds_min_y = min(bounds_min_y,y);
-	  bounds_min_z = min(bounds_min_z,z);
-
-	  bounds_max_x = max(bounds_max_x,x);
-	  bounds_max_y = max(bounds_max_y,y);
-	  bounds_max_z = max(bounds_max_z,z);
-        }
-
-      b.lower.x = reduce_min(bounds_min_x);
-      b.lower.y = reduce_min(bounds_min_y);
-      b.lower.z = reduce_min(bounds_min_z);
-      b.upper.x = reduce_max(bounds_max_x);
-      b.upper.y = reduce_max(bounds_max_y);
-      b.upper.z = reduce_max(bounds_max_z);
-#else
-      float8 bounds_min_x = pos_inf;
-      float8 bounds_min_y = pos_inf;
-      float8 bounds_min_z = pos_inf;
-      float8 bounds_max_x = neg_inf;
-      float8 bounds_max_y = neg_inf;
-      float8 bounds_max_z = neg_inf;
-      for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
-        {
-          float8 x = load8f(&grid_x[i * 8]);
-          float8 y = load8f(&grid_y[i * 8]);
-          float8 z = load8f(&grid_z[i * 8]);
-	  bounds_min_x = min(bounds_min_x,x);
-	  bounds_min_y = min(bounds_min_y,y);
-	  bounds_min_z = min(bounds_min_z,z);
-
-	  bounds_max_x = max(bounds_max_x,x);
-	  bounds_max_y = max(bounds_max_y,y);
-	  bounds_max_z = max(bounds_max_z,z);
-        }
-
-      b.lower.x = reduce_min(bounds_min_x);
-      b.lower.y = reduce_min(bounds_min_y);
-      b.lower.z = reduce_min(bounds_min_z);
-      b.upper.x = reduce_max(bounds_max_x);
-      b.upper.y = reduce_max(bounds_max_y);
-      b.upper.z = reduce_max(bounds_max_z);
-#endif
-
-      b.lower.a = 0.0f;
-      b.upper.a = 0.0f;
-
-      assert( std::isfinite(b.lower.x) );
-      assert( std::isfinite(b.lower.y) );
-      assert( std::isfinite(b.lower.z) );
-
-      assert( std::isfinite(b.upper.x) );
-      assert( std::isfinite(b.upper.y) );
-      assert( std::isfinite(b.upper.z) );
-
-
-      assert(b.lower.x <= b.upper.x);
-      assert(b.lower.y <= b.upper.y);
-      assert(b.lower.z <= b.upper.z);
-
-      return b;
-#endif
-    }
-
     struct BVH4SubdivPatch1CachedEvalBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
@@ -521,7 +429,8 @@ namespace embree
               subdiv_patches[patchIndex].root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
               SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(SharedLazyTessellationCache::threadState());
 #else
-              const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+              const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              const BBox3fa bounds = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
 #endif
               prims[patchIndex] = PrimRef(bounds,patchIndex);
               s.add(bounds);
@@ -744,7 +653,8 @@ namespace embree
                 new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(ipatch,depth,mesh->id,f,mesh,uv,edge_level,subdiv,border,border_flags,vfloat::size);
                 
                 /* compute patch bounds */
-                const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+                const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+                const BBox3fa bounds = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 prims[patchIndex] = PrimRef(bounds,patchIndex);
                 s.add(bounds);
               });
@@ -778,7 +688,8 @@ namespace embree
               subdiv_patches[patchIndex].resetRootRef();
               
               /* compute patch bounds */
-              const BBox3fa bounds = getBounds1(subdiv_patches[patchIndex],mesh);
+              const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              const BBox3fa bounds = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
               prims[patchIndex] = PrimRef(bounds,patchIndex);
               s.add(bounds);	      
             }
