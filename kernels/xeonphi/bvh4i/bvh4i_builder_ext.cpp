@@ -18,6 +18,8 @@
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_rotate.h"
 #include "../../common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/patch_eval.h"
+#include "../../common/subdiv/subdivpatch1base.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
 
@@ -34,8 +36,6 @@
 #define L2_PREFETCH_ITEMS 16
 
 //FIXME: use 8-bytes compact prim ref is used
-
-#define ENABLE_FEATURE_ADAPTIVE 1
 
 namespace embree
 {
@@ -876,7 +876,7 @@ PRINT(CORRECT_numPrims);
   /* =================================================================================== */
   /* =================================================================================== */
   /* =================================================================================== */
-#define DBG_CACHE_BUILDER(x) 
+#define DBG_CACHE_BUILDER(x) x
 
   void BVH4iBuilderSubdivMesh::printBuilderName()
   {
@@ -897,7 +897,18 @@ PRINT(CORRECT_numPrims);
     if (numPrimitives > 0 || scene->isInterpolatable()) {
       Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
       for (size_t i=0; i<iter.size(); i++)
-        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        if (iter[i]) 
+        {
+          fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
+          fastUpdateMode &= !iter[i]->faceVertices.isModified();
+          fastUpdateMode &= !iter[i]->holes.isModified();
+          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
+          //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
+          //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
+          //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
+          fastUpdateMode &= iter[i]->levels.isModified();
+          iter[i]->initializeHalfEdgeStructures();
+        }
     }
 
     /* initialize all half edge structures */
@@ -905,16 +916,15 @@ PRINT(CORRECT_numPrims);
 
     DBG_CACHE_BUILDER( PRINT( iter.size() ) );
 
-    for (size_t i=0; i<iter.size(); i++)
-      if (iter[i]) 
-	{
-	  DBG_CACHE_BUILDER( PRINT( i ) );
-	  DBG_CACHE_BUILDER( PRINT( iter[i] ) );
+    // for (size_t i=0; i<iter.size(); i++)
+    //   if (iter[i]) 
+    //     {
+    //       DBG_CACHE_BUILDER( PRINT( i ) );
+    //       DBG_CACHE_BUILDER( PRINT( iter[i] ) );
+    //       fastUpdateMode_numFaces += iter[i]->size();
+    //       if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
+    //     }
 
-	  //iter[i]->initializeHalfEdgeStructures();
-	  fastUpdateMode_numFaces += iter[i]->size();
-	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
-	}
     DBG_CACHE_BUILDER( PRINT( fastUpdateMode ) );
 
     pstate.init(iter,size_t(1024));
@@ -990,16 +1000,13 @@ PRINT(CORRECT_numPrims);
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-#if ENABLE_FEATURE_ADAPTIVE == 1
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
-					       {
-						 s++;
-					       });
-#else
-	      s++;
-#endif
-	    
+          s += patch_eval_subdivision_count (mesh->getHalfEdge(f));  
+
+	  // feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+	  //       			       [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
+	  //       			       {
+	  //       				 s++;
+	  //       			       });	    
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -1171,7 +1178,7 @@ PRINT(CORRECT_numPrims);
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-#if 1
+#if 0
     if (fastUpdateMode)
       {
 	scene->lockstep_scheduler.dispatchTask( task_updatePatchTessellation, this, threadIndex, threadCount );	
@@ -1189,70 +1196,88 @@ PRINT(CORRECT_numPrims);
 	{
           if (!mesh->valid(f)) continue;
 
-	  if (!fastUpdateMode) 
-	    {
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              const unsigned int patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              // if (likely(fastUpdateMode)) {
+              //   subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+              //   subdiv_patches[patchIndex].resetRootRef();
+              // }
+              // else {
+              //new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              // }
+              const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              const BBox3fa bounds = knc::evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+              prims[patchIndex] = PrimRef(bounds,patchIndex);
+              s.add(bounds);
+            });
 
-#if ENABLE_FEATURE_ADAPTIVE == 1
-	      feature_adaptive_subdivision_gregory(
-						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
-						   {
-						     float edge_level[4] = {
-						       ipatch.ring[0].edge_level,
-						       ipatch.ring[1].edge_level,
-						       ipatch.ring[2].edge_level,
-						       ipatch.ring[3].edge_level
-						     };
+	      // feature_adaptive_subdivision_gregory(
+	      //   				   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
+	      //   				   [&](const CatmullClarkPatch3fa& ipatch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
+	      //   				   {
+	      //   				     float edge_level[4] = {
+	      //   				       ipatch.ring[0].edge_level,
+	      //   				       ipatch.ring[1].edge_level,
+	      //   				       ipatch.ring[2].edge_level,
+	      //   				       ipatch.ring[3].edge_level
+	      //   				     };
 
-						     const unsigned int patchIndex = base.size()+s.size();
-						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, depth, mesh->id, f, mesh, uv, edge_level, subdiv, border, border_flags);
-#else
-						     const unsigned int patchIndex = base.size()+s.size();
-                                                     subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
-#endif                                                     
+	      //   				     const unsigned int patchIndex = base.size()+s.size();
+	      //   				     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, depth, mesh->id, f, mesh, uv, edge_level, subdiv, border, border_flags);
+
+	      //   				     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
+	      //   				     assert(bounds.lower.x <= bounds.upper.x);
+	      //   				     assert(bounds.lower.y <= bounds.upper.y);
+	      //   				     assert(bounds.lower.z <= bounds.upper.z);
+						     
+	      //   				     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+	      //   				     s.add(bounds);
+	      //   				   });
+
+
+          // const unsigned int patchIndex = base.size()+s.size();
+          // subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
 						   
-						     /* compute patch bounds */
-						     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
-						     assert(bounds.lower.x <= bounds.upper.x);
-						     assert(bounds.lower.y <= bounds.upper.y);
-						     assert(bounds.lower.z <= bounds.upper.z);
-						     
-						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
-						     s.add(bounds);
-#if ENABLE_FEATURE_ADAPTIVE == 1            
-						   });
-#endif
+          // /* compute patch bounds */
+          // const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
+          // assert(bounds.lower.x <= bounds.upper.x);
+          // assert(bounds.lower.y <= bounds.upper.y);
+          // assert(bounds.lower.z <= bounds.upper.z);
+          
+          // prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
+          // s.add(bounds);
 
-	    }
-	  else
-	    {
-	      const unsigned int patchIndex = base.size()+s.size();
-	      const HalfEdge* first_half_edge = mesh->getHalfEdge(f);
-	      float edge_level[4] = {
-		first_half_edge[0].edge_level,
-		first_half_edge[1].edge_level,
-		first_half_edge[2].edge_level,
-		first_half_edge[3].edge_level
-	      };
-              const int neighborSubdiv[4] = {
-                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[0]),
-                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[1]),
-                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[2]),
-                feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
-              };
-	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
-	      prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
+	  // else
+	  //   {
+	  //     const unsigned int patchIndex = base.size()+s.size();
+	  //     const HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+	  //     float edge_level[4] = {
+	  //       first_half_edge[0].edge_level,
+	  //       first_half_edge[1].edge_level,
+	  //       first_half_edge[2].edge_level,
+	  //       first_half_edge[3].edge_level
+	  //     };
+          //     const int neighborSubdiv[4] = {
+          //       feature_adaptive_gregory_neighbor_subdiv(first_half_edge[0]),
+          //       feature_adaptive_gregory_neighbor_subdiv(first_half_edge[1]),
+          //       feature_adaptive_gregory_neighbor_subdiv(first_half_edge[2]),
+          //       feature_adaptive_gregory_neighbor_subdiv(first_half_edge[3])
+          //     };
+	  //     prefetch<PFHINT_L1EX>(&prims[patchIndex]);
+	  //     prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
  
-	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh,vfloat::size);
-	      subdiv_patches[patchIndex].resetRootRef();
-	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
-	      assert(bounds.lower.x <= bounds.upper.x);
-	      assert(bounds.lower.y <= bounds.upper.y);
-	      assert(bounds.lower.z <= bounds.upper.z);
+	  //     subdiv_patches[patchIndex].updateEdgeLevels(edge_level,neighborSubdiv,mesh,vfloat::size);
+	  //     subdiv_patches[patchIndex].resetRootRef();
+	  //     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
+	  //     assert(bounds.lower.x <= bounds.upper.x);
+	  //     assert(bounds.lower.y <= bounds.upper.y);
+	  //     assert(bounds.lower.z <= bounds.upper.z);
 						     
-	      prims[patchIndex] = PrimRef(bounds,patchIndex);
-	      s.add(bounds);	      
-	    }
+	  //     prims[patchIndex] = PrimRef(bounds,patchIndex);
+	  //     s.add(bounds);	      
+	  //   }
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });

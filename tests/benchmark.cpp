@@ -242,7 +242,7 @@ namespace embree
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
-      //PRINT(double(c1-c0)/N);
+      PRINT(double(c1-c0)/N);
 
       //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
