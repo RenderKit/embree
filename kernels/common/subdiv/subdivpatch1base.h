@@ -80,11 +80,11 @@ namespace embree
       else if (likely(type == GREGORY_PATCH))
 	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::eval( patch_v, uu, vv );
+        return ((GregoryTrianglePatch3fa*)patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
-    __forceinline Vec3fa normal(const float& uu, const float& vv) const
+    __forceinline Vec3fa normal(const float uu, const float vv) const
     {
       if (likely(type == BEZIER_PATCH))
         return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
@@ -93,7 +93,7 @@ namespace embree
       else if (likely(type == GREGORY_PATCH))
 	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::normal( patch_v, uu, vv );
+	return ((GregoryTrianglePatch3fa*)patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
@@ -108,7 +108,7 @@ namespace embree
       else if (likely(type == GREGORY_PATCH))
 	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-        return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch_v, uu * (1.0f - vv), vv );
+        return ((GregoryTrianglePatch3fa*)patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
@@ -123,7 +123,7 @@ namespace embree
       else if (likely(type == GREGORY_PATCH))
 	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
-	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch_v, uu, vv );
+         return ((GregoryTrianglePatch3fa*)patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
