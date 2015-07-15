@@ -132,6 +132,13 @@ namespace embree
       return cross(dPdv,dPdu);
     }
 
+    __forceinline Vertex_t normal(const float uu, const float vv) 
+    {
+      const Vertex_t dPdu = tangentU(matrix,uu,vv);
+      const Vertex_t dPdv = tangentV(matrix,uu,vv);
+      return cross(dPdv,dPdu);
+    }
+
     __forceinline Vertex_t eval(const float uu, const float vv) const {
       return eval(matrix,uu,vv);
     }

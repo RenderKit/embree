@@ -74,7 +74,7 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
@@ -87,7 +87,7 @@ namespace embree
     __forceinline Vec3fa normal(const float& uu, const float& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
@@ -102,7 +102,7 @@ namespace embree
     {
       typedef typename simdf::Mask simdb;
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
@@ -117,7 +117,7 @@ namespace embree
     {
       typedef typename simdf::Mask simdb;
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
@@ -132,7 +132,7 @@ namespace embree
     __forceinline Vec3f16 eval(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::eval( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else 
@@ -142,7 +142,7 @@ namespace embree
     __forceinline Vec3f16 normal(const float16& uu, const float16& vv) const
     {
       if (likely(type == BEZIER_PATCH))
-        return BezierPatch3fa::normal( patch_v, uu, vv );
+        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
 	return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else
