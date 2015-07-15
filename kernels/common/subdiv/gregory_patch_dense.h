@@ -120,68 +120,6 @@ namespace embree
        return Vec3f16( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
     
-    static __forceinline float16 eval4(const Vec3fa matrix[4][4],
-				     const float16 uu,
-				     const float16 vv) 
-    {
-      const bool16 m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
-      
-      const float16 f0_p = (Vec3fa_t)matrix[1][1];
-      const float16 f1_p = (Vec3fa_t)matrix[1][2];
-      const float16 f2_p = (Vec3fa_t)matrix[2][2];
-      const float16 f3_p = (Vec3fa_t)matrix[2][1];
-      
-      const float16 f0_m = extract_f_m_float16(matrix,0);
-      const float16 f1_m = extract_f_m_float16(matrix,1);
-      const float16 f2_m = extract_f_m_float16(matrix,2);
-      const float16 f3_m = extract_f_m_float16(matrix,3);
-      
-      const float16 one_minus_uu = float16(1.0f) - uu;
-      const float16 one_minus_vv = float16(1.0f) - vv;      
-      
-#if 1
-      const float16 inv0 = rcp(uu+vv);
-      const float16 inv1 = rcp(one_minus_uu+vv);
-      const float16 inv2 = rcp(one_minus_uu+one_minus_vv);
-      const float16 inv3 = rcp(uu+one_minus_vv);
-#else
-      const float16 inv0 = 1.0f/(uu+vv);
-      const float16 inv1 = 1.0f/(one_minus_uu+vv);
-      const float16 inv2 = 1.0f/(one_minus_uu+one_minus_vv);
-      const float16 inv3 = 1.0f/(uu+one_minus_vv);
-#endif
-      
-      const float16 F0 = select(m_border,f0_p, (          uu * f0_p +           vv * f0_m) * inv0);
-      const float16 F1 = select(m_border,f1_p, (one_minus_uu * f1_m +           vv * f1_p) * inv1);
-      const float16 F2 = select(m_border,f2_p, (one_minus_uu * f2_p + one_minus_vv * f2_m) * inv2);
-      const float16 F3 = select(m_border,f3_p, (          uu * f3_m + one_minus_vv * f3_p) * inv3);
-      
-      const float16 B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float16 B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float16 B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float16 B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float16 B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float16 B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float16 B3_u = uu * uu * uu;
-      const float16 B3_v = vv * vv * vv;
-      
-      const float16 res = 
-	(B0_u * (Vec3fa_t)matrix[0][0] + B1_u * (Vec3fa_t)matrix[0][1] + B2_u * (Vec3fa_t)matrix[0][2] + B3_u * (Vec3fa_t)matrix[0][3]) * B0_v + 
-	(B0_u * (Vec3fa_t)matrix[1][0] + B1_u *                     F0 + B2_u *                     F1 + B3_u * (Vec3fa_t)matrix[1][3]) * B1_v + 
-	(B0_u * (Vec3fa_t)matrix[2][0] + B1_u *                     F3 + B2_u *                     F2 + B3_u * (Vec3fa_t)matrix[2][3]) * B2_v + 
-	(B0_u * (Vec3fa_t)matrix[3][0] + B1_u * (Vec3fa_t)matrix[3][1] + B2_u * (Vec3fa_t)matrix[3][2] + B3_u * (Vec3fa_t)matrix[3][3]) * B3_v; 
-      return res;
-    }
-    
-    
-    static __forceinline Vec3f16 eval16(const Vec3fa matrix[4][4], const float16 &uu, const float16 &vv) {
-      return eval_t<float16>(matrix,uu,vv);
-    }
-        
-    static __forceinline Vec3f16 normal16(const Vec3fa matrix[4][4], const float16 &uu, const float16 &vv) {
-      return normal_t<float16>(matrix,uu,vv);
-    }
-    
 #endif
   };
 }
