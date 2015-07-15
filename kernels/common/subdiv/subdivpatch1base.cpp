@@ -58,7 +58,7 @@ namespace embree
       GregoryPatch3fa gpatch; 
       //gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.init( ccpatch ); 
-      new (patch_v) DenseGregoryPatch3fa(ccpatch);
+      new (patch_v) DenseGregoryPatch3fa(gpatch);
     }
     else
 #endif 
@@ -105,18 +105,11 @@ namespace embree
     if (fas_depth == 0 && ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior and not FAS-based patches*/
     {
 #if 0
-      /* bezier */
-      BSplinePatch3fa tmp;
-      tmp.init( ipatch );
-      convertToBicubicBezierPatch(tmp.v,patch_v);
       type = BEZIER_PATCH;
+      new (patch_v) BezierPatch3fa(BSplinePatch3fa(ipatch));
 #else
-      /* bspline */
-
       type = BSPLINE_PATCH;
-      BSplinePatch3fa tmp;
-      tmp.init( ipatch );
-      tmp.exportControlPoints(patch_v);
+      new (patch_v) BSplinePatch3fa(ipatch);
 #endif      
     }
     else
