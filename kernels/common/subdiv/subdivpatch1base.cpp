@@ -32,15 +32,14 @@ namespace embree
                                       const int simd_width)
     : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
-    //static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
     const SubdivMesh::HalfEdge* edge = mesh->getHalfEdge(pID);
 
-#if 1
     if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
     {
-#if 0
+#if PATCH_USE_BEZIER_PATCH 
       type = BEZIER_PATCH;
       new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
 #else
@@ -48,13 +47,14 @@ namespace embree
       new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer()));
 #endif      
     }
+#if PATCH_USE_GREGORY == 2
     else if (edge->patch_type == SubdivMesh::IRREGULAR_QUAD_PATCH) 
     {
       type = GREGORY_PATCH;
       new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
     }
+#endif
     else
-#endif 
     {
       type = EVAL_PATCH;
       this->edge = mesh->getHalfEdge(pID);
@@ -84,7 +84,7 @@ namespace embree
                                       const int simd_width) 
     : geom(gID),prim(pID),flags(0)
   {
-      static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
+    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
     for (size_t i=0; i<4; i++) {

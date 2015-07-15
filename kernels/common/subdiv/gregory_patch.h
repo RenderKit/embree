@@ -797,7 +797,7 @@ namespace embree
       ff[0][1] = Vec3<T>(f[0][1]);
       ff[1][1] = Vec3<T>(f[1][1]);
       ff[1][0] = Vec3<T>(f[1][0]);
-      return normal_t<T::Mask>(v,ff,uu,vv);
+      return normal_t(v,ff,uu,vv);
     }
 
     __forceinline BBox<Vertex> bounds() const
