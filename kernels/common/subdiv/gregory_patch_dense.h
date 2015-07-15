@@ -21,12 +21,7 @@
 namespace embree
 {  
   class __aligned(64) DenseGregoryPatch3fa
-  {
-  private:
-    Vec3fa matrix[4][4]; // f_p/m points are stored in 4th component
-    
-  public:
-
+  {    
     static __forceinline float extract_f_m(const Vec3fa matrix[4][4], const size_t y, const size_t x) {
       return matrix[y][x].w;
     }
@@ -34,7 +29,36 @@ namespace embree
     static __forceinline Vec3fa extract_f_m_Vec3fa(const Vec3fa matrix[4][4], const size_t n) {
       return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
     }
-    
+   
+  public:
+
+    __forceinline DenseGregoryPatch3fa (const GregoryPatch3fa& patch)
+    {
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = patch.v[y][x];
+      
+      matrix[0][0].w = patch.f[0][0].x;
+      matrix[0][1].w = patch.f[0][0].y;
+      matrix[0][2].w = patch.f[0][0].z;
+      matrix[0][3].w = 0.0f;
+      
+      matrix[1][0].w = patch.f[0][1].x;
+      matrix[1][1].w = patch.f[0][1].y;
+      matrix[1][2].w = patch.f[0][1].z;
+      matrix[1][3].w = 0.0f;
+      
+      matrix[2][0].w = patch.f[1][1].x;
+      matrix[2][1].w = patch.f[1][1].y;
+      matrix[2][2].w = patch.f[1][1].z;
+      matrix[2][3].w = 0.0f;
+      
+      matrix[3][0].w = patch.f[1][0].x;
+      matrix[3][1].w = patch.f[1][0].y;
+      matrix[3][2].w = patch.f[1][0].z;
+      matrix[3][3].w = 0.0f;
+    }
+ 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
 #if defined(__MIC__)
@@ -102,5 +126,8 @@ namespace embree
       f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
       return GregoryPatch3fa::normal_t(matrix,f,uu,vv);
     }
+
+  private:
+    Vec3fa matrix[4][4]; // f_p/m points are stored in 4th component
   };
 }

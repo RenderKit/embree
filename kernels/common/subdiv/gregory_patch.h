@@ -442,34 +442,6 @@ namespace embree
 	  f_m[y][x] = (Vertex_t)f[y][x];
     }
     
-    __forceinline void exportDenseConrolPoints( Vertex matrix[4][4] ) const 
-    {
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)v[y][x];
-      
-      matrix[0][0].w = f[0][0].x;
-      matrix[0][1].w = f[0][0].y;
-      matrix[0][2].w = f[0][0].z;
-      matrix[0][3].w = 0.0f;
-      
-      matrix[1][0].w = f[0][1].x;
-      matrix[1][1].w = f[0][1].y;
-      matrix[1][2].w = f[0][1].z;
-      matrix[1][3].w = 0.0f;
-      
-      matrix[2][0].w = f[1][1].x;
-      matrix[2][1].w = f[1][1].y;
-      matrix[2][2].w = f[1][1].z;
-      matrix[2][3].w = 0.0f;
-      
-      matrix[3][0].w = f[1][0].x;
-      matrix[3][1].w = f[1][0].y;
-      matrix[3][2].w = f[1][0].z;
-      matrix[3][3].w = 0.0f;
-    }
-   
-    
     static __forceinline void computeInnerVertices(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv,
 						   Vertex_t& matrix_11, Vertex_t& matrix_12, Vertex_t& matrix_22, Vertex_t& matrix_21)
     {

@@ -120,7 +120,7 @@ namespace embree
       GregoryPatch3fa gpatch; 
       //gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
       gpatch.init( ccpatch ); 
-      gpatch.exportDenseConrolPoints( patch_v );
+      new (patch_v) DenseGregoryPatch3fa(ccpatch);
     }
     else
 #endif 
@@ -187,7 +187,7 @@ namespace embree
       type = GREGORY_PATCH;
       GregoryPatch3fa gpatch; 
       gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
-      gpatch.exportDenseConrolPoints( patch_v );
+      new (patch_v) DenseGregoryPatch3fa(gpatch);
     }
   }
 
