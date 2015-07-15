@@ -22,9 +22,11 @@ namespace embree
 {  
   class __aligned(64) DenseGregoryPatch3fa
   {
-  public:
+  private:
     Vec3fa matrix[4][4]; // f_p/m points are stored in 4th component
     
+  public:
+
     static __forceinline float extract_f_m(const Vec3fa matrix[4][4], const size_t y, const size_t x) {
       return matrix[y][x].w;
     }
@@ -80,7 +82,7 @@ namespace embree
     }
 
     template<class T>
-      static __forceinline Vec3<T> eval_t(const Vec3fa matrix[4][4], const T &uu, const T &vv) 
+      __forceinline Vec3<T> eval(const T &uu, const T &vv) const 
     {
       Vec3<T> f[2][2];
       f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
@@ -89,26 +91,16 @@ namespace embree
       f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
       return GregoryPatch3fa::eval_t(matrix,f,uu,vv);
     }
-
-    template<class T>
-      __forceinline Vec3<T> eval(const T &uu, const T &vv) const {
-      return eval_t(matrix,uu,vv);
-    }
     
-     template<class T>
-       static __forceinline Vec3<T> normal_t(const Vec3fa matrix[4][4], const T &uu, const T &vv) 
-     {
-       Vec3<T> f[2][2];
-       f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-       f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-       f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-       f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-       return GregoryPatch3fa::normal_t(matrix,f,uu,vv);
-    }
-
-     template<class T>
-      __forceinline Vec3<T> normal(const T &uu, const T &vv) const {
-      return normal_t(matrix,uu,vv);
+    template<class T>
+      __forceinline Vec3<T> normal(const T &uu, const T &vv) const 
+    {
+      Vec3<T> f[2][2];
+      f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
+      f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
+      f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
+      f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
+      return GregoryPatch3fa::normal_t(matrix,f,uu,vv);
     }
   };
 }
