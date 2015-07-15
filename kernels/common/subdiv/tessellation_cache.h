@@ -329,7 +329,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -347,7 +347,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -366,7 +366,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -386,7 +386,7 @@ namespace embree
    __forceinline size_t getMaxBlocks()    { return maxBlocks; }
    __forceinline size_t getSize()         { return size; }
 
-   void resetCache();
+   void allocNextSegment();
    void realloc(const size_t newSize);
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;

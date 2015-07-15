@@ -116,7 +116,7 @@ namespace embree
        }
    }
 
-  void SharedLazyTessellationCache::resetCache() 
+  void SharedLazyTessellationCache::allocNextSegment() 
   {
     if (reset_state.try_lock())
       {
