@@ -230,12 +230,12 @@ namespace embree
     {
       /* creates BSplinePatch from a half edge */
       template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
         return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader));
       }
       
       template<typename Loader>
-      __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+      __forceinline BSplinePatch (const HalfEdge* edge, const Loader& loader) 
       : patch(edge,loader) {}
       
       /* creates BSplinePatch from a CatmullClarkPatch */
@@ -255,12 +255,12 @@ namespace embree
     {
       /* creates BezierPatch from a half edge */
       template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
         return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader));
       }
       
       template<typename Loader>
-      __forceinline BezierPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+      __forceinline BezierPatch (const HalfEdge* edge, const Loader& loader) 
       : patch(edge,loader) {}
       
       /* creates Bezier from a CatmullClarkPatch */
@@ -280,12 +280,12 @@ namespace embree
     {
       /* creates GregoryPatch from half edge */
       template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
         return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,loader));
       }
       
       template<typename Loader>
-      __forceinline GregoryPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
+      __forceinline GregoryPatch (const HalfEdge* edge, const Loader& loader) 
       { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); } // FIXME: use constructor
       
       /* creates GregoryPatch from CatmullClarkPatch */
@@ -363,9 +363,9 @@ namespace embree
     __forceinline PatchT () {}
     
     template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride)
     {
-      auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+      auto loader = [&](const HalfEdge* p) -> Vertex { 
         const unsigned vtx = p->getStartVertexIndex();
         return Vertex_t::loadu((float*)&vertices[vtx*stride]);
       };
@@ -375,9 +375,9 @@ namespace embree
 
       Ref child(0);
       switch (edge->patch_type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,loader); break;
+      case HalfEdge::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,loader); break;
+      case HalfEdge::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
         GeneralCatmullClarkPatch patch(edge,loader);
@@ -388,7 +388,7 @@ namespace embree
     }
 
     template<typename Allocator>
-    __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+    __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
@@ -433,7 +433,7 @@ namespace embree
     }
 
     template<typename Allocator>
-    __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+    __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       if (unlikely(patch.isRegular2())) { 
         assert(depth > 0); return RegularPatch::create(alloc,patch); 

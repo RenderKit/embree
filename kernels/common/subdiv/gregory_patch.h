@@ -46,7 +46,7 @@ namespace embree
     }
 
     template<typename Loader>
-    __forceinline GregoryPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    __forceinline GregoryPatchT (const HalfEdge* edge, Loader& loader) 
     {
       CatmullClarkPatch ccpatch; 
       ccpatch.init2(edge,loader); 
@@ -830,7 +830,7 @@ namespace embree
 
   template<typename Vertex, typename Vertex_t>
   template<typename Loader>
-    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const HalfEdge* edge, Loader& loader) 
   {
     CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
     GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 

@@ -118,14 +118,14 @@ namespace embree
     }
 
     template<typename LoadVertex>
-      __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load) 
+      __forceinline void init(const HalfEdge* const h, const LoadVertex& load) 
     {
       noForcedSubdivision = true;
       border_index = -1;
       vtx = load(h);
       vertex_crease_weight = h->vertex_crease_weight;
       
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+      HalfEdge* p = (HalfEdge*) h;
       
       size_t i=0;
       unsigned min_vertex_index = (unsigned)-1;
@@ -170,7 +170,7 @@ namespace embree
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
-          p = (SubdivMesh::HalfEdge*) h;
+          p = (HalfEdge*) h;
           while (p->hasOpposite()) 
             p = p->opposite()->next();
         }
@@ -635,13 +635,13 @@ namespace embree
     }
 
     template<typename LoadVertex>
-      __forceinline void init(const SubdivMesh::HalfEdge* const h, const LoadVertex& load)
+      __forceinline void init(const HalfEdge* const h, const LoadVertex& load)
     {
       only_quads = true;
       border_face = -1;
       vtx = load(h);
       vertex_crease_weight = h->vertex_crease_weight;
-      SubdivMesh::HalfEdge* p = (SubdivMesh::HalfEdge*) h;
+      HalfEdge* p = (HalfEdge*) h;
       
       size_t e=0, f=0;
       unsigned min_vertex_index = (unsigned)-1;
@@ -651,8 +651,8 @@ namespace embree
       vertex_level = 0.0f;
       do 
       {
-        SubdivMesh::HalfEdge* p_prev = p->prev();
-        SubdivMesh::HalfEdge* p_next = p->next();
+        HalfEdge* p_prev = p->prev();
+        HalfEdge* p_next = p->next();
         const float crease_weight = p->edge_crease_weight;
          assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
         vertex_level = max(vertex_level,p->edge_level);
@@ -688,7 +688,7 @@ namespace embree
           ring[e++] = vtx; // dummy vertex
 	  
           /*! goto other side of border */
-          p = (SubdivMesh::HalfEdge*) h;
+          p = (HalfEdge*) h;
           while (p->hasOpposite()) 
             p = p->opposite()->next();
         }

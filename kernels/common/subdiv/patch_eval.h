@@ -364,17 +364,17 @@ namespace embree
         }
       }
 
-      static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      static void eval_direct (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+        auto loader = [&](const HalfEdge* p) -> Vertex { 
           const unsigned vtx = p->getStartVertexIndex();
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
         
         switch (edge->patch_type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+        case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+        case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #endif
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
@@ -384,17 +384,17 @@ namespace embree
         }
       }
 
-      static void eval_direct (const SubdivMesh::HalfEdge* edge, size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      static void eval_direct (const HalfEdge* edge, size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+        auto loader = [&](const HalfEdge* p) -> Vertex { 
           const unsigned vtx = p->getStartVertexIndex();
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
         
         switch (edge->patch_type) {
-        case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+        case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #if PATCH_USE_GREGORY == 2
-        case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
+        case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
 #endif
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
@@ -405,7 +405,7 @@ namespace embree
       }
 
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
-                        const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+                        const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
@@ -422,7 +422,7 @@ namespace embree
       }
 
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
-                        const SubdivMesh::HalfEdge* edge, const size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+                        const HalfEdge* edge, const size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
@@ -440,7 +440,7 @@ namespace embree
       
     };
 
-  __forceinline size_t patch_eval_subdivision_count (const SubdivMesh::HalfEdge* h)
+  __forceinline size_t patch_eval_subdivision_count (const HalfEdge* h)
   {
     const size_t N = h->numEdges();
     if (N == 4) return 1;
@@ -448,7 +448,7 @@ namespace embree
   }
 
   template<typename Tessellator>
-    inline void patch_eval_subdivision (const SubdivMesh::HalfEdge* h, Tessellator tessellator)
+    inline void patch_eval_subdivision (const HalfEdge* h, Tessellator tessellator)
   {
     const size_t N = h->numEdges();
     int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t

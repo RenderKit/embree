@@ -31,9 +31,9 @@ namespace embree
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
 
-    const SubdivMesh::HalfEdge* edge = mesh->getHalfEdge(pID);
+    const HalfEdge* edge = mesh->getHalfEdge(pID);
 
-    if (edge->patch_type == SubdivMesh::REGULAR_QUAD_PATCH) 
+    if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
     {
 #if PATCH_USE_BEZIER_PATCH 
       type = BEZIER_PATCH;
@@ -44,7 +44,7 @@ namespace embree
 #endif      
     }
 #if PATCH_USE_GREGORY == 2
-    else if (edge->patch_type == SubdivMesh::IRREGULAR_QUAD_PATCH) 
+    else if (edge->patch_type == HalfEdge::IRREGULAR_QUAD_PATCH) 
     {
       type = GREGORY_PATCH;
       new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));

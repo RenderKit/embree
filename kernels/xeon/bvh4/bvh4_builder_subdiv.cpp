@@ -663,7 +663,7 @@ namespace embree
             }
             else
             {
-              const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+              const HalfEdge* first_half_edge = mesh->getHalfEdge(f);
               const size_t numEdges = first_half_edge->numEdges();
               
               float edge_level[4] = {

@@ -117,7 +117,7 @@ namespace embree
     __forceinline BezierPatchT() {}
 
     template<typename Loader>
-      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader);
+      __forceinline BezierPatchT (const HalfEdge* edge, Loader& loader);
 
     __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch);
 

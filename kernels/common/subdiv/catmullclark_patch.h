@@ -35,22 +35,22 @@ namespace embree
     __forceinline CatmullClarkPatchT () {}
   
     template<typename Loader>
-    __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const Loader& loader) {
       init2(first_half_edge,loader);
     }
   
-    __forceinline CatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
       init(first_half_edge,vertices);
     }
 
-    __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       init2(first_half_edge,
-            [&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+            [&](const HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
     }
     
     template<typename Loader>
-      __forceinline void init2 (const SubdivMesh::HalfEdge* first_half_edge, const Loader& load) 
+      __forceinline void init2 (const HalfEdge* first_half_edge, const Loader& load) 
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,load);
@@ -431,7 +431,7 @@ namespace embree
       : N(0) {}
 
   template<typename Loader>
-  __forceinline GeneralCatmullClarkPatchT (const SubdivMesh::HalfEdge* first_half_edge, const Loader& loader) {
+  __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const Loader& loader) {
     init2(first_half_edge,loader);
   }
 
@@ -449,17 +449,17 @@ namespace embree
     }
 
 
-    __forceinline void init (const SubdivMesh::HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
     {
       init2(first_half_edge,
-            [&](const SubdivMesh::HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+            [&](const HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
     }
 
     template<typename Loader>
-      __forceinline void init2 (const SubdivMesh::HalfEdge* h, const Loader& load) 
+      __forceinline void init2 (const HalfEdge* h, const Loader& load) 
     {
       size_t i = 0;
-      const SubdivMesh::HalfEdge* edge = h; 
+      const HalfEdge* edge = h; 
       do {
 	ring[i].init(edge,load);
         edge = edge->next();

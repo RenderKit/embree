@@ -1122,7 +1122,7 @@ PRINT(CORRECT_numPrims);
 	prefetch<PFHINT_L2EX>(&prims[i+2]);
 
 	const SubdivMesh* const mesh = (SubdivMesh*) scene->get(subdiv_patch.geom);
-	const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(subdiv_patch.prim);
+	const HalfEdge* first_half_edge = mesh->getHalfEdge(subdiv_patch.prim);
 
 	const float edge_level[4] = {
 	  first_half_edge[0].edge_level,
@@ -1227,7 +1227,7 @@ PRINT(CORRECT_numPrims);
 	  else
 	    {
 	      const unsigned int patchIndex = base.size()+s.size();
-	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
+	      const HalfEdge* first_half_edge = mesh->getHalfEdge(f);
 	      float edge_level[4] = {
 		first_half_edge[0].edge_level,
 		first_half_edge[1].edge_level,

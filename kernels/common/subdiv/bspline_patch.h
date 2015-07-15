@@ -263,7 +263,7 @@ namespace embree
       }
 
       template<typename Loader>
-        __forceinline BSplinePatchT (const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        __forceinline BSplinePatchT (const HalfEdge* edge, const Loader& loader) {
         init(edge,loader);
       }
 
@@ -378,14 +378,14 @@ namespace embree
       }
       
       template<typename Loader>
-      __forceinline void init_border(const SubdivMesh::HalfEdge* edge0, Loader& load,
+      __forceinline void init_border(const HalfEdge* edge0, Loader& load,
                                      Vertex& v01, Vertex& v02,
                                      const Vertex& v11, const Vertex& v12,
                                      const Vertex& v21, const Vertex& v22)
       {
         if (likely(edge0->hasOpposite())) 
         {
-          const SubdivMesh::HalfEdge* e = edge0->opposite()->next()->next(); 
+          const HalfEdge* e = edge0->opposite()->next()->next(); 
           v01 = load(e); 
           v02 = load(e->next());
         } else {
@@ -395,7 +395,7 @@ namespace embree
       }
       
       template<typename Loader>
-      __forceinline void init_corner(const SubdivMesh::HalfEdge* edge0, Loader& load,
+      __forceinline void init_corner(const HalfEdge* edge0, Loader& load,
                                      Vertex& v00, const Vertex& v01, const Vertex& v02, 
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
@@ -405,7 +405,7 @@ namespace embree
 
         if (likely(has_back0))
         { 
-          const SubdivMesh::HalfEdge* e = edge0->opposite()->next();
+          const HalfEdge* e = edge0->opposite()->next();
           if (likely(has_front1))
           {
             assert(e->hasOpposite());
@@ -431,14 +431,14 @@ namespace embree
       }
       
       template<typename Loader>
-      void init(const SubdivMesh::HalfEdge* edge0, Loader& load)
+      void init(const HalfEdge* edge0, Loader& load)
       {
         assert( edge0->isRegularFace() );
         
         /* fill inner vertices */
-        const Vertex v11 = v[1][1] = load(edge0); const SubdivMesh::HalfEdge* edge1 = edge0->next();
-        const Vertex v12 = v[1][2] = load(edge1); const SubdivMesh::HalfEdge* edge2 = edge1->next();
-        const Vertex v22 = v[2][2] = load(edge2); const SubdivMesh::HalfEdge* edge3 = edge2->next();
+        const Vertex v11 = v[1][1] = load(edge0); const HalfEdge* edge1 = edge0->next();
+        const Vertex v12 = v[1][2] = load(edge1); const HalfEdge* edge2 = edge1->next();
+        const Vertex v22 = v[2][2] = load(edge2); const HalfEdge* edge3 = edge2->next();
         const Vertex v21 = v[2][1] = load(edge3); assert(edge0  == edge3->next());
         
         /* fill border vertices */

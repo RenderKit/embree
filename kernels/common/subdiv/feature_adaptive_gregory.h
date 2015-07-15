@@ -22,7 +22,7 @@
 
 namespace embree
 {
-  __forceinline int feature_adaptive_gregory_neighbor_subdiv(const SubdivMesh::HalfEdge& h) {
+  __forceinline int feature_adaptive_gregory_neighbor_subdiv(const HalfEdge& h) {
    return h.hasOpposite() ? !h.opposite()->isGregoryFace() : 0;  
   }
 
@@ -31,7 +31,7 @@ namespace embree
   {
     Tessellator& tessellator;
 
-    __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
+    __forceinline FeatureAdaptiveSubdivisionGregory (int primID, const HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
       : tessellator(tessellator)
     {
       /* fast path for regular input primitives */
@@ -347,7 +347,7 @@ namespace embree
   };
 
    template<typename Tessellator>
-     inline void feature_adaptive_subdivision_gregory (int primID, const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
+     inline void feature_adaptive_subdivision_gregory (int primID, const HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
    {
      FeatureAdaptiveSubdivisionGregory<Tessellator>(primID,h,vertices,tessellator);
    }

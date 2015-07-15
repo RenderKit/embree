@@ -201,7 +201,7 @@ namespace embree
 
     union {
       struct {
-        const SubdivMesh::HalfEdge* edge;
+        const HalfEdge* edge;
         size_t subPatch;
       };
       Vec3fa patch_v[4][4];

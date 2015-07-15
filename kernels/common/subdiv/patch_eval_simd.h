@@ -323,17 +323,17 @@ namespace embree
         }
       }
       
-      static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+      static void eval_direct (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
       {
-        auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
+        auto loader = [&](const HalfEdge* p) -> Vertex { 
           const unsigned vtx = p->getStartVertexIndex();
           return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
         };
         
         switch (edge->patch_type) {
-          case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
 #if PATCH_USE_GREGORY == 2
-          case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
 #endif
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
@@ -344,7 +344,7 @@ namespace embree
       }
 
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
-                        const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid0, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+                        const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid0, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
       {
         Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };

@@ -295,8 +295,8 @@ namespace embree
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = edge_level;
-          edge->patch_type             = COMPLEX_PATCH; // type gets updated below
-          edge->vertex_type            = REGULAR_VERTEX;
+          edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
+          edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
 	  if (unlikely(holeSet.lookup(f))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
@@ -341,11 +341,11 @@ namespace embree
         else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
-            halfEdges1[e+i].edge->vertex_type = NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->vertex_type = HalfEdge::NON_MANIFOLD_EDGE_VERTEX;
             halfEdges1[e+i].edge->edge_crease_weight = inf;
 
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
-            halfEdges1[e+i].edge->next()->vertex_type = NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->next()->vertex_type = HalfEdge::NON_MANIFOLD_EDGE_VERTEX;
             halfEdges1[e+i].edge->next()->edge_crease_weight = inf;
 	  }
 	}
@@ -359,7 +359,7 @@ namespace embree
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
-        PatchType patch_type = edge->patchType();
+        HalfEdge::PatchType patch_type = edge->patchType();
         invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(f);
           
         for (size_t i=0; i<faceVertices[f]; i++) 
@@ -406,7 +406,7 @@ namespace embree
             edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
-        if (updateVertexCreases && edge.vertex_type != NON_MANIFOLD_EDGE_VERTEX) {
+        if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
           if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
             edge.vertex_crease_weight = float(inf);
@@ -516,9 +516,9 @@ namespace embree
       for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
         switch (halfEdges[e].patch_type) {
-        case REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
-        case IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
-        case COMPLEX_PATCH       : numComplexFaces++;   break;
+        case HalfEdge::REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
+        case HalfEdge::IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
+        case HalfEdge::COMPLEX_PATCH       : numComplexFaces++;   break;
         }
       }
     
