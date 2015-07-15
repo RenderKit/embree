@@ -40,6 +40,10 @@ namespace embree
   void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
 
+ 
+/* number of created scene */
+  AtomicCounter Scene::numScenes = 0;
+
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
@@ -145,6 +149,9 @@ namespace embree
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
 #endif
+
+    /* increment number of scenes */
+    numScenes++;
   }
 
 #if !defined(__MIC__)
@@ -283,6 +290,9 @@ namespace embree
     //delete arena; arena = nullptr;
     delete group; group = nullptr;
 #endif
+
+    /* decrement number of scenes */
+    numScenes++;
   }
 
   void Scene::clear() {
@@ -392,6 +402,9 @@ namespace embree
 
     /* update commit counter */
     commitCounter++;
+    // FIXME: race condition?
+    if (numScenes == 1 )
+      resetTessellationCache();
   }
 
   void Scene::build_task ()

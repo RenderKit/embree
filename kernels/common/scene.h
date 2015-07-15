@@ -93,7 +93,7 @@ namespace embree
     private:
       Scene* scene;
       bool all;
-    };
+      };
 
   public:
     
@@ -233,6 +233,8 @@ namespace embree
   public:
     std::vector<int> usedIDs; // FIXME: encapsulate this functionality into own class
     std::vector<Geometry*> geometries; //!< list of all user geometries
+
+    static AtomicCounter numScenes;
     
   public:
     AccelN accels;

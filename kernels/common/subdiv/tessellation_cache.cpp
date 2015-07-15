@@ -31,9 +31,10 @@ namespace embree
       SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);    
   }
 
-  void clearTessellationCache()
+  void resetTessellationCache()
   {
-    SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_SEGMENTS);
+    //SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_SEGMENTS);
+    SharedLazyTessellationCache::sharedLazyTessellationCache.reset();
   }
   
   /* alloc cache memory */
@@ -174,6 +175,41 @@ namespace embree
       }
     else
       reset_state.wait_until_unlocked();	   
+  }
+
+
+  void SharedLazyTessellationCache::reset()
+  {
+    /* lock the reset_state */
+    reset_state.lock();
+
+    /* lock the linked list of thread states */
+    linkedlist_mtx.lock();
+
+    /* block all threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      if (lockThread(t) == 1)
+        waitForUsersLessEqual(t,1);
+
+
+    /* reset to the first segment */
+    next_block = 0;
+#if FORCE_SIMPLE_FLUSH == 1
+    switch_block_threshold = maxBlocks;
+#else
+    switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
+#endif
+
+    /* release all blocked threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      unlockThread(t);
+
+    /* unlock the linked list of thread states */
+    linkedlist_mtx.unlock();
+	    
+
+    /* unlock the reset_state */
+    reset_state.unlock();
   }
 
   void SharedLazyTessellationCache::realloc(const size_t new_size)

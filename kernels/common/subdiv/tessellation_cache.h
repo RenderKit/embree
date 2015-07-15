@@ -61,7 +61,7 @@ namespace embree
  };
 
   void resizeTessellationCache(const size_t new_size);
-  void clearTessellationCache();
+  void resetTessellationCache();
 
   /* alloc cache memory */
   float *alloc_tessellation_cache_mem(const size_t blocks);
@@ -388,6 +388,8 @@ namespace embree
 
    void allocNextSegment();
    void realloc(const size_t newSize);
+
+   void reset();
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
     
