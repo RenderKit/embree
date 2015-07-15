@@ -876,7 +876,7 @@ PRINT(CORRECT_numPrims);
   /* =================================================================================== */
   /* =================================================================================== */
   /* =================================================================================== */
-#define DBG_CACHE_BUILDER(x) x
+#define DBG_CACHE_BUILDER(x) 
 
   void BVH4iBuilderSubdivMesh::printBuilderName()
   {
@@ -911,6 +911,8 @@ PRINT(CORRECT_numPrims);
         }
     }
 
+    
+
     /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
 
@@ -931,12 +933,16 @@ PRINT(CORRECT_numPrims);
 
       /* deactivate fast update mode */
     if (numPrimitives == 0 || 
-	numPrimitives != fastUpdateMode_numFaces ||
+	// numPrimitives != fastUpdateMode_numFaces ||
 	bvh->root     == BVH4i::emptyNode ||
 	bvh->qbvh     == nullptr)
       {
 	fastUpdateMode = false;
       }
+
+    DBG_CACHE_BUILDER( PRINT(fastUpdateMode ) );
+
+    //fastUpdateMode = false;
 
     if (!fastUpdateMode)
       BVH4iBuilder::build(threadIndex,threadCount);
@@ -990,7 +996,9 @@ PRINT(CORRECT_numPrims);
   size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
   {
     /* in fast update mode we know the number of primitives in advance */
-    if (fastUpdateMode) return fastUpdateMode_numFaces;
+    //if (fastUpdateMode) return fastUpdateMode_numFaces;
+
+    DBG_CACHE_BUILDER( PING );
 
     TIMER(double msec = getSeconds());	
 
@@ -1001,7 +1009,6 @@ PRINT(CORRECT_numPrims);
 	{          
           if (!mesh->valid(f)) continue;
           s += patch_eval_subdivision_count (mesh->getHalfEdge(f));  
-
 	  // feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 	  //       			       [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 	  //       			       {
@@ -1013,6 +1020,8 @@ PRINT(CORRECT_numPrims);
 
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "getNumPrimitives " << 1000. * msec << " ms" << std::endl << std::flush);
+
+    DBG_CACHE_BUILDER( PRINT(pinfo.size()) );
 
     return pinfo.size();
     /* count total number of subdivision surface objects */
@@ -1200,13 +1209,13 @@ PRINT(CORRECT_numPrims);
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
-              // if (likely(fastUpdateMode)) {
-              //   subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
-              //   subdiv_patches[patchIndex].resetRootRef();
-              // }
-              // else {
-              //new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
-              // }
+              if (likely(fastUpdateMode)) {
+                 subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                 subdiv_patches[patchIndex].resetRootRef();
+              }
+              else {
+                new (&subdiv_patches[patchIndex]) SubdivPatch1(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              }
               const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
               const BBox3fa bounds = knc::evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
               prims[patchIndex] = PrimRef(bounds,patchIndex);

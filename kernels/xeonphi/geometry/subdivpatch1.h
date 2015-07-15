@@ -42,6 +42,17 @@ namespace embree
       : SubdivPatch1Base(ipatch,fas_depth,geomID,primID,mesh,uv,edge_level,subdiv, border, border_flags, 16)
     { 
     }
+
+    /*! constructor for cached subdiv patch */
+    SubdivPatch1 (const unsigned int gID,
+                  const unsigned int pID,
+                  const unsigned int subPatch,
+                  const SubdivMesh *const mesh,
+                  const Vec2f uv[4],
+                  const float edge_level[4],
+                  const int subdiv[4],
+                  const int simd_width) 
+      : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
     
   };
 
