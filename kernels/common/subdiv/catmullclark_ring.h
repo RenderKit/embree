@@ -17,7 +17,8 @@
 #pragma once
 
 #include "../geometry.h"
-#include "../scene_subdiv_mesh.h"
+#include "../buffer.h"
+#include "half_edge.h"
 #include "catmullclark_coefficients.h"
 
 namespace embree
@@ -44,7 +45,7 @@ namespace embree
     float edge_level; // level of first edge
     unsigned int eval_start_index;
     unsigned int eval_unique_identifier;
-    bool noForcedSubdivision; // varying edge crease weight stitching fix
+    bool noForcedSubdivision; // varying edge crease weight stitching fix // FIXME: remove
 
   public:
     CatmullClark1RingT () : eval_start_index(0), eval_unique_identifier(0) {}

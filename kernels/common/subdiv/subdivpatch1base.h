@@ -26,6 +26,7 @@
 #include "tessellation_cache.h"
 #include "gridrange.h"
 #include "feature_adaptive_eval2.h"
+#include "../scene_subdiv_mesh.h"
 
 namespace embree
 {

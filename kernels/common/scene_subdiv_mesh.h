@@ -21,7 +21,7 @@
 #include "subdiv/half_edge.h"
 #include "subdiv/tessellation_cache.h"
 #include "subdiv/catmullclark_coefficients.h"
-//#include "subdiv/patch.h"
+#include "subdiv/patch.h"
 #include "../algorithms/pmap.h"
 #include "../algorithms/pset.h"
 
@@ -225,7 +225,7 @@ namespace embree
     }
     std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
     std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
-    //std::vector<Patch3fa::Ref> patch_eval_trees;
+    std::vector<Patch3fa::Ref> patch_eval_trees;
       
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */

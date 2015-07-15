@@ -355,6 +355,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
+        //if (likely(!fastUpdateMode)) 
         bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
@@ -371,9 +372,11 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {          
             if (!mesh->valid(f)) continue;
-            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));            
-            //auto alloc = [&] (size_t bytes) { return bvh->alloc.threadLocal()->malloc(bytes); };
-            //mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().ptr(), mesh->getVertexBuffer().stride);
+            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));  
+            //if (likely(!fastUpdateMode)) {
+              //auto alloc = [&] (size_t bytes) { return bvh->alloc.threadLocal()->malloc(bytes); }; // FIXME: allocation using bvh->alloc is problematic
+              //mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
+            //}
           }
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
