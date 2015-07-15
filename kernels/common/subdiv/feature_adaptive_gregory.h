@@ -288,8 +288,8 @@ namespace embree
       {
 	for (size_t i=0; i<N; i++) 
 	{
-          assert(i<SubdivMesh::MAX_VALENCE);
-          static_assert(SubdivMesh::MAX_VALENCE <= 16, "MAX_VALENCE > 16");
+          assert(i<MAX_PATCH_VALENCE);
+          static_assert(MAX_PATCH_VALENCE <= 16, "MAX_PATCH_VALENCE > 16");
           const int h = (i >> 2) & 3, l = i & 3;
 	  const Vec2f uv[4] = { (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.0f,0.0f)),
                                 (1.0f/4.0f) * (Vec2f(l,h) + Vec2f(0.5f,0.0f)),

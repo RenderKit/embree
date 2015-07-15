@@ -17,21 +17,23 @@
 #pragma once
 
 #include "../geometry.h"
-#include "../scene_subdiv_mesh.h"
+//#include "../scene_subdiv_mesh.h"
 
 namespace embree
 {
+  static const size_t MAX_PATCH_VALENCE = 16;         //!< maximal number of vertices of a patch
+  static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
+  static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
+
   class CatmullClarkPrecomputedCoefficients {
 
   private:
     
-    static const size_t MAX_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
-    
-    float table_cos_2PI_div_n[MAX_VALENCE];
+    float table_cos_2PI_div_n[MAX_PATCH_VALENCE]; // FIXME: should be MAX_RING_FACE_VALENCE?
 
-    float *table_limittangent_a[MAX_VALENCE];
-    float *table_limittangent_b[MAX_VALENCE];
-    float table_limittangent_c[MAX_VALENCE];
+    float *table_limittangent_a[MAX_PATCH_VALENCE];
+    float *table_limittangent_b[MAX_PATCH_VALENCE];
+    float table_limittangent_c[MAX_PATCH_VALENCE];
 
     __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*M_PI/(float)n); }
 
@@ -54,9 +56,9 @@ namespace embree
 
     __forceinline float cos_2PI_div_n(const size_t n)
     {
-      assert(n < MAX_VALENCE);
+      assert(n < MAX_PATCH_VALENCE);
 
-      if (likely(n < MAX_VALENCE))
+      if (likely(n < MAX_PATCH_VALENCE))
         return table_cos_2PI_div_n[n];
       else
         return set_cos_2PI_div_n(n);
@@ -64,21 +66,21 @@ namespace embree
 
     __forceinline float limittangent_a(const size_t i, const size_t n)
     {
-      assert(n < MAX_VALENCE);
+      assert(n < MAX_PATCH_VALENCE);
       assert(i < n);
       return table_limittangent_a[n][i];
     }
 
     __forceinline float limittangent_b(const size_t i, const size_t n)
     {
-      assert(n < MAX_VALENCE);
+      assert(n < MAX_PATCH_VALENCE);
       assert(i < n);
       return table_limittangent_b[n][i];
     }
 
     __forceinline float limittangent_c(const size_t n)
     {
-      assert(n < MAX_VALENCE);
+      assert(n < MAX_PATCH_VALENCE);
       return table_limittangent_c[n];
     }
 

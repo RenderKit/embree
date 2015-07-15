@@ -356,7 +356,7 @@ namespace embree
       }
       
       size_t N;
-      Ref child[SubdivMesh::MAX_VALENCE];
+      Ref child[MAX_PATCH_VALENCE];
     };
     
     /*! Default constructor. */
@@ -422,8 +422,8 @@ namespace embree
       }
       else 
       {
-        assert(N<SubdivMesh::MAX_VALENCE);
-        Ref child[SubdivMesh::MAX_VALENCE];
+        assert(N<MAX_PATCH_VALENCE);
+        Ref child[MAX_PATCH_VALENCE];
         for (size_t i=0; i<N; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
         return SubdividedGeneralPatch::create(alloc,child,N);
@@ -466,4 +466,6 @@ namespace embree
       }
     }
   };
+
+  typedef PatchT<Vec3fa,Vec3fa_t> Patch3fa;
 }

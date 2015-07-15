@@ -30,12 +30,10 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {
-    static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
-    static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     static const size_t MAX_DEPTH_SUBDIVISION = 10;
 
-    array_t<Vertex,MAX_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
-    array_t<float,MAX_FACE_VALENCE> crease_weight;
+    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
+    array_t<float,MAX_RING_FACE_VALENCE> crease_weight;
     
     int border_index;
     Vertex vtx;
@@ -224,7 +222,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      array_t<size_t,MAX_FACE_VALENCE> crease_id;
+      array_t<size_t,MAX_RING_FACE_VALENCE> crease_id;
       Vertex_t C = Vertex_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
@@ -582,8 +580,6 @@ namespace embree
     struct __aligned(64) GeneralCatmullClark1RingT
   {
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
-    static const size_t MAX_FACE_VALENCE = SubdivMesh::MAX_RING_FACE_VALENCE;
-    static const size_t MAX_EDGE_VALENCE = SubdivMesh::MAX_RING_EDGE_VALENCE;
     
     struct Face 
     {
@@ -598,8 +594,8 @@ namespace embree
     };
 
     Vertex vtx;
-    array_t<Vertex,MAX_EDGE_VALENCE> ring; 
-    array_t<Face,MAX_FACE_VALENCE> faces;
+    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring; 
+    array_t<Face,MAX_RING_FACE_VALENCE> faces;
     unsigned int face_valence;
     unsigned int edge_valence;
     int border_face;
@@ -723,7 +719,7 @@ namespace embree
       dest.vertex_crease_weight    = max(0.0f,vertex_crease_weight-1.0f);
       dest.eval_start_index        = eval_start_face_index;
       dest.eval_unique_identifier  = eval_unique_identifier;
-      assert(dest.face_valence <= CatmullClark1Ring::MAX_FACE_VALENCE);
+      assert(dest.face_valence <= MAX_RING_FACE_VALENCE);
 
       /* calculate face points */
       Vertex_t S = Vertex_t(0.0f);
@@ -743,7 +739,7 @@ namespace embree
       
       /* calculate new edge points */
       size_t num_creases = 0;
-      array_t<size_t,MAX_FACE_VALENCE> crease_id;
+      array_t<size_t,MAX_RING_FACE_VALENCE> crease_id;
       Vertex_t C = Vertex_t(0.0f);
       for (size_t face=0, j=eval_start_vertex_index; face<face_valence; face++)
       {

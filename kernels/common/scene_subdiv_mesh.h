@@ -19,6 +19,8 @@
 #include "geometry.h"
 #include "buffer.h"
 #include "subdiv/tessellation_cache.h"
+#include "subdiv/catmullclark_coefficients.h"
+//#include "subdiv/patch.h"
 #include "../algorithms/pmap.h"
 #include "../algorithms/pset.h"
 
@@ -31,10 +33,6 @@ namespace embree
 
     /*! type of this geometry */
     static const Geometry::Type geom_type = Geometry::SUBDIV_MESH;
-
-    static const size_t MAX_VALENCE = 16;               //!< maximal number of vertices of a patch
-    static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximal number of faces per ring
-    static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximal number of edges per ring
 
     enum PatchType : char { 
       REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
@@ -232,7 +230,7 @@ namespace embree
         for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
           if (!p->validRing(vertices)) return false;
         }
-        return N >= 3 && N <= MAX_VALENCE;
+        return N >= 3 && N <= MAX_PATCH_VALENCE;
       }
 
       /*! counts number of polygon edges  */
@@ -307,7 +305,7 @@ namespace embree
           if (!isvalid(v)) return false;
         }
         N += n-2;
-        return n >= 3 && n <= MAX_VALENCE;
+        return n >= 3 && n <= MAX_PATCH_VALENCE;
       }
 
       /*! tests if this is a valid ring */
@@ -532,6 +530,7 @@ namespace embree
     }
     std::vector<SharedLazyTessellationCache::CacheEntry> vertex_buffer_tags[2];
     std::vector<SharedLazyTessellationCache::CacheEntry> user_buffer_tags[2];
+    //std::vector<Patch3fa::Ref> patch_eval_trees;
       
     /*! the following data is only required during construction of the
      *  half edge structure and can be cleared for static scenes */

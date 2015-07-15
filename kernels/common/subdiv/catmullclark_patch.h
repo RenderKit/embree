@@ -423,7 +423,7 @@ namespace embree
   public:
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
-    static const size_t SIZE = SubdivMesh::MAX_VALENCE;
+    static const size_t SIZE = MAX_PATCH_VALENCE;
     array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
     size_t N;
 
@@ -561,8 +561,8 @@ namespace embree
 
     static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
     {
-      assert(N<(CatmullClark1RingT<Vertex,Vertex_t>::MAX_FACE_VALENCE));
-      assert(2*N<(CatmullClark1RingT<Vertex,Vertex_t>::MAX_EDGE_VALENCE));
+      assert(N<(MAX_RING_FACE_VALENCE));
+      assert(2*N<(MAX_RING_EDGE_VALENCE));
       dest.vertex_level = vertex_level;
       dest.face_valence = N;
       dest.edge_valence = 2*N;

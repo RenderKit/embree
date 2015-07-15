@@ -371,7 +371,9 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) 
           {          
             if (!mesh->valid(f)) continue;
-            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));
+            s += patch_eval_subdivision_count (mesh->getHalfEdge(f));            
+            //auto alloc = [&] (size_t bytes) { return bvh->alloc.threadLocal()->malloc(bytes); };
+            //mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().ptr(), mesh->getVertexBuffer().stride);
           }
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });

@@ -24,11 +24,11 @@ namespace embree
   CatmullClarkPrecomputedCoefficients::CatmullClarkPrecomputedCoefficients()
   {
     /* precompute cosf(2.0f*M_PI/n) */
-    for (size_t n=0;n<MAX_VALENCE;n++)
+    for (size_t n=0;n<MAX_PATCH_VALENCE;n++)
       table_cos_2PI_div_n[n] = set_cos_2PI_div_n(n);
 
     /* precompute limit tangents coefficients */
-    for (size_t n=0;n<MAX_VALENCE;n++)
+    for (size_t n=0;n<MAX_PATCH_VALENCE;n++)
     {
       table_limittangent_a[n] = new float[n];
       table_limittangent_b[n] = new float[n];
@@ -40,7 +40,7 @@ namespace embree
       }      
     }
 
-    for (size_t n=0;n<MAX_VALENCE;n++)
+    for (size_t n=0;n<MAX_PATCH_VALENCE;n++)
       table_limittangent_c[n] = set_limittangent_c(n);
 
   }
