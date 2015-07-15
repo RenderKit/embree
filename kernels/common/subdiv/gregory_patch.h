@@ -739,9 +739,10 @@ namespace embree
       return eval_t(v,ff,uu,vv);
     }
 
-    template<class M, class T>
+    template<class T>
       static __forceinline Vec3<T> normal_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
+      typedef typename T::Mask M;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);

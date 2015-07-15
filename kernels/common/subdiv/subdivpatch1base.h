@@ -78,7 +78,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::eval( patch_v, uu, vv );
+	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::eval( patch_v, uu, vv );
       return Vec3fa( zero );
@@ -91,7 +91,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::normal( patch_v, uu, vv );
+	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::normal( patch_v, uu, vv );
       return Vec3fa( zero );
@@ -106,7 +106,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::eval_t<simdb>( patch_v, uu, vv );
+	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
         return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch_v, uu * (1.0f - vv), vv );
       return Vec3<simdf>( zero );
@@ -121,7 +121,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_PATCH))
-	return DenseGregoryPatch3fa::normal_t<simdb>( patch_v, uu, vv );
+	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == GREGORY_TRIANGLE_PATCH))
 	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch_v, uu, vv );
       return Vec3<simdf>( zero );
@@ -136,7 +136,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
         return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
       else 
-        return DenseGregoryPatch3fa::eval16( patch_v, uu, vv );
+        return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
     }
 
     __forceinline Vec3f16 normal(const float16& uu, const float16& vv) const
@@ -146,7 +146,7 @@ namespace embree
       else if (likely(type == BSPLINE_PATCH))
 	return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
       else
-        return DenseGregoryPatch3fa::normal16( patch_v, uu, vv );
+        return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
     }
 #endif
 
