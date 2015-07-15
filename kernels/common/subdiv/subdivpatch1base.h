@@ -247,12 +247,13 @@ namespace embree
     {
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
-      const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
+      const size_t M = dwidth*dheight+vfloat::size;
+      const size_t grid_size_simd_blocks = (M-1)/vfloat::size;
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
         const bool displ = geom->displFunc;
-        const size_t N = displ ? dwidth*dheight+16 : 0;
+        const size_t N = displ ? M : 0;
         dynamic_stack_array(float,grid_Ng_x,N);
         dynamic_stack_array(float,grid_Ng_y,N);
         dynamic_stack_array(float,grid_Ng_z,N);
@@ -350,20 +351,20 @@ namespace embree
       BBox3fa b(empty);
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
-      const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
-      dynamic_stack_array(float,grid_u,dwidth*dheight+16);
-      dynamic_stack_array(float,grid_v,dwidth*dheight+16);
+      const size_t M = dwidth*dheight+vfloat::size;
+      const size_t grid_size_simd_blocks = (M-1)/vfloat::size;
+      dynamic_stack_array(float,grid_u,M);
+      dynamic_stack_array(float,grid_v,M);
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
         const bool displ = geom->displFunc;
-        const size_t N = displ ? dwidth*dheight+16 : 0;
-        dynamic_stack_array(float,grid_x,dwidth*dheight+16);
-        dynamic_stack_array(float,grid_y,dwidth*dheight+16);
-        dynamic_stack_array(float,grid_z,dwidth*dheight+16);
-        dynamic_stack_array(float,grid_Ng_x,N);
-        dynamic_stack_array(float,grid_Ng_y,N);
-        dynamic_stack_array(float,grid_Ng_z,N);
+        dynamic_stack_array(float,grid_x,M);
+        dynamic_stack_array(float,grid_y,M);
+        dynamic_stack_array(float,grid_z,M);
+        dynamic_stack_array(float,grid_Ng_x,displ ? M : 0);
+        dynamic_stack_array(float,grid_Ng_y,displ ? M : 0);
+        dynamic_stack_array(float,grid_Ng_z,displ ? M : 0);
 
         if (unlikely(patch.needsStitching()))
           isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
@@ -396,8 +397,6 @@ namespace embree
           grid_y[i] = last_y;
           grid_z[i] = last_z;
         }
-
-        assert(grid_size_simd_blocks >= 1);
 
         vfloat bounds_min_x = pos_inf;
         vfloat bounds_min_y = pos_inf;
@@ -514,10 +513,6 @@ namespace embree
       assert(b.lower.z <= b.upper.z);
 
       return b;
-
     }
-
-
-
   }
 }
