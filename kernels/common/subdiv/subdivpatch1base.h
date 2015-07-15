@@ -347,23 +347,20 @@ namespace embree
                                                 const size_t swidth, const size_t sheight,
                                                 const SubdivMesh* const geom)
     {
-      dynamic_stack_array(float,grid_u,(patch.grid_size_simd_blocks+1)*8);
-      dynamic_stack_array(float,grid_v,(patch.grid_size_simd_blocks+1)*8);
-
       BBox3fa b(empty);
-
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
       const size_t grid_size_simd_blocks = (dwidth*dheight+vfloat::size-1)/vfloat::size;
+      dynamic_stack_array(float,grid_u,dwidth*dheight+16);
+      dynamic_stack_array(float,grid_v,dwidth*dheight+16);
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
         const bool displ = geom->displFunc;
         const size_t N = displ ? dwidth*dheight+16 : 0;
-        dynamic_stack_array(float,grid_x,(patch.grid_size_simd_blocks+1)*8);
-        dynamic_stack_array(float,grid_y,(patch.grid_size_simd_blocks+1)*8);
-        dynamic_stack_array(float,grid_z,(patch.grid_size_simd_blocks+1)*8);
-
+        dynamic_stack_array(float,grid_x,dwidth*dheight+16);
+        dynamic_stack_array(float,grid_y,dwidth*dheight+16);
+        dynamic_stack_array(float,grid_z,dwidth*dheight+16);
         dynamic_stack_array(float,grid_Ng_x,N);
         dynamic_stack_array(float,grid_Ng_y,N);
         dynamic_stack_array(float,grid_Ng_z,N);
@@ -400,8 +397,7 @@ namespace embree
           grid_z[i] = last_z;
         }
 
-        BBox3fa b(empty);
-        assert(patch.grid_size_simd_blocks >= 1);
+        assert(grid_size_simd_blocks >= 1);
 
         vfloat bounds_min_x = pos_inf;
         vfloat bounds_min_y = pos_inf;
@@ -409,7 +405,7 @@ namespace embree
         vfloat bounds_max_x = neg_inf;
         vfloat bounds_max_y = neg_inf;
         vfloat bounds_max_z = neg_inf;
-        for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
+        for (size_t i = 0; i<grid_size_simd_blocks; i++)
         {
           vfloat x = vfloat::loadu(&grid_x[i * vfloat::size]);
           vfloat y = vfloat::loadu(&grid_y[i * vfloat::size]);
@@ -430,7 +426,6 @@ namespace embree
         b.upper.x = reduce_max(bounds_max_x);
         b.upper.y = reduce_max(bounds_max_y);
         b.upper.z = reduce_max(bounds_max_z);
-
         b.lower.a = 0.0f;
         b.upper.a = 0.0f;
       }
@@ -501,7 +496,6 @@ namespace embree
         b.upper.x = reduce_max(bounds_max[0]);
         b.upper.y = reduce_max(bounds_max[1]);
         b.upper.z = reduce_max(bounds_max[2]);
-
         b.lower.a = 0.0f;
         b.upper.a = 0.0f;
       }

@@ -269,7 +269,7 @@ namespace embree
 
     BBox3fa getBounds1(const SubdivPatch1Base &patch, const SubdivMesh* const mesh)
     {
-#if 0
+#if 1
       return evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
 #else
       dynamic_stack_array(float,grid_x,(patch.grid_size_simd_blocks+1)*8);
