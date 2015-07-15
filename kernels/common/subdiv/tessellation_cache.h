@@ -140,6 +140,9 @@ namespace embree
        data = new_root_ref;
      }
 
+     __forceinline Tag(size_t ptr, size_t combinedTime)
+       : Tag((void*)ptr,combinedTime) {}
+
      volatile int64_t data;
    };
 

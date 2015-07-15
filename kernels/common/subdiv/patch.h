@@ -193,20 +193,36 @@ namespace embree
       SUBDIVIDED_GENERAL_PATCH = 7,
       SUBDIVIDED_QUAD_PATCH = 8
     };
+    
+    struct Ref
+    {
+      __forceinline Ref(void* p = nullptr) 
+        : ptr((size_t)p) {}
+
+      __forceinline operator bool() const { return ptr != 0; }
+      __forceinline operator size_t() const { return ptr; }
+
+      __forceinline Ref (Type ty, void* in) 
+        : ptr(((size_t)in)+ty) { assert((((size_t)in) & 0xF) == 0); }
+
+      __forceinline Type  type  () const { return (Type)(ptr & 0xF); }
+      __forceinline void* object() const { return (void*) (ptr & ~0xF); }
+
+      size_t ptr;
+    };
 
     struct BilinearPatch 
     {
       /* creates BilinearPatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BilinearPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch));
       }
       
       __forceinline BilinearPatch (const CatmullClarkPatch& patch) 
-        : type(BILINEAR_PATCH), patch(patch) {}
+        : patch(patch) {}
       
     public:
-      Type type;
       BilinearPatchT<Vertex,Vertex_t> patch;
     };
     
@@ -214,25 +230,24 @@ namespace embree
     {
       /* creates BSplinePatch from a half edge */
       template<typename Loader, typename Allocator>
-        __noinline static BSplinePatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader);
+        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader));
       }
       
       template<typename Loader>
       __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(BSPLINE_PATCH), patch(edge,loader) {}
+      : patch(edge,loader) {}
       
       /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BSplinePatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch));
       }
       
       __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
-        : type(BSPLINE_PATCH), patch(patch) {}
+        : patch(patch) {}
       
     public:
-      Type type;
       BSplinePatchT<Vertex,Vertex_t> patch;
     };
 
@@ -240,25 +255,24 @@ namespace embree
     {
       /* creates BezierPatch from a half edge */
       template<typename Loader, typename Allocator>
-        __noinline static BezierPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader);
+        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader));
       }
       
       template<typename Loader>
       __forceinline BezierPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(BEZIER_PATCH), patch(edge,loader) {}
+      : patch(edge,loader) {}
       
       /* creates Bezier from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BezierPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BezierPatch))) BezierPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(patch));
       }
       
       __forceinline BezierPatch (const CatmullClarkPatch& patch) 
-        : type(BEZIER_PATCH), patch(patch) {}
+        : patch(patch) {}
       
     public:
-      Type type;
       BezierPatchT<Vertex,Vertex_t> patch;
     };
     
@@ -266,95 +280,90 @@ namespace embree
     {
       /* creates GregoryPatch from half edge */
       template<typename Loader, typename Allocator>
-        __noinline static GregoryPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,loader);
+        __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,loader));
       }
       
       template<typename Loader>
       __forceinline GregoryPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(GREGORY_PATCH) { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); }
+      { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); } // FIXME: use constructor
       
       /* creates GregoryPatch from CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static GregoryPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch));
       }
       
       __forceinline GregoryPatch (const CatmullClarkPatch& patch) 
-        : type(GREGORY_PATCH), patch(patch) {}
+        : patch(patch) {}
       
     public:
-      Type type;
       GregoryPatchT<Vertex,Vertex_t> patch;
     };
     
     struct SubdividedGeneralTrianglePatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralTrianglePatch* create(const Allocator& alloc, PatchT* children[3]) {
-        return new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch(children);
+      __noinline static Ref create(const Allocator& alloc, Ref children[3]) {
+        return Ref(SUBDIVIDED_GENERAL_TRIANGLE_PATCH, new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch(children));
       }
       
-      __forceinline SubdividedGeneralTrianglePatch(PatchT* children[3]) : type(SUBDIVIDED_GENERAL_TRIANGLE_PATCH) {
+      __forceinline SubdividedGeneralTrianglePatch(Ref children[3]) {
         for (size_t i=0; i<3; i++) child[i] = children[i];
       }
       
-      Type type;
-      PatchT* child[3];
+      Ref child[3];
     };
     
     struct SubdividedQuadPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedQuadPatch* create(const Allocator& alloc, PatchT* children[4]) {
-        return new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch(children);
+      __noinline static Ref create(const Allocator& alloc, Ref children[4]) {
+        return Ref(SUBDIVIDED_QUAD_PATCH, new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch(children));
       }
       
-      __forceinline SubdividedQuadPatch(PatchT* children[4]) : type(SUBDIVIDED_QUAD_PATCH) {
+      __forceinline SubdividedQuadPatch(Ref children[4]) {
         for (size_t i=0; i<4; i++) child[i] = children[i];
       }
       
     public:
-      Type type;
-      PatchT* child[4];
+      Ref child[4];
     };
     
     struct SubdividedGeneralQuadPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralQuadPatch* create(const Allocator& alloc, PatchT* children[4]) {
-        return new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch(children);
+      __noinline static Ref create(const Allocator& alloc, Ref children[4]) {
+        return Ref(SUBDIVIDED_GENERAL_QUAD_PATCH, new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch(children));
       }
       
-      __forceinline SubdividedGeneralQuadPatch(PatchT* children[4]) : type(SUBDIVIDED_GENERAL_QUAD_PATCH) {
+      __forceinline SubdividedGeneralQuadPatch(Ref children[4]) {
         for (size_t i=0; i<4; i++) child[i] = children[i];
       }
       
-      Type type;
-      PatchT* child[4];
+      Ref child[4];
     };
 
     struct SubdividedGeneralPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralPatch* create(const Allocator& alloc, PatchT** children, const size_t N) {
-        return new (alloc(sizeof(SubdividedGeneralPatch))) SubdividedGeneralPatch(children,N);
+      __noinline static Ref create(const Allocator& alloc, Ref* children, const size_t N) {
+        return Ref(SUBDIVIDED_GENERAL_PATCH, new (alloc(sizeof(SubdividedGeneralPatch))) SubdividedGeneralPatch(children,N));
       }
       
-      __forceinline SubdividedGeneralPatch(PatchT** children, const size_t N) : type(SUBDIVIDED_GENERAL_PATCH), N(N) {
+      __forceinline SubdividedGeneralPatch(Ref* children, const size_t N) : N(N) {
         for (size_t i=0; i<N; i++) child[i] = children[i];
       }
       
-      Type type;
       size_t N;
-      PatchT* child[SubdivMesh::MAX_VALENCE];
+      Ref child[SubdivMesh::MAX_VALENCE];
     };
     
     /*! Default constructor. */
     __forceinline PatchT () {}
     
     template<typename Allocator>
-    __noinline static PatchT* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
+      __noinline static Ref create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
     {
       auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
         const unsigned vtx = p->getStartVertexIndex();
@@ -364,22 +373,22 @@ namespace embree
       if (PATCH_MAX_CACHE_DEPTH == 0) 
         return nullptr;
 
-      PatchT* child = nullptr;
+      Ref child(0);
       switch (edge->patch_type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   child = (PatchT*) RegularPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,loader); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = (PatchT*) GregoryPatch::create(alloc,edge,loader); break;
+      case SubdivMesh::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,loader); break;
 #endif
       default: {
         GeneralCatmullClarkPatch patch(edge,loader);
-        child = (PatchT*) PatchT::create(alloc,patch,edge,vertices,stride,0);
+        child = PatchT::create(alloc,patch,edge,vertices,stride,0);
       }
       }
       return child;
     }
 
     template<typename Allocator>
-    __noinline static PatchT* create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+    __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
@@ -398,48 +407,48 @@ namespace embree
       
       if (N == 3) 
       {
-        PatchT* child[3];
+        Ref child[3];
         for (size_t i=0; i<3; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
 
-        return (PatchT*) SubdividedGeneralTrianglePatch::create(alloc,child);
+        return SubdividedGeneralTrianglePatch::create(alloc,child);
       } 
       else if (N == 4) 
       {
-        PatchT* child[4];
+        Ref child[4];
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (PatchT*) SubdividedGeneralQuadPatch::create(alloc,child);
+        return SubdividedGeneralQuadPatch::create(alloc,child);
       }
       else 
       {
         assert(N<SubdivMesh::MAX_VALENCE);
-        PatchT* child[SubdivMesh::MAX_VALENCE];
+        Ref child[SubdivMesh::MAX_VALENCE];
         for (size_t i=0; i<N; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (PatchT*) SubdividedGeneralPatch::create(alloc,child,N);
+        return SubdividedGeneralPatch::create(alloc,child,N);
       }
       
       return nullptr;
     }
 
     template<typename Allocator>
-    __noinline static PatchT* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+    __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       if (unlikely(patch.isRegular2())) { 
-        assert(depth > 0); return (PatchT*) RegularPatch::create(alloc,patch); 
+        assert(depth > 0); return RegularPatch::create(alloc,patch); 
       }
 #if PATCH_USE_GREGORY == 2
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) { 
-        assert(depth > 0); return (PatchT*) GregoryPatch::create(alloc,patch); 
+        assert(depth > 0); return GregoryPatch::create(alloc,patch); 
       }
 #else
       else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
       {
 #if PATCH_USE_GREGORY == 1
-        return (PatchT*) GregoryPatch::create(alloc,patch); 
+        return GregoryPatch::create(alloc,patch); 
 #else
-        return (PatchT*) BilinearPatch::create(alloc,patch);
+        return BilinearPatch::create(alloc,patch);
 #endif
       }
 #endif
@@ -448,16 +457,13 @@ namespace embree
       
       else 
       {
-        PatchT* child[4];
+        Ref child[4];
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches);
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (PatchT*) SubdividedQuadPatch::create(alloc,child);
+        return SubdividedQuadPatch::create(alloc,child);
       }
     }
-
-  public:
-    Type type;
   };
 }

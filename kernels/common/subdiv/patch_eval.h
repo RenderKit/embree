@@ -26,6 +26,7 @@ namespace embree
     public:
       
       typedef PatchT<Vertex,Vertex_t> Patch;
+      typedef typename Patch::Ref Ref;
       typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
       typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
       typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
@@ -297,45 +298,45 @@ namespace embree
         }
       }  
       
-      static bool eval(Patch* This, const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
+      static bool eval(Ref This, const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
       {
-        if (This == nullptr) return false;
+        if (!This) return false;
         
-        switch (This->type) 
+        switch (This.type()) 
         {
         case Patch::BILINEAR_PATCH: {
-          ((typename Patch::BilinearPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+          ((typename Patch::BilinearPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale); 
           PATCH_DEBUG_SUBDIVISION(This,c,c,-1);
           return true;
         }
         case Patch::BSPLINE_PATCH: {
-          ((typename Patch::BSplinePatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+          ((typename Patch::BSplinePatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale);
           PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return true;
         }
         case Patch::BEZIER_PATCH: {
-          ((typename Patch::BezierPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale);
+          ((typename Patch::BezierPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale);
           PATCH_DEBUG_SUBDIVISION(This,-1,c,-1);
           return true;
         }
         case Patch::GREGORY_PATCH: {
-          ((typename Patch::GregoryPatch*)This)->patch.eval(u,v,P,dPdu,dPdv,dscale); 
+          ((typename Patch::GregoryPatch*)This.object())->patch.eval(u,v,P,dPdu,dPdv,dscale); 
           PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
           return true;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
-          return eval_quad((typename Patch::SubdividedQuadPatch*)This,u,v,P,dPdu,dPdv,dscale);
+          return eval_quad(((typename Patch::SubdividedQuadPatch*)This.object()),u,v,P,dPdu,dPdv,dscale);
         case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general_quad((typename Patch::SubdividedGeneralQuadPatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_quad(((typename Patch::SubdividedGeneralQuadPatch*)This.object()),u,v,P,dPdu,dPdv); 
         }
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general_triangle(((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),u,v,P,dPdu,dPdv); 
         }
         case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general((typename Patch::SubdividedGeneralPatch*)This,u,v,P,dPdu,dPdv); 
+          return eval_general(((typename Patch::SubdividedGeneralPatch*)This.object()),u,v,P,dPdu,dPdv); 
         }
         default: 
           assert(false); 
@@ -343,19 +344,19 @@ namespace embree
         }
       }
 
-      static bool eval(Patch* This, size_t subPatch, const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
+      static bool eval(Ref This, size_t subPatch, const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) 
       {
-        if (This == nullptr) return false;
+        if (!This) return false;
         
-        switch (This->type) 
+        switch (This.type()) 
         {
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general_triangle((typename Patch::SubdividedGeneralTrianglePatch*)This,subPatch,u,v,P,dPdu,dPdv); 
+          return eval_general_triangle(((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),subPatch,u,v,P,dPdu,dPdv); 
         }
         case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           assert(dscale == 1.0f); 
-          return eval_general((typename Patch::SubdividedGeneralPatch*)This,subPatch,u,v,P,dPdu,dPdv); 
+          return eval_general(((typename Patch::SubdividedGeneralPatch*)This.object()),subPatch,u,v,P,dPdu,dPdv); 
         }
         default: 
           assert(subPatch == 0);
@@ -406,7 +407,7 @@ namespace embree
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
                         const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
-        Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
+        Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
             return Patch::create(alloc,edge,vertices,stride);
           });
@@ -423,7 +424,7 @@ namespace embree
       static void eval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
                         const SubdivMesh::HalfEdge* edge, const size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
-        Patch* patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
+        Ref patch = SharedLazyTessellationCache::lookup(entry,commitCounter,[&] () {
             auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
             return Patch::create(alloc,edge,vertices,stride);
           });
