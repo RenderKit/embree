@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_curve.h"
 
 namespace embree
 {  
@@ -89,6 +90,12 @@ namespace embree
 
     __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch);
 
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch,
+                               const BezierCurveT<Vertex>* border0,
+                               const BezierCurveT<Vertex>* border1,
+                               const BezierCurveT<Vertex>* border2,
+                               const BezierCurveT<Vertex>* border3);
+                               
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
       const Vec4f Bu = BezierBasis::eval(uu);

@@ -260,7 +260,7 @@ namespace embree
         if (lx0 >= lx1 || ly0 >= ly1) return;
         
         if (unlikely(patch.isRegular2())) {
-          RegularPatch rpatch(patch); //,border0,border1,border2,border3);
+          RegularPatch rpatch(patch,border0,border1,border2,border3);
           evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
           return;
         }

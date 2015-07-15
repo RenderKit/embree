@@ -419,10 +419,8 @@ namespace embree
     }
    
     
-    __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
+    __forceinline void convert_to_bezier()
     {
-      assert( patch.isRegular1() );
-      init( patch );
       f0_p() = (f0_p() + f0_m()) * 0.5f;
       f1_p() = (f1_p() + f1_m()) * 0.5f;
       f2_p() = (f2_p() + f2_m()) * 0.5f;
@@ -862,8 +860,8 @@ namespace embree
     __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
   {
     CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
-    GregoryPatchT<Vertex,Vertex_t> gpatch; 
-    gpatch.init_bezier(patch); 
+    GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 
+    gpatch.convert_to_bezier(); 
     for (size_t y=0; y<4; y++)
       for (size_t x=0; x<4; x++)
         matrix[y][x] = (Vertex_t)gpatch.v[y][x];
@@ -872,8 +870,22 @@ namespace embree
    template<typename Vertex, typename Vertex_t>
     __forceinline BezierPatchT<Vertex,Vertex_t>::BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
     {
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
+      GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 
+      gpatch.convert_to_bezier(); 
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
+
+   template<typename Vertex, typename Vertex_t>
+     __forceinline BezierPatchT<Vertex,Vertex_t>::BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch, 
+                                                               const BezierCurveT<Vertex>* border0,
+                                                               const BezierCurveT<Vertex>* border1,
+                                                               const BezierCurveT<Vertex>* border2,
+                                                               const BezierCurveT<Vertex>* border3) 
+    {
+      GregoryPatchT<Vertex,Vertex_t> gpatch(patch,border0,border1,border2,border3); 
+      gpatch.convert_to_bezier(); 
       for (size_t y=0; y<4; y++)
 	for (size_t x=0; x<4; x++)
 	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];

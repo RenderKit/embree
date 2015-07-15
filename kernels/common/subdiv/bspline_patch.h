@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_curve.h"
 
 namespace embree
 {
@@ -249,6 +250,15 @@ namespace embree
       __forceinline BSplinePatchT () {}
 
       __forceinline BSplinePatchT (const CatmullClarkPatch& patch) {
+        init(patch);
+      }
+
+      __forceinline BSplinePatchT(const CatmullClarkPatch& patch,
+                                  const BezierCurveT<Vertex>* border0,
+                                  const BezierCurveT<Vertex>* border1,
+                                  const BezierCurveT<Vertex>* border2,
+                                  const BezierCurveT<Vertex>* border3)
+      {
         init(patch);
       }
 
