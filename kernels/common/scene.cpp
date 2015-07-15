@@ -403,8 +403,10 @@ namespace embree
     /* update commit counter */
     commitCounter++;
     // FIXME: race condition?
+#if 1
     if (numScenes == 1 )
       resetTessellationCache();
+#endif
   }
 
   void Scene::build_task ()

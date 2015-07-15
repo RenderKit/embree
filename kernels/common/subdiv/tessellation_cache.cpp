@@ -180,8 +180,11 @@ namespace embree
 
   void SharedLazyTessellationCache::reset()
   {
+
+#if 1
     /* lock the reset_state */
     reset_state.lock();
+
 
     /* lock the linked list of thread states */
     linkedlist_mtx.lock();
@@ -190,7 +193,7 @@ namespace embree
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
       if (lockThread(t) == 1)
         waitForUsersLessEqual(t,1);
-
+#endif
 
     /* reset to the first segment */
     next_block = 0;
@@ -200,6 +203,7 @@ namespace embree
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
+#if 1
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
       unlockThread(t);
@@ -210,6 +214,9 @@ namespace embree
 
     /* unlock the reset_state */
     reset_state.unlock();
+#endif
+
+
   }
 
   void SharedLazyTessellationCache::realloc(const size_t new_size)
