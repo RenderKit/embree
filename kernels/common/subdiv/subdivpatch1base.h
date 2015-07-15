@@ -127,31 +127,8 @@ namespace embree
       return Vec3<simdf>( zero );
     }
 
-#if defined(__MIC__)
-
-    __forceinline Vec3f16 eval(const float16& uu, const float16& vv) const
-    {
-      if (likely(type == BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
-      else if (likely(type == BSPLINE_PATCH))
-        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
-      else 
-        return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
-    }
-
-    __forceinline Vec3f16 normal(const float16& uu, const float16& vv) const
-    {
-      if (likely(type == BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
-      else if (likely(type == BSPLINE_PATCH))
-	return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
-      else
-        return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
-    }
-#endif
-
     __forceinline bool needsStitching() const {
-      return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
+      return flags & TRANSITION_PATCH;      
     }
 
     __forceinline Vec2f getUV(const size_t i) const {
