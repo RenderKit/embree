@@ -108,32 +108,19 @@ namespace embree
       return ring[0].hasBorder() || ring[1].hasBorder() || ring[2].hasBorder() || ring[3].hasBorder();
     }
 
-    /*! returns true if the patch is a B-spline patch or final Quad */
-    __forceinline bool isRegularOrFinal(const size_t depth) const {
-      return ring[0].isRegularOrFinal(depth) && ring[1].isRegularOrFinal(depth) && ring[2].isRegularOrFinal(depth) && ring[3].isRegularOrFinal(depth);
-    }
+  __forceinline bool isFinalResolution(float res) const {
+    return ring[0].isFinalResolution(res) && ring[1].isFinalResolution(res) && ring[2].isFinalResolution(res) && ring[3].isFinalResolution(res);
+  }
 
-    __forceinline bool isFinalResolution(float res) const {
-      return ring[0].isFinalResolution(res) && ring[1].isFinalResolution(res) && ring[2].isFinalResolution(res) && ring[3].isFinalResolution(res);
-    }
-
-    /*! returns true of the patch is a Gregory patch */
-    __forceinline bool isGregoryOrFinal(const size_t depth) const {
-      const bool ring0 = ring[0].isGregoryOrFinal(depth);
-      const bool ring1 = ring[1].isGregoryOrFinal(depth);
-      const bool ring2 = ring[2].isGregoryOrFinal(depth);
-      const bool ring3 = ring[3].isGregoryOrFinal(depth);
-      return ring0 && ring1 && ring2 && ring3;
-    }
-
-    /*! returns true of the patch is a Gregory patch */
-    __forceinline bool isGregory() const {
-      const bool ring0 = ring[0].isGregory();
-      const bool ring1 = ring[1].isGregory();
-      const bool ring2 = ring[2].isGregory();
-      const bool ring3 = ring[3].isGregory();
-      return ring0 && ring1 && ring2 && ring3;
-    }
+  /*! returns true of the patch is a Gregory patch */
+  __forceinline bool isGregory() const 
+  {
+    const bool ring0 = ring[0].isGregory();
+    const bool ring1 = ring[1].isGregory();
+    const bool ring2 = ring[2].isGregory();
+    const bool ring3 = ring[3].isGregory();
+    return ring0 && ring1 && ring2 && ring3;
+  }
 
     static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
 					   const CatmullClark1RingT<Vertex,Vertex_t>& p1,

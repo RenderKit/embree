@@ -327,11 +327,6 @@ namespace embree
       return vertex_level <= res;
     }
 
-     /* returns true if the vertex can be part of a dicable B-Spline patch or is a final Quad */
-    __forceinline bool isRegularOrFinal(const size_t depth) const {
-      return (depth >= MAX_DEPTH_SUBDIVISION) || (vertex_level <= 1.0f) || isRegular2();
-    }
-
     /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
     __forceinline bool isGregory() const 
     {
@@ -349,11 +344,6 @@ namespace embree
       else                                           return true;
     }
 
-    /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
-    __forceinline bool isGregoryOrFinal(const size_t depth) const {
-      return (depth >= MAX_DEPTH_SUBDIVISION) || (vertex_level <= 1.0f) || isGregory();
-    }
-    
     __forceinline Vertex ksum(Vertex_t &sum, Vertex_t &c, const Vertex_t &i) const
     {
       Vertex_t y = i - c;
