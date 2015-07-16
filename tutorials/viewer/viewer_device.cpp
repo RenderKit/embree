@@ -359,6 +359,7 @@ extern "C" void device_render (int* pixels,
   }
 
   bool camera_changed = g_changed; g_changed = false;
+  //g_changed = true;
   if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
     {
      camera_changed = true;
