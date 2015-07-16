@@ -92,7 +92,7 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     /* verify that all vertex accesses are 16 bytes aligned */
-#if defined(__MIC__)
+#if defined(__MIC__) && 0
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
       if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
         throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
