@@ -75,8 +75,10 @@ namespace embree
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
           Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
+              for (size_t i=range.begin(); i<range.end(); i++)
+                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+            });
         }
 
         /* skip build for empty scene */
