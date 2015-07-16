@@ -56,8 +56,8 @@ namespace embree
       if (i+4 >= numFloats)
       {
         float4 Pt, dPdut, dPdvt; 
-        PatchEval<float4>::eval(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
-                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+        PatchEval<float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
+                          getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
         if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
         if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
