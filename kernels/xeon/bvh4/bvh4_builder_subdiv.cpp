@@ -337,10 +337,10 @@ namespace embree
               fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
               fastUpdateMode &= !iter[i]->faceVertices.isModified();
               fastUpdateMode &= !iter[i]->holes.isModified();
-              //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
-              //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
-              //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
-              //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
+              fastUpdateMode &= !iter[i]->edge_creases.isModified();
+              fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
+              fastUpdateMode &= !iter[i]->vertex_creases.isModified();
+              fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
               fastUpdateMode &= iter[i]->levels.isModified();
               iter[i]->initializeHalfEdgeStructures();
               iter[i]->patch_eval_trees.resize(iter[i]->size());
