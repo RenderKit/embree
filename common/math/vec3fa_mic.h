@@ -62,8 +62,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline const float& operator []( const size_t index ) const { assert(index < 3); return (&x)[index]; }
-    __forceinline       float& operator []( const size_t index )       { assert(index < 3); return (&x)[index]; }
+    __forceinline const float& operator []( const size_t index ) const { assert(index <= 3); return (&x)[index]; }
+    __forceinline       float& operator []( const size_t index )       { assert(index <= 3); return (&x)[index]; }
   };
   
   /*! 3-wide vectors emulated with 16-wide vectors. */
