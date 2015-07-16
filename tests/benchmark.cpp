@@ -234,15 +234,15 @@ namespace embree
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      size_t c0 = rdtsc();
+      //size_t c0 = rdtsc();
       benchmark_atomic_inc_thread(nullptr);
-      size_t c1 = rdtsc();
+      //size_t c1 = rdtsc();
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
-      PRINT(double(c1-c0)/N);
+      //PRINT(double(c1-c0)/N);
 
       //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
@@ -1009,10 +1009,6 @@ namespace embree
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
     
-    //rtcore_coherent_intersect16(scene);
-    //rtcore_incoherent_intersect16(scene);
-    //exit(0);
-
     rtcore_coherent_intersect1(scene);
 #if !defined(__MIC__)
     rtcore_coherent_intersect4(scene);
@@ -1069,6 +1065,7 @@ namespace embree
 
   void create_benchmarks()
   {
+#if 1
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
 #if defined(__TARGET_AVX512__) || defined(__MIC__)
@@ -1113,11 +1110,14 @@ namespace embree
     benchmarks.push_back(new create_geometry ("create_dynamic_geometry_120_10000",RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
 #endif
 
+
     benchmarks.push_back(new update_geometry ("refit_geometry_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+
+
     benchmarks.push_back(new update_geometry ("refit_geometry_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
     benchmarks.push_back(new update_geometry ("refit_geometry_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
     benchmarks.push_back(new update_geometry ("refit_geometry_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
@@ -1137,25 +1137,30 @@ namespace embree
     benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
 
+
     benchmarks.push_back(new update_scenes ("refit_scenes_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
+#if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
     benchmarks.push_back(new update_scenes ("refit_scenes_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
 #endif
+#endif
 
-#if !defined(__MIC__)
+#endif
+
     benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
     benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
     benchmarks.push_back(new update_scenes ("update_scenes_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
     benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
+#if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
     benchmarks.push_back(new update_scenes ("update_scenes_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
 #if defined(__X86_64__)
