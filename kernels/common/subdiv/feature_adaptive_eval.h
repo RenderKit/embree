@@ -33,7 +33,7 @@ namespace embree
       typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
       typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
       typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
-      
+
       static void eval_general_triangle_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
       {
         const bool ab_abc = right_of_line_ab_abc(uv);
@@ -211,26 +211,6 @@ namespace embree
         default: {
           GeneralCatmullClarkPatch patch(edge,loader);
           eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
-          break;
-        }
-        }
-      }
-
-      static void eval_direct (const HalfEdge* edge, size_t subPatch, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      {
-        auto loader = [&](const HalfEdge* p) -> Vertex { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-        };
-        
-        switch (edge->patch_type) {
-        case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#if PATCH_USE_GREGORY == 2
-        case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#endif
-        default: {
-          GeneralCatmullClarkPatch patch(edge,loader);
-          eval_direct(patch,subPatch,Vec2f(u,v),P,dPdu,dPdv,0);
           break;
         }
         }
