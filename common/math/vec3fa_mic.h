@@ -41,6 +41,7 @@ namespace embree
     __forceinline Vec3fa () {}
     __forceinline Vec3fa ( float x                   ) : x(x), y(x), z(x), a(0) {}
     __forceinline Vec3fa ( float x, float y, float z ) : x(x), y(y), z(z), a(0) {}
+    __forceinline Vec3fa ( float x, float y, float z, float w ) : x(x), y(y), z(z), w(w) {}
     __forceinline Vec3fa ( const Vec3f & o           ) : x(o.x), y(o.y), z(o.z), a(0) {}
     __forceinline Vec3fa ( const Vec3fa& other, const int other_a ) : x(other.x), y(other.y), z(other.z), a(other_a) {}
     
