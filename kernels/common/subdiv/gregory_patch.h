@@ -402,7 +402,8 @@ namespace embree
     } 
 
     template<typename vfloat>
-    __forceinline void computeInnerVertices(size_t i, const vfloat& uu, const vfloat& vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
+    static __forceinline void computeInnerVertices(const Vertex v[4][4], const Vertex f[2][2], 
+                                                   size_t i, const vfloat& uu, const vfloat& vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) 
     {
       const auto m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
@@ -466,6 +467,10 @@ namespace embree
       return deCasteljau_tangent(uu, col0, col1, col2, col3);
     }
 
+    __forceinline Vertex tangentU( const float uu, const float vv) const {
+      return tangentU(v,f,uu,vv);
+    }
+
     static __forceinline Vertex tangentV(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv) // FIXME: why not using basis functions
     {
       /* interpolate inner vertices */
@@ -479,6 +484,10 @@ namespace embree
       const Vertex_t row3 = deCasteljau(uu, (Vertex_t)matrix[3][0], (Vertex_t)matrix[3][1], (Vertex_t)matrix[3][2], (Vertex_t)matrix[3][3]);
       
       return deCasteljau_tangent(vv, row0, row1, row2, row3);
+    }
+
+    __forceinline Vertex tangentV( const float uu, const float vv) const {
+      return tangentV(v,f,uu,vv);
     }
 
     static __forceinline Vertex normal(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv)  // FIXME: why not using basis functions
@@ -511,15 +520,7 @@ namespace embree
    
     __forceinline Vertex normal( const float uu, const float vv) const {
       return normal(v,f,uu,vv);
-    }
-
-    __forceinline Vertex tangentU( const float uu, const float vv) const {
-      return tangentU(v,f,uu,vv);
-    }
-
-    __forceinline Vertex tangentV( const float uu, const float vv) const {
-      return tangentV(v,f,uu,vv);
-    }
+    }    
     
     __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
     {
@@ -529,8 +530,9 @@ namespace embree
     }
 
     template<class vfloat>
-    __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n,
-                              vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) const
+    static __forceinline vfloat eval(const Vertex v[4][4], const Vertex f[2][2], 
+                                     const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n,
+                                     vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21)
     {
       const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
       const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(matrix_11 ) + v_n[2] * vfloat(matrix_21 ) + v_n[3] * vfloat(v[3][1][i]);
@@ -540,15 +542,16 @@ namespace embree
     }
     
     template<typename vbool, typename vfloat>
-    __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+    static __forceinline void eval(const Vertex v[4][4], const Vertex f[2][2], 
+                                   const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) 
     {
       if (P) {
         const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
         const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
-          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
-          vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
+          vfloat::store(valid,P+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
         }
       }
       if (dPdu) {
@@ -556,8 +559,8 @@ namespace embree
         const Vec4<vfloat> v_n = BezierBasis::eval(vv);
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
-          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          vfloat::store(valid,dPdu+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
         }
       }
       if (dPdv) {
@@ -565,10 +568,15 @@ namespace embree
         const Vec4<vfloat> v_n = BezierBasis::derivative(vv);
         for (size_t i=0; i<N; i++) {
           vfloat matrix_11, matrix_12, matrix_22, matrix_21;
-          computeInnerVertices(i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
-          vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          vfloat::store(valid,dPdv+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
         }
       }
+    }
+
+    template<typename vbool, typename vfloat>
+    __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const {
+      return eval(v,f,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
     }
 
     template<class T>

@@ -127,6 +127,55 @@ namespace embree
       return GregoryPatch3fa::normal_t(matrix,f,uu,vv);
     }
 
+    __forceinline void eval(const float u, const float v, Vec3fa* P, Vec3fa* dPdu, Vec3fa* dPdv, const float dscale = 1.0f) const
+    {
+#if defined(__MIC__)
+      const float16 row0 = load16f(&matrix[0][0]);
+      const float16 row1 = load16f(&matrix[1][0]);
+      const float16 row2 = load16f(&matrix[2][0]);
+      const float16 row3 = load16f(&matrix[3][0]);
+      
+      __aligned(64) Vec3fa f_m[2][2];
+      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
+      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
+      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
+      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
+#else
+      __aligned(64) Vec3fa f_m[2][2];
+      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
+      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
+      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
+      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
+#endif      
+      if (P)    *P    = GregoryPatch3fa::eval(matrix,f_m,u,v); 
+      if (dPdu) *dPdu = GregoryPatch3fa::tangentU(matrix,f_m,u,v)*dscale; 
+      if (dPdv) *dPdv = GregoryPatch3fa::tangentV(matrix,f_m,u,v)*dscale; 
+    }
+
+    template<typename vbool, typename vfloat>
+    __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const 
+    {
+#if defined(__MIC__)
+      const float16 row0 = load16f(&matrix[0][0]);
+      const float16 row1 = load16f(&matrix[1][0]);
+      const float16 row2 = load16f(&matrix[2][0]);
+      const float16 row3 = load16f(&matrix[3][0]);
+      
+      __aligned(64) Vec3fa f_m[2][2];
+      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
+      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
+      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
+      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
+#else
+      __aligned(64) Vec3fa f_m[2][2];
+      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
+      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
+      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
+      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
+#endif      
+      return GregoryPatch3fa::eval(matrix,f,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
+    }
+
   private:
     Vec3fa matrix[4][4]; // f_p/m points are stored in 4th component
   };
