@@ -57,6 +57,24 @@ namespace embree
           }
         }
         
+        __forceinline void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
+        {
+          array_t<CatmullClarkPatch,4> patches; 
+          patch.subdivide(patches); // FIXME: only have to generate one of the patches
+          
+          const vfloat u = uv.x, v = uv.y;
+          const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
+          const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
+          const vbool u0v0_mask = valid & u0_mask & v0_mask;
+          const vbool u0v1_mask = valid & u0_mask & v1_mask;
+          const vbool u1v0_mask = valid & u1_mask & v0_mask;
+          const vbool u1v1_mask = valid & u1_mask & v1_mask;
+          if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),2.0f*dscale,depth+1);
+          if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),2.0f*dscale,depth+1);
+          if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),2.0f*dscale,depth+1);
+          if (any(u0v1_mask)) eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f*u,2.0f*v-1.0f),2.0f*dscale,depth+1);
+        }
+        
         void eval_general_triangle_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, size_t depth)
         {
           const vbool ab_abc = right_of_line_ab_abc(uv);
@@ -82,24 +100,6 @@ namespace embree
             eval_direct(tri2_mask,patches[2],xy,1.0f,depth+1);
             if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(tri2_mask,xy,dPdu,dPdv,dstride,i);
           }
-        }
-        
-        __forceinline void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
-        {
-          array_t<CatmullClarkPatch,4> patches; 
-          patch.subdivide(patches); // FIXME: only have to generate one of the patches
-          
-          const vfloat u = uv.x, v = uv.y;
-          const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
-          const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
-          const vbool u0v0_mask = valid & u0_mask & v0_mask;
-          const vbool u0v1_mask = valid & u0_mask & v1_mask;
-          const vbool u1v0_mask = valid & u1_mask & v0_mask;
-          const vbool u1v1_mask = valid & u1_mask & v1_mask;
-          if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),2.0f*dscale,depth+1);
-          if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),2.0f*dscale,depth+1);
-          if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),2.0f*dscale,depth+1);
-          if (any(u0v1_mask)) eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f*u,2.0f*v-1.0f),2.0f*dscale,depth+1);
         }
         
         void eval_general_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, size_t depth)
@@ -186,13 +186,8 @@ namespace embree
             assert(depth > 0); GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N); return;
           }
 #else
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-          {
-#if PATCH_USE_GREGORY == 1
-            GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
-#else
-            BilinearPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
-#endif
+          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
+            IrregularFillPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
             return;
           }
 #endif
