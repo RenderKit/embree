@@ -100,11 +100,32 @@ namespace embree
           }
         }
         
+        void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
+        {
+          if (unlikely(patch.isRegular2())) { 
+            assert(depth > 0); RegularPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+          }
+#if PATCH_USE_GREGORY == 2
+          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
+            assert(depth > 0); GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+          }
+#else
+          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
+            IrregularFillPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
+          }
+#endif
+          else 
+          {
+            array_t<CatmullClarkPatch,4> patches; 
+            patch.subdivide(patches); // FIXME: only have to generate one of the patches
+            eval_quad_direct(valid,patches,uv,dscale,depth);
+          }
+        }  
+
         void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, const size_t depth) 
         {
           /* convert into standard quad patch if possible */
-          if (likely(patch.isQuadPatch())) 
-          {
+          if (likely(patch.isQuadPatch())) {
             CatmullClarkPatch qpatch; patch.init(qpatch);
             return eval_direct(valid,qpatch,uv,1.0f,depth);
           }
@@ -134,29 +155,6 @@ namespace embree
               });
           }
         }
-        
-        void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
-        {
-          if (unlikely(patch.isRegular2())) { 
-            assert(depth > 0); RegularPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N); return;
-          }
-#if PATCH_USE_GREGORY == 2
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
-            assert(depth > 0); GregoryPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N); return;
-          }
-#else
-          else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
-            IrregularFillPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N);
-            return;
-          }
-#endif
-          else 
-          {
-            array_t<CatmullClarkPatch,4> patches; 
-            patch.subdivide(patches); // FIXME: only have to generate one of the patches
-            eval_quad_direct(valid,patches,uv,dscale,depth);
-          }
-        }  
 
       private:
         float* const P;
