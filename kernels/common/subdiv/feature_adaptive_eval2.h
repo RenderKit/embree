@@ -302,12 +302,10 @@ namespace embree
       }
     };
     
-    __forceinline void feature_adaptive_eval2 (const HalfEdge* h, size_t subPatch, const BufferT<Vec3fa>& vertices,
+    __forceinline void feature_adaptive_eval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch, 
                                                const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                                float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
     {
-      GeneralCatmullClarkPatch3fa patch;
-      patch.init(h,vertices);
       FeatureAdaptiveEval2(patch,subPatch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,Nx,Ny,Nz,dwidth,dheight);
     }
     
@@ -373,13 +371,10 @@ namespace embree
       return true;
     }
     
-    __forceinline void feature_adaptive_eval2 (const HalfEdge* h, size_t subPatch, const float levels[4], const BufferT<Vec3fa>& vertices,
+    __forceinline void feature_adaptive_eval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch, const float levels[4],
                                                const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                                float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
     {
-      GeneralCatmullClarkPatch3fa patch;
-      patch.init(h,vertices);
-      
       const bool sl = x0 == 0         && stitch_col(patch,subPatch,0,y0,y1,sheight-1,levels[3], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
       const bool sr = x1 == swidth-1  && stitch_col(patch,subPatch,1,y0,y1,sheight-1,levels[1], Px,Py,Pz,U,V,Nx,Ny,Nz, x1-x0,dwidth,dheight);
       

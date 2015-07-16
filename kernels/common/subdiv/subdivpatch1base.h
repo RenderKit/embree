@@ -236,14 +236,17 @@ namespace embree
         dynamic_stack_array(float,grid_Ng_y,N);
         dynamic_stack_array(float,grid_Ng_z,N);
 
+        GeneralCatmullClarkPatch3fa ccpatch;
+        ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+
         if (unlikely(patch.needsStitching()))
-          isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
+          isa::feature_adaptive_eval2 (ccpatch, patch.subPatch, patch.level,
                                        x0,x1,y0,y1,swidth,sheight,
                                        grid_x,grid_y,grid_z,grid_u,grid_v,
                                        displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
                                        dwidth,dheight);
         else
-          isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+          isa::feature_adaptive_eval2 (ccpatch, patch.subPatch,
                                        x0,x1,y0,y1,swidth,sheight,
                                        grid_x,grid_y,grid_z,grid_u,grid_v,
                                        displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
@@ -344,14 +347,17 @@ namespace embree
         dynamic_stack_array(float,grid_Ng_y,displ ? M : 0);
         dynamic_stack_array(float,grid_Ng_z,displ ? M : 0);
 
+        GeneralCatmullClarkPatch3fa ccpatch;
+        ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+
         if (unlikely(patch.needsStitching()))
-          isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, patch.level, geom->getVertexBuffer(0),
+          isa::feature_adaptive_eval2 (ccpatch, patch.subPatch, patch.level,
                                        x0,x1,y0,y1,swidth,sheight,
                                        grid_x,grid_y,grid_z,grid_u,grid_v,
                                        displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
                                        dwidth,dheight);
         else
-          isa::feature_adaptive_eval2 (patch.edge, patch.subPatch, geom->getVertexBuffer(0),
+          isa::feature_adaptive_eval2 (ccpatch, patch.subPatch,
                                        x0,x1,y0,y1,swidth,sheight,
                                        grid_x,grid_y,grid_z,grid_u,grid_v,
                                        displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
