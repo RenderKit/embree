@@ -35,8 +35,29 @@ namespace embree
         typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
         typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
         typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
+
+        FeatureAdaptiveEvalSimd (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+        : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
+        {
+          auto loader = [&](const HalfEdge* p) -> Vertex { 
+            const unsigned vtx = p->getStartVertexIndex();
+            return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
+          };
+          
+          switch (edge->patch_type) {
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+#if PATCH_USE_GREGORY == 2
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+#endif
+          default: {
+            GeneralCatmullClarkPatch patch(edge,loader);
+            eval_direct(valid,patch,Vec2<vfloat>(u,v),0);
+            break;
+          }
+          }
+        }
         
-        static void eval_general_triangle_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, size_t depth, const size_t dstride, const size_t N)
+        void eval_general_triangle_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, size_t depth)
         {
           const vbool ab_abc = right_of_line_ab_abc(uv);
           const vbool ac_abc = right_of_line_ac_abc(uv);
@@ -48,22 +69,22 @@ namespace embree
           
           if  (any(tri0_mask)) {
             const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(u,v));
-            eval_direct(tri0_mask,patches[0],xy,P,dPdu,dPdv,1.0f,depth+1,dstride,N);
+            eval_direct(tri0_mask,patches[0],xy,1.0f,depth+1);
             if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad0_to_tri(tri0_mask,xy,dPdu,dPdv,dstride,i);
           }
           if (any(tri1_mask)) {
             const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(v,w));
-            eval_direct(tri1_mask,patches[1],xy,P,dPdu,dPdv,1.0f,depth+1,dstride,N);
+            eval_direct(tri1_mask,patches[1],xy,1.0f,depth+1);
             if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad1_to_tri(tri1_mask,xy,dPdu,dPdv,dstride,i);
           }
           if (any(tri2_mask)) {
             const Vec2<vfloat> xy = map_tri_to_quad(Vec2<vfloat>(w,u));
-            eval_direct(tri2_mask,patches[2],xy,P,dPdu,dPdv,1.0f,depth+1,dstride,N);
+            eval_direct(tri2_mask,patches[2],xy,1.0f,depth+1);
             if (dPdu && dPdv) for (size_t i=0; i<N; i++) map_quad2_to_tri(tri2_mask,xy,dPdu,dPdv,dstride,i);
           }
         }
         
-        __forceinline static void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, float dscale, size_t depth, const size_t dstride, const size_t N)
+        __forceinline void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
         {
           array_t<CatmullClarkPatch,4> patches; 
           patch.subdivide(patches); // FIXME: only have to generate one of the patches
@@ -75,13 +96,13 @@ namespace embree
           const vbool u0v1_mask = valid & u0_mask & v1_mask;
           const vbool u1v0_mask = valid & u1_mask & v0_mask;
           const vbool u1v1_mask = valid & u1_mask & v1_mask;
-          if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,dstride,N);
-          if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),P,dPdu,dPdv,2.0f*dscale,depth+1,dstride,N);
-          if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),P,dPdu,dPdv,2.0f*dscale,depth+1,dstride,N);
-          if (any(u0v1_mask)) eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f*u,2.0f*v-1.0f),P,dPdu,dPdv,2.0f*dscale,depth+1,dstride,N);
+          if (any(u0v0_mask)) eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),2.0f*dscale,depth+1);
+          if (any(u1v0_mask)) eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v),2.0f*dscale,depth+1);
+          if (any(u1v1_mask)) eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f*u-1.0f,2.0f*v-1.0f),2.0f*dscale,depth+1);
+          if (any(u0v1_mask)) eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f*u,2.0f*v-1.0f),2.0f*dscale,depth+1);
         }
         
-        static void eval_general_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, size_t depth, const size_t dstride, const size_t N)
+        void eval_general_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, size_t depth)
         {
           const vfloat u = uv.x, v = uv.y;
           const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
@@ -91,7 +112,7 @@ namespace embree
           const vbool u1v0_mask = valid & u1_mask & v0_mask;
           const vbool u1v1_mask = valid & u1_mask & v1_mask;
           if (any(u0v0_mask)) {
-            eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1,dstride,N);
+            eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),2.0f,depth+1);
             if (dPdu && dPdv) {
               for (size_t i=0; i<N; i++) {
                 const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
@@ -100,21 +121,21 @@ namespace embree
             }
           }
           if (any(u1v0_mask)) {
-            eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*v,2.0f-2.0f*u),P,dPdu,dPdv,2.0f,depth+1,dstride,N);
+            eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
             for (size_t i=0; i<N; i++) {
               const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
               vfloat::store(u1v0_mask,dPdu+i*dstride,-dpdy); vfloat::store(u1v0_mask,dPdv+i*dstride,dpdx);
             }
           }
           if (any(u1v1_mask)) {
-            eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f-2.0f*u,2.0f-2.0f*v),P,dPdu,dPdv,2.0f,depth+1,dstride,N);
+            eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
             for (size_t i=0; i<N; i++) {
               const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
               vfloat::store(u1v1_mask,dPdu+i*dstride,-dpdx); vfloat::store(u1v1_mask,dPdv+i*dstride,-dpdy);
             }
           }
           if (any(u0v1_mask)) {
-            eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f-2.0f*v,2.0f*u),P,dPdu,dPdv,2.0f,depth+1,dstride,N);
+            eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
             for (size_t i=0; i<N; i++) {
               const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
               vfloat::store(u0v1_mask,dPdu+i*dstride,dpdy); vfloat::store(u0v1_mask,dPdv+i*dstride,-dpdx);
@@ -122,13 +143,13 @@ namespace embree
           }
         }
         
-        static void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, const size_t depth, const size_t dstride, const size_t N) 
+        void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, const size_t depth) 
         {
           /* convert into standard quad patch if possible */
           if (likely(patch.isQuadPatch())) 
           {
             CatmullClarkPatch qpatch; patch.init(qpatch);
-            return eval_direct(valid,qpatch,uv,P,dPdu,dPdv,1.0f,depth,dstride,N);
+            return eval_direct(valid,qpatch,uv,1.0f,depth);
           }
           
           /* subdivide patch */
@@ -138,11 +159,11 @@ namespace embree
           
           /* parametrization for triangles */
           if (Nc == 3) 
-            eval_general_triangle_direct(valid,patches,uv,P,dPdu,dPdv,depth,dstride,N);
+            eval_general_triangle_direct(valid,patches,uv,depth);
           
           /* parametrization for quads */
           else if (Nc == 4) 
-            eval_general_quad_direct(valid,patches,uv,P,dPdu,dPdv,depth,dstride,N);
+            eval_general_quad_direct(valid,patches,uv,depth);
           
           /* parametrization for arbitrary polygons */
           else {
@@ -150,12 +171,12 @@ namespace embree
             const vint h = (vint)floor(4.0f*uv.y); const vfloat v = 2.0f*frac(4.0f*uv.y); 
             const vint i = (h<<2)+l; assert(all(valid,i<Nc));
             foreach_unique(valid,i,[&](const vbool& valid, const int i) {
-                eval_direct(valid,patches[i],Vec2<vfloat>(u,v),P,dPdu,dPdv,8.0f,depth+1,dstride,N);
+                eval_direct(valid,patches[i],Vec2<vfloat>(u,v),8.0f,depth+1);
               });
           }
         }
         
-        static void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float* P, float* dPdu, float* dPdv, float dscale, size_t depth, const size_t dstride, const size_t N)
+        void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
         {
           if (unlikely(patch.isRegular2())) { 
             assert(depth > 0); RegularPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,dscale,dstride,N); return;
@@ -176,29 +197,16 @@ namespace embree
           }
 #endif
           else {
-            eval_quad_direct(valid,patch,uv,P,dPdu,dPdv,dscale,depth,dstride,N);
+            eval_quad_direct(valid,patch,uv,dscale,depth);
           }
         }  
-        
-        static void eval_direct (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
-        {
-          auto loader = [&](const HalfEdge* p) -> Vertex { 
-            const unsigned vtx = p->getStartVertexIndex();
-            return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-          };
-          
-          switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
-#if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
-#endif
-          default: {
-            GeneralCatmullClarkPatch patch(edge,loader);
-            eval_direct(valid,patch,Vec2<vfloat>(u,v),P,dPdu,dPdv,0,dstride,N);
-            break;
-          }
-          }
-        }
+
+      private:
+        float* const P;
+        float* const dPdu;
+        float* const dPdv;
+        const size_t dstride;
+        const size_t N;
       };
   }
 }

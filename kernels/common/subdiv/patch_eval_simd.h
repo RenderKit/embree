@@ -153,7 +153,7 @@ namespace embree
           SharedLazyTessellationCache::unlock();
           const vbool valid2 = valid0 & !valid1;
           if (any(valid2)) {
-            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>::eval_direct (edge,vertices,stride,valid2,u,v,P,dPdu,dPdv,dstride,N);
+            FeatureAdaptiveEvalSimd<vbool,vint,vfloat,Vertex,Vertex_t>(edge,vertices,stride,valid2,u,v,P,dPdu,dPdv,dstride,N);
             //PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
           }
         }
