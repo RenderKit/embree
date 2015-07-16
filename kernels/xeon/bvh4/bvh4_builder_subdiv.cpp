@@ -373,10 +373,10 @@ namespace embree
           {          
             if (!mesh->valid(f)) continue;
             s += patch_eval_subdivision_count (mesh->getHalfEdge(f)); 
-            /*if (unlikely(!fastUpdateMode)) {
+            if (unlikely(!fastUpdateMode)) {
               auto alloc = [&] (size_t bytes) { return bvh->alloc.threadLocal()->malloc(bytes); }; // FIXME: allocation using bvh->alloc is problematic
               mesh->patch_eval_trees[f] = Patch3fa::create(alloc, mesh->getHalfEdge(f), mesh->getVertexBuffer().getPtr(), mesh->getVertexBuffer().getStride());
-              }*/
+            }
           }
           return PrimInfo(s,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });

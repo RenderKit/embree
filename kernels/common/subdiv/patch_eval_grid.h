@@ -177,6 +177,7 @@ namespace embree
           eval(patch->child[1],srange1,intersect(srange1,erange));
           eval(patch->child[2],srange2,intersect(srange2,erange));
           eval(patch->child[3],srange3,intersect(srange3,erange));
+          return true;
         }
         default: 
           assert(false); 
@@ -188,7 +189,7 @@ namespace embree
       {
         if (!This) 
           return false;
-        
+
         switch (This.type()) 
         {
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 

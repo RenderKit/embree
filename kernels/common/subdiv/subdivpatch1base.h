@@ -29,6 +29,8 @@
 #include "feature_adaptive_eval2.h"
 #include "../scene_subdiv_mesh.h"
 
+#define USE_PATCH_EVAL_GRID 1
+
 namespace embree
 {
   struct __aligned(64) SubdivPatch1Base
@@ -237,6 +239,14 @@ namespace embree
         dynamic_stack_array(float,grid_Ng_y,N);
         dynamic_stack_array(float,grid_Ng_z,N);
 
+#if USE_PATCH_EVAL_GRID
+        isa::feature_adaptive_eval2<PatchEvalGrid> 
+          (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+           x0,x1,y0,y1,swidth,sheight,
+           grid_x,grid_y,grid_z,grid_u,grid_v,
+           displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+           dwidth,dheight);
+#else
         GeneralCatmullClarkPatch3fa ccpatch;
         ccpatch.init(patch.edge,geom->getVertexBuffer(0));
 
@@ -246,6 +256,7 @@ namespace embree
            grid_x,grid_y,grid_z,grid_u,grid_v,
            displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
            dwidth,dheight);
+#endif
 
         /* call displacement shader */
         if (geom->displFunc) 
@@ -342,6 +353,14 @@ namespace embree
         dynamic_stack_array(float,grid_Ng_y,displ ? M : 0);
         dynamic_stack_array(float,grid_Ng_z,displ ? M : 0);
 
+#if USE_PATCH_EVAL_GRID
+        isa::feature_adaptive_eval2<PatchEvalGrid> 
+          (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+           x0,x1,y0,y1,swidth,sheight,
+           grid_x,grid_y,grid_z,grid_u,grid_v,
+           displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+           dwidth,dheight);
+#else
         GeneralCatmullClarkPatch3fa ccpatch;
         ccpatch.init(patch.edge,geom->getVertexBuffer(0));
 
@@ -351,6 +370,7 @@ namespace embree
            grid_x,grid_y,grid_z,grid_u,grid_v,
            displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
            dwidth,dheight);
+#endif
 
         /* call displacement shader */
         if (geom->displFunc) 
