@@ -19,6 +19,7 @@
 #include "bvh4i/bvh4i_rotate.h"
 #include "../../common/subdiv/feature_adaptive_gregory.h"
 #include "../../common/subdiv/patch_eval.h"
+#include "../../common/subdiv/patch_eval_grid.h"
 #include "../../common/subdiv/subdivpatch1base.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
@@ -1008,7 +1009,7 @@ PRINT(CORRECT_numPrims);
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-          s += patch_eval_subdivision_count (mesh->getHalfEdge(f));  
+          s += isa::patch_eval_subdivision_count (mesh->getHalfEdge(f));  
 	  // feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
 	  //       			       [&](const CatmullClarkPatch3fa& patch, const int depth, const Vec2f uv[4], const int subdiv[4], const BezierCurve3fa *border, const int border_flags)
 	  //       			       {
@@ -1205,7 +1206,7 @@ PRINT(CORRECT_numPrims);
 	{
           if (!mesh->valid(f)) continue;
 
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+          isa::patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
