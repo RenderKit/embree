@@ -174,7 +174,7 @@ namespace embree
           return;
         }
         SharedLazyTessellationCache::unlock();
-        FeatureAdaptiveEval<Vertex,Vertex_t>::eval_direct (edge,vertices,stride,u,v,P,dPdu,dPdv);
+        FeatureAdaptiveEval<Vertex,Vertex_t>(edge,vertices,stride,u,v,P,dPdu,dPdv);
         PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
       }
     };
