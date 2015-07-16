@@ -80,31 +80,6 @@ namespace embree
       return (border_index == -1) || (border_index >= 4);
     }
     
-    __forceinline Vertex regular_border_vertex_4() const 
-    {
-      assert(border_index != -1);
-      assert(face_valence == 2 || face_valence == 3);
-      if (face_valence == 3 && border_index == 4) return ring[4];
-      else return 2.0f*vtx-ring[0];
-    }
-
-    __forceinline Vertex regular_border_vertex_5() const 
-    {
-      assert(border_index != -1);
-      assert(face_valence == 2 || face_valence == 3);
-      if (face_valence == 2) return 2.0f*vtx-ring[1];
-      else if (border_index == 2) return 2.0f*ring[4]-ring[5];
-      else { assert(border_index == 4); return 2.0f*ring[4]-ring[3]; }
-    }
-
-    __forceinline Vertex regular_border_vertex_6() const 
-    {
-      assert(border_index != -1);
-      assert(face_valence == 2 || face_valence == 3);
-      if (face_valence == 3 && border_index == 2) return ring[4];
-      else return 2.0f*vtx-ring[2];
-    }
-
     __forceinline const Vertex& getVertex(size_t i) const {
       if (i >= edge_valence) i -= edge_valence;
       return ring[i];

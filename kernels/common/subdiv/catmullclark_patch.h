@@ -97,7 +97,7 @@ namespace embree
     }
 
     /*! returns true if the patch is a B-spline patch */
-    __forceinline bool isRegular1() const {
+  __forceinline bool isRegular1() const {
       return ring[0].isRegular1() && ring[1].isRegular1() && ring[2].isRegular1() && ring[3].isRegular1();
     }
   __forceinline bool isRegular2() const {
