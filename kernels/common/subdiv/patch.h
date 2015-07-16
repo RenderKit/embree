@@ -55,6 +55,14 @@
 #  define RegularPatchT BSplinePatchT<Vertex,Vertex_t>
 #endif
 
+#if PATCH_USE_GREGORY
+#define IrregularFillPatch GregoryPatch
+#define IrregularFillPatchT GregoryPatchT<Vertex,Vertex_t>
+#else
+#define IrregularFillPatch BilinearPatch
+#define IrregularFillPatchT BilinearPatchT<Vertex,Vertex_t>
+#endif
+
 namespace embree
 {
   template<typename vfloat>
