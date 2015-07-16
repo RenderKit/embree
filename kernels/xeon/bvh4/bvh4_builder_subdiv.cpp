@@ -129,8 +129,10 @@ namespace embree
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
           Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-            if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
+              for (size_t i=range.begin(); i<range.end(); i++)
+                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+            });
         }
 
         /* skip build for empty scene */
@@ -330,21 +332,28 @@ namespace embree
         /* initialize all half edge structures */
         bool fastUpdateMode = true;
         size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) {
+        if (numPrimitives > 0 || scene->isInterpolatable()) 
+        {
           Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          for (size_t i=0; i<iter.size(); i++) // FIXME: parallelize
-            if (iter[i]) {
-              fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
-              fastUpdateMode &= !iter[i]->faceVertices.isModified();
-              fastUpdateMode &= !iter[i]->holes.isModified();
-              fastUpdateMode &= !iter[i]->edge_creases.isModified();
-              fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
-              fastUpdateMode &= !iter[i]->vertex_creases.isModified();
-              fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
-              fastUpdateMode &= iter[i]->levels.isModified();
+          fastUpdateMode = parallel_reduce(size_t(0),iter.size(),true,[&](const range<size_t>& range)
+          {
+            bool fastUpdate = true;
+            for (size_t i=range.begin(); i<range.end(); i++)
+            {
+              if (!iter[i]) continue;
+              fastUpdate &= !iter[i]->vertexIndices.isModified(); 
+              fastUpdate &= !iter[i]->faceVertices.isModified();
+              fastUpdate &= !iter[i]->holes.isModified();
+              fastUpdate &= !iter[i]->edge_creases.isModified();
+              fastUpdate &= !iter[i]->edge_crease_weights.isModified();
+              fastUpdate &= !iter[i]->vertex_creases.isModified();
+              fastUpdate &= !iter[i]->vertex_crease_weights.isModified(); 
+              fastUpdate &= iter[i]->levels.isModified();
               iter[i]->initializeHalfEdgeStructures();
               iter[i]->patch_eval_trees.resize(iter[i]->size());
             }
+            return fastUpdate;
+          }, [](const bool a, const bool b) { return a && b; });
         }
 
         /* skip build for empty scene */
