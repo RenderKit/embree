@@ -646,9 +646,9 @@ namespace embree
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>::eval(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
-                                                                         getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                                         P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
+                                                                   getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                   P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
       });
     }
@@ -668,9 +668,9 @@ namespace embree
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool4,int4,float4,float4>::eval(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
-                                                             getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                             P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+          isa::PatchEvalSimd<bool4,int4,float4,float4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
+                                                       getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                       P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
       });
     }

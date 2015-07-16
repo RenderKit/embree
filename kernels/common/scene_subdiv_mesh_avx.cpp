@@ -107,17 +107,17 @@ namespace embree
         if (j+4 >= numFloats)
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float4>::eval(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
-                                                             getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                             P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
+          isa::PatchEvalSimd<vbool,vint,vfloat,float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
+                                                       getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                       P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=4;
         }
         else
         {
           const size_t M = min(size_t(8),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float8>::eval(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
-                                                             getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
-                                                             P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
+          isa::PatchEvalSimd<vbool,vint,vfloat,float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
+                                                       getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                       P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=8;
         }
       }
