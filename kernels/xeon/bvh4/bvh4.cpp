@@ -880,6 +880,8 @@ namespace embree
     intersectors.intersector8  = BVH4Subdivpatch1Intersector8;
     intersectors.intersector16 = BVH4Subdivpatch1Intersector16;
     Builder* builder = BVH4SubdivPatch1BuilderBinnedSAH(accel,scene,LeafMode);
+    scene->needSubdivIndices = true;
+    scene->needSubdivVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -893,6 +895,8 @@ namespace embree
     intersectors.intersector8  = BVH4Subdivpatch1CachedIntersector8;
     intersectors.intersector16 = BVH4Subdivpatch1CachedIntersector16;
     Builder* builder = BVH4SubdivPatch1CachedBuilderBinnedSAH(accel,scene,LeafMode);
+    scene->needSubdivIndices = false;
+    scene->needSubdivVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
