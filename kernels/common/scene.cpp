@@ -83,6 +83,7 @@ namespace embree
 
 #if defined(__MIC__)
     needBezierVertices = true;
+    needSubdivVertices = true;
 
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
