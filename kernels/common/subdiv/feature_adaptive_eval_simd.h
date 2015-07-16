@@ -57,11 +57,9 @@ namespace embree
           }
         }
         
-        __forceinline void eval_quad_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth)
+        template<size_t N>
+        __forceinline void eval_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,N>& patches, const Vec2<vfloat>& uv, float dscale, size_t depth)
         {
-          array_t<CatmullClarkPatch,4> patches; 
-          patch.subdivide(patches); // FIXME: only have to generate one of the patches
-          
           const vfloat u = uv.x, v = uv.y;
           const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
           const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
@@ -102,47 +100,6 @@ namespace embree
           }
         }
         
-        void eval_general_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2<vfloat>& uv, size_t depth)
-        {
-          const vfloat u = uv.x, v = uv.y;
-          const vbool u0_mask = u < 0.5f, u1_mask = u >= 0.5f;
-          const vbool v0_mask = v < 0.5f, v1_mask = v >= 0.5f;
-          const vbool u0v0_mask = valid & u0_mask & v0_mask;
-          const vbool u0v1_mask = valid & u0_mask & v1_mask;
-          const vbool u1v0_mask = valid & u1_mask & v0_mask;
-          const vbool u1v1_mask = valid & u1_mask & v1_mask;
-          if (any(u0v0_mask)) {
-            eval_direct(u0v0_mask,patches[0],Vec2<vfloat>(2.0f*u,2.0f*v),2.0f,depth+1);
-            if (dPdu && dPdv) {
-              for (size_t i=0; i<N; i++) {
-                const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
-                vfloat::store(u0v0_mask,dPdu+i*dstride,dpdx); vfloat::store(u0v0_mask,dPdv+i*dstride,dpdy);
-              }
-            }
-          }
-          if (any(u1v0_mask)) {
-            eval_direct(u1v0_mask,patches[1],Vec2<vfloat>(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
-            for (size_t i=0; i<N; i++) {
-              const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
-              vfloat::store(u1v0_mask,dPdu+i*dstride,-dpdy); vfloat::store(u1v0_mask,dPdv+i*dstride,dpdx);
-            }
-          }
-          if (any(u1v1_mask)) {
-            eval_direct(u1v1_mask,patches[2],Vec2<vfloat>(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
-            for (size_t i=0; i<N; i++) {
-              const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
-              vfloat::store(u1v1_mask,dPdu+i*dstride,-dpdx); vfloat::store(u1v1_mask,dPdv+i*dstride,-dpdy);
-            }
-          }
-          if (any(u0v1_mask)) {
-            eval_direct(u0v1_mask,patches[3],Vec2<vfloat>(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
-            for (size_t i=0; i<N; i++) {
-              const vfloat dpdx = vfloat::loadu(dPdu+i*dstride), dpdy = vfloat::loadu(dPdv+i*dstride);  
-              vfloat::store(u0v1_mask,dPdu+i*dstride,dpdy); vfloat::store(u0v1_mask,dPdv+i*dstride,-dpdx);
-            }
-          }
-        }
-        
         void eval_direct(const vbool& valid, const GeneralCatmullClarkPatch& patch, const Vec2<vfloat>& uv, const size_t depth) 
         {
           /* convert into standard quad patch if possible */
@@ -162,8 +119,10 @@ namespace embree
             eval_general_triangle_direct(valid,patches,uv,depth);
           
           /* parametrization for quads */
-          else if (Nc == 4) 
-            eval_general_quad_direct(valid,patches,uv,depth);
+          else if (Nc == 4) {
+            GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
+            eval_quad_direct(valid,patches,uv,1.0f,depth);
+          }
           
           /* parametrization for arbitrary polygons */
           else {
@@ -191,8 +150,11 @@ namespace embree
             return;
           }
 #endif
-          else {
-            eval_quad_direct(valid,patch,uv,dscale,depth);
+          else 
+          {
+            array_t<CatmullClarkPatch,4> patches; 
+            patch.subdivide(patches); // FIXME: only have to generate one of the patches
+            eval_quad_direct(valid,patches,uv,dscale,depth);
           }
         }  
 
