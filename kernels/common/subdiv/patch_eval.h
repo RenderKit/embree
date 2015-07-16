@@ -53,19 +53,17 @@ namespace embree
         PATCH_DEBUG_SUBDIVISION(edge,c,-1,-1);
       }
       
-      __forceinline bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, size_t subPatch, const float x, const float y)
+      __forceinline bool eval_quad(const typename Patch::SubdividedQuadPatch* This, const float u, const float v, const float dscale)
       {
-        assert(subPatch < 3);
-        if (!eval(This->child[subPatch],x,y,1.0f)) return false;
-        if (!dPdu || !dPdv) return true; 
-        switch (subPatch) {
-        case 0: map_quad0_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
-        case 1: map_quad1_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
-        case 2: map_quad2_to_tri(Vec2f(x,y),*dPdu,*dPdv); break;
+        if (v < 0.5f) {
+          if (u < 0.5f) return eval(This->child[0],2.0f*u,2.0f*v,2.0f*dscale);
+          else          return eval(This->child[1],2.0f*u-1.0f,2.0f*v,2.0f*dscale);
+        } else {
+          if (u > 0.5f) return eval(This->child[2],2.0f*u-1.0f,2.0f*v-1.0f,2.0f*dscale);
+          else          return eval(This->child[3],2.0f*u,2.0f*v-1.0f,2.0f*dscale);
         }
-        return true;
       }
-
+      
       bool eval_general_triangle(const typename Patch::SubdividedGeneralTrianglePatch* This, const float u, const float v)
       {
         const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
@@ -91,23 +89,6 @@ namespace embree
         return true;
       }
       
-      bool eval_quad(const typename Patch::SubdividedQuadPatch* This, const float u, const float v, const float dscale)
-      {
-        if (v < 0.5f) {
-          if (u < 0.5f) return eval(This->child[0],2.0f*u,2.0f*v,2.0f*dscale);
-          else          return eval(This->child[1],2.0f*u-1.0f,2.0f*v,2.0f*dscale);
-        } else {
-          if (u > 0.5f) return eval(This->child[2],2.0f*u-1.0f,2.0f*v-1.0f,2.0f*dscale);
-          else          return eval(This->child[3],2.0f*u,2.0f*v-1.0f,2.0f*dscale);
-        }
-      }
-      
-      __forceinline bool eval_general(const typename Patch::SubdividedGeneralPatch* This, size_t subPatch, const float u, const float v)
-      {
-        assert(subPatch < This->N);
-        return eval(This->child[subPatch],u,v,1.0f);
-      }
-
       bool eval_general(const typename Patch::SubdividedGeneralPatch* This, const float U, const float V)
       {
         const unsigned l = floor(4.0f*U); const float u = 2.0f*frac(4.0f*U); 
@@ -156,26 +137,6 @@ namespace embree
         default: 
           assert(false); 
           return false;
-        }
-      }
-
-      bool eval(Ref This, size_t subPatch, const float& u, const float& v, const float dscale) 
-      {
-        if (!This) return false;
-        
-        switch (This.type()) 
-        {
-        case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
-          assert(dscale == 1.0f); 
-          return eval_general_triangle(((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),subPatch,u,v); 
-        }
-        case Patch::SUBDIVIDED_GENERAL_PATCH: { 
-          assert(dscale == 1.0f); 
-          return eval_general(((typename Patch::SubdividedGeneralPatch*)This.object()),subPatch,u,v); 
-        }
-        default: 
-          assert(subPatch == 0);
-          return eval(This,u,v,dscale);
         }
       }
 
