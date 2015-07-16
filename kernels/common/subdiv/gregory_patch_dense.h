@@ -22,14 +22,6 @@ namespace embree
 {  
   class __aligned(64) DenseGregoryPatch3fa
   {    
-    static __forceinline float extract_f_m(const Vec3fa matrix[4][4], const size_t y, const size_t x) {
-      return matrix[y][x].w;
-    }
-    
-    static __forceinline Vec3fa extract_f_m_Vec3fa(const Vec3fa matrix[4][4], const size_t n) {
-      return Vec3fa( extract_f_m(matrix,n,0), extract_f_m(matrix,n,1), extract_f_m(matrix,n,2) );
-    }
-   
   public:
 
     __forceinline DenseGregoryPatch3fa (const GregoryPatch3fa& patch)
@@ -58,8 +50,8 @@ namespace embree
       matrix[3][2].w = patch.f[1][0].z;
       matrix[3][3].w = 0.0f;
     }
- 
-    __forceinline Vec3fa eval(const float uu, const float vv) const
+
+    __forceinline void extract_f_m(Vec3fa f_m[2][2]) const
     {
 #if defined(__MIC__)
       const float16 row0 = load16f(&matrix[0][0]);
@@ -67,86 +59,55 @@ namespace embree
       const float16 row2 = load16f(&matrix[2][0]);
       const float16 row3 = load16f(&matrix[3][0]);
       
-      __aligned(64) Vec3fa f_m[2][2];
       compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
       compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
       compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
       compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
 #else
-      __aligned(64) Vec3fa f_m[2][2];
-      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
-      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
-      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
-      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
-#endif      
+      f_m[0][0] = Vec3fa( matrix[0][0].w, matrix[0][1].w, matrix[0][2].w );
+      f_m[0][1] = Vec3fa( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
+      f_m[1][1] = Vec3fa( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
+      f_m[1][0] = Vec3fa( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );      
+#endif     
+    }
+
+    __forceinline Vec3fa eval(const float uu, const float vv) const
+    {
+      __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
       return GregoryPatch3fa::eval(matrix,f_m,uu,vv);
     }
 
     __forceinline Vec3fa normal(const float uu, const float vv) const
     {
-#if defined(__MIC__)
-      const float16 row0 = load16f(&matrix[0][0]);
-      const float16 row1 = load16f(&matrix[1][0]);
-      const float16 row2 = load16f(&matrix[2][0]);
-      const float16 row3 = load16f(&matrix[3][0]);
-      
-      __aligned(64) Vec3fa f_m[2][2];
-      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
-      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
-      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
-      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
-#else
-      __aligned(64) Vec3fa f_m[2][2];
-      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
-      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
-      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
-      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
-#endif      
+      __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
       return GregoryPatch3fa::normal(matrix,f_m,uu,vv);
     }
 
     template<class T>
       __forceinline Vec3<T> eval(const T &uu, const T &vv) const 
     {
-      Vec3<T> f[2][2];
-      f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-      return GregoryPatch3fa::eval_t(matrix,f,uu,vv);
+      Vec3<T> f_m[2][2];
+      f_m[0][0] = Vec3<T>( matrix[0][0].w, matrix[0][1].w, matrix[0][2].w );
+      f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
+      f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
+      f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
+      return GregoryPatch3fa::eval_t(matrix,f_m,uu,vv);
     }
     
     template<class T>
       __forceinline Vec3<T> normal(const T &uu, const T &vv) const 
     {
-      Vec3<T> f[2][2];
-      f[0][0] = Vec3<T>( extract_f_m(matrix,0,0), extract_f_m(matrix,0,1), extract_f_m(matrix,0,2) );
-      f[0][1] = Vec3<T>( extract_f_m(matrix,1,0), extract_f_m(matrix,1,1), extract_f_m(matrix,1,2) );
-      f[1][1] = Vec3<T>( extract_f_m(matrix,2,0), extract_f_m(matrix,2,1), extract_f_m(matrix,2,2) );
-      f[1][0] = Vec3<T>( extract_f_m(matrix,3,0), extract_f_m(matrix,3,1), extract_f_m(matrix,3,2) );
-      return GregoryPatch3fa::normal_t(matrix,f,uu,vv);
+      Vec3<T> f_m[2][2];
+      f_m[0][0] = Vec3<T>( matrix[0][0].w, matrix[0][1].w, matrix[0][2].w );
+      f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
+      f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
+      f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
+      return GregoryPatch3fa::normal_t(matrix,f_m,uu,vv);
     }
 
     __forceinline void eval(const float u, const float v, Vec3fa* P, Vec3fa* dPdu, Vec3fa* dPdv, const float dscale = 1.0f) const
     {
-#if defined(__MIC__)
-      const float16 row0 = load16f(&matrix[0][0]);
-      const float16 row1 = load16f(&matrix[1][0]);
-      const float16 row2 = load16f(&matrix[2][0]);
-      const float16 row3 = load16f(&matrix[3][0]);
-      
-      __aligned(64) Vec3fa f_m[2][2];
-      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
-      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
-      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
-      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
-#else
-      __aligned(64) Vec3fa f_m[2][2];
-      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
-      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
-      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
-      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
-#endif      
+      __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
       if (P)    *P    = GregoryPatch3fa::eval(matrix,f_m,u,v); 
       if (dPdu) *dPdu = GregoryPatch3fa::tangentU(matrix,f_m,u,v)*dscale; 
       if (dPdv) *dPdv = GregoryPatch3fa::tangentV(matrix,f_m,u,v)*dscale; 
@@ -155,24 +116,7 @@ namespace embree
     template<typename vbool, typename vfloat>
     __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const 
     {
-#if defined(__MIC__)
-      const float16 row0 = load16f(&matrix[0][0]);
-      const float16 row1 = load16f(&matrix[1][0]);
-      const float16 row2 = load16f(&matrix[2][0]);
-      const float16 row3 = load16f(&matrix[3][0]);
-      
-      __aligned(64) Vec3fa f_m[2][2];
-      compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
-      compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);
-      compactustore16f_low(0x8888,(float*)&f_m[1][1],row2);
-      compactustore16f_low(0x8888,(float*)&f_m[1][0],row3);
-#else
-      __aligned(64) Vec3fa f_m[2][2];
-      f_m[0][0] = extract_f_m_Vec3fa(matrix,0);
-      f_m[0][1] = extract_f_m_Vec3fa(matrix,1);
-      f_m[1][1] = extract_f_m_Vec3fa(matrix,2);
-      f_m[1][0] = extract_f_m_Vec3fa(matrix,3);      
-#endif      
+      __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
       return GregoryPatch3fa::eval(matrix,f,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
     }
 
