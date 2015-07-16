@@ -25,6 +25,7 @@
 #include "tessellation.h"
 #include "tessellation_cache.h"
 #include "gridrange.h"
+#include "patch_eval_grid.h"
 #include "feature_adaptive_eval2.h"
 #include "../scene_subdiv_mesh.h"
 
