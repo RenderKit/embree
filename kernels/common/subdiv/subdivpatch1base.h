@@ -239,11 +239,12 @@ namespace embree
         GeneralCatmullClarkPatch3fa ccpatch;
         ccpatch.init(patch.edge,geom->getVertexBuffer(0));
 
-        isa::feature_adaptive_eval2 (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
-                                     x0,x1,y0,y1,swidth,sheight,
-                                     grid_x,grid_y,grid_z,grid_u,grid_v,
-                                     displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
-                                     dwidth,dheight);
+        isa::feature_adaptive_eval2<FeatureAdaptiveEval2,GeneralCatmullClarkPatch3fa> 
+          (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+           x0,x1,y0,y1,swidth,sheight,
+           grid_x,grid_y,grid_z,grid_u,grid_v,
+           displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+           dwidth,dheight);
 
         /* call displacement shader */
         if (geom->displFunc) 
@@ -343,11 +344,12 @@ namespace embree
         GeneralCatmullClarkPatch3fa ccpatch;
         ccpatch.init(patch.edge,geom->getVertexBuffer(0));
 
-        isa::feature_adaptive_eval2 (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
-                                     x0,x1,y0,y1,swidth,sheight,
-                                     grid_x,grid_y,grid_z,grid_u,grid_v,
-                                     displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
-                                     dwidth,dheight);
+        isa::feature_adaptive_eval2 <FeatureAdaptiveEval2,GeneralCatmullClarkPatch3fa>
+          (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+           x0,x1,y0,y1,swidth,sheight,
+           grid_x,grid_y,grid_z,grid_u,grid_v,
+           displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+           dwidth,dheight);
 
         /* call displacement shader */
         if (geom->displFunc) 
