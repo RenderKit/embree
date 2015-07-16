@@ -267,35 +267,6 @@ namespace embree
         init(edge,loader);
       }
 
-      __forceinline void init( FinalQuad& quad ) const
-      {
-        quad.vtx[0] = v[1][1];
-        quad.vtx[1] = v[1][2];
-        quad.vtx[2] = v[2][2];
-        quad.vtx[3] = v[2][1];
-      };
-      
-      __forceinline void init_limit( FinalQuad& quad ) const
-      {
-        
-        const Vertex limit_v0 = computeLimitVertex(1,1);
-        const Vertex limit_v1 = computeLimitVertex(1,2);
-        const Vertex limit_v2 = computeLimitVertex(2,2);
-        const Vertex limit_v3 = computeLimitVertex(2,1);
-        
-        quad.vtx[0] = limit_v0;
-        quad.vtx[1] = limit_v1;
-        quad.vtx[2] = limit_v2;
-        quad.vtx[3] = limit_v3;
-      };
-
-      __forceinline void exportControlPoints( Vertex matrix[4][4] ) const
-      {
-        for (size_t y=0; y<4; y++)
-          for (size_t x=0; x<4; x++)
-            matrix[y][x] = (Vertex_t)v[y][x];
-      }
-
       __forceinline Vertex hard_corner(const                    Vertex& v01, const Vertex& v02, 
                                        const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                        const Vertex& v20, const Vertex& v21, const Vertex& v22)
@@ -605,30 +576,6 @@ namespace embree
         const Vec3<T> tV = tangentV(uu,vv);
         return cross(tU,tV);
       }
-      
-#if defined(__MIC__)
-      
-      __forceinline float16 getRow(const size_t i) const
-      {
-        return load16f(&v[i][0]);
-      }
-      
-      __forceinline void prefetchData() const
-      {
-        prefetch<PFHINT_L1>(&v[0][0]);
-        prefetch<PFHINT_L1>(&v[1][0]);
-        prefetch<PFHINT_L1>(&v[2][0]);
-        prefetch<PFHINT_L1>(&v[3][0]);
-      }
-      
-      static __forceinline Vec4f16 eval_derivative(const float16 u, const bool16 m_mask)
-      {
-        const Vec4f16 e = BSplineBasis::eval(u);
-        const Vec4f16 d = BSplineBasis::derivative(u);
-        return Vec4f16(select(m_mask,e[0],d[0]),select(m_mask,e[1],d[1]),select(m_mask,e[2],d[2]),select(m_mask,e[3],d[3]));
-      }    
-            
-#endif
       
       friend __forceinline std::ostream& operator<<(std::ostream& o, const BSplinePatchT& p)
       {
