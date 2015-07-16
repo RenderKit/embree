@@ -264,8 +264,6 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-#define DBG_CACHE_BUILDER(x) 
-
     struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
@@ -393,7 +391,6 @@ namespace embree
         /* Allocate memory for gregory and b-spline patches */
         if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
         {
-          DBG_CACHE_BUILDER(std::cout << "DEALLOCATING SUBDIVPATCH1CACHED MEMORY" << std::endl);
           if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
           this->bvh->data_mem      = nullptr;
           this->bvh->size_data_mem = 0;
@@ -401,7 +398,6 @@ namespace embree
         
         if (bvh->data_mem == nullptr)
         {
-          DBG_CACHE_BUILDER(std::cout << "ALLOCATING SUBDIVPATCH1CACHED MEMORY FOR " << numPrimitives << " PRIMITIVES" << std::endl);
           this->bvh->size_data_mem = sizeof(SubdivPatch1Cached) * numPrimitives;
           if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
           else                                this->bvh->data_mem = nullptr;
@@ -444,9 +440,6 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
-        DBG_CACHE_BUILDER(std::cout << "create prims in " << 1000.0f*t0 << "ms " << std::endl);
-        DBG_CACHE_BUILDER(std::cout << "pinfo.bounds " << pinfo << std::endl);
-
         if (fastUpdateMode)
         {
           if (bvh->root != BVH4::emptyNode)
@@ -456,8 +449,6 @@ namespace embree
         {
           if (numPrimitives)
           {
-            DBG_CACHE_BUILDER(std::cout << "start building..." << std::endl);
-            
             BVH4::NodeRef root;
             BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
               (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
@@ -472,8 +463,6 @@ namespace embree
                progress,
                prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
             bvh->set(root,pinfo.geomBounds,pinfo.size());
-            DBG_CACHE_BUILDER(std::cout << "finsihed building" << std::endl);
-            
           }
           else
             bvh->set(BVH4::emptyNode,empty,0);	  
