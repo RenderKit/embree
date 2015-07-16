@@ -3070,7 +3070,7 @@ namespace embree
       float p1 = (1.0f/6.0f)*(1.0f*data[(v0+0-1)*N_total+i] + 4.0f*data[(v0+0+0)*N_total+i] + 1.0f*data[(v0+0+1)*N_total+i]);
       float p2 = (1.0f/6.0f)*(1.0f*data[(v0+4-1)*N_total+i] + 4.0f*data[(v0+4+0)*N_total+i] + 1.0f*data[(v0+4+1)*N_total+i]);
       float p = (1.0f/6.0f)*(1.0f*p0+4.0f*p1+1.0f*p2);
-      passed &= fabs(p-P[i]) < 1E-4f;
+      passed &= fabsf(p-P[i]) < 1E-4f;
     }
     return passed;
   }
@@ -3083,7 +3083,7 @@ namespace embree
     
     for (size_t i=0; i<N; i++) {
       float v = (1.0f/6.0f)*(1.0f*data[v0*N_total+i] + 4.0f*data[v1*N_total+i] + 1.0f*data[v2*N_total+i]);
-      passed &= fabs(v-P[i]) < 1E-3f;
+      passed &= fabsf(v-P[i]) < 0.014f;
     }
     return passed;
   }
@@ -3109,14 +3109,13 @@ namespace embree
     AssertNoError();
     rtcCommit(scene);
     AssertNoError();
-
     bool passed = true;
     passed &= checkInterpolation1D(scene,geomID,0,0.0f,0.0f,4,0,1,buffer,vertices0,N,N_total);
     passed &= checkInterpolation1D(scene,geomID,2,1.0f,0.0f,2,3,7,buffer,vertices0,N,N_total);
 
     passed &= checkInterpolation2D(scene,geomID,3,1.0f,0.0f,5,buffer,vertices0,N,N_total);
     passed &= checkInterpolation2D(scene,geomID,1,1.0f,1.0f,6,buffer,vertices0,N,N_total);
-    
+ 
     passed &= checkInterpolation1D(scene,geomID,3,1.0f,1.0f,8,9,10,buffer,vertices0,N,N_total);
     passed &= checkInterpolation1D(scene,geomID,7,1.0f,0.0f,9,10,11,buffer,vertices0,N,N_total);
 
