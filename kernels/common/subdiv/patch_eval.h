@@ -124,12 +124,9 @@ namespace embree
           PATCH_DEBUG_SUBDIVISION(This,-1,-1,c);
           return true;
         }
-        case Patch::SUBDIVIDED_QUAD_PATCH: 
+        case Patch::SUBDIVIDED_QUAD_PATCH: {
           return eval_quad(((typename Patch::SubdividedQuadPatch*)This.object()),u,v,P,dPdu,dPdv,dscale);
-          /*case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
-          assert(dscale == 1.0f); 
-          return eval_general_quad(((typename Patch::SubdividedGeneralQuadPatch*)This.object()),u,v,P,dPdu,dPdv); 
-          }*/
+        }
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle(((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),u,v,P,dPdu,dPdv); 
