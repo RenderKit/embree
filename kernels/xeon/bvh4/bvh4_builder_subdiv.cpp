@@ -346,6 +346,7 @@ namespace embree
               //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
               fastUpdateMode &= iter[i]->levels.isModified();
               iter[i]->initializeHalfEdgeStructures();
+              iter[i]->patch_eval_trees.resize(iter[i]->size());
             }
         }
 
@@ -355,7 +356,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-        if (!fastUpdateMode)
+        if (!fastUpdateMode) 
           bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
