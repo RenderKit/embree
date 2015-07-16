@@ -304,7 +304,34 @@ namespace embree
 
       return false;
     }
+
+    enum Type {
+      TYPE_NONE            = 0,
+      TYPE_REGULAR         = 1,
+      TYPE_REGULAR_CREASES = 2,
+      TYPE_GREGORY         = 4,
+      TYPE_GREGORY_CREASES = 8
+    };
     
+    __forceinline Type type() const
+    {
+      /* check if there is an edge crease anywhere */
+      Type crease_mask = (Type) (TYPE_REGULAR | TYPE_GREGORY);
+      if (!hasEdgeCrease()) crease_mask = (Type) (crease_mask | TYPE_REGULAR_CREASES | TYPE_GREGORY_CREASES);
+
+      /* calculate if this vertex is regular */
+      bool hasBorder = border_index != -1;
+      if (face_valence == 2 && hasBorder) {
+        if      (vertex_crease_weight == 0.0f      ) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
+        else if (vertex_crease_weight == float(inf)) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
+        else                                         return TYPE_NONE;
+      }
+      else if (vertex_crease_weight != 0.0f)         return TYPE_NONE;
+      else if (face_valence == 3 &&  hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
+      else if (face_valence == 4 && !hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
+      else                                           return (Type) (crease_mask & (TYPE_GREGORY | TYPE_GREGORY_CREASES));
+    }
+
     __forceinline bool isRegular2() const
     {
       /* check if there is an edge crease anywhere */

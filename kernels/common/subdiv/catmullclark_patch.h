@@ -28,17 +28,20 @@ namespace embree
 
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) CatmullClarkPatchT
-  {
-  public:
+    {
+    public:
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
+    typedef typename CatmullClark1Ring::Type Type;
+
     array_t<CatmullClark1RingT<Vertex,Vertex_t>,4> ring;
 
     __forceinline CatmullClarkPatchT () {}
-  
+    
     template<typename Loader>
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const Loader& loader) {
       init2(first_half_edge,loader);
     }
-  
+    
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
       init(first_half_edge,vertices);
     }
@@ -96,11 +99,15 @@ namespace embree
       return bounds;
     }
 
+    __forceinline Type type() const {
+      return (Type) (ring[0].type() & ring[1].type() & ring[2].type() & ring[3].type());
+    }
+    
     /*! returns true if the patch is a B-spline patch */
-  __forceinline bool isRegular1() const {
+    __forceinline bool isRegular1() const {
       return ring[0].isRegular1() && ring[1].isRegular1() && ring[2].isRegular1() && ring[3].isRegular1();
     }
-  __forceinline bool isRegular2() const {
+    __forceinline bool isRegular2() const {
       return ring[0].isRegular2() && ring[1].isRegular2() && ring[2].isRegular2() && ring[3].isRegular2();
     }
 

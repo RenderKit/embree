@@ -189,6 +189,7 @@ namespace embree
     
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
     
     enum Type {
       INVALID_PATCH = 0,
@@ -444,21 +445,18 @@ namespace embree
     template<typename Allocator>
     __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
-      if (unlikely(patch.isRegular2())) { 
+      typename CatmullClarkPatch::Type ty = patch.type();
+
+      if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
+        if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch); 
+        else                                     return IrregularFillPatch::create(alloc,patch); 
+      }
+      else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
         assert(depth > 0); return RegularPatch::create(alloc,patch); 
       }
 #if PATCH_USE_GREGORY == 2
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) { 
+      else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
         assert(depth > 0); return GregoryPatch::create(alloc,patch); 
-      }
-#else
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-      {
-#if PATCH_USE_GREGORY == 1
-        return GregoryPatch::create(alloc,patch); 
-#else
-        return BilinearPatch::create(alloc,patch);
-#endif
       }
 #endif
       else if (depth >= PATCH_MAX_CACHE_DEPTH) 
