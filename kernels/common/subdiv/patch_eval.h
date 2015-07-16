@@ -30,12 +30,6 @@ namespace embree
         
         typedef PatchT<Vertex,Vertex_t> Patch;
         typedef typename Patch::Ref Ref;
-        typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
-        typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
-        typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
-        typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
-        typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
-        typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
         
         PatchEval (SharedLazyTessellationCache::CacheEntry& entry, size_t commitCounter, 
                    const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
