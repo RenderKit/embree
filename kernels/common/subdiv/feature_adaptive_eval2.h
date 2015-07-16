@@ -302,13 +302,6 @@ namespace embree
       }
     };
     
-    __forceinline void feature_adaptive_eval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch, 
-                                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-                                               float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
-    {
-      FeatureAdaptiveEval2(patch,subPatch,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,Nx,Ny,Nz,dwidth,dheight);
-    }
-    
     static __forceinline bool stitch_col(const GeneralCatmullClarkPatch3fa& patch, int subPatch,
                                          const bool right, const size_t y0, const size_t y1, const int fine_y, const int coarse_y, 
                                          float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dx0, const size_t dwidth, const size_t dheight)
@@ -375,12 +368,13 @@ namespace embree
                                                const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
                                                float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
     {
-      const bool sl = x0 == 0         && stitch_col(patch,subPatch,0,y0,y1,sheight-1,levels[3], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
-      const bool sr = x1 == swidth-1  && stitch_col(patch,subPatch,1,y0,y1,sheight-1,levels[1], Px,Py,Pz,U,V,Nx,Ny,Nz, x1-x0,dwidth,dheight);
-      
-      const bool st = y0 == 0         && stitch_row(patch,subPatch,0,x0,x1,swidth-1,levels[0], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
-      const bool sb = y1 == sheight-1 && stitch_row(patch,subPatch,1,x0,x1,swidth-1,levels[2], Px,Py,Pz,U,V,Nx,Ny,Nz, y1-y0,dwidth,dheight);
-      
+      bool sl = false, sr = false, st = false, sb = false;
+      if (levels) {
+        sl = x0 == 0         && stitch_col(patch,subPatch,0,y0,y1,sheight-1,levels[3], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
+        sr = x1 == swidth-1  && stitch_col(patch,subPatch,1,y0,y1,sheight-1,levels[1], Px,Py,Pz,U,V,Nx,Ny,Nz, x1-x0,dwidth,dheight);
+        st = y0 == 0         && stitch_row(patch,subPatch,0,x0,x1,swidth-1,levels[0], Px,Py,Pz,U,V,Nx,Ny,Nz, 0    ,dwidth,dheight);
+        sb = y1 == sheight-1 && stitch_row(patch,subPatch,1,x0,x1,swidth-1,levels[2], Px,Py,Pz,U,V,Nx,Ny,Nz, y1-y0,dwidth,dheight);
+      }
       const size_t ofs = st*dwidth+sl;
       FeatureAdaptiveEval2(patch,subPatch,x0+sl,x1-sr,y0+st,y1-sb, swidth,sheight, Px+ofs,Py+ofs,Pz+ofs,U+ofs,V+ofs,Nx?Nx+ofs:nullptr,Ny?Ny+ofs:nullptr,Nz?Nz+ofs:nullptr, dwidth,dheight);
     }
