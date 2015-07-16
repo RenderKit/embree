@@ -65,51 +65,6 @@ namespace embree
     updateEdgeLevels(edge_level,subdiv,mesh,simd_width);
   }
 
-
-  /*! Construction from vertices and IDs. */
-  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
-                                      const int fas_depth,
-                                      const unsigned int gID,
-                                      const unsigned int pID,
-                                      const SubdivMesh *const mesh,
-                                      const Vec2f uv[4],
-                                      const float edge_level[4],
-                                      const int neighborSubdiv[4],
-                                      const BezierCurve3fa *border, 
-                                      const int border_flags,
-                                      const int simd_width) 
-    : geom(gID),prim(pID),flags(0)
-  {
-    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-    mtx.reset();
-
-    for (size_t i=0; i<4; i++) {
-      u[i] = (unsigned short)(uv[i].x * 65535.0f);
-      v[i] = (unsigned short)(uv[i].y * 65535.0f);
-    }
-
-    updateEdgeLevels(edge_level,neighborSubdiv,mesh,simd_width);
-    
-    /* determine whether patch is regular or not */
-    if (fas_depth == 0 && ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior and not FAS-based patches*/
-    {
-#if 0
-      type = BEZIER_PATCH;
-      new (patch_v) BezierPatch3fa(BSplinePatch3fa(ipatch));
-#else
-      type = BSPLINE_PATCH;
-      new (patch_v) BSplinePatch3fa(ipatch);
-#endif      
-    }
-    else
-    {
-      type = GREGORY_PATCH;
-      GregoryPatch3fa gpatch; 
-      gpatch.init_crackfix( ipatch, fas_depth, neighborSubdiv, border, border_flags ); 
-      new (patch_v) DenseGregoryPatch3fa(gpatch);
-    }
-  }
-
   void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
   {
     /* init discrete edge tessellation levels and grid resolution */

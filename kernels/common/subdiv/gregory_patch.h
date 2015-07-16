@@ -228,65 +228,6 @@ namespace embree
 
     }
 
-    __noinline void init_crackfix(const CatmullClarkPatch& patch,  // FIXME: remove
-                                  const int depth,
-                                  const int neighborSubdiv[4],
-                                  const BezierCurve* border, 
-                                  const int border_flags)
-    {
-      assert( patch.ring[0].hasValidPositions() );
-      assert( patch.ring[1].hasValidPositions() );
-      assert( patch.ring[2].hasValidPositions() );
-      assert( patch.ring[3].hasValidPositions() );
-      
-      p0() = initCornerVertex(patch,0);
-      p1() = initCornerVertex(patch,1);
-      p2() = initCornerVertex(patch,2);
-      p3() = initCornerVertex(patch,3);
-
-      e0_p() = initPositiveEdgeVertex(patch,0, p0());
-      e1_p() = initPositiveEdgeVertex(patch,1, p1());
-      e2_p() = initPositiveEdgeVertex(patch,2, p2());
-      e3_p() = initPositiveEdgeVertex(patch,3, p3());
-
-      e0_m() = initNegativeEdgeVertex(patch,0, p0());
-      e1_m() = initNegativeEdgeVertex(patch,1, p1());
-      e2_m() = initNegativeEdgeVertex(patch,2, p2());
-      e3_m() = initNegativeEdgeVertex(patch,3, p3());
-
-      if (depth > 0 && border && border_flags != BORDER_BEZIER_CURVE_IGNORE)
-      {
-
-        if (border_flags & BORDER_BEZIER_CURVE_FIRST)
-        {         
-          BezierCurve l,r; 
-          border[0].subdivide(l,r); 
-          e0_p() = l.v1; 
-          e1_m() = l.v2; 
-          p1()   = l.v3;
-        }
-
-        if (border_flags & BORDER_BEZIER_CURVE_SECOND)
-        {          
-          BezierCurve l,r; 
-          border[1].subdivide(l,r); 
-          e0_m() = r.v2; 
-          e3_p() = r.v1; 
-          p3()   = r.v0; 
-       }
-      }
-      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
-      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
-      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
-      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
-      
-      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e3_p(),face_valence_p3,f0_p(),f0_m() );
-      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
-      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
-      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
-
-    }
-    
     __noinline void init_crackfix(const CatmullClarkPatch& patch, 
                                   const BezierCurve* border0, 
                                   const BezierCurve* border1,
