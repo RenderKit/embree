@@ -372,17 +372,6 @@ namespace embree
       f3_m() = Vertex( zero );      
     }
     
-    __forceinline void exportControlPoints( Vertex matrix[4][4], Vertex f_m[2][2] ) const
-    {
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)v[y][x];
-      
-      for (size_t y=0; y<2; y++)
-	for (size_t x=0; x<2; x++)
-	  f_m[y][x] = (Vertex_t)f[y][x];
-    }
-    
     static __forceinline void computeInnerVertices(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv,
 						   Vertex_t& matrix_11, Vertex_t& matrix_12, Vertex_t& matrix_22, Vertex_t& matrix_21)
     {
