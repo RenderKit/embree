@@ -39,7 +39,7 @@
 #define PATCH_MAX_CACHE_DEPTH 4
 #define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
 #define PATCH_MAX_EVAL_DEPTH 4     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 2        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
 #define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of b-spline patches
@@ -189,7 +189,7 @@ namespace embree
       BEZIER_PATCH = 3,  
       GREGORY_PATCH = 4,
       SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
+      //SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
       SUBDIVIDED_GENERAL_PATCH = 7,
       SUBDIVIDED_QUAD_PATCH = 8
     };
@@ -330,7 +330,7 @@ namespace embree
       Ref child[4];
     };
     
-    struct SubdividedGeneralQuadPatch
+    /*struct SubdividedGeneralQuadPatch
     {
       template<typename Allocator>
       __noinline static Ref create(const Allocator& alloc, Ref children[4]) {
@@ -342,7 +342,7 @@ namespace embree
       }
       
       Ref child[4];
-    };
+      };*/
 
     struct SubdividedGeneralPatch
     {
@@ -416,9 +416,10 @@ namespace embree
       else if (N == 4) 
       {
         Ref child[4];
+        GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return SubdividedGeneralQuadPatch::create(alloc,child);
+        return SubdividedQuadPatch::create(alloc,child);
       }
       else 
       {

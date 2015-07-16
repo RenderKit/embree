@@ -122,7 +122,7 @@ namespace embree
         }
       }
       
-      static bool eval_general_quad(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+      /*static bool eval_general_quad(const typename Patch::SubdividedGeneralQuadPatch* This, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
       {
         if (v < 0.5f) {
           if (u < 0.5f) {
@@ -159,7 +159,7 @@ namespace embree
             return true;
           }
         }
-      }
+        }*/
       
       static void eval_general_quad_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
       {
@@ -326,10 +326,10 @@ namespace embree
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
           return eval_quad(((typename Patch::SubdividedQuadPatch*)This.object()),u,v,P,dPdu,dPdv,dscale);
-        case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
+          /*case Patch::SUBDIVIDED_GENERAL_QUAD_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_quad(((typename Patch::SubdividedGeneralQuadPatch*)This.object()),u,v,P,dPdu,dPdv); 
-        }
+          }*/
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           assert(dscale == 1.0f); 
           return eval_general_triangle(((typename Patch::SubdividedGeneralTrianglePatch*)This.object()),u,v,P,dPdu,dPdv); 

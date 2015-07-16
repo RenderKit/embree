@@ -37,7 +37,7 @@ namespace embree
       displBounds(empty),
       levelUpdate(false)
   {
-    //patch_eval_trees.resize(numFaces);
+    patch_eval_trees.resize(numFaces);
     for (size_t i=0; i<numTimeSteps; i++)
        vertices[i].init(numVertices,sizeof(Vec3fa));
 
