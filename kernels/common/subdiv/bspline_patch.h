@@ -245,45 +245,39 @@ namespace embree
         return bounds;
       }
       
-      __noinline Vertex eval(const float uu, const float vv) const // this has to be noinline to work around likely compiler bug in feature_adaptive_eval
+      __forceinline Vertex eval(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
-        
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
         const Vec4f u_n = BSplineBasis::eval(uu);
-        
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex tangentU(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::eval(vv);
-        
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
         const Vec4f u_n = BSplineBasis::derivative(uu);
-        
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
       __forceinline Vertex tangentV(const float uu, const float vv) const
       {
         const Vec4f v_n = BSplineBasis::derivative(vv);
-        
         const Vertex_t curve0 = v_n[0] * v[0][0] + v_n[1] * v[1][0] + v_n[2] * v[2][0] + v_n[3] * v[3][0];
         const Vertex_t curve1 = v_n[0] * v[0][1] + v_n[1] * v[1][1] + v_n[2] * v[2][1] + v_n[3] * v[3][1];
         const Vertex_t curve2 = v_n[0] * v[0][2] + v_n[1] * v[1][2] + v_n[2] * v[2][2] + v_n[3] * v[3][2];
         const Vertex_t curve3 = v_n[0] * v[0][3] + v_n[1] * v[1][3] + v_n[2] * v[2][3] + v_n[3] * v[3][3];
         
         const Vec4f u_n = BSplineBasis::eval(uu);
-        
         return (u_n[0] * curve0 + u_n[1] * curve1 + u_n[2] * curve2 + u_n[3] * curve3) * (1.0f/36.0f);
       }
       
@@ -294,6 +288,61 @@ namespace embree
         return cross(tv,tu);
       }   
       
+
+      template<class T>
+      __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
+      {
+        const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
+        const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
+        const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
+        const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
+        const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
+                  
+        const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
+        const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
+        const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
+        const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
+        const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
+          
+        const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
+        const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
+        const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
+        const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
+        const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
+        
+        return Vec3<T>(x,y,z);
+      }
+      
+      template<typename T>
+      __forceinline Vec3<T> eval(const T& uu, const T& vv) const
+      {
+        const Vec4<T> u_n = BSplineBasis::eval(uu);
+        const Vec4<T> v_n = BSplineBasis::eval(vv);
+        return eval(uu,vv,u_n,v_n);
+      }
+
+      template<typename T>
+      __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
+      {
+        const Vec4<T> u_n = BSplineBasis::derivative(uu); 
+        const Vec4<T> v_n = BSplineBasis::eval(vv); 
+        return eval(uu,vv,u_n,v_n);      
+      }
+      
+      template<typename T>
+      __forceinline Vec3<T> tangentV(const T& uu, const T& vv) const
+      {
+        const Vec4<T> u_n = BSplineBasis::eval(uu); 
+        const Vec4<T> v_n = BSplineBasis::derivative(vv); 
+        return eval(uu,vv,u_n,v_n);      
+      }
+      
+      template<typename T>
+      __forceinline Vec3<T> normal(const T& uu, const T& vv) const
+      {
+        return cross(tangentV(uu,vv),tangentU(uu,vv));
+      }
+
       __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
       {
         if (P)    *P    = eval(u,v); 
@@ -331,63 +380,6 @@ namespace embree
         }
       }
 
-      template<class T>
-      __forceinline Vec3<T> eval(const T& uu, const T& vv, const Vec4<T>& u_n, const Vec4<T>& v_n) const
-      {
-        const T curve0_x = v_n[0] * T(v[0][0].x) + v_n[1] * T(v[1][0].x) + v_n[2] * T(v[2][0].x) + v_n[3] * T(v[3][0].x);
-        const T curve1_x = v_n[0] * T(v[0][1].x) + v_n[1] * T(v[1][1].x) + v_n[2] * T(v[2][1].x) + v_n[3] * T(v[3][1].x);
-        const T curve2_x = v_n[0] * T(v[0][2].x) + v_n[1] * T(v[1][2].x) + v_n[2] * T(v[2][2].x) + v_n[3] * T(v[3][2].x);
-        const T curve3_x = v_n[0] * T(v[0][3].x) + v_n[1] * T(v[1][3].x) + v_n[2] * T(v[2][3].x) + v_n[3] * T(v[3][3].x);
-        const T x = (u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x) * T(1.0f/36.0f);
-        
-        
-        const T curve0_y = v_n[0] * T(v[0][0].y) + v_n[1] * T(v[1][0].y) + v_n[2] * T(v[2][0].y) + v_n[3] * T(v[3][0].y);
-        const T curve1_y = v_n[0] * T(v[0][1].y) + v_n[1] * T(v[1][1].y) + v_n[2] * T(v[2][1].y) + v_n[3] * T(v[3][1].y);
-        const T curve2_y = v_n[0] * T(v[0][2].y) + v_n[1] * T(v[1][2].y) + v_n[2] * T(v[2][2].y) + v_n[3] * T(v[3][2].y);
-        const T curve3_y = v_n[0] * T(v[0][3].y) + v_n[1] * T(v[1][3].y) + v_n[2] * T(v[2][3].y) + v_n[3] * T(v[3][3].y);
-        const T y = (u_n[0] * curve0_y + u_n[1] * curve1_y + u_n[2] * curve2_y + u_n[3] * curve3_y) * T(1.0f/36.0f);
-          
-        const T curve0_z = v_n[0] * T(v[0][0].z) + v_n[1] * T(v[1][0].z) + v_n[2] * T(v[2][0].z) + v_n[3] * T(v[3][0].z);
-        const T curve1_z = v_n[0] * T(v[0][1].z) + v_n[1] * T(v[1][1].z) + v_n[2] * T(v[2][1].z) + v_n[3] * T(v[3][1].z);
-        const T curve2_z = v_n[0] * T(v[0][2].z) + v_n[1] * T(v[1][2].z) + v_n[2] * T(v[2][2].z) + v_n[3] * T(v[3][2].z);
-        const T curve3_z = v_n[0] * T(v[0][3].z) + v_n[1] * T(v[1][3].z) + v_n[2] * T(v[2][3].z) + v_n[3] * T(v[3][3].z);
-        const T z = (u_n[0] * curve0_z + u_n[1] * curve1_z + u_n[2] * curve2_z + u_n[3] * curve3_z) * T(1.0f/36.0f);
-        
-        return Vec3<T>(x,y,z);
-      }
-      
-      template<typename T>
-      __forceinline Vec3<T> eval(const T& uu, const T& vv) const
-      {
-        const Vec4<T> v_n = BSplineBasis::eval(vv); // FIXME: precompute in table
-        const Vec4<T> u_n = BSplineBasis::eval(uu); // FIXME: precompute in table
-        return eval(uu,vv,u_n,v_n);
-      }
-
-      template<typename T>
-      __forceinline Vec3<T> tangentU(const T& uu, const T& vv) const
-      {
-        const Vec4<T> v_n = BSplineBasis::derivative(vv); 
-        const Vec4<T> u_n = BSplineBasis::eval(uu); 
-        return eval(uu,vv,u_n,v_n);      
-      }
-      
-      template<typename T>
-      __forceinline Vec3<T> tangentV(const T& uu, const T& vv) const
-      {
-        const Vec4<T> v_n = BSplineBasis::eval(vv); 
-        const Vec4<T> u_n = BSplineBasis::derivative(uu); 
-        return eval(uu,vv,u_n,v_n);      
-      }
-      
-      template<typename T>
-      __forceinline Vec3<T> normal(const T& uu, const T& vv) const
-      {
-        const Vec3<T> tU = tangentU(uu,vv);
-        const Vec3<T> tV = tangentV(uu,vv);
-        return cross(tU,tV);
-      }
-      
       friend __forceinline std::ostream& operator<<(std::ostream& o, const BSplinePatchT& p)
       {
         for (size_t y=0; y<4; y++)
