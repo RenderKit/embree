@@ -393,11 +393,13 @@ namespace embree
       tbb_affinity.set_concurrency(0);
       tbb_affinity.observe(true); 
 
+#if 0
       const size_t N = 1024*1024;
       //PRINT(g_numThreads );
       while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
         tbb_pi<double> (N);
       //PRINT( tbb_affinity.get_concurrency() );
+#endif
     }
 #endif
 
