@@ -37,6 +37,7 @@
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
+#define USE_SMOOTH_NORMALS 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -1083,11 +1084,16 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT1);
+#if USE_SMOOTH_NORMALS
+  scene_aflags |= RTC_INTERPOLATE;
+#endif
+
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1280,6 +1286,15 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 #endif
       break;
     }
+    Vec3fa Ns = normalize(ray.Ng);
+
+#if USE_SMOOTH_NORMALS
+    Vec3fa dPdu,dPdv;
+    int geomID = ray.geomID;  {
+      rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+    }
+    Ns = normalize(cross(dPdv,dPdu));
+#endif
 
     /* compute differential geometry */
     DifferentialGeometry dg;
@@ -1289,9 +1304,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    //Vec3fa _Ns = interpolate_normal(ray);
-    Vec3fa _Ns = normalize(ray.Ng);
-    dg.Ns = face_forward(ray.dir,_Ns);
+    dg.Ns = face_forward(ray.dir,Ns);
 
     /* shade all rays that hit something */
     int materialID = getMaterialID(ray,dg);

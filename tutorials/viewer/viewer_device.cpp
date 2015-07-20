@@ -29,7 +29,7 @@ bool g_subdiv_mode = false;
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 128
+#define FIXED_EDGE_TESSELLATION_VALUE 3
 #define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 64.0f
@@ -43,8 +43,6 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
-  //return 128;
-  //return FIXED_EDGE_TESSELLATION_VALUE; 
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
@@ -359,7 +357,6 @@ extern "C" void device_render (int* pixels,
   }
 
   bool camera_changed = g_changed; g_changed = false;
-  //g_changed = true;
   if ((p.x != old_p.x || p.y != old_p.y || p.z != old_p.z))
     {
      camera_changed = true;
@@ -381,7 +378,6 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
-  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

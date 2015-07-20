@@ -24,7 +24,7 @@
 #if defined(__XEON_PHI__)
 #define EDGE_LEVEL 64.0f
 #else
-#define EDGE_LEVEL 64.0f
+#define EDGE_LEVEL 256.0f
 #endif
 
 
