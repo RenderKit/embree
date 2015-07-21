@@ -82,16 +82,7 @@ namespace embree
           
           if (unlikely(hit_patch != nullptr))
           {
-
-#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-	    //if (likely(!hit_patch->hasDisplacement()))
-	      {		 
-		Vec3fa normal = hit_patch->normal(r.v,r.u);
-		r.Ng = normal;
-	      }
-#endif
-
-#if FORCE_TRIANGLE_UV == 0
+#if !FORCE_TRIANGLE_UV
 	    const Vec2f uv0 = hit_patch->getUV(0);
 	    const Vec2f uv1 = hit_patch->getUV(1);
 	    const Vec2f uv2 = hit_patch->getUV(2);
@@ -105,7 +96,6 @@ namespace embree
 #endif
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
-            //r.primID = (size_t)hit_patch;
           }
         }
         
@@ -143,8 +133,9 @@ namespace embree
 						       const float *const grid_y,
 						       const float *const grid_z,
 						       const float *const grid_uv,
-						       const size_t line_offset,
-						       Precalculations &pre)
+ 						       const size_t line_offset,
+ 						       Precalculations &pre,
+                                                       Scene* scene)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -189,57 +180,79 @@ namespace embree
 	if (likely(none(valid))) return;
         
 	/* perform depth test */
-	const float4 _t = dot(v0,Ng) ^ sgnDen;
-	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+	const float4 T = dot(v0,Ng) ^ sgnDen;
+	valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
 	if (unlikely(none(valid))) return;
         
 	/* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(RTCORE_BACKFACE_CULLING) // FIXME: wrong because of flipped normals
 	valid &= den > float4(zero);
 	if (unlikely(none(valid))) return;
 #else
 	valid &= den != float4(zero);
 	if (unlikely(none(valid))) return;
 #endif
+
+        /* ray mask test */
+#if defined(RTCORE_RAY_MASK)
+        if (geometry->mask & ray.mask) == 0) return;
+#endif
         
 	/* calculate hit information */
 	const float4 rcpAbsDen = rcp(absDen);
-	const float4 u =  U*rcpAbsDen;
-	const float4 v =  V*rcpAbsDen;
-	const float4 t = _t*rcpAbsDen;
+        float4 u =  U*rcpAbsDen;
+	float4 v =  V*rcpAbsDen;
+	const float4 t = T*rcpAbsDen;
         
-#if FORCE_TRIANGLE_UV == 0
+#if !FORCE_TRIANGLE_UV
 	const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
 	const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
 	const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
 	const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	const float4 u_final = uv[1];
-	const float4 v_final = uv[0];        
-#else
-	const float4 u_final = u;
-	const float4 v_final = v;
+	u = uv[1];
+	v = uv[0];        
 #endif
 	size_t i = select_min(valid,t);
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
+
+        /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+        if (unlikely(geometry->hasIntersectionFilter1())) 
+        {
+          while (true) 
+          {
+            /* call intersection filter function */
+            Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
+              pre.hit_patch = pre.current_patch;
+              return;
+            }
+            valid[i] = 0;
+            if (unlikely(none(valid))) return;
+            i = select_min(valid,t);
+          }
+          return;
+        }
+#endif
 
 	/* update hit information */
 	pre.hit_patch = pre.current_patch;
-
-	ray.u         = u_final[i];
-	ray.v         = v_final[i];
+	ray.u         = u[i];
+	ray.v         = v[i];
 	ray.tfar      = t[i];
-	if (i % 2)
-	  {
-	    ray.Ng.x      = Ng.x[i];
-	    ray.Ng.y      = Ng.y[i];
-	    ray.Ng.z      = Ng.z[i];
-	  }
-	else
-	  {
-	    ray.Ng.x      = -Ng.x[i];
-	    ray.Ng.y      = -Ng.y[i];
-	    ray.Ng.z      = -Ng.z[i];	    
-	  }
+	if (i % 2) {
+          ray.Ng.x      = Ng.x[i];
+          ray.Ng.y      = Ng.y[i];
+          ray.Ng.z      = Ng.z[i];
+        }
+	else {
+          ray.Ng.x      = -Ng.x[i];
+          ray.Ng.y      = -Ng.y[i];
+          ray.Ng.z      = -Ng.z[i];	    
+        }
       };
 
       static __forceinline bool occluded1_precise_2x3(Ray& ray,
@@ -247,7 +260,9 @@ namespace embree
 						      const float *const grid_y,
 						      const float *const grid_z,
 						      const float *const grid_uv,
-						      const size_t line_offset)
+						      const size_t line_offset,
+                                                      Precalculations &pre,
+                                                      Scene* scene)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -291,23 +306,56 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* perform depth test */
-        const float4 _t = dot(v0,Ng) ^ sgnDen;
-        valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+        const float4 T = dot(v0,Ng) ^ sgnDen;
+        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
+#if defined(RTCORE_BACKFACE_CULLING) // FIXME: wrong because of flipped normals
         valid &= den > float4(zero);
         if (unlikely(none(valid))) return false;
 #else
         valid &= den != float4(zero);
         if (unlikely(none(valid))) return false;
 #endif
+
+        /* ray mask test */
+#if defined(RTCORE_RAY_MASK)
+        if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+        
+        /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
+        if (unlikely(geometry->hasOcclusionFilter1())) 
+        {
+          /* calculate hit information */
+          const float4 rcpAbsDen = rcp(absDen);
+          float4 u =  U*rcpAbsDen;
+          float4 v =  V*rcpAbsDen;
+          const float4 t = T*rcpAbsDen;
+        
+#if !FORCE_TRIANGLE_UV
+          const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
+          const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
+          const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
+          const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
+          const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[1];
+          v = uv[0];        
+#endif
+          
+          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
+            const Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
+          }
+          return false;
+        }
+#endif
         return true;
-      };
-
-
-
+      }
 
 #if defined(__AVX__)
 
@@ -349,7 +397,8 @@ namespace embree
 						       const float *const grid_z,
 						       const float *const grid_uv,
 						       const size_t line_offset,
-						       Precalculations &pre)
+						       Precalculations &pre,
+                                                       Scene* scene)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -424,13 +473,12 @@ namespace embree
 
 #endif        
 
-
 	valid &= W >= 0.0f;
 	if (likely(none(valid))) return;
         
 	/* perform depth test */
-	const float8 _t = dot(v0,Ng) ^ sgnDen;
-	valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+	const float8 T = dot(v0,Ng) ^ sgnDen;
+	valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
 	if (unlikely(none(valid))) return;
         
 	/* perform backface culling */
@@ -441,51 +489,72 @@ namespace embree
 	valid &= den != float8(zero);
 	if (unlikely(none(valid))) return;
 #endif
+
+        /* ray mask test */
+#if defined(RTCORE_RAY_MASK)
+        if (geometry->mask & ray.mask) == 0) return;
+#endif
         
 	/* calculate hit information */
 	const float8 rcpAbsDen = rcp(absDen);
-	const float8 u =  U*rcpAbsDen;
-	const float8 v =  V*rcpAbsDen;
-	const float8 t = _t*rcpAbsDen;
+	float8 u =  U*rcpAbsDen;
+	float8 v =  V*rcpAbsDen;
+	const float8 t = T*rcpAbsDen;
         
-#if FORCE_TRIANGLE_UV == 0
+#if !FORCE_TRIANGLE_UV
 	const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
 	const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
 	const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
 	const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-	const float8 u_final = uv[1];
-	const float8 v_final = uv[0];
-#else
-	const float8 u_final = u;
-	const float8 v_final = v;
-#endif
-        
-	size_t i = select_min(valid,t);
+	u = uv[1];
+	v = uv[0];
+#endif        
+        size_t i = select_min(valid,t);
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
 
+        /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+        if (unlikely(geometry->hasIntersectionFilter1())) 
+        {
+          while (true) 
+          {
+            /* call intersection filter function */
+            Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
+              pre.hit_patch = pre.current_patch;
+              return;
+            }
+            valid[i] = 0;
+            if (unlikely(none(valid))) return;
+            i = select_min(valid,t);
+          }
+          return;
+        }
+#endif
 	
 	/* update hit information */
 	pre.hit_patch = pre.current_patch;
-
-	ray.u         = u_final[i];
-	ray.v         = v_final[i];
+	ray.u         = u[i];
+	ray.v         = v[i];
 	ray.tfar      = t[i];
 
 #if ENABLE_NORMALIZED_INTERSECTION == 1
 	Ng = Ng * Vec3<float8>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
 #endif
-	if (i % 2)
-	  {
-	    ray.Ng.x      = Ng.x[i];
-	    ray.Ng.y      = Ng.y[i];
-	    ray.Ng.z      = Ng.z[i];
-	  }
+	if (i % 2) {
+          ray.Ng.x      = Ng.x[i];
+          ray.Ng.y      = Ng.y[i];
+          ray.Ng.z      = Ng.z[i];
+        }
 	else
-	  {
-	    ray.Ng.x      = -Ng.x[i];
-	    ray.Ng.y      = -Ng.y[i];
-	    ray.Ng.z      = -Ng.z[i];	    
-	  }
+        {
+           ray.Ng.x      = -Ng.x[i];
+           ray.Ng.y      = -Ng.y[i];
+           ray.Ng.z      = -Ng.z[i];	    
+        }
       };
 
         static __forceinline bool occluded1_precise_3x3(Ray& ray,
@@ -493,7 +562,9 @@ namespace embree
 							const float *const grid_y,
 							const float *const grid_z,
 							const float *const grid_uv,
-							const size_t line_offset)
+							const size_t line_offset,
+                                                        Precalculations &pre,
+                                                        Scene* scene)
       {
 	const size_t offset0 = 0 * line_offset;
 	const size_t offset1 = 1 * line_offset;
@@ -538,8 +609,8 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* perform depth test */
-        const float8 _t = dot(v0,Ng) ^ sgnDen;
-        valid &= (_t >= absDen*ray.tnear) & (absDen*ray.tfar >= _t);
+        const float8 T = dot(v0,Ng) ^ sgnDen;
+        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
         if (unlikely(none(valid))) return false;
         
         /* perform backface culling */
@@ -550,6 +621,43 @@ namespace embree
         valid &= den != float8(zero);
         if (unlikely(none(valid))) return false;
 #endif
+
+        /* ray mask test */
+#if defined(RTCORE_RAY_MASK)
+        if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+
+        /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
+        if (unlikely(geometry->hasOcclusionFilter1())) 
+        {
+          /* calculate hit information */
+          const float8 rcpAbsDen = rcp(absDen);
+          float8 u =  U*rcpAbsDen;
+          float8 v =  V*rcpAbsDen;
+          const float8 t = T*rcpAbsDen;
+        
+#if !FORCE_TRIANGLE_UV
+          const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1);	
+          const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
+          const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
+          const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
+          const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[1];
+          v = uv[0];        
+#endif
+          
+          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
+            const Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
+          }
+          return false;
+        }
+#endif
+
         return true;
       };
 
@@ -579,7 +687,7 @@ namespace embree
       
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         STAT3(normal.trav_prims,1,1,1);
         
@@ -594,10 +702,10 @@ namespace embree
           const float *const grid_z  = grid_x + 2 * dim_offset;
           const float *const grid_uv = grid_x + 3 * dim_offset;
 #if defined(__AVX__)
-	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre);
+	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre);
-	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre);
+	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
+	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
 #endif
 
         }
@@ -610,7 +718,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, const Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         STAT3(shadow.trav_prims,1,1,1);
         
@@ -626,10 +734,10 @@ namespace embree
           const float *const grid_uv = grid_x + 3 * dim_offset;
 
 #if defined(__AVX__)
-	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset);
+	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset)) return true;
-	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
+	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
 #endif
 
         }
