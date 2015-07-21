@@ -32,8 +32,8 @@ namespace embree
   namespace isa
   {    
 
-    template<typename PrimitiveIntersector16>
-    __forceinline void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    template<bool robust, typename PrimitiveIntersector16>
+    __forceinline void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -91,9 +91,14 @@ namespace embree
           const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
 
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+
           const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          const bool8 vmask = tNear <= tFar;
+          //const bool8 vmask = tNear <= tFar;
+          const bool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
+
           size_t mask = movemask(vmask);
           
           /*! if no child is hit, pop next node */
@@ -169,8 +174,8 @@ namespace embree
     }
 
     
-    template<typename PrimitiveIntersector16>    
-    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
+    template<bool robust, typename PrimitiveIntersector16>    
+    void BVH8Intersector16Hybrid<robust,PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)      
       /* load ray */
@@ -262,7 +267,12 @@ namespace embree
             const float16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
             const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            //const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+
+            const float round_down = 1.0f-2.0f*float(ulp);
+            const float round_up   = 1.0f+2.0f*float(ulp);
+
+            const bool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
@@ -317,8 +327,8 @@ namespace embree
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    template<typename PrimitiveIntersector16>
-    __forceinline bool BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    template<bool robust, typename PrimitiveIntersector16>
+    __forceinline bool BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -371,17 +381,15 @@ namespace embree
           const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
           
-#if defined(__AVX2__)
-          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
-          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
-          const bool8 vmask = cast(tNear) > cast(tFar);
-          size_t mask = movemask(vmask)^0xff;
-#else
           const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
           const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          const bool8 vmask = tNear <= tFar;
+          const float round_down = 1.0f-2.0f*float(ulp);
+          const float round_up   = 1.0f+2.0f*float(ulp);
+
+          //const bool8 vmask = tNear <= tFar;
+          const bool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
+
           size_t mask = movemask(vmask);
-#endif
           
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
@@ -443,8 +451,8 @@ namespace embree
     }
 
     
-     template<typename PrimitiveIntersector16>
-    void BVH8Intersector16Hybrid<PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
+     template<bool robust, typename PrimitiveIntersector16>
+     void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
@@ -517,7 +525,12 @@ namespace embree
             const float16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
             const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
             const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+
+            const float round_down = 1.0f-2.0f*float(ulp);
+            const float round_up   = 1.0f+2.0f*float(ulp);
+
+            //const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const bool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
@@ -564,16 +577,16 @@ namespace embree
 #endif      
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA true> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA true> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
 
   }
 }  
