@@ -44,6 +44,46 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+#define NUM_VERTICES 8
+#define NUM_QUAD_INDICES 24
+#define NUM_TRI_INDICES 36
+#define NUM_QUAD_FACES 6
+#define NUM_TRI_FACES 12
+
+__aligned(16) uniform float cube_vertices[NUM_VERTICES][4] = 
+{
+  { -1, -1, -1, 0 }, 
+  { -1, -1, +1, 0 }, 
+  { -1, +1, -1, 0 }, 
+  { -1, +1, +1, 0 }, 
+  { +1, -1, -1, 0 }, 
+  { +1, -1, +1, 0 }, 
+  { +1, +1, -1, 0 }, 
+  { +1, +1, +1, 0 }, 
+};
+
+uniform unsigned int cube_quad_indices[NUM_QUAD_INDICES] = { 
+  0, 2, 3, 1, 
+  5, 7, 6, 4, 
+  0, 1, 5, 4, 
+  6, 7, 3, 2, 
+  0, 4, 6, 2,
+  3, 7, 5, 1
+};
+
+uniform unsigned int cube_tri_indices[NUM_TRI_INDICES] = { 
+  0, 2, 1,  2, 3, 1, 
+  5, 7, 4,  7, 6, 4, 
+  0, 1, 4,  1, 5, 4, 
+  6, 7, 2,  7, 3, 2, 
+  0, 4, 2,  4, 6, 2,
+  3, 7, 1,  7, 5, 1
+};
+
+uniform unsigned int cube_quad_faces[NUM_QUAD_FACES] = { 
+  4, 4, 4, 4, 4, 4 
+};
+
 /* extended ray structure that includes total transparency along the ray */
 struct RTCRay2
 {
@@ -94,58 +134,58 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
 uniform unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
-  uniform unsigned int mesh = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, 12, 8);
+  uniform unsigned int geomID = rtcNewTriangleMesh (scene_i, RTC_GEOMETRY_STATIC, NUM_TRI_FACES, NUM_VERTICES);
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,     0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_tri_indices , 0, 3*sizeof(uniform unsigned int));
 
-  /* set vertices */
-  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-  vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1; 
-  vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1; 
-  vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1; 
-  vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1; 
-  vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1; 
-  vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1; 
-  vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1; 
-  vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1; 
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-
-  /* create triangle color array */
+  /* create per-triangle color array */
   colors = uniform new uniform Vec3f[12];
-
-  /* set triangles and colors */
-  uniform int tri = 0;
-  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-  
-  // left side
-  colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
-  colors[tri] = make_Vec3f(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 2; triangles[tri].v2 = 3; tri++;
-
-  // right side
-  colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 5; triangles[tri].v2 = 6; tri++;
-  colors[tri] = make_Vec3f(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
-
-  // bottom side
-  colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 4; tri++;
-  colors[tri] = make_Vec3f(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 4; tri++;
-
-  // top side
-  colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 3; tri++;
-  colors[tri] = make_Vec3f(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
-
-  // front side
-  colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 2; tri++;
-  colors[tri] = make_Vec3f(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 4; triangles[tri].v2 = 6; tri++;
-
-  // back side
-  colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 5; tri++;
-  colors[tri] = make_Vec3f(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 5; tri++;
-
-  rtcUnmapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
+  colors[0] = make_Vec3f(1,0,0); // left side
+  colors[1] = make_Vec3f(1,0,0);
+  colors[2] = make_Vec3f(0,1,0); // right side
+  colors[3] = make_Vec3f(0,1,0);
+  colors[4] = make_Vec3f(0.5f);  // bottom side
+  colors[5] = make_Vec3f(0.5f); 
+  colors[6] = make_Vec3f(1.0f);  // top side
+  colors[7] = make_Vec3f(1.0f); 
+  colors[8] = make_Vec3f(0,0,1); // front side
+  colors[9] = make_Vec3f(0,0,1);
+  colors[10] = make_Vec3f(1,1,0); // back side
+  colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-  rtcSetIntersectionFilterFunction(scene_i,mesh,(RTCFilterFuncVarying)&intersectionFilter);
-  rtcSetOcclusionFilterFunction   (scene_i,mesh,(RTCFilterFuncVarying)&occlusionFilter);
+  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
+  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
 
-  return mesh;
+  return geomID;
+}
+
+/* adds a cube to the scene */
+uniform unsigned int addSubdivCube (RTCScene scene_i)
+{
+  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_i, RTC_GEOMETRY_STATIC, NUM_QUAD_FACES, NUM_QUAD_INDICES, NUM_VERTICES, 0, 0, 0);
+  rtcSetBuffer(scene_i, geomID, RTC_VERTEX_BUFFER, cube_vertices,      0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(scene_i, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_i, geomID, RTC_FACE_BUFFER,   cube_quad_faces,    0, sizeof(uniform unsigned int));
+
+  uniform float* level = (uniform float*) rtcMapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  for (size_t i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
+  rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
+  
+  /* create face color array */
+  colors = uniform new uniform Vec3f[6];
+  colors[0] = make_Vec3f(1,0,0); // left side
+  colors[1] = make_Vec3f(0,1,0); // right side
+  colors[2] = make_Vec3f(0.5f);  // bottom side
+  colors[3] = make_Vec3f(1.0f);  // top side
+  colors[4] = make_Vec3f(0,0,1); // front side
+  colors[5] = make_Vec3f(1,1,0); // back side
+
+  /* set intersection filter for the cube */
+  rtcSetIntersectionFilterFunction(scene_i,geomID,(RTCFilterFuncVarying)&intersectionFilter);
+  rtcSetOcclusionFilterFunction   (scene_i,geomID,(RTCFilterFuncVarying)&occlusionFilter);
+
+  return geomID;
 }
 
 /* adds a ground plane to the scene */
@@ -185,6 +225,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* add cube */
   addCube(g_scene);
+  //addSubdivCube(g_scene);
 
   /* add ground plane */
   addGroundPlane(g_scene);
