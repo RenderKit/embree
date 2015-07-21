@@ -104,4 +104,33 @@ namespace embree
       flags |= TRANSITION_PATCH;
     }
   }
+
+   size_t SubdivPatch1Base::get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
+   {
+     if (range.hasLeafSize()) 
+       return leafBlocks;
+     
+     __aligned(64) GridRange r[4];
+     const unsigned int children = range.splitIntoSubRanges(r);
+     
+     size_t blocks = 2; /* 128 bytes bvh4 node layout */
+     for (unsigned int i=0;i<children;i++)
+       blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
+     return blocks;    
+   }
+
+  size_t SubdivPatch1Base::getSubTreeSize64bBlocks(const unsigned int leafBlocks)
+  {
+#if defined(__MIC__)
+    const unsigned int U_BLOCK_SIZE = 5;
+    const unsigned int V_BLOCK_SIZE = 3;
+    
+    const unsigned int grid_u_blocks = (grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
+    const unsigned int grid_v_blocks = (grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
+    
+    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_blocks,0,grid_v_blocks),leafBlocks);
+#else
+    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
+#endif
+  }
 }

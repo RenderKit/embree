@@ -126,36 +126,10 @@ namespace embree
     void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
   private:
-
-    size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
-    {
-      if (range.hasLeafSize()) 
-        return leafBlocks;
-
-      __aligned(64) GridRange r[4];
-      const unsigned int children = range.splitIntoSubRanges(r);
-
-      size_t blocks = 2; /* 128 bytes bvh4 node layout */
-      for (unsigned int i=0;i<children;i++)
-	blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
-      return blocks;    
-    }
+    size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks);
 
   public:
-    __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
-    {
-#if defined(__MIC__)
-      const unsigned int U_BLOCK_SIZE = 5;
-      const unsigned int V_BLOCK_SIZE = 3;
-
-      const unsigned int grid_u_blocks = (grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
-      const unsigned int grid_v_blocks = (grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
-
-      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_blocks,0,grid_v_blocks),leafBlocks);
-#else
-      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
-#endif
-    }
+    size_t getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2);
 
     __forceinline void write_lock()     { mtx.write_lock();   }
     __forceinline void write_unlock()   { mtx.write_unlock(); }
