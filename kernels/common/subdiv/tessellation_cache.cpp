@@ -61,7 +61,7 @@ namespace embree
 #endif
 
     maxBlocks              = size/64;
-    localTime              = 1;
+    localTime              = NUM_CACHE_SEGMENTS;
     next_block             = 0;
     numRenderThreads       = 0;
 #if FORCE_SIMPLE_FLUSH == 1
