@@ -237,7 +237,7 @@ namespace embree
     if (info7[1] & CPU_FEATURE_BIT_BMI1) cpu_features |= CPU_FEATURE_BMI1;
     if (info7[1] & CPU_FEATURE_BIT_BMI2) cpu_features |= CPU_FEATURE_BMI2;
 
-    if (has_ymm && info7[1] & CPU_FEATURE_BIT_AVX512) cpu_features |= CPU_FEATURE_AVX512;
+    if (has_ymm && info7[1] & CPU_FEATURE_BIT_AVX512) cpu_features |= CPU_FEATURE_AVX512; // FIXME: buggy, check more flags
 
 #if defined(__MIC__)
     cpu_features |= CPU_FEATURE_KNC;
