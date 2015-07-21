@@ -407,7 +407,7 @@ namespace embree
   
   __forceinline int __bsr(int v) {
 #if defined(__AVX2__) 
-    return _lzcnt_u32(v);
+    return 31 - _lzcnt_u32(v);
 #else
     int r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;
 #endif
@@ -415,7 +415,7 @@ namespace embree
   
   __forceinline unsigned __bsr(unsigned v) {
 #if defined(__AVX2__) 
-    return _lzcnt_u32(v);
+    return 31 - _lzcnt_u32(v);
 #else
     unsigned r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;
 #endif
@@ -424,9 +424,9 @@ namespace embree
   __forceinline size_t __bsr(size_t v) {
 #if defined(__AVX2__)
 #if defined(__X86_64__)
-    return _lzcnt_u64(v);
+    return 63 - _lzcnt_u64(v);
 #else
-    return _lzcnt_u32(v);
+    return 31 - _lzcnt_u32(v);
 #endif
 #else
     size_t r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;

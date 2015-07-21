@@ -107,9 +107,13 @@ namespace embree
 
     static __forceinline float16 loadu(const void* addr) 
     {
+#if defined(__AVX512__)
+      return _mm512_loadu_ps(addr);  
+#else
       float16 r = float16::undefined();
       r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
       return _mm512_extloadunpackhi_ps(r, (float*)addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+#endif
     }
 
     static __forceinline float16 load(const void *f) { 
@@ -617,9 +621,11 @@ namespace embree
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT16,_MM_BROADCAST_16X16,_MM_HINT_NONE),float16(1.0f/65535.0f));  
   }
 
+#if !defined(__AVX512__)
   __forceinline float16 uload16f_low_uint8(const bool16& mask, const void* addr, const float16& v1) {
     return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_UINT8, _MM_HINT_NONE);
   }
+#endif
 
   __forceinline float16 load16f_int8(const char *const ptr) {
     return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_SINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),float16(1.0f/127.0f));  

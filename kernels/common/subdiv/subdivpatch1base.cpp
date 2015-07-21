@@ -86,7 +86,13 @@ namespace embree
     grid_u_res = max(grid_u_res,3); // FIXME: this triggers stitching
     grid_v_res = max(grid_v_res,3);
 #endif
+    // PRINT(grid_u_res);
+    // PRINT(grid_v_res);
+
     grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
+    // PRINT(simd_width);
+    // PRINT(grid_size_simd_blocks);
+
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);

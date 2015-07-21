@@ -338,9 +338,9 @@ namespace embree
                                         const float travCost, const float intCost)
       {
         /* builder wants log2 of blockSize as input */
-        const size_t logBlockSize = __bsr(blockSize);
+        const size_t logBlockSize = __bsr(blockSize); 
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
-        
+
         /* instantiate array binning heuristic */
         Heuristic heuristic(prims);
         
