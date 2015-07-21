@@ -194,8 +194,11 @@ namespace embree
 #endif
 
         /* ray mask test */
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
-        if (geometry->mask & ray.mask) == 0) return;
+        if ((geometry->mask & ray.mask) == 0) return;
 #endif
         
 	/* calculate hit information */
@@ -214,9 +217,6 @@ namespace embree
 	v = uv[0];        
 #endif
 	size_t i = select_min(valid,t);
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
-        Geometry* geometry = scene->get(geomID);
 
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
@@ -320,15 +320,15 @@ namespace embree
 #endif
 
         /* ray mask test */
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
         
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
-        Geometry* geometry = scene->get(geomID);
         if (unlikely(geometry->hasOcclusionFilter1())) 
         {
           /* calculate hit information */
@@ -491,8 +491,11 @@ namespace embree
 #endif
 
         /* ray mask test */
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
-        if (geometry->mask & ray.mask) == 0) return;
+        if ((geometry->mask & ray.mask) == 0) return;
 #endif
         
 	/* calculate hit information */
@@ -511,9 +514,6 @@ namespace embree
 	v = uv[0];
 #endif        
         size_t i = select_min(valid,t);
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
-        Geometry* geometry = scene->get(geomID);
 
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
@@ -623,15 +623,15 @@ namespace embree
 #endif
 
         /* ray mask test */
+        const size_t geomID = pre.current_patch->geom;
+        const size_t primID = pre.current_patch->prim;
+        Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
 #endif
 
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
-        Geometry* geometry = scene->get(geomID);
         if (unlikely(geometry->hasOcclusionFilter1())) 
         {
           /* calculate hit information */
