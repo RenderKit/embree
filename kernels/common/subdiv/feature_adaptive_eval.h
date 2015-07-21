@@ -30,6 +30,7 @@ namespace embree
         typedef PatchT<Vertex,Vertex_t> Patch;
         typedef typename Patch::Ref Ref;
         typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
+        typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
         typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
         typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
         typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
@@ -118,25 +119,39 @@ namespace embree
             }
           }
         }
+
+        __forceinline bool final(const CatmullClarkPatch& patch, size_t depth) 
+        {
+#if PATCH_MIN_RESOLUTION
+          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=PATCH_MAX_EVAL_DEPTH;
+#else
+          return depth>=PATCH_MAX_EVAL_DEPTH;
+#endif
+        }
         
         void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth)
         {
           while (true) 
           {
-            if (unlikely(patch.isRegular2())) { 
+            typename CatmullClarkPatch::Type ty = patch.type();
+
+            if (unlikely(final(patch,depth)))
+            {
+              if (ty & CatmullClarkRing::TYPE_REGULAR) { 
+                RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              } else {
+                IrregularFillPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              }
+            }
+            else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
               assert(depth > 0); RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
             }
 #if PATCH_USE_GREGORY == 2
-            else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
+            else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
               assert(depth > 0); GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
             }
-#else
-            else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)){
-              IrregularFillPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-              return;
-            }
 #endif
-            else 
+            else
             {
               array_t<CatmullClarkPatch,4> patches; 
               patch.subdivide(patches); // FIXME: only have to generate one of the patches
@@ -169,15 +184,15 @@ namespace embree
           patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
           
           /* parametrization for triangles */
-          if (N == 3) 
+          if (N == 3)  // FIXME: border handling
             eval_general_triangle(patches,uv,depth);
           
           /* parametrization for quads */
-          else if (N == 4) 
+          else if (N == 4) // FIXME: border handling
             eval_general_quad(patches,uv,depth);
           
           /* parametrization for arbitrary polygons */
-          else {
+          else { // FIXME: border handling
             const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
             const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
             const unsigned i = 4*h+l; assert(i<N);

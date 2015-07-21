@@ -263,7 +263,7 @@ namespace embree
 
         typename CatmullClarkPatch::Type ty = patch.type();
 
-        if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH) || final(patch,depth)) 
+        if (unlikely(final(patch,depth)))
         {
           if (ty & CatmullClarkRing::TYPE_REGULAR) {
             RegularPatch rpatch(patch,border0,border1,border2,border3);
