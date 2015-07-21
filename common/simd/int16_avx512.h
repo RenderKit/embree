@@ -105,7 +105,7 @@ namespace embree
     }
 
     static __forceinline void store(const bool16& mask, void* addr, const int16& v2) {
-      store(mask,(int*)addr,v2);
+      _mm512_mask_store_epi32(addr,mask,v2);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
