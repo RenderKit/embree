@@ -28,6 +28,8 @@ namespace embree
   {
     struct FeatureAdaptiveEvalGrid
     {
+      typedef CatmullClark1Ring3fa CatmullClarkRing;
+      typedef CatmullClarkPatch3fa CatmullClarkPatch;
       typedef BilinearPatch3fa BilinearPatch;
       typedef BSplinePatch3fa BSplinePatch;
       typedef BezierPatch3fa BezierPatch;
@@ -258,29 +260,32 @@ namespace embree
         int ly0 = ceilf(erange.lower.y);
         int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
         if (lx0 >= lx1 || ly0 >= ly1) return;
-        
-        if (unlikely(patch.isRegular2())) {
+
+        typename CatmullClarkPatch::Type ty = patch.type();
+
+        if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH) || final(patch,depth)) 
+        {
+          if (ty & CatmullClarkRing::TYPE_REGULAR) {
+            RegularPatch rpatch(patch,border0,border1,border2,border3);
+            evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
+            return;
+          } else {
+            IrregularFillPatch ipatch(patch,border0,border1,border2,border3);
+            evalLocalGrid(ipatch,srange,lx0,lx1,ly0,ly1);
+            return;
+          }
+        }
+        else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
+          assert(depth > 0); 
           RegularPatch rpatch(patch,border0,border1,border2,border3);
           evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
           return;
         }
 #if PATCH_USE_GREGORY == 2
-        else if (unlikely(final(patch,depth) || patch.isGregory())) {
+        else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
+          assert(depth > 0); 
           GregoryPatch gpatch(patch,border0,border1,border2,border3);
           evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
-          return;
-        }
-#else
-        else if (unlikely(final(patch,depth)))
-        {
-#if PATCH_USE_GREGORY == 1
-          GregoryPatch gpatch(patch,border0,border1,border2,border3);
-          evalLocalGrid(gpatch,srange,lx0,lx1,ly0,ly1);
-#else
-          BilinearPatch bpatch(patch);
-          evalLocalGrid(bpatch,srange,lx0,lx1,ly0,ly1);
-#endif
-          return;
         }
 #endif
         else
