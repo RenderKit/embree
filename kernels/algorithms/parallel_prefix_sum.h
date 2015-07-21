@@ -23,7 +23,7 @@ namespace embree
   template<typename Value>
     struct ParallelPrefixSumState 
   {
-    enum { MAX_TASKS = 128 };
+    enum { MAX_TASKS = MAX_THREADS };
     Value counts[MAX_TASKS];
     Value sums  [MAX_TASKS];
   };

@@ -52,7 +52,6 @@ namespace embree
   {
     ALIGNED_STRUCT;
 
-    static const size_t MAX_THREADS = 1024;               // FIXME: there should be no maximal number of threads
     static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
     static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
@@ -372,7 +371,7 @@ namespace embree
     __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
 
   private:
-    Thread* threadLocal[MAX_THREADS];
+    Thread* threadLocal[MAX_THREADS]; // FIXME: thread should be no maximal number of threads
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;

@@ -200,16 +200,10 @@ namespace embree
   class __aligned(64) ParallelRadixSort
   {
   public:
-
-#if defined(__MIC__)
-    enum { MAX_THREADS = MAX_MIC_THREADS };
-#else
-    enum { MAX_THREADS = 32 };
-#endif
-
+    static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t BITS = 8;
     static const size_t BUCKETS = (1 << BITS);
-    typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
+    typedef unsigned int TyRadixCount[MAX_TASKS][BUCKETS];
     
     template<typename Ty, typename Key>
       class Task
@@ -240,12 +234,12 @@ namespace embree
 #if defined(__MIC__)
 	  const size_t numThreads = scheduler->getNumThreads(); 
 #else
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_THREADS));
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,scheduler->getNumThreads(),size_t(MAX_TASKS));
 #endif
 	  parent->barrier.init(numThreads);
 	  scheduler->dispatchTask(task_radixsort,this,0,numThreads);
 #else
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_THREADS));
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_TASKS));
           tbbRadixSort(numThreads);
 #endif
 	}
@@ -517,11 +511,10 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   class ParallelRadixSortCopy
   {
   public:
-
-    enum { MAX_THREADS = 32 };
+    static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
-    typedef unsigned int TyRadixCount[MAX_THREADS][BUCKETS];
+    typedef unsigned int TyRadixCount[MAX_TASKS][BUCKETS];
     
     template<typename Ty, typename Key>
       class Task
@@ -551,7 +544,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
 	/* perform parallel sort for large N */
 	else 
 	{
-	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_THREADS));
+	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_TASKS));
           tbbRadixSort(numThreads);
 	}
       }

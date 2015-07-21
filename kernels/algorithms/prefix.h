@@ -28,10 +28,10 @@ namespace embree
   class ParallelPrefixOp
   {
 #if defined(__MIC__)
-    static const size_t MAX_THREADS = MAX_MIC_THREADS;
+    static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t SINGLE_THREAD_THRESHOLD = 50000;
 #else
-    static const size_t MAX_THREADS = 32;
+    static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t SINGLE_THREAD_THRESHOLD = 3000000;
 #endif
 
@@ -55,7 +55,7 @@ namespace embree
 	/* perform parallel prefix operation for large N */
 	else 
 	{
-	  const size_t threadCount = TaskSchedulerTBB::threadCount();
+	  const size_t threadCount = min(MAX_TASKS, TaskSchedulerTBB::threadCount()); // FIXME: dont use all threads for medium sized jobs
 	  
 	  /* first calculate range for each block */
 	  parallel_for(threadCount, [&] (const size_t threadIndex) 
@@ -92,59 +92,9 @@ namespace embree
 	    if (threadIndex == threadCount-1) 
 	      parent->value = count;
 	  });
-
-	  /* first calculate range for each block */
-	  //scheduler->dispatchTask(task_sum,this,0,numThreads);
-	  
-	  /* now calculate prefix_op for each block */
-	  //scheduler->dispatchTask(task_prefix_op,this,0,numThreads);
 	}
       }
       
-      /* task that sums up a block of elements */
-      void sum(const size_t threadIndex, const size_t threadCount) // FIXME: remove
-      {
-	const size_t start = (threadIndex+0)*N/threadCount;
-	const size_t end   = (threadIndex+1)*N/threadCount;
-	
-	Ty sum = id;
-	for (size_t i=start; i<end; i++)
-	  sum = op(sum,src[i]);
-	
-	parent->state[threadIndex] = sum;
-      }
-
-      /* task that calculates the prefix operation for a block of elements */
-      void prefix_op(const size_t threadIndex, const size_t threadCount) // FIXME: remove
-      {
-	const size_t start = (threadIndex+0)*N/threadCount;
-	const size_t end   = (threadIndex+1)*N/threadCount;
-		
-	/* calculate start sum for block */
-	Ty count = id;
-	for (size_t i=0; i<threadIndex; i++)
-	  count += parent->state[i];
-	
-	/* calculate prefix sums for the block */
-	for (size_t i=start; i<end; i++) 
-	{
-	  const Ty v = src[i];
-	  dst[i] = count;
-	  count = op(count,v);
-	}
-
-        if (threadIndex == threadCount-1) 
-          parent->value = count;
-      }
-      
-      //static void task_sum (void* data, const size_t threadIndex, const size_t threadCount) { 
-      //	((Task*)data)->sum(threadIndex,threadCount);                          
-      //}
-      
-      //static void task_prefix_op (void* data, const size_t threadIndex, const size_t threadCount) { 
-      //((Task*)data)->prefix_op(threadIndex,threadCount);                          
-      //}
-
     private:
       ParallelPrefixOp* const parent;
       const SrcArray& src;               //!< source array
@@ -159,7 +109,7 @@ namespace embree
     }
 
   public:
-    Ty state[MAX_THREADS];
+    Ty state[MAX_TASKS];
     Ty value;
   };
 

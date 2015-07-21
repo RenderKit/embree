@@ -22,6 +22,10 @@
   #define PAGE_SIZE 4096
 #endif
 
+#define MAX_THREADS 256
+#define MAX_MIC_THREADS MAX_THREADS // FIXME: remove MAX_MIC_THREADS
+#define MAX_MIC_CORES (MAX_MIC_THREADS/4)
+
 #include "platform.h"
 
 /* define isa namespace and ISA bitvector */
