@@ -220,16 +220,6 @@ namespace embree
       float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
       float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
-      if (patch.grid_subtree_size_64b_blocks * 16 < grid_offset + 4 * array_elements)
-      {
-        PRINT( patch.grid_u_res );
-        PRINT( patch.grid_v_res );
-        PRINT( patch.grid_size_simd_blocks );
-        PRINT( patch.grid_subtree_size_64b_blocks );
-        PRINT( grid_offset );
-        PRINT( array_elements );
-
-      }
       assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
       memcpy(grid_x ,local_grid_x ,array_elements*sizeof(float));
