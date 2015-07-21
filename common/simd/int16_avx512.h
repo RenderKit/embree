@@ -72,9 +72,13 @@ namespace embree
 
     static __forceinline int16 loadu(const void* addr) 
     {
+#if defined(__AVX512__)
+      return _mm512_loadu_si512(addr);
+#else
       int16 r = _mm512_undefined_epi32();
       r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
       return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+#endif
     }
 
     static __forceinline int16 load(const void* addr) 
