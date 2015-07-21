@@ -190,6 +190,7 @@ namespace embree
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
+    typedef BezierCurveT<Vertex> BezierCurve;
     
     enum Type {
       INVALID_PATCH = 0,
@@ -224,12 +225,13 @@ namespace embree
     {
       /* creates BilinearPatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch));
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BilinearPatch (const CatmullClarkPatch& patch) 
-        : patch(patch) {}
+      __forceinline BilinearPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
       BilinearPatchT<Vertex,Vertex_t> patch;
@@ -249,12 +251,13 @@ namespace embree
       
       /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch));
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
-        : patch(patch) {}
+      __forceinline BSplinePatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
       BSplinePatchT<Vertex,Vertex_t> patch;
@@ -274,12 +277,13 @@ namespace embree
       
       /* creates Bezier from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(patch));
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BezierPatch (const CatmullClarkPatch& patch) 
-        : patch(patch) {}
+      __forceinline BezierPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
       BezierPatchT<Vertex,Vertex_t> patch;
@@ -299,12 +303,13 @@ namespace embree
       
       /* creates GregoryPatch from CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch));
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline GregoryPatch (const CatmullClarkPatch& patch) 
-        : patch(patch) {}
+      __forceinline GregoryPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
       GregoryPatchT<Vertex,Vertex_t> patch;
@@ -339,20 +344,6 @@ namespace embree
       Ref child[4];
     };
     
-    /*struct SubdividedGeneralQuadPatch
-    {
-      template<typename Allocator>
-      __noinline static Ref create(const Allocator& alloc, Ref children[4]) {
-        return Ref(SUBDIVIDED_GENERAL_QUAD_PATCH, new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch(children));
-      }
-      
-      __forceinline SubdividedGeneralQuadPatch(Ref children[4]) {
-        for (size_t i=0; i<4; i++) child[i] = children[i];
-      }
-      
-      Ref child[4];
-      };*/
-
     struct SubdividedGeneralPatch
     {
       template<typename Allocator>
@@ -417,17 +408,89 @@ namespace embree
       if (N == 3) 
       {
         Ref child[3];
+#if PATCH_USE_GREGORY == 2
+        const Vertex_t t0_p = patch.ring[0].getLimitTangent();
+        const Vertex_t t0_m = patch.ring[0].getSecondLimitTangent();
+        
+        const Vertex_t t1_p = patch.ring[1].getLimitTangent();
+        const Vertex_t t1_m = patch.ring[1].getSecondLimitTangent();
+        
+        const Vertex_t t2_p = patch.ring[2].getLimitTangent();
+        const Vertex_t t2_m = patch.ring[2].getSecondLimitTangent();
+        
+        const Vertex_t b00 = patch.ring[0].getLimitVertex();
+        const Vertex_t b03 = patch.ring[1].getLimitVertex();
+        const Vertex_t b33 = patch.ring[2].getLimitVertex();
+        
+        const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
+        const Vertex_t b11 = b00 + 1.0/3.0f * t0_m;
+        
+        const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
+        const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
+        
+        const Vertex_t b22 = b33 + 1.0/3.0f * t2_p;
+        const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
+        
+        BezierCurve border0l,border0r; const BezierCurve border0(b00,b01,b02,b03); border0.subdivide(border0l,border0r);
+        BezierCurve border1l,border1r; const BezierCurve border1(b03,b13,b23,b33); border1.subdivide(border1l,border1r);
+        BezierCurve border2l,border2r; const BezierCurve border2(b33,b22,b11,b00); border2.subdivide(border2l,border2r);
+        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1, &border1l, nullptr, nullptr, &border0r);
+        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1, &border2l, nullptr, nullptr, &border1r);
+#else
         for (size_t i=0; i<3; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
-
+#endif
         return SubdividedGeneralTrianglePatch::create(alloc,child);
       } 
       else if (N == 4) 
       {
-        Ref child[4];
+         Ref child[4];
+#if PATCH_USE_GREGORY == 2
+        const Vertex_t t0_p = patch.ring[0].getLimitTangent();
+        const Vertex_t t0_m = patch.ring[0].getSecondLimitTangent();
+        
+        const Vertex_t t1_p = patch.ring[1].getLimitTangent();
+        const Vertex_t t1_m = patch.ring[1].getSecondLimitTangent();
+        
+        const Vertex_t t2_p = patch.ring[2].getLimitTangent();
+        const Vertex_t t2_m = patch.ring[2].getSecondLimitTangent();
+          
+        const Vertex_t t3_p = patch.ring[3].getLimitTangent();
+        const Vertex_t t3_m = patch.ring[3].getSecondLimitTangent();
+        
+        const Vertex_t b00 = patch.ring[0].getLimitVertex();
+        const Vertex_t b03 = patch.ring[1].getLimitVertex();
+        const Vertex_t b33 = patch.ring[2].getLimitVertex();
+        const Vertex_t b30 = patch.ring[3].getLimitVertex();
+        
+        const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
+        const Vertex_t b10 = b00 + 1.0/3.0f * t0_m;
+        
+        const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
+        const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
+        
+        const Vertex_t b32 = b33 + 1.0/3.0f * t2_p;
+        const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
+        
+        const Vertex_t b20 = b30 + 1.0/3.0f * t3_p;
+        const Vertex_t b31 = b30 + 1.0/3.0f * t3_m;
+        
+        BezierCurve curve0l,curve0r; const BezierCurve curve0(b00,b01,b02,b03); curve0.subdivide(curve0l,curve0r);
+        BezierCurve curve1l,curve1r; const BezierCurve curve1(b03,b13,b23,b33); curve1.subdivide(curve1l,curve1r);
+        BezierCurve curve2l,curve2r; const BezierCurve curve2(b33,b32,b31,b30); curve2.subdivide(curve2l,curve2r);
+        BezierCurve curve3l,curve3r; const BezierCurve curve3(b30,b20,b10,b00); curve3.subdivide(curve3l,curve3r);
+        
+        GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
+        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1,&curve0l,nullptr,nullptr,&curve3r);
+        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1,&curve0r,&curve1l,nullptr,nullptr);
+        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1,nullptr,&curve1r,&curve2l,nullptr);
+        child[3] = PatchT::create(alloc,patches[3],edge,vertices,stride,depth+1,nullptr,nullptr,&curve2r,&curve3l);
+#else
         GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+#endif
         return SubdividedQuadPatch::create(alloc,child);
       }
       else 
@@ -435,7 +498,40 @@ namespace embree
         assert(N<MAX_PATCH_VALENCE);
         Ref child[MAX_PATCH_VALENCE];
         for (size_t i=0; i<N; i++)
+        {
+#if PATCH_USE_GREGORY == 2
+          const size_t i0 = i;
+          const Vertex_t t0_p = patch.ring[i0].getLimitTangent();
+          const Vertex_t t0_m = patch.ring[i0].getSecondLimitTangent();
+          
+          const size_t i1 = i+1 == N ? 0 : i+1;
+          const Vertex_t t1_p = patch.ring[i1].getLimitTangent();
+          const Vertex_t t1_m = patch.ring[i1].getSecondLimitTangent();
+          
+          const size_t i2 = i == 0 ? N-1 : i-1;
+          const Vertex_t t2_p = patch.ring[i2].getLimitTangent();
+          const Vertex_t t2_m = patch.ring[i2].getSecondLimitTangent();
+          
+          const Vertex_t b00 = patch.ring[i0].getLimitVertex();
+          const Vertex_t b03 = patch.ring[i1].getLimitVertex();
+          const Vertex_t b33 = patch.ring[i2].getLimitVertex();
+          
+          const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
+          const Vertex_t b11 = b00 + 1.0/3.0f * t0_m;
+          
+          //const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
+          const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
+          
+          const Vertex_t b22 = b33 + 1.0/3.0f * t2_p;
+          const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
+          
+          BezierCurve border0l,border0r; const BezierCurve border0(b00,b01,b02,b03); border0.subdivide(border0l,border0r);
+          BezierCurve border2l,border2r; const BezierCurve border2(b33,b22,b11,b00); border2.subdivide(border2l,border2r);
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+#endif
+        }
         return SubdividedGeneralPatch::create(alloc,child,N);
       }
       
@@ -443,20 +539,21 @@ namespace embree
     }
 
     template<typename Allocator>
-    __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+      __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth,
+            const BezierCurve* border0 = nullptr, const BezierCurve* border1 = nullptr, const BezierCurve* border2 = nullptr, const BezierCurve* border3 = nullptr)
     {
       typename CatmullClarkPatch::Type ty = patch.type();
 
       if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
-        if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch); 
-        else                                     return IrregularFillPatch::create(alloc,patch); 
+          if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
+        else                                       return IrregularFillPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
       else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
-        assert(depth > 0); return RegularPatch::create(alloc,patch); 
+        assert(depth > 0); return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
 #if PATCH_USE_GREGORY == 2
       else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
-        assert(depth > 0); return GregoryPatch::create(alloc,patch); 
+        assert(depth > 0); return GregoryPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
 #endif
       else if (depth >= PATCH_MAX_CACHE_DEPTH) 

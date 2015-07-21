@@ -17,6 +17,7 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_curve.h"
 
 namespace embree
 {
@@ -33,7 +34,11 @@ namespace embree
       
       __forceinline BilinearPatchT () {}
 
-      __forceinline BilinearPatchT (const CatmullClarkPatch& patch) 
+      __forceinline BilinearPatchT (const CatmullClarkPatch& patch,
+                                    const BezierCurveT<Vertex>* border0 = nullptr,
+                                    const BezierCurveT<Vertex>* border1 = nullptr,
+                                    const BezierCurveT<Vertex>* border2 = nullptr,
+                                    const BezierCurveT<Vertex>* border3 = nullptr) 
       {
         v[0] = patch.ring[0].getLimitVertex();
         v[1] = patch.ring[1].getLimitVertex();
