@@ -280,6 +280,7 @@ namespace embree
     atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
     atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
+    atomic_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
     __forceinline size_t numPrimitives() const {
     return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;

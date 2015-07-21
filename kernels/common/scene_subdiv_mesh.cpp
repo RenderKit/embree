@@ -53,12 +53,14 @@ namespace embree
 
   void SubdivMesh::enabling() 
   { 
+    atomic_add(&parent->numSubdivEnableDisableEvents,1);
     if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,numFaces); 
     else                   atomic_add(&parent->numSubdivPatches2,numFaces); 
   }
   
   void SubdivMesh::disabling() 
   { 
+    atomic_add(&parent->numSubdivEnableDisableEvents,1);
     if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); 
     else                   atomic_add(&parent->numSubdivPatches2,-(ssize_t)numFaces);
   }

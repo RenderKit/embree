@@ -250,6 +250,7 @@ namespace embree
     Scene::Iterator<SubdivMesh> iter;
     ParallelForForPrefixSumState<PrimInfo> pstate;
     bool fastUpdateMode;
+    size_t numSubdivEnableDisableEvents;
 
     static const size_t MAX_SUBTREES = 2048;
     static const size_t GENERATE_SUBTREES_MAX_TREE_DEPTH = 5;
@@ -258,7 +259,7 @@ namespace embree
     BVH4i::NodeRef subtree_refs[MAX_SUBTREES];
 
   public:
-    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),fastUpdateMode(false)
+    BVH4iBuilderSubdivMesh (BVH4i* bvh, void* geometry) : BVH4iBuilder(bvh,geometry),fastUpdateMode(false),numSubdivEnableDisableEvents(0)
       {}
 
     virtual void build            (const size_t threadIndex, const size_t threadCount);

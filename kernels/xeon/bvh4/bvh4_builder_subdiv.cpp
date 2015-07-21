@@ -242,9 +242,10 @@ namespace embree
       Scene* scene;
       mvector<PrimRef> prims; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
+      size_t numSubdivEnableDisableEvents;
 
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene) {}
+        : bvh(bvh), scene(scene), numSubdivEnableDisableEvents(0) {}
 
             BBox3fa refit(BVH4::NodeRef& ref)
       {
@@ -323,6 +324,10 @@ namespace embree
             return fastUpdate;
           }, [](const bool a, const bool b) { return a && b; });
         }
+
+        /* only enable fast mode of no subdiv mesh got enabled or disabled since last run */
+        fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
+        numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
 
         /* skip build for empty scene */
         if (numPrimitives == 0) {

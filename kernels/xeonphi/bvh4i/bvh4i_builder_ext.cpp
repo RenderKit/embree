@@ -910,7 +910,9 @@ PRINT(CORRECT_numPrims);
         }
     }
 
-    
+    /* only enable fast mode of no subdiv mesh got enabled or disabled since last run */
+    fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
+    numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
 
     /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
