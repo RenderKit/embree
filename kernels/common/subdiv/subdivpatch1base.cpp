@@ -65,7 +65,7 @@ namespace embree
     updateEdgeLevels(edge_level,subdiv,mesh,simd_width);
   }
 
-  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
+  void SubdivPatch1Base::computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4])
   {
     /* init discrete edge tessellation levels and grid resolution */
     assert( edge_level[0] >= 0.0f );
@@ -77,15 +77,28 @@ namespace embree
     level[1] = max(ceilf(adjustTessellationLevel(edge_level[1],subdiv[1])),1.0f);
     level[2] = max(ceilf(adjustTessellationLevel(edge_level[2],subdiv[2])),1.0f);
     level[3] = max(ceilf(adjustTessellationLevel(edge_level[3],subdiv[3])),1.0f);
+  }
 
-    grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
-    grid_v_res = max(level[1],level[3])+1;
-
+  Vec2i SubdivPatch1Base::computeGridSize(const float level[4])
+  {
+    unsigned width = max(level[0],level[2])+1; // n segments -> n+1 points
+    unsigned height = max(level[1],level[3])+1;
+    
     /* workaround for 2x2 intersection stencil */
 #if !defined(__MIC__)
-    grid_u_res = max(grid_u_res,3); // FIXME: this triggers stitching
-    grid_v_res = max(grid_v_res,3);
+    width = max(width,3); // FIXME: this triggers stitching
+    height = max(height,3);
 #endif
+
+    return Vec2i(width,height);
+  }
+
+  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
+  {
+    computeEdgeLevels(edge_level,subdiv,level);
+    Vec2i res = computeGridSize(level);
+    grid_u_res = res.x; grid_v_res = res.y;
+    
     grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;

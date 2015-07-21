@@ -123,6 +123,8 @@ namespace embree
       return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
     }
 
+    static void computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4]);
+    static Vec2i computeGridSize(const float level[4]);
     void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
   private:
