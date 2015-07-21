@@ -3476,11 +3476,14 @@ namespace embree
       rtcore_watertight_plane8(100000);
     }
 #endif
+#endif
 
 #if defined(__MIC__) || defined(__TARGET_AVX512__)
-    rtcore_watertight_closed16("sphere",pos);
-    rtcore_watertight_closed16("cube",pos);
-    rtcore_watertight_plane16(100000);
+    if (hasISA(AVX512)) {
+      rtcore_watertight_closed16("sphere",pos);
+      rtcore_watertight_closed16("cube",pos);
+      rtcore_watertight_plane16(100000);
+    }
 
 #endif
 
@@ -3506,7 +3509,6 @@ namespace embree
 #endif
 #endif
 
-#endif
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
