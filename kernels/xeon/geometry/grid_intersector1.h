@@ -113,7 +113,7 @@ namespace embree
 #endif
 
           /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasIntersectionFilter1())) {
             runIntersectionFilter1(geometry,ray,u,v,t,Ng,prim.grid.geomID,prim.grid.primID);
             return;
@@ -317,7 +317,7 @@ namespace embree
 #endif
 
         /* intersection filter test */
-#if defined(__INTERSECTION_FILTER__)
+#if defined(RTCORE_INTERSECTION_FILTER)
         if (unlikely(geometry->hasOcclusionFilter1()))
         {
           /* calculate hit information */

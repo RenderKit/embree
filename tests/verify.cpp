@@ -430,6 +430,42 @@ namespace embree
     return mesh;
   }
 
+  unsigned addSubdivPlane (RTCScene scene, RTCGeometryFlags flag, size_t num, const Vec3fa& p0, const Vec3fa& dx, const Vec3fa& dy)
+  {
+    unsigned mesh = rtcNewSubdivisionMesh (scene, flag, num*num, 4*num*num, (num+1)*(num+1), 0,0,0);
+    Vertex3fa*   vertices  = (Vertex3fa*) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    int* indices = (int*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    int* faces = (int*) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);
+    for (size_t y=0; y<=num; y++) {
+      for (size_t x=0; x<=num; x++) {
+        Vec3fa p = p0+float(x)/float(num)*dx+float(y)/float(num)*dy;
+        size_t i = y*(num+1)+x;
+        vertices[i].x = p.x;
+        vertices[i].y = p.y;
+        vertices[i].z = p.z;
+      }
+    }
+    for (size_t y=0; y<num; y++) {
+      for (size_t x=0; x<num; x++) {
+        size_t i = y*num+x;
+        size_t p00 = (y+0)*(num+1)+(x+0);
+        size_t p01 = (y+0)*(num+1)+(x+1);
+        size_t p10 = (y+1)*(num+1)+(x+0);
+        size_t p11 = (y+1)*(num+1)+(x+1);
+        indices[4*i+0] = p00; 
+        indices[4*i+1] = p01; 
+        indices[4*i+2] = p11; 
+        indices[4*i+3] = p10; 
+        faces[i] = 4;
+      }
+    }
+    rtcUnmapBuffer(scene,mesh,RTC_VERTEX_BUFFER); 
+    rtcUnmapBuffer(scene,mesh,RTC_INDEX_BUFFER);
+    rtcUnmapBuffer(scene,mesh,RTC_FACE_BUFFER);
+    rtcSetBoundaryMode(scene,mesh,RTC_BOUNDARY_EDGE_AND_CORNER);
+    return mesh;
+  }
+
   unsigned addSphere (RTCScene scene, RTCGeometryFlags flag, const Vec3fa& pos, const float r, size_t numPhi, size_t maxTriangles = -1, float motion = 0.0f)
   {
     /* create a triangulated sphere */
@@ -1672,7 +1708,7 @@ namespace embree
     if ((size_t)ptr != 123) 
       return;
 
-    if (ray.primID & 2) 
+    if (ray.primID & 2)
       ray.geomID = -1;
   }
 
@@ -1712,13 +1748,15 @@ namespace embree
 	    ray.geomID[i] = -1;
   }
 
-  bool rtcore_filter_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  bool rtcore_filter_intersect(RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
   {
     bool passed = true;
 
     RTCScene scene = rtcNewScene(sflags,aflags);
     Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
-    int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
+    int geom0 = 0;
+    if (subdiv) geom0 = addSubdivPlane (scene, gflags, 4, p0, dx, dy);
+    else        geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
     rtcSetUserData(scene,geom0,(void*)123);
     rtcSetIntersectionFilterFunction(scene,geom0,intersectionFilter1);
     rtcSetIntersectionFilterFunction4(scene,geom0,intersectionFilter4);
@@ -1730,7 +1768,8 @@ namespace embree
     {
       for (size_t ix=0; ix<4; ix++) 
       {
-        int primID = 2*(iy*4+ix);
+        int primID = iy*4+ix;
+        if (!subdiv) primID *= 2;
         {
           RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
           rtcIntersect(scene,ray0);
@@ -1738,6 +1777,8 @@ namespace embree
           if (!ok0) passed = false;
         }
 
+        if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
+       
 #if !defined(__MIC__)
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
@@ -1786,13 +1827,15 @@ namespace embree
     return passed;
   }
 
-  bool rtcore_filter_occluded(RTCSceneFlags sflags, RTCGeometryFlags gflags)
+  bool rtcore_filter_occluded(RTCSceneFlags sflags, RTCGeometryFlags gflags, bool subdiv)
   {
     bool passed = true;
 
     RTCScene scene = rtcNewScene(sflags,aflags);
     Vec3fa p0(-0.75f,-0.25f,-10.0f), dx(4,0,0), dy(0,4,0);
-    int geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
+    int geom0 = 0;
+    if (subdiv) geom0 = addSubdivPlane (scene, gflags, 4, p0, dx, dy);
+    else        geom0 = addPlane (scene, gflags, 4, p0, dx, dy);
     rtcSetUserData(scene,geom0,(void*)123);
     rtcSetOcclusionFilterFunction(scene,geom0,intersectionFilter1);
     rtcSetOcclusionFilterFunction4(scene,geom0,intersectionFilter4);
@@ -1804,13 +1847,17 @@ namespace embree
     {
       for (size_t ix=0; ix<4; ix++) 
       {
-        int primID = 2*(iy*4+ix);
+        int primID = iy*4+ix;
+        if (!subdiv) primID *= 2;
+
         {
           RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
           rtcOccluded(scene,ray0);
           bool ok0 = (primID & 2) ? (ray0.geomID == -1) : (ray0.geomID == 0);
           if (!ok0) passed = false;
         }
+
+        if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
 
 #if !defined(__MIC__)
       {
@@ -1859,20 +1906,20 @@ namespace embree
     return passed;
   }
 
-  void rtcore_filter_all()
+  void rtcore_filter_all(bool subdiv)
   {
-    printf("%30s ... ","intersection_filter");
+    if (subdiv) printf("%30s ... ","intersection_filter_subdiv");
+    else        printf("%30s ... ","intersection_filter");
     bool passed = true;
     for (int i=0; i<numSceneFlags; i++) 
     {
       RTCSceneFlags flag = getSceneFlag(i);
-      bool ok0 = rtcore_filter_intersect(flag,RTC_GEOMETRY_STATIC);
+      bool ok0 = rtcore_filter_intersect(flag,RTC_GEOMETRY_STATIC, subdiv);
       if (ok0) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok0;
-      bool ok1 = rtcore_filter_occluded(flag,RTC_GEOMETRY_STATIC);
+      bool ok1 = rtcore_filter_occluded(flag,RTC_GEOMETRY_STATIC, subdiv);
       if (ok1) printf(GREEN("+")); else printf(RED("-"));
       passed &= ok1;
-
     }
     printf(" %s\n",passed ? GREEN("[PASSED]") : RED("[FAILED]"));
     fflush(stdout);
@@ -3451,8 +3498,13 @@ namespace embree
 #endif
 
 #if defined(RTCORE_INTERSECTION_FILTER)
-    rtcore_filter_all();
+    rtcore_filter_all(false);
 #endif
+
+#if defined(RTCORE_INTERSECTION_FILTER) && !defined(__MIC__) // FIXME: subdiv intersection filters not yet implemented for MIC
+    rtcore_filter_all(true);
+#endif
+
 
 #if defined(RTCORE_BACKFACE_CULLING)
     rtcore_backface_culling_all();
