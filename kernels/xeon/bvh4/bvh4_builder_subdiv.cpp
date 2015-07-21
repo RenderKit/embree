@@ -157,11 +157,19 @@ namespace embree
         PrimInfo pinfo1 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         { 
           size_t p = 0;
+          size_t g = 0;
           for (size_t f=r.begin(); f!=r.end(); ++f) {          
             if (!mesh->valid(f)) continue;
-            p += patch_eval_subdivision_count (mesh->getHalfEdge(f));
+            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
+              Vec2i grid = SubdivPatch1Base::computeGridSize(level);
+              size_t N = Grid::getNumEagerLeaves(grid.x-1,grid.y-1);
+              g+=N;
+              p++;
+            });
           }
-          return PrimInfo(p,0,empty,empty);
+          return PrimInfo(p,g,empty,empty);
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
         size_t numSubPatches = pinfo1.begin;
         if (numSubPatches == 0) {
@@ -169,48 +177,8 @@ namespace embree
           return;
         }
 
-        /* Allocate memory for gregory and b-spline patches */
-        if (this->bvh->size_data_mem < sizeof(SubdivPatch1Base) * numSubPatches) 
-        {
-          if (this->bvh->data_mem) os_free( this->bvh->data_mem, this->bvh->size_data_mem );
-          this->bvh->data_mem      = nullptr;
-          this->bvh->size_data_mem = 0;
-        }
-        
-        if (bvh->data_mem == nullptr)
-        {
-          this->bvh->size_data_mem = sizeof(SubdivPatch1Base) * numSubPatches;
-          if ( this->bvh->size_data_mem != 0) this->bvh->data_mem = os_malloc( this->bvh->size_data_mem );        
-          else                                this->bvh->data_mem = nullptr;
-        }
-        assert(this->bvh->data_mem);
-        SubdivPatch1Base *const subdiv_patches = (SubdivPatch1Base *)this->bvh->data_mem;
-
-        PrimInfo pinfo2 = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-        {
-          size_t p = 0;
-          size_t g = 0;
-          for (size_t f=r.begin(); f!=r.end(); ++f) 
-          {
-            if (!mesh->valid(f)) continue;
-
-            patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
-            {
-              const unsigned int patchIndex = base.begin+p;
-              assert(patchIndex < numSubPatches);
-              new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
-              size_t N = Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1);
-              g+=N;
-              p++;
-            });
-          }
-
-          return PrimInfo(p,g,empty,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
-        assert(numSubPatches == pinfo2.begin);
-
-        prims.resize(pinfo2.end);
-        if (pinfo2.end == 0) {
+        prims.resize(pinfo1.end);
+        if (pinfo1.end == 0) {
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
@@ -225,11 +193,9 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              const unsigned int patchIndex = base.begin+s.begin;
-              assert(patchIndex < numSubPatches);
-              //new (&subdiv_patches[patchIndex]) SubdivPatch1Base(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
-              size_t N = Grid::createEager(subdiv_patches[patchIndex],scene,mesh,f,alloc,&prims[base.end+s.end]);
-              N = Grid::getNumEagerLeaves(subdiv_patches[patchIndex].grid_u_res-1,subdiv_patches[patchIndex].grid_v_res-1);
+              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              size_t N = Grid::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
+              assert(N == Grid::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<N; i++)
                 s.add(prims[base.end+s.end].bounds());
               s.begin++;
