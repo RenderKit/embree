@@ -26,7 +26,7 @@ namespace embree
 {
   namespace isa 
   {
-    struct FeatureAdaptiveEval2
+    struct FeatureAdaptiveEvalGrid
     {
       typedef BilinearPatch3fa BilinearPatch;
       typedef BSplinePatch3fa BSplinePatch;
@@ -51,11 +51,11 @@ namespace embree
       
 
     public:      
-      FeatureAdaptiveEval2 (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
-                            const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-                            float* Px, float* Py, float* Pz, float* U, float* V, 
-                            float* Nx, float* Ny, float* Nz,
-                            const size_t dwidth, const size_t dheight)
+      FeatureAdaptiveEvalGrid (const GeneralCatmullClarkPatch3fa& patch, size_t subPatch,
+                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                               float* Px, float* Py, float* Pz, float* U, float* V, 
+                               float* Nx, float* Ny, float* Nz,
+                               const size_t dwidth, const size_t dheight)
       : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
         Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
       {
@@ -367,9 +367,9 @@ namespace embree
     }
     
     template<typename Eval, typename Patch>
-    __forceinline void feature_adaptive_eval2 (const Patch& patch, size_t subPatch, const float levels[4],
-                                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-                                               float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
+    __forceinline void feature_adaptive_eval_grid (const Patch& patch, size_t subPatch, const float levels[4],
+                                                   const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                                                   float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
     {
       bool sl = false, sr = false, st = false, sb = false;
       if (levels) {

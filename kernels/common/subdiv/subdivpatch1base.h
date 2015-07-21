@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cmath>
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
@@ -26,7 +25,7 @@
 #include "tessellation_cache.h"
 #include "gridrange.h"
 #include "patch_eval_grid.h"
-#include "feature_adaptive_eval2.h"
+#include "feature_adaptive_eval_grid.h"
 #include "../scene_subdiv_mesh.h"
 
 namespace embree
@@ -226,7 +225,7 @@ namespace embree
 
         if (geom->patch_eval_trees.size())
         {
-          isa::feature_adaptive_eval2<PatchEvalGrid> 
+          isa::feature_adaptive_eval_grid<PatchEvalGrid> 
             (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -238,7 +237,7 @@ namespace embree
           GeneralCatmullClarkPatch3fa ccpatch;
           ccpatch.init(patch.edge,geom->getVertexBuffer(0));
           
-          isa::feature_adaptive_eval2<FeatureAdaptiveEval2,GeneralCatmullClarkPatch3fa> 
+          isa::feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
             (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -343,7 +342,7 @@ namespace embree
 
         if (geom->patch_eval_trees.size())
         {
-          isa::feature_adaptive_eval2<PatchEvalGrid> 
+          isa::feature_adaptive_eval_grid<PatchEvalGrid> 
             (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -355,7 +354,7 @@ namespace embree
           GeneralCatmullClarkPatch3fa ccpatch;
           ccpatch.init(patch.edge,geom->getVertexBuffer(0));
           
-          isa::feature_adaptive_eval2 <FeatureAdaptiveEval2,GeneralCatmullClarkPatch3fa>
+          isa::feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
             (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
