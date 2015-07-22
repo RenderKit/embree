@@ -73,9 +73,8 @@ namespace embree
         init(patch);
       }
 
-      template<typename Loader>
-        __forceinline BSplinePatchT (const HalfEdge* edge, const Loader& loader) {
-        init(edge,loader);
+      __forceinline BSplinePatchT (const HalfEdge* edge, const char* vertices, size_t stride) {
+        init(edge,vertices,stride);
       }
 
       __forceinline Vertex hard_corner(const                    Vertex& v01, const Vertex& v02, 

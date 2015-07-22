@@ -176,37 +176,19 @@ namespace embree
 
 #if !defined(__MIC__) 
 
-    for (size_t i=0; i<numFloats; i+=4) // FIXME: implement AVX path
+    for (size_t i=0; i<numFloats; i+=4)
     {
       size_t ofs = i*sizeof(float);
-      if (i+4 > numFloats) 
-      {
-        const size_t n = numFloats-i;
-        const size_t curve = curves[primID];
-        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs],n);
-        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs],n);
-        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs],n);
-        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs],n);
-
-        const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
-
-        if (P   ) float4::storeu(P+i,Q,n);
-        if (dPdu) float4::storeu(dPdu+i,dQdu,n);
-
-      } else {
-        const size_t curve = curves[primID];
-        const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs]);
-        const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs]);
-        const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
-        const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
-
-        const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-        float4 Q, dQdu; bezier.eval(u,Q,dQdu);
-
-        if (P   ) float4::storeu(P+i,Q);
-        if (dPdu) float4::storeu(dPdu+i,dQdu);
-      }
+      const size_t curve = curves[primID];
+      const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs]);
+      const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs]);
+      const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
+      const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
+      const bool4 valid = int4(i)+int4(step) < int4(numFloats);
+      const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      float4 Q, dQdu; bezier.eval(u,Q,dQdu);
+      if (P   ) float4::storeu(valid,P+i,Q);
+      if (dPdu) float4::storeu(valid,dPdu+i,dQdu);
     }
 
 #else
@@ -220,10 +202,8 @@ namespace embree
       const float16 p1 = uload16f(mask,(float*)&src[(curve+1)*stride+ofs]);
       const float16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
       const float16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
-
       const BezierCurveT<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
       float16 Q, dQdu; bezier.eval(u,Q,dQdu);
-
       if (P   ) compactustore16f(mask,P+i,Q);
       if (dPdu) compactustore16f(mask,dPdu+i,dQdu);
     }

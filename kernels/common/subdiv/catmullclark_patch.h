@@ -37,26 +37,18 @@ namespace embree
 
     __forceinline CatmullClarkPatchT () {}
     
-    template<typename Loader>
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const Loader& loader) {
-      init2(first_half_edge,loader);
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
+      init2(first_half_edge,vertices,stride);
     }
     
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
-      init(first_half_edge,vertices);
+      init2(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
 
-    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
-    {
-      init2(first_half_edge,
-            [&](const HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
-    }
-    
-    template<typename Loader>
-      __forceinline void init2 (const HalfEdge* first_half_edge, const Loader& load) 
+    __forceinline void init2 (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
     {
       for (size_t i=0; i<4; i++)
-        ring[i].init(first_half_edge+i,load);
+        ring[i].init(first_half_edge+i,vertices,stride);
 
       checkPositions();
     }
@@ -424,9 +416,8 @@ namespace embree
     __forceinline GeneralCatmullClarkPatchT () 
       : N(0) {}
 
-  template<typename Loader>
-  __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const Loader& loader) {
-    init2(first_half_edge,loader);
+  __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
+    init2(first_half_edge,vertices,stride);
   }
 
     __forceinline size_t size() const { 
@@ -437,25 +428,21 @@ namespace embree
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
 
-    __forceinline bool isRegular() const 
-    {
+    __forceinline bool isRegular() const {
       return (N == 4) && ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
 
 
-    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
-    {
-      init2(first_half_edge,
-            [&](const HalfEdge* p) { return Vec3fa(vertices[p->getStartVertexIndex()], p->getStartVertexIndex()); });
+    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
+      init2(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
 
-    template<typename Loader>
-      __forceinline void init2 (const HalfEdge* h, const Loader& load) 
+    __forceinline void init2 (const HalfEdge* h, const char* vertices, size_t stride) 
     {
       size_t i = 0;
       const HalfEdge* edge = h; 
       do {
-	ring[i].init(edge,load);
+	ring[i].init(edge,vertices,stride);
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));

@@ -98,9 +98,9 @@ namespace embree
     /// Loading
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline Vec3fa_t loadu( const float* const a ) { 
+    static __forceinline Vec3fa_t loadu( const void* const a ) { 
       const bool16 m_4f = 0xf;
-      return (__m512)permute<0,0,0,0>(uload16f(m_4f,a));
+      return (__m512)permute<0,0,0,0>(uload16f(m_4f,(float*)a));
     }
   };
 

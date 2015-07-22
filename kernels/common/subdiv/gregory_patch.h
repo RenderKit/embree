@@ -41,15 +41,16 @@ namespace embree
       init(patch);
     }
 
-    __forceinline GregoryPatchT(const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+    __forceinline GregoryPatchT(const CatmullClarkPatch& patch, 
+                                const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+    {
       init_crackfix(patch,border0,border1,border2,border3);
     }
 
-    template<typename Loader>
-    __forceinline GregoryPatchT (const HalfEdge* edge, Loader& loader) 
+    __forceinline GregoryPatchT (const HalfEdge* edge, const char* vertices, size_t stride) 
     {
       CatmullClarkPatch ccpatch; 
-      ccpatch.init2(edge,loader); 
+      ccpatch.init2(edge,vertices,stride); 
       init(ccpatch);
     }
       
@@ -767,10 +768,9 @@ namespace embree
   typedef GregoryPatchT<Vec3fa,Vec3fa_t> GregoryPatch3fa;
 
   template<typename Vertex, typename Vertex_t>
-  template<typename Loader>
-    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const HalfEdge* edge, Loader& loader) 
+    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const HalfEdge* edge, const char* vertices, size_t stride) 
   {
-    CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
+    CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,vertices,stride);
     GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 
     gpatch.convert_to_bezier(); 
     for (size_t y=0; y<4; y++)

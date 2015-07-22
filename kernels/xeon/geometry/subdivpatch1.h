@@ -129,11 +129,11 @@ namespace embree
     }
     
     __forceinline void init( GeneralCatmullClarkPatch3fa& patch) const {
-      patch.init(first_half_edge,vertices);
+      new (&patch) GeneralCatmullClarkPatch3fa(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
 
     __forceinline void init( CatmullClarkPatch3fa& patch) const {
-      patch.init(first_half_edge,vertices);
+      new (&patch) CatmullClarkPatch3fa(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
     
     /*__forceinline void init( BSplinePatch& cc_patch) const

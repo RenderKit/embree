@@ -72,20 +72,8 @@ namespace embree
       return _mm_load_ps(a); 
     }
 
-    static __forceinline float4 loadu( const float* const a ) {
+    static __forceinline float4 loadu( const void* const a ) {
       return _mm_loadu_ps((float*)a); 
-    }
-
-    static __forceinline float4 loadu( const float* const a, const size_t n) // FIXME: optimize
-    {
-      assert(n<=4);
-      if (likely(n==4)) return loadu(a);
-      else switch (n) {
-        case 3: return float4(a[0],a[1],a[2],0.0f);
-        case 2: return float4(a[0],a[1],0.0f,0.0f);
-        case 1: return float4(a[0]);
-        default: return float4(0.0f);
-        }
     }
 
     static __forceinline float4 load_nt ( const float* ptr ) {

@@ -93,12 +93,11 @@ namespace embree
       return bounds;
     }
 
-    template<typename LoadVertex>
-      __forceinline void init(const HalfEdge* const h, const LoadVertex& load) 
+    __forceinline void init(const HalfEdge* const h, const char* vertices, size_t stride) 
     {
       noForcedSubdivision = true;
       border_index = -1;
-      vtx = load(h);
+      vtx = Vertex_t::loadu(vertices+h->getStartVertexIndex()*stride);
       vertex_crease_weight = h->vertex_crease_weight;
       
       HalfEdge* p = (HalfEdge*) h;
@@ -117,14 +116,14 @@ namespace embree
 
         /* store first two vertices of face */
         p = p->next();
-        ring[i++] = load(p);
+        ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
         
         /* find minimal start vertex */
         unsigned vertex_index = p->getStartVertexIndex();
         if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
 
         p = p->next();
-        ring[i++] = load(p);
+        ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
         p = p->next();
         crease_weight[i/2] = p->edge_crease_weight;
        
@@ -142,7 +141,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = load(p);
+          ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
@@ -627,12 +626,11 @@ namespace embree
       return true;
     }
 
-    template<typename LoadVertex>
-      __forceinline void init(const HalfEdge* const h, const LoadVertex& load)
+    __forceinline void init(const HalfEdge* const h, const char* vertices, size_t stride)
     {
       only_quads = true;
       border_face = -1;
-      vtx = load(h);
+      vtx = Vertex_t::loadu(vertices+h->getStartVertexIndex()*stride);
       vertex_crease_weight = h->vertex_crease_weight;
       HalfEdge* p = (HalfEdge*) h;
       
@@ -657,7 +655,7 @@ namespace embree
 	/* store first N-2 vertices of face */
 	size_t vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
-          ring[e++] = load(p);
+          ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           vn++;
 	}
 	faces[f++] = Face(vn,crease_weight);
@@ -677,7 +675,7 @@ namespace embree
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;
 	  faces[f++] = Face(2,inf); 
-          ring[e++] = load(p);
+          ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           ring[e++] = vtx; // dummy vertex
 	  
           /*! goto other side of border */

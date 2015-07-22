@@ -42,18 +42,13 @@ namespace embree
         FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
         : P(P), dPdu(dPdu), dPdv(dPdv)
         {
-          auto loader = [&](const HalfEdge* p) -> Vertex { 
-            const unsigned vtx = p->getStartVertexIndex();
-            return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-          };
-          
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,loader).eval(u,v); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v); break;
 #endif
           default: {
-            GeneralCatmullClarkPatch patch(edge,loader);
+            GeneralCatmullClarkPatch patch(edge,vertices,stride);
             eval(patch,Vec2f(u,v),0);
             break;
           }

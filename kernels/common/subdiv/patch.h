@@ -240,14 +240,13 @@ namespace embree
     struct BSplinePatch 
     {
       /* creates BSplinePatch from a half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
-        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader));
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline BSplinePatch (const HalfEdge* edge, const Loader& loader) 
-      : patch(edge,loader) {}
+      __forceinline BSplinePatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(edge,vertices,stride) {}
       
       /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
@@ -266,14 +265,13 @@ namespace embree
     struct BezierPatch
     {
       /* creates BezierPatch from a half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
-        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader));
+      template<typename Allocator>
+        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline BezierPatch (const HalfEdge* edge, const Loader& loader) 
-      : patch(edge,loader) {}
+      __forceinline BezierPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(edge,vertices,stride) {}
       
       /* creates Bezier from a CatmullClarkPatch */
       template<typename Allocator>
@@ -292,14 +290,13 @@ namespace embree
     struct GregoryPatch
     {
       /* creates GregoryPatch from half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const Loader& loader) {
-        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,loader));
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline GregoryPatch (const HalfEdge* edge, const Loader& loader) 
-      { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); } // FIXME: use constructor
+      __forceinline GregoryPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+      { CatmullClarkPatch ccpatch; ccpatch.init2(edge,vertices,stride); patch.init(ccpatch); } // FIXME: use constructor
       
       /* creates GregoryPatch from CatmullClarkPatch */
       template<typename Allocator>
@@ -365,22 +362,17 @@ namespace embree
     template<typename Allocator>
       __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride)
     {
-      auto loader = [&](const HalfEdge* p) -> Vertex { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return Vertex_t::loadu((float*)&vertices[vtx*stride]);
-      };
-      
       if (PATCH_MAX_CACHE_DEPTH == 0) 
         return nullptr;
 
       Ref child(0);
       switch (edge->patch_type) {
-      case HalfEdge::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,loader); break;
+      case HalfEdge::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,vertices,stride); break;
 #if PATCH_USE_GREGORY == 2
-      case HalfEdge::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,loader); break;
+      case HalfEdge::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,vertices,stride); break;
 #endif
       default: {
-        GeneralCatmullClarkPatch patch(edge,loader);
+        GeneralCatmullClarkPatch patch(edge,vertices,stride);
         child = PatchT::create(alloc,patch,edge,vertices,stride,0);
       }
       }

@@ -40,18 +40,13 @@ namespace embree
         FeatureAdaptiveEvalSimd (const HalfEdge* edge, const char* vertices, size_t stride, const vbool& valid, const vfloat& u, const vfloat& v, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
         : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
         {
-          auto loader = [&](const HalfEdge* p) -> Vertex { 
-            const unsigned vtx = p->getStartVertexIndex();
-            return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-          };
-          
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,vertices,stride).eval(valid,u,v,P,dPdu,dPdv,1.0f,dstride,N); break;
 #endif
           default: {
-            GeneralCatmullClarkPatch patch(edge,loader);
+            GeneralCatmullClarkPatch patch(edge,vertices,stride);
             eval_direct(valid,patch,Vec2<vfloat>(u,v),0);
             break;
           }

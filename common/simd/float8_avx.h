@@ -90,22 +90,14 @@ namespace embree
       return _mm256_store_ps((float*)ptr,f);
     }
 
-    static __forceinline float8 loadu( const float* const a) { 
-      return _mm256_loadu_ps(a); 
+    static __forceinline float8 loadu( const void* const a) { 
+      return _mm256_loadu_ps((float*)a); 
     }
     
-    static __forceinline void storeu(float* ptr, const float8& f ) { 
-      return _mm256_storeu_ps(ptr,f);
+    static __forceinline void storeu(void* ptr, const float8& f ) { 
+      return _mm256_storeu_ps((float*)ptr,f);
     }
 
-    static __forceinline float8 loadu( const float* const a, const size_t n) 
-    { 
-      assert(n<=8);
-      if (likely(n==8)) return loadu(a);
-      else if (n>4) return float8(float4::loadu(a),float4::loadu(a+4,n-4));
-      else return float8(float4::loadu(a,n));
-    }
-    
     static __forceinline void store( const bool8& mask, void* ptr, const float8& f ) { 
       return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
     }
