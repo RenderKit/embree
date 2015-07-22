@@ -82,9 +82,9 @@ builds_unix = ['RelWithDebInfo']
 builds = []
 
 #ISAs_win  = ['AVX2']
-ISAs_win  = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_win  = ['SSE2', 'AVX2', 'AVX512']
 #ISAs_unix = ['AVX2']
-ISAs_unix = ['SSE2', 'SSE4.2', 'AVX', 'AVX2']
+ISAs_unix = ['SSE2', 'AVX2', 'AVX512']
 ISAs = []
 
 supported_configurations = [
