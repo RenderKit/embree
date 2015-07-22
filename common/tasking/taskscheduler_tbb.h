@@ -30,7 +30,7 @@
 #if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
 #define NOMINMAX
 #define __TBB_NO_IMPLICIT_LINKAGE 1
-#define TBB_PREVIEW_TASK_ARENA 1
+//#define is_trivially_copyable has_trivial_copy_constructor
 #include "tbb/tbb.h"
 #endif
 

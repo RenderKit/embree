@@ -222,7 +222,7 @@ namespace embree
 #if TASKING_TBB
    __dllexport size_t TaskSchedulerTBB::threadIndex() {
 #if TBB_INTERFACE_VERSION_MAJOR < 8
-     return tbb::task_arena::current_slot();
+     return 0;
 #else
      return tbb::task_arena::current_thread_index();
 #endif

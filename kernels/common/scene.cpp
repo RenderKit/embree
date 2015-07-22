@@ -25,11 +25,15 @@
 #include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
 
+#if TBB_INTERFACE_VERSION_MAJOR < 8    
+#define USE_TASK_ARENA 0
+#else
 #define USE_TASK_ARENA 1
-
+#endif
+ 
 namespace embree
 {
-#if TASKING_TBB
+#if USE_TASK_ARENA
   tbb::task_arena arena;
 #endif
 
@@ -621,8 +625,12 @@ namespace embree
 #endif
     
     try {
-    
+
+#if TBB_INTERFACE_VERSION_MAJOR < 8    
+      tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
+#else
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
+#endif
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
