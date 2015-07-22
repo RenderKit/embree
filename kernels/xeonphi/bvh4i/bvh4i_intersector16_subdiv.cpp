@@ -535,16 +535,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[new_primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-
-	  if (unlikely(!subdiv_patch.hasDisplacement()))
-	    {
-	      const Vec3fa normal    = subdiv_patch.normal(ray16.v[rayIndex],ray16.u[rayIndex]);
-	      ray16.Ng.x[rayIndex]   = normal.x;
-	      ray16.Ng.y[rayIndex]   = normal.y;
-	      ray16.Ng.z[rayIndex]   = normal.z;
-	    }
-#endif
 
 #if FORCE_TRIANGLE_UV == 0
 
@@ -824,16 +814,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray.primID];
 	  ray.primID = subdiv_patch.prim;
 	  ray.geomID = subdiv_patch.geom;
-#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-
-	  if (unlikely(!subdiv_patch.hasDisplacement()))
-	    {
-	      const Vec3fa normal = subdiv_patch.normal(ray.v,ray.u);
-	      ray.Ng.x = normal.x;
-	      ray.Ng.y = normal.y;
-	      ray.Ng.z = normal.z;
-	    }
-#endif
 
 #if FORCE_TRIANGLE_UV == 0
 
