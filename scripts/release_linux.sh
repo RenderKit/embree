@@ -17,7 +17,6 @@ rm version.h
 # set release settings
 cmake \
 -D COMPILER=ICC \
--D TBB_ROOT=$TBB_PATH \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
@@ -33,12 +32,12 @@ VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h
 # make docu after cmake to have correct version.h
 make -j 8 preinstall
 
-# create installers
-cmake -D ENABLE_INSTALLER=ON ..
+# create RPM files
+cmake -D ENABLE_INSTALLER=ON -D TBB_ROOT=/usr ..
 make -j 8 package
 
-# create RPM files
-cmake -D ENABLE_INSTALLER=OFF ..
+# create tar.gz files
+cmake -D ENABLE_INSTALLER=OFF -D TBB_ROOT=$TBB_PATH ..
 make -j 8 package
 
 # rename RPMs to have component name before version

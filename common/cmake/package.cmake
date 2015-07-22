@@ -15,6 +15,7 @@
 ## ======================================================================== ##
 
 OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
+MARK_AS_ADVANCED(ENABLE_INSTALLER)
 
 IF (ENABLE_INSTALLER AND APPLE)
   #SET(CMAKE_MACOSX_RPATH ON)
