@@ -212,6 +212,10 @@ namespace embree
   __forceinline double drand48() {
     return double(rand())/double(RAND_MAX);
   }
+
+  __forceinline void srand48(long seed) {
+    return srand(seed);
+  }
 #endif
 
   /*! selects */
