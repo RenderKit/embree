@@ -524,7 +524,7 @@ namespace embree
         P[i+2] = Vec3fa(xyzuv2);
         P[i+3] = Vec3fa(xyzuv3);
       }
-      for (i; i<dwidth*dheight; i++) 
+      for (; i<dwidth*dheight; i++) 
       {
         const float xi = grid_x[i];
         const float yi = grid_y[i];

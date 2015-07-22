@@ -42,7 +42,7 @@ namespace embree
     __forceinline explicit Vec3 ( const T& x, const T& y, const T& z ) : x(x), y(y), z(z) {}
 
     __forceinline Vec3     ( const Vec3& other ) { x = other.x; y = other.y; z = other.z; }
-    __forceinline Vec3     ( const Vec3fa& other ) { x = other.x; y = other.y; z = other.z; }
+    __forceinline Vec3     ( const Vec3fa& other );
 
     template<typename T1> __forceinline Vec3( const Vec3<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)) {}
     template<typename T1> __forceinline Vec3& operator =(const Vec3<T1>& other) { x = other.x; y = other.y; z = other.z; return *this; }
