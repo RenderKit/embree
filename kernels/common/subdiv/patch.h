@@ -296,8 +296,8 @@ namespace embree
       }
       
       __forceinline GregoryPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
-      { CatmullClarkPatch ccpatch; ccpatch.init2(edge,vertices,stride); patch.init(ccpatch); } // FIXME: use constructor
-      
+        : patch(CatmullClarkPatch(edge,vertices,stride)) {}
+       
       /* creates GregoryPatch from CatmullClarkPatch */
       template<typename Allocator>
       __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,

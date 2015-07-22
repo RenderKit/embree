@@ -47,11 +47,8 @@ namespace embree
       init_crackfix(patch,border0,border1,border2,border3);
     }
 
-    __forceinline GregoryPatchT (const HalfEdge* edge, const char* vertices, size_t stride) 
-    {
-      CatmullClarkPatch ccpatch; 
-      ccpatch.init2(edge,vertices,stride); 
-      init(ccpatch);
+    __forceinline GregoryPatchT (const HalfEdge* edge, const char* vertices, size_t stride) { 
+      init(CatmullClarkPatch(edge,vertices,stride));
     }
       
     __forceinline Vertex& p0() { return v[0][0]; }

@@ -20,12 +20,6 @@
 
 namespace embree
 {
-  enum {
-    BORDER_BEZIER_CURVE_IGNORE   = 0,
-    BORDER_BEZIER_CURVE_FIRST    = 1 << 0,
-    BORDER_BEZIER_CURVE_SECOND   = 1 << 1
-  };
-
   template<typename Vertex, typename Vertex_t = Vertex>
     class __aligned(64) CatmullClarkPatchT
     {
@@ -37,22 +31,17 @@ namespace embree
 
     __forceinline CatmullClarkPatchT () {}
     
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
-      init2(first_half_edge,vertices,stride);
-    }
-    
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
-      init2(first_half_edge,vertices.getPtr(),vertices.getStride());
-    }
-
-    __forceinline void init2 (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices,stride);
 
       checkPositions();
     }
-
+    
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+     : CatmullClarkPatchT(first_half_edge,vertices.getPtr(),vertices.getStride()) {}
+    
     __forceinline Vertex normal(const float uu, const float vv) const // FIXME: remove
     {
       const int iu = (int) uu;
