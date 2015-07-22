@@ -36,8 +36,10 @@ namespace embree
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices,stride);
-      
+
+#if _DEBUG      
       checkPositions();
+#endif
     }
     
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
@@ -55,30 +57,8 @@ namespace embree
       return (Type) (ring[0].type() & ring[1].type() & ring[2].type() & ring[3].type());
     }
     
-    /*! returns true if the patch is a B-spline patch */
-    __forceinline bool isRegular1() const {
-      return ring[0].isRegular1() && ring[1].isRegular1() && ring[2].isRegular1() && ring[3].isRegular1();
-    }
-    __forceinline bool isRegular2() const {
-      return ring[0].isRegular2() && ring[1].isRegular2() && ring[2].isRegular2() && ring[3].isRegular2();
-    }
-    
-    __forceinline bool hasBorder() const {
-      return ring[0].hasBorder() || ring[1].hasBorder() || ring[2].hasBorder() || ring[3].hasBorder();
-    }
-    
     __forceinline bool isFinalResolution(float res) const {
       return ring[0].isFinalResolution(res) && ring[1].isFinalResolution(res) && ring[2].isFinalResolution(res) && ring[3].isFinalResolution(res);
-    }
-    
-    /*! returns true of the patch is a Gregory patch */
-    __forceinline bool isGregory() const 
-    {
-      const bool ring0 = ring[0].isGregory();
-      const bool ring1 = ring[1].isGregory();
-      const bool ring2 = ring[2].isGregory();
-      const bool ring3 = ring[3].isGregory();
-      return ring0 && ring1 && ring2 && ring3;
     }
     
     static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
@@ -238,9 +218,8 @@ namespace embree
         init_border(patch[3].ring[3],patch[0].ring[0],patch[3].ring[0],patch[0].ring[3]);
       
       Vertex_t center = (ring[0].vtx + ring[1].vtx + ring[2].vtx + ring[3].vtx) * 0.25f;
+
       Vertex_t center_ring[8];
-      
-      // counter-clockwise
       center_ring[0] = (Vertex_t)patch[3].ring[3].ring[0];
       center_ring[7] = (Vertex_t)patch[3].ring[3].vtx;
       center_ring[6] = (Vertex_t)patch[2].ring[2].ring[0];
@@ -310,10 +289,6 @@ namespace embree
     
     __forceinline bool isQuadPatch() const {
       return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
-    }
-    
-    __forceinline bool isRegular() const {
-      return (N == 4) && ring[0].isRegular() && ring[1].isRegular() && ring[2].isRegular() && ring[3].isRegular();
     }
     
     __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
