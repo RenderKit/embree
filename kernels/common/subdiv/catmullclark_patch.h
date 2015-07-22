@@ -42,24 +42,6 @@ namespace embree
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
      : CatmullClarkPatchT(first_half_edge,vertices.getPtr(),vertices.getStride()) {}
     
-    __forceinline Vertex normal(const float uu, const float vv) const // FIXME: remove
-    {
-      const int iu = (int) uu;
-      const int iv = (int) vv;
-      const int index = iv > 0 ? 3-iu : iu;
-      const Vertex tu = ring[index].getLimitTangent();
-      const Vertex tv = ring[index].getSecondLimitTangent();
-      return cross(tv,tu);
-    }   
-
-    __forceinline Vertex eval(const float uu, const float vv) const
-    {
-      const int iu = (int) uu;
-      const int iv = (int) vv;
-      const int index = iv > 0 ? 3-iu : iu;
-      return ring[index].getLimitVertex();
-    }   
-
     __forceinline Vertex getLimitVertex(const size_t index) const {
       return ring[index].getLimitVertex();
     }
