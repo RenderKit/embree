@@ -111,6 +111,9 @@ CONFIGURE_FILE(
 ##############################################################
 # Compiler
 ##############################################################
+
+SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
+
 IF (WIN32)
   IF (NOT DEFAULT_CMAKE_CONFIGURATION_TYPES_SET)
     SET(CMAKE_CONFIGURATION_TYPES "${CONFIGURATION_TYPES}" CACHE STRING "List of generated configurations." FORCE)
@@ -242,8 +245,6 @@ IF (ISA GREATER 8)
   SET(TARGET_AVX512  ON)
   LIST(APPEND ISPC_TARGETS "avx512knl-i32x16")
 ENDIF ()
-
-SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
 
 INCLUDE (ispc)
 

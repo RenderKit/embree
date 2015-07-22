@@ -163,13 +163,29 @@ namespace embree
     RWMutex mtx;
     SharedLazyTessellationCache::Tag root_ref;
 
-    union {
-      struct {
-        const HalfEdge* edge;
-        size_t subPatch;
-      };
-      Vec3fa patch_v[4][4];
+    struct PatchHalfEdge {
+      const HalfEdge* edge;
+      size_t subPatch;
     };
+
+      Vec3fa patch_v[4][4];
+
+      const HalfEdge *edge() const {
+        return ((PatchHalfEdge*)patch_v)->edge;
+      }
+
+      size_t subPatch() const {
+        return ((PatchHalfEdge*)patch_v)->subPatch;
+      }
+
+      void set_edge(const HalfEdge *h) const {
+        ((PatchHalfEdge*)patch_v)->edge = h;
+      }
+
+      void set_subPatch(const size_t s) const {
+        ((PatchHalfEdge*)patch_v)->subPatch = s;
+      }
+
   };
 
   namespace isa
@@ -202,22 +218,21 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           isa::feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
-             displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+             displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
              dwidth,dheight);
         }
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch;
-          ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
           
           isa::feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
-            (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+            (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
-            displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+            displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
             dwidth,dheight);
         }
 
@@ -319,22 +334,21 @@ namespace embree
         if (geom->patch_eval_trees.size())
         {
           isa::feature_adaptive_eval_grid<PatchEvalGrid> 
-            (geom->patch_eval_trees[patch.prim], patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
-             displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+             displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
              dwidth,dheight);
         } 
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch;
-          ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
           
           isa::feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
-            (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
+            (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
-            displ ? grid_Ng_x : nullptr, displ ? grid_Ng_y : nullptr, displ ? grid_Ng_z : nullptr,
+            displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
             dwidth,dheight);
         }
 

@@ -53,8 +53,8 @@ namespace embree
     else
     {
       type = EVAL_PATCH;
-      this->edge = mesh->getHalfEdge(pID);
-      this->subPatch = subPatch;
+      set_edge(mesh->getHalfEdge(pID));
+      set_subPatch(subPatch);
     }
 
     for (size_t i=0; i<4; i++) {
