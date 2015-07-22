@@ -37,9 +37,7 @@ namespace embree
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices,stride);
 
-#if _DEBUG      
-      checkPositions();
-#endif
+      assert(verify());
     }
     
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
@@ -231,15 +229,13 @@ namespace embree
       init_regular(center,center_ring,4,patch[2].ring[0]);
       init_regular(center,center_ring,6,patch[3].ring[1]);
       
-#if _DEBUG
-      patch[0].checkPositions();
-      patch[1].checkPositions();
-      patch[2].checkPositions();
-      patch[3].checkPositions();
-#endif
+      assert(patch[0].verify());
+      assert(patch[1].verify());
+      assert(patch[2].verify());
+      assert(patch[3].verify());
     }
     
-    bool checkPositions() const {
+    bool verify() const {
       return ring[0].hasValidPositions() && ring[1].hasValidPositions() && ring[2].hasValidPositions() && ring[3].hasValidPositions();
     }
     
