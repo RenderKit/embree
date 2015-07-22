@@ -81,8 +81,8 @@ namespace embree
 
   Vec2i SubdivPatch1Base::computeGridSize(const float level[4])
   {
-    unsigned width = max(level[0],level[2])+1; // n segments -> n+1 points
-    unsigned height = max(level[1],level[3])+1;
+    int width = max(level[0],level[2])+1; // n segments -> n+1 points
+    int height = max(level[1],level[3])+1;
     
     /* workaround for 2x2 intersection stencil */
 #if !defined(__MIC__)
