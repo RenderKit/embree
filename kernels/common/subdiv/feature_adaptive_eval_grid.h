@@ -261,7 +261,7 @@ namespace embree
         int ly1 = ceilf(erange.upper.y) + (erange.upper.y == y1 && (srange.lower.y < erange.upper.y || erange.upper.y == 0));
         if (lx0 >= lx1 || ly0 >= ly1) return;
 
-        typename CatmullClarkPatch::Type ty = patch.type();
+        CatmullClarkPatch::Type ty = patch.type();
 
         if (unlikely(final(patch,depth)))
         {
