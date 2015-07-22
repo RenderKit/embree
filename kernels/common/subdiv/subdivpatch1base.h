@@ -210,8 +210,7 @@ namespace embree
         }
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch;
-          ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge,geom->getVertexBuffer(0));
           
           isa::feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
             (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,
@@ -327,8 +326,7 @@ namespace embree
         } 
         else 
         {
-          GeneralCatmullClarkPatch3fa ccpatch;
-          ccpatch.init(patch.edge,geom->getVertexBuffer(0));
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge,geom->getVertexBuffer(0));
           
           isa::feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
             (ccpatch, patch.subPatch, patch.needsStitching() ? patch.level : nullptr,

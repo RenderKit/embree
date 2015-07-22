@@ -27,7 +27,6 @@ namespace embree
     Vec3fa vtx[4];
   };
 
-
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {
@@ -41,11 +40,10 @@ namespace embree
     unsigned int face_valence;
     unsigned int edge_valence;
     float vertex_crease_weight;
-    float vertex_level; // maximal level of all adjacent edges
-    float edge_level; // level of first edge
+    float vertex_level;                  // maximal level of all adjacent edges
+    float edge_level;                    // level of first edge
     unsigned int eval_start_index;
     unsigned int eval_unique_identifier;
-    bool noForcedSubdivision; // varying edge crease weight stitching fix // FIXME: remove
 
   public:
     CatmullClark1RingT () : eval_start_index(0), eval_unique_identifier(0) {}
@@ -95,7 +93,6 @@ namespace embree
 
     __forceinline void init(const HalfEdge* const h, const char* vertices, size_t stride) 
     {
-      noForcedSubdivision = true;
       border_index = -1;
       vtx = Vertex_t::loadu(vertices+h->getStartVertexIndex()*stride);
       vertex_crease_weight = h->vertex_crease_weight;
@@ -163,7 +160,6 @@ namespace embree
       
     __forceinline void subdivide(CatmullClark1RingT& dest) const
     {
-      dest.noForcedSubdivision    = true;
       dest.edge_level             = 0.5f*edge_level;
       dest.vertex_level           = 0.5f*vertex_level;
       dest.face_valence           = face_valence;
@@ -216,7 +212,6 @@ namespace embree
         S += ring[index];
         dest.crease_weight[face_index] = max(crease_weight[face_index]-1.0f,0.0f);
         //dest.crease_weight[i] = crease_weight[face_index] < 1.0f ? 0.0f : 0.5f*crease_weight[face_index];
-	dest.noForcedSubdivision &= crease_weight[face_index] == 0.0f || crease_weight[face_index] > 1.0f;
         
         /* fast path for regular edge points */
         if (likely(crease_weight[face_index] <= 0.0f)) {
@@ -264,7 +259,6 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-	dest.noForcedSubdivision = (dest.crease_weight[crease_id[0]] != 0.0f) || (dest.crease_weight[crease_id[1]] != 0.0f);
         //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
         //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
@@ -701,7 +695,6 @@ namespace embree
     
     __forceinline void subdivide(CatmullClark1Ring& dest) const
     {
-      dest.noForcedSubdivision = true;
       dest.edge_level = 0.5f*edge_level;
       dest.vertex_level = 0.5f*vertex_level;
       dest.face_valence = face_valence;
@@ -818,10 +811,8 @@ namespace embree
       for (size_t i=0; i<face_valence; i++) 
 	dst.crease_weight[i] = faces[i].crease_weight;
       dst.vertex_crease_weight = vertex_crease_weight;
-      dst.noForcedSubdivision = true;
       for (size_t i=0; i<edge_valence; i++) dst.ring[i] = ring[i];
 
-      //dst.updateEvalStartIndex();
       dst.eval_start_index = eval_start_face_index;
       dst.eval_unique_identifier = eval_unique_identifier;
 

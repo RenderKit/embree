@@ -73,7 +73,6 @@ namespace embree
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vertex_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
-      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
       
       dest1.ring[2] = dest0.ring[0] = (Vertex_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[7] = (Vertex_t)p1.ring[0];
@@ -117,7 +116,6 @@ namespace embree
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vertex_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
-      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
       
       dest1.ring[2] = dest0.ring[0] = (Vertex_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[5] = (Vertex_t)p1.ring[0];
@@ -154,7 +152,6 @@ namespace embree
       dest.border_index = -1;
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
-      dest.noForcedSubdivision = true;
       for (size_t i=0; i<8; i++) 
 	dest.ring[i] = (Vertex_t)center_ring[(offset+i)%8];
       for (size_t i=0; i<4; i++) 
@@ -279,23 +276,7 @@ namespace embree
     __forceinline GeneralCatmullClarkPatchT () 
     : N(0) {}
     
-    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
-      init2(first_half_edge,vertices,stride);
-    }
-    
-    __forceinline size_t size() const { 
-      return N; 
-    }
-    
-    __forceinline bool isQuadPatch() const {
-      return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
-    }
-    
-    __forceinline void init (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
-      init2(first_half_edge,vertices.getPtr(),vertices.getStride());
-    }
-    
-    __forceinline void init2 (const HalfEdge* h, const char* vertices, size_t stride) 
+    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* h, const char* vertices, size_t stride) 
     {
       size_t i = 0;
       const HalfEdge* edge = h; 
@@ -305,6 +286,17 @@ namespace embree
         i++;
       } while ((edge != h) && (i < SIZE));
       N = i;
+    }
+
+    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
+    : GeneralCatmullClarkPatchT(first_half_edge,vertices.getPtr(),vertices.getStride()) {}
+    
+    __forceinline size_t size() const { 
+      return N; 
+    }
+    
+    __forceinline bool isQuadPatch() const {
+      return (N == 4) && ring[0].only_quads && ring[1].only_quads && ring[2].only_quads && ring[3].only_quads;
     }
     
     static __forceinline void init_regular(const CatmullClark1RingT<Vertex,Vertex_t>& p0,
@@ -319,7 +311,6 @@ namespace embree
       dest1.border_index = dest0.border_index = -1;
       dest1.vtx = dest0.vtx = (Vertex_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
-      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
       
       dest1.ring[2] = dest0.ring[0] = (Vertex_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[7] = (Vertex_t)p1.ring[0];
@@ -335,7 +326,6 @@ namespace embree
       dest1.crease_weight[3] = dest0.crease_weight[2] = 0.0f;
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
       
-      //////////////////////////////
       if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
       {
         dest0.eval_start_index = 3;
@@ -349,9 +339,7 @@ namespace embree
         dest1.eval_start_index = 2;
         dest0.eval_unique_identifier = p1.eval_unique_identifier;
         dest1.eval_unique_identifier = p1.eval_unique_identifier;
-      }
-      //////////////////////////////
-      
+      }      
     }
     
     
@@ -367,7 +355,6 @@ namespace embree
       dest1.border_index = 4;
       dest1.vtx  = dest0.vtx = (Vertex_t)p0.ring[0];
       dest1.vertex_crease_weight = dest0.vertex_crease_weight = 0.0f;
-      dest1.noForcedSubdivision = dest0.noForcedSubdivision = true;
       
       dest1.ring[2] = dest0.ring[0] = (Vertex_t)p0.ring[1];
       dest1.ring[1] = dest0.ring[5] = (Vertex_t)p1.ring[0];
@@ -380,7 +367,6 @@ namespace embree
       dest1.crease_weight[0] = dest0.crease_weight[2] = p1.crease_weight[1];
       dest1.crease_weight[2] = dest0.crease_weight[1] = p0.crease_weight[0];
       
-      //////////////////////////////
       if (p0.eval_unique_identifier <= p1.eval_unique_identifier)
       {
         dest0.eval_start_index = 1;
@@ -395,7 +381,6 @@ namespace embree
         dest0.eval_unique_identifier = p1.eval_unique_identifier;
         dest1.eval_unique_identifier = p1.eval_unique_identifier;
       }
-      //////////////////////////////      
     }
     
     static __forceinline void init_regular(const Vertex_t &center, const array_t<Vertex_t,2*SIZE>& center_ring, const float vertex_level, const size_t N, const size_t offset, CatmullClark1RingT<Vertex,Vertex_t> &dest)
@@ -408,7 +393,6 @@ namespace embree
       dest.border_index = -1;
       dest.vtx     = (Vertex_t)center;
       dest.vertex_crease_weight = 0.0f;
-      dest.noForcedSubdivision = true;
       for (size_t i=0; i<2*N; i++) {
         dest.ring[i] = (Vertex_t)center_ring[(2*N+offset+i-1)%(2*N)];
         assert(isvalid(dest.ring[i]));
@@ -416,14 +400,12 @@ namespace embree
       for (size_t i=0; i<N; i++) 
         dest.crease_weight[i] = 0.0f;
       
-      //////////////////////////////
       assert(offset <= 2*N);
       dest.eval_start_index       = (2*N-offset)>>1;
       if (dest.eval_start_index >= dest.face_valence) dest.eval_start_index -= dest.face_valence;
       
       assert( dest.eval_start_index < dest.face_valence );
       dest.eval_unique_identifier = 0;
-      //////////////////////////////
     }
     
     __noinline void subdivide(array_t<CatmullClarkPatch,SIZE>& patch, size_t& N_o) const
@@ -484,7 +466,7 @@ namespace embree
     static void fix_quad_ring_order (array_t<CatmullClarkPatch,GeneralCatmullClarkPatchT::SIZE>& patches)
     {
       CatmullClark1Ring patches1ring1 = patches[1].ring[1];
-      patches[1].ring[1] = patches[1].ring[0];
+      patches[1].ring[1] = patches[1].ring[0]; // FIXME: optimize these assignments
       patches[1].ring[0] = patches[1].ring[3];
       patches[1].ring[3] = patches[1].ring[2];
       patches[1].ring[2] = patches1ring1;
