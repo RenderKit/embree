@@ -143,7 +143,7 @@ namespace embree
     {
       running = true;
       for (size_t t=1; t<numThreads; t++) {
-        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,t));
+        threads.push_back(createThread((thread_func)threadPoolFunction,this,16*1024*1024,t));
       }
     }
   }
