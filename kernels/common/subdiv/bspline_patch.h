@@ -137,8 +137,6 @@ namespace embree
       
       void init(const CatmullClarkPatch& patch)
       {
-        assert( patch.isRegular1() );
-        
         /* fill inner vertices */
         const Vertex v11 = v[1][1] = patch.ring[0].vtx;
         const Vertex v12 = v[1][2] = patch.ring[1].vtx;
