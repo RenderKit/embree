@@ -38,7 +38,7 @@ namespace embree
 #if defined(__MIC__)
     const size_t maxTasks = 256;
 #else
-    const size_t maxTasks = 64;
+    const size_t maxTasks = 64; // FIXME: increase!!!!
 #endif
     const size_t threadCount = TaskSchedulerTBB::threadCount();
     taskCount = min(taskCount,threadCount,maxTasks);
