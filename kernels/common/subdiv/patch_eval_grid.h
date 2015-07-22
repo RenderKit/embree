@@ -25,7 +25,7 @@ namespace embree
     struct PatchEvalGrid
     {
       typedef Patch3fa Patch;
-      typedef typename Patch::Ref Ref;
+      typedef Patch::Ref Ref;
       typedef GeneralCatmullClarkPatch3fa GeneralCatmullClarkPatch;
       typedef CatmullClarkPatch3fa CatmullClarkPatch;
       typedef BSplinePatch3fa BSplinePatch;
@@ -149,19 +149,19 @@ namespace embree
         switch (This.type()) 
         {
         case Patch::BILINEAR_PATCH: {
-          evalLocalGrid((typename Patch::BilinearPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
+          evalLocalGrid((Patch::BilinearPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
           return true;
         }
         case Patch::BSPLINE_PATCH: {
-          evalLocalGrid((typename Patch::BSplinePatch*)This.object(),srange,lx0,lx1,ly0,ly1);
+          evalLocalGrid((Patch::BSplinePatch*)This.object(),srange,lx0,lx1,ly0,ly1);
           return true;
         }
         case Patch::BEZIER_PATCH: {
-          evalLocalGrid((typename Patch::BezierPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
+          evalLocalGrid((Patch::BezierPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
           return true;
         }
         case Patch::GREGORY_PATCH: {
-          evalLocalGrid((typename Patch::GregoryPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
+          evalLocalGrid((Patch::GregoryPatch*)This.object(),srange,lx0,lx1,ly0,ly1);
           return true;
         }
         case Patch::SUBDIVIDED_QUAD_PATCH: 
@@ -172,7 +172,7 @@ namespace embree
           const BBox2f srange2(c,srange.upper);
           const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
           
-          typename Patch::SubdividedQuadPatch* patch = (typename Patch::SubdividedQuadPatch*)This.object();
+          Patch::SubdividedQuadPatch* patch = (Patch::SubdividedQuadPatch*)This.object();
           eval(patch->child[0],srange0,intersect(srange0,erange));
           eval(patch->child[1],srange1,intersect(srange1,erange));
           eval(patch->child[2],srange2,intersect(srange2,erange));
@@ -193,12 +193,12 @@ namespace embree
         switch (This.type()) 
         {
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
-          typename Patch::SubdividedGeneralTrianglePatch* patch = (typename Patch::SubdividedGeneralTrianglePatch*)This.object();
+          Patch::SubdividedGeneralTrianglePatch* patch = (Patch::SubdividedGeneralTrianglePatch*)This.object();
           assert(subPatch < 3);
           return eval(patch->child[subPatch],srange,erange);
         }
         case Patch::SUBDIVIDED_GENERAL_PATCH: { 
-          typename Patch::SubdividedGeneralPatch* patch = (typename Patch::SubdividedGeneralPatch*)This.object();
+          Patch::SubdividedGeneralPatch* patch = (Patch::SubdividedGeneralPatch*)This.object();
           assert(subPatch < patch->N);
           return eval(patch->child[subPatch],srange,erange);
         }
