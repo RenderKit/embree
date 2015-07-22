@@ -274,8 +274,11 @@ namespace embree
     
     double run (size_t numThreads)
     {
+#if !defined(__WIN32__)
       ptr = (char*) os_reserve(N);
-
+#else
+      ptr = (char*)os_malloc(N);
+#endif
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
