@@ -202,8 +202,7 @@ namespace embree
 #endif
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
-    if (State::instance()->verbosity(2)) 
-      std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
+    std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
 #if defined(__TARGET_SSE41__)
     std::cout << "SSE4.1 ";
