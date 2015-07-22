@@ -32,17 +32,22 @@ namespace embree
     public:
     __forceinline CatmullClarkPatchT () {}
     
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
+      init(first_half_edge,vertices,stride);
+    }
+    
+    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
+      init(first_half_edge,vertices.getPtr(),vertices.getStride());
+    }
+    
+    __forceinline void init (const HalfEdge* first_half_edge, const char* vertices, size_t stride) 
     {
       for (size_t i=0; i<4; i++)
         ring[i].init(first_half_edge+i,vertices,stride);
 
       assert(verify());
     }
-    
-    __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
-     : CatmullClarkPatchT(first_half_edge,vertices.getPtr(),vertices.getStride()) {}
-    
+
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds (ring[0].bounds());
