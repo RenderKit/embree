@@ -1,12 +1,13 @@
 #!/bin/tcsh
-
 pushd . > /dev/null
-SCRIPT_PATH="${BASH_SOURCE[0]}";
+set SCRIPT_PATH=($_)
+set SCRIPT_PATH="$SCRIPT_PATH[2]"
+echo "$SCRIPT_PATH"
 if ( -l "${SCRIPT_PATH}" ) then
   while( -l "${SCRIPT_PATH}" ) do cd `dirname "$SCRIPT_PATH"`; SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
-fi
+endif
 cd "`dirname "$SCRIPT_PATH"`" > /dev/null
-SCRIPT_PATH=`pwd`;
+set SCRIPT_PATH=`pwd`
 popd > /dev/null
 
 setenv CPATH "$SCRIPT_PATH/include:${CPATH}"
