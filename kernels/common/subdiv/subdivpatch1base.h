@@ -191,7 +191,7 @@ namespace embree
   namespace isa
   {
     /* eval grid over patch and stich edges when required */      
-    static __forceinline void evalGrid(const SubdivPatch1Base& patch,
+    static __noinline void evalGrid(const SubdivPatch1Base& patch,
                                        const size_t x0, const size_t x1,
                                        const size_t y0, const size_t y1,
                                        const size_t swidth, const size_t sheight,
@@ -308,7 +308,7 @@ namespace embree
 
 
     /* eval grid over patch and stich edges when required */      
-    static __forceinline BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
+    static __noinline BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
                                                 const size_t x0, const size_t x1,
                                                 const size_t y0, const size_t y1,
                                                 const size_t swidth, const size_t sheight,
