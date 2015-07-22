@@ -276,21 +276,26 @@ namespace embree
     __forceinline GeneralCatmullClarkPatchT () 
     : N(0) {}
     
-    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* h, const char* vertices, size_t stride) 
+    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* h, const char* vertices, size_t stride) {
+      init(h,vertices,stride);
+    }
+
+    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) {
+      init(first_half_edge,vertices.getPtr(),vertices.getStride());
+    }
+
+    __forceinline void init (const HalfEdge* h, const char* vertices, size_t stride) 
     {
       size_t i = 0;
       const HalfEdge* edge = h; 
       do {
-	ring[i].init(edge,vertices,stride);
+	      ring[i].init(edge,vertices,stride);
         edge = edge->next();
         i++;
       } while ((edge != h) && (i < SIZE));
       N = i;
     }
 
-    __forceinline GeneralCatmullClarkPatchT (const HalfEdge* first_half_edge, const BufferT<Vec3fa>& vertices) 
-    : GeneralCatmullClarkPatchT(first_half_edge,vertices.getPtr(),vertices.getStride()) {}
-    
     __forceinline size_t size() const { 
       return N; 
     }

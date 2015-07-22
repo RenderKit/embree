@@ -127,7 +127,15 @@ namespace embree
    {
      __forceinline Tag() : data(0) {}
 
-     __forceinline Tag(void* ptr, size_t combinedTime)
+     __forceinline Tag(void* ptr, size_t combinedTime) { 
+       init(ptr,combinedTime);
+     }
+
+     __forceinline Tag(size_t ptr, size_t combinedTime) {
+       init((void*)ptr,combinedTime); 
+     }
+
+     __forceinline void init(void* ptr, size_t combinedTime)
      {
        if (ptr == nullptr) {
          data = 0;
@@ -139,9 +147,6 @@ namespace embree
        new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
-
-     __forceinline Tag(size_t ptr, size_t combinedTime)
-       : Tag((void*)ptr,combinedTime) {}
 
      volatile int64_t data;
    };
