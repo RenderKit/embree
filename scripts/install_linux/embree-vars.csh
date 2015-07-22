@@ -2,7 +2,6 @@
 pushd . > /dev/null
 set SCRIPT_PATH=($_)
 set SCRIPT_PATH="$SCRIPT_PATH[2]"
-echo "$SCRIPT_PATH"
 if ( -l "${SCRIPT_PATH}" ) then
   while( -l "${SCRIPT_PATH}" ) do cd `dirname "$SCRIPT_PATH"`; SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
 endif
