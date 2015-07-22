@@ -612,10 +612,6 @@ namespace embree
       eval_start_face_index = min_vertex_index_face;
       eval_start_vertex_index = min_vertex_index_vertex;
 
-      ////////////////////////////
-      //vertex_crease_weight = inf;
-      ////////////////////////////
-
       assert( hasValidPositions() );
     }
     
@@ -634,17 +630,13 @@ namespace embree
       /* calculate face points */
       Vertex_t S = Vertex_t(0.0f);
       for (size_t face=0, v=eval_start_vertex_index; face<face_valence; face++) {
-        ////////////////////////////////////////////////
         size_t f = (face + eval_start_face_index)%face_valence;
-        ////////////////////////////////////////////////
 
         Vertex_t F = vtx;
         for (size_t k=v; k<=v+faces[f].size; k++) F += ring[k%edge_valence]; // FIXME: optimize
         S += dest.ring[2*f+1] = F/float(faces[f].size+2);
         v+=faces[f].size;
-        ////////////////////////////////////////////////        
         v%=edge_valence;
-        ////////////////////////////////////////////////
       }
       
       /* calculate new edge points */
@@ -653,9 +645,7 @@ namespace embree
       Vertex_t C = Vertex_t(0.0f);
       for (size_t face=0, j=eval_start_vertex_index; face<face_valence; face++)
       {
-        ////////////////////////////////////////////////
         size_t i = (face + eval_start_face_index)%face_valence;
-        ////////////////////////////////////////////////
         
         const Vertex_t v = vtx + ring[j];
         Vertex_t f = dest.ring[2*i+1];
@@ -681,9 +671,7 @@ namespace embree
           }
         }
         j+=faces[i].size;
-        ////////////////////////////////////////////////                
         j%=edge_valence;
-        ////////////////////////////////////////////////                
       }
       
       /* compute new vertex using smooth rule */
@@ -792,8 +780,6 @@ namespace embree
       return cc_vtx.getLimitVertex();
     }
 
-    //__forceinline CatmullClark1Ring& operator=(const CatmullClark1Ring& other); // FIXME: implement
-    
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
@@ -807,32 +793,5 @@ namespace embree
       }
       return o;
     } 
-
-    /*friend __forceinline bool equalRingEval(CatmullClark1Ring& source, CatmullClark1Ring& dest) 
-    {
-      if (source.face_valence != dest.face_valence) return false;
-      if (source.edge_valence != dest.edge_valence) return false;
-      
-      size_t start_index_source = 2 * source.eval_start_index;
-      size_t start_index_dest   = 2 * dest.eval_start_index;
-      
-      for (size_t i=0;i<source.edge_valence;i++)
-        {
-          size_t index_source = (start_index_source + i) % source.edge_valence;
-          size_t index_dest   = (start_index_dest   + i) % source.edge_valence;          
-          if ( source.ring[index_source] != dest.ring[index_dest] )
-            {
-              PRINT(source.eval_start_index);
-              PRINT(dest.eval_start_index);              
-              PRINT(index_source);
-              PRINT(index_dest);
-              PRINT(source.ring[index_source]);
-              PRINT(dest.ring[index_dest]);
-              return false;              
-            }
-        }
-      return true;
-      }*/
-
   };  
 }
