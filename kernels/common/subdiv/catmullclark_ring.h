@@ -325,51 +325,8 @@ namespace embree
       else                                           return (Type) (crease_mask & (TYPE_GREGORY | TYPE_GREGORY_CREASES));
     }
 
-    __forceinline bool isRegular2() const
-    {
-      /* check if there is an edge crease anywhere */
-      if (hasEdgeCrease()) return false;
-
-      /* calculate if this vertex is regular */
-      bool hasBorder = border_index != -1;
-      if (face_valence == 2 && hasBorder) {
-        if      (vertex_crease_weight == 0.0f      ) return true;
-        else if (vertex_crease_weight == float(inf)) return true;
-        else                                         return false;
-      }
-      else if (vertex_crease_weight != 0.0f)         return false;
-      else if (face_valence == 3 &&  hasBorder)      return true;
-      else if (face_valence == 4 && !hasBorder)      return true;
-      else                                           return false;
-    }
-
     __forceinline bool isFinalResolution(float res) const {
       return vertex_level <= res;
-    }
-
-    /* returns true if the vertex can be part of a dicable gregory patch (using gregory patches) */
-    __forceinline bool isGregory() const 
-    {
-      /* check if there is an edge crease anywhere */
-      if (hasEdgeCrease()) return false;
-
-      /* calculate if this vertex is regular */
-      bool hasBorder = border_index != -1;
-      if (face_valence == 2 && hasBorder) {
-        if      (vertex_crease_weight == 0.0f      ) return true;
-        else if (vertex_crease_weight == float(inf)) return true;
-        else                                         return false;
-      }
-      else if (vertex_crease_weight != 0.0f)         return false;
-      else                                           return true;
-    }
-
-    __forceinline Vertex ksum(Vertex_t &sum, Vertex_t &c, const Vertex_t &i) const
-    {
-      Vertex_t y = i - c;
-      Vertex_t t = sum + y;
-      c = (t - sum) - y;
-      return t;
     }
 
     /* computes the limit vertex */
@@ -382,9 +339,6 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-	//if (unlikely(std::isinf(vertex_crease_weight)))
-        //return vtx;
-	
 	const unsigned int second_border_index = border_index+2 >= edge_valence ? 0 : border_index+2;
 	return (4.0f * vtx + (ring[border_index] + ring[second_border_index])) * 1.0f/6.0f;
       }
@@ -395,11 +349,8 @@ namespace embree
       assert(eval_start_index < face_valence);
 
       for (size_t i=0; i<face_valence; i++) {
-        ////////////////////////////////////////////////
         size_t index = i+eval_start_index;
         if (index >= face_valence) index -= face_valence;
-        ////////////////////////////////////////////////
-
         F += ring[2*index+1];
         E += ring[2*index];
       }
@@ -417,7 +368,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {	
-	if (border_index != edge_valence-2 ) { // && face_valence != 2
+	if (border_index != edge_valence-2 ) {
 	  return ring[0] - vtx; 
 	}
 	else
@@ -432,33 +383,20 @@ namespace embree
       
       const size_t n = face_valence;
 
-      //const float n = (float)face_valence;
-      //const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-      //const float c1 = (1.0f/n + cosf(M_PI/n) * c0); // FIXME: plus or minus
-
       assert(eval_start_index < face_valence);
 
       Vertex_t q( 0.0f );
       for (size_t i=0; i<face_valence; i++)
       {
-        ////////////////////////////////////////////////
         size_t index = i+eval_start_index;
         if (index >= face_valence) index -= face_valence;
-        ////////////////////////////////////////////////
-
-	//const float a = c1 * cosf(2.0f*M_PI*index/n);
-	//const float b = c0 * cosf((2.0f*M_PI*index+M_PI)/n); 
         const float a = CatmullClarkPrecomputedCoefficients::table.limittangent_a(index,n);
         const float b = CatmullClarkPrecomputedCoefficients::table.limittangent_b(index,n);
-
 	alpha +=  a * ring[2*index];
 	beta  +=  b * ring[2*index+1];
-
       }
 
-      //const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
       const float sigma = CatmullClarkPrecomputedCoefficients::table.limittangent_c(n);
-
       return sigma * (alpha + beta);
     }
     
@@ -471,7 +409,7 @@ namespace embree
       /* border vertex rule */
       if (unlikely(border_index != -1))
       {
-        if (border_index != 2) { //edge_valence-2 ) { // && face_valence != 2
+        if (border_index != 2) {
           return ring[2] - vtx;
         }
         else {
@@ -485,33 +423,21 @@ namespace embree
 
       const size_t n = face_valence;
 
-      //const float n = (float)face_valence;
-      //const float c0 = 1.0f/n * 1.0f / sqrtf(4.0f + cosf(M_PI/n)*cosf(M_PI/n));  
-      //const float c1 = (1.0f/n + cosf(M_PI/n) * c0);
-
       assert(eval_start_index < face_valence);
 
       for (size_t i=0; i<face_valence; i++)
       {
-        ////////////////////////////////////////////////
         size_t index = i+eval_start_index;
         if (index >= face_valence) index -= face_valence;
-        ////////////////////////////////////////////////
 
         size_t prev_index = index == 0 ? face_valence-1 : index-1; // need to be bit-wise exact in cosf eval
-
-	//const float a = c1 * cosf(2.0f*M_PI*(float(prev_index))/n);
-	//const float b = c0 * cosf((2.0f*M_PI*(float(prev_index))+M_PI)/n);
         const float a = CatmullClarkPrecomputedCoefficients::table.limittangent_a(prev_index,n);
         const float b = CatmullClarkPrecomputedCoefficients::table.limittangent_b(prev_index,n);
-
 	alpha += a * ring[2*index];
 	beta  += b * ring[2*index+1];
       }
 
-      //const float sigma = 2.0f/16.0f * (5.0f + cosf(2.0f*M_PI/n) + cosf(M_PI/n) * sqrtf(18.0f+2.0f*cosf(2.0f*M_PI/n)));
       const float sigma = CatmullClarkPrecomputedCoefficients::table.limittangent_c(n);
-
       return sigma* (alpha + beta);      
     }
 
@@ -587,13 +513,13 @@ namespace embree
     int border_face;
     float vertex_crease_weight;
     float vertex_level;                      //!< maximal level of adjacent edges
-    float edge_level; // level of first edge
-    bool only_quads;  // true if all faces are quads
+    float edge_level;                        // level of first edge
+    bool only_quads;                         // true if all faces are quads
     unsigned int eval_start_face_index;
     unsigned int eval_start_vertex_index;
     unsigned int eval_unique_identifier;
 
-
+  public:
     GeneralCatmullClark1RingT() 
       : eval_start_face_index(0), eval_start_vertex_index(0), eval_unique_identifier(0) {}
 
