@@ -226,7 +226,7 @@ namespace embree
 	os_free(data,size);
       }
     size      = new_size;
-    data      = (float*)os_malloc(size);
+    data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
     maxBlocks = size/64;    
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
