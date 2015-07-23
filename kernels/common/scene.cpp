@@ -296,7 +296,7 @@ namespace embree
 #endif
 
     /* decrement number of scenes */
-    numScenes++;
+    numScenes--;
   }
 
   void Scene::clear() {
