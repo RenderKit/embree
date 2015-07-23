@@ -100,6 +100,10 @@ namespace embree
         else                                  return soft_convex_corner(v01,v02,v10,v11,v12,v20,v21,v22);
       }
 
+      __forceinline Vertex load(const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Vertex_t::loadu(vertices+edge->getStartVertexIndex()*stride);
+      }
+
       __forceinline void init_border(const CatmullClarkRing& edge0,
                                      Vertex& v01, Vertex& v02,
                                      const Vertex& v11, const Vertex& v12,
@@ -156,8 +160,7 @@ namespace embree
         init_corner(patch.ring[3],v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
-      template<typename Loader>
-      __forceinline void init_border(const HalfEdge* edge0, Loader& load,
+      __forceinline void init_border(const HalfEdge* edge0, const char* vertices, size_t stride,
                                      Vertex& v01, Vertex& v02,
                                      const Vertex& v11, const Vertex& v12,
                                      const Vertex& v21, const Vertex& v22)
@@ -165,16 +168,15 @@ namespace embree
         if (likely(edge0->hasOpposite())) 
         {
           const HalfEdge* e = edge0->opposite()->next()->next(); 
-          v01 = load(e); 
-          v02 = load(e->next());
+          v01 = load(e,vertices,stride); 
+          v02 = load(e->next(),vertices,stride);
         } else {
           v01 = 2.0f*v11-v21;
           v02 = 2.0f*v12-v22;
         }
       }
       
-      template<typename Loader>
-      __forceinline void init_corner(const HalfEdge* edge0, Loader& load,
+      __forceinline void init_corner(const HalfEdge* edge0, const char* vertices, size_t stride,
                                      Vertex& v00, const Vertex& v01, const Vertex& v02, 
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
@@ -189,7 +191,7 @@ namespace embree
           {
             assert(e->hasOpposite());
             assert(edge0->prev()->opposite()->prev()->hasOpposite());
-            v00 = load(e->opposite()->prev());
+            v00 = load(e->opposite()->prev(),vertices,stride);
           } 
           else {
             assert(!e->hasOpposite());
@@ -209,28 +211,27 @@ namespace embree
         }
       }
       
-      template<typename Loader>
-      void init(const HalfEdge* edge0, Loader& load)
+      void init(const HalfEdge* edge0, const char* vertices, size_t stride)
       {
         assert( edge0->isRegularFace() );
         
         /* fill inner vertices */
-        const Vertex v11 = v[1][1] = load(edge0); const HalfEdge* edge1 = edge0->next();
-        const Vertex v12 = v[1][2] = load(edge1); const HalfEdge* edge2 = edge1->next();
-        const Vertex v22 = v[2][2] = load(edge2); const HalfEdge* edge3 = edge2->next();
-        const Vertex v21 = v[2][1] = load(edge3); assert(edge0  == edge3->next());
+        const Vertex v11 = v[1][1] = load(edge0,vertices,stride); const HalfEdge* edge1 = edge0->next();
+        const Vertex v12 = v[1][2] = load(edge1,vertices,stride); const HalfEdge* edge2 = edge1->next();
+        const Vertex v22 = v[2][2] = load(edge2,vertices,stride); const HalfEdge* edge3 = edge2->next();
+        const Vertex v21 = v[2][1] = load(edge3,vertices,stride); assert(edge0  == edge3->next());
         
         /* fill border vertices */
-        init_border(edge0,load,v[0][1],v[0][2],v11,v12,v21,v22);
-        init_border(edge1,load,v[1][3],v[2][3],v12,v22,v11,v21);
-        init_border(edge2,load,v[3][2],v[3][1],v22,v21,v12,v11);
-        init_border(edge3,load,v[2][0],v[1][0],v21,v11,v22,v12);
+        init_border(edge0,vertices,stride,v[0][1],v[0][2],v11,v12,v21,v22);
+        init_border(edge1,vertices,stride,v[1][3],v[2][3],v12,v22,v11,v21);
+        init_border(edge2,vertices,stride,v[3][2],v[3][1],v22,v21,v12,v11);
+        init_border(edge3,vertices,stride,v[2][0],v[1][0],v21,v11,v22,v12);
         
         /* fill corner vertices */
-        init_corner(edge0,load,v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
-        init_corner(edge1,load,v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
-        init_corner(edge2,load,v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
-        init_corner(edge3,load,v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
+        init_corner(edge0,vertices,stride,v[0][0],v[0][1],v[0][2],v[1][0],v11,v12,v[2][0],v21,v22);
+        init_corner(edge1,vertices,stride,v[0][3],v[1][3],v[2][3],v[0][2],v12,v22,v[0][1],v11,v21);
+        init_corner(edge2,vertices,stride,v[3][3],v[3][2],v[3][1],v[2][3],v22,v21,v[1][3],v12,v11);
+        init_corner(edge3,vertices,stride,v[3][0],v[2][0],v[1][0],v[3][1],v21,v11,v[3][2],v22,v12);
       }
       
       __forceinline BBox<Vertex> bounds() const
