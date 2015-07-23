@@ -219,7 +219,7 @@ namespace embree
      const int64_t subdiv_patch_root_ref = tag->data; 
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
-     if (likely(subdiv_patch_root_ref)) 
+     if (likely(subdiv_patch_root_ref != 0)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
@@ -272,7 +272,7 @@ namespace embree
      const int64_t subdiv_patch_root_ref = tag->data; 
      
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
-     if (likely(subdiv_patch_root_ref)) 
+     if (likely(subdiv_patch_root_ref != 0)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
