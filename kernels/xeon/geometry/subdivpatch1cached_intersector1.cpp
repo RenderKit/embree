@@ -174,35 +174,11 @@ namespace embree
       assert( patch.grid_size_simd_blocks >= 1 );
 
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
- 
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-      __aligned(64) float local_grid_u[array_elements+16]; 
-      __aligned(64) float local_grid_v[array_elements+16];
-      __aligned(64) float local_grid_x[array_elements+16];
-      __aligned(64) float local_grid_y[array_elements+16];
-      __aligned(64) float local_grid_z[array_elements+16];
-#else
-#define MAX_GRID_SIZE 64*64
-      __aligned(64) float tmp_grid_u[MAX_GRID_SIZE];
-      __aligned(64) float tmp_grid_v[MAX_GRID_SIZE];
-      __aligned(64) float tmp_grid_x[MAX_GRID_SIZE];
-      __aligned(64) float tmp_grid_y[MAX_GRID_SIZE];
-      __aligned(64) float tmp_grid_z[MAX_GRID_SIZE];
-
-      float *local_grid_u = tmp_grid_u;
-      float *local_grid_v = tmp_grid_v;
-      float *local_grid_x = tmp_grid_x;
-      float *local_grid_y = tmp_grid_y;
-      float *local_grid_z = tmp_grid_z;
-      if (unlikely(array_elements >= MAX_GRID_SIZE))
-      { 
-        local_grid_u = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-        local_grid_v = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-        local_grid_x = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-        local_grid_y = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-        local_grid_z = (float*)_mm_malloc((array_elements + 16)*sizeof(float),64);
-      }
-#endif   
+      dynamic_large_stack_array(float,local_grid_u,array_elements,64*64);
+      dynamic_large_stack_array(float,local_grid_v,array_elements,64*64);
+      dynamic_large_stack_array(float,local_grid_x,array_elements,64*64);
+      dynamic_large_stack_array(float,local_grid_y,array_elements,64*64);
+      dynamic_large_stack_array(float,local_grid_z,array_elements,64*64);
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
@@ -248,20 +224,9 @@ namespace embree
       assert( std::isfinite(bounds.upper.x) );
       assert( std::isfinite(bounds.upper.y) );
       assert( std::isfinite(bounds.upper.z) );
-      
+
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-	
-      if (array_elements >= MAX_GRID_SIZE)
-      {
-        _mm_free(local_grid_u);
-        _mm_free(local_grid_v);
-        _mm_free(local_grid_x);
-        _mm_free(local_grid_y);
-        _mm_free(local_grid_z);       
-      }
-#endif
       return subtree_root;
     }
 
