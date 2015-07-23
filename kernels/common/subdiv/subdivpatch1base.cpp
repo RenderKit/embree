@@ -40,7 +40,7 @@ namespace embree
       new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
 #else
       type = BSPLINE_PATCH;
-      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer()));
+      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())); // FIXME: init BSpline directly from half edge structure
 #endif      
     }
 #if PATCH_USE_GREGORY == 2
