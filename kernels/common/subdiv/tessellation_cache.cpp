@@ -55,7 +55,7 @@ namespace embree
   {
     size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
 #if defined(_MSC_VER)
-    data                   = (float*)os_malloc(size);
+    data                   = (float*)os_malloc(size); // FIXME: should only reserve memory under windows
 #else
     data                   = (float*)os_reserve(size);
 #endif
