@@ -203,6 +203,9 @@ namespace embree
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
+    /* reset local time */
+    localTime              = NUM_CACHE_SEGMENTS;
+
 #if 1
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
