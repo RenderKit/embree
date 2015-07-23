@@ -174,11 +174,11 @@ namespace embree
       assert( patch.grid_size_simd_blocks >= 1 );
 
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
-      dynamic_large_stack_array(float,local_grid_u,array_elements,64*64);
-      dynamic_large_stack_array(float,local_grid_v,array_elements,64*64);
-      dynamic_large_stack_array(float,local_grid_x,array_elements,64*64);
-      dynamic_large_stack_array(float,local_grid_y,array_elements,64*64);
-      dynamic_large_stack_array(float,local_grid_z,array_elements,64*64);
+      dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_v,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_x,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_y,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_z,array_elements+vfloat::size,64*64);
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
