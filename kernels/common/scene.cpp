@@ -637,7 +637,7 @@ namespace embree
       arena.execute([&]{
 #endif
           group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
+              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
