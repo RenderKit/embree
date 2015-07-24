@@ -262,11 +262,11 @@ def render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, scene, fl
 def render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   render(OS,compiler,platform,build,isa,tasking,"hair_geometry"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
-def render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
+def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -i tutorials/models/" + scene + '.xml',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -i tutorials/models/" + scene + '.xml',scene,flags)
   else:
-    render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+    render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -306,15 +306,15 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
     
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', 'default')
-      render_tutorial10(OS, compiler, platform, build, isa, tasking, ty, 'cupid', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', 'default')
+      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'cupid', 'default')
 			    
 def renderLoop(OS):
     for compiler in compilers:
