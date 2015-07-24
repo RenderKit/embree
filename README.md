@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.6.0
+% Embree: High Performance Ray Tracing Kernels 2.6.1
 % Intel Corporation
 
 Embree Overview
@@ -76,22 +76,20 @@ list](https://groups.google.com/d/forum/embree/).
 Installation of Embree
 ======================
 
-This section describes how to install Embree. You can download the
-referenced installers from the embree webpage
-[https://embree.github.com/](https://embree.github.com/).
-
 Windows Installer
 -----------------
 
 You can install the 64\ bit version of the Embree library using the
 Windows installer application
-`embree-2.6.0.x64.exe`. This will install the 64
-bit Embree version by default in `Program Files\Intel\Embree
-2.6.0`. To install the 32\ bit Embree library use the
-`embree-2.6.0.win32.exe` installer. This will
-install the 32\ bit Embree version by default in `Program
-Files\Intel\Embree 2.6.0` on 32\ bit systems and `Program
-Files (x86)\Intel\Embree 2.6.0` on 64\ bit systems.
+[embree-2.6.1-x64.exe](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x64.exe). This
+will install the 64 bit Embree version by default in `Program
+Files\Intel\Embree v2.6.1 x64`. To install the 32\ bit
+Embree library use the
+[embree-2.6.1-win32.exe](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.win32.exe)
+installer. This will install the 32\ bit Embree version by default in
+`Program Files\Intel\Embree v2.6.1 win32` on 32\ bit
+systems and `Program Files (x86)\Intel\Embree v2.6.1 win32`
+on 64\ bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -102,18 +100,20 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.6.0` and uninstall it.
+2.6.1` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree is also delivered as a ZIP file
-`embree-2.6.0.x64.windows.zip`. After unpacking this ZIP
-file you should set the path to the `lib` folder manually to your
-`PATH` environment variable for applications to find Embree. To
-compile applications with Embree you also have to set the `Include
-Directories` path in Visual Studio to the `include` folder of the
-Embree installation.
+Embree is also delivered as a ZIP file for 64 bit
+[embree-2.6.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x64.windows.zip)
+and 32 bit
+[embree-2.6.1.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.win32.windows.zip). After
+unpacking this ZIP file you should set the path to the `lib` folder
+manually to your `PATH` environment variable for applications to find
+Embree. To compile applications with Embree you also have to set the
+`Include Directories` path in Visual Studio to the `include` folder of
+the Embree installation.
 
 If you plan to ship Embree with your application, best use the Embree
 version from this ZIP file.
@@ -121,20 +121,33 @@ version from this ZIP file.
 Linux RPMs
 ----------
 
-Use the provided RPMs to install Embree on your Linux system:
+Uncompress the 'tar.gz' file
+[embree-2.6.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.rpm.tar.gz)
+to
+obtain the individual RPM files:
 
-    sudo rpm --install embree-lib-2.6.0-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.6.0-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.6.0-1.x86_64.rpm
+    tar xzf embree-2.6.1.x86_64.rpm.tar.gz
+
+To install the Embree using the RPM packages on your Linux system type
+the following:
+
+    sudo rpm --install embree-lib-2.6.1-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.6.1-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.6.1-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.0-1.x86_64.rpm
-    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.0-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.1-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.1-1.x86_64.rpm
 
-You also have to install the Intel® Threading Building Blocks (TBB) of
-at least version 4.3 either using `yum`:
+To use the Xeon Phi™ version of Embree you additionally have configure your
+`SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
+
+    export SINK_LD_LIBRARY_PATH=/usr/local:${SINK_LD_LIBRARY_PATH}
+
+You also have to install the Intel® Threading Building Blocks (TBB)
+using `yum`:
 
     sudo yum install tbb.x86_64 tbb-devel.x86_64
 
@@ -147,34 +160,41 @@ Alternatively you can download the latest TBB version from
 and set the `LD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
+Note that the Embree RPMs are linked against the TBB version coming
+with CentOS. This older TBB version is missing some features required
+to get optimal build performance and does not support building of
+scenes lazily during rendering. To get a full featured Embree please
+install using the tar.gz files, which always ship with the latest TBB version.
+
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.6.0` folder. Specify the full path to
+`/usr/bin/embree-2.6.1` folder. Specify the full path to
 the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.6.0-1.x86_64
-    sudo rpm --erase embree-devel-2.6.0-1.x86_64
-    sudo rpm --erase embree-examples-2.6.0-1.x86_64
+    sudo rpm --erase embree-lib-2.6.1-1.x86_64
+    sudo rpm --erase embree-devel-2.6.1-1.x86_64
+    sudo rpm --erase embree-examples-2.6.1-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-lib_xeonphi-2.6.0-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.6.0-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.6.1-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.6.1-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-`embree-2.6.0.x64.linux.tar.gz`. Unpack this file using
-`tar` and source the provided `embree-vars.sh` to setup the
-environment properly:
+[embree-2.6.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.linux.tar.gz). Unpack
+this file using `tar` and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the
+C shell) to setup the environment properly:
 
-    tar xzf embree-2.6.0.x64.linux.tar.gz
-    source embree-2.6.0.x64.linux/embree-vars.sh
+    tar xzf embree-2.6.1.x64.linux.tar.gz
+    source embree-2.6.1.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -184,10 +204,10 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-`embree-2.6.0.x86_64.dmg`. This will install Embree by
-default into `/opt/local/lib` and `/opt/local/include`
-directories. The Embree tutorials are installed into the
-`/Applications/Embree2` folder.
+[embree-2.6.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.dmg). This
+will install Embree by default into `/opt/local/lib` and
+`/opt/local/include` directories. The Embree tutorials are installed
+into the `/Applications/Embree2` folder.
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using [MacPorts](http://www.macports.org/):
@@ -200,18 +220,18 @@ and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
 To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.6.0/uninstall.command`.
+`/Applications/embree-2.6.1/uninstall.command`.
 
 Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-`embree-2.6.0.x64.macosx.tar.gz`. Unpack this file using
-`tar` and source the provided `embree-vars.sh` to setup the
-environment properly:
+[embree-2.6.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.macosx.tar.gz). Unpack
+this file using `tar` and source the provided `embree-vars.sh` to
+setup the environment properly:
 
-    tar xzf embree-2.6.0.x64.macosx.tar.gz
-    source embree-2.6.0.x64.macosx/embree-vars.sh
+    tar xzf embree-2.6.1.x64.macosx.tar.gz
+    source embree-2.6.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -237,8 +257,8 @@ Linux and Mac OS\ X
 
 To compile Embree you need a modern C++ compiler that supports C++11.
 Embree is tested with Intel® Compiler 15.0.2, CLANG 3.4.2, and GCC
-4.8.2. If the GCC that comes with your Fedora/Redhat/CentOS distribution
-is too old then you can run the provided script
+4.8.2. If the GCC that comes with your Fedora/Red Hat/CentOS
+distribution is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
 `$HOME/devtools-2`.
 
@@ -286,7 +306,7 @@ Type the following to install the dependencies using `apt-get`:
     sudo apt-get install libxmu-dev libxi-dev
 
 Finally you can compile Embree using CMake. Create a build directory
-inside the Embree root directory and execute "ccmake .." inside this
+inside the Embree root directory and execute `ccmake ..` inside this
 build directory.
 
     mkdir build
@@ -336,11 +356,9 @@ implementation will always use some internal tasking system.
 Windows
 -------
 
-To compile Embree under Windows you need a recent version of Visual
-Studio that supports C++11. We have tested Visual Studio 2013, Visual
-Studio 2012, and Visual Studio 2010. Under Visual Studio 2013 you can
-enable AVX2 in CMake, however, Visual Studio 2012 supports at most
-AVX, and Visual Studio 2010 at most the SSE4.2 CMake configuration.
+To compile Embree under Windows you need Visual Studio 2013 or Visual
+Studio 2012. Under Visual Studio 2013 you can enable AVX2 in CMake,
+however, Visual Studio 2012 supports at most AVX.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -482,10 +500,11 @@ parameters that can be configured in CMake:
 
   RTCORE_RAY_MASK              Enables the ray masking feature. OFF
 
-  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
-                               the ray returns a smooth normal
-                               based on evaluating the
-                               subdivision surface patch.
+  RTCORE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
+                               risk of full-tree traversals
+                               caused by invalid rays (e.g.
+                               rays containing inf/NaN as
+                               origins).
 
   RTCORE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
                                Building Blocks (TBB) or an
@@ -1065,7 +1084,7 @@ geometries:
     userGeom[1] = ...
     unsigned geomID = rtcNewUserGeometry(scene, 2);
     rtcSetUserData(scene, geomID, userGeom);
-    rtcSetBounds(scene, geomID, userBoundsFunction);
+    rtcSetBoundsFunction(scene, geomID, userBoundsFunction);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
     rtcSetOccludedFunction(scene, geomID, userOccludedFunction);
 
@@ -1255,7 +1274,8 @@ Interpolation of Vertex Data
 
 Smooth interpolation of per-vertex data is supported for triangle
 meshes, hair geometry, and subdivision geometry using the
-`rtcInterpolate` API call.
+`rtcInterpolate` API call. This interpolation function does ignore
+displacements and always interpolates the underlying base surface.
 
     void rtcInterpolate(RTCScene scene,
                         unsigned geomID, unsigned primID,
@@ -1290,7 +1310,7 @@ NULL.
 The `RTC_INTERPOLATE` algorithm flag of a scene has to be enabled to
 perform interpolations.
 
-It is explicitely allowed to call this function on disabled
+It is explicitly allowed to call this function on disabled
 geometries. This makes it possible to use a separate subdivision mesh
 with different vertex creases, edge creases, and boundary handling for
 interpolation of texture coordinates if that is necessary.

@@ -1,6 +1,23 @@
 Version History
 ---------------
 
+### New Features in Embree 2.6.1
+
+-   Major performance improvements for ray tracing subdivision
+    surfaces, e.g. up to 2x faster for scenes where only the
+	tessellation levels are changing per frame, and up to 3x faster
+	for scenes with lots of crease features.
+
+-   Initial support for architectures supporting the new 16-wide
+    AVX512 ISA.
+
+-   Implemented intersection filter callback support for
+    subdivision surfaces.
+
+-   Added `RTC_IGNORE_INVALID_RAYS` CMake option which makes the ray
+	intersectors more robust against full tree traversal caused by
+	invalid ray inputs (e.g. INF, NAN, etc).
+
 ### New Features in Embree 2.6.0
 
 -   Added `rtcInterpolate` function to interpolate per vertex
@@ -10,8 +27,8 @@ Version History
 -   Fixed a traversal bug that caused rays with very small ray
     direction components to miss geometry
 -   Performance improvements for the robust traversal mode
--   Fixed deadlock when calling rtcCommit from multiple
-    threads on same scene.
+-   Fixed deadlock when calling `rtcCommit` from multiple
+    threads on same scene
 
 ### New Features in Embree 2.5.1
 
