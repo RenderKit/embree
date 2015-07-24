@@ -5,10 +5,10 @@ set TBB_PATH=%cd%\tbb
 
 mkdir -p build_win32
 cd build_win32
-del CMakeCache.txt # make sure to use default settings
+del CMakeCache.txt
 del version.h
 
-# set release settings
+REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013" ^
 -T "Intel C++ Compiler XE 15.0" ^
@@ -23,24 +23,24 @@ cmake -L ^
 -D USE_OPENEXR=OFF ^
 ..
 
-# compile
+REM compile
 cmake --clean-first --build . --config Release --target PREINSTALL -- /m /nologo /verbosity:n
 
-# create installers
+REM create installers
 cmake -D ENABLE_INSTALLER=ON ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
-# create ZIP files
+REM create ZIP files
 cmake -D ENABLE_INSTALLER=OFF ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
 cd ..
-mkdir -p build_x64
+mkdir build_x64
 cd build_x64
 del CMakeCache.txt # make sure to use default settings
 del version.h
 
-# set release settings
+REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013 Win64" ^
 -T "Intel C++ Compiler XE 15.0" ^
@@ -55,14 +55,14 @@ cmake -L ^
 -D USE_OPENEXR=OFF ^
 ..
 
-# compile
+REM compile
 cmake --clean-first --build . --config Release --target PREINSTALL -- /m /nologo /verbosity:n
 
-# create installers
+REM create installers
 cmake -D ENABLE_INSTALLER=ON ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
-# create ZIP files
+REM create ZIP files
 cmake -D ENABLE_INSTALLER=OFF ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
