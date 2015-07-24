@@ -170,9 +170,10 @@ namespace embree
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
+          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           binner = parallel_reduce(set.begin(),set.end(),size_t(4096),binner,
-                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),mapping,space); return binner; },
-                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,mapping.size()); return r; });
+                                   [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping,space); return binner; },
+                                   [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
         }
         

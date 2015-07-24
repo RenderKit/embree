@@ -58,13 +58,14 @@ namespace embree
         const Split parallel_find(Set& set, const PrimInfo& pinfo, const size_t logBlockSize, SplitInfo& sinfo_o)
         {
           const BinMapping<BINS> mapping(pinfo);
+          const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           typename Set::iterator i=set;
           const size_t threadCount = TaskSchedulerTBB::threadCount();
           const Binner binner = parallel_reduce(size_t(0),threadCount,Binner(empty), [&] (const range<size_t>& r) -> Binner
           {
             Binner binner(empty);
             while (Set_item* block = i.next()) {
-              binner.bin(block->base(),block->size(),mapping);
+              binner.bin(block->base(),block->size(),_mapping);
             }
             return binner;
           },[](const Binner& a, const Binner& b) -> Binner { return HeuristicListBinningSAH<PrimRef,BINS>::Binner::reduce(a,b); });
