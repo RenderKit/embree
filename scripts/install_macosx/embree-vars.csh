@@ -13,22 +13,17 @@ if (!($?CPATH)) then
   setenv CPATH
 endif
 
-if (!($?LIBRARY_PATH)) then
+if (!($?LIBRARY_PATCH)) then
   setenv LIBRARY_PATH
 endif
 
-if (!($?LD_LIBRARY_PATH)) then
-  setenv LD_LIBRARY_PATH
+if (!($?DYLD_LIBRARY_PATH)) then
+  setenv DYLD_LIBRARY_PATH
 endif
 
-if (!($?SINK_LD_LIBRARY_PATH)) then
-  setenv SINK_LD_LIBRARY_PATH
-endif
+setenv CPATH "$SCRIPT_PATH/include":${CPATH}
 
-setenv CPATH "$SCRIPT_PATH/include:${CPATH}"
+setenv LIBRARY_PATH "$SCRIPT_PATH/lib":${LIBRARY_PATH}
 
-setenv LIBRARY_PATH "$SCRIPT_PATH/lib:${LIBRARY_PATH}"
+setenv DYLD_LIBRARY_PATH "$SCRIPT_PATH/lib":${DYLD_LIBRARY_PATH}
 
-setenv LD_LIBRARY_PATH "$SCRIPT_PATH/lib:${LD_LIBRARY_PATH}"
-
-setenv SINK_LD_LIBRARY_PATH "$SCRIPT_PATH/lib:${SINK_LD_LIBRARY_PATH}"
