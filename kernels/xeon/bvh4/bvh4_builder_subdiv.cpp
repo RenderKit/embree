@@ -102,9 +102,11 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,pinfo.size());
 
 	/* clear temporary data for static geometry */
-	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.clear();
-        bvh->alloc.cleanup();
+	if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
         bvh->postBuild(t0);
       }
 
@@ -219,9 +221,11 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,pinfo.size());
         
 	/* clear temporary data for static geometry */
-	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.clear();
-        bvh->alloc.cleanup();
+	if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
         bvh->postBuild(t0);
       }
 
@@ -451,9 +455,11 @@ namespace embree
         }
         
 	/* clear temporary data for static geometry */
-	bool staticGeom = scene->isStatic();
-	if (staticGeom) prims.clear();
-        bvh->alloc.cleanup();
+	if (scene->isStatic()) {
+          prims.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
         bvh->postBuild(t0);
       }
       

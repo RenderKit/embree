@@ -365,7 +365,7 @@ namespace embree
 
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
-        //bvh->alloc.shrink();
+        //bvh->shrink();
       }
       
       /* build function */
@@ -480,8 +480,12 @@ namespace embree
 #endif
             
         /* clear temporary data for static geometry */
-	if (mesh->isStatic()) morton.clear();
-        bvh->alloc.cleanup();
+        if (mesh->isStatic()) 
+        {
+          morton.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
       }
 
       void clear() {
@@ -513,9 +517,8 @@ namespace embree
         : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1) {}
       
       /*! Destruction */
-      ~BVH4SceneBuilderMorton ()
-      {
-        //bvh->alloc.shrink();
+      ~BVH4SceneBuilderMorton () {
+        //bvh->shrink();
       }
       
       /* build function */
@@ -661,10 +664,13 @@ namespace embree
         }); 
 #endif
         
-        /* clear temporary data for static geometry */
-	bool staticGeom = scene->isStatic(); 
-	if (staticGeom) morton.clear();
-        bvh->alloc.cleanup();
+        /* clear temporary data for static geometry */ 
+	if (scene->isStatic()) 
+        {
+          morton.clear();
+          bvh->shrink();
+        }
+        bvh->cleanup();
         bvh->postBuild(t0);
       }
 

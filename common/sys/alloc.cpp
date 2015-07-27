@@ -60,13 +60,14 @@ namespace embree
     VirtualAlloc(ptr,bytes,MEM_COMMIT,PAGE_READWRITE);
   }
 
-  void os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = 4096;
-    if (bytesNew & (pageSize-1)) 
-      bytesNew = (bytesNew+pageSize) & (pageSize-1);
-
-    VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
+    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    assert(bytesNew <= bytesOld);
+    if (bytesNew < bytesOld)
+      VirtualFree((char*)ptr+bytesNew,bytesOld-bytesNew,MEM_DECOMMIT);
+    return bytesNew;
   }
 
   void os_free(void* ptr, size_t bytes) {
@@ -155,20 +156,25 @@ namespace embree
   void os_commit (void* ptr, size_t bytes) {
   }
 
-  void os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
+  size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = 4096;
 #if USE_HUGE_PAGES
     if (bytesOld > 16*4096) pageSize = 2*1024*1024;
 #endif
-    if (bytesNew & (pageSize-1)) 
-      bytesNew = (bytesNew+pageSize) & (pageSize-1);
+    assert(((size_t)ptr & pageSize) == 0);
+    bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+    assert(bytesNew <= bytesOld);
+    if (bytesNew < bytesOld)
+      if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
+        throw std::bad_alloc();
 
-    os_free((char*)ptr+bytesNew,bytesOld-bytesNew);
+    return bytesNew;
   }
 
   void os_free(void* ptr, size_t bytes) 
   {
+    assert(((size_t)ptr & pageSize) == 0);
     if (bytes == 0)
       return;
 
@@ -179,9 +185,8 @@ namespace embree
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 #endif
-    if (munmap(ptr,bytes) == -1) {
+    if (munmap(ptr,bytes) == -1)
       throw std::bad_alloc();
-    }
   }
 
   void* os_realloc (void* old_ptr, size_t bytesNew, size_t bytesOld)

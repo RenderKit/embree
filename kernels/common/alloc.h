@@ -234,7 +234,7 @@ namespace embree
 
     /*! shrinks all memory blocks to the actually used size */
     void shrink () {
-      usedBlocks->shrink();
+      if (usedBlocks) usedBlocks->shrink();
       if (freeBlocks) freeBlocks->~Block(); freeBlocks = nullptr;
     }
 
@@ -392,7 +392,7 @@ namespace embree
       ~Block () {
 	if (next) next->~Block(); next = nullptr;
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        const size_t sizeof_This = sizeof_Header+reserveEnd;
+        size_t sizeof_This = sizeof_Header+reserveEnd;
         const size_t sizeof_Alloced = sizeof_Header+getBlockAllocatedBytes();
         os_free(this,sizeof_This);
         memoryMonitor(-sizeof_Alloced,true);
@@ -438,9 +438,15 @@ namespace embree
 
       void shrink () 
       {
-        os_shrink(&data[0],cur,reserveEnd);
-        reserveEnd = allocEnd = cur;
+        const size_t sizeof_Header = offsetof(Block,data[0]);
+        size_t newSize = os_shrink(this,sizeof_Header+getRequiredBytes(),reserveEnd+sizeof_Header);
+        memoryMonitor(newSize-sizeof_Header-allocEnd,true);
+        reserveEnd = allocEnd = newSize-sizeof_Header;
         if (next) next->shrink();
+      }
+
+      size_t getRequiredBytes() const {
+        return min(size_t(cur),reserveEnd);
       }
 
       size_t getBlockAllocatedBytes() const {

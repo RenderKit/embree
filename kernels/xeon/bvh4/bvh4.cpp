@@ -414,8 +414,6 @@ namespace embree
 
   void BVH4::postBuild(double t0)
   {
-    //if (staticGeom) alloc.shrink(); // FIXME: triggers bug
-
     if (t0 == double(inf))
       return;
     

@@ -732,6 +732,16 @@ namespace embree
     /*! called by all builders after build ended */
     void postBuild(double t0);
 
+    /*! shrink allocated memory */
+    void shrink() {
+      alloc.shrink();
+    }
+
+    /*! post build cleanup */
+    void cleanup() {
+      alloc.cleanup();
+    }
+
   public:
 
     /*! Encodes a node */
