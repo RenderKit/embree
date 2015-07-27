@@ -155,22 +155,22 @@ namespace embree
           if (ofs+3 >= mesh->numVertices())
             continue;
 
-	  Vec3fa p0 = mesh->vertex(ofs+0,0);
-	  Vec3fa p1 = mesh->vertex(ofs+1,0);
-	  Vec3fa p2 = mesh->vertex(ofs+2,0);
-	  Vec3fa p3 = mesh->vertex(ofs+3,0);
+          BBox3fa bounds = empty;
+	  Vec3fa p0 = mesh->vertex(ofs+0,0); bounds.extend(p0);
+	  Vec3fa p1 = mesh->vertex(ofs+1,0); bounds.extend(p1);
+	  Vec3fa p2 = mesh->vertex(ofs+2,0); bounds.extend(p2);
+	  Vec3fa p3 = mesh->vertex(ofs+3,0); bounds.extend(p3);
 	  if (timeSteps == 2) {
-	    p0 = 0.5f*(p0+mesh->vertex(ofs+0,1));
-	    p1 = 0.5f*(p1+mesh->vertex(ofs+1,1));
-	    p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
-	    p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
+            Vec3fa q0 = mesh->vertex(ofs+0,1); bounds.extend(q0); p0 = 0.5f*(p0+q0);
+            Vec3fa q1 = mesh->vertex(ofs+1,1); bounds.extend(q1); p1 = 0.5f*(p1+q1);
+	    Vec3fa q2 = mesh->vertex(ofs+2,1); bounds.extend(q2); p2 = 0.5f*(p2+q2);
+	    Vec3fa q3 = mesh->vertex(ofs+3,1); bounds.extend(q3); p3 = 0.5f*(p3+q3);
 	  }
           if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
               continue;
 
 	  const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);
-          const BBox3fa bounds = bezier.bounds();
-          pinfo.add(bounds);
+          pinfo.add(bounds,bezier.bounds().center2());
           prims[k++] = bezier;
         }
         return pinfo;
@@ -190,22 +190,22 @@ namespace embree
             if (ofs+3 >= mesh->numVertices())
               continue;
 
-            Vec3fa p0 = mesh->vertex(ofs+0,0);
-            Vec3fa p1 = mesh->vertex(ofs+1,0);
-            Vec3fa p2 = mesh->vertex(ofs+2,0);
-            Vec3fa p3 = mesh->vertex(ofs+3,0);
+            BBox3fa bounds = empty;
+            Vec3fa p0 = mesh->vertex(ofs+0,0); bounds.extend(p0);
+            Vec3fa p1 = mesh->vertex(ofs+1,0); bounds.extend(p1);
+            Vec3fa p2 = mesh->vertex(ofs+2,0); bounds.extend(p2);
+            Vec3fa p3 = mesh->vertex(ofs+3,0); bounds.extend(p3);
             if (timeSteps == 2) {
-              p0 = 0.5f*(p0+mesh->vertex(ofs+0,1));
-              p1 = 0.5f*(p1+mesh->vertex(ofs+1,1));
-              p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
-              p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
+              Vec3fa q0 = mesh->vertex(ofs+0,1); bounds.extend(q0); p0 = 0.5f*(p0+q0);
+              Vec3fa q1 = mesh->vertex(ofs+1,1); bounds.extend(q1); p1 = 0.5f*(p1+q1);
+              Vec3fa q2 = mesh->vertex(ofs+2,1); bounds.extend(q2); p2 = 0.5f*(p2+q2);
+              Vec3fa q3 = mesh->vertex(ofs+3,1); bounds.extend(q3); p3 = 0.5f*(p3+q3);
             }
             if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
               continue;
             
             const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);
-            const BBox3fa bounds = bezier.bounds();
-            pinfo.add(bounds);
+            pinfo.add(bounds,bezier.bounds().center2());
             prims[k++] = bezier;
           }
           return pinfo;

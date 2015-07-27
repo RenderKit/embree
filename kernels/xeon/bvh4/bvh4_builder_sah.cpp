@@ -509,10 +509,11 @@ namespace embree
 	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
               : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
 	    BVH4::NodeRef root;
-            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+            auto bounds2 = BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
 	      (root,BVH4::CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),progress,
 	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
-	    bvh->set(root,pinfo.geomBounds,pinfo.size());
+            const BBox3fa bounds = merge(bounds2.first,bounds2.second);
+	    bvh->set(root,bounds,pinfo.size());
             
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
 
