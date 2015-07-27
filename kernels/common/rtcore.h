@@ -18,6 +18,16 @@
 
 namespace embree
 {
+#if TBB_INTERFACE_VERSION_MAJOR < 8    
+#define USE_TASK_ARENA 0
+#else
+#define USE_TASK_ARENA 1
+#endif
+
+#if USE_TASK_ARENA
+  extern tbb::task_arena arena;
+#endif
+
   /*! processes error codes, do not call directly */
   void process_error(RTCError error, const char* str);
 

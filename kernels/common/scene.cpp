@@ -24,12 +24,6 @@
 #include "../xeonphi/bvh4mb/bvh4mb.h"
 #include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
-
-#if TBB_INTERFACE_VERSION_MAJOR < 8    
-#define USE_TASK_ARENA 0
-#else
-#define USE_TASK_ARENA 1
-#endif
  
 namespace embree
 {

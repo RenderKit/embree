@@ -372,34 +372,27 @@ namespace embree
     TaskSchedulerTBB::create(g_numThreads);
 #endif
 
-#if defined(__TARGET_AVX512__)
-    if (hasISA(AVX512)) {
-      if (g_numThreads == 0) {
-        if (State::instance()->verbosity(2)) 
-          std::cout << "Pre-initialize TBB threads..." << std::endl;
-        g_numThreads = tbb::task_scheduler_init::default_num_threads();
-      } 
-    }
-#endif
-
 #if defined(TASKING_TBB)
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      tbb_threads.initialize(g_numThreads);
       tbb_affinity.set_concurrency(0);
       tbb_affinity.observe(true); 
+      tbb_threads.initialize(g_numThreads);
 
 #if 0
       const size_t N = 1024*1024;
       //PRINT(g_numThreads );
       while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
         tbb_pi<double> (N);
-      //PRINT( tbb_affinity.get_concurrency() );
+      PRINT( tbb_affinity.get_concurrency() );
 #endif
     }
+#if USE_TASK_ARENA
+    arena.initialize(g_numThreads);
+#endif
 #endif
 
     /* execute regression tests */
