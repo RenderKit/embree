@@ -162,7 +162,6 @@ namespace embree
 #if USE_HUGE_PAGES
     if (bytesOld > 16*4096) pageSize = 2*1024*1024;
 #endif
-    assert(((size_t)ptr & pageSize) == 0);
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
     assert(bytesNew <= bytesOld);
     if (bytesNew < bytesOld)
@@ -174,7 +173,6 @@ namespace embree
 
   void os_free(void* ptr, size_t bytes) 
   {
-    assert(((size_t)ptr & pageSize) == 0);
     if (bytes == 0)
       return;
 
