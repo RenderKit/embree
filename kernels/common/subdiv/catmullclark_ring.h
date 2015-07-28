@@ -135,10 +135,6 @@ namespace embree
       return border_index != (edge_valence-2-2*i);
     }
     
-    __forceinline bool has_second_face() const {
-      return (border_index == -1) || (border_index >= 4);
-    }
-    
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds ( vtx );
