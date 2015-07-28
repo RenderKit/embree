@@ -43,9 +43,9 @@ namespace embree
         : P(P), dPdu(dPdu), dPdv(dPdv)
         {
           switch (edge->patch_type) {
-          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v); break;
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
 #if PATCH_USE_GREGORY == 2
-          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v); break;
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
 #endif
           default: {
             GeneralCatmullClarkPatch patch(edge,vertices,stride);
