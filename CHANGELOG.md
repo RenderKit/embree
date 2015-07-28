@@ -1,22 +1,23 @@
 Version History
 ---------------
 
+### New Features in Embree 2.6.2 (devel)
+
+-   Fixed bug triggered by instantiating motion blur geometry.
+
 ### New Features in Embree 2.6.1
 
--   Major performance improvements for ray tracing subdivision
-    surfaces, e.g. up to 2x faster for scenes where only the
-	tessellation levels are changing per frame, and up to 3x faster
-	for scenes with lots of crease features.
-
--   Initial support for architectures supporting the new 16-wide
-    AVX512 ISA.
-
--   Implemented intersection filter callback support for
-    subdivision surfaces.
-
+-   Major performance improvements for ray tracing subdivision surfaces,
+    e.g. up to 2× faster for scenes where only the tessellation levels
+    are changing per frame, and up to 3× faster for scenes with lots of
+    crease features
+-   Initial support for architectures supporting the new 16-wide AVX512
+    ISA
+-   Implemented intersection filter callback support for subdivision
+    surfaces
 -   Added `RTC_IGNORE_INVALID_RAYS` CMake option which makes the ray
-	intersectors more robust against full tree traversal caused by
-	invalid ray inputs (e.g. INF, NAN, etc).
+    intersectors more robust against full tree traversal caused by
+    invalid ray inputs (e.g. INF, NaN, etc)
 
 ### New Features in Embree 2.6.0
 
@@ -96,7 +97,7 @@ Version History
 ### New Features in Embree 2.3.1
 
 -   High quality BVH mode improves spatial splits which result in up to
-    30% performance improvement for some scenes (Xeon).
+    30% performance improvement for some scenes (Xeon)
 -   Compile time enabled intersection filter functions do not reduce
     performance if no intersection filter is used in the scene (Xeon and
     Xeon Phi)

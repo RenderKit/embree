@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.6.1
+% Embree: High Performance Ray Tracing Kernels 2.6.2 (devel)
 % Intel Corporation
 
 Embree Overview
@@ -9,7 +9,7 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels are
 optimized for photo-realistic rendering on the latest Intel® processors
-with support for SSE, AVX, AVX2, and the 16-wide Intel® Xeon Phi™
+with support for SSE, AVX, AVX2, AVX512, and the 16-wide Intel® Xeon Phi™
 coprocessor vector instructions. Embree supports runtime code selection
 to choose the traversal and build algorithms that best matches the
 instruction set of your CPU. We recommend using Embree through its API
@@ -20,7 +20,7 @@ license](http://www.apache.org/licenses/LICENSE-2.0).
 Embree supports applications written with the Intel SPMD Programm
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
-write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi
+write a renderer in ISPC that leverages SSE, AVX, AVX2, AVX512, and Xeon Phi
 instructions without any code change. ISPC also supports runtime code
 selection, thus ISPC will select the best code path for your
 application, while Embree selects the optimal code path for the ray
@@ -503,7 +503,7 @@ parameters that can be configured in CMake:
   RTCORE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
                                risk of full-tree traversals
                                caused by invalid rays (e.g.
-                               rays containing inf/NaN as
+                               rays containing INF/NaN as
                                origins).
 
   RTCORE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
@@ -514,7 +514,7 @@ parameters that can be configured in CMake:
   XEON_ISA                     Select highest supported ISA on  AVX2
                                Intel® Xeon® CPUs (SSE2, SSE3,
                                SSSE3, SSE4.1, SSE4.2, AVX,
-                               AVX-I, or AVX2).
+                               AVX-I, AVX2, or AVX512).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 Embree API
@@ -688,6 +688,10 @@ get deleted by deleting the entire scene.
 The modification of geometry, building of hierarchies using
 `rtcCommit`, and tracing of rays have always to happen separately,
 never at the same time.
+
+Embree silently ignores primitives that would cause numerical issues,
+e.g. primitives containing NaNs, INFs, or values greater
+than 1.844E18f.
 
 The following flags can be used to tune the used acceleration structure.
 These flags are only hints and may be ignored by the implementation.
@@ -1802,7 +1806,7 @@ q
 Triangle Geometry
 -----------------
 
-![](images/triangle_geometry.jpg)
+![][imgTriangleGeometry]
 
 This tutorial demonstrates the creation of a static cube and ground
 plane using triangle meshes. It also demonstrates the use of the
@@ -1813,7 +1817,7 @@ primitive.
 Dynamic Scene
 -------------
 
-![](images/dynamic_scene.jpg)
+![][imgDynamicScene]
 
 This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deformed spheres. Half of the spheres use the
@@ -1826,7 +1830,7 @@ sphere geometry.
 User Geometry
 -------------
 
-![](images/user_geometry.jpg)
+![][imgUserGeometry]
 
 This tutorial shows the use of user defined geometry, to re-implement
 instancing and to add analytic spheres. A two level scene is created,
@@ -1839,7 +1843,7 @@ ways can be distinguished.
 Viewer
 ------
 
-![](images/viewer.jpg)
+![][imgViewer]
 
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
@@ -1855,7 +1859,7 @@ work:
 Instanced Geometry
 ------------------
 
-![](images/instanced_geometry.jpg)
+![][imgInstancedGeometry]
 
 This tutorial demonstrates the in-build instancing feature of Embree, by
 instancing a number of other scenes build from triangulated spheres. The
@@ -1866,7 +1870,7 @@ ways can be distinguished.
 Intersection Filter
 -------------------
 
-![](images/intersection_filter.jpg)
+![][imgIntersectionFilter]
 
 This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used for
@@ -1879,7 +1883,7 @@ the ray, and terminates traversal if an opaque occluder is hit.
 Pathtracer
 ----------
 
-![](images/pathtracer.jpg)
+![][imgPathtracer]
 
 This tutorial is a simple path tracer, building on tutorial03.
 
@@ -1891,7 +1895,7 @@ this tutorial to work:
 Hair
 ----
 
-![](images/hair_geometry.jpg)
+![][imgHairGeometry]
 
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
@@ -1899,7 +1903,7 @@ hairball.
 Subdivision Geometry
 --------------------
 
-![](images/subdivision_geometry.jpg)
+![][imgSubdivisionGeometry]
 
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces. Per default the edge tessellation level is set adaptively
@@ -1923,7 +1927,7 @@ changing per frame.
 Displacement Geometry
 ---------------------
 
-![](images/displacement_geometry.jpg)
+![][imgDisplacementGeometry]
 
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
@@ -1932,7 +1936,7 @@ tessellation level.
 Motion Blur Geometry
 --------------------
 
-![](images/motion_blur_geometry.jpg)
+![][imgMotionBlurGeometry]
 
 This tutorial demonstrates rendering motion blur using the linear
 motion blur feature for triangles and hair geometry.
@@ -1940,7 +1944,7 @@ motion blur feature for triangles and hair geometry.
 Interpolation
 -------------
 
-![](images/interpolation.jpg)
+![][imgInterpolation]
 
 This tutorial demonstrates interpolation of user defined per vertex data.
 
@@ -1981,3 +1985,15 @@ X.Y.Z\lib\cmake\embree-X.Y.Z`.
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
 [Configuring Embree]: #configuring-embree
+[imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg
+[imgDynamicScene]: https://embree.github.io/images/dynamic_scene.jpg
+[imgUserGeometry]: https://embree.github.io/images/user_geometry.jpg
+[imgViewer]: https://embree.github.io/images/viewer.jpg
+[imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
+[imgPathtracer]: https://embree.github.io/images/pathtracer.jpg
+[imgHairGeometry]: https://embree.github.io/images/hair_geometry.jpg
+[imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
+[imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
+[imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
+[imgInterpolation]: https://embree.github.io/images/interpolation.jpg
