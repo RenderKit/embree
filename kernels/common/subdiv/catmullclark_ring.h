@@ -174,7 +174,6 @@ namespace embree
         p = p->next();
         ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
         p = p->next();
-        crease_weight[i/2] = p->edge_crease_weight;
        
         /* continue with next face */
         if (likely(p->hasOpposite())) 
