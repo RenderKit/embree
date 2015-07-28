@@ -119,7 +119,7 @@ namespace embree
     }
     
     __forceinline const Vertex& back(size_t i) const {
-      assert(i>0 && edge_valence>=i);
+      assert(edge_valence>=i);
       return ring[edge_valence-i];
     }
     
@@ -139,11 +139,6 @@ namespace embree
       return (border_index == -1) || (border_index >= 4);
     }
     
-    __forceinline const Vertex& getVertex(size_t i) const {
-      if (i >= edge_valence) i -= edge_valence;
-      return ring[i];
-    }
-
     __forceinline BBox3fa bounds() const
     {
       BBox3fa bounds ( vtx );
