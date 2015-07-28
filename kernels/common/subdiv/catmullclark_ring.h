@@ -143,6 +143,7 @@ namespace embree
       return bounds;
     }
 
+    /*! initializes the ring from the half edge structure */
     __forceinline void init(const HalfEdge* const h, const char* vertices, size_t stride) 
     {
       border_index = -1;
@@ -165,14 +166,13 @@ namespace embree
 
         /* store first two vertices of face */
         p = p->next();
-        ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
-        
-        /* find minimal start vertex */
-        unsigned vertex_index = p->getStartVertexIndex();
-        if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
-
+        const unsigned index0 = p->getStartVertexIndex();
+        ring[i++] = Vertex_t::loadu(vertices+index0*stride);
+        if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
         p = p->next();
-        ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
+
+        const unsigned index1 = p->getStartVertexIndex();
+        ring[i++] = Vertex_t::loadu(vertices+index1*stride);
         p = p->next();
        
         /* continue with next face */
@@ -183,13 +183,13 @@ namespace embree
         else
         {
           /* find minimal start vertex */
-          unsigned vertex_index = p->getStartVertexIndex();
-          if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = i>>1; }
+          const unsigned index0 = p->getStartVertexIndex();
+          if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
+          ring[i++] = Vertex_t::loadu(vertices+index0*stride);
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
@@ -219,18 +219,15 @@ namespace embree
       dest.eval_start_index       = eval_start_index;
       dest.eval_unique_identifier = eval_unique_identifier;
 
-      assert(eval_start_index < edge_valence);
-
       /* calculate face points */
       Vertex_t S = Vertex_t(0.0f);
       for (size_t i=0; i<face_valence; i++) 
       {
-        size_t face_index = i + eval_start_index;
-        if (face_index >= face_valence) face_index -= face_valence;
+        size_t face_index = i + eval_start_index; if (face_index >= face_valence) face_index -= face_valence; assert(face_index < face_valence);
         size_t index0 = 2*face_index+0; if (index0 >= edge_valence) index0 -= edge_valence; assert(index0 < edge_valence);
         size_t index1 = 2*face_index+1; if (index1 >= edge_valence) index1 -= edge_valence; assert(index1 < edge_valence);
         size_t index2 = 2*face_index+2; if (index2 >= edge_valence) index2 -= edge_valence; assert(index2 < edge_valence);
-        S += dest.ring[index1] = ((vtx + ring[index0]) + (ring[index1] + ring[index2])) * 0.25f;
+        S += dest.ring[index1] = ((vtx + ring[index1]) + (ring[index0] + ring[index2])) * 0.25f;
       }
       
       /* calculate new edge points */
