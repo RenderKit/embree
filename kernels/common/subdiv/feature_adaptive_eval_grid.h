@@ -123,6 +123,18 @@ namespace embree
         assert(count == (x1-x0+1)*(y1-y0+1));
       }
       
+      FeatureAdaptiveEvalGrid (const CatmullClarkPatch3fa& patch,
+                               const BBox2f& srange, const BBox2f& erange, const size_t depth,
+                               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                               float* Px, float* Py, float* Pz, float* U, float* V, 
+                               float* Nx, float* Ny, float* Nz,
+                               const size_t dwidth, const size_t dheight)
+      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), rcp_swidth(1.0f/(swidth-1.0f)), rcp_sheight(1.0f/(sheight-1.0f)), 
+        Px(Px), Py(Py), Pz(Pz), U(U), V(V), Nx(Nx), Ny(Ny), Nz(Nz), dwidth(dwidth), dheight(dheight), count(0)
+      {
+        eval(patch,srange,erange,depth);
+      }
+
       template<typename Patch>
       __forceinline void evalLocalGrid(const Patch& patch, const BBox2f& srange, const int lx0, const int lx1, const int ly0, const int ly1)
       {

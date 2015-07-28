@@ -54,6 +54,12 @@ namespace embree
           }
         }
 
+        FeatureAdaptiveEvalSimd (const CatmullClarkPatch& patch, const vbool& valid, const vfloat& u, const vfloat& v, float dscale, size_t depth, float* P, float* dPdu, float* dPdv, const size_t dstride, const size_t N)
+        : P(P), dPdu(dPdu), dPdv(dPdv), dstride(dstride), N(N)
+        {
+          eval_direct(valid,patch,Vec2<vfloat>(u,v),dscale,depth);
+        }
+
         template<size_t N>
         __forceinline void eval_quad_direct(const vbool& valid, array_t<CatmullClarkPatch,N>& patches, const Vec2<vfloat>& uv, float dscale, size_t depth)
         {
@@ -158,7 +164,7 @@ namespace embree
 #endif
         }
 
-        void eval_direct(const vbool& valid, CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth,
+        void eval_direct(const vbool& valid, const CatmullClarkPatch& patch, const Vec2<vfloat>& uv, float dscale, size_t depth,
                          BezierCurve* border0 = nullptr, BezierCurve* border1 = nullptr, BezierCurve* border2 = nullptr, BezierCurve* border3 = nullptr)
         {
           typename CatmullClarkPatch::Type ty = patch.type();

@@ -55,6 +55,12 @@ namespace embree
           }
           }
         }
+
+        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+        : P(P), dPdu(dPdu), dPdv(dPdv)
+        {
+          eval(patch,Vec2f(u,v),dscale,depth);
+        }
         
         void eval_general_triangle(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
         {
@@ -175,7 +181,7 @@ namespace embree
         }
         
         void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth, 
-                BezierCurve* border0 = nullptr, BezierCurve* border1 = nullptr, BezierCurve* border2 = nullptr, BezierCurve* border3 = nullptr)
+                  BezierCurve* border0 = nullptr, BezierCurve* border1 = nullptr, BezierCurve* border2 = nullptr, BezierCurve* border3 = nullptr)
         {
           while (true) 
           {
@@ -184,17 +190,27 @@ namespace embree
             if (unlikely(final(patch,depth)))
             {
               if (ty & CatmullClarkRing::TYPE_REGULAR) { 
-              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                PATCH_DEBUG_SUBDIVISION(234423,c,c,-1);
+                return;
               } else {
-                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                PATCH_DEBUG_SUBDIVISION(34534,c,-1,c);
+                return;
               }
             }
             else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
-              assert(depth > 0); RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              assert(depth > 0); 
+              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              PATCH_DEBUG_SUBDIVISION(43524,c,c,-1);
+              return;
             }
 #if PATCH_USE_GREGORY == 2
             else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
-              assert(depth > 0); GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              assert(depth > 0); 
+              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              PATCH_DEBUG_SUBDIVISION(23498,c,-1,c);
+              return;
             }
 #endif
             else

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "patch.h"
+#include "feature_adaptive_eval_grid.h"
 
 namespace embree
 {
@@ -131,7 +132,7 @@ namespace embree
 #endif
       }
 
-      bool eval(Ref This, const BBox2f& srange, const BBox2f& erange) 
+      bool eval(Ref This, const BBox2f& srange, const BBox2f& erange, const size_t depth) 
       {
         if (erange.empty())
           return true;
@@ -173,10 +174,16 @@ namespace embree
           const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
           
           Patch::SubdividedQuadPatch* patch = (Patch::SubdividedQuadPatch*)This.object();
-          eval(patch->child[0],srange0,intersect(srange0,erange));
-          eval(patch->child[1],srange1,intersect(srange1,erange));
-          eval(patch->child[2],srange2,intersect(srange2,erange));
-          eval(patch->child[3],srange3,intersect(srange3,erange));
+          eval(patch->child[0],srange0,intersect(srange0,erange),depth+1);
+          eval(patch->child[1],srange1,intersect(srange1,erange),depth+1);
+          eval(patch->child[2],srange2,intersect(srange2,erange),depth+1);
+          eval(patch->child[3],srange3,intersect(srange3,erange),depth+1);
+          return true;
+        }
+        case Patch::EVAL_PATCH: { 
+          CatmullClarkPatch patch; patch.deserialize(This.object());
+          FeatureAdaptiveEvalGrid(patch,srange,erange,depth,x0,x1,y0,y1,swidth,sheight,Px,Py,Pz,U,V,Nx,Ny,Nz,dwidth,dheight);
+          count += (lx1-lx0)*(ly1-ly0);
           return true;
         }
         default: 
@@ -195,16 +202,16 @@ namespace embree
         case Patch::SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { 
           Patch::SubdividedGeneralTrianglePatch* patch = (Patch::SubdividedGeneralTrianglePatch*)This.object();
           assert(subPatch < 3);
-          return eval(patch->child[subPatch],srange,erange);
+          return eval(patch->child[subPatch],srange,erange,1);
         }
         case Patch::SUBDIVIDED_GENERAL_PATCH: { 
           Patch::SubdividedGeneralPatch* patch = (Patch::SubdividedGeneralPatch*)This.object();
           assert(subPatch < patch->N);
-          return eval(patch->child[subPatch],srange,erange);
+          return eval(patch->child[subPatch],srange,erange,1);
         }
         default: 
           assert(subPatch == 0);
-          return eval(This,srange,erange);
+          return eval(This,srange,erange,0);
         }
       }
     };

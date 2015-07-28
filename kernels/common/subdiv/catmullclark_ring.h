@@ -30,13 +30,7 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {
-    static const size_t MAX_DEPTH_SUBDIVISION = 10;
-
-    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
-    array_t<float,MAX_RING_FACE_VALENCE> crease_weight;
-    
     int border_index;
-    Vertex vtx;
     unsigned int face_valence;
     unsigned int edge_valence;
     float vertex_crease_weight;
@@ -45,8 +39,75 @@ namespace embree
     unsigned int eval_start_index;
     unsigned int eval_unique_identifier;
 
+    Vertex vtx;
+    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
+    array_t<float,MAX_RING_FACE_VALENCE> crease_weight;
+    
+
   public:
-    CatmullClark1RingT () : eval_start_index(0), eval_unique_identifier(0) {}
+    CatmullClark1RingT () 
+    : eval_start_index(0), eval_unique_identifier(0) {} // FIXME: default constructor should be empty
+
+    __forceinline size_t bytes() const
+    {
+      size_t ofs = 0;
+      ofs += sizeof(border_index);
+      ofs += sizeof(face_valence);
+      ofs += sizeof(edge_valence);
+      ofs += sizeof(vertex_crease_weight);
+      ofs += sizeof(vertex_level);
+      ofs += sizeof(edge_level);
+      ofs += sizeof(eval_start_index);
+      ofs += sizeof(eval_unique_identifier);
+      ofs += sizeof(vtx);
+      ofs += edge_valence*sizeof(Vertex);
+      ofs += face_valence*sizeof(float);
+      return ofs;
+    }
+
+    template<typename Ty>
+    static __forceinline void store(char* ptr, size_t& ofs, const Ty& v) {
+      *(Ty*)&ptr[ofs] = v; ofs += sizeof(Ty);
+    }
+
+    template<typename Ty>
+    static __forceinline void load(char* ptr, size_t& ofs, Ty& v) {
+      v = *(Ty*)&ptr[ofs]; ofs += sizeof(Ty);
+    }
+
+    __forceinline void serialize(char* ptr, size_t& ofs) const
+    {
+      store(ptr,ofs,border_index);
+      store(ptr,ofs,face_valence);
+      store(ptr,ofs,edge_valence);
+      store(ptr,ofs,vertex_crease_weight);
+      store(ptr,ofs,vertex_level);
+      store(ptr,ofs,edge_level);
+      store(ptr,ofs,eval_start_index);
+      store(ptr,ofs,eval_unique_identifier);
+      store(ptr,ofs,vtx);
+      for (size_t i=0; i<edge_valence; i++)
+        store(ptr,ofs,ring[i]);
+      for (size_t i=0; i<face_valence; i++)
+        store(ptr,ofs,crease_weight[i]);
+    }
+
+    __forceinline void deserialize(char* ptr, size_t& ofs)
+    {
+      load(ptr,ofs,border_index);
+      load(ptr,ofs,face_valence);
+      load(ptr,ofs,edge_valence);
+      load(ptr,ofs,vertex_crease_weight);
+      load(ptr,ofs,vertex_level);
+      load(ptr,ofs,edge_level);
+      load(ptr,ofs,eval_start_index);
+      load(ptr,ofs,eval_unique_identifier);
+      load(ptr,ofs,vtx);
+      for (size_t i=0; i<edge_valence; i++)
+        load(ptr,ofs,ring[i]);
+      for (size_t i=0; i<face_valence; i++)
+        load(ptr,ofs,crease_weight[i]);
+    }
 
     __forceinline bool hasBorder() const {
       return border_index != -1;

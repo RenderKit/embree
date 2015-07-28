@@ -32,7 +32,7 @@ namespace embree
     
     public:
     __forceinline CatmullClarkPatchT () {}
-    
+
     __forceinline CatmullClarkPatchT (const HalfEdge* first_half_edge, const char* vertices, size_t stride) {
       init(first_half_edge,vertices,stride);
     }
@@ -47,6 +47,23 @@ namespace embree
         ring[i].init(first_half_edge+i,vertices,stride);
 
       assert(verify());
+    }
+
+    __forceinline size_t bytes() const {
+      return ring[0].bytes()+ring[1].bytes()+ring[2].bytes()+ring[3].bytes();
+    }
+
+    __forceinline void serialize(void* ptr, size_t& ofs) const
+    {
+      for (size_t i=0; i<4; i++)
+        ring[i].serialize((char*)ptr,ofs);
+    }
+
+    __forceinline void deserialize(void* ptr)
+    {
+      size_t ofs = 0;
+      for (size_t i=0; i<4; i++)
+        ring[i].deserialize((char*)ptr,ofs);
     }
 
     __forceinline BBox3fa bounds() const

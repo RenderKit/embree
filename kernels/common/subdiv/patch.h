@@ -36,10 +36,10 @@
     }               
 #endif
 
-#define PATCH_MAX_CACHE_DEPTH 4
+#define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
 #define PATCH_MAX_EVAL_DEPTH 4     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 2        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
 #define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of b-spline patches
@@ -201,7 +201,8 @@ namespace embree
       SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
       //SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
       SUBDIVIDED_GENERAL_PATCH = 7,
-      SUBDIVIDED_QUAD_PATCH = 8
+      SUBDIVIDED_QUAD_PATCH = 8,
+      EVAL_PATCH = 9,
     };
     
     struct Ref
@@ -219,6 +220,20 @@ namespace embree
       __forceinline void* object() const { return (void*) (ptr & ~0xF); }
 
       size_t ptr;
+    };
+
+    struct EvalPatch 
+    {
+      /* creates EvalPatch from a CatmullClarkPatch */
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) 
+      {
+        size_t ofs = 0, bytes = patch.bytes();
+        void* ptr = alloc(bytes);
+        patch.serialize(ptr,ofs);
+        assert(ofs == bytes);
+        return Ref(EVAL_PATCH, ptr);
+      }
     };
 
     struct BilinearPatch 
@@ -478,8 +493,10 @@ namespace embree
         assert(depth > 0); return GregoryPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
 #endif
-      else if (depth >= PATCH_MAX_CACHE_DEPTH) 
-        return nullptr;
+      else if (depth >= PATCH_MAX_CACHE_DEPTH) {
+        //return nullptr;
+        return EvalPatch::create(alloc,patch); 
+      }
       
       else 
       {
