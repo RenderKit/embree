@@ -36,6 +36,7 @@ namespace embree
         typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
         typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
         typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
+        typedef BezierCurveT<Vertex> BezierCurve;
         
       public:
         
@@ -55,7 +56,7 @@ namespace embree
           }
         }
         
-        void eval_general_triangle(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
+        void eval_general_triangle(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
         {
           const bool ab_abc = right_of_line_ab_abc(uv);
           const bool ac_abc = right_of_line_ac_abc(uv);
@@ -64,34 +65,69 @@ namespace embree
           const float u = uv.x, v = uv.y, w = 1.0f-u-v;
           if  (!ab_abc &&  ac_abc) {
             const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,0);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[0],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
             eval(patches[0],xy,1.0f,depth+1);
+#endif
             if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
           }
           else if ( ab_abc && !bc_abc) {
             const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,1);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[1],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
             eval(patches[1],xy,1.0f,depth+1);
+#endif
             if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
           }
           else {
             const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,2);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[2],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
             eval(patches[2],xy,1.0f,depth+1);
+#endif
             if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
           }
         }
         
-        void eval_general_quad(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
+        void eval_general_quad(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
         {
           float u = uv.x, v = uv.y;
           if (v < 0.5f) {
             if (u < 0.5f) {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,0);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
               eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1);
+#endif
               if (dPdu && dPdv) {
                 const Vertex dpdx = *dPdu, dpdy = *dPdv;
                 *dPdu = dpdx; *dPdv = dpdy;
               }
             }
             else {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,1);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
               eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
+#endif
               if (dPdu && dPdv) {
                 const Vertex dpdx = *dPdu, dpdy = *dPdv;
                 *dPdu = -dpdy; *dPdv = dpdx;
@@ -99,14 +135,28 @@ namespace embree
             }
           } else {
             if (u > 0.5f) {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,2);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
               eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
+#endif
               if (dPdu && dPdv) {
                 const Vertex dpdx = *dPdu, dpdy = *dPdv;
                 *dPdu = -dpdx; *dPdv = -dpdy;
               }
             }
             else {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,3);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
               eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
+#endif
               if (dPdu && dPdv) {
                 const Vertex dpdx = *dPdu, dpdy = *dPdv;
                 *dPdu = dpdy; *dPdv = -dpdx;
@@ -124,7 +174,8 @@ namespace embree
 #endif
         }
         
-        void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth)
+        void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth, 
+                BezierCurve* border0 = nullptr, BezierCurve* border1 = nullptr, BezierCurve* border2 = nullptr, BezierCurve* border3 = nullptr)
         {
           while (true) 
           {
@@ -133,17 +184,17 @@ namespace embree
             if (unlikely(final(patch,depth)))
             {
               if (ty & CatmullClarkRing::TYPE_REGULAR) { 
-                RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
               } else {
-                IrregularFillPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
               }
             }
             else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
-              assert(depth > 0); RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              assert(depth > 0); RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
             }
 #if PATCH_USE_GREGORY == 2
             else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
-              assert(depth > 0); GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
+              assert(depth > 0); GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
             }
 #endif
             else
@@ -179,19 +230,28 @@ namespace embree
           patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
           
           /* parametrization for triangles */
-          if (N == 3)  // FIXME: border handling
-            eval_general_triangle(patches,uv,depth);
+          if (N == 3)
+            eval_general_triangle(patch,patches,uv,depth);
           
           /* parametrization for quads */
-          else if (N == 4) // FIXME: border handling
-            eval_general_quad(patches,uv,depth);
+          else if (N == 4) 
+            eval_general_quad(patch,patches,uv,depth);
           
           /* parametrization for arbitrary polygons */
-          else { // FIXME: border handling
+          else 
+          {
             const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
             const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
             const unsigned i = 4*h+l; assert(i<N);
+
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,i);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[i],Vec2f(u,v),8.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
             eval(patches[i],Vec2f(u,v),8.0f,depth+1);
+#endif
           }
         }
         

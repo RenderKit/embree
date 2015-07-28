@@ -511,29 +511,29 @@ namespace embree
     __forceinline void getLimitBorder(BezierCurve curves[2], const size_t subPatch) const
     {
       const size_t i0 = subPatch;
-      const Vec3fa t0_p = ring[i0].getLimitTangent();
-      const Vec3fa t0_m = ring[i0].getSecondLimitTangent();
+      const Vertex t0_p = ring[i0].getLimitTangent();
+      const Vertex t0_m = ring[i0].getSecondLimitTangent();
           
       const size_t i1 = subPatch+1 == N ? 0 : subPatch+1;
-      const Vec3fa t1_p = ring[i1].getLimitTangent();
-      const Vec3fa t1_m = ring[i1].getSecondLimitTangent();
+      const Vertex t1_p = ring[i1].getLimitTangent();
+      const Vertex t1_m = ring[i1].getSecondLimitTangent();
       
       const size_t i2 = subPatch == 0 ? N-1 : subPatch-1;
-      const Vec3fa t2_p = ring[i2].getLimitTangent();
-      const Vec3fa t2_m = ring[i2].getSecondLimitTangent();
+      const Vertex t2_p = ring[i2].getLimitTangent();
+      const Vertex t2_m = ring[i2].getSecondLimitTangent();
       
-      const Vec3fa b00 = ring[i0].getLimitVertex();
-      const Vec3fa b03 = ring[i1].getLimitVertex();
-      const Vec3fa b33 = ring[i2].getLimitVertex();
+      const Vertex b00 = ring[i0].getLimitVertex();
+      const Vertex b03 = ring[i1].getLimitVertex();
+      const Vertex b33 = ring[i2].getLimitVertex();
       
-      const Vec3fa b01 = b00 + 1.0/3.0f * t0_p;
-      const Vec3fa b11 = b00 + 1.0/3.0f * t0_m;
+      const Vertex b01 = b00 + 1.0/3.0f * t0_p;
+      const Vertex b11 = b00 + 1.0/3.0f * t0_m;
       
-      //const Vec3fa b13 = b03 + 1.0/3.0f * t1_p;
-      const Vec3fa b02 = b03 + 1.0/3.0f * t1_m;
+      //const Vertex b13 = b03 + 1.0/3.0f * t1_p;
+      const Vertex b02 = b03 + 1.0/3.0f * t1_m;
           
-      const Vec3fa b22 = b33 + 1.0/3.0f * t2_p;
-      const Vec3fa b23 = b33 + 1.0/3.0f * t2_m;
+      const Vertex b22 = b33 + 1.0/3.0f * t2_p;
+      const Vertex b23 = b33 + 1.0/3.0f * t2_m;
           
       new (&curves[0]) BezierCurve(b00,b01,b02,b03);
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);
