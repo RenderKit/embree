@@ -30,38 +30,37 @@ namespace embree
   template<typename Vertex, typename Vertex_t = Vertex>
     struct __aligned(64) CatmullClark1RingT
   {
-    int border_index;
-    unsigned int face_valence;
-    unsigned int edge_valence;
-    float vertex_crease_weight;
-    float vertex_level;                  // maximal level of all adjacent edges
-    float edge_level;                    // level of first edge
-    unsigned int eval_start_index;
-    unsigned int eval_unique_identifier;
-
-    Vertex vtx;
-    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring ; // FIXME: also store size in these arrays for more accurate checks
-    array_t<float,MAX_RING_FACE_VALENCE> crease_weight;
-    
-
+    int border_index;                                   //!< edge index where border starts
+    unsigned int face_valence;                          //!< number of adjacent quad faces
+    unsigned int edge_valence;                          //!< number of adjacent edges (2*face_valence)
+    float vertex_crease_weight;                         //!< weight of vertex crease (0 if no vertex crease)
+    array_t<float,MAX_RING_FACE_VALENCE> crease_weight; //!< edge crease weights for each adjacent edge
+    float vertex_level;                                 //!< maximal level of all adjacent edges
+    float edge_level;                                   //!< level of first edge
+    unsigned int eval_start_index;                      //!< topology dependent index to start evaluation
+    unsigned int eval_unique_identifier;                //!< topology dependent unique identifier for this ring 
+    Vertex vtx;                                         //!< center vertex
+    array_t<Vertex,MAX_RING_EDGE_VALENCE> ring;         //!< ring of neighboring vertices
+   
   public:
     CatmullClark1RingT () 
     : eval_start_index(0), eval_unique_identifier(0) {} // FIXME: default constructor should be empty
 
+    /*! calculates number of bytes required to serialize this structure */
     __forceinline size_t bytes() const
     {
       size_t ofs = 0;
       ofs += sizeof(border_index);
       ofs += sizeof(face_valence);
-      ofs += sizeof(edge_valence);
+      assert(2*face_valence == edge_valence);
       ofs += sizeof(vertex_crease_weight);
+      ofs += face_valence*sizeof(float);
       ofs += sizeof(vertex_level);
       ofs += sizeof(edge_level);
       ofs += sizeof(eval_start_index);
       ofs += sizeof(eval_unique_identifier);
       ofs += sizeof(vtx);
       ofs += edge_valence*sizeof(Vertex);
-      ofs += face_valence*sizeof(float);
       return ofs;
     }
 
@@ -75,12 +74,14 @@ namespace embree
       v = *(Ty*)&ptr[ofs]; ofs += sizeof(Ty);
     }
 
+    /*! serializes the ring to some memory location */
     __forceinline void serialize(char* ptr, size_t& ofs) const
     {
       store(ptr,ofs,border_index);
       store(ptr,ofs,face_valence);
-      store(ptr,ofs,edge_valence);
       store(ptr,ofs,vertex_crease_weight);
+      for (size_t i=0; i<face_valence; i++)
+        store(ptr,ofs,crease_weight[i]);
       store(ptr,ofs,vertex_level);
       store(ptr,ofs,edge_level);
       store(ptr,ofs,eval_start_index);
@@ -88,16 +89,17 @@ namespace embree
       store(ptr,ofs,vtx);
       for (size_t i=0; i<edge_valence; i++)
         store(ptr,ofs,ring[i]);
-      for (size_t i=0; i<face_valence; i++)
-        store(ptr,ofs,crease_weight[i]);
     }
 
+    /*! deserializes the ring from some memory location */
     __forceinline void deserialize(char* ptr, size_t& ofs)
     {
       load(ptr,ofs,border_index);
       load(ptr,ofs,face_valence);
-      load(ptr,ofs,edge_valence);
+      edge_valence = 2*face_valence;
       load(ptr,ofs,vertex_crease_weight);
+      for (size_t i=0; i<face_valence; i++)
+        load(ptr,ofs,crease_weight[i]);
       load(ptr,ofs,vertex_level);
       load(ptr,ofs,edge_level);
       load(ptr,ofs,eval_start_index);
@@ -105,8 +107,6 @@ namespace embree
       load(ptr,ofs,vtx);
       for (size_t i=0; i<edge_valence; i++)
         load(ptr,ofs,ring[i]);
-      for (size_t i=0; i<face_valence; i++)
-        load(ptr,ofs,crease_weight[i]);
     }
 
     __forceinline bool hasBorder() const {
