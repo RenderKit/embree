@@ -216,7 +216,6 @@ namespace embree
       eval_start_index = min_vertex_index_face;
 
       assert( hasValidPositions() );
-
     }
       
     __forceinline void subdivide(CatmullClark1RingT& dest) const
@@ -234,21 +233,13 @@ namespace embree
 
       /* calculate face points */
       Vertex_t S = Vertex_t(0.0f);
-      for (size_t i=0; i<face_valence; i++) {
-        ////////////////////////////////////////////////
+      for (size_t i=0; i<face_valence; i++) 
+      {
         size_t face_index = i + eval_start_index;
         if (face_index >= face_valence) face_index -= face_valence;
-        ////////////////////////////////////////////////
-
-        size_t index0     = 2*face_index;
-        size_t index1     = 2*face_index+1;
-        size_t index2     = 2*face_index+2;
-        if (index0 >= edge_valence) index0 -= edge_valence;
-        if (index1 >= edge_valence) index1 -= edge_valence;
-        if (index2 >= edge_valence) index2 -= edge_valence;
-        assert(index0 < edge_valence);
-        assert(index1 < edge_valence);
-        assert(index2 < edge_valence);
+        size_t index0 = 2*face_index+0; if (index0 >= edge_valence) index0 -= edge_valence; assert(index0 < edge_valence);
+        size_t index1 = 2*face_index+1; if (index1 >= edge_valence) index1 -= edge_valence; assert(index1 < edge_valence);
+        size_t index2 = 2*face_index+2; if (index2 >= edge_valence) index2 -= edge_valence; assert(index2 < edge_valence);
         S += dest.ring[index1] = ((vtx + ring[index0]) + (ring[index1] + ring[index2])) * 0.25f;
       }
       
@@ -258,12 +249,9 @@ namespace embree
       Vertex_t C = Vertex_t(0.0f);
       for (size_t i=0; i<face_valence; i++)
       {
-        ////////////////////////////////////////////////
         size_t face_index = i + eval_start_index;
         if (face_index >= face_valence) face_index -= face_valence;
-        ////////////////////////////////////////////////
       
-        //size_t face_index = i;
         size_t index      = 2*face_index;
         size_t prev_index = face_index == 0 ? edge_valence-1 : 2*face_index-1;
         size_t next_index = 2*face_index+1;
@@ -272,7 +260,6 @@ namespace embree
         const Vertex_t f = dest.ring[prev_index] + dest.ring[next_index];
         S += ring[index];
         dest.crease_weight[face_index] = max(crease_weight[face_index]-1.0f,0.0f);
-        //dest.crease_weight[i] = crease_weight[face_index] < 1.0f ? 0.0f : 0.5f*crease_weight[face_index];
         
         /* fast path for regular edge points */
         if (likely(crease_weight[face_index] <= 0.0f)) {
@@ -320,11 +307,7 @@ namespace embree
         dest.vtx = v_sharp;
         dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
         dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
-        //dest.crease_weight[crease_id[0]] = max(0.5f*(crease_weight0 + crease_weight1)-1.0f,0.0f);
-        //dest.crease_weight[crease_id[1]] = max(0.5f*(crease_weight1 + crease_weight0)-1.0f,0.0f);
         const float t0 = 0.5f*(crease_weight0+crease_weight1), t1 = 1.0f-t0;
-        //dest.crease_weight[crease_id[0]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
-        //dest.crease_weight[crease_id[1]] = t0 < 1.0f ? 0.0f : 0.5f*t0;
         if (unlikely(t0 < 1.0f)) {
           dest.vtx = t0*v_sharp + t1*v_smooth;
         }
