@@ -39,7 +39,7 @@
 #define PATCH_MAX_CACHE_DEPTH 4
 #define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
 #define PATCH_MAX_EVAL_DEPTH 4     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
-#define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 2        // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
 #define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of b-spline patches
@@ -401,31 +401,10 @@ namespace embree
       {
         Ref child[3];
 #if PATCH_USE_GREGORY == 2
-        const Vertex_t t0_p = patch.ring[0].getLimitTangent();
-        const Vertex_t t0_m = patch.ring[0].getSecondLimitTangent();
-        
-        const Vertex_t t1_p = patch.ring[1].getLimitTangent();
-        const Vertex_t t1_m = patch.ring[1].getSecondLimitTangent();
-        
-        const Vertex_t t2_p = patch.ring[2].getLimitTangent();
-        const Vertex_t t2_m = patch.ring[2].getSecondLimitTangent();
-        
-        const Vertex_t b00 = patch.ring[0].getLimitVertex();
-        const Vertex_t b03 = patch.ring[1].getLimitVertex();
-        const Vertex_t b33 = patch.ring[2].getLimitVertex();
-        
-        const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
-        const Vertex_t b11 = b00 + 1.0/3.0f * t0_m;
-        
-        const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
-        const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
-        
-        const Vertex_t b22 = b33 + 1.0/3.0f * t2_p;
-        const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
-        
-        BezierCurve border0l,border0r; const BezierCurve border0(b00,b01,b02,b03); border0.subdivide(border0l,border0r);
-        BezierCurve border1l,border1r; const BezierCurve border1(b03,b13,b23,b33); border1.subdivide(border1l,border1r);
-        BezierCurve border2l,border2r; const BezierCurve border2(b33,b22,b11,b00); border2.subdivide(border2l,border2r);
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; patch.getLimitBorder(borders);
+        BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+        BezierCurve border1l,border1r; borders[1].subdivide(border1l,border1r);
+        BezierCurve border2l,border2r; borders[2].subdivide(border2l,border2r);
         child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
         child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1, &border1l, nullptr, nullptr, &border0r);
         child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1, &border2l, nullptr, nullptr, &border1r);
@@ -437,47 +416,18 @@ namespace embree
       } 
       else if (N == 4) 
       {
-         Ref child[4];
+        Ref child[4];
 #if PATCH_USE_GREGORY == 2
-        const Vertex_t t0_p = patch.ring[0].getLimitTangent();
-        const Vertex_t t0_m = patch.ring[0].getSecondLimitTangent();
-        
-        const Vertex_t t1_p = patch.ring[1].getLimitTangent();
-        const Vertex_t t1_m = patch.ring[1].getSecondLimitTangent();
-        
-        const Vertex_t t2_p = patch.ring[2].getLimitTangent();
-        const Vertex_t t2_m = patch.ring[2].getSecondLimitTangent();
-          
-        const Vertex_t t3_p = patch.ring[3].getLimitTangent();
-        const Vertex_t t3_m = patch.ring[3].getSecondLimitTangent();
-        
-        const Vertex_t b00 = patch.ring[0].getLimitVertex();
-        const Vertex_t b03 = patch.ring[1].getLimitVertex();
-        const Vertex_t b33 = patch.ring[2].getLimitVertex();
-        const Vertex_t b30 = patch.ring[3].getLimitVertex();
-        
-        const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
-        const Vertex_t b10 = b00 + 1.0/3.0f * t0_m;
-        
-        const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
-        const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
-        
-        const Vertex_t b32 = b33 + 1.0/3.0f * t2_p;
-        const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
-        
-        const Vertex_t b20 = b30 + 1.0/3.0f * t3_p;
-        const Vertex_t b31 = b30 + 1.0/3.0f * t3_m;
-        
-        BezierCurve curve0l,curve0r; const BezierCurve curve0(b00,b01,b02,b03); curve0.subdivide(curve0l,curve0r);
-        BezierCurve curve1l,curve1r; const BezierCurve curve1(b03,b13,b23,b33); curve1.subdivide(curve1l,curve1r);
-        BezierCurve curve2l,curve2r; const BezierCurve curve2(b33,b32,b31,b30); curve2.subdivide(curve2l,curve2r);
-        BezierCurve curve3l,curve3r; const BezierCurve curve3(b30,b20,b10,b00); curve3.subdivide(curve3l,curve3r);
-        
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; patch.getLimitBorder(borders);
+        BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+        BezierCurve border1l,border1r; borders[1].subdivide(border1l,border1r);
+        BezierCurve border2l,border2r; borders[2].subdivide(border2l,border2r);
+        BezierCurve border3l,border3r; borders[3].subdivide(border3l,border3r);
         GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
-        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1,&curve0l,nullptr,nullptr,&curve3r);
-        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1,&curve0r,&curve1l,nullptr,nullptr);
-        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1,nullptr,&curve1r,&curve2l,nullptr);
-        child[3] = PatchT::create(alloc,patches[3],edge,vertices,stride,depth+1,nullptr,nullptr,&curve2r,&curve3l);
+        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1,&border0l,nullptr,nullptr,&border3r);
+        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1,&border0r,&border1l,nullptr,nullptr);
+        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1,nullptr,&border1r,&border2l,nullptr);
+        child[3] = PatchT::create(alloc,patches[3],edge,vertices,stride,depth+1,nullptr,nullptr,&border2r,&border3l);
 #else
         GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
         for (size_t i=0; i<4; i++)
@@ -489,41 +439,21 @@ namespace embree
       {
         assert(N<MAX_PATCH_VALENCE);
         Ref child[MAX_PATCH_VALENCE];
-        for (size_t i=0; i<N; i++)
-        {
+        
 #if PATCH_USE_GREGORY == 2
-          const size_t i0 = i;
-          const Vertex_t t0_p = patch.ring[i0].getLimitTangent();
-          const Vertex_t t0_m = patch.ring[i0].getSecondLimitTangent();
-          
-          const size_t i1 = i+1 == N ? 0 : i+1;
-          const Vertex_t t1_p = patch.ring[i1].getLimitTangent();
-          const Vertex_t t1_m = patch.ring[i1].getSecondLimitTangent();
-          
-          const size_t i2 = i == 0 ? N-1 : i-1;
-          const Vertex_t t2_p = patch.ring[i2].getLimitTangent();
-          const Vertex_t t2_m = patch.ring[i2].getSecondLimitTangent();
-          
-          const Vertex_t b00 = patch.ring[i0].getLimitVertex();
-          const Vertex_t b03 = patch.ring[i1].getLimitVertex();
-          const Vertex_t b33 = patch.ring[i2].getLimitVertex();
-          
-          const Vertex_t b01 = b00 + 1.0/3.0f * t0_p;
-          const Vertex_t b11 = b00 + 1.0/3.0f * t0_m;
-          
-          //const Vertex_t b13 = b03 + 1.0/3.0f * t1_p;
-          const Vertex_t b02 = b03 + 1.0/3.0f * t1_m;
-          
-          const Vertex_t b22 = b33 + 1.0/3.0f * t2_p;
-          const Vertex_t b23 = b33 + 1.0/3.0f * t2_m;
-          
-          BezierCurve border0l,border0r; const BezierCurve border0(b00,b01,b02,b03); border0.subdivide(border0l,border0r);
-          BezierCurve border2l,border2r; const BezierCurve border2(b33,b22,b11,b00); border2.subdivide(border2l,border2r);
-          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; 
+        patch.getLimitBorder(borders);
+
+        for (size_t i0=0; i0<N; i0++) {
+          const size_t i2 = i0==0 ? N-1 : i0-1; 
+          BezierCurve border0l,border0r; borders[i0].subdivide(border0l,border0r);
+          BezierCurve border2l,border2r; borders[i2].subdivide(border2l,border2r);
+          child[i0] = PatchT::create(alloc,patches[i0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+        }
 #else
+        for (size_t i=0; i<N; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
 #endif
-        }
         return SubdividedGeneralPatch::create(alloc,child,N);
       }
       

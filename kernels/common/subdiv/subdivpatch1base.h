@@ -214,7 +214,7 @@ namespace embree
         dynamic_large_stack_array(float,grid_Ng_x,N,64*64);
         dynamic_large_stack_array(float,grid_Ng_y,N,64*64);
         dynamic_large_stack_array(float,grid_Ng_z,N,64*64);
-
+        
         if (geom->patch_eval_trees.size())
         {
           isa::feature_adaptive_eval_grid<PatchEvalGrid> 

@@ -86,47 +86,18 @@ namespace embree
           const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
           const BBox2f srange2(c,srange.upper);
           const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
-          
+
 #if PATCH_USE_GREGORY == 2
-          const Vec3fa t0_p = patch.ring[0].getLimitTangent();
-          const Vec3fa t0_m = patch.ring[0].getSecondLimitTangent();
-          
-          const Vec3fa t1_p = patch.ring[1].getLimitTangent();
-          const Vec3fa t1_m = patch.ring[1].getSecondLimitTangent();
-          
-          const Vec3fa t2_p = patch.ring[2].getLimitTangent();
-          const Vec3fa t2_m = patch.ring[2].getSecondLimitTangent();
-          
-          const Vec3fa t3_p = patch.ring[3].getLimitTangent();
-          const Vec3fa t3_m = patch.ring[3].getSecondLimitTangent();
-          
-          const Vec3fa b00 = patch.ring[0].getLimitVertex();
-          const Vec3fa b03 = patch.ring[1].getLimitVertex();
-          const Vec3fa b33 = patch.ring[2].getLimitVertex();
-          const Vec3fa b30 = patch.ring[3].getLimitVertex();
-          
-          const Vec3fa b01 = b00 + 1.0/3.0f * t0_p;
-          const Vec3fa b10 = b00 + 1.0/3.0f * t0_m;
-          
-          const Vec3fa b13 = b03 + 1.0/3.0f * t1_p;
-          const Vec3fa b02 = b03 + 1.0/3.0f * t1_m;
-          
-          const Vec3fa b32 = b33 + 1.0/3.0f * t2_p;
-          const Vec3fa b23 = b33 + 1.0/3.0f * t2_m;
-          
-          const Vec3fa b20 = b30 + 1.0/3.0f * t3_p;
-          const Vec3fa b31 = b30 + 1.0/3.0f * t3_m;
-          
-          BezierCurve3fa curve0l,curve0r; const BezierCurve3fa curve0(b00,b01,b02,b03); curve0.subdivide(curve0l,curve0r);
-          BezierCurve3fa curve1l,curve1r; const BezierCurve3fa curve1(b03,b13,b23,b33); curve1.subdivide(curve1l,curve1r);
-          BezierCurve3fa curve2l,curve2r; const BezierCurve3fa curve2(b33,b32,b31,b30); curve2.subdivide(curve2l,curve2r);
-          BezierCurve3fa curve3l,curve3r; const BezierCurve3fa curve3(b30,b20,b10,b00); curve3.subdivide(curve3l,curve3r);
-          
+          BezierCurve3fa borders[GeneralCatmullClarkPatch3fa::SIZE]; patch.getLimitBorder(borders);
+          BezierCurve3fa border0l,border0r; borders[0].subdivide(border0l,border0r);
+          BezierCurve3fa border1l,border1r; borders[1].subdivide(border1l,border1r);
+          BezierCurve3fa border2l,border2r; borders[2].subdivide(border2l,border2r);
+          BezierCurve3fa border3l,border3r; borders[3].subdivide(border3l,border3r);
           GeneralCatmullClarkPatch3fa::fix_quad_ring_order(patches);
-          eval(patches[0],srange0,intersect(srange0,erange),1,&curve0l,nullptr,nullptr,&curve3r);
-          eval(patches[1],srange1,intersect(srange1,erange),1,&curve0r,&curve1l,nullptr,nullptr);
-          eval(patches[2],srange2,intersect(srange2,erange),1,nullptr,&curve1r,&curve2l,nullptr);
-          eval(patches[3],srange3,intersect(srange3,erange),1,nullptr,nullptr,&curve2r,&curve3l);
+          eval(patches[0],srange0,intersect(srange0,erange),1,&border0l,nullptr,nullptr,&border3r);
+          eval(patches[1],srange1,intersect(srange1,erange),1,&border0r,&border1l,nullptr,nullptr);
+          eval(patches[2],srange2,intersect(srange2,erange),1,nullptr,&border1r,&border2l,nullptr);
+          eval(patches[3],srange3,intersect(srange3,erange),1,nullptr,nullptr,&border2r,&border3l);
 #else
           GeneralCatmullClarkPatch3fa::fix_quad_ring_order(patches);
           eval(patches[0],srange0,intersect(srange0,erange),1);
@@ -140,33 +111,9 @@ namespace embree
           assert(subPatch < N);
           
 #if PATCH_USE_GREGORY == 2
-          const size_t i0 = subPatch;
-          const Vec3fa t0_p = patch.ring[i0].getLimitTangent();
-          const Vec3fa t0_m = patch.ring[i0].getSecondLimitTangent();
-          
-          const size_t i1 = subPatch+1 == N ? 0 : subPatch+1;
-          const Vec3fa t1_p = patch.ring[i1].getLimitTangent();
-          const Vec3fa t1_m = patch.ring[i1].getSecondLimitTangent();
-          
-          const size_t i2 = subPatch == 0 ? N-1 : subPatch-1;
-          const Vec3fa t2_p = patch.ring[i2].getLimitTangent();
-          const Vec3fa t2_m = patch.ring[i2].getSecondLimitTangent();
-          
-          const Vec3fa b00 = patch.ring[i0].getLimitVertex();
-          const Vec3fa b03 = patch.ring[i1].getLimitVertex();
-          const Vec3fa b33 = patch.ring[i2].getLimitVertex();
-          
-          const Vec3fa b01 = b00 + 1.0/3.0f * t0_p;
-          const Vec3fa b11 = b00 + 1.0/3.0f * t0_m;
-          
-          //const Vec3fa b13 = b03 + 1.0/3.0f * t1_p;
-          const Vec3fa b02 = b03 + 1.0/3.0f * t1_m;
-          
-          const Vec3fa b22 = b33 + 1.0/3.0f * t2_p;
-          const Vec3fa b23 = b33 + 1.0/3.0f * t2_m;
-          
-          BezierCurve3fa border0l,border0r; const BezierCurve3fa border0(b00,b01,b02,b03); border0.subdivide(border0l,border0r);
-          BezierCurve3fa border2l,border2r; const BezierCurve3fa border2(b33,b22,b11,b00); border2.subdivide(border2l,border2r);
+          BezierCurve3fa borders[2]; patch.getLimitBorder(borders,subPatch);
+          BezierCurve3fa border0l,border0r; borders[0].subdivide(border0l,border0r);
+          BezierCurve3fa border2l,border2r; borders[1].subdivide(border2l,border2r);
           eval(patches[subPatch], srange, erange, 1, &border0l, nullptr, nullptr, &border2r);
 #else
           eval(patches[subPatch], srange, erange, 1);
