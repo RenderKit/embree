@@ -81,8 +81,8 @@ namespace embree
 
   Vec2i SubdivPatch1Base::computeGridSize(const float level[4])
   {
-    int width = max(level[0],level[2])+1; // n segments -> n+1 points
-    int height = max(level[1],level[3])+1;
+    int width  = (int)max(level[0],level[2])+1; // n segments -> n+1 points
+    int height = (int)max(level[1],level[3])+1;
     
     /* workaround for 2x2 intersection stencil */
 #if !defined(__MIC__)
@@ -92,10 +92,21 @@ namespace embree
 
     return Vec2i(width,height);
   }
-
-  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
+  
+  bool SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
   {
-    computeEdgeLevels(edge_level,subdiv,level);
+    /* calculate edge levels */
+    float new_level[4];
+    computeEdgeLevels(edge_level,subdiv,new_level);
+
+    /* calculate if tessellation pattern changed */
+    bool grid_changed = false;
+    for (size_t i=0; i<4; i++) {
+      grid_changed |= (int)new_level[i] != (int)level[i]; 
+      level[i] = new_level[i];
+    }
+
+    /* compute grid resolution */
     Vec2i res = computeGridSize(level);
     grid_u_res = res.x; grid_v_res = res.y;
     
@@ -106,16 +117,18 @@ namespace embree
 
     /* need stiching? */
     flags &= ~TRANSITION_PATCH;
-    const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
-    const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
-    const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
-    const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
-    if (int_edge_points0 < (unsigned int)grid_u_res ||
-	int_edge_points2 < (unsigned int)grid_u_res ||
-	int_edge_points1 < (unsigned int)grid_v_res ||
-	int_edge_points3 < (unsigned int)grid_v_res) {
+    const int int_edge_points0 = (int)level[0] + 1;
+    const int int_edge_points1 = (int)level[1] + 1;
+    const int int_edge_points2 = (int)level[2] + 1;
+    const int int_edge_points3 = (int)level[3] + 1;
+    if (int_edge_points0 < (int)grid_u_res ||
+	int_edge_points2 < (int)grid_u_res ||
+	int_edge_points1 < (int)grid_v_res ||
+	int_edge_points3 < (int)grid_v_res) {
       flags |= TRANSITION_PATCH;
     }
+
+    return grid_changed;
   }
 
    size_t SubdivPatch1Base::get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)

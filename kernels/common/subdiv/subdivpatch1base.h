@@ -125,7 +125,7 @@ namespace embree
 
     static void computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4]);
     static Vec2i computeGridSize(const float level[4]);
-    void updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
+    bool updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
   private:
     size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks);
@@ -141,6 +141,12 @@ namespace embree
     __forceinline void resetRootRef() {
       assert( mtx.hasInitialState() );
       root_ref = SharedLazyTessellationCache::Tag();
+    }
+
+    __forceinline void updateRootRef(size_t globalTime) 
+    {
+      const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
+      root_ref.setTime(combinedTime);
     }
 
 

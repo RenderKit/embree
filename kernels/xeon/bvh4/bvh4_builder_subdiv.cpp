@@ -245,6 +245,7 @@ namespace embree
       BVH4* bvh;
       Scene* scene;
       mvector<PrimRef> prims; 
+      mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       size_t numSubdivEnableDisableEvents;
 
@@ -336,6 +337,7 @@ namespace embree
         /* skip build for empty scene */
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
+          bounds.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
@@ -368,11 +370,13 @@ namespace embree
         
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
+          bounds.resize(numPrimitives);
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
         
         prims.resize(numPrimitives);
+        bounds.resize(numPrimitives);
         
         /* Allocate memory for gregory and b-spline patches */
         if (this->bvh->size_data_mem < sizeof(SubdivPatch1Cached) * numPrimitives) 
@@ -391,6 +395,8 @@ namespace embree
         assert(this->bvh->data_mem);
         SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
         
+        //atomic_t numChanged = 0;
+        //atomic_t numUnchanged = 0;
         pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
         {
           PrimInfo s(empty);
@@ -402,29 +408,34 @@ namespace embree
             {
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
+              SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              BBox3fa bound = empty;
+              
               if (likely(fastUpdateMode)) {
-                subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
-                subdiv_patches[patchIndex].resetRootRef();
+                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                //if (grid_changed) atomic_add(&numChanged,1); else atomic_add(&numUnchanged,1);
+                if (grid_changed) {
+                  patch.resetRootRef();
+                  bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                }
+                else {
+                  patch.updateRootRef(scene->commitCounter+1);
+                  bound = bounds[patchIndex];
+                }
               }
               else {
-                new (&subdiv_patches[patchIndex]) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+                bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
               }
-#if 0
-              BBox3fa bounds;
-              size_t new_root_ref = SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(subdiv_patches[patchIndex],SharedLazyTessellationCache::threadState(),mesh,&bounds);
-              const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(scene->commitCounter+1);
-              subdiv_patches[patchIndex].root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
-              SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(SharedLazyTessellationCache::threadState());
-#else
-              const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
-              const BBox3fa bounds = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
-#endif
-              prims[patchIndex] = PrimRef(bounds,patchIndex);
-              s.add(bounds);
+              bounds[patchIndex] = bound;
+              prims[patchIndex] = PrimRef(bound,patchIndex);
+              s.add(bound);
             });
           }
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
+        //PRINT(numChanged);
+        //PRINT(numUnchanged);
 
         if (fastUpdateMode)
         {

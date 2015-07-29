@@ -110,6 +110,7 @@ namespace embree
 #endif
    static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
+   static const size_t REF_TAG_MASK                    = 0xffffffffff;
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
@@ -143,9 +144,15 @@ namespace embree
        }
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-       assert( new_root_ref <= 0xffffffff );
+       assert( new_root_ref <= REF_TAG_MASK );
        new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
+     }
+     
+     __forceinline void setTime(size_t combinedTime)
+     {
+       if (data == 0) return;
+       data = (data & REF_TAG_MASK) | (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
      }
 
      volatile int64_t data;
@@ -213,9 +220,7 @@ namespace embree
    }
 
    static __forceinline void* lookup(volatile Tag* tag, unsigned globalTime)
-   {
-     static const size_t REF_TAG_MASK = 0xffffffff;
-       
+   {   
      const int64_t subdiv_patch_root_ref = tag->data; 
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
@@ -267,8 +272,6 @@ namespace embree
    
    static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
    {
-     static const size_t REF_TAG_MASK = 0xffffffff;
-       
      const int64_t subdiv_patch_root_ref = tag->data; 
      
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);

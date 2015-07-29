@@ -400,9 +400,10 @@ namespace embree
 
     /* update commit counter */
     commitCounter++;
-    // FIXME: race condition?
-#if 1
-    if (numScenes == 1 )
+
+    /* do only reset tessellation cache on MIC */
+#if defined(__MIC__)
+    if (numScenes == 1)
       resetTessellationCache();
 #endif
   }
