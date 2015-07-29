@@ -36,66 +36,39 @@ namespace embree
       int sb = *(size_t*)&b->node()->lower_x;
       return sa < sb;
     }
-    
-    BVH4Refit::BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
-      : builder(builder), mesh(mesh), bvh(bvh) {}
 
-    BVH4Refit::~BVH4Refit () {
-      delete builder;
+    BVH4Refitter::BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds)
+      : bvh(bvh), leafBounds(leafBounds) 
+    {
+      if (bvh->numPrimitives > 50000) {
+        annotate_tree_sizes(bvh->root);
+        calculate_refit_roots();
+      }
     }
 
-    void BVH4Refit::clear()
+    void BVH4Refitter::refit()
     {
-      if (builder) 
-        builder->clear();
-    }
-    
-    void BVH4Refit::build(size_t threadIndex, size_t threadCount) 
-    {
-      /* build initial BVH */
-      if (builder) {
-        builder->build(threadIndex,threadCount);
-        if (bvh->numPrimitives > 50000) {
-          annotate_tree_sizes(bvh->root);
-          calculate_refit_roots();
-        }
-        delete builder; builder = nullptr;
-      }
-      
-      /* refit BVH */
-      double t0 = 0.0;
-      if (State::instance()->verbosity(2)) {
-        std::cout << "refitting BVH4 <" << bvh->primTy.name << "> ... " << std::flush;
-        t0 = getSeconds();
-      }
-      
-      /* schedule refit tasks */
+      /* single threaded fallback */
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
-        refit_sequential(threadIndex,threadCount);
-      }
-      else {
-        parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r)
-        {
-          for (size_t i=r.begin(); i<r.end(); i++) {
-            NodeRef& ref = *roots[i];
-            recurse_bottom(ref);
-            ref.setBarrier();
-          }
-        });
-        bvh->bounds = recurse_top(bvh->root);
+        bvh->bounds = recurse_bottom(bvh->root);
       }
 
-      if (State::instance()->verbosity(2)) 
+      /* parallel refit */
+      else 
       {
-        double t1 = getSeconds();
-        std::cout << "[DONE]" << std::endl;
-        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->size())/(t1-t0) << " Mprim/s" << std::endl;
-        std::cout << BVH4Statistics(bvh).str();
+        parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r) {
+            for (size_t i=r.begin(); i<r.end(); i++) {
+              NodeRef& ref = *roots[i];
+              recurse_bottom(ref);
+              ref.setBarrier();
+            }
+          });
+        bvh->bounds = recurse_top(bvh->root);
       }
     }
-    
-    size_t BVH4Refit::annotate_tree_sizes(BVH4::NodeRef& ref)
+
+    size_t BVH4Refitter::annotate_tree_sizes(BVH4::NodeRef& ref)
     {
       if (ref.isNode())
       {
@@ -117,7 +90,7 @@ namespace embree
       }
     }
     
-    void BVH4Refit::calculate_refit_roots ()
+    void BVH4Refitter::calculate_refit_roots ()
     {
       if (!bvh->root.isNode()) return;
       
@@ -141,27 +114,20 @@ namespace embree
         }
       }
     }
-    
-    __forceinline BBox3fa BVH4Refit::leaf_bounds(NodeRef& ref)
-    {
-      size_t num; char* tri = ref.leaf(num);
-      if (unlikely(ref == BVH4::emptyNode)) return empty;
-      return update(tri,num,mesh);
-    }
-    
-    __forceinline BBox3fa BVH4Refit::node_bounds(NodeRef& ref)
+
+    __forceinline BBox3fa BVH4Refitter::node_bounds(NodeRef& ref)
     {
       if (ref.isNode())
         return ref.node()->bounds();
       else
-        return leaf_bounds(ref);
+        return leafBounds(ref);
     }
     
-    BBox3fa BVH4Refit::recurse_bottom(NodeRef& ref)
+    BBox3fa BVH4Refitter::recurse_bottom(NodeRef& ref)
     {
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-        return leaf_bounds(ref);
+        return leafBounds(ref);
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
@@ -194,7 +160,7 @@ namespace embree
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    BBox3fa BVH4Refit::recurse_top(NodeRef& ref)
+    BBox3fa BVH4Refitter::recurse_top(NodeRef& ref)
     {
       /* stop here if we encounter a barrier */
       if (unlikely(ref.isBarrier())) {
@@ -204,7 +170,7 @@ namespace embree
       
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-        return leaf_bounds(ref);
+        return leafBounds(ref);
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
@@ -237,10 +203,51 @@ namespace embree
                     Vec3fa(upper_x,upper_y,upper_z));
     }
     
-    void BVH4Refit::refit_sequential(size_t threadIndex, size_t threadCount) {
-      bvh->bounds = recurse_bottom(bvh->root);
+    template<typename Primitive>
+    BVH4RefitT<Primitive>::BVH4RefitT (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
+      : builder(builder), refitter(nullptr), mesh(mesh), bvh(bvh) {}
+
+    template<typename Primitive>
+    BVH4RefitT<Primitive>::~BVH4RefitT () {
+      delete builder;
+      delete refitter;
     }
 
+    template<typename Primitive>
+    void BVH4RefitT<Primitive>::clear()
+    {
+      if (builder) 
+        builder->clear();
+    }
+    
+    template<typename Primitive>
+    void BVH4RefitT<Primitive>::build(size_t threadIndex, size_t threadCount) 
+    {
+      /* build initial BVH */
+      if (builder) {
+        builder->build(threadIndex,threadCount);
+        delete builder; builder = nullptr;
+        refitter = new BVH4Refitter(bvh,*(LeafBoundsInterface*)this);
+      }
+      
+      /* refit BVH */
+      double t0 = 0.0;
+      if (State::instance()->verbosity(2)) {
+        std::cout << "refitting BVH4 <" << bvh->primTy.name << "> ... " << std::flush;
+        t0 = getSeconds();
+      }
+      
+      refitter->refit();
+
+      if (State::instance()->verbosity(2)) 
+      {
+        double t1 = getSeconds();
+        std::cout << "[DONE]" << std::endl;
+        std::cout << "  dt = " << 1000.0f*(t1-t0) << "ms, perf = " << 1E-6*double(mesh->size())/(t1-t0) << " Mprim/s" << std::endl;
+        std::cout << BVH4Statistics(bvh).str();
+      }
+    }
+    
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
     Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);

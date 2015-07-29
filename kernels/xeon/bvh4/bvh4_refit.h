@@ -22,7 +22,57 @@ namespace embree
 {
   namespace isa
   {
-    class BVH4Refit : public Builder
+    class BVH4Refitter
+    {
+    public:
+
+      /*! Type shortcuts */
+      typedef BVH4::Node    Node;
+      typedef BVH4::NodeRef NodeRef;
+
+      struct LeafBoundsInterface {
+        virtual const BBox3fa operator() (NodeRef& ref) const = 0;
+      };
+
+      template<typename LeafBoundsFunc>
+        struct MakeLeafBoundsClosure : public LeafBoundsInterface 
+      {
+        MakeLeafBoundsClosure (const LeafBoundsFunc& leadBoundsFunc)
+          : leafBoundsFunc(leafBoundsFunc) {}
+        
+        virtual const BBox3fa operator() (NodeRef& ref) const {
+          return leafBoundsFunc(ref);
+        }
+
+      private:
+        const LeafBoundsFunc& leafBoundsFunc;
+      };
+
+    public:
+    
+      /*! Constructor. */
+      BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds);
+
+      void refit();
+
+      void refit_sequential(size_t threadIndex, size_t threadCount);
+
+    private:
+      size_t annotate_tree_sizes(NodeRef& ref);
+      void calculate_refit_roots ();
+      
+      BBox3fa node_bounds(NodeRef& ref);
+      BBox3fa recurse_bottom(NodeRef& ref);
+      BBox3fa recurse_top(NodeRef& ref);
+      
+    public:
+      BVH4* bvh;                      //!< BVH to refit
+      const LeafBoundsInterface& leafBounds;
+      std::vector<NodeRef*> roots;    //!< List of equal sized subtrees for bvh refit
+    };
+
+    template<typename Primitive>
+      class BVH4RefitT : public Builder, public BVH4Refitter::LeafBoundsInterface 
     {
       ALIGNED_CLASS;
     public:
@@ -32,54 +82,28 @@ namespace embree
       typedef BVH4::NodeRef NodeRef;
       
     public:
+      BVH4RefitT (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode);
+      ~BVH4RefitT();
+
+      virtual void build(size_t threadIndex, size_t threadCount);
       
-      void build(size_t threadIndex, size_t threadCount);
+      virtual void clear();
 
-      void clear();
-
-      /*! Constructor. */
-      BVH4Refit (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode);
-
-      ~BVH4Refit();
-
-      void refit_sequential(size_t threadIndex, size_t threadCount);
-
-      virtual BBox3fa update(void* prim, size_t N, TriangleMesh* mesh) const = 0;
-      
-    private:
-      size_t annotate_tree_sizes(NodeRef& ref);
-      void calculate_refit_roots ();
-      
-      BBox3fa leaf_bounds(NodeRef& ref);
-      BBox3fa node_bounds(NodeRef& ref);
-      BBox3fa recurse_bottom(NodeRef& ref);
-      BBox3fa recurse_top(NodeRef& ref);
+      virtual const BBox3fa operator() (NodeRef& ref) const
+      {
+        size_t N; char* prim = ref.leaf(N);
+        if (unlikely(ref == BVH4::emptyNode)) return empty;
+        BBox3fa bounds = empty;
+        for (size_t i=0; i<N; i++)
+            bounds.extend(((Primitive*)prim)[i].update(mesh));
+        return bounds;
+      }
       
     private:
       TriangleMesh* mesh;
-      bool listMode;
-      
-    public:
       Builder* builder;
-      BVH4* bvh;                      //!< BVH to refit
-      std::vector<NodeRef*> roots;    //!< List of equal sized subtrees for bvh refit
-    };
-
-    template<typename Primitive>
-      class BVH4RefitT : public BVH4Refit
-    {
-    public:
-      BVH4RefitT (BVH4* bvh, Builder* builder, TriangleMesh* mesh, size_t mode)
-        : BVH4Refit(bvh,builder,mesh,mode) {}
-
-    private:      
-      BBox3fa update(void* prim, size_t N, TriangleMesh* mesh) const 
-      {
-        BBox3fa bounds = empty;
-        for (size_t i=0; i<N; i++)
-          bounds.extend(((Primitive*)prim)[i].update(mesh));
-        return bounds;
-      }
+      BVH4Refitter* refitter;
+      BVH4* bvh;
     };
   }
 }

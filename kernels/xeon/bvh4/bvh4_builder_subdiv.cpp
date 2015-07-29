@@ -252,7 +252,7 @@ namespace embree
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), scene(scene), numSubdivEnableDisableEvents(0) {}
 
-            BBox3fa refit(BVH4::NodeRef& ref)
+      BBox3fa refit(BVH4::NodeRef& ref)
       {
         /* this is a empty node */
         if (unlikely(ref == BVH4::emptyNode))
