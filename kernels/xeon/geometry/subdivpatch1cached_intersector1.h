@@ -25,7 +25,6 @@
 #include "subdivpatch1cached.h"
 
 #define FORCE_TRIANGLE_UV 0                //!< returns u,v based on individual triangles instead relative to original patch 
-#define ENABLE_NORMALIZED_INTERSECTION 0  // FIXME: still required? remove
 
 #if FORCE_TRIANGLE_UV
 #  pragma message("WARNING: FORCE_TRIANGLE_UV is enabled")
@@ -45,33 +44,18 @@ namespace embree
       public:
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
-#if ENABLE_NORMALIZED_INTERSECTION == 1
-	Vec3fa ray_dir_scale;
-#endif
         SubdivPatch1Cached* current_patch;
         SubdivPatch1Cached* hit_patch;
         ThreadWorkState *t_state;
         Ray& r;
-#if _DEBUG
-	size_t numPrimitives;
-	SubdivPatch1Cached* array;
-#endif
         
         __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
         {
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
-#if ENABLE_NORMALIZED_INTERSECTION == 1
-	  ray_dir_scale = Vec3fa(ray.dir.y*ray.dir.z,ray.dir.z*ray.dir.x,ray.dir.x*ray.dir.y);
-#endif
-
           current_patch = nullptr;
           hit_patch     = nullptr;
           t_state = SharedLazyTessellationCache::threadState();
-#if _DEBUG
-	  numPrimitives = ((BVH4*)ptr)->numPrimitives;
-	  array         = (SubdivPatch1Cached*)(((BVH4*)ptr)->data_mem);
-#endif
         }
 
           /*! Final per ray computations like smooth normal, patch u,v, etc. */        
@@ -413,7 +397,6 @@ namespace embree
 	const Vec3<float8> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
         
 
-#if ENABLE_NORMALIZED_INTERSECTION == 0
 	const Vec3<float8> O = ray.org;
 	const Vec3<float8> D = ray.dir;
 
@@ -441,37 +424,6 @@ namespace embree
 	valid &= V >= 0.0f;
 	if (likely(none(valid))) return;
 	const float8 W = dot(Vec3<float8>(cross(v1+v2,e2)),D) ^ sgnDen;
-
-#else
-        const Vec3<float8> ray_rdir(pre.ray_rdir.x,pre.ray_rdir.y,pre.ray_rdir.z);
-        const Vec3<float8> ray_org_rdir(pre.ray_org_rdir.x,pre.ray_org_rdir.y,pre.ray_org_rdir.z);
-
-	const Vec3<float8> v0 = v0_org * ray_rdir - ray_org_rdir;
-	const Vec3<float8> v1 = v1_org * ray_rdir - ray_org_rdir;
-	const Vec3<float8> v2 = v2_org * ray_rdir - ray_org_rdir;
-
-	const Vec3<float8> e0 = v2 - v0;
-	const Vec3<float8> e1 = v0 - v1;	     
-	const Vec3<float8> e2 = v1 - v2;	     
-
-	/* calculate geometry normal and denominator */
-	const Vec3<float8> Ng1 = cross(e1,e0);
-	Vec3<float8> Ng = Ng1+Ng1;
-	const float8 den = sum(Ng);
-	const float8 absDen = abs(den);
-	const float8 sgnDen = signmsk(den);
-        
-	bool8 valid ( true );
-	/* perform edge tests */
-	const float8 U = sum(Vec3<float8>(cross(v2+v0,e0))) ^ sgnDen;
-	valid &= U >= 0.0f;
-	if (likely(none(valid))) return;
-	const float8 V = sum(Vec3<float8>(cross(v0+v1,e1))) ^ sgnDen;
-	valid &= V >= 0.0f;
-	if (likely(none(valid))) return;
-	const float8 W = sum(Vec3<float8>(cross(v1+v2,e2))) ^ sgnDen;
-
-#endif        
 
 	valid &= W >= 0.0f;
 	if (likely(none(valid))) return;
@@ -541,9 +493,6 @@ namespace embree
 	ray.v         = v[i];
 	ray.tfar      = t[i];
 
-#if ENABLE_NORMALIZED_INTERSECTION == 1
-	Ng = Ng * Vec3<float8>(pre.ray_dir_scale.x,pre.ray_dir_scale.y,pre.ray_dir_scale.z);
-#endif
 	if (i % 2) {
           ray.Ng.x      = Ng.x[i];
           ray.Ng.y      = Ng.y[i];
@@ -747,9 +696,7 @@ namespace embree
           pre.current_patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
-      }
-      
-      
+      }      
     };
   }
 }
