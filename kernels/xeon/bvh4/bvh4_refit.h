@@ -34,20 +34,6 @@ namespace embree
         virtual const BBox3fa operator() (NodeRef& ref) const = 0;
       };
 
-      template<typename LeafBoundsFunc>
-        struct MakeLeafBoundsClosure : public LeafBoundsInterface 
-      {
-        MakeLeafBoundsClosure (const LeafBoundsFunc& leadBoundsFunc)
-          : leafBoundsFunc(leafBoundsFunc) {}
-        
-        virtual const BBox3fa operator() (NodeRef& ref) const {
-          return leafBoundsFunc(ref);
-        }
-
-      private:
-        const LeafBoundsFunc& leafBoundsFunc;
-      };
-
     public:
     
       /*! Constructor. */

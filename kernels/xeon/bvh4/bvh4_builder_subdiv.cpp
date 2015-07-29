@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
+#include "bvh4_refit.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
@@ -238,11 +239,12 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder
+    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVH4Refitter::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
       BVH4* bvh;
+      BVH4Refitter* refitter;
       Scene* scene;
       mvector<PrimRef> prims; 
       mvector<BBox3fa> bounds; 
@@ -250,55 +252,14 @@ namespace embree
       size_t numSubdivEnableDisableEvents;
 
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), numSubdivEnableDisableEvents(0) {}
-
-      BBox3fa refit(BVH4::NodeRef& ref)
-      {
-        /* this is a empty node */
-        if (unlikely(ref == BVH4::emptyNode))
-          return BBox3fa( empty );
-        
-        assert(ref != BVH4::invalidNode);
-        
-        /* this is a leaf node */
-        if (unlikely(ref.isLeaf()))
-        {
-          size_t num;
-          SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
-          const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
-          //assert(index < numPrimitives);
-          return prims[index].bounds(); 
-        }
+        : bvh(bvh), refitter(nullptr), scene(scene), numSubdivEnableDisableEvents(0) {}
       
-        /* recurse if this is an internal node */
-        BVH4::Node* node = ref.node();
-        const BBox3fa bounds0 = refit(node->child(0));
-        const BBox3fa bounds1 = refit(node->child(1));
-        const BBox3fa bounds2 = refit(node->child(2));
-        const BBox3fa bounds3 = refit(node->child(3));
-        
-        /* AOS to SOA transform */
-        BBox<Vec3f4> bounds;
-        transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-        transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
-        
-        /* set new bounds */
-        node->lower_x = bounds.lower.x;
-        node->lower_y = bounds.lower.y;
-        node->lower_z = bounds.lower.z;
-        node->upper_x = bounds.upper.x;
-        node->upper_y = bounds.upper.y;
-        node->upper_z = bounds.upper.z;
-        
-        /* return merged bounds */
-        const float lower_x = reduce_min(bounds.lower.x);
-        const float lower_y = reduce_min(bounds.lower.y);
-        const float lower_z = reduce_min(bounds.lower.z);
-        const float upper_x = reduce_max(bounds.upper.x);
-        const float upper_y = reduce_max(bounds.upper.y);
-        const float upper_z = reduce_max(bounds.upper.z);
-        return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-                       Vec3fa(upper_x,upper_y,upper_z));
+      virtual const BBox3fa operator() (BVH4::NodeRef& ref) const 
+      {
+        if (ref == BVH4::emptyNode) return BBox3fa(empty);
+        size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
+        const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
+        return prims[index].bounds(); 
       }
 
       void build(size_t, size_t) 
@@ -439,8 +400,10 @@ namespace embree
 
         if (fastUpdateMode)
         {
-          if (bvh->root != BVH4::emptyNode)
-            refit(bvh->root);
+          if (refitter == nullptr)
+            refitter = new BVH4Refitter(bvh,*(BVH4Refitter::LeafBoundsInterface*)this);
+
+          refitter->refit();
         }
         else
         {
@@ -463,6 +426,8 @@ namespace embree
           }
           else
             bvh->set(BVH4::emptyNode,empty,0);	  
+
+          delete refitter; refitter = nullptr;
         }
         
 	/* clear temporary data for static geometry */
