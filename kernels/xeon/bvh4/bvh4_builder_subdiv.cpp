@@ -407,26 +407,21 @@ namespace embree
         }
         else
         {
-          if (numPrimitives)
-          {
-            BVH4::NodeRef root;
-            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-              (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-               [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-                size_t items = current.pinfo.size();
-                assert(items == 1);
-                const unsigned int patchIndex = prims[current.prims.begin()].ID();
-                SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-                *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-                return 0;
-              },
-               progress,
-               prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-            bvh->set(root,pinfo.geomBounds,pinfo.size());
-          }
-          else
-            bvh->set(BVH4::emptyNode,empty,0);	  
+          BVH4::NodeRef root;
+          BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+            (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
+             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+              size_t items = current.pinfo.size();
+              assert(items == 1);
+              const unsigned int patchIndex = prims[current.prims.begin()].ID();
+              SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+              *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+              return 0;
+            },
+             progress,
+             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
 
+          bvh->set(root,pinfo.geomBounds,pinfo.size());
           delete refitter; refitter = nullptr;
         }
         
