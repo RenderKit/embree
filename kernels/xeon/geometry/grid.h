@@ -531,7 +531,8 @@ namespace embree
         const float zi = grid_z[i];
         const int   ui = clamp(grid_u[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
         const int   vi = clamp(grid_v[i] * 0xFFFF, 0.0f, float(0xFFFF)); 
-        P[i] = Vec3fa(xi,yi,zi,(vi << 16) | ui);
+        P[i] = Vec3fa(xi,yi,zi);
+        P[i].a = (vi << 16) | ui;
       }
     }
 
