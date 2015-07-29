@@ -31,7 +31,7 @@ namespace embree
       typedef BVH4::NodeRef NodeRef;
 
       struct LeafBoundsInterface {
-        virtual const BBox3fa operator() (NodeRef& ref) const = 0;
+        virtual const BBox3fa leafBounds(NodeRef& ref) const = 0;
       };
 
     public:
@@ -39,9 +39,8 @@ namespace embree
       /*! Constructor. */
       BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds);
 
+      /*! refits the BVH */
       void refit();
-
-      void refit_sequential(size_t threadIndex, size_t threadCount);
 
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
@@ -52,9 +51,9 @@ namespace embree
       BBox3fa recurse_top(NodeRef& ref);
       
     public:
-      BVH4* bvh;                      //!< BVH to refit
-      const LeafBoundsInterface& leafBounds;
-      std::vector<NodeRef*> roots;    //!< List of equal sized subtrees for bvh refit
+      BVH4* bvh;                             //!< BVH to refit
+      const LeafBoundsInterface& leafBounds; //!< calculates bounds of leaves
+      std::vector<NodeRef*> roots;           //!< List of equal sized subtrees for bvh refit
     };
 
     template<typename Primitive>
@@ -75,7 +74,7 @@ namespace embree
       
       virtual void clear();
 
-      virtual const BBox3fa operator() (NodeRef& ref) const
+      virtual const BBox3fa leafBounds (NodeRef& ref) const
       {
         size_t N; char* prim = ref.leaf(N);
         if (unlikely(ref == BVH4::emptyNode)) return empty;

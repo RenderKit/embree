@@ -40,7 +40,7 @@ namespace embree
     BVH4Refitter::BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds)
       : bvh(bvh), leafBounds(leafBounds) 
     {
-      if (bvh->numPrimitives > 50000) {
+      if (bvh->numPrimitives > block_size) {
         annotate_tree_sizes(bvh->root);
         calculate_refit_roots();
       }
@@ -120,14 +120,14 @@ namespace embree
       if (ref.isNode())
         return ref.node()->bounds();
       else
-        return leafBounds(ref);
+        return leafBounds.leafBounds(ref);
     }
     
     BBox3fa BVH4Refitter::recurse_bottom(NodeRef& ref)
     {
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-        return leafBounds(ref);
+        return leafBounds.leafBounds(ref);
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
@@ -170,7 +170,7 @@ namespace embree
       
       /* this is a leaf node */
       if (unlikely(ref.isLeaf()))
-        return leafBounds(ref);
+        return leafBounds.leafBounds(ref);
       
       /* recurse if this is an internal node */
       Node* node = ref.node();

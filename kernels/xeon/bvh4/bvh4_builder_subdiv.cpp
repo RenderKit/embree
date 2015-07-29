@@ -254,7 +254,7 @@ namespace embree
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
         : bvh(bvh), refitter(nullptr), scene(scene), numSubdivEnableDisableEvents(0) {}
       
-      virtual const BBox3fa operator() (BVH4::NodeRef& ref) const 
+      virtual const BBox3fa leafBounds (BVH4::NodeRef& ref) const 
       {
         if (ref == BVH4::emptyNode) return BBox3fa(empty);
         size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
