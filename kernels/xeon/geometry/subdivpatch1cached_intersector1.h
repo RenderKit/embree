@@ -44,20 +44,16 @@ namespace embree
       { 
       public:
         __forceinline Precalculations (Ray& ray, const void *ptr) 
-        {
-          current_patch = nullptr;
-          t_state = SharedLazyTessellationCache::threadState();
-        }
+          : current_patch(nullptr) {}
 
         __forceinline ~Precalculations() 
         {
 	  if (current_patch)
-            SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
+            SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
         }
 
       public:
         SubdivPatch1Cached* current_patch;
-        ThreadWorkState *t_state;
       };
 
       static __forceinline const Vec3<float4> getV012(const float *const grid,
@@ -590,7 +586,7 @@ namespace embree
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-						       ThreadWorkState *t_state,
+						       ThreadWorkState *t_state, 
 						       const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
       
       /*! Create BVH4 tree over grid. */
