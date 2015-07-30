@@ -69,9 +69,9 @@ namespace embree
       {
 	const int4 i_uv = cast(uv);
 	const int4 i_u  = i_uv & 0xffff;
-	const int4 i_v  = i_uv >> 16;
-	const float4 u    = (float4)i_u * float4(2.0f/65535.0f);
-	const float4 v    = (float4)i_v * float4(2.0f/65535.0f);
+	const int4 i_v  = srl(i_uv,16);
+	const float4 u    = (float4)i_u * float4(1.0f/0xFFFF);
+	const float4 v    = (float4)i_v * float4(1.0f/0xFFFF);
 	return Vec2<float4>(u,v);
       }
 
@@ -315,9 +315,9 @@ namespace embree
       {
 	const int8 i_uv = cast(uv);
 	const int8 i_u  = i_uv & 0xffff;
-	const int8 i_v  = i_uv >> 16;
-	const float8 u    = (float8)i_u * float8(2.0f/65535.0f);
-	const float8 v    = (float8)i_v * float8(2.0f/65535.0f);
+	const int8 i_v  = srl(i_uv,16);
+	const float8 u    = (float8)i_u * float8(1.0f/0xFFFF);
+	const float8 v    = (float8)i_v * float8(1.0f/0xFFFF);
 	return Vec2<float8>(u,v);
       }
      

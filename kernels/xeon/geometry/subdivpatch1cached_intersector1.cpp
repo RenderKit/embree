@@ -193,9 +193,12 @@ namespace embree
       memcpy(grid_x ,local_grid_x ,array_elements*sizeof(float));
       memcpy(grid_y ,local_grid_y ,array_elements*sizeof(float));
       memcpy(grid_z ,local_grid_z ,array_elements*sizeof(float));
-
-      for (size_t i=0;i<array_elements;i++)
-        grid_uv[i] = (((int)(local_grid_v[i] * 65535.0f/2.0f)) << 16) | ((int)(local_grid_u[i] * 65535.0f/2.0f)); 
+      
+      for (size_t i=0; i<array_elements; i++) { // FIXME: vectorize
+        const int iu = clamp(local_grid_u[i]*0xFFFF, float(0.0f), float(0xFFFF));
+        const int iv = clamp(local_grid_v[i]*0xFFFF, float(0.0f), float(0xFFFF));
+        grid_uv[i] = (iv << 16) | iu; 
+      }
       
       /* build bvh tree */
       BVH4::NodeRef subtree_root = 0;
