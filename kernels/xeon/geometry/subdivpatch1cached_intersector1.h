@@ -45,7 +45,6 @@ namespace embree
         Vec3fa ray_rdir;
         Vec3fa ray_org_rdir;
         SubdivPatch1Cached* current_patch;
-        SubdivPatch1Cached* hit_patch;
         ThreadWorkState *t_state;
         Ray& r;
         
@@ -54,23 +53,14 @@ namespace embree
           ray_rdir      = rcp_safe(ray.dir);
           ray_org_rdir  = ray.org*ray_rdir;
           current_patch = nullptr;
-          hit_patch     = nullptr;
           t_state = SharedLazyTessellationCache::threadState();
         }
 
-          /*! Final per ray computations like smooth normal, patch u,v, etc. */        
         __forceinline ~Precalculations() 
         {
 	  if (current_patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
-          
-          if (unlikely(hit_patch != nullptr))
-          {
-            r.geomID = hit_patch->geom;
-            r.primID = hit_patch->prim;
-          }
         }
-        
       };
 
 
@@ -199,7 +189,6 @@ namespace embree
             /* call intersection filter function */
             Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
-              pre.hit_patch = pre.current_patch;
               return;
             }
             valid[i] = 0;
@@ -211,10 +200,11 @@ namespace embree
 #endif
 
 	/* update hit information */
-	pre.hit_patch = pre.current_patch;
 	ray.u         = u[i];
 	ray.v         = v[i];
 	ray.tfar      = t[i];
+        ray.geomID    = pre.current_patch->geom;
+        ray.primID    = pre.current_patch->prim;
 	if (i % 2) {
           ray.Ng.x      = Ng.x[i];
           ray.Ng.y      = Ng.y[i];
@@ -464,7 +454,6 @@ namespace embree
             /* call intersection filter function */
             Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
-              pre.hit_patch = pre.current_patch;
               return;
             }
             valid[i] = 0;
@@ -476,11 +465,11 @@ namespace embree
 #endif
 	
 	/* update hit information */
-	pre.hit_patch = pre.current_patch;
 	ray.u         = u[i];
 	ray.v         = v[i];
 	ray.tfar      = t[i];
-
+        ray.geomID    = pre.current_patch->geom;
+        ray.primID    = pre.current_patch->prim;
 	if (i % 2) {
           ray.Ng.x      = Ng.x[i];
           ray.Ng.y      = Ng.y[i];
