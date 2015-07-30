@@ -38,7 +38,8 @@
 
 #define PATCH_MAX_CACHE_DEPTH 2
 #define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
-#define PATCH_MAX_EVAL_DEPTH 4     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_MAX_EVAL_DEPTH_IRREGULAR 2     // maximal evaluation depth at irregular vertices (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
+#define PATCH_MAX_EVAL_DEPTH_CREASE 10       // maximal evaluation depth at crease features (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
 #define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
@@ -475,15 +476,24 @@ namespace embree
       return nullptr;
     }
 
+    static __forceinline bool final(const CatmullClarkPatch& patch, const typename CatmullClarkRing::Type type, size_t depth) 
+    {
+      const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
+//#if PATCH_MIN_RESOLUTION
+//      return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
+//#else
+      return depth>=max_eval_depth;
+//#endif
+    }
+
     template<typename Allocator>
       __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth,
-            const BezierCurve* border0 = nullptr, const BezierCurve* border1 = nullptr, const BezierCurve* border2 = nullptr, const BezierCurve* border3 = nullptr)
+                                   const BezierCurve* border0 = nullptr, const BezierCurve* border1 = nullptr, const BezierCurve* border2 = nullptr, const BezierCurve* border3 = nullptr)
     {
-      typename CatmullClarkPatch::Type ty = patch.type();
-
-      if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH)) {
-          if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
-        else                                       return IrregularFillPatch::create(alloc,patch,border0,border1,border2,border3); 
+      const typename CatmullClarkPatch::Type ty = patch.type();
+      if (unlikely(final(patch,ty,depth))) {
+        if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
+        else                                     return IrregularFillPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
       else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
         assert(depth > 0); return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
@@ -494,7 +504,6 @@ namespace embree
       }
 #endif
       else if (depth >= PATCH_MAX_CACHE_DEPTH) {
-        //return nullptr;
         return EvalPatch::create(alloc,patch); 
       }
       
@@ -503,6 +512,7 @@ namespace embree
         Ref child[4];
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches);
+        
         for (size_t i=0; i<4; i++)
           child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
         return SubdividedQuadPatch::create(alloc,child);

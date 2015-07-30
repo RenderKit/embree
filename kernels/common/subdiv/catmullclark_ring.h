@@ -298,8 +298,8 @@ namespace embree
 
         /* update crease_weights using chaikin rule */
         const float crease_weight0 = crease_weight[crease0], crease_weight1 = crease_weight[crease1];
-        dest.crease_weight[crease_id[0]] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
-        dest.crease_weight[crease_id[1]] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
+        dest.crease_weight[crease0] = max(0.25f*(3.0f*crease_weight0 + crease_weight1)-1.0f,0.0f);
+        dest.crease_weight[crease1] = max(0.25f*(3.0f*crease_weight1 + crease_weight0)-1.0f,0.0f);
 
         /* interpolate between sharp and smooth rule */
         const float t1 = 0.5f*(crease_weight0+crease_weight1), t0 = 1.0f-t1;
@@ -324,44 +324,45 @@ namespace embree
       return false;
     }
 
-    __forceinline bool hasEdgeCrease() const
+    __forceinline size_t numEdgeCreases() const
     {
-      /* check if there is an edge crease anywhere */
-      for (size_t i=1; i<face_valence; i++) {
-        if ((2*i != border_index) && (2*(i-1) != border_index) && crease_weight[i] > 0.0f) 
-          return true;
+      ssize_t numCreases = 0;
+      for (size_t i=0; i<face_valence; i++) {
+        numCreases += crease_weight[i] > 0.0f;
       }
-      if ((2*(face_valence-1) != border_index) && crease_weight[0] > 0.0f) 
-          return true;
-
-      return false;
+      return numCreases;
     }
 
     enum Type {
-      TYPE_NONE            = 0,
-      TYPE_REGULAR         = 1,
-      TYPE_REGULAR_CREASES = 2,
-      TYPE_GREGORY         = 4,
-      TYPE_GREGORY_CREASES = 8
+      TYPE_NONE            = 0,      //!< invalid type
+      TYPE_REGULAR         = 1,      //!< regular patch when ignoring creases
+      TYPE_REGULAR_CREASES = 2,      //!< regular patch when considering creases
+      TYPE_GREGORY         = 4,      //!< gregory patch when ignoring creases
+      TYPE_GREGORY_CREASES = 8,      //!< gregory patch when considering creases
+      TYPE_CREASES         = 16      //!< patch has crease features
     };
     
     __forceinline Type type() const
     {
-      /* check if there is an edge crease anywhere */
+      /* check if there is an edge crease anywhere */      
+      const size_t numCreases = numEdgeCreases();
+      const bool noInnerCreases = hasBorder() ? numCreases == 2 : numCreases == 0;
+
       Type crease_mask = (Type) (TYPE_REGULAR | TYPE_GREGORY);
-      if (!hasEdgeCrease()) crease_mask = (Type) (crease_mask | TYPE_REGULAR_CREASES | TYPE_GREGORY_CREASES);
+      if (noInnerCreases ) crease_mask = (Type) (crease_mask | TYPE_REGULAR_CREASES | TYPE_GREGORY_CREASES);
+      if (numCreases != 0) crease_mask = (Type) (crease_mask | TYPE_CREASES);
 
       /* calculate if this vertex is regular */
       bool hasBorder = border_index != -1;
       if (face_valence == 2 && hasBorder) {
-        if      (vertex_crease_weight == 0.0f      ) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
-        else if (vertex_crease_weight == float(inf)) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
-        else                                         return TYPE_NONE;
+        if      (vertex_crease_weight == 0.0f      ) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES | TYPE_CREASES));
+        else if (vertex_crease_weight == float(inf)) return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES | TYPE_CREASES));
+        else                                         return TYPE_CREASES;
       }
-      else if (vertex_crease_weight != 0.0f)         return TYPE_NONE;
-      else if (face_valence == 3 &&  hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
-      else if (face_valence == 4 && !hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES));
-      else                                           return (Type) (crease_mask & (TYPE_GREGORY | TYPE_GREGORY_CREASES));
+      else if (vertex_crease_weight != 0.0f)         return TYPE_CREASES;
+      else if (face_valence == 3 &&  hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES | TYPE_CREASES));
+      else if (face_valence == 4 && !hasBorder)      return (Type) (crease_mask & (TYPE_REGULAR | TYPE_REGULAR_CREASES | TYPE_GREGORY | TYPE_GREGORY_CREASES | TYPE_CREASES));
+      else                                           return (Type) (crease_mask & (TYPE_GREGORY | TYPE_GREGORY_CREASES | TYPE_CREASES));
     }
 
     __forceinline bool isFinalResolution(float res) const {

@@ -199,13 +199,14 @@ namespace embree
 #endif
       }
       
-      __forceinline bool final(const CatmullClarkPatch3fa& patch, size_t depth) 
+      __forceinline bool final(const CatmullClarkPatch3fa& patch, const typename CatmullClarkRing::Type type, size_t depth) 
       {
-#if PATCH_MIN_RESOLUTION
-        return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=PATCH_MAX_EVAL_DEPTH;
-#else
-        return depth>=PATCH_MAX_EVAL_DEPTH;
-#endif
+        const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
+//#if PATCH_MIN_RESOLUTION
+//        return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
+//#else
+        return depth>=max_eval_depth;
+//#endif
       }
       
       void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth, 
@@ -222,7 +223,7 @@ namespace embree
 
         CatmullClarkPatch::Type ty = patch.type();
 
-        if (unlikely(final(patch,depth)))
+        if (unlikely(final(patch,ty,depth)))
         {
           if (ty & CatmullClarkRing::TYPE_REGULAR) {
             RegularPatch rpatch(patch,border0,border1,border2,border3);

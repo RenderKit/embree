@@ -74,8 +74,13 @@ namespace embree
       return bounds;
     }
     
-    __forceinline Type type() const {
-      return (Type) (ring[0].type() & ring[1].type() & ring[2].type() & ring[3].type());
+    __forceinline Type type() const 
+    {
+      const int ty0 = ring[0].type() ^ CatmullClark1Ring::TYPE_CREASES;
+      const int ty1 = ring[1].type() ^ CatmullClark1Ring::TYPE_CREASES;
+      const int ty2 = ring[2].type() ^ CatmullClark1Ring::TYPE_CREASES;
+      const int ty3 = ring[3].type() ^ CatmullClark1Ring::TYPE_CREASES;
+      return (Type) ((ty0 & ty1 & ty2 & ty3) ^ CatmullClark1Ring::TYPE_CREASES);
     }
     
     __forceinline bool isFinalResolution(float res) const {
