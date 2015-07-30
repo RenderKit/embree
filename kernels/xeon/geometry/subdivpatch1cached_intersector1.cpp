@@ -15,101 +15,12 @@
 // ======================================================================== //
  
 #include "subdivpatch1cached_intersector1.h"
-#include "../bvh4/bvh4.h"
-#include "../bvh4/bvh4_intersector1.h"
-
-#define TIMER(x) 
-#define DBG(x) 
 
 namespace embree
 {
   namespace isa
   {  
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void verifySubTreeBVH(const BVH4::NodeRef ref)
-    {
-      assert(ref != BVH4::invalidNode );
-
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-        return;
-      
-      const BVH4::Node* node = ref.node();
-      
-      for (size_t i=0;i<4;i++)
-	{
-	  assert(node->child(i) != BVH4::emptyNode);
-	  
-	  BBox3fa bounds = node->bounds(i);
-
-	  assert( std::isfinite(bounds.lower.x) );
-	  assert( std::isfinite(bounds.lower.y) );
-	  assert( std::isfinite(bounds.lower.z) );
-
-	  assert( std::isfinite(bounds.upper.x) );
-	  assert( std::isfinite(bounds.upper.y) );
-	  assert( std::isfinite(bounds.upper.z) );
-
-	  verifySubTreeBVH(node->child(i));
-	}
-    }
-
-    size_t countBlocks(const BVH4::NodeRef ref, const size_t range0, const size_t range1)
-    {
-      
-      size_t t = (size_t)ref;
-
-      assert(range0 <= t);
-      assert(t <= range1);
-
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-        return 3;
-      
-      const BVH4::Node* node = ref.node();
-      
-      size_t size = 0;
-      for (size_t i=0;i<4;i++)
-        if (node->child(i) != BVH4::emptyNode)
-          size += countBlocks(node->child(i),range0,range1);
-
-      return 2 + size;
-    }
-
-    void updateBVH4Refs(const BVH4::NodeRef &ref, const size_t old_ptr, const size_t new_ptr)
-    {
-      if (unlikely(ref == BVH4::emptyNode))
-        return;
-
-      assert(ref != BVH4::invalidNode);
-
-      /* this is a leaf node */
-      if (unlikely(ref.isLeaf()))
-        return;
-
-      const BVH4::Node* node = ref.node();
-      
-      for (size_t i=0;i<4;i++)
-        {
-          const BVH4::NodeRef &child = node->child(i);
-          if (node->child(i) != BVH4::emptyNode)
-            {
-              if (child.isNode())
-                updateBVH4Refs(child,old_ptr,new_ptr);
-
-              const size_t dest_offset = (size_t)&child - old_ptr;              
-              const size_t new_ref     = (size_t)child - old_ptr + new_ptr;
-              size_t *ptr = (size_t*)((char*)new_ptr + dest_offset);
-              *ptr = new_ref;    
-            }
-        }
-    }
-
-    /* build lazy subtree over patch */
-    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre,
-							  SubdivPatch1Cached* const subdiv_patch, 
-							  const Scene* scene)
+    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
       ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
@@ -136,7 +47,6 @@ namespace embree
             assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
 
             /* get current commit index */
-            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
             const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
             
             /* write new root ref */
@@ -154,10 +64,6 @@ namespace embree
         }
       }
     }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
     
     BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
                                                                               ThreadWorkState *t_state,
@@ -321,17 +227,11 @@ namespace embree
       BBox3fa bounds( empty );
       
       for (unsigned int i=0;i<children;i++)
-	{
-	  BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), 
-							 lazymem, 
-							 patch, 
-							 grid_array,
-							 grid_array_elements,
-							 r[i],						  
-							 localCounter);
-	  node->set(i, bounds_subtree);
-	  bounds.extend( bounds_subtree );
-	}
+      {
+        BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), lazymem, patch, grid_array, grid_array_elements, r[i],	localCounter);
+        node->set(i, bounds_subtree);
+        bounds.extend( bounds_subtree );
+      }
       
       return bounds;
     }
