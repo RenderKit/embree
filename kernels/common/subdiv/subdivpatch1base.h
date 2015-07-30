@@ -303,19 +303,9 @@ namespace embree
           /* evaluate displacement function */
           if (unlikely(geom->displFunc != nullptr))
           {
-            Vec3<vfloat> normal = patch.normal(u, v);
-            normal = normalize(normal); // FIXME: use normalize_safe
-          
-            const Vec2f uv0 = patch.getUV(0);
-            const Vec2f uv1 = patch.getUV(1);
-            const Vec2f uv2 = patch.getUV(2);
-            const Vec2f uv3 = patch.getUV(3);
-          
-            const vfloat patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
-            const vfloat patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
-          
+            const Vec3<vfloat> normal = normalize_safe(patch.normal(u, v)); 
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
-                            &patch_uu[0],&patch_vv[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloat::size);
           
           }
@@ -459,19 +449,9 @@ namespace embree
           /* evaluate displacement function */
           if (unlikely(geom->displFunc != nullptr))
           {
-            Vec3<vfloat> normal = patch.normal(u, v);
-            normal = normalize(normal); // FIXME: use normalize_safe
-          
-            const Vec2f uv0 = patch.getUV(0);
-            const Vec2f uv1 = patch.getUV(1);
-            const Vec2f uv2 = patch.getUV(2);
-            const Vec2f uv3 = patch.getUV(3);
-          
-            const vfloat patch_uu = lerp2(uv0.x, uv1.x, uv3.x, uv2.x, u, v);
-            const vfloat patch_vv = lerp2(uv0.y, uv1.y, uv3.y, uv2.y, u, v);
-          
+            const Vec3<vfloat> normal = normalize_safe(patch.normal(u,v));
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
-                            &patch_uu[0],&patch_vv[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
                             &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloat::size);
           
           }
