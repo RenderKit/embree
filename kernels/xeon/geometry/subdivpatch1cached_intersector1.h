@@ -44,16 +44,16 @@ namespace embree
       { 
       public:
         __forceinline Precalculations (Ray& ray, const void *ptr) 
-          : current_patch(nullptr) {}
+          : patch(nullptr) {}
 
         __forceinline ~Precalculations() 
         {
-	  if (current_patch)
+	  if (patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
         }
 
       public:
-        SubdivPatch1Cached* current_patch;
+        SubdivPatch1Cached* patch;
       };
 
       static __forceinline const Vec3<float4> getV012(const float *const grid,
@@ -148,8 +148,8 @@ namespace embree
 #endif
 
         /* ray mask test */
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
+        const size_t geomID = pre.patch->geom;
+        const size_t primID = pre.patch->prim;
         Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return;
@@ -195,8 +195,8 @@ namespace embree
 	ray.u         = u[i];
 	ray.v         = v[i];
 	ray.tfar      = t[i];
-        ray.geomID    = pre.current_patch->geom;
-        ray.primID    = pre.current_patch->prim;
+        ray.geomID    = pre.patch->geom;
+        ray.primID    = pre.patch->prim;
 	if (i % 2) {
           ray.Ng.x      = Ng.x[i];
           ray.Ng.y      = Ng.y[i];
@@ -274,8 +274,8 @@ namespace embree
 #endif
 
         /* ray mask test */
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
+        const size_t geomID = pre.patch->geom;
+        const size_t primID = pre.patch->prim;
         Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -413,8 +413,8 @@ namespace embree
 #endif
 
         /* ray mask test */
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
+        const size_t geomID = pre.patch->geom;
+        const size_t primID = pre.patch->prim;
         Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return;
@@ -460,8 +460,8 @@ namespace embree
 	ray.u         = u[i];
 	ray.v         = v[i];
 	ray.tfar      = t[i];
-        ray.geomID    = pre.current_patch->geom;
-        ray.primID    = pre.current_patch->prim;
+        ray.geomID    = pre.patch->geom;
+        ray.primID    = pre.patch->prim;
 	if (i % 2) {
           ray.Ng.x      = Ng.x[i];
           ray.Ng.y      = Ng.y[i];
@@ -541,8 +541,8 @@ namespace embree
 #endif
 
         /* ray mask test */
-        const size_t geomID = pre.current_patch->geom;
-        const size_t primID = pre.current_patch->prim;
+        const size_t geomID = pre.patch->geom;
+        const size_t primID = pre.patch->prim;
         Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -612,8 +612,8 @@ namespace embree
         if (likely(ty == 2))
         {
 
-          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * vfloat::size;
-          const size_t line_offset   = pre.current_patch->grid_u_res;
+          const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
+          const size_t line_offset   = pre.patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
           const float *const grid_y  = grid_x + 1 * dim_offset;
@@ -631,7 +631,7 @@ namespace embree
         {
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
 	  assert(lazy_node);
-          pre.current_patch = (SubdivPatch1Cached*)prim;
+          pre.patch = (SubdivPatch1Cached*)prim;
         }             
       }
       
@@ -643,8 +643,8 @@ namespace embree
         if (likely(ty == 2))
         {
 
-          const size_t dim_offset    = pre.current_patch->grid_size_simd_blocks * vfloat::size;
-          const size_t line_offset   = pre.current_patch->grid_u_res;
+          const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
+          const size_t line_offset   = pre.patch->grid_u_res;
           const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
           const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
           const float *const grid_y  = grid_x + 1 * dim_offset;
@@ -662,7 +662,7 @@ namespace embree
         else 
         {
 	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
-          pre.current_patch = (SubdivPatch1Cached*)prim;
+          pre.patch = (SubdivPatch1Cached*)prim;
         }             
         return false;
       }      

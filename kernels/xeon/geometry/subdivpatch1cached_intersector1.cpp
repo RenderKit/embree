@@ -114,15 +114,11 @@ namespace embree
       ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
       /* unlock previous patch */
-      if (pre.current_patch)
-      {
-        assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
+      if (pre.patch)
         SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
-      }
 
       while(1)
       {
-
         SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
        
         const size_t globalTime = scene->commitCounter;
@@ -137,21 +133,15 @@ namespace embree
           {
             /* generate vertex grid, lock and allocate memory in the cache */
             size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,t_state,scene->getSubdivMesh(subdiv_patch->geom));                                
-            
+            assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
+
             /* get current commit index */
             //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
             const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
-
-            __memory_barrier();
-            /* write new root ref */
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
             
-#if _DEBUG
-            const size_t patchIndex = subdiv_patch - pre.array;
-            assert(patchIndex < pre.numPrimitives);
-            CACHE_STATS(SharedTessellationCacheStats::incPatchBuild(patchIndex,pre.numPrimitives));
-#endif
-            assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
+            /* write new root ref */
+            __memory_barrier();
+            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
 
             /* unlock current patch */
             subdiv_patch->write_unlock();
