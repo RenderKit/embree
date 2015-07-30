@@ -185,8 +185,8 @@ namespace embree
 	const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
 	const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	u = uv[1];
-	v = uv[0];        
+	u = uv[0];
+	v = uv[1];        
 #endif
 	size_t i = select_min(valid,t);
 
@@ -315,8 +315,8 @@ namespace embree
           const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
           const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
           const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[1];
-          v = uv[0];        
+          u = uv[0];
+          v = uv[1];        
 #endif
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
@@ -450,8 +450,8 @@ namespace embree
 	const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
 	const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
 	const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-	u = uv[1];
-	v = uv[0];
+	u = uv[0];
+	v = uv[1];
 #endif        
         size_t i = select_min(valid,t);
 
@@ -583,8 +583,8 @@ namespace embree
           const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
           const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
           const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[1];
-          v = uv[0];        
+          u = uv[0];
+          v = uv[1];        
 #endif
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  

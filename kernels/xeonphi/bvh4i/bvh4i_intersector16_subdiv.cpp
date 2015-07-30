@@ -308,7 +308,7 @@ namespace embree
 	  const float16 v = load16f(&local_grid_v[i]);
 	  const int16 u_i = int16(u * 65535.0f/2.0f);
 	  const int16 v_i = int16(v * 65535.0f/2.0f);
-	  const int16 uv_i = (u_i << 16) | v_i;
+	  const int16 uv_i = (v_i << 16) | u_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
