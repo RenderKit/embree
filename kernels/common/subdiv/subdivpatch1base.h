@@ -242,6 +242,21 @@ namespace embree
             dwidth,dheight);
         }
 
+        /* convert sub-patch UVs to patch UVs*/
+        const Vec2f uv0 = patch.getUV(0);
+        const Vec2f uv1 = patch.getUV(1);
+        const Vec2f uv2 = patch.getUV(2);
+        const Vec2f uv3 = patch.getUV(3);
+        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        {
+          const vfloat u = vfloat::load(&grid_u[i*vfloat::size]);
+          const vfloat v = vfloat::load(&grid_v[i*vfloat::size]);
+          const vfloat patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,u,v);
+          const vfloat patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,u,v);
+          vfloat::store(&grid_u[i*vfloat::size],patch_u);
+          vfloat::store(&grid_v[i*vfloat::size],patch_v);
+        }
+
         /* call displacement shader */
         if (geom->displFunc) 
           geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);

@@ -535,19 +535,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[new_primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-
-#if FORCE_TRIANGLE_UV == 0
-
-	  const Vec2f uv0 = subdiv_patch.getUV(0);
-	  const Vec2f uv1 = subdiv_patch.getUV(1);
-	  const Vec2f uv2 = subdiv_patch.getUV(2);
-	  const Vec2f uv3 = subdiv_patch.getUV(3);
-	  
-	  const float patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,ray16.v[rayIndex],ray16.u[rayIndex]);
-	  const float patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,ray16.v[rayIndex],ray16.u[rayIndex]);
-	  ray16.u[rayIndex] = patch_u;
-	  ray16.v[rayIndex] = patch_v;
-#endif
 	}
 
     }
@@ -814,19 +801,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray.primID];
 	  ray.primID = subdiv_patch.prim;
 	  ray.geomID = subdiv_patch.geom;
-
-#if FORCE_TRIANGLE_UV == 0
-
-	  const Vec2f uv0 = subdiv_patch.getUV(0);
-	  const Vec2f uv1 = subdiv_patch.getUV(1);
-	  const Vec2f uv2 = subdiv_patch.getUV(2);
-	  const Vec2f uv3 = subdiv_patch.getUV(3);
-	  
-	  const float patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,ray.v,ray.u);
-	  const float patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,ray.v,ray.u);
-	  ray.u = patch_u;
-	  ray.v = patch_v;
-#endif
 	}
 
     }

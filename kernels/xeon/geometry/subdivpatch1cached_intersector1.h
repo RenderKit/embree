@@ -66,18 +66,6 @@ namespace embree
           
           if (unlikely(hit_patch != nullptr))
           {
-#if !FORCE_TRIANGLE_UV
-	    const Vec2f uv0 = hit_patch->getUV(0);
-	    const Vec2f uv1 = hit_patch->getUV(1);
-	    const Vec2f uv2 = hit_patch->getUV(2);
-	    const Vec2f uv3 = hit_patch->getUV(3);
-	    
-	    const float patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,r.v,r.u);
-	    const float patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,r.v,r.u);
-
-	    r.u      = patch_u;
-	    r.v      = patch_v;
-#endif
             r.geomID = hit_patch->geom;
             r.primID = hit_patch->prim;
           }
