@@ -56,20 +56,13 @@ namespace embree
         SubdivPatch1Cached* patch;
       };
 
-      static __forceinline const Vec3<float4> getV012(const float *const grid,
-						    const size_t offset0,
-						    const size_t offset1)
+      static __forceinline const Vec3<float4> getV012(const float *const grid, const size_t offset0, const size_t offset1)
       {
-	const float4 row_a0 = loadu4f(grid + offset0); 
-	const float4 row_b0 = loadu4f(grid + offset1);
-	const float4 row_a1 = shuffle<1,2,3,3>(row_a0);
-	const float4 row_b1 = shuffle<1,2,3,3>(row_b0);
-
-	Vec3<float4> v;
-	v[0] = unpacklo( row_a0 , row_b0 );
-	v[1] = unpacklo( row_b0 , row_a1 );
-	v[2] = unpacklo( row_a1 , row_b1 );
-	return v;
+        const float4 r0 = loadu4f(grid + offset0); 
+        const float4 r1 = loadu4f(grid + offset1); // FIXME: this accesses 1 element too much
+        return Vec3<float4>(unpacklo(r0,r1),       // r00, r10, r01, r11  
+                            shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
+                            shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
       }
 
       static __forceinline Vec2<float4> decodeUV(const float4 &uv)
@@ -179,7 +172,7 @@ namespace embree
           while (true) 
           {
             /* call intersection filter function */
-            Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
               return;
             }
@@ -197,16 +190,9 @@ namespace embree
 	ray.tfar      = t[i];
         ray.geomID    = pre.patch->geom;
         ray.primID    = pre.patch->prim;
-	if (i % 2) {
-          ray.Ng.x      = Ng.x[i];
-          ray.Ng.y      = Ng.y[i];
-          ray.Ng.z      = Ng.z[i];
-        }
-	else {
-          ray.Ng.x      = -Ng.x[i];
-          ray.Ng.y      = -Ng.y[i];
-          ray.Ng.z      = -Ng.z[i];	    
-        }
+        ray.Ng.x      = Ng.x[i];
+        ray.Ng.y      = Ng.y[i];
+        ray.Ng.z      = Ng.z[i];
       };
 
       static __forceinline bool occluded1_precise_2x3(Ray& ray,
@@ -302,7 +288,7 @@ namespace embree
 #endif
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
-            const Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
           }
           return false;
@@ -313,25 +299,16 @@ namespace embree
 
 #if defined(__AVX__)
 
-      static __forceinline const Vec3<float8> getV012(const float *const grid,
-						    const size_t offset0,
-						    const size_t offset1,
-						    const size_t offset2)
+      static __forceinline const Vec3<float8> getV012(const float *const grid, const size_t offset0, const size_t offset1, const size_t offset2)
       {
-	const float4 row_a0 = loadu4f(grid + offset0 + 0); 
-	const float4 row_b0 = loadu4f(grid + offset1 + 0);
-	const float4 row_c0 = loadu4f(grid + offset2 + 0);
-	const float8 row_ab = float8( row_a0, row_b0 );
-	const float8 row_bc = float8( row_b0, row_c0 );
-
-	const float8 row_ab_shuffle = shuffle<1,2,3,3>(row_ab);
-	const float8 row_bc_shuffle = shuffle<1,2,3,3>(row_bc);
-
-	Vec3<float8> v;
-	v[0] = unpacklo(         row_ab , row_bc );
-	v[1] = unpacklo(         row_bc , row_ab_shuffle );
-	v[2] = unpacklo( row_ab_shuffle , row_bc_shuffle );
-	return v;
+        const float4 ra = loadu4f(grid + offset0);
+        const float4 rb = loadu4f(grid + offset1);
+	const float4 rc = loadu4f(grid + offset2); // FIXME: this accesses 1 element too much
+        const float8 r0 = float8(ra,rb);
+        const float8 r1 = float8(rb,rc);
+        return Vec3<float8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21   
+                            shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
+                            shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
       }
 
       static __forceinline Vec2<float8> decodeUV(const float8 &uv)
@@ -444,7 +421,7 @@ namespace embree
           while (true) 
           {
             /* call intersection filter function */
-            Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
               return;
             }
@@ -462,17 +439,9 @@ namespace embree
 	ray.tfar      = t[i];
         ray.geomID    = pre.patch->geom;
         ray.primID    = pre.patch->prim;
-	if (i % 2) {
-          ray.Ng.x      = Ng.x[i];
-          ray.Ng.y      = Ng.y[i];
-          ray.Ng.z      = Ng.z[i];
-        }
-	else
-        {
-           ray.Ng.x      = -Ng.x[i];
-           ray.Ng.y      = -Ng.y[i];
-           ray.Ng.z      = -Ng.z[i];	    
-        }
+        ray.Ng.x      = Ng.x[i];
+        ray.Ng.y      = Ng.y[i];
+        ray.Ng.z      = Ng.z[i];
       };
 
         static __forceinline bool occluded1_precise_3x3(Ray& ray,
@@ -569,7 +538,7 @@ namespace embree
 #endif
           
           for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
-            const Vec3fa Ng_i = i % 2 ? Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]) : -Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+            const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
             if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
           }
           return false;
