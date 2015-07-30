@@ -163,8 +163,6 @@ namespace embree
                                                                               ThreadWorkState *t_state,
 									      const SubdivMesh* const geom, BBox3fa* bounds_o)
     {      
-      assert( patch.grid_size_simd_blocks >= 1 );
-
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
       dynamic_large_stack_array(float,local_grid_v,array_elements+vfloat::size,64*64);
@@ -190,14 +188,17 @@ namespace embree
       int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
       assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
-      memcpy(grid_x ,local_grid_x ,array_elements*sizeof(float));
-      memcpy(grid_y ,local_grid_y ,array_elements*sizeof(float));
-      memcpy(grid_z ,local_grid_z ,array_elements*sizeof(float));
+      /* copy points */
+      memcpy(grid_x, local_grid_x, array_elements*sizeof(float));
+      memcpy(grid_y, local_grid_y, array_elements*sizeof(float));
+      memcpy(grid_z, local_grid_z, array_elements*sizeof(float));
       
-      for (size_t i=0; i<array_elements; i++) { // FIXME: vectorize
-        const int iu = clamp(local_grid_u[i]*0xFFFF, float(0.0f), float(0xFFFF));
-        const int iv = clamp(local_grid_v[i]*0xFFFF, float(0.0f), float(0xFFFF));
-        grid_uv[i] = (iv << 16) | iu; 
+      /* encode UVs */
+      for (size_t i=0; i<array_elements; i+=vfloat::size) 
+      {
+        const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
+        const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
+        vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
       
       /* build bvh tree */
