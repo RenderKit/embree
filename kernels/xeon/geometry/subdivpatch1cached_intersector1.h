@@ -40,18 +40,11 @@ namespace embree
       typedef SubdivPatch1Cached Primitive;
       
       /*! Precalculations for subdiv patch intersection */
-      class Precalculations {
+      class Precalculations 
+      { 
       public:
-        Vec3fa ray_rdir;
-        Vec3fa ray_org_rdir;
-        SubdivPatch1Cached* current_patch;
-        ThreadWorkState *t_state;
-        Ray& r;
-        
-        __forceinline Precalculations (Ray& ray, const void *ptr) : r(ray) 
+        __forceinline Precalculations (Ray& ray, const void *ptr) 
         {
-          ray_rdir      = rcp_safe(ray.dir);
-          ray_org_rdir  = ray.org*ray_rdir;
           current_patch = nullptr;
           t_state = SharedLazyTessellationCache::threadState();
         }
@@ -61,8 +54,11 @@ namespace embree
 	  if (current_patch)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
         }
-      };
 
+      public:
+        SubdivPatch1Cached* current_patch;
+        ThreadWorkState *t_state;
+      };
 
       static __forceinline const Vec3<float4> getV012(const float *const grid,
 						    const size_t offset0,
