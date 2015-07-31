@@ -20,6 +20,41 @@ namespace embree
 {
   namespace isa
   {  
+    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom)
+    {      
+      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
+      dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_v,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_x,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_y,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_z,array_elements+vfloat::size,64*64);
+
+      /* compute vertex grid (+displacement) */
+      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+
+      /* copy temporary data to tessellation cache */
+      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
+
+      float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
+      float* const grid_y  = (float*)this + grid_offset + 1 * array_elements;
+      float* const grid_z  = (float*)this + grid_offset + 2 * array_elements;
+      int  * const grid_uv = (int*)  this + grid_offset + 3 * array_elements;
+      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
+
+      /* copy points */
+      memcpy(grid_x, local_grid_x, array_elements*sizeof(float));
+      memcpy(grid_y, local_grid_y, array_elements*sizeof(float));
+      memcpy(grid_z, local_grid_z, array_elements*sizeof(float));
+      
+      /* encode UVs */
+      for (size_t i=0; i<array_elements; i+=vfloat::size) 
+      {
+        const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
+        const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
+        vint::store(&grid_uv[i], (iv << 16) | iu); 
+      }
+    }
+      
     size_t GridSOA::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
       ThreadWorkState* t_state = SharedLazyTessellationCache::threadState();
@@ -67,41 +102,7 @@ namespace embree
       }
     }
     
-    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom)
-    {      
-      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
-      dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_v,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_x,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_y,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_z,array_elements+vfloat::size,64*64);
-
-      /* compute vertex grid (+displacement) */
-      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
-
-      /* copy temporary data to tessellation cache */
-      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
-
-      float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
-      float* const grid_y  = (float*)this + grid_offset + 1 * array_elements;
-      float* const grid_z  = (float*)this + grid_offset + 2 * array_elements;
-      int  * const grid_uv = (int*)  this + grid_offset + 3 * array_elements;
-      assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
-
-      /* copy points */
-      memcpy(grid_x, local_grid_x, array_elements*sizeof(float));
-      memcpy(grid_y, local_grid_y, array_elements*sizeof(float));
-      memcpy(grid_z, local_grid_z, array_elements*sizeof(float));
-      
-      /* encode UVs */
-      for (size_t i=0; i<array_elements; i+=vfloat::size) 
-      {
-        const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
-        const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
-        vint::store(&grid_uv[i], (iv << 16) | iu); 
-      }
-    }
-      
+    
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
     {
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
@@ -129,70 +130,71 @@ namespace embree
                                           unsigned int &localCounter)
     {
       if (range.hasLeafSize())
-	{
-	  const float *const grid_x_array = grid_array + 0 * grid_array_elements;
-	  const float *const grid_y_array = grid_array + 1 * grid_array_elements;
-	  const float *const grid_z_array = grid_array + 2 * grid_array_elements;
-
-	  /* compute the bounds just for the range! */
-	  BBox3fa bounds( empty );
-	  for (size_t v = range.v_start; v<=range.v_end; v++)
-	    for (size_t u = range.u_start; u<=range.u_end; u++)
-	      {
-		const float x = grid_x_array[ v * patch.grid_u_res + u];
-		const float y = grid_y_array[ v * patch.grid_u_res + u];
-		const float z = grid_z_array[ v * patch.grid_u_res + u];
-		bounds.extend( Vec3fa(x,y,z) );
-	      }
-	  unsigned int u_start = range.u_start;
-	  unsigned int v_start = range.v_start;
-
-	  const unsigned int u_end   = range.u_end;
-	  const unsigned int v_end   = range.v_end;
-
-          if (unlikely(u_end-u_start+1 < 3)) 
-	    { 
-	      const unsigned int delta_u = 3 - (u_end-u_start+1);
-	      if (u_start >= delta_u) 
-		u_start -= delta_u; 
-	      else
-		u_start = 0;
-	    }
-          if (unlikely(v_end-v_start+1 < 3)) 
-	    { 
-	      const unsigned int delta_v = 3 - (v_end-v_start+1);
-	      if (v_start >= delta_v) 
-		v_start -= delta_v; 
-	      else
-		v_start = 0;
-	    }
-
-	  const unsigned int u_size = u_end-u_start+1;
-	  const unsigned int v_size = v_end-v_start+1;
+      {
+        const float *const grid_x_array = grid_array + 0 * grid_array_elements;
+        const float *const grid_y_array = grid_array + 1 * grid_array_elements;
+        const float *const grid_z_array = grid_array + 2 * grid_array_elements;
         
-	  assert(u_size >= 1);
-	  assert(v_size >= 1);
+        /* compute the bounds just for the range! */
+        BBox3fa bounds( empty );
+        for (size_t v = range.v_start; v<=range.v_end; v++) {
+          for (size_t u = range.u_start; u<=range.u_end; u++)
+          {
+            const float x = grid_x_array[ v * patch.grid_u_res + u];
+            const float y = grid_y_array[ v * patch.grid_u_res + u];
+            const float z = grid_z_array[ v * patch.grid_u_res + u];
+            bounds.extend( Vec3fa(x,y,z) );
+          }
+        }
+        unsigned int u_start = range.u_start;
+        unsigned int v_start = range.v_start;
         
-	  const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
-
-
-	  size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-	  assert(offset_bytes < 0xffffffff);
-	  assert((offset_bytes & 3) == 0);
-          size_t value = (offset_bytes << 2) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
-          assert( (value & 2) == 0 );
-	  curNode = BVH4::encodeTypedLeaf((void*)value,2);
-
-	  assert( std::isfinite(bounds.lower.x) );
-	  assert( std::isfinite(bounds.lower.y) );
-	  assert( std::isfinite(bounds.lower.z) );
-	  
-	  assert( std::isfinite(bounds.upper.x) );
-	  assert( std::isfinite(bounds.upper.y) );
-	  assert( std::isfinite(bounds.upper.z) );
-
-	  return bounds;
-	}
+        const unsigned int u_end   = range.u_end;
+        const unsigned int v_end   = range.v_end;
+        
+        if (unlikely(u_end-u_start+1 < 3)) 
+        { 
+          const unsigned int delta_u = 3 - (u_end-u_start+1);
+          if (u_start >= delta_u) 
+            u_start -= delta_u; 
+          else
+            u_start = 0;
+        }
+        if (unlikely(v_end-v_start+1 < 3)) 
+        { 
+          const unsigned int delta_v = 3 - (v_end-v_start+1);
+          if (v_start >= delta_v) 
+            v_start -= delta_v; 
+          else
+            v_start = 0;
+        }
+        
+        const unsigned int u_size = u_end-u_start+1;
+        const unsigned int v_size = v_end-v_start+1;
+        
+        assert(u_size >= 1);
+        assert(v_size >= 1);
+        
+        const size_t grid_offset3x3    = v_start * patch.grid_u_res + u_start;
+        
+        
+        size_t offset_bytes = (size_t)&grid_x_array[ grid_offset3x3 ] - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+        assert(offset_bytes < 0xffffffff);
+        assert((offset_bytes & 3) == 0);
+        size_t value = (offset_bytes << 2) + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+        assert( (value & 2) == 0 );
+        curNode = BVH4::encodeTypedLeaf((void*)value,2);
+        
+        assert( std::isfinite(bounds.lower.x) );
+        assert( std::isfinite(bounds.lower.y) );
+        assert( std::isfinite(bounds.lower.z) );
+	
+        assert( std::isfinite(bounds.upper.x) );
+        assert( std::isfinite(bounds.upper.y) );
+        assert( std::isfinite(bounds.upper.z) );
+        
+        return bounds;
+      }
       
       
       /* allocate new bvh4 node */
@@ -220,7 +222,7 @@ namespace embree
         node->set(i, bounds_subtree);
         bounds.extend( bounds_subtree );
       }
-
+      
       assert(is_finite(bounds));
       return bounds;
     }
