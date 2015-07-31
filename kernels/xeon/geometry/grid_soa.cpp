@@ -38,8 +38,13 @@ namespace embree
         {
           if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
           {
-            /* generate vertex grid, lock and allocate memory in the cache */
-            GridSOA* grid = buildGrid(*subdiv_patch,t_state,scene->getSubdivMesh(subdiv_patch->geom));  
+            /* lock the cache */
+            SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
+            
+            /* allocate memory in cache and get current commit index */
+            void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
+            
+            GridSOA* grid = new (lazymem) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
             size_t new_root_ref = (size_t)buildBVH(*subdiv_patch,grid);                                
             assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
 
@@ -62,7 +67,7 @@ namespace embree
       }
     }
     
-    GridSOA* GridSOA::buildGrid(const SubdivPatch1Cached& patch, ThreadWorkState* t_state, const SubdivMesh* const geom)
+    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -74,19 +79,13 @@ namespace embree
       /* compute vertex grid (+displacement) */
       evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
-      /* lock the cache */
-      SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
-
-      /* allocate memory in cache and get current commit index */
-      void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*patch.grid_subtree_size_64b_blocks);
-
       /* copy temporary data to tessellation cache */
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
-      float* const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
-      float* const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
-      float* const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
-      int  * const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
+      float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
+      float* const grid_y  = (float*)this + grid_offset + 1 * array_elements;
+      float* const grid_z  = (float*)this + grid_offset + 2 * array_elements;
+      int  * const grid_uv = (int*)  this + grid_offset + 3 * array_elements;
       assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
       /* copy points */
@@ -101,8 +100,6 @@ namespace embree
         const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
-      
-      return (GridSOA*) lazymem;
     }
       
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, GridSOA* grid_array)

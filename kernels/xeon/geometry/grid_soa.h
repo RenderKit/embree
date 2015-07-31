@@ -32,11 +32,11 @@ namespace embree
     {
     public:
 
+      /*! GridSOA constructor */
+      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom);
+
       static size_t lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
       
-      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      static GridSOA* buildGrid(const SubdivPatch1Cached &patch, ThreadWorkState *t_state, const SubdivMesh* const scene);
-
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       static BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch, GridSOA* grid_array);
       
