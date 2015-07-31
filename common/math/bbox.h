@@ -88,6 +88,11 @@ namespace embree
     return all(gt_mask(v.lower,Vec3fa_t(-FLT_LARGE)) & lt_mask(v.upper,Vec3fa_t(+FLT_LARGE)));
   }
 
+  /*! tests if box has finite entries */
+  __forceinline bool is_finite( const BBox<Vec3fa>& b) {
+    return is_finite(b.lower) && is_finite(b.upper);
+  }
+
   /*! test if point contained in box */
   __forceinline bool inside ( const BBox<Vec3fa>& b, const Vec3fa& p ) { return all(ge_mask(p,b.lower) & le_mask(p,b.upper)); }
 

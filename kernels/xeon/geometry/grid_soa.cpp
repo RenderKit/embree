@@ -62,8 +62,8 @@ namespace embree
     }
     
     BVH4::NodeRef GridSOA::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-                                                                              ThreadWorkState *t_state,
-									      const SubdivMesh* const geom, BBox3fa* bounds_o)
+                                                       ThreadWorkState *t_state,
+                                                       const SubdivMesh* const geom, BBox3fa* bounds_o)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -79,15 +79,15 @@ namespace embree
       SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
 
       /* allocate memory in cache and get current commit index */
-      void *const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*patch.grid_subtree_size_64b_blocks);
+      void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*patch.grid_subtree_size_64b_blocks);
 
       /* copy temporary data to tessellation cache */
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
 
-      float *const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
-      float *const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
-      float *const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
-      int   *const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
+      float* const grid_x  = (float*)lazymem + grid_offset + 0 * array_elements;
+      float* const grid_y  = (float*)lazymem + grid_offset + 1 * array_elements;
+      float* const grid_z  = (float*)lazymem + grid_offset + 2 * array_elements;
+      int  * const grid_uv = (int*)  lazymem + grid_offset + 3 * array_elements;
       assert( patch.grid_subtree_size_64b_blocks * 16 >= grid_offset + 4 * array_elements);
 
       /* copy points */
@@ -115,16 +115,7 @@ namespace embree
 					     currentIndex);
       if (bounds_o) *bounds_o = bounds;
 
-      assert( std::isfinite(bounds.lower.x) );
-      assert( std::isfinite(bounds.lower.y) );
-      assert( std::isfinite(bounds.lower.z) );
-
-      assert( std::isfinite(bounds.upper.x) );
-      assert( std::isfinite(bounds.upper.y) );
-      assert( std::isfinite(bounds.upper.z) );
-
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
-
       return subtree_root;
     }
 
@@ -228,7 +219,8 @@ namespace embree
         node->set(i, bounds_subtree);
         bounds.extend( bounds_subtree );
       }
-      
+
+      assert(is_finite(bounds));
       return bounds;
     }
   }
