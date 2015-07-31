@@ -54,13 +54,6 @@ namespace embree
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
     }
-      
-    void* GridSOA::create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
-    {
-      void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(64*subdiv_patch->grid_subtree_size_64b_blocks);
-      GridSOA* grid = new (lazymem) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
-      return (void*) (size_t) grid->buildBVH(*subdiv_patch);
-    }
     
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
     {

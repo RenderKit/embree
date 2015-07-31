@@ -36,7 +36,13 @@ namespace embree
       GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
-      static void* create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
+      template<typename Allocator>
+        static void* create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene, const Allocator& alloc)
+      {
+        const size_t bytes = 64*subdiv_patch->grid_subtree_size_64b_blocks;
+        GridSOA* grid = new (alloc(bytes)) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
+        return (void*) (size_t) grid->buildBVH(*subdiv_patch);
+      }
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch);
