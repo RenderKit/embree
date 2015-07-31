@@ -55,7 +55,7 @@ namespace embree
       }
     }
       
-    size_t GridSOA::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
+    size_t GridSOA::lookup(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
       ThreadWorkState* t_state = SharedLazyTessellationCache::threadState();
 
@@ -104,31 +104,20 @@ namespace embree
     
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
     {
-      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
-      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
-      float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
-
-      BVH4::NodeRef subtree_root = 0;
-      size_t allocator = 0;
-      BBox3fa bounds = createSubTreeCompact( subtree_root,
-                                             patch,
-                                             grid_x,
-                                             array_elements,
-                                             GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-                                             allocator);
-
+      BVH4::NodeRef root = 0; size_t allocator = 0;
+      GridRange range(0,patch.grid_u_res-1,0,patch.grid_v_res-1);
+      buildBVH(root,patch,range,allocator);
       assert(allocator == 64*patch.grid_bvh_size_64b_blocks);
-      return subtree_root;
+      return root;
     }
 
-    BBox3fa GridSOA::createSubTreeCompact(BVH4::NodeRef& curNode,
-                                          const SubdivPatch1Cached& patch,
-                                          const float* const grid_array,
-                                          const size_t grid_array_elements,
-                                          const GridRange& range,
-                                          size_t& allocator)
+    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, const GridRange& range, size_t& allocator)
     {
-      if (range.hasLeafSize())
+      const size_t grid_array_elements = patch.grid_size_simd_blocks * vfloat::size;
+      float* const grid_array  = (float*)this + patch.grid_bvh_size_64b_blocks * 16;
+
+      /*! create leaf node */
+      if (unlikely(range.hasLeafSize()))
       {
         const float* const grid_x_array = grid_array + 0 * grid_array_elements;
         const float* const grid_y_array = grid_array + 1 * grid_array_elements;
@@ -164,27 +153,31 @@ namespace embree
         return bounds;
       }
       
-      /* allocate new bvh4 node */
-      BVH4::Node* node = (BVH4::Node *)&((char*)this)[allocator];
-      allocator += sizeof(BVH4::Node);
-      node->clear();
-      
-      /* split range */
-      GridRange r[4];
-      const size_t children = range.splitIntoSubRanges(r);
-      
-      /* recurse into subtrees */
-      BBox3fa bounds( empty );
-      for (size_t i=0; i<children; i++)
+      /* create internal node */
+      else 
       {
-        BBox3fa box = createSubTreeCompact( node->child(i), patch, grid_array, grid_array_elements, r[i], allocator);
-        node->set(i,box);
-        bounds.extend(box);
-      }
+        /* allocate new bvh4 node */
+        BVH4::Node* node = (BVH4::Node *)&((char*)this)[allocator];
+        allocator += sizeof(BVH4::Node);
+        node->clear();
+        
+        /* split range */
+        GridRange r[4];
+        const size_t children = range.splitIntoSubRanges(r);
       
-      curNode = BVH4::encodeNode(node);
-      assert(is_finite(bounds));
-      return bounds;
+        /* recurse into subtrees */
+        BBox3fa bounds( empty );
+        for (size_t i=0; i<children; i++)
+        {
+          BBox3fa box = buildBVH( node->child(i), patch, r[i], allocator);
+          node->set(i,box);
+          bounds.extend(box);
+        }
+        
+        curNode = BVH4::encodeNode(node);
+        assert(is_finite(bounds));
+        return bounds;
+      }
     }
   }
 }

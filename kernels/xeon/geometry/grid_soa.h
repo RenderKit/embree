@@ -35,18 +35,14 @@ namespace embree
       /*! GridSOA constructor */
       GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom);
 
-      static size_t lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
+      /*! performs cache lookup of grid BVH and builds grid if not in cache */
+      static size_t lookup(SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
-                                   const SubdivPatch1Cached &patch,
-                                   const float *const grid_array,
-                                   const size_t grid_array_elements,
-                                   const GridRange& range,
-                                   size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, const GridRange& range, size_t& localCounter);
     };
   }
 }

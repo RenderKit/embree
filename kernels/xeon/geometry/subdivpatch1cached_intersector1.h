@@ -40,7 +40,7 @@ namespace embree
         }
         else {
           if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          lazy_node = GridSOA::lazyBuildPatch(prim,scene);
+          lazy_node = GridSOA::lookup(prim,scene);
           pre.patch = prim;
         }
       }
@@ -55,9 +55,9 @@ namespace embree
         }
         else {
           if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-	  lazy_node = GridSOA::lazyBuildPatch(prim, scene);
+	  lazy_node = GridSOA::lookup(prim, scene);
           pre.patch = prim;
-        }             
+        }
         return false;
       }      
     };
