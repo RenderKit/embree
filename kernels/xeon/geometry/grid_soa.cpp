@@ -20,7 +20,7 @@ namespace embree
 {
   namespace isa
   {  
-    size_t SubdivPatch1CachedIntersector1::lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
+    size_t GridSOA::lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
       ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
 
@@ -65,7 +65,7 @@ namespace embree
       }
     }
     
-    BVH4::NodeRef SubdivPatch1CachedIntersector1::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+    BVH4::NodeRef GridSOA::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
                                                                               ThreadWorkState *t_state,
 									      const SubdivMesh* const geom, BBox3fa* bounds_o)
     {      
@@ -132,13 +132,13 @@ namespace embree
       return subtree_root;
     }
 
-    BBox3fa SubdivPatch1CachedIntersector1::createSubTreeCompact(BVH4::NodeRef &curNode,
-								 float *const lazymem,
-								 const SubdivPatch1Cached &patch,
-								 const float *const grid_array,
-								 const size_t grid_array_elements,
-								 const GridRange &range,
-								 unsigned int &localCounter)
+    BBox3fa GridSOA::createSubTreeCompact(BVH4::NodeRef &curNode,
+                                          float *const lazymem,
+                                          const SubdivPatch1Cached &patch,
+                                          const float *const grid_array,
+                                          const size_t grid_array_elements,
+                                          const GridRange &range,
+                                          unsigned int &localCounter)
     {
       if (range.hasLeafSize())
 	{

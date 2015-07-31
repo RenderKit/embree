@@ -94,7 +94,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   geometry/subdivpatch1_intersector1.cpp
-  geometry/subdivpatch1cached_intersector1.cpp		
+  geometry/grid_soa.cpp		
   builders/primrefgen.cpp
 
   bvh4/bvh4.cpp
@@ -117,7 +117,7 @@ IF (TARGET_SSE41)
   ADD_LIBRARY(embree_sse41 STATIC
 
     geometry/subdivpatch1_intersector1.cpp
-    geometry/subdivpatch1cached_intersector1.cpp
+    geometry/grid_soa.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
@@ -147,7 +147,7 @@ IF (TARGET_AVX)
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
     geometry/subdivpatch1_intersector1.cpp
-    geometry/subdivpatch1cached_intersector1.cpp
+    geometry/grid_soa.cpp
     builders/primrefgen.avx.cpp
 
     bvh4/bvh4_rotate.cpp
@@ -187,7 +187,7 @@ IF (TARGET_AVX2)
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
     geometry/subdivpatch1_intersector1.cpp
-    geometry/subdivpatch1cached_intersector1.cpp
+    geometry/grid_soa.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
@@ -216,7 +216,7 @@ IF (TARGET_AVX512)
     geometry/instance_intersector8.cpp
     geometry/instance_intersector16.cpp
     geometry/subdivpatch1_intersector1.cpp
-    geometry/subdivpatch1cached_intersector1.cpp
+    geometry/grid_soa.cpp
 
     builders/primrefgen.avx512.cpp
 
