@@ -56,6 +56,23 @@ namespace embree
         SubdivPatch1Cached* patch;
       };
 
+      static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
+      
+      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
+      static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
+						       ThreadWorkState *t_state, 
+						       const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
+      
+      /*! Create BVH4 tree over grid. */
+      static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
+					  float *const lazymem,
+					  const SubdivPatch1Cached &patch,
+					  const float *const grid_array,
+					  const size_t grid_array_elements,
+					  const GridRange &range,
+					  unsigned int &localCounter);
+      
+
       static __forceinline const Vec3<float4> getV012(const float *const grid, const size_t offset0, const size_t offset1)
       {
         const float4 r0 = loadu4f(grid + offset0); 
@@ -550,89 +567,41 @@ namespace embree
 
 #endif      
       
-      
-        static size_t lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
-      
-      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-						       ThreadWorkState *t_state, 
-						       const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
-      
-      /*! Create BVH4 tree over grid. */
-      static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,
-					  float *const lazymem,
-					  const SubdivPatch1Cached &patch,
-					  const float *const grid_array,
-					  const size_t grid_array_elements,
-					  const GridRange &range,
-					  unsigned int &localCounter);
-      
-
-        
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      
-      
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        STAT3(normal.trav_prims,1,1,1);
-        
-        if (likely(ty == 2))
-        {
-
-          const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
-          const size_t line_offset   = pre.patch->grid_u_res;
-          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
-          const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
-          const float *const grid_y  = grid_x + 1 * dim_offset;
-          const float *const grid_z  = grid_x + 2 * dim_offset;
-          const float *const grid_uv = grid_x + 3 * dim_offset;
+        const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
+        const size_t line_offset   = pre.patch->grid_u_res;
+        const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
+        const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
+        const float *const grid_y  = grid_x + 1 * dim_offset;
+        const float *const grid_z  = grid_x + 2 * dim_offset;
+        const float *const grid_uv = grid_x + 3 * dim_offset;
 #if defined(__AVX__)
-	  intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        intersect1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-	  intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
-	  intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
+        intersect1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene);
+        intersect1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene);
 #endif
-
-        }
-        else 
-        {
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
-	  assert(lazy_node);
-          pre.patch = (SubdivPatch1Cached*)prim;
-        }             
       }
       
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        STAT3(shadow.trav_prims,1,1,1);
-        
-        if (likely(ty == 2))
-        {
-
-          const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
-          const size_t line_offset   = pre.patch->grid_u_res;
-          const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
-          const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
-          const float *const grid_y  = grid_x + 1 * dim_offset;
-          const float *const grid_z  = grid_x + 2 * dim_offset;
-          const float *const grid_uv = grid_x + 3 * dim_offset;
+        const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
+        const size_t line_offset   = pre.patch->grid_u_res;
+        const size_t offset_bytes  = ((size_t)prim  - (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr()) >> 2;   
+        const float *const grid_x  = (float*)(offset_bytes + (size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr());
+        const float *const grid_y  = grid_x + 1 * dim_offset;
+        const float *const grid_z  = grid_x + 2 * dim_offset;
+        const float *const grid_uv = grid_x + 3 * dim_offset;
 
 #if defined(__AVX__)
-	  return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
+        return occluded1_precise_3x3( ray, grid_x,grid_y,grid_z,grid_uv, line_offset, pre, scene);
 #else
-	  if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
-	  if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
+        if (occluded1_precise_2x3( ray, grid_x            ,grid_y            ,grid_z            ,grid_uv            , line_offset, pre, scene)) return true;
+        if (occluded1_precise_2x3( ray, grid_x+line_offset,grid_y+line_offset,grid_z+line_offset,grid_uv+line_offset, line_offset, pre, scene)) return true;
 #endif
-
-        }
-        else 
-        {
-	  lazy_node = lazyBuildPatch(pre,(SubdivPatch1Cached*)prim, scene);
-          pre.patch = (SubdivPatch1Cached*)prim;
-        }             
         return false;
       }      
     };
