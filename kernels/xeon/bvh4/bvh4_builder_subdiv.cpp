@@ -374,6 +374,7 @@ namespace embree
               
               if (likely(fastUpdateMode)) {
                 bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                //grid_changed = true;
                 //if (grid_changed) atomic_add(&numChanged,1); else atomic_add(&numUnchanged,1);
                 if (grid_changed) {
                   patch.resetRootRef();

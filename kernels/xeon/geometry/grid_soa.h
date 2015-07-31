@@ -39,11 +39,15 @@ namespace embree
       template<typename Allocator>
         static void* create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene, const Allocator& alloc)
       {
-        const size_t bytes = 64*subdiv_patch->grid_subtree_size_64b_blocks;
+        const GridRange range(0,subdiv_patch->grid_u_res-1,0,subdiv_patch->grid_v_res-1);
+        const size_t bytes = getBVHBytes(range,0) + subdiv_patch->getGridBytes();
         GridSOA* grid = new (alloc(bytes)) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
         return (void*) (size_t) grid->buildBVH(*subdiv_patch);
       }
       
+      /*! returns the size of the BVH over the grid in bytes */
+      static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
+
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch);
       

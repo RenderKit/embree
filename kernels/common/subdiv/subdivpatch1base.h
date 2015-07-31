@@ -133,6 +133,11 @@ namespace embree
   public:
     size_t getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2);
 
+    __forceinline size_t getGridBytes() const {
+      const size_t grid_size_xyzuv = (grid_size_simd_blocks * vfloat::size) * 4;
+      return 64*((grid_size_xyzuv+15) / 16);
+    }
+
     __forceinline void write_lock()     { mtx.write_lock();   }
     __forceinline void write_unlock()   { mtx.write_unlock(); }
     __forceinline bool try_write_lock() { return mtx.try_write_lock(); }

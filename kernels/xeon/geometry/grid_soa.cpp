@@ -47,12 +47,25 @@ namespace embree
       memcpy(grid_z, local_grid_z, array_elements*sizeof(float));
       
       /* encode UVs */
-      for (size_t i=0; i<array_elements; i+=vfloat::size) 
-      {
+      for (size_t i=0; i<array_elements; i+=vfloat::size) {
         const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
+    }
+
+    size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
+    {
+      if (range.hasLeafSize()) 
+        return leafBytes;
+      
+      __aligned(64) GridRange r[4];
+      const unsigned int children = range.splitIntoSubRanges(r);
+      
+      size_t bytes = sizeof(BVH4::Node);
+      for (unsigned int i=0;i<children;i++)
+        bytes += getBVHBytes(r[i],leafBytes);
+      return bytes;
     }
     
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
