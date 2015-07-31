@@ -117,7 +117,7 @@ namespace embree
                                              GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
                                              currentIndex);
 
-      assert(currentIndex == patch.grid_bvh_size_64b_blocks);
+      assert(currentIndex == 64*patch.grid_bvh_size_64b_blocks);
       return subtree_root;
     }
 
@@ -148,7 +148,7 @@ namespace embree
         }
         assert(is_finite(bounds));
 
-        /* shift 2x2 quads that wrap around to the left */
+        /* shift 2x2 quads that wrap around to the left */ // FIXME: causes intersection filter to be called multiple times for some triangles
         unsigned int u_start = range.u_start, u_end = range.u_end;
         unsigned int v_start = range.v_start, v_end = range.v_end;
         unsigned int u_size = u_end-u_start; assert(u_size > 0);
@@ -158,20 +158,18 @@ namespace embree
         
         /* we store pointer to first subgrid vertex as leaf node */
         const size_t first_vertex = (size_t) &grid_x_array[v_start * patch.grid_u_res + u_start];
-        const size_t base = (size_t) SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();
+        const size_t base = (size_t) SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr(); // FIXME: makes intersector dependent on tessellation cache
         const size_t value = 4*(first_vertex-base) + base;
         curNode = BVH4::encodeTypedLeaf((void*)value,2);
         return bounds;
       }
       
-      
       /* allocate new bvh4 node */
       const size_t currentIndex = localCounter;
       
-      /* 128 bytes == 2 x 64 bytes cachelines */
-      localCounter += 2; 
+      localCounter += sizeof(BVH4::Node);
       
-      BVH4::Node *node = (BVH4::Node *)&((float*)this)[currentIndex*16];
+      BVH4::Node* node = (BVH4::Node *)&((char*)this)[currentIndex];
       
       curNode = BVH4::encodeNode( node );
       
