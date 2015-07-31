@@ -162,8 +162,8 @@ namespace embree
 
    struct CacheEntry
    {
-     RWMutex mutex;
      Tag tag;
+     RWMutex mutex;
    };
 
  private:

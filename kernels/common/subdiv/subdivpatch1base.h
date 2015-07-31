@@ -149,8 +149,14 @@ namespace embree
       root_ref.setTime(combinedTime);
     }
 
+    __forceinline SharedLazyTessellationCache::CacheEntry& entry() {
+      return (SharedLazyTessellationCache::CacheEntry&) root_ref;
+    }
 
   public:    
+    SharedLazyTessellationCache::Tag root_ref;
+    RWMutex mtx;
+
     unsigned short u[4];                        //!< 16bit discretized u,v coordinates
     unsigned short v[4];
     float level[4];
@@ -165,9 +171,6 @@ namespace embree
 
     unsigned short grid_size_simd_blocks;
     unsigned short grid_subtree_size_64b_blocks;
-
-    RWMutex mtx;
-    SharedLazyTessellationCache::Tag root_ref;
 
     struct PatchHalfEdge {
       const HalfEdge* edge;

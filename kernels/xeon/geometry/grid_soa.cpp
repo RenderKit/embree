@@ -55,51 +55,11 @@ namespace embree
       }
     }
       
-    size_t GridSOA::lookup(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
+    void* GridSOA::create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
-      ThreadWorkState* t_state = SharedLazyTessellationCache::threadState();
-
-      while (true)
-      {
-        SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
-       
-        const size_t globalTime = scene->commitCounter;
-        if (void* ptr = SharedLazyTessellationCache::lookup(&subdiv_patch->root_ref,globalTime))
-            return (size_t) ptr;
-        
-        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);		  
-
-        if (subdiv_patch->try_write_lock())
-        {
-          if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
-          {
-            /* lock the cache */
-            SharedLazyTessellationCache::sharedLazyTessellationCache.lockThreadLoop(t_state);
-            
-            /* allocate memory in cache and get current commit index */
-            void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
-            
-            GridSOA* grid = new (lazymem) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
-            size_t new_root_ref = (size_t)grid->buildBVH(*subdiv_patch);
-            assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
-
-            /* get current commit index */
-            const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
-            
-            /* write new root ref */
-            __memory_barrier();
-            subdiv_patch->root_ref = SharedLazyTessellationCache::Tag((void*)new_root_ref,combinedTime);
-
-            /* unlock current patch */
-            subdiv_patch->write_unlock();
-
-            /* memory region still locked, forward progress guaranteed */
-            return new_root_ref;
-          }
-          /* unlock current patch */
-          subdiv_patch->write_unlock();
-        }
-      }
+      void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(64*subdiv_patch->grid_subtree_size_64b_blocks);
+      GridSOA* grid = new (lazymem) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
+      return (void*) (size_t) grid->buildBVH(*subdiv_patch);
     }
     
     BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
