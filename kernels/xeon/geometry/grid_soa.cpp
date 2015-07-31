@@ -22,7 +22,7 @@ namespace embree
   {  
     size_t GridSOA::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
-      ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
+      ThreadWorkState* t_state = SharedLazyTessellationCache::threadState();
 
       while(1)
       {
@@ -40,7 +40,7 @@ namespace embree
           {
             /* generate vertex grid, lock and allocate memory in the cache */
             GridSOA* grid = buildGrid(*subdiv_patch,t_state,scene->getSubdivMesh(subdiv_patch->geom));  
-            size_t new_root_ref = (size_t)buildBVH(*subdiv_patch,grid,t_state);                                
+            size_t new_root_ref = (size_t)buildBVH(*subdiv_patch,grid);                                
             assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
 
             /* get current commit index */
@@ -62,9 +62,7 @@ namespace embree
       }
     }
     
-    GridSOA* GridSOA::buildGrid(const SubdivPatch1Cached &patch,
-                                ThreadWorkState *t_state,
-                                const SubdivMesh* const geom, BBox3fa* bounds_o)
+    GridSOA* GridSOA::buildGrid(const SubdivPatch1Cached& patch, ThreadWorkState* t_state, const SubdivMesh* const geom)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -107,10 +105,7 @@ namespace embree
       return (GridSOA*) lazymem;
     }
       
-    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached &patch,
-                                    GridSOA* grid_array,
-                                    ThreadWorkState *t_state, 
-                                    BBox3fa* bounds_o)
+    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, GridSOA* grid_array)
     {
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
@@ -125,8 +120,7 @@ namespace embree
                                              array_elements,
                                              GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
                                              currentIndex);
-      if (bounds_o) *bounds_o = bounds;
-      
+
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
       return subtree_root;
     }
