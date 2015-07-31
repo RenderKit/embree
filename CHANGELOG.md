@@ -4,6 +4,10 @@ Version History
 ### New Features in Embree 2.6.2 (devel)
 
 -   Fixed bug triggered by instantiating motion blur geometry.
+-   Fixed bug in hit UV coordinates of static subdivision geometries.
+-   Performance improvements when changing tessellation levels for
+    subdivision geometries.
+-   Reduced virtual address space usage for static geometries.
 
 ### New Features in Embree 2.6.1
 
