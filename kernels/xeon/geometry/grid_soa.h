@@ -35,9 +35,15 @@ namespace embree
       static size_t lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene);                  
       
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      static BVH4::NodeRef buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-						       ThreadWorkState *t_state, 
-						       const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
+      static GridSOA* buildGrid(const SubdivPatch1Cached &patch,
+                                ThreadWorkState *t_state, 
+                                const SubdivMesh* const scene, BBox3fa* bounds_o = nullptr);
+
+      /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
+      static BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch,
+                                    GridSOA* grid_array,
+                                    ThreadWorkState *t_state, 
+                                    BBox3fa* bounds_o = nullptr);
       
       /*! Create BVH4 tree over grid. */
       static BBox3fa createSubTreeCompact(BVH4::NodeRef &curNode,

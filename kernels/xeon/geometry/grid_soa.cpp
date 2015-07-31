@@ -39,7 +39,8 @@ namespace embree
           if (!SharedLazyTessellationCache::validTag(subdiv_patch->root_ref,globalTime)) 
           {
             /* generate vertex grid, lock and allocate memory in the cache */
-            size_t new_root_ref = (size_t)buildSubdivPatchTreeCompact(*subdiv_patch,t_state,scene->getSubdivMesh(subdiv_patch->geom));                                
+            GridSOA* grid = buildGrid(*subdiv_patch,t_state,scene->getSubdivMesh(subdiv_patch->geom));  
+            size_t new_root_ref = (size_t)buildBVH(*subdiv_patch,grid,t_state);                                
             assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
 
             /* get current commit index */
@@ -61,9 +62,9 @@ namespace embree
       }
     }
     
-    BVH4::NodeRef GridSOA::buildSubdivPatchTreeCompact(const SubdivPatch1Cached &patch,
-                                                       ThreadWorkState *t_state,
-                                                       const SubdivMesh* const geom, BBox3fa* bounds_o)
+    GridSOA* GridSOA::buildGrid(const SubdivPatch1Cached &patch,
+                                ThreadWorkState *t_state,
+                                const SubdivMesh* const geom, BBox3fa* bounds_o)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -103,18 +104,29 @@ namespace embree
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
       
-      /* build bvh tree */
+      return (GridSOA*) lazymem;
+    }
+      
+    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached &patch,
+                                    GridSOA* grid_array,
+                                    ThreadWorkState *t_state, 
+                                    BBox3fa* bounds_o)
+    {
+      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
+      const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
+      float* const grid_x  = (float*)grid_array + grid_offset + 0 * array_elements;
+
       BVH4::NodeRef subtree_root = 0;
       unsigned int currentIndex = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
-					     (float*)lazymem,
-					     patch,
-					     grid_x,
-					     array_elements,
-					     GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-					     currentIndex);
+                                             (float*)grid_array,
+                                             patch,
+                                             grid_x,
+                                             array_elements,
+                                             GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
+                                             currentIndex);
       if (bounds_o) *bounds_o = bounds;
-
+      
       assert(currentIndex == patch.grid_bvh_size_64b_blocks);
       return subtree_root;
     }
