@@ -45,7 +45,7 @@ namespace embree
             void* const lazymem = SharedLazyTessellationCache::sharedLazyTessellationCache.allocLoop(t_state,64*subdiv_patch->grid_subtree_size_64b_blocks);
             
             GridSOA* grid = new (lazymem) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
-            size_t new_root_ref = (size_t)buildBVH(*subdiv_patch,grid);                                
+            size_t new_root_ref = (size_t)grid->buildBVH(*subdiv_patch);
             assert(SharedLazyTessellationCache::sharedLazyTessellationCache.isLocked(t_state));
 
             /* get current commit index */
@@ -102,16 +102,15 @@ namespace embree
       }
     }
       
-    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, GridSOA* grid_array)
+    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch)
     {
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       const size_t grid_offset = patch.grid_bvh_size_64b_blocks * 16;
-      float* const grid_x  = (float*)grid_array + grid_offset + 0 * array_elements;
+      float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
 
       BVH4::NodeRef subtree_root = 0;
       unsigned int currentIndex = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
-                                             (float*)grid_array,
                                              patch,
                                              grid_x,
                                              array_elements,
@@ -123,7 +122,6 @@ namespace embree
     }
 
     BBox3fa GridSOA::createSubTreeCompact(BVH4::NodeRef &curNode,
-                                          float *const lazymem,
                                           const SubdivPatch1Cached &patch,
                                           const float *const grid_array,
                                           const size_t grid_array_elements,
@@ -203,7 +201,7 @@ namespace embree
       /* 128 bytes == 2 x 64 bytes cachelines */
       localCounter += 2; 
       
-      BVH4::Node *node = (BVH4::Node *)&lazymem[currentIndex*16];
+      BVH4::Node *node = (BVH4::Node *)&((float*)this)[currentIndex*16];
       
       curNode = BVH4::encodeNode( node );
       
@@ -218,7 +216,7 @@ namespace embree
       
       for (unsigned int i=0;i<children;i++)
       {
-        BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), lazymem, patch, grid_array, grid_array_elements, r[i],	localCounter);
+        BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), patch, grid_array, grid_array_elements, r[i],	localCounter);
         node->set(i, bounds_subtree);
         bounds.extend( bounds_subtree );
       }
