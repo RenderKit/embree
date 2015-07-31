@@ -227,8 +227,9 @@ Mac OS X tar.gz file
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
 [embree-2.6.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.macosx.tar.gz). Unpack
-this file using `tar` and source the provided `embree-vars.sh` to
-setup the environment properly:
+this file using `tar` and and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the
+C shell) to setup the environment properly:
 
     tar xzf embree-2.6.1.x64.macosx.tar.gz
     source embree-2.6.1.x64.macosx/embree-vars.sh
@@ -855,7 +856,7 @@ point, and the vector `p1 - p0` as u-direction and `p2 - p0` as
 v-direction. The following picture additionally illustrates the
 direction the geometry normal is pointing into.
 
-![](images/triangle_uv.png)
+![][imgTriangleUV]
 
 Some texture coordinates `t0,t1,t2` can be linearly interpolated over
 the triangle the following way:
@@ -946,7 +947,7 @@ vertex `p0` as base point, and the vector `p1 - p0` as u-direction and
 `p2 - p0` as v-direction. The following picture additionally
 illustrates the direction the geometry normal is pointing into.
 
-![](images/triangle_uv.png)
+![][imgTriangleUV]
 
 Some texture coordinates `t0,t1,t2` can be linearly
 interpolated over the triangle the following way:
@@ -958,7 +959,7 @@ base point, and the vector `p1 - p0` as u-direction and `p3 - p0` as
 v-direction. The following picture additionally illustrates the
 direction the geometry normal is pointing into.
 
-![](images/quad_uv.png)
+![][imgQuadUV]
 
 Some texture coordinates `t0,t1,t2,t3` can be bi-linearly
 interpolated over the quadrilateral the following way:
@@ -1854,7 +1855,7 @@ shading normals.
 You need to specify an OBJ file at the command line for this tutorial to
 work:
 
-    ./tutorial03 -i model.obj
+    ./viewer -i model.obj
 
 Instanced Geometry
 ------------------
@@ -1885,12 +1886,25 @@ Pathtracer
 
 ![][imgPathtracer]
 
-This tutorial is a simple path tracer, building on tutorial03.
+This tutorial is a simple path tracer, building on the viewer tutorial.
 
 You need to specify an OBJ file and light source at the command line for
 this tutorial to work:
 
-    ./tutorial06 -i model.obj -ambientlight 1 1 1
+    ./pathtracer -i model.obj -ambientlight 1 1 1
+
+As example models we provide the "Austrian Imperial Crown" model by
+[Martin Lubich](www.loramel.net) and the "Asian Dragon" model from the
+[Stanford 3D Scanning Repository](http://graphics.stanford.edu/data/3Dscanrep/).
+
+[crown.zip](https://github.com/embree/models/releases/download/release/crown.zip)
+
+[asian_dragon.zip](https://github.com/embree/models/releases/download/release/asian_dragon.zip)
+
+To render these models execute the following:
+
+    ./pathtracer -c crown/crown.ecs
+    ./pathtracer -c asian_dragon/asian_dragon.ecs
 
 Hair
 ----
@@ -1985,6 +1999,8 @@ X.Y.Z\lib\cmake\embree-X.Y.Z`.
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
 [Configuring Embree]: #configuring-embree
+[imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
+[imgQuadUV]: https://embree.github.io/images/quad_uv.png
 [imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg
 [imgDynamicScene]: https://embree.github.io/images/dynamic_scene.jpg
 [imgUserGeometry]: https://embree.github.io/images/user_geometry.jpg
