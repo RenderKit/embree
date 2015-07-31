@@ -20,13 +20,9 @@ namespace embree
 {
   namespace isa
   {  
-    size_t GridSOA::lazyBuildPatch(Precalculations &pre, SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
+    size_t GridSOA::lazyBuildPatch(SubdivPatch1Cached* const subdiv_patch, const Scene* scene)
     {
       ThreadWorkState *t_state = SharedLazyTessellationCache::threadState();
-
-      /* unlock previous patch */
-      if (pre.patch)
-        SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
 
       while(1)
       {

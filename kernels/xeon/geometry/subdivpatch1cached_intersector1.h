@@ -17,7 +17,7 @@
 #pragma once
 
 #include "subdivpatch1cached.h"
-#include "grid_soa.h"
+#include "grid_soa_intersector1.h"
 #include "../../common/ray.h"
 
 namespace embree
@@ -28,7 +28,7 @@ namespace embree
     {
     public:
       typedef SubdivPatch1Cached Primitive;
-      typedef GridSOA::Precalculations Precalculations;
+      typedef GridSOAIntersector1::Precalculations Precalculations;
       
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
@@ -36,10 +36,11 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         
         if (likely(ty == 2)) {
-          GridSOA::intersect(pre,ray,prim,ty,scene,lazy_node);
+          GridSOAIntersector1::intersect(pre,ray,prim,ty,scene,lazy_node);
         }
         else {
-          lazy_node = GridSOA::lazyBuildPatch(pre,prim,scene);
+          if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+          lazy_node = GridSOA::lazyBuildPatch(prim,scene);
           pre.patch = prim;
         }
       }
@@ -50,10 +51,11 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         
         if (likely(ty == 2)) {
-          return GridSOA::occluded(pre,ray,prim,ty,scene,lazy_node);
+          return GridSOAIntersector1::occluded(pre,ray,prim,ty,scene,lazy_node);
         }
         else {
-	  lazy_node = GridSOA::lazyBuildPatch(pre,prim, scene);
+          if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+	  lazy_node = GridSOA::lazyBuildPatch(prim, scene);
           pre.patch = prim;
         }             
         return false;
