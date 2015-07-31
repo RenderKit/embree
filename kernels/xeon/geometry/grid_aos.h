@@ -561,6 +561,15 @@ namespace embree
       return N;
     }
 
+    template<typename Allocator>
+        static void* create(SubdivPatch1Base* const patch, Scene* scene, Allocator& alloc)
+      {
+        PrimRef prims[32];
+        size_t N = createEager(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
+        assert(N == 1);
+        return (void*) prims[0].ID();
+      }
+
   public:
     unsigned width;
     unsigned height;

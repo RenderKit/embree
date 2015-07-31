@@ -23,7 +23,7 @@
 #include "../../common/subdiv/tessellation.h"
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
-#include "grid_soa.h"
+#include "grid_aos.h"
 
 namespace embree
 {
@@ -36,7 +36,6 @@ namespace embree
       /*! GridSOA constructor */
       GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t offset);
 
-#if 1
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
         static void* create(SubdivPatch1Cached* const patch, const Scene* scene, const Allocator& alloc)
@@ -47,17 +46,6 @@ namespace embree
         GridSOA* grid = new (alloc(bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
         return (void*) (size_t) grid->buildBVH(*patch,bvhBytes);
       }
-#else
-      template<typename Allocator>
-        static void* create(SubdivPatch1Cached* const patch, const Scene* scene, const Allocator& alloc)
-      {
-        PrimRef prims[32];
-        size_t N = Grid::createEager(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
-        assert(N == 1);
-        return prims[0].ID();
-      }
-
-#endif
       
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
