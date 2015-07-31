@@ -33,26 +33,27 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom);
+      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t offset);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
         static void* create(SubdivPatch1Cached* const subdiv_patch, const Scene* scene, const Allocator& alloc)
       {
         const GridRange range(0,subdiv_patch->grid_u_res-1,0,subdiv_patch->grid_v_res-1);
-        const size_t bytes = getBVHBytes(range,0) + subdiv_patch->getGridBytes();
-        GridSOA* grid = new (alloc(bytes)) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom));  
-        return (void*) (size_t) grid->buildBVH(*subdiv_patch);
+        const size_t bvhBytes  = getBVHBytes(range,0);
+        const size_t gridBytes = subdiv_patch->getGridBytes();
+        GridSOA* grid = new (alloc(bvhBytes+gridBytes)) GridSOA(*subdiv_patch,scene->getSubdivMesh(subdiv_patch->geom),bvhBytes);  
+        return (void*) (size_t) grid->buildBVH(*subdiv_patch,bvhBytes);
       }
       
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(const SubdivPatch1Cached &patch);
+      BVH4::NodeRef buildBVH(const SubdivPatch1Cached& patch, const size_t bvhBytes);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, float* grid_array, const GridRange& range, size_t& localCounter);
     };
   }
 }

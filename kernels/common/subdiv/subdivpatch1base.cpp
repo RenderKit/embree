@@ -111,9 +111,11 @@ namespace embree
     grid_u_res = res.x; grid_v_res = res.y;
     
     grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
+#if defined(__MIC__)
     grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
     const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
     grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
+#endif
 
     /* need stiching? */
     flags &= ~TRANSITION_PATCH;

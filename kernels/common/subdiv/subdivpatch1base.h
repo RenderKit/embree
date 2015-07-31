@@ -168,14 +168,16 @@ namespace embree
 
     unsigned char flags;
     unsigned char type;
-    unsigned short grid_bvh_size_64b_blocks;
+    unsigned short grid_u_res;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned short grid_u_res;
     unsigned short grid_v_res;
 
     unsigned short grid_size_simd_blocks;
+#if defined (__MIC__)
+    unsigned short grid_bvh_size_64b_blocks;
     unsigned short grid_subtree_size_64b_blocks;
+#endif
 
     struct PatchHalfEdge {
       const HalfEdge* edge;
