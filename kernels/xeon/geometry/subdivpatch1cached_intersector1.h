@@ -18,6 +18,7 @@
 
 #include "subdivpatch1cached.h"
 #include "grid_soa_intersector1.h"
+#include "grid_intersector1.h"
 #include "../../common/ray.h"
 
 namespace embree
@@ -37,6 +38,7 @@ namespace embree
         
         if (likely(ty == 2)) {
           GridSOAIntersector1::intersect(pre,ray,prim,ty,scene,lazy_node);
+          //GridIntersector1::intersect(pre,ray,(Grid::EagerLeaf*)prim,ty,scene,lazy_node);
         }
         else {
           if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
@@ -55,6 +57,7 @@ namespace embree
         
         if (likely(ty == 2)) {
           return GridSOAIntersector1::occluded(pre,ray,prim,ty,scene,lazy_node);
+          //return GridIntersector1::occluded(pre,ray,(Grid::EagerLeaf*)prim,ty,scene,lazy_node);
         }
         else {
           if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
