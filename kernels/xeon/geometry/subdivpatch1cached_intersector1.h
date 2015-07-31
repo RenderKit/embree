@@ -36,7 +36,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         
-        if (likely(ty == 2)) {
+        if (likely(ty == 0)) {
           GridSOAIntersector1::intersect(pre,ray,prim,ty,scene,lazy_node);
           //GridIntersector1::intersect(pre,ray,(Grid::EagerLeaf*)prim,ty,scene,lazy_node);
         }
@@ -55,7 +55,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         
-        if (likely(ty == 2)) {
+        if (likely(ty == 0)) {
           return GridSOAIntersector1::occluded(pre,ray,prim,ty,scene,lazy_node);
           //return GridIntersector1::occluded(pre,ray,(Grid::EagerLeaf*)prim,ty,scene,lazy_node);
         }

@@ -114,7 +114,7 @@ namespace embree
         const size_t first_vertex = (size_t) &grid_x_array[v_start * patch.grid_u_res + u_start];
         const size_t base = (size_t) SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr(); // FIXME: makes intersector dependent on tessellation cache
         const size_t value = 4*(first_vertex-base) + base;
-        curNode = BVH4::encodeTypedLeaf((void*)value,2);
+        curNode = BVH4::encodeTypedLeaf((void*)value,0);
         return bounds;
       }
       
