@@ -150,16 +150,16 @@ namespace embree
 
         unsigned int u_start = range.u_start, u_end = range.u_end;
         unsigned int v_start = range.v_start, v_end = range.v_end;
-        unsigned int u_size = u_end-u_start+1;
-        unsigned int v_size = v_end-v_start+1;
+        unsigned int u_size = u_end-u_start; assert(u_size > 0);
+        unsigned int v_size = v_end-v_start; assert(v_size > 0);
         
-        if (unlikely(u_size < 3)) { 
-          const unsigned int delta_u = 3-u_size;
+        if (unlikely(u_size < 2)) { 
+          const unsigned int delta_u = 2-u_size;
           if (u_start >= delta_u) u_start -= delta_u; 
           else                    u_start = 0;
         }
-        if (unlikely(v_size < 3)) { 
-          const unsigned int delta_v = 3-v_size;
+        if (unlikely(v_size < 2)) { 
+          const unsigned int delta_v = 2-v_size;
           if (v_start >= delta_v) v_start -= delta_v; 
           else                    v_start = 0;
         }
