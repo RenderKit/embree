@@ -54,6 +54,11 @@ namespace embree
       }
 
       /* Allocate aligned memory from the threads memory block. */
+      __forceinline void* operator() (size_t bytes, size_t align = 16) {
+        return malloc(bytes,align);
+      }
+
+      /* Allocate aligned memory from the threads memory block. */
       __forceinline void* malloc(size_t bytes, size_t align = 16) 
       {
         assert(align <= maxAlignment);

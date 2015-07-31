@@ -455,8 +455,9 @@ namespace embree
       assert(height <= 17);
     }
 
-    static __forceinline Grid* create(FastAllocator::ThreadLocal& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
-      return new (alloc.malloc(sizeof(Grid)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+    template<typename Allocator>
+    static __forceinline Grid* create(Allocator& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+      return new (alloc(sizeof(Grid)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
     }
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
@@ -477,7 +478,8 @@ namespace embree
       return w*h;
     }
 
-   __forceinline size_t createEagerPrims(FastAllocator::ThreadLocal& alloc, PrimRef* prims, 
+    template<typename Allocator>
+   __forceinline size_t createEagerPrims(Allocator& alloc, PrimRef* prims, 
 					 const size_t x0, const size_t x1,
 					 const size_t y0, const size_t y1)
     {
@@ -486,7 +488,7 @@ namespace embree
         for (size_t x=x0; x<x1; x+=8) {
           const size_t rx0 = x-x0, rx1 = min(x+8,x1)-x0;
           const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
-          EagerLeaf* leaf = new (alloc.malloc(sizeof(EagerLeaf))) EagerLeaf(*this);
+          EagerLeaf* leaf = new (alloc(sizeof(EagerLeaf))) EagerLeaf(*this);
           const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
           prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
         }
@@ -536,7 +538,8 @@ namespace embree
       }
     }
 
-    __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, FastAllocator::ThreadLocal& alloc, PrimRef* prims)
+    template<typename Allocator>
+    __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
     {
       size_t N = 0;
       const size_t x0 = 0, x1 = patch.grid_u_res-1;
