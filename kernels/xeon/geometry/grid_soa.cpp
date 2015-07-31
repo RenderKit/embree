@@ -148,34 +148,21 @@ namespace embree
         }
         assert(is_finite(bounds));
 
-        unsigned int u_start = range.u_start;
-        unsigned int v_start = range.v_start;
+        unsigned int u_start = range.u_start, u_end = range.u_end;
+        unsigned int v_start = range.v_start, v_end = range.v_end;
+        unsigned int u_size = u_end-u_start+1;
+        unsigned int v_size = v_end-v_start+1;
         
-        const unsigned int u_end   = range.u_end;
-        const unsigned int v_end   = range.v_end;
-        
-        if (unlikely(u_end-u_start+1 < 3)) 
-        { 
-          const unsigned int delta_u = 3 - (u_end-u_start+1);
-          if (u_start >= delta_u) 
-            u_start -= delta_u; 
-          else
-            u_start = 0;
+        if (unlikely(u_size < 3)) { 
+          const unsigned int delta_u = 3-u_size;
+          if (u_start >= delta_u) u_start -= delta_u; 
+          else                    u_start = 0;
         }
-        if (unlikely(v_end-v_start+1 < 3)) 
-        { 
-          const unsigned int delta_v = 3 - (v_end-v_start+1);
-          if (v_start >= delta_v) 
-            v_start -= delta_v; 
-          else
-            v_start = 0;
+        if (unlikely(v_size < 3)) { 
+          const unsigned int delta_v = 3-v_size;
+          if (v_start >= delta_v) v_start -= delta_v; 
+          else                    v_start = 0;
         }
-        
-        const unsigned int u_size = u_end-u_start+1;
-        const unsigned int v_size = v_end-v_start+1;
-        
-        assert(u_size >= 1);
-        assert(v_size >= 1);
         
         /* we store pointer to first subgrid vertex as leaf node */
         const size_t first_vertex = (size_t) &grid_x_array[v_start * patch.grid_u_res + u_start];

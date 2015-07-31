@@ -38,6 +38,14 @@ namespace embree
     __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) 
       : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
 
+    __forceinline unsigned int width() const {
+      return u_end-u_start+1;
+    }
+
+    __forceinline unsigned int height() const {
+      return v_end-v_start+1;
+    }
+
     __forceinline bool hasLeafSize() const
     {
 #if defined(__MIC__)
