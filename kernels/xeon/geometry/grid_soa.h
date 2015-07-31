@@ -45,8 +45,8 @@ namespace embree
                                    const SubdivPatch1Cached &patch,
                                    const float *const grid_array,
                                    const size_t grid_array_elements,
-                                   const GridRange &range,
-                                   unsigned int &localCounter);
+                                   const GridRange& range,
+                                   size_t& localCounter);
     };
   }
 }

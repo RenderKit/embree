@@ -109,15 +109,15 @@ namespace embree
       float* const grid_x  = (float*)this + grid_offset + 0 * array_elements;
 
       BVH4::NodeRef subtree_root = 0;
-      unsigned int currentIndex = 0;
+      size_t allocator = 0;
       BBox3fa bounds = createSubTreeCompact( subtree_root,
                                              patch,
                                              grid_x,
                                              array_elements,
                                              GridRange(0,patch.grid_u_res-1,0,patch.grid_v_res-1),
-                                             currentIndex);
+                                             allocator);
 
-      assert(currentIndex == 64*patch.grid_bvh_size_64b_blocks);
+      assert(allocator == 64*patch.grid_bvh_size_64b_blocks);
       return subtree_root;
     }
 
@@ -126,7 +126,7 @@ namespace embree
                                           const float* const grid_array,
                                           const size_t grid_array_elements,
                                           const GridRange& range,
-                                          unsigned int& localCounter)
+                                          size_t& allocator)
     {
       if (range.hasLeafSize())
       {
@@ -165,30 +165,24 @@ namespace embree
       }
       
       /* allocate new bvh4 node */
-      const size_t currentIndex = localCounter;
-      
-      localCounter += sizeof(BVH4::Node);
-      
-      BVH4::Node* node = (BVH4::Node *)&((char*)this)[currentIndex];
-      
-      curNode = BVH4::encodeNode( node );
-      
+      BVH4::Node* node = (BVH4::Node *)&((char*)this)[allocator];
+      allocator += sizeof(BVH4::Node);
       node->clear();
       
+      /* split range */
       GridRange r[4];
+      const size_t children = range.splitIntoSubRanges(r);
       
-      const unsigned int children = range.splitIntoSubRanges(r);
-      
-      /* create four subtrees */
+      /* recurse into subtrees */
       BBox3fa bounds( empty );
-      
-      for (unsigned int i=0;i<children;i++)
+      for (size_t i=0; i<children; i++)
       {
-        BBox3fa bounds_subtree = createSubTreeCompact( node->child(i), patch, grid_array, grid_array_elements, r[i],	localCounter);
-        node->set(i, bounds_subtree);
-        bounds.extend( bounds_subtree );
+        BBox3fa box = createSubTreeCompact( node->child(i), patch, grid_array, grid_array_elements, r[i], allocator);
+        node->set(i,box);
+        bounds.extend(box);
       }
       
+      curNode = BVH4::encodeNode(node);
       assert(is_finite(bounds));
       return bounds;
     }
