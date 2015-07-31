@@ -26,7 +26,7 @@
 #include "../../common/subdiv/bezier_curve.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
-#include "../geometry/grid.h"
+#include "../geometry/grid_aos.h"
 #include "../geometry/subdivpatch1.h"
 #include "../geometry/subdivpatch1cached.h"
 
@@ -167,7 +167,7 @@ namespace embree
             {
               float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
               Vec2i grid = SubdivPatch1Base::computeGridSize(level);
-              size_t N = Grid::getNumEagerLeaves(grid.x-1,grid.y-1);
+              size_t N = GridAOS::getNumEagerLeaves(grid.x-1,grid.y-1);
               g+=N;
               p++;
             });
@@ -197,8 +197,8 @@ namespace embree
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
-              size_t N = Grid::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
-              assert(N == Grid::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
+              size_t N = GridAOS::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
+              assert(N == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<N; i++)
                 s.add(prims[base.end+s.end].bounds());
               s.begin++;

@@ -25,7 +25,7 @@
 
 namespace embree
 {
-  struct Grid
+  struct GridAOS
   {
     struct CompressedBounds16;
     struct UncompressedBounds16;
@@ -400,7 +400,7 @@ namespace embree
 	return bounds;
       }
 
-      __forceinline EagerLeaf (const Grid& grid) 
+      __forceinline EagerLeaf (const GridAOS& grid) 
 	: grid(grid) {}
 
       __forceinline const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
@@ -443,12 +443,12 @@ namespace embree
 
       Bounds16 bounds;
       Quads quads[16];
-      const Grid& grid;
+      const GridAOS& grid;
     };
 
   public:
 
-    __forceinline Grid(unsigned width, unsigned height, unsigned geomID, unsigned primID)
+    __forceinline GridAOS(unsigned width, unsigned height, unsigned geomID, unsigned primID)
       : width(width), height(height), geomID(geomID), primID(primID) 
     {
       assert(width <= 17);
@@ -456,8 +456,8 @@ namespace embree
     }
 
     template<typename Allocator>
-    static __forceinline Grid* create(Allocator& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
-      return new (alloc(sizeof(Grid)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) Grid(width,height,geomID,primID);
+    static __forceinline GridAOS* create(Allocator& alloc, const size_t width, const size_t height, const unsigned geomID, const unsigned primID) {
+      return new (alloc(sizeof(GridAOS)-17*17*sizeof(Vec3fa)+width*height*sizeof(Vec3fa))) GridAOS(width,height,geomID,primID);
     }
     
     __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
@@ -551,7 +551,7 @@ namespace embree
 	{
 	  const size_t lx0 = x, lx1 = min(lx0+16,x1);
 	  const size_t ly0 = y, ly1 = min(ly0+16,y1);
-	  Grid* leaf = Grid::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
+	  GridAOS* leaf = GridAOS::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
 	  leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
 	  size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
 	  prims += n;

@@ -21,7 +21,7 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/subdivpatch1_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/grid_intersector1.h"
+#include "../geometry/grid_aos_intersector1.h"
 
 namespace embree
 {
@@ -134,6 +134,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
-    DEFINE_INTERSECTOR4(BVH4GridIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA GridIntersector1> >);
+    DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
   }
 }

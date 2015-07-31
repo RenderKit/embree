@@ -44,7 +44,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4vMBIntersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1Intersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
-  DECLARE_SYMBOL(Accel::Intersector1,BVH4GridIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4GridAOSIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4VirtualIntersector1);
 
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Bezier1vIntersector4Chunk);
@@ -66,7 +66,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Triangle4vMBIntersector4ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Subdivpatch1Intersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH4GridIntersector4);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4GridAOSIntersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
   
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Bezier1vIntersector8Chunk);
@@ -88,7 +88,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle4vMBIntersector8ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Subdivpatch1Intersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4GridIntersector8);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH4GridAOSIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
 
 
@@ -111,7 +111,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Triangle4vMBIntersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1Intersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH4GridIntersector16);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4GridAOSIntersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
 
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
@@ -220,7 +220,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1Intersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
-    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridIntersector1);
+    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
 
     /* select intersectors4 */
@@ -246,7 +246,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Subdivpatch1Intersector4);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Subdivpatch1CachedIntersector4);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4GridIntersector4);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4GridAOSIntersector4);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
    
     /* select intersectors8 */
@@ -269,7 +269,7 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle4vMBIntersector8ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Subdivpatch1Intersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector8);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4GridIntersector8);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH4GridAOSIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
 
 
@@ -293,7 +293,7 @@ namespace embree
     SELECT_SYMBOL_AVX512(features,BVH4Triangle4vMBIntersector16ChunkMoeller);
     SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1Intersector16);
     SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
-    SELECT_SYMBOL_AVX512(features,BVH4GridIntersector16);
+    SELECT_SYMBOL_AVX512(features,BVH4GridAOSIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4VirtualIntersector16Chunk);
   }
 
@@ -903,10 +903,10 @@ namespace embree
     BVH4* accel = new BVH4(PrimitiveType2::type,scene,LeafMode); // FIXME: type
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
-    intersectors.intersector1  = BVH4GridIntersector1;
-    intersectors.intersector4  = BVH4GridIntersector4;
-    intersectors.intersector8  = BVH4GridIntersector8;
-    intersectors.intersector16 = BVH4GridIntersector16;
+    intersectors.intersector1  = BVH4GridAOSIntersector1;
+    intersectors.intersector4  = BVH4GridAOSIntersector4;
+    intersectors.intersector8  = BVH4GridAOSIntersector8;
+    intersectors.intersector16 = BVH4GridAOSIntersector16;
     Builder* builder = BVH4SubdivGridEagerBuilderBinnedSAH(accel,scene,LeafMode);
     return new AccelInstance(accel,builder,intersectors);
   }

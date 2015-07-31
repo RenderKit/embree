@@ -23,7 +23,7 @@
 #include "../../common/subdiv/tessellation.h"
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
-#include "grid.h"
+#include "grid_soa.h"
 
 namespace embree
 {

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "grid.h"
+#include "grid_aos.h"
 #include "../../common/ray.h"
 #include "../geometry/filter.h"
 
@@ -24,9 +24,9 @@ namespace embree
 {
   namespace isa
   {
-    struct GridIntersector1
+    struct GridAOSIntersector1
     {
-      typedef Grid::EagerLeaf Primitive;
+      typedef GridAOS::EagerLeaf Primitive;
       
       struct Precalculations 
       {
@@ -264,26 +264,26 @@ namespace embree
           const size_t i = __bscf(mask);
           const size_t ofs = prim.quads[i].ofs;
           switch (prim.quads[i].type) {
-          case Grid::EagerLeaf::Quads::QUAD1X1: {
+          case GridAOS::EagerLeaf::Quads::QUAD1X1: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             intersectQuad(ray, v00,v10,v01,v11, prim, scene);
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD1X2: {
+          case GridAOS::EagerLeaf::Quads::QUAD1X2: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
             intersectQuads(ray, v10,v11,v12, v00,v01,v02, prim, scene);
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD2X1: {
+          case GridAOS::EagerLeaf::Quads::QUAD2X1: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
             intersectQuads(ray, v00,v10,v20,v01,v11,v21, prim, scene);
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD2X2: {
+          case GridAOS::EagerLeaf::Quads::QUAD2X2: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
@@ -474,26 +474,26 @@ namespace embree
           const size_t i = __bscf(mask);
           const size_t ofs = prim.quads[i].ofs;
           switch (prim.quads[i].type) {
-          case Grid::EagerLeaf::Quads::QUAD1X1: {
+          case GridAOS::EagerLeaf::Quads::QUAD1X1: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             if (occludedQuad(ray, v00,v10,v01,v11, prim, scene)) return true;
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD1X2: {
+          case GridAOS::EagerLeaf::Quads::QUAD1X2: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1];
             if (occludedQuads(ray, v10,v11,v12,v00,v01,v02,  prim,scene)) return true;
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD2X1: {
+          case GridAOS::EagerLeaf::Quads::QUAD2X1: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
             if (occludedQuads(ray, v00,v10,v20,v01,v11,v21, prim,scene)) return true;
             break;
           }
-          case Grid::EagerLeaf::Quads::QUAD2X2: {
+          case GridAOS::EagerLeaf::Quads::QUAD2X2: {
             const Vec3fa& v00 = prim.grid.point(ofs,0), v10 = (&v00)[1], v20 = (&v00)[2];
             const Vec3fa& v01 = prim.grid.point(ofs,1), v11 = (&v01)[1], v21 = (&v01)[2];
             const Vec3fa& v02 = prim.grid.point(ofs,2), v12 = (&v02)[1], v22 = (&v02)[2];
