@@ -148,21 +148,13 @@ namespace embree
         }
         assert(is_finite(bounds));
 
+        /* shift 2x2 quads that wrap around to the left */
         unsigned int u_start = range.u_start, u_end = range.u_end;
         unsigned int v_start = range.v_start, v_end = range.v_end;
         unsigned int u_size = u_end-u_start; assert(u_size > 0);
         unsigned int v_size = v_end-v_start; assert(v_size > 0);
-        
-        if (unlikely(u_size < 2)) { 
-          const unsigned int delta_u = 2-u_size;
-          if (u_start >= delta_u) u_start -= delta_u; 
-          else                    u_start = 0;
-        }
-        if (unlikely(v_size < 2)) { 
-          const unsigned int delta_v = 2-v_size;
-          if (v_start >= delta_v) v_start -= delta_v; 
-          else                    v_start = 0;
-        }
+        if (unlikely(u_size < 2 && u_start > 0)) u_start--;
+        if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store pointer to first subgrid vertex as leaf node */
         const size_t first_vertex = (size_t) &grid_x_array[v_start * patch.grid_u_res + u_start];
