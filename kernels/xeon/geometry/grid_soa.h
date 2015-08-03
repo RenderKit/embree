@@ -34,11 +34,11 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes);
+      GridSOA(const SubdivPatch1Base& patch, const SubdivMesh* const geom, const size_t bvhBytes);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
-        static void* create(SubdivPatch1Cached* const patch, const Scene* scene, const Allocator& alloc)
+        static void* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc)
       {
         const GridRange range(0,patch->grid_u_res-1,0,patch->grid_v_res-1);
         const size_t bvhBytes  = getBVHBytes(range,0);

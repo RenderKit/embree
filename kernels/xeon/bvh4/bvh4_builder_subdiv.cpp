@@ -29,6 +29,7 @@
 #include "../geometry/grid_aos.h"
 #include "../geometry/subdivpatch1.h"
 #include "../geometry/subdivpatch1cached.h"
+#include "../geometry/grid_soa.h"
 
 namespace embree
 {
@@ -388,6 +389,7 @@ namespace embree
               else {
                 new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+                //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }
               bounds[patchIndex] = bound;
               prims[patchIndex] = PrimRef(bound,patchIndex);
