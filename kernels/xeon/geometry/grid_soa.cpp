@@ -25,37 +25,36 @@ namespace embree
         width(patch.grid_u_res), height(patch.grid_v_res), dim_offset(patch.grid_size_simd_blocks * vfloat::size), 
         geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
-      const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
-      dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_v,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_x,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_y,array_elements+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_z,array_elements+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_u,dim_offset+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_v,dim_offset+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_x,dim_offset+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_y,dim_offset+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_z,dim_offset+vfloat::size,64*64);
 
       /* compute vertex grid (+displacement) */
-      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,
+      evalGrid(patch,0,width-1,0,height-1,width,height,
                local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
       /* copy temporary data to tessellation cache */
-      float* const grid_x  = (float*)(gridData() + 0*array_elements);
-      float* const grid_y  = (float*)(gridData() + 1*array_elements);
-      float* const grid_z  = (float*)(gridData() + 2*array_elements);
-      int  * const grid_uv = (int*  )(gridData() + 3*array_elements);
+      float* const grid_x  = (float*)(gridData() + 0*dim_offset);
+      float* const grid_y  = (float*)(gridData() + 1*dim_offset);
+      float* const grid_z  = (float*)(gridData() + 2*dim_offset);
+      int  * const grid_uv = (int*  )(gridData() + 3*dim_offset);
       
       /* copy points */
-      memcpy(grid_x, local_grid_x, array_elements*sizeof(float));
-      memcpy(grid_y, local_grid_y, array_elements*sizeof(float));
-      memcpy(grid_z, local_grid_z, array_elements*sizeof(float));
+      memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
+      memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
+      memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
       
       /* encode UVs */
-      for (size_t i=0; i<array_elements; i+=vfloat::size) {
+      for (size_t i=0; i<dim_offset; i+=vfloat::size) {
         const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
 
       /* create BVH */
-      root = buildBVH(patch,bvhData(),gridData(),bvhBytes);
+      root = buildBVH(bvhData(),gridData(),bvhBytes);
     }
 
     size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
@@ -72,25 +71,23 @@ namespace embree
       return bytes;
     }
     
-    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const size_t bvhBytes)
+    BVH4::NodeRef GridSOA::buildBVH(char* node_array, float* grid_array, const size_t bvhBytes)
     {
       BVH4::NodeRef root = 0; size_t allocator = 0;
-      GridRange range(0,patch.grid_u_res-1,0,patch.grid_v_res-1);
-      buildBVH(root,patch,node_array,grid_array,range,allocator);
+      GridRange range(0,width-1,0,height-1);
+      buildBVH(root,node_array,grid_array,range,allocator);
       assert(allocator == bvhBytes);
       return root;
     }
 
-    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const GridRange& range, size_t& allocator)
+    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, char* node_array, float* grid_array, const GridRange& range, size_t& allocator)
     {
-      const size_t grid_array_elements = patch.grid_size_simd_blocks * vfloat::size;
-
       /*! create leaf node */
       if (unlikely(range.hasLeafSize()))
       {
-        const float* const grid_x_array = grid_array + 0 * grid_array_elements;
-        const float* const grid_y_array = grid_array + 1 * grid_array_elements;
-        const float* const grid_z_array = grid_array + 2 * grid_array_elements;
+        const float* const grid_x_array = grid_array + 0 * dim_offset;
+        const float* const grid_y_array = grid_array + 1 * dim_offset;
+        const float* const grid_z_array = grid_array + 2 * dim_offset;
         
         /* compute the bounds just for the range! */
         BBox3fa bounds( empty );
@@ -98,9 +95,9 @@ namespace embree
         {
           for (size_t u = range.u_start; u<=range.u_end; u++)
           {
-            const float x = grid_x_array[ v * patch.grid_u_res + u];
-            const float y = grid_y_array[ v * patch.grid_u_res + u];
-            const float z = grid_z_array[ v * patch.grid_u_res + u];
+            const float x = grid_x_array[ v * width + u];
+            const float y = grid_y_array[ v * width + u];
+            const float z = grid_z_array[ v * width + u];
             bounds.extend( Vec3fa(x,y,z) );
           }
         }
@@ -115,7 +112,7 @@ namespace embree
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store pointer to first subgrid vertex as leaf node */
-        const size_t value = 16*(v_start * patch.grid_u_res + u_start);
+        const size_t value = 16*(v_start * width + u_start);
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
         return bounds;
       }
@@ -136,7 +133,7 @@ namespace embree
         BBox3fa bounds( empty );
         for (size_t i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH( node->child(i), patch, node_array, grid_array, r[i], allocator);
+          BBox3fa box = buildBVH( node->child(i), node_array, grid_array, r[i], allocator);
           node->set(i,box);
           bounds.extend(box);
         }

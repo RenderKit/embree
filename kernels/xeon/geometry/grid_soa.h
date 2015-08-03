@@ -60,10 +60,10 @@ namespace embree
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const size_t bvhBytes);
+      BVH4::NodeRef buildBVH(char* node_array, float* grid_array, const size_t bvhBytes);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
 
     public:
       BVH4::NodeRef root;
