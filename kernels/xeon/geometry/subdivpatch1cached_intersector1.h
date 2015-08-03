@@ -74,6 +74,7 @@ namespace embree
 #endif
             });
           lazy_node = grid->root;
+          pre.grid = grid;
           pre.patch = prim;
         }
       }

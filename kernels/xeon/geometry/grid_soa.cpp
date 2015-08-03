@@ -110,9 +110,7 @@ namespace embree
         if (unlikely(v_size < 2 && v_start > 0)) v_start--;
         
         /* we store pointer to first subgrid vertex as leaf node */
-        const size_t first_vertex = (size_t) &grid_x_array[v_start * patch.grid_u_res + u_start];
-        const size_t base = (size_t) SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr(); // FIXME: makes intersector dependent on tessellation cache
-        const size_t value = 4*(first_vertex-base) + base;
+        const size_t value = 16*(v_start * patch.grid_u_res + u_start);
         curNode = BVH4::encodeTypedLeaf((void*)value,0);
         return bounds;
       }
