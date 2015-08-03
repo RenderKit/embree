@@ -40,11 +40,42 @@ namespace embree
       template<typename Allocator>
         static void* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc)
       {
-        const GridRange range(0,patch->grid_u_res-1,0,patch->grid_v_res-1);
+        const size_t width = patch->grid_u_res;
+        const size_t height = patch->grid_v_res;
+        const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
         return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
       }
+
+      /*static size_t getNumEagerLeaves(size_t width, size_t height) {
+        const size_t w = (((width +1)/2)+3)/4;
+        const size_t h = (((height+1)/2)+3)/4;
+        return w*h;
+      }
+
+      template<typename Allocator>
+        __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+      {
+        size_t N = 0;
+        const size_t x0 = 0, x1 = patch.grid_u_res-1;
+        const size_t y0 = 0, y1 = patch.grid_v_res-1;
+        
+        for (size_t y=y0; y<y1; y+=8)
+        {
+          for (size_t x=x0; x<x1; x+=8) 
+          {
+            const size_t lx0 = x, lx1 = min(lx0+8,x1);
+            const size_t ly0 = y, ly1 = min(ly0+8,y1);
+            GridAOS* leaf = GridAOS::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
+            leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
+            size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
+            prims += n;
+            N += n;
+          }
+        }
+        return N;
+        }*/
 
       /*! returns pointer to BVH array */
       __forceinline char* bvhData() {
