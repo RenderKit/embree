@@ -20,10 +20,10 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes)
+    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes)
       : root(BVH4::emptyNode), 
         width(patch.grid_u_res), height(patch.grid_v_res), dim_offset(patch.grid_size_simd_blocks * vfloat::size), 
-        geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)//, gridBytes(gridBytes)
+        geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -53,6 +53,9 @@ namespace embree
         const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         vint::store(&grid_uv[i], (iv << 16) | iu); 
       }
+
+      /* create BVH */
+      root = buildBVH(patch,bvhData(),gridData(),bvhBytes);
     }
 
     size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)

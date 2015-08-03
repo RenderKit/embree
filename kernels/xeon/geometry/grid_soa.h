@@ -34,7 +34,7 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes);
+      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
@@ -43,19 +43,15 @@ namespace embree
         const GridRange range(0,patch->grid_u_res-1,0,patch->grid_v_res-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
-        
-        GridSOA* grid = new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes,gridBytes);  
-        char* const node_array  = grid->bvhData();
-        float* const grid_array = grid->gridData();
-        grid->root =  grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
-        return grid;
-        //return (void*) (size_t) grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
+        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
       }
 
+      /*! returns pointer to BVH array */
       __forceinline char* bvhData() {
         return &data[0];
       }
 
+      /*! returns pointer to Grid array */
       __forceinline float* gridData() {
         return (float*) &data[bvhBytes];
       }
@@ -77,8 +73,7 @@ namespace embree
       unsigned geomID;
       unsigned primID;
       unsigned bvhBytes;
-      //unsigned gridBytes;
-      char data[1];
+      char data[1];        //!< after the struct we first store the BVH and then the grid
     };
   }
 }
