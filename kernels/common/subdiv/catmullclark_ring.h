@@ -85,9 +85,10 @@ namespace embree
       store(ptr,ofs,edge_level);
       store(ptr,ofs,eval_start_index);
       store(ptr,ofs,eval_unique_identifier);
-      store(ptr,ofs,vtx);
-      for (size_t i=0; i<edge_valence; i++)
-        store(ptr,ofs,ring[i]);
+      Vertex::storeu(&ptr[ofs],vtx); ofs += sizeof(Vertex);
+      for (size_t i=0; i<edge_valence; i++) {
+        Vertex::storeu(&ptr[ofs],ring[i]); ofs += sizeof(Vertex);
+      }
       for (size_t i=0; i<face_valence; i++)
         store(ptr,ofs,crease_weight[i]);
     }
@@ -102,9 +103,10 @@ namespace embree
       load(ptr,ofs,edge_level);
       load(ptr,ofs,eval_start_index);
       load(ptr,ofs,eval_unique_identifier);
-      load(ptr,ofs,vtx);
-      for (size_t i=0; i<edge_valence; i++)
-        load(ptr,ofs,ring[i]);
+      vtx = Vertex::loadu(&ptr[ofs]); ofs += sizeof(Vertex);
+      for (size_t i=0; i<edge_valence; i++) {
+        ring[i] = Vertex::loadu(&ptr[ofs]); ofs += sizeof(Vertex);
+      }
       for (size_t i=0; i<face_valence; i++)
         load(ptr,ofs,crease_weight[i]);
     }

@@ -103,8 +103,8 @@ namespace embree
       _mm_store_ps((float*)ptr,v); 
     }
 
-    static __forceinline void storeu ( float* ptr, const float4& v ) {
-      _mm_storeu_ps(ptr,v);
+    static __forceinline void storeu ( void* ptr, const float4& v ) {
+      _mm_storeu_ps((float*)ptr,v);
     }
 
     static __forceinline void storeu ( float* ptr, const float4& v, size_t n) // FIXME: is there a better way of implementing this
