@@ -67,17 +67,16 @@ namespace embree
       return bytes;
     }
     
-    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, const size_t bvhBytes)
+    BVH4::NodeRef GridSOA::buildBVH(const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const size_t bvhBytes)
     {
-      float* const grid_array  = (float*)this + bvhBytes/4;
       BVH4::NodeRef root = 0; size_t allocator = 0;
       GridRange range(0,patch.grid_u_res-1,0,patch.grid_v_res-1);
-      buildBVH(root,patch,grid_array,range,allocator);
+      buildBVH(root,patch,node_array,grid_array,range,allocator);
       assert(allocator == bvhBytes);
       return root;
     }
 
-    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, float* grid_array, const GridRange& range, size_t& allocator)
+    BBox3fa GridSOA::buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const GridRange& range, size_t& allocator)
     {
       const size_t grid_array_elements = patch.grid_size_simd_blocks * vfloat::size;
 
@@ -122,7 +121,7 @@ namespace embree
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::Node* node = (BVH4::Node *)&((char*)this)[allocator];
+        BVH4::Node* node = (BVH4::Node *)&node_array[allocator];
         allocator += sizeof(BVH4::Node);
         node->clear();
         
@@ -134,7 +133,7 @@ namespace embree
         BBox3fa bounds( empty );
         for (size_t i=0; i<children; i++)
         {
-          BBox3fa box = buildBVH( node->child(i), patch, grid_array, r[i], allocator);
+          BBox3fa box = buildBVH( node->child(i), patch, node_array, grid_array, r[i], allocator);
           node->set(i,box);
           bounds.extend(box);
         }

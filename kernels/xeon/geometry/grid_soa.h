@@ -43,18 +43,21 @@ namespace embree
         const GridRange range(0,patch->grid_u_res-1,0,patch->grid_v_res-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
+        
         GridSOA* grid = new (alloc(bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
-        return (void*) (size_t) grid->buildBVH(*patch,bvhBytes);
+        char* const node_array  = (char*)grid;
+        float* const grid_array  = (float*)grid + bvhBytes/4;
+        return (void*) (size_t) grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
       }
       
       /*! returns the size of the BVH over the grid in bytes */
       static size_t getBVHBytes(const GridRange& range, const unsigned int leafBytes);
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
-      BVH4::NodeRef buildBVH(const SubdivPatch1Cached& patch, const size_t bvhBytes);
+      BVH4::NodeRef buildBVH(const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const size_t bvhBytes);
       
       /*! Create BVH4 tree over grid. */
-      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, float* grid_array, const GridRange& range, size_t& localCounter);
+      BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
     };
   }
 }
