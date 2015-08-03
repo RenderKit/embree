@@ -20,8 +20,10 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Base& patch, const SubdivMesh* const geom, const size_t bvhBytes)
-      : root(BVH4::emptyNode), width(patch.grid_u_res), height(patch.grid_v_res), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
+    GridSOA::GridSOA(const SubdivPatch1Base& patch, 
+                     const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
+                     const SubdivMesh* const geom, const size_t bvhBytes)
+      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
       dim_offset = ((width*height+vfloat::size-1)&(-vfloat::size)) / vfloat::size * vfloat::size;
 
@@ -32,7 +34,7 @@ namespace embree
       dynamic_large_stack_array(float,local_grid_z,dim_offset+vfloat::size,64*64);
 
       /* compute vertex grid (+displacement) */
-      evalGrid(patch,0,width-1,0,height-1,width,height,
+      evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
                local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
       /* copy temporary data to tessellation cache */

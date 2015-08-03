@@ -34,7 +34,9 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Base& patch, const SubdivMesh* const geom, const size_t bvhBytes);
+      GridSOA(const SubdivPatch1Base& patch, 
+              const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
+              const SubdivMesh* const geom, const size_t bvhBytes);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
@@ -45,7 +47,7 @@ namespace embree
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
-        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
+        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,0,width-1,0,height-1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
       }
 
       /*static size_t getNumEagerLeaves(size_t width, size_t height) {
