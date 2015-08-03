@@ -220,6 +220,7 @@ IF (TARGET_AVX512)
 
     builders/primrefgen.avx512.cpp
 
+    bvh4/bvh4_refit.cpp
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp

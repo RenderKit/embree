@@ -81,12 +81,15 @@ namespace embree
 #endif
     }
 
-    static __forceinline int16 load(const void* addr) 
-    {
+    static __forceinline int16 load(const void* addr) {
       return _mm512_load_si512(addr);
     }
 
-    static __forceinline void storeu(int* ptr, const int16& f ) { 
+    static __forceinline void store(void* addr, const int16& v2) {
+      _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
+    }
+
+    static __forceinline void storeu(void* ptr, const int16& f ) { 
 #if defined(__AVX512__)
        _mm512_storeu_si512(ptr,f);
 #else
