@@ -47,9 +47,9 @@ namespace embree
         GridSOA* grid = new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes,gridBytes);  
         char* const node_array  = grid->bvhData();
         float* const grid_array = grid->gridData();
-        //grid->root =  grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
-        //return grid;
-        return (void*) (size_t) grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
+        grid->root =  grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
+        return grid;
+        //return (void*) (size_t) grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
       }
 
       __forceinline char* bvhData() {

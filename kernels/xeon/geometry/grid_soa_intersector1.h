@@ -34,7 +34,7 @@ namespace embree
       { 
       public:
         __forceinline Precalculations (Ray& ray, const void* ptr) 
-          : patch(nullptr) {}
+          : grid(nullptr), patch(nullptr) {}
         
         __forceinline ~Precalculations() 
         {
@@ -43,6 +43,7 @@ namespace embree
         }
         
       public:
+        GridSOA* grid;
         SubdivPatch1Cached* patch;
       };
       
