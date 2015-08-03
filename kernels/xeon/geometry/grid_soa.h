@@ -34,7 +34,7 @@ namespace embree
     public:
 
       /*! GridSOA constructor */
-      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t offset);
+      GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes);
 
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
@@ -44,10 +44,20 @@ namespace embree
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
         
-        GridSOA* grid = new (alloc(bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes);  
-        char* const node_array  = (char*)grid;
-        float* const grid_array  = (float*)grid + bvhBytes/4;
+        GridSOA* grid = new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,scene->getSubdivMesh(patch->geom),bvhBytes,gridBytes);  
+        char* const node_array  = grid->bvhData();
+        float* const grid_array = grid->gridData();
+        //grid->root =  grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
+        //return grid;
         return (void*) (size_t) grid->buildBVH(*patch,node_array,grid_array,bvhBytes);
+      }
+
+      __forceinline char* bvhData() {
+        return &data[0];
+      }
+
+      __forceinline float* gridData() {
+        return (float*) &data[bvhBytes];
       }
       
       /*! returns the size of the BVH over the grid in bytes */
@@ -58,6 +68,12 @@ namespace embree
       
       /*! Create BVH4 tree over grid. */
       BBox3fa buildBVH(BVH4::NodeRef& curNode, const SubdivPatch1Cached& patch, char* node_array, float* grid_array, const GridRange& range, size_t& localCounter);
+
+    public:
+      BVH4::NodeRef root;
+      unsigned bvhBytes;
+      unsigned gridBytes;
+      char data[1];
     };
   }
 }

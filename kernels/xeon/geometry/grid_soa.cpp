@@ -20,7 +20,8 @@ namespace embree
 {
   namespace isa
   {  
-    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t offset)
+    GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes)
+      : root(BVH4::emptyNode), bvhBytes(bvhBytes), gridBytes(gridBytes)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
@@ -34,11 +35,10 @@ namespace embree
                local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
       /* copy temporary data to tessellation cache */
-      const size_t grid_offset = offset/4;
-      float* const grid_x  = (float*)this + grid_offset + 0*array_elements;
-      float* const grid_y  = (float*)this + grid_offset + 1*array_elements;
-      float* const grid_z  = (float*)this + grid_offset + 2*array_elements;
-      int  * const grid_uv = (int*  )this + grid_offset + 3*array_elements;
+      float* const grid_x  = (float*)(gridData() + 0*array_elements);
+      float* const grid_y  = (float*)(gridData() + 1*array_elements);
+      float* const grid_z  = (float*)(gridData() + 2*array_elements);
+      int  * const grid_uv = (int*  )(gridData() + 3*array_elements);
       
       /* copy points */
       memcpy(grid_x, local_grid_x, array_elements*sizeof(float));
