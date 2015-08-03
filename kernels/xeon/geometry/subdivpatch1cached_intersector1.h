@@ -64,7 +64,7 @@ namespace embree
 #endif
         }
         else {
-          if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+          if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounter,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
 #if GRID_SOA
@@ -75,7 +75,6 @@ namespace embree
             });
           lazy_node = grid->root;
           pre.grid = grid;
-          pre.patch = prim;
         }
       }
       
@@ -92,7 +91,7 @@ namespace embree
 #endif
         }
         else {
-          if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
+          if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
           GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounter,[&] () {
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
 #if GRID_SOA
@@ -103,7 +102,6 @@ namespace embree
             });
           lazy_node = grid->root;
           pre.grid = grid;
-          pre.patch = prim;
         }
         return false;
       }      

@@ -71,8 +71,13 @@ namespace embree
 
     public:
       BVH4::NodeRef root;
+      unsigned width;
+      unsigned height;
+      unsigned dim_offset;
+      unsigned geomID;
+      unsigned primID;
       unsigned bvhBytes;
-      unsigned gridBytes;
+      //unsigned gridBytes;
       char data[1];
     };
   }

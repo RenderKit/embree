@@ -29,22 +29,20 @@ namespace embree
     public:
       typedef SubdivPatch1Cached Primitive;
       
-      /*! Precalculations for subdiv patch intersection */
       class Precalculations 
       { 
       public:
         __forceinline Precalculations (Ray& ray, const void* ptr) 
-          : grid(nullptr), patch(nullptr) {}
+          : grid(nullptr) {}
         
         __forceinline ~Precalculations() 
         {
-	  if (patch)
+	  if (grid)
             SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
         }
         
       public:
         GridSOA* grid;
-        SubdivPatch1Cached* patch;
       };
       
       struct Gather2x3
@@ -125,7 +123,7 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        triangle_intersect_pluecker<vbool>(ray,v0,v1,v2,pre.patch->geom,pre.patch->prim,scene,[&](vfloat& u, vfloat& v) {
+        triangle_intersect_pluecker<vbool>(ray,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
             const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
             const Vec2<vfloat> uv0 = decodeUV(tri_v012_uv[0]);
             const Vec2<vfloat> uv1 = decodeUV(tri_v012_uv[1]);
@@ -155,7 +153,7 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        return triangle_occluded_pluecker<vbool>(ray,v0,v1,v2,pre.patch->geom,pre.patch->prim,scene,[&](vfloat& u, vfloat& v) {
+        return triangle_occluded_pluecker<vbool>(ray,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
             const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
             const Vec2<vfloat> uv0 = decodeUV(tri_v012_uv[0]);
             const Vec2<vfloat> uv1 = decodeUV(tri_v012_uv[1]);
@@ -168,8 +166,8 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
-        const size_t line_offset   = pre.patch->grid_u_res;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
@@ -186,8 +184,8 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
-        const size_t line_offset   = pre.patch->grid_u_res;
+        const size_t dim_offset    = pre.grid->dim_offset;
+        const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4);
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;

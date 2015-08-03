@@ -21,7 +21,9 @@ namespace embree
   namespace isa
   {  
     GridSOA::GridSOA(const SubdivPatch1Cached& patch, const SubdivMesh* const geom, const size_t bvhBytes, const size_t gridBytes)
-      : root(BVH4::emptyNode), bvhBytes(bvhBytes), gridBytes(gridBytes)
+      : root(BVH4::emptyNode), 
+        width(patch.grid_u_res), height(patch.grid_v_res), dim_offset(patch.grid_size_simd_blocks * vfloat::size), 
+        geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)//, gridBytes(gridBytes)
     {      
       const size_t array_elements = patch.grid_size_simd_blocks * vfloat::size;
       dynamic_large_stack_array(float,local_grid_u,array_elements+vfloat::size,64*64);
