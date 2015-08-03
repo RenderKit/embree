@@ -49,7 +49,7 @@ namespace embree
               auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
               return GridSOA::create(prim,scene,alloc);
             });
-          //GridSOA* grid = (GridSOA*)) prim->root_ref.data;
+          //GridSOA* grid = (GridSOA*) prim->root_ref.data;
           lazy_node = grid->root;
           pre.grid = grid;
         }
