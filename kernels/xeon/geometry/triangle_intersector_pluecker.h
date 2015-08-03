@@ -137,15 +137,15 @@ namespace embree
       ray.primID = tri_primIDs[i];              
     }
 
-    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi, typename UVMapper>
+    template<typename tsimdb, typename tsimdf, typename UVMapper>
       __forceinline void triangle_intersect_pluecker(Ray& ray, 
                                                      const Vec3<tsimdf>& tri_v0, 
 						     const Vec3<tsimdf>& tri_v1, 
 						     const Vec3<tsimdf>& tri_v2,  
-                                                     const unsigned& geomID, 
-						     const unsigned& primID, 
-                                                     const UVMapper& mapUV,
-                                                     Scene* scene)
+                                                     const unsigned int& geomID, 
+						     const unsigned int& primID, 
+                                                     Scene* scene,
+                                                     const UVMapper& mapUV)
       {
         /* calculate vertices relative to ray origin */
         typedef Vec3<tsimdf> tsimd3f;
@@ -333,15 +333,15 @@ namespace embree
       return true;
     }
 
-    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi, typename UVMapper>
+    template<typename tsimdb, typename tsimdf, typename UVMapper>
       __forceinline bool triangle_occluded_pluecker(Ray& ray, 
                                                     const Vec3<tsimdf>& tri_v0, 
                                                     const Vec3<tsimdf>& tri_v1, 
                                                     const Vec3<tsimdf>& tri_v2, 
-                                                    const unsigned& geomID, 
-                                                    const unsigned& primID,  
-                                                    const UVMapper& mapUV,
-                                                    Scene* scene)
+                                                    const unsigned int& geomID, 
+                                                    const unsigned int& primID,
+                                                    Scene* scene,
+                                                    const UVMapper& mapUV)
       {
         /* calculate vertices relative to ray origin */
         typedef Vec3<tsimdf> tsimd3f;

@@ -24,6 +24,7 @@
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
 #include "grid_soa.h"
+#include "triangle_intersector_pluecker.h"
 
 #define FORCE_TRIANGLE_UV 0                //!< returns u,v based on individual triangles instead relative to original patch 
 
@@ -95,105 +96,15 @@ namespace embree
 	const Vec3<float4> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
 	const Vec3<float4> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<float4> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
-        
-	const Vec3<float4> O = ray.org;
-	const Vec3<float4> D = ray.dir;
-        
-	const Vec3<float4> v0 = v0_org - O;
-	const Vec3<float4> v1 = v1_org - O;
-	const Vec3<float4> v2 = v2_org - O;
-        
-	const Vec3<float4> e0 = v2 - v0;
-	const Vec3<float4> e1 = v0 - v1;	     
-	const Vec3<float4> e2 = v1 - v2;	     
-        
-	/* calculate geometry normal and denominator */
-	const Vec3<float4> Ng1 = cross(e1,e0);
-	const Vec3<float4> Ng = Ng1+Ng1;
-	const float4 den = dot(Ng,D);
-	const float4 absDen = abs(den);
-	const float4 sgnDen = signmsk(den);
-        
-	bool4 valid ( true );
-	/* perform edge tests */
-	const float4 U = dot(Vec3<float4>(cross(v2+v0,e0)),D) ^ sgnDen;
-	valid &= U >= 0.0f;
-	if (likely(none(valid))) return;
-	const float4 V = dot(Vec3<float4>(cross(v0+v1,e1)),D) ^ sgnDen;
-	valid &= V >= 0.0f;
-	if (likely(none(valid))) return;
-	const float4 W = dot(Vec3<float4>(cross(v1+v2,e2)),D) ^ sgnDen;
 
-	valid &= W >= 0.0f;
-	if (likely(none(valid))) return;
-        
-	/* perform depth test */
-	const float4 T = dot(v0,Ng) ^ sgnDen;
-	valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-	if (unlikely(none(valid))) return;
-        
-	/* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING) // FIXME: wrong because of flipped normals
-	valid &= den > float4(zero);
-	if (unlikely(none(valid))) return;
-#else
-	valid &= den != float4(zero);
-	if (unlikely(none(valid))) return;
-#endif
-
-        /* ray mask test */
-        const size_t geomID = pre.patch->geom;
-        const size_t primID = pre.patch->prim;
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return;
-#endif
-        
-	/* calculate hit information */
-	const float4 rcpAbsDen = rcp(absDen);
-        float4 u =  U*rcpAbsDen;
-	float4 v =  V*rcpAbsDen;
-	const float4 t = T*rcpAbsDen;
-        
-#if !FORCE_TRIANGLE_UV
-	const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
-	const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
-	const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
-	const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
-	const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-	u = uv[0];
-	v = uv[1];        
-#endif
-	size_t i = select_min(valid,t);
-
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasIntersectionFilter1())) 
-        {
-          while (true) 
-          {
-            /* call intersection filter function */
-            Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
-              return;
-            }
-            valid[i] = 0;
-            if (unlikely(none(valid))) return;
-            i = select_min(valid,t);
-          }
-          return;
-        }
-#endif
-
-	/* update hit information */
-	ray.u         = u[i];
-	ray.v         = v[i];
-	ray.tfar      = t[i];
-        ray.geomID    = pre.patch->geom;
-        ray.primID    = pre.patch->prim;
-        ray.Ng.x      = Ng.x[i];
-        ray.Ng.y      = Ng.y[i];
-        ray.Ng.z      = Ng.z[i];
+        triangle_intersect_pluecker<bool4>(ray,v0_org,v1_org,v2_org,pre.patch->geom,pre.patch->prim,scene,[&](float4& u, float4& v) {
+            const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
+            const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
+            const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
+            const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
+            const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+            u = uv[0];v = uv[1]; 
+          });
       };
 
       static __forceinline bool occluded1_precise_2x3(Ray& ray,
@@ -215,87 +126,15 @@ namespace embree
 	const Vec3<float4> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
 	const Vec3<float4> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<float4> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
-        
-        const Vec3<float4> O = ray.org;
-        const Vec3<float4> D = ray.dir;
-        
-        const Vec3<float4> v0 = v0_org - O;
-        const Vec3<float4> v1 = v1_org - O;
-        const Vec3<float4> v2 = v2_org - O;
-        
-        const Vec3<float4> e0 = v2 - v0;
-        const Vec3<float4> e1 = v0 - v1;	     
-        const Vec3<float4> e2 = v1 - v2;	     
-        
-        /* calculate geometry normal and denominator */
-        const Vec3<float4> Ng1 = cross(e1,e0);
-        const Vec3<float4> Ng = Ng1+Ng1;
-        const float4 den = dot(Ng,D);
-        const float4 absDen = abs(den);
-        const float4 sgnDen = signmsk(den);
-        
-        bool4 valid ( true );
-        /* perform edge tests */
-        const float4 U = dot(Vec3<float4>(cross(v2+v0,e0)),D) ^ sgnDen;
-        valid &= U >= 0.0f;
-        if (likely(none(valid))) return false;
-        const float4 V = dot(Vec3<float4>(cross(v0+v1,e1)),D) ^ sgnDen;
-        valid &= V >= 0.0f;
-        if (likely(none(valid))) return false;
-        const float4 W = dot(Vec3<float4>(cross(v1+v2,e2)),D) ^ sgnDen;
-        valid &= W >= 0.0f;
-        if (likely(none(valid))) return false;
-        
-        /* perform depth test */
-        const float4 T = dot(v0,Ng) ^ sgnDen;
-        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-        if (unlikely(none(valid))) return false;
-        
-        /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING) // FIXME: wrong because of flipped normals
-        valid &= den > float4(zero);
-        if (unlikely(none(valid))) return false;
-#else
-        valid &= den != float4(zero);
-        if (unlikely(none(valid))) return false;
-#endif
 
-        /* ray mask test */
-        const size_t geomID = pre.patch->geom;
-        const size_t primID = pre.patch->prim;
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return false;
-#endif
-        
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasOcclusionFilter1())) 
-        {
-          /* calculate hit information */
-          const float4 rcpAbsDen = rcp(absDen);
-          float4 u =  U*rcpAbsDen;
-          float4 v =  V*rcpAbsDen;
-          const float4 t = T*rcpAbsDen;
-        
-#if !FORCE_TRIANGLE_UV
-          const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
-          const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
-          const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
-          const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
-          const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];
-          v = uv[1];        
-#endif
-          
-          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
-            const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
-          }
-          return false;
-        }
-#endif
-        return true;
+        return triangle_occluded_pluecker<bool4>(ray,v0_org,v1_org,v2_org,pre.patch->geom,pre.patch->prim,scene,[&](float4& u, float4& v) {
+            const Vec3<float4> tri012_uv = getV012(grid_uv,offset0,offset1);	
+            const Vec2<float4> uv0 = decodeUV(tri012_uv[0]);
+            const Vec2<float4> uv1 = decodeUV(tri012_uv[1]);
+            const Vec2<float4> uv2 = decodeUV(tri012_uv[2]);        
+            const Vec2<float4> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+            u = uv[0];v = uv[1]; 
+          });
       }
 
 #if defined(__AVX__)
@@ -343,106 +182,15 @@ namespace embree
 	const Vec3<float8> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
 	const Vec3<float8> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<float8> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
-        
 
-	const Vec3<float8> O = ray.org;
-	const Vec3<float8> D = ray.dir;
-
-	const Vec3<float8> v0 = v0_org - O;
-	const Vec3<float8> v1 = v1_org - O;
-	const Vec3<float8> v2 = v2_org - O;
-
-	const Vec3<float8> e0 = v2 - v0;
-	const Vec3<float8> e1 = v0 - v1;	     
-	const Vec3<float8> e2 = v1 - v2;	     
-
-	/* calculate geometry normal and denominator */
-	const Vec3<float8> Ng1 = cross(e1,e0);
-	const Vec3<float8> Ng = Ng1+Ng1;
-	const float8 den = dot(Ng,D);
-	const float8 absDen = abs(den);
-	const float8 sgnDen = signmsk(den);
-        
-	bool8 valid ( true );
-	/* perform edge tests */
-	const float8 U = dot(Vec3<float8>(cross(v2+v0,e0)),D) ^ sgnDen;
-	valid &= U >= 0.0f;
-	if (likely(none(valid))) return;
-	const float8 V = dot(Vec3<float8>(cross(v0+v1,e1)),D) ^ sgnDen;
-	valid &= V >= 0.0f;
-	if (likely(none(valid))) return;
-	const float8 W = dot(Vec3<float8>(cross(v1+v2,e2)),D) ^ sgnDen;
-
-	valid &= W >= 0.0f;
-	if (likely(none(valid))) return;
-        
-	/* perform depth test */
-	const float8 T = dot(v0,Ng) ^ sgnDen;
-	valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-	if (unlikely(none(valid))) return;
-        
-	/* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-	valid &= den > float8(zero);
-	if (unlikely(none(valid))) return;
-#else
-	valid &= den != float8(zero);
-	if (unlikely(none(valid))) return;
-#endif
-
-        /* ray mask test */
-        const size_t geomID = pre.patch->geom;
-        const size_t primID = pre.patch->prim;
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return;
-#endif
-        
-	/* calculate hit information */
-	const float8 rcpAbsDen = rcp(absDen);
-	float8 u =  U*rcpAbsDen;
-	float8 v =  V*rcpAbsDen;
-	const float8 t = T*rcpAbsDen;
-        
-#if !FORCE_TRIANGLE_UV
-	const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
-	const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
-	const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
-	const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
-	const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
-	u = uv[0];
-	v = uv[1];
-#endif        
-        size_t i = select_min(valid,t);
-
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasIntersectionFilter1())) 
-        {
-          while (true) 
-          {
-            /* call intersection filter function */
-            Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
-              return;
-            }
-            valid[i] = 0;
-            if (unlikely(none(valid))) return;
-            i = select_min(valid,t);
-          }
-          return;
-        }
-#endif
-	
-	/* update hit information */
-	ray.u         = u[i];
-	ray.v         = v[i];
-	ray.tfar      = t[i];
-        ray.geomID    = pre.patch->geom;
-        ray.primID    = pre.patch->prim;
-        ray.Ng.x      = Ng.x[i];
-        ray.Ng.y      = Ng.y[i];
-        ray.Ng.z      = Ng.z[i];
+        triangle_intersect_pluecker<bool8>(ray,v0_org,v1_org,v2_org,pre.patch->geom,pre.patch->prim,scene,[&](float8& u, float8& v) {
+            const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
+            const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
+            const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
+            const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
+            const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+            u = uv[0];v = uv[1]; 
+          });
       };
 
         static __forceinline bool occluded1_precise_3x3(Ray& ray,
@@ -465,88 +213,15 @@ namespace embree
 	const Vec3<float8> v0_org(tri012_x[0],tri012_y[0],tri012_z[0]);
 	const Vec3<float8> v1_org(tri012_x[1],tri012_y[1],tri012_z[1]);
 	const Vec3<float8> v2_org(tri012_x[2],tri012_y[2],tri012_z[2]);
-        
-        const Vec3<float8> O = ray.org;
-        const Vec3<float8> D = ray.dir;
-        
-        const Vec3<float8> v0 = v0_org - O;
-        const Vec3<float8> v1 = v1_org - O;
-        const Vec3<float8> v2 = v2_org - O;
-        
-        const Vec3<float8> e0 = v2 - v0;
-        const Vec3<float8> e1 = v0 - v1;	     
-        const Vec3<float8> e2 = v1 - v2;	     
-        
-        /* calculate geometry normal and denominator */
-        const Vec3<float8> Ng1 = cross(e1,e0);
-        const Vec3<float8> Ng = Ng1+Ng1;
-        const float8 den = dot(Ng,D);
-        const float8 absDen = abs(den);
-        const float8 sgnDen = signmsk(den);
-        
-        bool8 valid ( true );
-        /* perform edge tests */
-        const float8 U = dot(Vec3<float8>(cross(v2+v0,e0)),D) ^ sgnDen;
-        valid &= U >= 0.0f;
-        if (likely(none(valid))) return false;
-        const float8 V = dot(Vec3<float8>(cross(v0+v1,e1)),D) ^ sgnDen;
-        valid &= V >= 0.0f;
-        if (likely(none(valid))) return false;
-        const float8 W = dot(Vec3<float8>(cross(v1+v2,e2)),D) ^ sgnDen;
-        valid &= W >= 0.0f;
-        if (likely(none(valid))) return false;
-        
-        /* perform depth test */
-        const float8 T = dot(v0,Ng) ^ sgnDen;
-        valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
-        if (unlikely(none(valid))) return false;
-        
-        /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-        valid &= den > float8(zero);
-        if (unlikely(none(valid))) return false;
-#else
-        valid &= den != float8(zero);
-        if (unlikely(none(valid))) return false;
-#endif
 
-        /* ray mask test */
-        const size_t geomID = pre.patch->geom;
-        const size_t primID = pre.patch->prim;
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return false;
-#endif
-
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasOcclusionFilter1())) 
-        {
-          /* calculate hit information */
-          const float8 rcpAbsDen = rcp(absDen);
-          float8 u =  U*rcpAbsDen;
-          float8 v =  V*rcpAbsDen;
-          const float8 t = T*rcpAbsDen;
-        
-#if !FORCE_TRIANGLE_UV
-          const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1);	
-          const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
-          const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
-          const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
-          const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];
-          v = uv[1];        
-#endif
-          
-          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
-            const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
-          }
-          return false;
-        }
-#endif
-
-        return true;
+        return triangle_occluded_pluecker<bool8>(ray,v0_org,v1_org,v2_org,pre.patch->geom,pre.patch->prim,scene,[&](float8& u, float8& v) {
+            const Vec3<float8> tri012_uv = getV012(grid_uv,offset0,offset1,offset2);	
+            const Vec2<float8> uv0 = decodeUV(tri012_uv[0]);
+            const Vec2<float8> uv1 = decodeUV(tri012_uv[1]);
+            const Vec2<float8> uv2 = decodeUV(tri012_uv[2]);        
+            const Vec2<float8> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+            u = uv[0];v = uv[1]; 
+          });
       };
 
 #endif      
