@@ -102,6 +102,14 @@ namespace embree
       const bool16 m_4f = 0xf;
       return (__m512)permute<0,0,0,0>(uload16f(m_4f,(float*)a));
     }
+
+    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  // FIXME: implement fast version
+    {
+      ((float*)ptr)[0] = ((float*)&v)[0];
+      ((float*)ptr)[1] = ((float*)&v)[1];
+      ((float*)ptr)[2] = ((float*)&v)[2];
+      ((float*)ptr)[3] = ((float*)&v)[3];
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
