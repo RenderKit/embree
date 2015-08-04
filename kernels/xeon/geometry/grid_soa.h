@@ -38,19 +38,37 @@ namespace embree
               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
               const SubdivMesh* const geom, const size_t bvhBytes);
 
+      static __forceinline size_t calculate_grid_size(size_t width, size_t height) {
+        return ((width*height+vfloat::size-1)&(-vfloat::size)) / vfloat::size * vfloat::size;
+      }
+
       /*! performs cache lookup of grid BVH and builds grid if not in cache */
       template<typename Allocator>
-        static void* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc)
+        static GridSOA* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc)
       {
         const size_t width = patch->grid_u_res;
         const size_t height = patch->grid_v_res;
+        const GridRange range(0,width-1,0,height-1);
+        const size_t bvhBytes  = getBVHBytes(range,0);
+        //const size_t gridBytes = patch->getGridBytes();
+        const size_t gridBytes = 4*4*calculate_grid_size(width,height);
+        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,0,width-1,0,height-1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
+      }
+
+#if 0
+      /*! performs cache lookup of grid BVH and builds grid if not in cache */
+      template<typename Allocator>
+        static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, const Allocator& alloc)
+      {
+        const size_t width = x1-x0+1;
+        const size_t height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
         const size_t gridBytes = patch->getGridBytes();
         return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,0,width-1,0,height-1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
       }
 
-      /*static size_t getNumEagerLeaves(size_t width, size_t height) {
+      static size_t getNumEagerLeaves(size_t width, size_t height) {
         const size_t w = (((width +1)/2)+3)/4;
         const size_t h = (((height+1)/2)+3)/4;
         return w*h;
@@ -69,7 +87,7 @@ namespace embree
           {
             const size_t lx0 = x, lx1 = min(lx0+8,x1);
             const size_t ly0 = y, ly1 = min(ly0+8,y1);
-            GridAOS* leaf = GridAOS::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
+            GridSOA* leaf = create(&patch,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
             leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
             size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
             prims += n;
@@ -77,7 +95,8 @@ namespace embree
           }
         }
         return N;
-        }*/
+      }
+#endif
 
       /*! returns pointer to BVH array */
       __forceinline char* bvhData() {

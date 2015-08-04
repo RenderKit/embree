@@ -25,7 +25,7 @@ namespace embree
                      const SubdivMesh* const geom, const size_t bvhBytes)
       : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
-      dim_offset = ((width*height+vfloat::size-1)&(-vfloat::size)) / vfloat::size * vfloat::size;
+      dim_offset = calculate_grid_size(width,height);
 
       dynamic_large_stack_array(float,local_grid_u,dim_offset+vfloat::size,64*64);
       dynamic_large_stack_array(float,local_grid_v,dim_offset+vfloat::size,64*64);
