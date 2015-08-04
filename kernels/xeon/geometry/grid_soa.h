@@ -44,7 +44,7 @@ namespace embree
 
       /*! Subgrid creation */
       template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr)
+        static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
         const size_t width = x1-x0+1;
         const size_t height = y1-y0+1;
@@ -68,7 +68,7 @@ namespace embree
       }
 
       template<typename Allocator>
-        __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+        __forceinline static size_t createEager(SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
       {
         size_t N = 0;
         const size_t x0 = 0, x1 = patch.grid_u_res-1;
@@ -82,7 +82,7 @@ namespace embree
             const size_t ly0 = y, ly1 = min(ly0+8,y1);
             BBox3fa bounds;
             GridSOA* leaf = create(&patch,lx0,lx1,ly0,ly1,scene,alloc,&bounds);
-            *prims = PrimRef(bounds,leaf); prims++;
+            *prims = PrimRef(bounds,(size_t)BVH4::encodeTypedLeaf(leaf,1)); prims++;
             N++;
           }
         }

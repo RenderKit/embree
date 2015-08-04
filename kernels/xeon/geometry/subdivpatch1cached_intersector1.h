@@ -50,6 +50,7 @@ namespace embree
               return GridSOA::create(prim,scene,alloc);
             });
           //GridSOA* grid = (GridSOA*) prim->root_ref.data;
+          //GridSOA* grid = (GridSOA*) prim;
           lazy_node = grid->root;
           pre.grid = grid;
         }
@@ -70,6 +71,7 @@ namespace embree
               return GridSOA::create(prim,scene,alloc);
             });
           //GridSOA* grid = (GridSOA*) prim->root_ref.data;
+          //GridSOA* grid = (GridSOA*) prim;
           lazy_node = grid->root;
           pre.grid = grid;
         }

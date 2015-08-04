@@ -904,6 +904,7 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = accel; 
     intersectors.intersector1  = BVH4GridAOSIntersector1;
+    //intersectors.intersector1  = BVH4Subdivpatch1CachedIntersector1;
     intersectors.intersector4  = BVH4GridAOSIntersector4;
     intersectors.intersector8  = BVH4GridAOSIntersector8;
     intersectors.intersector16 = BVH4GridAOSIntersector16;
