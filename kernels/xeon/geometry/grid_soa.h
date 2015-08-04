@@ -42,21 +42,7 @@ namespace embree
         return ((width*height+vfloat::size-1)&(-vfloat::size)) / vfloat::size * vfloat::size;
       }
 
-      /*! performs cache lookup of grid BVH and builds grid if not in cache */
-      template<typename Allocator>
-        static GridSOA* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc)
-      {
-        const size_t width = patch->grid_u_res;
-        const size_t height = patch->grid_v_res;
-        const GridRange range(0,width-1,0,height-1);
-        const size_t bvhBytes  = getBVHBytes(range,0);
-        //const size_t gridBytes = patch->getGridBytes();
-        const size_t gridBytes = 4*4*calculate_grid_size(width,height);
-        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,0,width-1,0,height-1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
-      }
-
-#if 0
-      /*! performs cache lookup of grid BVH and builds grid if not in cache */
+      /*! Subgrid creation */
       template<typename Allocator>
         static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, const Allocator& alloc)
       {
@@ -64,10 +50,18 @@ namespace embree
         const size_t height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
-        const size_t gridBytes = patch->getGridBytes();
-        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,0,width-1,0,height-1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
+        const size_t gridBytes = 4*4*calculate_grid_size(width,height);
+        return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,width,height,scene->getSubdivMesh(patch->geom),bvhBytes);  
       }
 
+      /*! Grid creation */
+      template<typename Allocator>
+        static GridSOA* create(SubdivPatch1Base* const patch, const Scene* scene, const Allocator& alloc) 
+      {
+        return create(patch,0,patch->grid_u_res-1,0,patch->grid_v_res-1,scene,alloc);
+      }
+
+#if 0
       static size_t getNumEagerLeaves(size_t width, size_t height) {
         const size_t w = (((width +1)/2)+3)/4;
         const size_t h = (((height+1)/2)+3)/4;
