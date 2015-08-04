@@ -21,14 +21,10 @@
 #include "grid_aos_intersector1.h"
 #include "../../common/ray.h"
 
-#define GRID_SOA 1
-
 namespace embree
 {
   namespace isa
   {
-#if GRID_SOA
-
     class SubdivPatch1CachedIntersector1
     {
     public:
@@ -78,66 +74,5 @@ namespace embree
         return false;
       }      
     };
-
-#else
-
-  class SubdivPatch1CachedIntersector1
-    {
-    public:
-      typedef SubdivPatch1Cached Primitive;
-
-      struct Precalculations : public GridAOSIntersector1::Precalculations
-      {
-        __forceinline Precalculations (const Ray& ray, const void *ptr) 
-          :  patch(nullptr), GridAOSIntersector1::Precalculations(ray,ptr) {}
-
-         __forceinline ~Precalculations() 
-         {
-           if (patch)
-             SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-         }
-         
-      public:
-         SubdivPatch1Cached* patch;
-      };
-      
-      /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        STAT3(normal.trav_prims,1,1,1);
-        
-        if (likely(ty == 0)) {
-          GridAOSIntersector1::intersect(pre,ray,(GridAOS::EagerLeaf*)prim,ty,scene,lazy_node);
-        }
-        else {
-          if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          lazy_node = (size_t) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounter,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridAOS::create(prim,scene,alloc);
-            });
-          pre.patch = prim;
-        }
-      }
-      
-      /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        STAT3(shadow.trav_prims,1,1,1);
-        
-        if (likely(ty == 0)) {
-          return GridAOSIntersector1::occluded(pre,ray,(GridAOS::EagerLeaf*)prim,ty,scene,lazy_node);
-        }
-        else {
-          if (pre.patch) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-          lazy_node = (size_t) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounter,[&] () {
-              auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-              return GridAOS::create(prim,scene,alloc);
-            });
-          pre.patch = prim;
-        }
-        return false;
-      }      
-    };
-#endif
   }
 }
