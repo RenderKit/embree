@@ -22,7 +22,7 @@ namespace embree
   {  
     GridSOA::GridSOA(const SubdivPatch1Base& patch, 
                      const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
-                     const SubdivMesh* const geom, const size_t bvhBytes)
+                     const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
       : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
       dim_offset = calculate_grid_size(width,height);
@@ -56,7 +56,7 @@ namespace embree
       }
 
       /* create BVH */
-      root = buildBVH(bvhData(),gridData(),bvhBytes);
+      root = buildBVH(bvhData(),gridData(),bvhBytes,bounds_o);
     }
 
     size_t GridSOA::getBVHBytes(const GridRange& range, const unsigned int leafBytes)
@@ -73,11 +73,12 @@ namespace embree
       return bytes;
     }
     
-    BVH4::NodeRef GridSOA::buildBVH(char* node_array, float* grid_array, const size_t bvhBytes)
+    BVH4::NodeRef GridSOA::buildBVH(char* node_array, float* grid_array, const size_t bvhBytes, BBox3fa* bounds_o)
     {
       BVH4::NodeRef root = 0; size_t allocator = 0;
       GridRange range(0,width-1,0,height-1);
-      buildBVH(root,node_array,grid_array,range,allocator);
+      BBox3fa bounds = buildBVH(root,node_array,grid_array,range,allocator);
+      if (bounds_o) *bounds_o = bounds;
       assert(allocator == bvhBytes);
       return root;
     }
