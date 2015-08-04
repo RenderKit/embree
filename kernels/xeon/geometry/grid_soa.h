@@ -124,17 +124,7 @@ namespace embree
         }
       };
       
-      static __forceinline Vec2<float4> decodeUV(const float4& uv)
-      {
-	const int4 iu  = cast(uv) & 0xffff;
-	const int4 iv  = srl(cast(uv),16);
-	const float4 u = (float4)iu * float4(1.0f/0xFFFF);
-	const float4 v = (float4)iv * float4(1.0f/0xFFFF);
-	return Vec2<float4>(u,v);
-      }
-      
 #if defined (__AVX__)
-      
       struct Gather3x3
       {
         typedef bool8 vbool;
@@ -153,18 +143,18 @@ namespace embree
                               shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
         }
       };
-      
-      static __forceinline Vec2<float8> decodeUV(const float8& uv)
-      {
-	const int8 i_uv = cast(uv);
-	const int8 i_u  = i_uv & 0xffff;
-	const int8 i_v  = srl(i_uv,16);
-	const float8 u    = (float8)i_u * float8(1.0f/0xFFFF);
-	const float8 v    = (float8)i_v * float8(1.0f/0xFFFF);
-	return Vec2<float8>(u,v);
-      }
-      
 #endif
+
+      template<typename vfloat>
+      static __forceinline Vec2<vfloat> decodeUV(const vfloat& uv)
+      {
+        typedef typename vfloat::Int vint;
+	const vint iu  = cast(uv) & 0xffff;
+	const vint iv  = srl(cast(uv),16);
+	const vfloat u = (vfloat)iu * vfloat(1.0f/0xFFFF);
+	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
+	return Vec2<vfloat>(u,v);
+      }
 
     public:
       BVH4::NodeRef root;
