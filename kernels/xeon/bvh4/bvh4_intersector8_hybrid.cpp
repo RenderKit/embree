@@ -111,12 +111,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const Node* __restrict__ const node = cur.node();
 	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+	    /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -132,25 +129,28 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -169,12 +169,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -183,32 +180,35 @@ namespace embree
 	      if (unlikely(child == BVH4::emptyNode)) break;
 	      float8 lnearP; const bool8 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
-	      /* if we hit the child we choose to continue with that child if it 
+              /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
-	      }	      
+	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -327,13 +327,10 @@ namespace embree
 	    const bool8 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const Node* __restrict__ const node = cur.node();
-	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -349,25 +346,28 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -386,12 +386,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -399,33 +396,36 @@ namespace embree
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
 	      float8 lnearP; const bool8 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
-	      
-	      /* if we hit the child we choose to continue with that child if it 
+	      	      
+              /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
-	      }	      
+	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
