@@ -170,7 +170,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
         const size_t line_offset   = pre.patch->grid_u_res;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4);
+        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
@@ -188,7 +188,7 @@ namespace embree
       {
         const size_t dim_offset    = pre.patch->grid_size_simd_blocks * vfloat::size;
         const size_t line_offset   = pre.patch->grid_u_res;
-        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4);
+        const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
         const float* const grid_y  = grid_x + 1 * dim_offset;
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
