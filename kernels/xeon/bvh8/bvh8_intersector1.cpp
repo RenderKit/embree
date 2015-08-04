@@ -187,7 +187,6 @@ namespace embree
         size_t lazy_node = 0;
         PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene,lazy_node);
         ray_far = ray.tfar;
-
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
           stackPtr->dist = inf;
@@ -348,7 +347,5 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
 
     DEFINE_INTERSECTOR1(BVH8Triangle8vIntersector1Pluecker,BVH8Intersector1<true COMMA ArrayIntersector1<TriangleNvIntersector1Pluecker2<Triangle8v COMMA true> > >);
-
-
   }
 }

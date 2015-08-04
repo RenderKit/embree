@@ -143,8 +143,15 @@ namespace embree
         const bool16 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector16::intersect(valid_leaf,pre,ray,tri,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector16::intersect(valid_leaf,pre,ray,tri,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
 #endif       
@@ -262,9 +269,16 @@ namespace embree
         const bool16 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector16::occluded(!terminated,pre,ray,tri,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector16::occluded(!terminated,pre,ray,tri,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store16i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
