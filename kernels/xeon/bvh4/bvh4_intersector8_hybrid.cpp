@@ -24,6 +24,7 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
 
 #define SWITCH_THRESHOLD 5
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
@@ -471,6 +472,9 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersector8_1<TriangleNvIntersectorMPluecker<Ray8 COMMA Triangle4v COMMA true> > >);
+
+    //DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8, BVH4Intersector8Hybrid<0x1 COMMA true COMMA SubdivPatch1CachedIntersector8>);
+               
 
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
