@@ -30,7 +30,6 @@ uniform bool g_subdiv_mode = false;
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 3
-#define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -128,6 +127,14 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+uniform bool g_use_smooth_normals = false;
+void device_key_pressed(uniform int key)
+{
+  //print("key = %\n",key);
+  if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
+  else device_key_pressed_default(key);
+}
+
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 
@@ -143,7 +150,7 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
-  key_pressed_handler = device_key_pressed_default;
+  key_pressed_handler = device_key_pressed;
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -158,12 +165,9 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   geomID_to_type = uniform new uniform int[numGeometries];
 
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT| RTC_SCENE_ROBUST;
-  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
+  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE;
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
-#if USE_SMOOTH_NORMALS
-  scene_aflags |= RTC_INTERPOLATE;
-#endif
 
   RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
@@ -235,13 +239,14 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   Vec3f Ns = ray.Ng;
 
-#if USE_SMOOTH_NORMALS
-  Vec3f dPdu,dPdv;
-  foreach_unique (geomID in ray.geomID) {
-    rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+  if (g_use_smooth_normals)
+  {
+    Vec3f dPdu,dPdv;
+    foreach_unique (geomID in ray.geomID) {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+    }
+    Ns = cross(dPdv,dPdu);
   }
-  Ns = cross(dPdv,dPdu);
-#endif
 
   int materialID = 0;
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi

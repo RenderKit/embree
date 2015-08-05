@@ -37,7 +37,6 @@
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
-#define USE_SMOOTH_NORMALS 0
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -865,9 +864,11 @@ Vec3fa g_accu_p;
 extern "C" bool g_changed;
 
 bool g_animation = true;
+bool g_use_smooth_normals = false;
 void device_key_pressed(int key)
 {
-  if (key == 32) g_animation = !g_animation;
+  if (key == 32  /* */) g_animation = !g_animation;
+  if (key == 115 /*c*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
 
@@ -1097,9 +1098,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-#if USE_SMOOTH_NORMALS
   scene_aflags |= RTC_INTERPOLATE;
-#endif
 
   RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
@@ -1296,13 +1295,14 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     }
     Vec3fa Ns = normalize(ray.Ng);
 
-#if USE_SMOOTH_NORMALS
-    Vec3fa dPdu,dPdv;
-    int geomID = ray.geomID;  {
-      rtcInterpolate(g_scene,ray.geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+    if (g_use_smooth_normals)
+    {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ns = normalize(cross(dPdv,dPdu));
     }
-    Ns = normalize(cross(dPdv,dPdu));
-#endif
 
     /* compute differential geometry */
     DifferentialGeometry dg;
