@@ -184,20 +184,6 @@ namespace embree
     if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
       std::cerr << "Thread: cannot set affinity" << std::endl;
   }
-  
-  ssize_t getThreadAffinity(pthread_t pth)
-  {
-    cpu_set_t cset;
-    CPU_ZERO(&cset);
-    int error = pthread_getaffinity_np(pth, sizeof(cset), &cset);
-    if (error != 0) perror("pthread_getaffinity_np");
-    
-    for (int j=0; j<CPU_COUNT(&cset); j++)
-      if (CPU_ISSET(j, &cset))
-	return j;
-
-    return -1;
-  }
 }
 #endif
 
