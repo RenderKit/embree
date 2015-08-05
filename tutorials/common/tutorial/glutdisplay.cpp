@@ -106,7 +106,7 @@ namespace embree
     case 'd' : g_camera.rotate(+0.02f,0.0f); break;
     case 'w' : g_camera.move(0.0f,0.0f,+g_speed); break;
     case 's' : g_camera.move(0.0f,0.0f,-g_speed); break;
-    case ' ' : g_display = !g_display; break;
+      //case ' ' : g_display = !g_display; break;
 
     case '+' : g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
     case '-' : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;

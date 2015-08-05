@@ -27,7 +27,7 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-#define FIX_SAMPLING 0
+#define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
 #define ENABLE_TEXTURING 0
@@ -864,6 +864,13 @@ uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
 extern uniform bool g_changed;
 
+uniform bool g_animation = true;
+void device_key_pressed(uniform int key)
+{
+  if (key == 32) g_animation = !g_animation;
+  else device_key_pressed_default(key);
+}
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -882,7 +889,7 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //  renderPixel = renderPixelEyeLight;
-  key_pressed_handler = device_key_pressed_default;
+  key_pressed_handler = device_key_pressed;
 
 } // device_init
 
@@ -1518,14 +1525,14 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
 
-  if (g_ispc_scene->numSubdivMeshKeyFrames)
+  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames)
     {
       updateKeyFrame(g_ispc_scene);
       rtcCommit(g_scene);
       g_changed = true;
     }
 
-#if  FIX_SAMPLING == 0
+#if  FIXED_SAMPLING == 0
   g_accu_count++;
 #endif
 
