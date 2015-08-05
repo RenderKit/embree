@@ -66,7 +66,7 @@ namespace embree
     struct SubdivPatch1CachedIntersector4
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef typename GridSOAIntersectorN<Ray4>::Precalculations Precalculations;
+      typedef GridSOAIntersectorN<Ray4>::Precalculations Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
@@ -111,7 +111,7 @@ namespace embree
     struct SubdivPatch1CachedIntersector8
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef typename GridSOAIntersectorN<Ray8>::Precalculations Precalculations;
+      typedef GridSOAIntersectorN<Ray8>::Precalculations Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {

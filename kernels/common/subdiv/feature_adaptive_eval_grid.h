@@ -199,7 +199,7 @@ namespace embree
 #endif
       }
       
-      __forceinline bool final(const CatmullClarkPatch3fa& patch, const typename CatmullClarkRing::Type type, size_t depth) 
+      __forceinline bool final(const CatmullClarkPatch3fa& patch, const CatmullClarkRing::Type type, size_t depth) 
       {
         const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
 //#if PATCH_MIN_RESOLUTION
