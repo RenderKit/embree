@@ -333,9 +333,17 @@ namespace embree
 	}
 
         /* standard edge shared between two faces */
-	else if (N == 2) {
-	  halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
-	  halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
+        else if (N == 2)
+        {
+          if (halfEdges1[e+0].edge->next()->vtx_index != halfEdges1[e+1].edge->vtx_index) // FIXME: workaround for wrong winding order of opposite patch
+          {
+            halfEdges1[e+0].edge->edge_crease_weight = float(inf);
+            halfEdges1[e+1].edge->edge_crease_weight = float(inf);
+          }
+          else {
+            halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
+            halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
+          }
 	}
 
         /* non-manifold geometry is handled by keeping vertices fixed during subdivision */
