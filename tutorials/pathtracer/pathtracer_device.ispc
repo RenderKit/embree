@@ -1013,7 +1013,7 @@ void updateKeyFrame(uniform ISPCScene* uniform scene_in)
       {
 	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
 	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
 	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
       }
   }
