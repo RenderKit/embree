@@ -203,10 +203,6 @@ namespace embree
 
   void displayFunc(void) 
   {
-    float dx = 0;
-    float dy = 5;
-
-
     AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
 
     /* render image using ISPC */
@@ -223,9 +219,36 @@ namespace embree
     {
       /* draw pixels to screen */
       int* pixels = map();
-      //glRasterPos2i(-1, 1);
-      //glPixelZoom(1.0f, -1.0f);
       glDrawPixels(g_width,g_height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+
+      if (g_fullscreen) 
+      {
+        glMatrixMode( GL_PROJECTION );
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D( 0, g_width, 0, g_height );
+        glMatrixMode( GL_MODELVIEW );
+        glPushMatrix();
+        glLoadIdentity();
+
+         /* print frame rate */
+        std::ostringstream stream;
+        stream.setf(std::ios::fixed, std::ios::floatfield);
+        stream.precision(2);
+        stream << 1.0f/dt0 << " fps";
+        std::string str = stream.str();
+
+        glRasterPos2i( g_width-str.size()*12, g_height - 24); 
+        for ( int i = 0; i < str.size(); ++i )
+          glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+        
+        glRasterPos2i( 0, 0 ); 
+        glPopMatrix();
+        glMatrixMode( GL_PROJECTION );
+        glPopMatrix();
+        glMatrixMode( GL_MODELVIEW );
+      }
+      
       glutSwapBuffers();
       unmap();
     }
