@@ -28,11 +28,11 @@ namespace embree
   {
   private:
     
-    float table_cos_2PI_div_n[MAX_RING_FACE_VALENCE];
+    float table_cos_2PI_div_n[MAX_RING_FACE_VALENCE+1];
 
-    float *table_limittangent_a[MAX_RING_FACE_VALENCE];
-    float *table_limittangent_b[MAX_RING_FACE_VALENCE];
-    float table_limittangent_c[MAX_RING_FACE_VALENCE];
+    float *table_limittangent_a[MAX_RING_FACE_VALENCE+1];
+    float *table_limittangent_b[MAX_RING_FACE_VALENCE+1];
+    float table_limittangent_c[MAX_RING_FACE_VALENCE+1];
 
     __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*M_PI/(float)n); }
 
@@ -55,9 +55,7 @@ namespace embree
 
     __forceinline float cos_2PI_div_n(const size_t n)
     {
-      assert(n < MAX_RING_FACE_VALENCE);
-
-      if (likely(n < MAX_RING_FACE_VALENCE))
+      if (likely(n <= MAX_RING_FACE_VALENCE))
         return table_cos_2PI_div_n[n];
       else
         return set_cos_2PI_div_n(n);
@@ -65,21 +63,21 @@ namespace embree
 
     __forceinline float limittangent_a(const size_t i, const size_t n)
     {
-      assert(n < MAX_RING_FACE_VALENCE);
+      assert(n <= MAX_RING_FACE_VALENCE);
       assert(i < n);
       return table_limittangent_a[n][i];
     }
 
     __forceinline float limittangent_b(const size_t i, const size_t n)
     {
-      assert(n < MAX_RING_FACE_VALENCE);
+      assert(n <= MAX_RING_FACE_VALENCE);
       assert(i < n);
       return table_limittangent_b[n][i];
     }
 
     __forceinline float limittangent_c(const size_t n)
     {
-      assert(n < MAX_RING_FACE_VALENCE);
+      assert(n <= MAX_RING_FACE_VALENCE);
       return table_limittangent_c[n];
     }
 
