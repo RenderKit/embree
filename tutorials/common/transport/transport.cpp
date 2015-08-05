@@ -112,8 +112,7 @@ namespace embree
 
   void key_pressed (int key) 
   {
-    if (key_pressed_handler)
-      key_pressed_handler(key);
+    call_key_pressed_handler(key);
   }
 
   void resize(int width, int height)

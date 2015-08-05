@@ -407,6 +407,10 @@ extern "C" void device_key_pressed_default(int key)
 /* called when a key is pressed */
 extern "C" void (*key_pressed_handler)(int key) = nullptr;
 
+extern "C" void call_key_pressed_handler(int key) {
+  if (key_pressed_handler) key_pressed_handler(key);
+}
+
 void renderTile(int taskIndex,
                 int* pixels,
                 const int width,
