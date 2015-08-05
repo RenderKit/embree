@@ -46,6 +46,7 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
+
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
   for (size_t f=startID; f<endID;f++) {
@@ -64,30 +65,44 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+task void updateSubMeshEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
   const size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
+task void updateMeshEdgeLevelBufferTask( ISPCScene* scene_in, const Vec3fa& cam_pos )
+{
+  ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[taskIndex];
+  unsigned int geomID = mesh->geomID;
+  if (mesh->numFaces < 10000) {
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);   
+  }
+}
 #endif
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
+  /* first update small meshes */
+#if defined(ISPC)
+  launch[ scene_in->numSubdivMeshes ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); 
+#endif
+
+  /* now update large meshes */
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
-    unsigned int geomID = mesh->geomID;
+    if (mesh->numFaces < 10000) continue;
 #if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); 	           
 #else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);    
   }
 }
-
 
 /* render function to use */
 renderPixelFunc renderPixel;
