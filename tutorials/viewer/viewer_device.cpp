@@ -43,7 +43,6 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
-  //return 8;
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
@@ -129,6 +128,7 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
+  key_pressed_handler = device_key_pressed_default;
 }
 
 RTCScene convertScene(ISPCScene* scene_in)

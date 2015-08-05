@@ -332,7 +332,7 @@ export uniform bool device_pick(const uniform float x,
 }
 
 /* called when a key is pressed */
-export void device_key_pressed(uniform int key)
+extern void device_key_pressed_default(uniform int key)
 {
   if (key == GLUT_KEY_F1) {
     renderPixel = renderPixelStandard;
@@ -383,12 +383,12 @@ export void device_key_pressed(uniform int key)
   else if (key == GLUT_KEY_F12) {
     g_changed = true;
   }
-
 }
 
+/* called when a key is pressed */
+void (* uniform key_pressed_handler)(uniform int key) = NULL;
 
-task void task_getNumHWThreads()
-{
+task void task_getNumHWThreads() {
  g_numThreads = threadCount;
 }
 

@@ -882,6 +882,7 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //  renderPixel = renderPixelEyeLight;
+  key_pressed_handler = device_key_pressed_default;
 
 } // device_init
 

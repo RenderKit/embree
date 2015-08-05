@@ -208,6 +208,7 @@ extern "C" void device_init (char* cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
 }
 
 int frameID = 0;

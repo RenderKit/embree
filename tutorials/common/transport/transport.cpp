@@ -110,8 +110,10 @@ namespace embree
     device_init(cfg);
   }
 
-  void key_pressed (int key) {
-    device_key_pressed(key);
+  void key_pressed (int key) 
+  {
+    if (key_pressed_handler)
+      key_pressed_handler(key);
   }
 
   void resize(int width, int height)

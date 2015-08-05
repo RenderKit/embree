@@ -349,7 +349,7 @@ extern "C" bool device_pick(const float x,
 }
 
 /* called when a key is pressed */
-extern "C" void device_key_pressed(int key)
+extern "C" void device_key_pressed_default(int key)
 {
   if (key == GLUT_KEY_F1) {
     renderPixel = renderPixelStandard;
@@ -402,8 +402,10 @@ extern "C" void device_key_pressed(int key)
   else if (key == GLUT_KEY_F12) {
     g_changed = true;
   }
-
 }
+
+/* called when a key is pressed */
+extern "C" void (*key_pressed_handler)(int key) = nullptr;
 
 void renderTile(int taskIndex,
                 int* pixels,
