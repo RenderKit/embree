@@ -14,13 +14,9 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-# ##################################################################
-# add macro INCLUDE_DIRECTORIES_ISPC() that allows to specify search
-# paths for ISPC sources
-# ##################################################################
-SET(ISPC_INCLUDE_DIR "")
+SET (ISPC_INCLUDE_DIR "")
 MACRO (INCLUDE_DIRECTORIES_ISPC)
-  SET(ISPC_INCLUDE_DIR ${ISPC_INCLUDE_DIR} ${ARGN})
+  SET (ISPC_INCLUDE_DIR ${ISPC_INCLUDE_DIR} ${ARGN})
 ENDMACRO ()
 
 IF (ENABLE_ISPC_SUPPORT)
@@ -28,17 +24,7 @@ IF (ENABLE_ISPC_SUPPORT)
 SET(ISPC_VERSION_REQUIRED "1.8.2")
 
 IF (NOT ISPC_EXECUTABLE)
-  # try sibling folder as hint for path of ISPC
-  IF (APPLE)
-    SET(ISPC_DIR_SUFFIX "osx")
-  ELSEIF(WIN32)
-    SET(ISPC_DIR_SUFFIX "windows")
-  ELSE()
-    SET(ISPC_DIR_SUFFIX "linux")
-  ENDIF()
-  SET(ISPC_DIR_HINT ${PROJECT_SOURCE_DIR}/../ispc-v${ISPC_VERSION_REQUIRED}-${ISPC_DIR_SUFFIX})
-
-  FIND_PROGRAM(ISPC_EXECUTABLE ispc PATHS ${ISPC_DIR_HINT} DOC "Path to the ISPC executable.")
+  FIND_PROGRAM(ISPC_EXECUTABLE ispc DOC "Path to the ISPC executable.")
   IF (NOT ISPC_EXECUTABLE)
     MESSAGE(FATAL_ERROR "Intel SPMD Compiler (ISPC) not found. Disable ENABLE_ISPC_SUPPORT or install ISPC.")
   ELSE()
@@ -65,16 +51,14 @@ GET_FILENAME_COMPONENT(ISPC_DIR ${ISPC_EXECUTABLE} PATH)
 SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT "32vs64 bit addressing in ispc")
 MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
 
-MACRO (ISPC_COMPILE)
+MACRO (ispc_compile)
   SET(ISPC_ADDITIONAL_ARGS "")
 
-  IF (NOT __XEON__)
-    SET(ISPC_TARGET_EXT .cpp)
-    SET(ISPC_TARGET_ARGS generic-16)
-    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --opt=force-aligned-memory --emit-c++ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h -D__XEON_PHI__)
+  IF (__XEON__)
+    SET (ISPC_TARGET_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})
   ELSE()
-    SET(ISPC_TARGET_EXT ${CMAKE_CXX_OUTPUT_EXTENSION})
-    STRING(REPLACE ";" "," ISPC_TARGET_ARGS "${ISPC_TARGETS}")
+    SET (ISPC_TARGET_EXT .cpp)
+    SET (ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --opt=force-aligned-memory)
   ENDIF()
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -91,10 +75,11 @@ MACRO (ISPC_COMPILE)
     SET(ISPC_INCLUDE_DIR_PARMS "-I" ${ISPC_INCLUDE_DIR_PARMS})
   ENDIF()
 
-  IF (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    SET(ISPC_OPT_FLAGS -O3)
+  IF (__XEON__)
+    STRING(REPLACE ";" "," ISPC_TARGET_ARGS "${ISPC_TARGETS}")
   ELSE()
-    SET(ISPC_OPT_FLAGS -O2 -g)
+    SET(ISPC_TARGET_ARGS generic-16)
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --emit-c++ -D__XEON_PHI__ --c++-include-file=${ISPC_DIR}/examples/intrinsics/knc.h)
   ENDIF()
 
   SET(ISPC_OBJECTS "")
@@ -103,13 +88,12 @@ MACRO (ISPC_COMPILE)
     GET_FILENAME_COMPONENT(fname ${src} NAME_WE)
     GET_FILENAME_COMPONENT(dir ${src} PATH)
 
-    IF ("${dir}" MATCHES "^/|([A-Z]:)") # global path name to input
-      STRING(REGEX REPLACE "^/|([A-Z]:)" "${ISPC_TARGET_DIR}/rebased/" outdir "${dir}")
-      SET(input ${src})
-    ELSE() # local path name to input
-      SET(outdir "${ISPC_TARGET_DIR}/local_${dir}")
-      SET(input ${CMAKE_CURRENT_SOURCE_DIR}/${src})
-    ENDIF()
+    IF("${dir}" STREQUAL "")
+      SET(outdir ${ISPC_TARGET_DIR})
+    ELSE("${dir}" STREQUAL "")
+      SET(outdir ${ISPC_TARGET_DIR}/${dir})
+    ENDIF("${dir}" STREQUAL "")
+    SET(outdirh ${ISPC_TARGET_DIR})
 
     SET(deps "")
     IF (EXISTS ${outdir}/${fname}.dev.idep)
@@ -137,37 +121,39 @@ MACRO (ISPC_COMPILE)
     ENDIF()
 
     IF (WIN32)
-      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
-    ELSE()
+	  SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
+	ELSE()
       SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
     ENDIF()
 
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${results} ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      OUTPUT ${results} ${outdirh}/${fname}_ispc.h
       COMMAND ${CMAKE_COMMAND} -E make_directory ${outdir}
       COMMAND ${ISPC_EXECUTABLE}
       -I ${CMAKE_CURRENT_SOURCE_DIR}
       ${ISPC_INCLUDE_DIR_PARMS}
       --arch=${ISPC_ARCHITECTURE}
       --addressing=${EMBREE_ISPC_ADDRESSING}
-      ${ISPC_OPT_FLAGS}
+      -O3
       --target=${ISPC_TARGET_ARGS}
       --woff
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
-      -h ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      -h ${outdirh}/${fname}_ispc.h
       -MMM  ${outdir}/${fname}.dev.idep
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
-      ${input}
-      DEPENDS ${input} ${deps}
+      ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src} ${deps}
       COMMENT "Building ISPC object ${outdir}/${fname}.dev${ISPC_TARGET_EXT}"
     )
 
     SET(ISPC_OBJECTS ${ISPC_OBJECTS} ${results})
+
   ENDFOREACH()
+
 ENDMACRO()
 
-MACRO (ADD_ISPC_EXECUTABLE name)
+MACRO (add_ispc_executable name)
    SET(ISPC_SOURCES "")
    SET(OTHER_SOURCES "")
    FOREACH(src ${ARGN})
@@ -188,7 +174,7 @@ MACRO (ADD_ISPC_EXECUTABLE name)
   ENDIF()
 ENDMACRO()
 
-MACRO (ADD_ISPC_LIBRARY name type)
+MACRO (add_ispc_library name type)
    SET(ISPC_SOURCES "")
    SET(OTHER_SOURCES "")
    FOREACH(src ${ARGN})
@@ -211,7 +197,7 @@ ENDMACRO()
 
 ELSE (ENABLE_ISPC_SUPPORT)
 
-MACRO (ADD_ISPC_LIBRARY name type)
+MACRO (add_ispc_library name type)
    SET(ISPC_SOURCES "")
    SET(OTHER_SOURCES "")
    FOREACH(src ${ARGN})
@@ -223,6 +209,7 @@ MACRO (ADD_ISPC_LIBRARY name type)
     ENDIF ()
   ENDFOREACH()
   ADD_LIBRARY(${name} ${type} ${OTHER_SOURCES})
+
 ENDMACRO()
 
 ENDIF (ENABLE_ISPC_SUPPORT)
