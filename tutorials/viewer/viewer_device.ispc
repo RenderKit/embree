@@ -240,6 +240,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f Ns = ray.Ng;
 
   if (g_use_smooth_normals)
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
     Vec3f dPdu,dPdv;
     foreach_unique (geomID in ray.geomID) {
