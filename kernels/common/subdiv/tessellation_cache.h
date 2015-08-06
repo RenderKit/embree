@@ -148,12 +148,6 @@ namespace embree
        new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
-     
-     __forceinline void setTime(size_t combinedTime)
-     {
-       if (data == 0) return;
-       data = (data & REF_TAG_MASK) | (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
-     }
 
      volatile int64_t data;
    };

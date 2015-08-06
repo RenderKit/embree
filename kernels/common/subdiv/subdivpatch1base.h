@@ -148,12 +148,6 @@ namespace embree
       root_ref = SharedLazyTessellationCache::Tag();
     }
 
-    __forceinline void updateRootRef(size_t globalTime) 
-    {
-      const size_t combinedTime = SharedLazyTessellationCache::sharedLazyTessellationCache.getTime(globalTime);
-      root_ref.setTime(combinedTime);
-    }
-
     __forceinline SharedLazyTessellationCache::CacheEntry& entry() {
       return (SharedLazyTessellationCache::CacheEntry&) root_ref;
     }
