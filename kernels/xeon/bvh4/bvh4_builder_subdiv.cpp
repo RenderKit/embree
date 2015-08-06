@@ -73,8 +73,6 @@ namespace embree
 
       void build(size_t, size_t) 
       {
-        scene->commitCounterSubdiv++;
-
         /* initialize all half edge structures */
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
@@ -133,8 +131,6 @@ namespace embree
 
       void build(size_t, size_t) 
       {
-        scene->commitCounterSubdiv++;
-
         /* initialize all half edge structures */
         const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
         if (numPrimitives > 0 || scene->isInterpolatable()) {
@@ -309,10 +305,8 @@ namespace embree
         }
 
         /* only invalidate old grids and BVH if we have to recalculate */
-        if (!fastUpdateMode) {
+        if (!fastUpdateMode)
           bvh->alloc.reset();
-          scene->commitCounterSubdiv++;
-        }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
 

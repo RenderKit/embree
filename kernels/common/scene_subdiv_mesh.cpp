@@ -101,6 +101,9 @@ namespace embree
     }
 #endif
 
+    if (type != RTC_LEVEL_BUFFER)
+      atomic_add(&parent->commitCounterSubdiv,1);
+
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
     case RTC_FACE_BUFFER                : faceVertices.set(ptr,offset,stride); break;
@@ -194,6 +197,9 @@ namespace embree
 
   void SubdivMesh::updateBuffer (RTCBufferType type)
   {
+    if (type != RTC_LEVEL_BUFFER)
+      atomic_add(&parent->commitCounterSubdiv,1);
+
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;
     case RTC_FACE_BUFFER                : faceVertices.setModified(true); break;
@@ -604,7 +610,7 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       float4 Pt, dPdut, dPdvt; 
-      isa::PatchEval<float4,float4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounter,
+      isa::PatchEval<float4,float4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
                                       getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
@@ -656,7 +662,7 @@ namespace embree
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
+          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
                                                                    getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                                    P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
@@ -678,7 +684,7 @@ namespace embree
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool4,int4,float4,float4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounter,
+          isa::PatchEvalSimd<bool4,int4,float4,float4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
