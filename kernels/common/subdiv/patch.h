@@ -36,10 +36,10 @@
     }               
 #endif
 
-#define PATCH_MAX_CACHE_DEPTH 2
+#define PATCH_MAX_CACHE_DEPTH 4
 #define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
 #define PATCH_MAX_EVAL_DEPTH_IRREGULAR 2     // maximal evaluation depth at irregular vertices (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
-#define PATCH_MAX_EVAL_DEPTH_CREASE 10       // maximal evaluation depth at crease features (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
+#define PATCH_MAX_EVAL_DEPTH_CREASE 4       // maximal evaluation depth at crease features (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
 #define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
