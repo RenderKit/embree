@@ -97,6 +97,12 @@ MACRO (ISPC_COMPILE)
     SET(ISPC_OPT_FLAGS -O2 -g)
   ENDIF()
 
+  IF (WIN32)
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
+  ELSE()
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
+  ENDIF()
+
   SET(ISPC_OBJECTS "")
 
   FOREACH(src ${ARGN})
@@ -129,12 +135,6 @@ MACRO (ISPC_COMPILE)
           SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
         ENDFOREACH()
       ENDIF()
-    ENDIF()
-
-    IF (WIN32)
-      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
-    ELSE()
-      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
     ENDIF()
 
     ADD_CUSTOM_COMMAND(
