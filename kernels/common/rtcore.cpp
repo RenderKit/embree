@@ -365,21 +365,26 @@ namespace embree
       State::instance()->print();
 
 #if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(g_numThreads);
+    TaskScheduler::create(g_numThreads,State::instance()->set_affinity);
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(g_numThreads);
+    TaskSchedulerTBB::create(g_numThreads,State::instance()->set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
+
+    /* only set affinity of requested by the user */
+    if (State::instance()->set_affinity) {
+      tbb_affinity.set_concurrency(0);
+      tbb_affinity.observe(true); 
+    }
+    
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      tbb_affinity.set_concurrency(0);
-      tbb_affinity.observe(true); 
       tbb_threads.initialize(g_numThreads);
 
 #if 0

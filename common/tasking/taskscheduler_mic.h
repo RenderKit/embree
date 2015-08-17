@@ -138,7 +138,7 @@ namespace embree
     static TaskScheduler* instance;
     
     /*! creates the threads */
-    static __dllexport void create(size_t numThreads = 0);
+    static __dllexport void create(size_t numThreads = 0, bool set_affinity = true);
 
     /*! returns the number of threads used */
     static __dllexport size_t getNumThreads();
@@ -171,7 +171,7 @@ namespace embree
   protected:
 
     /*! creates all threads */
-    void createThreads(size_t numThreads);
+    void createThreads(size_t numThreads, bool set_affinity);
 
     /*! thread function */
     static void threadFunction(void* thread);

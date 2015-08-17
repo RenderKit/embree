@@ -36,7 +36,7 @@ namespace embree
   
   TaskScheduler* TaskScheduler::instance = nullptr;
 
-  __dllexport void TaskScheduler::create(size_t numThreads)
+  __dllexport void TaskScheduler::create(size_t numThreads, bool set_affinity)
   {
     if (instance)
       THROW_RUNTIME_ERROR("Embree threads already running.");
@@ -49,7 +49,7 @@ namespace embree
     instance = new TaskSchedulerSys; 
 #endif
 
-    instance->createThreads(numThreads);
+    instance->createThreads(numThreads,set_affinity);
   }
 
   __dllexport size_t TaskScheduler::getNumThreads() 
@@ -117,7 +117,7 @@ namespace embree
   TaskScheduler::TaskScheduler () 
     : terminateThreads(false), defaultNumThreads(true), numThreads(0), numEnabledThreads(0) {}
 
-  void TaskScheduler::createThreads(size_t numThreads_in)
+  void TaskScheduler::createThreads(size_t numThreads_in, bool set_affinity)
   {
     numThreads = numThreads_in;
     defaultNumThreads = false;
@@ -136,7 +136,7 @@ namespace embree
 
     /* generate all threads */
     for (size_t t=0; t<numThreads; t++) {
-      threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,t));
+      threads.push_back(createThread((thread_func)threadFunction,new Thread(t,numThreads,this),4*1024*1024,set_affinity ? t : -1));
     }
 
     //TaskLogger::init(numThreads);

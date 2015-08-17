@@ -215,7 +215,7 @@ namespace embree
     /*! pool of worker threads */
     struct ThreadPool
     {
-      ThreadPool (size_t numThreads = 0);
+      ThreadPool (size_t numThreads = 0, bool set_affinity = false);
       ~ThreadPool ();
 
       /*! starts the threads */
@@ -235,6 +235,7 @@ namespace embree
       
     private:
       size_t numThreads;
+      bool set_affinity;
       bool running;
       volatile bool terminate;
       std::vector<thread_t> threads;
@@ -249,7 +250,7 @@ namespace embree
     ~TaskSchedulerTBB ();
 
     /*! initializes the task scheduler */
-    static void create(size_t numThreads);
+    static void create(size_t numThreads, bool set_affinity);
 
     /*! destroys the task scheduler again */
     static void destroy();

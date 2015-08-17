@@ -51,9 +51,15 @@ namespace embree
     
     scene_flags = -1;
     verbose = 0;
-    g_numThreads = 0;
     benchmark = 0;
     regression_testing = 0;
+
+    g_numThreads = 0;
+#if TASKING_TBB_INTERNAL || defined(__MIC__)
+    set_affinity = true;
+#else
+    set_affinity = false;
+#endif
 
     {
       Lock<MutexSys> lock(g_errors_mutex);
@@ -112,6 +118,8 @@ namespace embree
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         g_numThreads = cin->get().Int();
+      else if (tok == Token::Id("set_affinity"))
+        set_affinity = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) 
       {

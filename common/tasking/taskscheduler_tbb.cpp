@@ -130,8 +130,8 @@ namespace embree
     exit(1);
   }
 
-  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads)
-    : numThreads(numThreads), running(false), terminate(false) 
+  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads, bool set_affinity)
+    : numThreads(numThreads), set_affinity(set_affinity), running(false), terminate(false) 
   {
     if (this->numThreads == 0)
       this->numThreads = getNumberOfLogicalThreads();
@@ -143,7 +143,7 @@ namespace embree
     {
       running = true;
       for (size_t t=1; t<numThreads; t++) {
-        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,t));
+        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,set_affinity ? t : -1));
       }
     }
   }
@@ -254,10 +254,10 @@ namespace embree
     return g_instance;
   }
 
-  void TaskSchedulerTBB::create(size_t numThreads)
+  void TaskSchedulerTBB::create(size_t numThreads, bool set_affinity)
   {
     if (threadPool) THROW_RUNTIME_ERROR("Embree threads already running.");
-    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads);
+    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads,set_affinity);
   }
 
   void TaskSchedulerTBB::destroy() {

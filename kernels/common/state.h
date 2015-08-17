@@ -83,9 +83,12 @@ namespace embree
     bool float_exceptions;                 //!< enable floating point exceptions
     int scene_flags;                       //!< scene flags to use
     size_t verbose;                        //!< verbosity of output
-    //size_t numThreads;                   //!< number of threads to use in builders
     size_t benchmark;                      //!< true
     size_t regression_testing;             //!< enables regression tests at startup
+
+  public:
+    //size_t numThreads;                   //!< number of threads to use in builders
+    bool set_affinity;                     //!< sets affinity for worker threads
 
   public:
     static tls_t g_error; // FIXME: use thread local
