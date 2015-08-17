@@ -22,6 +22,8 @@
 /*! Modified Pluecker ray/triangle intersector. The edge equations
  *  are watertight along the edge for neighboring triangles. */
 
+#define GCC_MSUB_WORKAROUND 1
+
 namespace embree
 {
   namespace isa
@@ -44,9 +46,15 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
+#if GCC_MSUB_WORKAROUND == 1
+      const tsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
       
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -153,9 +161,15 @@ namespace embree
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
+#if GCC_MSUB_WORKAROUND == 1
+      const tsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
       
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -266,9 +280,15 @@ namespace embree
       /* calculate vertices relative to ray origin */
       rsimdb valid = valid0;
 
+#if GCC_MSUB_WORKAROUND == 1
+      const rsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const rsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const rsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const rsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const rsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const rsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
       
       /* calculate triangle edges */
       const rsimd3f e0 = v2-v0;
@@ -370,9 +390,15 @@ namespace embree
       
       /* calculate vertices relative to ray origin */
       rsimdb valid = valid0;
+#if GCC_MSUB_WORKAROUND == 1
+      const rsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const rsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const rsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const rsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const rsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const rsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
       
       /* calculate triangle edges */
       const rsimd3f e0 = v2-v0;
@@ -460,9 +486,15 @@ namespace embree
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate vertices relative to ray origin */
+#if GCC_MSUB_WORKAROUND == 1
+      const tsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
 
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
@@ -573,9 +605,15 @@ namespace embree
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate vertices relative to ray origin */
+#if GCC_MSUB_WORKAROUND == 1
+      const tsimd3f v0( msub(tri_v0.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v0.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v0.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v1( msub(tri_v1.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v1.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v1.z,ray_rdir.z,ray_org_rdir.z) );
+      const tsimd3f v2( msub(tri_v2.x,ray_rdir.x,ray_org_rdir.x), msub(tri_v2.y,ray_rdir.y,ray_org_rdir.y), msub(tri_v2.z,ray_rdir.z,ray_org_rdir.z) );   
+#else
       const tsimd3f v0 = msub(tri_v0,ray_rdir,ray_org_rdir);
       const tsimd3f v1 = msub(tri_v1,ray_rdir,ray_org_rdir);
       const tsimd3f v2 = msub(tri_v2,ray_rdir,ray_org_rdir);
+#endif 
 
       /* calculate triangle edges */
       const tsimd3f e0 = v2-v0;
