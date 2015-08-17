@@ -93,8 +93,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
-#if defined(ISPC)
     if (mesh->numFaces < 10000) continue;
+#if defined(ISPC)
     launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -240,7 +240,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f Ns = ray.Ng;
 
   if (g_use_smooth_normals)
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
     Vec3f dPdu,dPdv;
     foreach_unique (geomID in ray.geomID) {

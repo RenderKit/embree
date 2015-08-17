@@ -1296,7 +1296,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     Vec3f Ns = normalize(ray.Ng);
 
     if (g_use_smooth_normals)
-      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {

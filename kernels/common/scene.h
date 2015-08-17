@@ -239,7 +239,6 @@ namespace embree
   public:
     AccelN accels;
     unsigned int commitCounter;
-    atomic_t commitCounterSubdiv;
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;

@@ -53,7 +53,7 @@ namespace embree
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), numSubdivEnableDisableEvents(0),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0), commitCounterSubdiv(0), 
+      commitCounter(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
 #if defined(TASKING_LOCKSTEP) 

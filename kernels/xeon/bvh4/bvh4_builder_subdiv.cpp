@@ -102,7 +102,7 @@ namespace embree
           (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
         bvh->set(root,pinfo.geomBounds,pinfo.size());
-        
+
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
           prims.clear();
@@ -303,9 +303,7 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-
-        /* only invalidate old grids and BVH if we have to recalculate */
-        if (!fastUpdateMode)
+        if (!fastUpdateMode) 
           bvh->alloc.reset();
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
@@ -384,6 +382,7 @@ namespace embree
                   bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 }
                 else {
+                  patch.updateRootRef(scene->commitCounter+1);
                   bound = bounds[patchIndex];
                 }
               }

@@ -3429,6 +3429,100 @@ namespace embree
     return passed;
   }
 
+  /*********************************************************************************/
+  /*********************************************************************************/
+  /*********************************************************************************/
+
+  bool rtcore_bary_distance_robust()
+  {
+    struct __aligned(16) Vertex
+    {
+      float x, y, z, w;
+    };
+
+    struct Triangle
+    {
+      int v0, v1, v2;
+    };
+
+    std::vector<Vertex> m_vertices;
+    std::vector<Triangle> m_triangles;
+    
+    const float length = 1000.0f;
+    const float width = 1000.0f;
+      
+    m_vertices.resize(4);
+
+    m_vertices[0] = {-length / 2.0f, -width / 2.0f, 0};
+    m_vertices[1] = { length / 2.0f, -width / 2.0f, 0};
+    m_vertices[2] = { length / 2.0f,  width / 2.0f, 0};
+    m_vertices[3] = {-length / 2.0f,  width / 2.0f, 0};
+
+    m_triangles.resize(2);
+
+    m_triangles[0] = {0, 1, 2};
+    m_triangles[1] = {2, 3, 0};
+
+    //const RTCSceneFlags flags = RTCSceneFlags(0); 
+    const RTCSceneFlags flags = RTC_SCENE_ROBUST;
+    const RTCScene mainSceneId = rtcNewScene(RTC_SCENE_STATIC | flags , RTC_INTERSECT1);
+
+    const unsigned int id = rtcNewTriangleMesh(mainSceneId, RTC_GEOMETRY_STATIC, m_triangles.size(), m_vertices.size());
+
+    rtcSetBuffer(mainSceneId, id, RTC_VERTEX_BUFFER, m_vertices.data(), 0, sizeof(Vertex));
+    rtcSetBuffer(mainSceneId, id, RTC_INDEX_BUFFER, m_triangles.data(), 0, sizeof(Triangle));
+
+    rtcCommit(mainSceneId);
+
+    RTCRay ray;
+
+    ray.org[0] = 0.1f;
+    ray.org[1] = 1.09482f;
+    ray.org[2] = 29.8984f;
+    
+    ray.dir[0] = 0.f;
+    ray.dir[1] = 0.99482f;
+    ray.dir[2] = -0.101655f;
+    
+    ray.tnear = 0.05f;
+    ray.tfar  = inf;
+    ray.mask  = -1;
+
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.instID = RTC_INVALID_GEOMETRY_ID;
+
+    rtcIntersect(mainSceneId, ray);
+
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return false;
+      
+    const Triangle &triangle = m_triangles[ray.primID];
+
+    const Vertex &v0_ = m_vertices[triangle.v0];
+    const Vertex &v1_ = m_vertices[triangle.v1];
+    const Vertex &v2_ = m_vertices[triangle.v2];
+
+    const Vec3fa v0(v0_.x, v0_.y, v0_.z);
+    const Vec3fa v1(v1_.x, v1_.y, v1_.z);
+    const Vec3fa v2(v2_.x, v2_.y, v2_.z);
+
+    const Vec3fa hit_tri = v0 + ray.u * (v1 - v0) + ray.v * (v2 - v0);
+
+    const Vec3fa ray_org = Vec3fa(ray.org[0], ray.org[1], ray.org[2]);
+    const Vec3fa ray_dir = Vec3fa(ray.dir[0], ray.dir[1], ray.dir[2]);
+
+    const Vec3fa hit_tfar = ray_org + ray.tfar * ray_dir;
+    const Vec3fa delta = hit_tri - hit_tfar;
+    const float distance = embree::length(delta);
+
+#if 0
+    PRINT(ray_org);
+    PRINT(ray_dir);
+    PRINT(hit_tri);
+    PRINT(distance);
+#endif
+    return distance < 0.0002f;
+  }
 
   /* main function in embree namespace */
   int main(int argc, char** argv) 
@@ -3438,6 +3532,8 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
+    //PRINT(test_barycentric());
 
     /* parse command line */  
     parseCommandLine(argc,argv);
@@ -3462,6 +3558,8 @@ namespace embree
 #if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
+    POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
+    
     POSITIVE("flags_static_static",       rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_STATIC));
     NEGATIVE("flags_static_deformable",   rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DEFORMABLE));
     NEGATIVE("flags_static_dynamic",      rtcore_dynamic_flag(RTC_SCENE_STATIC, RTC_GEOMETRY_DYNAMIC));

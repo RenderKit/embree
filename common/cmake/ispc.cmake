@@ -91,12 +91,16 @@ MACRO (ISPC_COMPILE)
     SET(ISPC_INCLUDE_DIR_PARMS "-I" ${ISPC_INCLUDE_DIR_PARMS})
   ENDIF()
 
-  IF (WIN32)
-    SET(ISPC_OPT_FLAGS -O3)
-  ELSEIF (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  IF (WIN32 OR "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     SET(ISPC_OPT_FLAGS -O3)
   ELSE()
     SET(ISPC_OPT_FLAGS -O2 -g)
+  ENDIF()
+
+  IF (WIN32)
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
+  ELSE()
+    SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
   ENDIF()
 
   SET(ISPC_OBJECTS "")
@@ -105,13 +109,8 @@ MACRO (ISPC_COMPILE)
     GET_FILENAME_COMPONENT(fname ${src} NAME_WE)
     GET_FILENAME_COMPONENT(dir ${src} PATH)
 
-    IF ("${dir}" MATCHES "^/|([A-Z]:)") # global path name to input
-      STRING(REGEX REPLACE "^/|([A-Z]:)" "${ISPC_TARGET_DIR}/rebased/" outdir "${dir}")
-      SET(input ${src})
-    ELSE() # local path name to input
-      SET(outdir "${ISPC_TARGET_DIR}/local_${dir}")
-      SET(input ${CMAKE_CURRENT_SOURCE_DIR}/${src})
-    ENDIF()
+    SET(outdir "${ISPC_TARGET_DIR}/${dir}")
+    SET(input ${CMAKE_CURRENT_SOURCE_DIR}/${src})
 
     SET(deps "")
     IF (EXISTS ${outdir}/${fname}.dev.idep)
@@ -136,12 +135,6 @@ MACRO (ISPC_COMPILE)
           SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
         ENDFOREACH()
       ENDIF()
-    ENDIF()
-
-    IF (WIN32)
-      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --dllexport)
-    ELSE()
-      SET(ISPC_ADDITIONAL_ARGS ${ISPC_ADDITIONAL_ARGS} --pic)
     ENDIF()
 
     ADD_CUSTOM_COMMAND(

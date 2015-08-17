@@ -56,7 +56,7 @@ namespace embree
       if (i+4 >= numFloats)
       {
         float4 Pt, dPdut, dPdvt; 
-        isa::PatchEval<float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        isa::PatchEval<float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
                           getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
         if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
@@ -67,7 +67,7 @@ namespace embree
       else
       {
         float8 Pt, dPdut, dPdvt; 
-        isa::PatchEval<float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        isa::PatchEval<float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
                                      
         if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
@@ -107,7 +107,7 @@ namespace embree
         if (j+4 >= numFloats)
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool,vint,vfloat,float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=4;
@@ -115,7 +115,7 @@ namespace embree
         else
         {
           const size_t M = min(size_t(8),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool,vint,vfloat,float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounter,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=8;
