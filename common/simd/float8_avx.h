@@ -162,8 +162,17 @@ namespace embree
   __forceinline const float8 signmsk ( const float8& a ) { return _mm256_and_ps(a.m256,_mm256_castsi256_ps(_mm256_set1_epi32(0x80000000))); }
 
   __forceinline const float8 rcp  ( const float8& a ) { 
-    const float8 r = _mm256_rcp_ps(a.m256); 
-    return _mm256_sub_ps(_mm256_add_ps(r, r), _mm256_mul_ps(_mm256_mul_ps(r, r), a)); 
+    const float8 r   = _mm256_rcp_ps(a.m256); 
+#if defined(__AVX2__)
+    const float8 res = _mm256_mul_ps(r,_mm256_fnmadd_ps(r, a, float8(2.0f)));     
+#else
+    const float8 res = _mm256_mul_ps(r,_mm256_sub_ps(float8(2.0f), _mm256_mul_ps(r, a)));     
+    //const float8 r2  = _mm256_mul_ps(r, r);
+    //const float8 r_r = _mm256_add_ps(r, r);
+    //const float8 r2a = _mm256_mul_ps(r2, a);
+    //const float8 res = _mm256_sub_ps(r_r, r2a); 
+#endif
+    return res;
   }
   __forceinline const float8 sqr  ( const float8& a ) { return _mm256_mul_ps(a,a); }
   __forceinline const float8 sqrt ( const float8& a ) { return _mm256_sqrt_ps(a.m256); }

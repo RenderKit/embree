@@ -3520,6 +3520,7 @@ namespace embree
     PRINT(ray_dir);
     PRINT(hit_tri);
     PRINT(distance);
+    exit(0);
 #endif
     return distance < 0.0002f;
   }
@@ -3532,8 +3533,6 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-
-    //PRINT(test_barycentric());
 
     /* parse command line */  
     parseCommandLine(argc,argv);

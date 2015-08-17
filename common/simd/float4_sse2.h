@@ -181,7 +181,13 @@ namespace embree
   
   __forceinline const float4 rcp  ( const float4& a ) {
     const float4 r = _mm_rcp_ps(a.m128);
-    return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#if defined(__AVX2__)
+    const float4 res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, float4(2.0f)));     
+#else
+    const float4 res = _mm_mul_ps(r,_mm_sub_ps(float4(2.0f), _mm_mul_ps(r, a)));     
+    //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#endif
+    return res;
   }
   __forceinline const float4 sqr  ( const float4& a ) { return _mm_mul_ps(a,a); }
   __forceinline const float4 sqrt ( const float4& a ) { return _mm_sqrt_ps(a.m128); }
