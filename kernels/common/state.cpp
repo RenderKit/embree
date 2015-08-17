@@ -108,6 +108,22 @@ namespace embree
                                            TokenStream::separators,syms);
     parse(cin);
   }
+  
+  int string_to_cpufeatures(const std::string& isa)
+  {
+    if      (isa == "sse" ) return SSE;
+    else if (isa == "sse2") return SSE2;
+    else if (isa == "sse3") return SSE3;
+    else if (isa == "ssse3") return SSSE3;
+    else if (isa == "sse41") return SSE41;
+    else if (isa == "sse4.1") return SSE41;
+    else if (isa == "sse42") return SSE42;
+    else if (isa == "sse4.2") return SSE42;
+    else if (isa == "avx") return AVX;
+    else if (isa == "avxi") return AVXI;
+    else if (isa == "avx2") return AVX2;
+    else return SSE2;
+  }
 
   void State::parse(Ref<TokenStream> cin)
   {
@@ -118,23 +134,18 @@ namespace embree
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         g_numThreads = cin->get().Int();
+      
       else if (tok == Token::Id("set_affinity"))
         set_affinity = cin->get().Int();
       
-      else if (tok == Token::Id("isa") && cin->trySymbol("=")) 
-      {
-        std::string isa = cin->get().Identifier();
-        if      (isa == "sse" ) setCPUFeatures(SSE);
-        else if (isa == "sse2") setCPUFeatures(SSE2);
-        else if (isa == "sse3") setCPUFeatures(SSE3);
-        else if (isa == "ssse3") setCPUFeatures(SSSE3);
-        else if (isa == "sse41") setCPUFeatures(SSE41);
-        else if (isa == "sse4.1") setCPUFeatures(SSE41);
-        else if (isa == "sse42") setCPUFeatures(SSE42);
-        else if (isa == "sse4.2") setCPUFeatures(SSE42);
-        else if (isa == "avx") setCPUFeatures(AVX);
-        else if (isa == "int8") setCPUFeatures(AVXI);
-        else if (isa == "avx2") setCPUFeatures(AVX2);
+      else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
+        std::string isa = strlwr(cin->get().Identifier());
+        setCPUFeatures(string_to_cpufeatures(isa));
+      }
+
+      else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
+        std::string isa = strlwr(cin->get().Identifier());
+        setCPUFeatures(getCPUFeatures() & string_to_cpufeatures(isa));
       }
 
       else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 
