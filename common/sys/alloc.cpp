@@ -32,10 +32,15 @@ namespace embree
   void* alignedMalloc(size_t size, size_t align) 
   {
     assert((align & (align-1)) == 0);
-    return _aligned_malloc(size,align);
+    if (size == 0) return nullptr;
+    void* ptr = _aligned_malloc(size,align);
+    if (ptr == nullptr) throw std::bad_alloc();
+    return ptr;
   }
   
-  void alignedFree(const void* ptr) {
+  void alignedFree(const void* ptr) 
+  {
+    if (ptr == nullptr) return;
     _aligned_free((void*)ptr);
   }
 
