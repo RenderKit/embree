@@ -70,3 +70,7 @@ IF (ENABLE_XEON_PHI_SUPPORT)
   ADD_SUBDIRECTORY(motion_blur_geometry motion_blur_geometry_device)
   ADD_SUBDIRECTORY(interpolation interpolation_device)
 ENDIF()
+
+# propagate menu links up
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
+
