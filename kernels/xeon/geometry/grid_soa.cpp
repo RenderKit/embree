@@ -52,7 +52,7 @@ namespace embree
       for (size_t i=0; i<dim_offset; i+=vfloat::size) {
         const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
         const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
-        vint::store(&grid_uv[i], (iv << 16) | iu); 
+        vint::storeu(&grid_uv[i], (iv << 16) | iu); 
       }
 
       /* create BVH */
