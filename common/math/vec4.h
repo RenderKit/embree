@@ -121,7 +121,8 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> __forceinline T       dot      ( const Vec4<T>& a, const Vec4<T>& b ) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+  template<typename T> __forceinline T       dot      ( const Vec4<T>& a, const Vec4<T>& b ) { return madd(a.x,b.x,madd(a.y,b.y,madd(a.z,b.z,a.w*b.w))); }
+
   template<typename T> __forceinline T       length   ( const Vec4<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec4<T> normalize( const Vec4<T>& a )                   { return a*rsqrt(dot(a,a)); }
   template<typename T> __forceinline T       distance ( const Vec4<T>& a, const Vec4<T>& b ) { return length(a-b); }
