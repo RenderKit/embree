@@ -158,6 +158,9 @@ namespace embree
 
     public:
       BVH4::NodeRef root;
+#if !defined (__X86_64__)
+      unsigned align0;
+#endif
       unsigned width;
       unsigned height;
       unsigned dim_offset;
