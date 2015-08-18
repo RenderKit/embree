@@ -46,7 +46,11 @@ namespace embree
     hair_traverser = "default";
     hair_builder_replication_factor = 3.0f;
     memory_preallocation_factor     = 1.0f; 
-    tessellation_cache_size         = 0;
+#if defined(__X86_64__)
+    tessellation_cache_size = 1024*1024*1024;
+#else
+    tessellation_cache_size = 128*1024*1024;
+#endif
     subdiv_accel = "default";
     
     scene_flags = -1;

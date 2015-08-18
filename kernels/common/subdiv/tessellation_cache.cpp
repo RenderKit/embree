@@ -37,29 +37,10 @@ namespace embree
     SharedLazyTessellationCache::sharedLazyTessellationCache.reset();
   }
   
-  /* alloc cache memory */
-  float *alloc_tessellation_cache_mem(const size_t blocks)
-  {
-    return (float*)_mm_malloc(64 * blocks,64);
-  }
-  
-  /* free cache memory */
-  void free_tessellation_cache_mem(void *mem, const size_t blocks)
-  {
-    assert(mem);
-    _mm_free(mem);
-  }
-
-
   SharedLazyTessellationCache::SharedLazyTessellationCache()
   {
-    size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
-#if defined(_MSC_VER)
-    data                   = (float*)os_malloc(size); // FIXME: should only reserve memory under windows
-#else
-    data                   = (float*)os_reserve(size);
-#endif
-
+    size = 0;
+    data = nullptr;
     maxBlocks              = size/64;
     localTime              = NUM_CACHE_SEGMENTS;
     next_block             = 0;
@@ -225,12 +206,13 @@ namespace embree
   void SharedLazyTessellationCache::realloc(const size_t new_size)
   {
     if (data)
-      {
-	os_free(data,size);
-      }
+      os_free(data,size);
+     
     size      = new_size;
     data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
     maxBlocks = size/64;    
+    //localTime              = NUM_CACHE_SEGMENTS; // FIXME: has this to get set?
+    //next_block             = 0;                  // FIXME: has this to get set?
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else

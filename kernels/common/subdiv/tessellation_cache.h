@@ -63,12 +63,6 @@ namespace embree
   void resizeTessellationCache(const size_t new_size);
   void resetTessellationCache();
 
-  /* alloc cache memory */
-  float *alloc_tessellation_cache_mem(const size_t blocks);
-
-  /* free cache memory */
-  void free_tessellation_cache_mem(void *mem, const size_t blocks = 0);
-
 
 #if defined(__MIC__)
  typedef unsigned int InputTagType;
@@ -100,9 +94,9 @@ namespace embree
  class __aligned(64) SharedLazyTessellationCache 
  {
  public:
-   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29
+   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29  // FIXME: why is this a maximal size?
    
-   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
+   //static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 #if defined(__MIC__)
    static const size_t NUM_CACHE_SEGMENTS              = 4;
 #else

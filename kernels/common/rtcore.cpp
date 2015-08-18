@@ -289,8 +289,8 @@ namespace embree
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::instance()->parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     
-    if (State::instance()->tessellation_cache_size)
-      resizeTessellationCache( State::instance()->tessellation_cache_size );
+    /*! set tessellation cache size */
+    resizeTessellationCache( State::instance()->tessellation_cache_size );
 
     /*! enable some floating point exceptions to catch bugs */
     if (State::instance()->float_exceptions)
