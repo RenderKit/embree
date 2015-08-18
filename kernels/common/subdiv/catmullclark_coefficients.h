@@ -37,7 +37,7 @@ namespace embree
     __forceinline float set_cos_2PI_div_n(const size_t n) { return cosf(2.0f*M_PI/(float)n); }
 
     __forceinline float set_limittangent_a(const size_t i, const size_t n)  { 
-      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));  
+      const float c0 = 1.0f/(float)n * 1.0f / sqrtf(4.0f + cosf(M_PI/(float)n)*cosf(M_PI/(float)n));   // FIXME: remove
       const float c1 = (1.0f/(float)n + cosf(M_PI/(float)n) * c0); 
       return cosf(2.0f*M_PI*(float)i/(float)n) * c1;
     }
