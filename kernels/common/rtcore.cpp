@@ -396,7 +396,7 @@ namespace embree
 #endif
     }
 #if USE_TASK_ARENA
-    arena.initialize(g_numThreads);
+    arena = new tbb::task_arena(g_numThreads);
 #endif
 #endif
 
@@ -434,10 +434,11 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB)
+#if USE_TASK_ARENA
+    delete arena; arena = nullptr;
+#endif
     if (g_tbb_threads_initialized)
-    {
       tbb_threads.terminate();
-    }
 #endif
     State::instance()->clear();
     g_initialized = false;

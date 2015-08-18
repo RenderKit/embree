@@ -25,7 +25,7 @@ namespace embree
 #endif
 
 #if USE_TASK_ARENA
-  extern tbb::task_arena arena;
+  extern tbb::task_arena* arena;
 #endif
 
   /*! processes error codes, do not call directly */

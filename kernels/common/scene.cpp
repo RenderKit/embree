@@ -28,7 +28,7 @@
 namespace embree
 {
 #if USE_TASK_ARENA
-  tbb::task_arena arena;
+  tbb::task_arena* arena = nullptr;
 #endif
 
   /* error raising rtcIntersect and rtcOccluded functions */
@@ -587,7 +587,7 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked()) {
 #if USE_TASK_ARENA
-      arena.execute([&]{ group->wait(); });
+      arena->execute([&]{ group->wait(); });
 #else
       group->wait();
 #endif
@@ -595,7 +595,7 @@ namespace embree
         __pause_cpu();
         yield();
 #if USE_TASK_ARENA
-        arena.execute([&]{ group->wait(); });
+        arena->execute([&]{ group->wait(); });
 #else
         group->wait();
 #endif
@@ -629,7 +629,7 @@ namespace embree
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
-      arena.execute([&]{
+      arena->execute([&]{
 #endif
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
