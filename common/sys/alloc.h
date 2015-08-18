@@ -90,7 +90,7 @@ namespace embree
   void  os_commit (void* ptr, size_t bytes);
   size_t os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
   void  os_free   (void* ptr, size_t bytes);
-  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld);
+  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld); // FIXME: remove, not used and not implemented completely
 
   /*! allocator that performs OS allocations */
   template<typename T>
