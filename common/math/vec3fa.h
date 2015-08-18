@@ -120,7 +120,13 @@ namespace embree
   }
   __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
     const Vec3fa r = _mm_rcp_ps(a.m128);
-    return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#if defined(__AVX2__)
+    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, float4(2.0f)));     
+#else
+    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(float4(2.0f), _mm_mul_ps(r, a)));     
+    //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#endif
+    return res;
   }
   __forceinline const Vec3fa sqrt ( const Vec3fa& a ) { return _mm_sqrt_ps(a.m128); }
   __forceinline const Vec3fa sqr  ( const Vec3fa& a ) { return _mm_mul_ps(a,a); }
