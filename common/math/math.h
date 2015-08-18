@@ -57,11 +57,16 @@ namespace embree
 
 #ifndef __MIC__
   __forceinline float rcp  ( const float x ) 
-  { 
-    const __m128 vx = _mm_set_ss(x);
-    const __m128 r = _mm_rcp_ps(vx);
-    return _mm_cvtss_f32(_mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), vx)));
+  {
+    const __m128 a = _mm_set_ss(x);
+    const __m128 r = _mm_rcp_ps(a);
+#if defined(__AVX2__)
+    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_fnmadd_ps(r, a, _mm_set_ss(2.0f))));
+#else
+    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_sub_ps(_mm_set_ss(2.0f), _mm_mul_ps(r, a))));
+#endif
   }
+
   __forceinline float signmsk ( const float x ) { 
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(0x80000000))));
   }
