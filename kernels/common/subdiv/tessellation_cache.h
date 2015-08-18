@@ -213,9 +213,15 @@ namespace embree
      }
    }
 
-   static __forceinline void* lookup(volatile Tag* tag, unsigned globalTime)
+   static __forceinline void* lookup(CacheEntry& entry, unsigned globalTime)
    {   
-     const int64_t subdiv_patch_root_ref = tag->data; 
+#if defined(__X86_64__)
+     const int64_t subdiv_patch_root_ref = entry.tag.data; 
+#else
+     entry.mutex.read_lock();
+     const int64_t subdiv_patch_root_ref = entry.tag.data; 
+     entry.mutex.read_unlock();
+#endif
      CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
      if (likely(subdiv_patch_root_ref != 0)) 
@@ -241,7 +247,7 @@ namespace embree
      while (true)
      {
        sharedLazyTessellationCache.lockThreadLoop(t_state);
-       void* patch = SharedLazyTessellationCache::lookup(&entry.tag,globalTime);
+       void* patch = SharedLazyTessellationCache::lookup(entry,globalTime);
        if (patch) return (decltype(constructor())) patch;
        
        if (entry.mutex.try_write_lock())
