@@ -30,37 +30,37 @@
 
 /* define isa namespace and ISA bitvector */
 #if defined(__MIC__)
-#define isa knc
+#  define isa knc
 #  define ISA KNC
 #elif defined (__AVX512__)
-#define isa avx512
-#  define ISA AVX512
+#  define isa avx512
+#  define ISA AVX512KNL
 #elif defined (__AVX2__)
-#define isa avx2
+#  define isa avx2
 #  define ISA AVX2
 #elif defined(__AVXI__)
-#define isa int8
+#  define isa int8
 #  define ISA AVXI
 #elif defined(__AVX__)
-#define isa avx
+#  define isa avx
 #  define ISA AVX
 #elif defined (__SSE4_2__)
-#define isa sse42
+#  define isa sse42
 #  define ISA SSE42
 #elif defined (__SSE4_1__)
-#define isa sse41
+#  define isa sse41
 #  define ISA SSE41
 #elif defined(__SSSE3__)
-#define isa ssse3
+#  define isa ssse3
 #  define ISA SSSE3
 #elif defined(__SSE3__)
-#define isa sse3
+#  define isa sse3
 #  define ISA SSE3
 #elif defined(__SSE2__)
-#define isa sse2
+#  define isa sse2
 #  define ISA SSE2
 #elif defined(__SSE__)
-#define isa sse
+#  define isa sse
 #  define ISA SSE
 #else 
 #error Unknown ISA
@@ -124,8 +124,15 @@ namespace embree
   static const int CPU_FEATURE_BMI1   = 1 << 13;
   static const int CPU_FEATURE_BMI2   = 1 << 14;
   static const int CPU_FEATURE_KNC    = 1 << 15;
-  static const int CPU_FEATURE_AVX512 = 1 << 16;
-
+  static const int CPU_FEATURE_AVX512F = 1 << 16;
+  static const int CPU_FEATURE_AVX512DQ = 1 << 17;    
+  static const int CPU_FEATURE_AVX512PF = 1 << 18;
+  static const int CPU_FEATURE_AVX512ER = 1 << 19;
+  static const int CPU_FEATURE_AVX512CD = 1 << 20;
+  static const int CPU_FEATURE_AVX512BW = 1 << 21;
+  static const int CPU_FEATURE_AVX512IFMA = 1 << 22;
+  static const int CPU_FEATURE_AVX512VBMI = 1 << 23;
+ 
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -146,7 +153,8 @@ namespace embree
   static const int AVXI   = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
   static const int KNC    = CPU_FEATURE_KNC;
-  static const int AVX512 = AVX2 | CPU_FEATURE_AVX512;
+  static const int AVX512F = AVX2 | CPU_FEATURE_AVX512F;
+  static const int AVX512KNL = AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
 
   /*! checks if the CPU has the specified ISA */
   bool hasISA(const int feature);

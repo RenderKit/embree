@@ -1024,7 +1024,7 @@ namespace embree
 #endif
 
 #if defined(__MIC__) || defined(__TARGET_AVX512__)
-    if (hasISA(AVX512)) {    
+    if (hasISA(AVX512KNL)) {    
       rtcore_coherent_intersect16(scene);
     }
 #endif
@@ -1050,7 +1050,7 @@ namespace embree
 #endif
 
 #if defined(__MIC__) || defined(__TARGET_AVX512__)
-    if (hasISA(AVX512)) {
+    if (hasISA(AVX512F)) {
       rtcore_incoherent_intersect16(scene,numbers,N);
     }
 #endif
@@ -1072,7 +1072,7 @@ namespace embree
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
 #if defined(__TARGET_AVX512__) || defined(__MIC__)
-    if (hasISA(AVX512)) {
+    if (hasISA(AVX512F)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
     }
 #endif
