@@ -1,14 +1,19 @@
 Version History
 ---------------
 
-### New Features in Embree 2.6.2 (devel)
+### New Features in Embree 2.6.2
 
 -   Fixed bug triggered by instantiating motion blur geometry.
 -   Fixed bug in hit UV coordinates of static subdivision geometries.
--   Performance improvements when changing tessellation levels for
-    subdivision geometries.
+-   Performance improvements when only changing tessellation levels for
+    subdivision geometry per frame.
+-   Added ray packet intersectors for subdivision geometry, resulting in
+    improved performance for coherent rays.
 -   Reduced virtual address space usage for static geometries.
-
+-   Fixed some AVX2 code paths when compiling with GCC or CLANG.
+-   Bugfix for subdiv patches with non-matching winding order.
+-   Bugfix in ISA detection of AVX512.
+	
 ### New Features in Embree 2.6.1
 
 -   Major performance improvements for ray tracing subdivision surfaces,

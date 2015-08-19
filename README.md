@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.6.2 (devel)
+% Embree: High Performance Ray Tracing Kernels 2.6.2
 % Intel Corporation
 
 Embree Overview
@@ -81,14 +81,14 @@ Windows Installer
 
 You can install the 64\ bit version of the Embree library using the
 Windows installer application
-[embree-2.6.1-x64.exe](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x64.exe). This
+[embree-2.6.2-x64.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.6.1 x64`. To install the 32\ bit
+Files\Intel\Embree v2.6.2 x64`. To install the 32\ bit
 Embree library use the
-[embree-2.6.1-win32.exe](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.win32.exe)
+[embree-2.6.2-win32.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.exe)
 installer. This will install the 32\ bit Embree version by default in
-`Program Files\Intel\Embree v2.6.1 win32` on 32\ bit
-systems and `Program Files (x86)\Intel\Embree v2.6.1 win32`
+`Program Files\Intel\Embree v2.6.2 win32` on 32\ bit
+systems and `Program Files (x86)\Intel\Embree v2.6.2 win32`
 on 64\ bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -100,15 +100,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.6.1` and uninstall it.
+2.6.2` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.6.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x64.windows.zip)
+[embree-2.6.2.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.windows.zip)
 and 32 bit
-[embree-2.6.1.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.win32.windows.zip). After
+[embree-2.6.2.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -122,24 +122,24 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.6.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.rpm.tar.gz)
+[embree-2.6.2.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.6.1.x86_64.rpm.tar.gz
+    tar xzf embree-2.6.2.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.6.1-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.6.1-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.6.1-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.6.2-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.6.2-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.6.2-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.1-1.x86_64.rpm
-    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.1-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.2-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.2-1.x86_64.rpm
 
 To use the Xeon Phi™ version of Embree you additionally have configure your
 `SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
@@ -169,32 +169,32 @@ install using the tar.gz files, which always ship with the latest TBB version.
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.6.1` folder. Specify the full path to
+`/usr/bin/embree-2.6.2` folder. Specify the full path to
 the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.6.1-1.x86_64
-    sudo rpm --erase embree-devel-2.6.1-1.x86_64
-    sudo rpm --erase embree-examples-2.6.1-1.x86_64
+    sudo rpm --erase embree-lib-2.6.2-1.x86_64
+    sudo rpm --erase embree-devel-2.6.2-1.x86_64
+    sudo rpm --erase embree-examples-2.6.2-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-lib_xeonphi-2.6.1-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.6.1-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.6.2-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.6.2-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.6.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.linux.tar.gz). Unpack
+[embree-2.6.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.6.1.x64.linux.tar.gz
-    source embree-2.6.1.x64.linux/embree-vars.sh
+    tar xzf embree-2.6.2.x64.linux.tar.gz
+    source embree-2.6.2.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -204,7 +204,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-[embree-2.6.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.dmg). This
+[embree-2.6.2.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -220,19 +220,19 @@ and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
 To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.6.1/uninstall.command`.
+`/Applications/embree-2.6.2/uninstall.command`.
 
 Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-[embree-2.6.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.1/embree-2.6.1.x86_64.macosx.tar.gz). Unpack
+[embree-2.6.2.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.6.1.x64.macosx.tar.gz
-    source embree-2.6.1.x64.macosx/embree-vars.sh
+    tar xzf embree-2.6.2.x64.macosx.tar.gz
+    source embree-2.6.2.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -1711,6 +1711,17 @@ The software cache cannot get configured while any Embree API call is
 executed. Best configure the size of the cache only once at
 application start.
 
+Limiting number of Build Threads
+--------------------------------
+
+You can use the TBB API to limit the number of threads used by Embree
+during hierarchy construction. Therefore just create a global
+taskscheduler_init object, initialized with the number of threads to
+use:
+
+    #include <tbb/tbb.h>
+
+    tbb::task_scheduler_init init(numThreads);
 Embree Tutorials
 ================
 
