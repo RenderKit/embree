@@ -7,6 +7,26 @@
 
 #destdir=`readlink -f "$1"`
 
+function check_symbols
+{
+  for sym in `nm $1 | grep $2_`
+  do
+    version=(`echo $sym | sed 's/.*@@\(.*\)$/\1/p' | grep -E -o "[0-9]+"`)
+    if [ ${#version[@]} -ne 0 ]; then
+      #echo "version0 = " ${version[0]}
+      #echo "version1 = " ${version[1]}
+      if [ ${version[0]} -gt $3 ]; then
+        echo "Error: problematic $2 symbol " $sym
+        exit 1
+      fi
+      if [ ${version[1]} -gt $4 ]; then
+        echo "Error: problematic $2 symbol " $sym
+        exit 1
+      fi
+    fi
+  done
+}
+
 TBB_PATH=$PWD/tbb
 
 mkdir -p build
@@ -31,6 +51,10 @@ VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h
 
 # make docu after cmake to have correct version.h
 make -j 8 preinstall
+
+check_symbols libembree.so GLIBC 2 3
+check_symbols libembree.so GLIBCXX 3 4
+check_symbols libembree.so CXXABI 1 3
 
 # create RPM files
 cmake -D ENABLE_INSTALLER=ON -D TBB_ROOT=/usr ..
