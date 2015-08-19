@@ -7,6 +7,9 @@
 
 #destdir=`readlink -f "$1"`
 
+export CPATH=
+export LD_LIBRARY_PATH=
+
 function check_symbols
 {
   for sym in `nm $1 | grep $2_`
