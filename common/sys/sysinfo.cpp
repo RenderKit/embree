@@ -116,7 +116,7 @@ namespace embree
     if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
     if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
     if (model == 0x45) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    // FIXME: add Haswell
+    if (model == 0x3C) return CPU_HASWELL;           // Haswell
     return CPU_UNKNOWN;
   }
 
@@ -128,6 +128,7 @@ namespace embree
     case CPU_CORE2           : return "Core2";
     case CPU_CORE_NEHALEM    : return "Nehalem";
     case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
+    case CPU_HASWELL         : return "Haswell";
     default                  : return "Unknown CPU";
     }
   }

@@ -103,7 +103,7 @@ supported_configurations = [
 models = {}
 #models['Win32'] = [ 'conference' ]
 #models['x64'  ] = [ 'crown' ]
-models['Win32'] = [ 'conference', 'sponza', 'headlight', 'crown' ]
+models['Win32'] = [ 'conference', 'sponza' ]
 models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'xyz_dragon', 'powerplant' ]
 
 modelDir  = ''

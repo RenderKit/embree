@@ -51,7 +51,12 @@ namespace embree
   static size_t regressionN = 200;
 
   /* vertex and triangle layout */
-  struct Vertex  { float x,y,z,a; };
+  struct Vertex  {
+    Vertex() {}
+    Vertex(float x, float y, float z, float a = 0.0f) 
+      : x(x), y(y), z(z), a(a) {}
+    float x,y,z,a; 
+  };
 #if defined(__MIC__)
   typedef Vec3fa Vertex3f;
   typedef Vec3fa Vertex3fa;
@@ -59,7 +64,11 @@ namespace embree
   typedef Vec3f  Vertex3f;
   typedef Vec3fa Vertex3fa;
 #endif
-  struct Triangle { int v0, v1, v2; };
+  struct Triangle {
+    Triangle () {}
+    Triangle(int v0, int v1, int v2) : v0(v0), v1(v1), v2(v2) {}
+    int v0, v1, v2; 
+  };
 
   std::vector<thread_t> g_threads;
   size_t numFailedTests = 0;
@@ -3435,16 +3444,6 @@ namespace embree
 
   bool rtcore_bary_distance_robust()
   {
-    struct __aligned(16) Vertex
-    {
-      float x, y, z, w;
-    };
-
-    struct Triangle
-    {
-      int v0, v1, v2;
-    };
-
     std::vector<Vertex> m_vertices;
     std::vector<Triangle> m_triangles;
     
@@ -3452,16 +3451,14 @@ namespace embree
     const float width = 1000.0f;
       
     m_vertices.resize(4);
-
-    m_vertices[0] = {-length / 2.0f, -width / 2.0f, 0};
-    m_vertices[1] = { length / 2.0f, -width / 2.0f, 0};
-    m_vertices[2] = { length / 2.0f,  width / 2.0f, 0};
-    m_vertices[3] = {-length / 2.0f,  width / 2.0f, 0};
+    m_vertices[0] = Vertex(-length / 2.0f, -width / 2.0f, 0);
+    m_vertices[1] = Vertex( length / 2.0f, -width / 2.0f, 0);
+    m_vertices[2] = Vertex( length / 2.0f,  width / 2.0f, 0);
+    m_vertices[3] = Vertex(-length / 2.0f,  width / 2.0f, 0);
 
     m_triangles.resize(2);
-
-    m_triangles[0] = {0, 1, 2};
-    m_triangles[1] = {2, 3, 0};
+    m_triangles[0] = Triangle(0, 1, 2);
+    m_triangles[1] = Triangle(2, 3, 0);
 
     //const RTCSceneFlags flags = RTCSceneFlags(0); 
     const RTCSceneFlags flags = RTC_SCENE_ROBUST;

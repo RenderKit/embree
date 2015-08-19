@@ -84,6 +84,7 @@ namespace embree
     CPU_CORE2,
     CPU_CORE_NEHALEM,
     CPU_CORE_SANDYBRIDGE,
+    CPU_HASWELL,
     CPU_KNC,
     CPU_KNL
   };
