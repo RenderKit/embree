@@ -79,7 +79,7 @@ namespace embree
 #define __TARGET_SIMD16__
 #endif
 #define SELECT_SYMBOL_AVX512(features,intersector) \
-  if ((features & CPU_FEATURE_AVX512) == CPU_FEATURE_AVX512) intersector = avx512::intersector; 
+  if ((features & AVX512KNL) == AVX512KNL) intersector = avx512::intersector; 
 #else
 #define SELECT_SYMBOL_AVX512(features,intersector)
 #endif
