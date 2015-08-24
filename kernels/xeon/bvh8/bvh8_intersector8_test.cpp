@@ -25,6 +25,7 @@
 
 #define DBG(x) 
 
+#define OLD_TRAVERSAL 0
 
 namespace embree
 {
@@ -50,7 +51,8 @@ namespace embree
       /*! load the ray into SIMD registers */
       const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
       const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3f8 norg = -org;
+      const Vec3f8 org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
 /* pop loop */
@@ -75,7 +77,8 @@ namespace embree
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
 
-#if 0
+#if OLD_TRAVERSAL == 1
+
           const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
           const float8 _tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
           const float8 _tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
@@ -286,23 +289,53 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
+
+#if OLD_TRAVERSAL == 1
           const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
-          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
-          
+          const float8 _tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+          const float8 _tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+          const float8 _tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+          const float8 _tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+          const float8 _tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+          const float8 _tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+
+          const float8 tNearX  = _tNearX;
+          const float8 tNearY  = _tNearY;
+          const float8 tNearZ  = _tNearZ;
+
+          const float8 tFarX   = _tFarX;
+          const float8 tFarY   = _tFarY;
+          const float8 tFarZ   = _tFarZ;
+
           const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
           const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
           const bool8 vmask = cast(tNear) > cast(tFar);
           size_t mask = movemask(vmask)^0xff;
 
-          //const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
-          //const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          //const bool8 vmask = tNear <= tFar;
-          //size_t mask = movemask(vmask);
+#else
+
+          const float8 _tNearX = msub(node->lower_x, rdir.x, org_rdir.x);
+          const float8 _tNearY = msub(node->lower_y, rdir.y, org_rdir.y);
+          const float8 _tNearZ = msub(node->lower_z, rdir.z, org_rdir.z);
+          const float8 _tFarX  = msub(node->upper_x, rdir.x, org_rdir.x);
+          const float8 _tFarY  = msub(node->upper_y, rdir.y, org_rdir.y);
+          const float8 _tFarZ  = msub(node->upper_z, rdir.z, org_rdir.z);
+
+          const bool8  nactive = float8(pos_inf) == node->lower_x;
+          const float8 tNearX  = mini(_tNearX,_tFarX);
+          const float8 tNearY  = mini(_tNearY,_tFarY);
+          const float8 tNearZ  = mini(_tNearZ,_tFarZ);
+
+          const float8 tFarX   = maxi(_tNearX,_tFarX);
+          const float8 tFarY   = maxi(_tNearY,_tFarY);
+          const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
+
+          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,rayNear));
+          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,rayFar ));
+          const bool8 vmask  = nactive | cast(tNear) > cast(tFar);
+          size_t mask = movemask(vmask)^0xff;
+
+#endif
           
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
