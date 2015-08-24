@@ -22,6 +22,8 @@
 #include "../geometry/trianglepairs8.h"
 #include "../../common/accelinstance.h"
 
+#define ENABLE_TEST_INTERSECTOR 0
+
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
@@ -37,6 +39,9 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
+
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle4Intersector8TestMoeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle4Intersector8TestMoellerNoFilter);
 
   DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle8vIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8vIntersector4HybridPluecker);
@@ -101,6 +106,9 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector8HybridPluecker);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector8HybridPlueckerNoFilter);
+
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector8TestMoeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector8TestMoellerNoFilter);
 
     /* select intersectors16 */
     SELECT_SYMBOL_AVX512(features,BVH8Triangle4Intersector16ChunkMoeller);
@@ -245,8 +253,13 @@ namespace embree
     intersectors.intersector1           = BVH8Triangle4Intersector1Moeller;
     intersectors.intersector4_filter    = BVH8Triangle4Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH8Triangle4Intersector4HybridMoellerNoFilter;
+#if ENABLE_TEST_INTERSECTOR == 1
+    intersectors.intersector8_filter    = BVH8Triangle4Intersector8TestMoeller;
+    intersectors.intersector8_nofilter  = BVH8Triangle4Intersector8TestMoellerNoFilter;
+#else
     intersectors.intersector8_filter    = BVH8Triangle4Intersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH8Triangle4Intersector8HybridMoellerNoFilter;
+#endif
     intersectors.intersector16_filter   = BVH8Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter;
     return intersectors;
