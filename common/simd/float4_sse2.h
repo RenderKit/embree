@@ -411,6 +411,13 @@ namespace embree
     return float4::broadcast(&a[k]);
   }
 
+#if defined (__AVX2__)
+  __forceinline float4 permute(const float4 &a, const __m128i &index) {
+    return _mm_permutevar_ps(a,index);
+  }
+#endif
+
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
   ////////////////////////////////////////////////////////////////////////////////

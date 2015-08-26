@@ -33,6 +33,27 @@ namespace embree
 {
   namespace isa
   {
+
+    static int4 compactTable[16] = {
+      /* 0b0000 */ int4(3,3,3,3),
+      /* 0b0001 */ int4(0,3,3,3),
+      /* 0b0010 */ int4(1,3,3,3),
+      /* 0b0011 */ int4(0,1,3,3),
+      /* 0b0100 */ int4(2,3,3,3),
+      /* 0b0101 */ int4(0,2,3,3),
+      /* 0b0110 */ int4(1,2,3,3),
+      /* 0b0111 */ int4(0,1,2,3),
+
+      /* 0b1000 */ int4(3,0,0,0),
+      /* 0b1001 */ int4(0,3,1,1),
+      /* 0b1010 */ int4(1,3,0,0),
+      /* 0b1011 */ int4(0,1,3,2),
+      /* 0b1100 */ int4(2,3,0,0),
+      /* 0b1101 */ int4(0,2,3,1),
+      /* 0b1110 */ int4(1,2,3,0),
+      /* 0b1111 */ int4(0,1,2,3)
+    };
+
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Test<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
@@ -112,7 +133,7 @@ namespace embree
             STAT3(normal.trav_nodes,1,1,1);
 
             const BVH4::Node* node = cur.node();
-#if 1
+#if defined(__AVX2__)
             const float4 _tNearX = msub(node->lower_x, rdir.x, org_rdir.x);
             const float4 _tNearY = msub(node->lower_y, rdir.y, org_rdir.y);
             const float4 _tNearZ = msub(node->lower_z, rdir.z, org_rdir.z);
@@ -132,12 +153,30 @@ namespace embree
             const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
             const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
             const bool4 vmask  = nactive | cast(tNear) > cast(tFar);
+            
             size_t mask = movemask(vmask)^0xf;
+
+            if (unlikely(mask == 0))
+              goto pop;
+
+            //const float4 dist = select(vmask,float4(neg_inf),tNear);
+            //const float4 dist_perm = permute(dist,compactTable[mask]);
+
+#pragma unroll
+            for (size_t i=0;i<4;i++)
+            {
+              const unsigned int index = compactTable[mask][i];
+              stackPtr[i].ptr  = node->child(index);
+              stackPtr[i].dist = ((unsigned int*)&tNear)[index];
+            }
+
+            stackPtr += (ssize_t)__popcnt(mask) - 1;
+            cur = stackPtr->ptr;
+
 
 #else
             float4 tNear;
             size_t mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
-#endif
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
@@ -187,6 +226,9 @@ namespace embree
             assert(c != BVH4::emptyNode);
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+
+#endif
+
           }
         
           /*! this is a leaf node */
