@@ -175,6 +175,7 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
 
+    bvh4/bvh4_intersector8_test.cpp
     bvh8/bvh8_intersector8_test.cpp
   )
 
@@ -203,6 +204,8 @@ IF (TARGET_AVX2)
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
+
+    bvh4/bvh4_intersector8_test.cpp
     bvh8/bvh8_intersector8_test.cpp
   )
 
@@ -243,6 +246,7 @@ IF (TARGET_AVX512)
     bvh8/bvh8_intersector16_chunk.cpp
     bvh8/bvh8_intersector16_hybrid.cpp
 
+    bvh4/bvh4_intersector8_test.cpp
     bvh8/bvh8_intersector8_test.cpp
 )
   SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")

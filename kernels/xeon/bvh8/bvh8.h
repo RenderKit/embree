@@ -84,6 +84,13 @@ namespace embree
 	prefetchL1(((char*)ptr)+3*64);
       }
 
+      __forceinline void prefetchL2C() const {
+	prefetchL2(((char*)ptr)+0*64);
+	prefetchL2(((char*)ptr)+1*64);
+	prefetchL2(((char*)ptr)+2*64);
+	prefetchL2(((char*)ptr)+3*64);
+      }
+
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { ptr |= (size_t)(1 << (alignment-1)); }
       
