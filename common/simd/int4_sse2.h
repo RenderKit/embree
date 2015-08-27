@@ -188,6 +188,10 @@ namespace embree
 #if defined(__SSE4_1__)
   __forceinline const int4 min( const int4& a, const int4& b ) { return _mm_min_epi32(a.m128, b.m128); }
   __forceinline const int4 max( const int4& a, const int4& b ) { return _mm_max_epi32(a.m128, b.m128); }
+
+  __forceinline const int4 umin( const int4& a, const int4& b ) { return _mm_min_epu32(a.m128, b.m128); }
+  __forceinline const int4 umax( const int4& a, const int4& b ) { return _mm_max_epu32(a.m128, b.m128); }
+
 #else
   __forceinline const int4 min( const int4& a, const int4& b ) { return int4(min(a[0],b[0]),min(a[1],b[1]),min(a[2],b[2]),min(a[3],b[3])); }
   __forceinline const int4 max( const int4& a, const int4& b ) { return int4(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]),max(a[3],b[3])); }

@@ -155,20 +155,16 @@ namespace embree
           assert(c0 != BVH8::emptyNode);
           assert(c1 != BVH8::emptyNode);
           if (likely(mask == 0)) {
-            assert(stackPtr < stackEnd); 
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
             else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
           }
           
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
-          assert(stackPtr < stackEnd); 
           stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-          assert(stackPtr < stackEnd); 
           stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
           
           /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-          assert(stackPtr < stackEnd); 
           r = __bscf(mask);
           NodeRef c = node->child(r); c.prefetch(); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH8::emptyNode);
@@ -191,7 +187,6 @@ namespace embree
 	  while (1)
 	  {
 	    r = __bscf(mask);
-	    assert(stackPtr < stackEnd);
 	    c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	    if (unlikely(mask == 0)) break;
 	  }
@@ -353,20 +348,16 @@ namespace embree
         assert(c0 != BVH8::emptyNode);
         assert(c1 != BVH8::emptyNode);
         if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd); 
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; return; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; return; }
         }
           
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
-        assert(stackPtr < stackEnd); 
         stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-        assert(stackPtr < stackEnd); 
         stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
         
         /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-        assert(stackPtr < stackEnd); 
         r = __bscf(mask);
           BVH8::NodeRef c = node->child(r); 
           //c.prefetch(); 
@@ -391,7 +382,6 @@ namespace embree
 	  while (1)
 	  {
 	    r = __bscf(mask);
-	    assert(stackPtr < stackEnd);
 	    c = node->child(r); 
             //c.prefetch(); 
             d = *(unsigned int*)&dist[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;

@@ -31,8 +31,37 @@
 
 namespace embree
 {
-  namespace isa
-  {
+    /* ----------------- */
+    /* -- 0 0 0 1 1 2 -- */
+    /* -- 1 2 3 2 3 3 -- */
+    /* ----------------- */
+
+    __forceinline unsigned int countBits3(const unsigned int bits, const unsigned int flip_mask, const unsigned int and_mask)
+    {
+      return __popcnt((bits ^ flip_mask) & and_mask);
+
+    }
+      
+    __forceinline int4 cmpT(unsigned int bits)
+    {
+      const unsigned int count0 = countBits3(bits,0b000000,0b000111);
+      const unsigned int count1 = countBits3(bits,0b000001,0b011001);
+      const unsigned int count2 = countBits3(bits,0b001010,0b101010);
+      const unsigned int count3 = countBits3(bits,0b110100,0b110100);
+
+      return int4(count0,count1,count2,count3);
+    }
+
+    static int4 compareTable[64] = {
+      cmpT(0*8+0), cmpT(0*8+1), cmpT(0*8+2), cmpT(0*8+3), cmpT(0*8+4), cmpT(0*8+5), cmpT(0*8+6), cmpT(0*8+7),
+      cmpT(1*8+0), cmpT(1*8+1), cmpT(1*8+2), cmpT(1*8+3), cmpT(1*8+4), cmpT(1*8+5), cmpT(1*8+6), cmpT(1*8+7),
+      cmpT(2*8+0), cmpT(2*8+1), cmpT(2*8+2), cmpT(2*8+3), cmpT(2*8+4), cmpT(2*8+5), cmpT(2*8+6), cmpT(2*8+7),
+      cmpT(3*8+0), cmpT(3*8+1), cmpT(3*8+2), cmpT(3*8+3), cmpT(3*8+4), cmpT(3*8+5), cmpT(3*8+6), cmpT(3*8+7),
+      cmpT(4*8+0), cmpT(4*8+1), cmpT(4*8+2), cmpT(4*8+3), cmpT(4*8+4), cmpT(4*8+5), cmpT(4*8+6), cmpT(4*8+7),
+      cmpT(5*8+0), cmpT(5*8+1), cmpT(5*8+2), cmpT(5*8+3), cmpT(5*8+4), cmpT(5*8+5), cmpT(5*8+6), cmpT(5*8+7),
+      cmpT(6*8+0), cmpT(6*8+1), cmpT(6*8+2), cmpT(6*8+3), cmpT(6*8+4), cmpT(6*8+5), cmpT(6*8+6), cmpT(6*8+7),
+      cmpT(7*8+0), cmpT(7*8+1), cmpT(7*8+2), cmpT(7*8+3), cmpT(7*8+4), cmpT(7*8+5), cmpT(7*8+6), cmpT(7*8+7)
+    };
 
     static int4 compactTable[16] = {
       /* 0b0000 */ int4(3,3,3,3),
@@ -53,6 +82,62 @@ namespace embree
       /* 0b1110 */ int4(1,2,3,0),
       /* 0b1111 */ int4(0,1,2,3)
     };
+
+  static int8 comparePerm0(0,0,0,1,1,2,0,0);
+  static int8 comparePerm1(1,2,3,2,3,3,0,0);
+  namespace isa
+  {
+    __forceinline size_t getCompareMask(const float4 &v)
+    {
+#if defined (__AVX2__)
+      const float8 v8  = assign(v);
+      const float8 c0  = permute(v8,comparePerm0);
+      const float8 c1  = permute(v8,comparePerm1);
+      PRINT(c0);
+      PRINT(c1);
+      const bool8 mask = c0 < c1;
+      PRINT(mask);
+      return movemask(mask);
+#else
+      return 0;
+#endif
+    }
+
+    __forceinline int4 getPermuteSequence(const float4 &v)
+    {
+      const size_t mask = getCompareMask(v);
+      assert(mask < 64);
+      PRINT(compareTable[mask]);
+      return compareTable[mask];
+    }
+
+    __forceinline int4 merge(const int4 &a, const int4 &b, const int imm)
+    {
+      return select(imm,a,b);
+    }
+
+    __forceinline int4 networkSort(const float4 &v, const bool4 &active)
+    {
+      const int4 or_mask = select(active,int4( step ),int4( 0xffffffff ));
+      const int4 a0 = (srl(cast(v),2)) | or_mask;
+      PRINT(active);
+      PRINT(a0);
+      PRINT(or_mask);
+      PRINT(v);
+      const int4 b0 = shuffle<1,0,3,2>(a0);
+      const int4 c0 = umin(a0,b0);
+      const int4 d0 = umax(a0,b0);
+      const int4 a1 = merge(c0,d0,0b0101);
+      const int4 b1 = shuffle<2,3,0,1>(a1);
+      const int4 c1 = umin(a1,b1);
+      const int4 d1 = umax(a1,b1);
+      const int4 a2 = merge(c1,d1,0b0011);
+      const int4 b2 = shuffle<0,2,1,0>(a2);
+      const int4 c2 = umin(a2,b2);
+      const int4 d2 = umax(a2,b2);
+      const int4 a3 = merge(c2,d2,0b0010);
+      return a3 & 3;
+    }
 
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Test<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
@@ -91,6 +176,18 @@ namespace embree
         BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
       }
 #else
+
+#if defined(__AVX2__)
+
+      float4 t0(3,2,1,0);
+
+      const int4 p0 = networkSort(t0, bool4(0,0,0,0) );
+      const float4 t1 = permute(t0,p0);
+      PRINT(t0);
+      PRINT(p0);
+      PRINT(t1);
+      exit(0);
+#endif
 
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
       for (size_t k=__bsf(bits); bits!=0; bits=__blsr(bits), k=__bsf(bits)) 

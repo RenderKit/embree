@@ -365,6 +365,8 @@ namespace embree
 
   template<size_t i> __forceinline float fextract   (const float8& a            ) { return _mm_cvtss_f32(_mm256_extractf128_ps(a  ,i)); }
 
+  __forceinline float8 assign( const float4& a ) { return _mm256_castps128_ps256(a); }
+
 #if defined (__AVX2__)
   __forceinline float8 permute(const float8 &a, const __m256i &index) {
     return _mm256_permutevar8x32_ps(a,index);
