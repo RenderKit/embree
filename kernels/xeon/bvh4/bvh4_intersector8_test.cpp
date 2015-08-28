@@ -207,7 +207,7 @@ namespace embree
       size_t bits = movemask(active);
 
       /* switch to single ray traversal */
-#if 1 // !defined(__WIN32__) || defined(__X86_64__)
+#if 0 // !defined(__WIN32__) || defined(__X86_64__)
       /* compute near/far per ray */
 
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
@@ -323,6 +323,7 @@ namespace embree
 
             
             cur = node->child(min_dist_index);
+            //cur.prefetch(types);
             perm4i         = permute(perm4i,reverseCompact[setbits]);
             
             const float4 dist4_perm = permute(tNear,perm4i);
@@ -333,11 +334,6 @@ namespace embree
             const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
 
 #endif            
-            //if (any(lowHigh32bit2 != node4_perm))
-            //  PING;
-            //PRINT(node4_perm);
-            //PRINT(lowHigh32bit2);
-            //exit(0);
 
 
             store4f(&stackDist[sindex],dist4_perm);
