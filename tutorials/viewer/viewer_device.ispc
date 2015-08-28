@@ -233,7 +233,9 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
+    return make_Vec3f(0.0f);
+  }
   
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
