@@ -144,10 +144,6 @@ namespace embree
     {
       const int4 or_mask = select(active,int4( step ),int4( 0xffffffff ));
       const int4 a0 = (srl(cast(v),2)) | or_mask;
-      PRINT(active);
-      PRINT(a0);
-      PRINT(or_mask);
-      PRINT(v);
       const int4 b0 = shuffle<1,0,3,2>(a0);
       const int4 c0 = umin(a0,b0);
       const int4 d0 = umax(a0,b0);
@@ -282,17 +278,29 @@ namespace embree
 #if 1
             
             int8 node4 = *(int8*)node->children;
+
+#if 0
             const int4 perm4i = compactTable[mask];
-            const int8 perm8i = compactTable64[mask];
             float4 dist4_perm = permute(tNear,perm4i);
+
+            const int8 perm8i = compactTable64[mask];
             int8   node4_perm = permute(node4,perm8i);
+#else
+
+            //const int4 perm4i = compactTable[mask];
+            const int4 perm4i = networkSort(tNear,vmask);
+
+            float4 dist4_perm = permute(tNear,perm4i);
 
             const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
             const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
-            const int8 lowHigh32bit2 = permute(lowHigh32bit1,lowHighInsert);
-
-            PRINT(node4_perm);
-            PRINT(lowHigh32bit2);
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+#endif            
+            //if (any(lowHigh32bit2 != node4_perm))
+            //  PING;
+            //PRINT(node4_perm);
+            //PRINT(lowHigh32bit2);
+            //exit(0);
 
 
             store4f(&stackDist[sindex],dist4_perm);
