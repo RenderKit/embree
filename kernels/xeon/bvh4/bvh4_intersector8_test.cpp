@@ -116,6 +116,10 @@ namespace embree
     int4(2,1,0,3),
     int4(3,2,1,0)
   };
+
+  static int4 step4( 0,1,2,3 );
+  static int4 allSet4( 0xffffffff,0xffffffff,0xffffffff,0xffffffff );
+  static int4 mask2( 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc );
   
   namespace isa
   {
@@ -153,18 +157,19 @@ namespace embree
 
     __forceinline unsigned int networkSort(const float4 &v, const bool4 &active, int4 &result)
     {
-      const int4 or_mask = select(active,int4( step ),int4( 0xffffffff ));
+      const int4 or_mask = select(active,step4,allSet4); //optimize
       const int4 vi = cast(v); 
-      const int4 a0 = (vi & 0xfffffffc) | or_mask;
+      const int4 a0 = (vi & mask2) | or_mask;
       const int4 b0 = shuffle<1,0,3,2>(a0);
       const int4 c0 = umin(a0,b0);
       const int4 d0 = umax(a0,b0);
       const int4 a1 = merge(c0,d0,0b0101);
       const int4 b1 = shuffle<2,3,0,1>(a1);
       const int4 c1 = umin(a1,b1);
+      const unsigned int min_dist_index = extract<0>(c1) & 3;
+      // 2 case border?
       const int4 d1 = umax(a1,b1);
       const int4 a2 = merge(c1,d1,0b0011);
-      const unsigned int min_dist_index = extract<0>(a2) & 3;
       assert(min_dist_index < 4);
       const int4 b2 = shuffle<0,2,1,3>(a2);
       const int4 c2 = umin(a2,b2);
@@ -279,7 +284,9 @@ namespace embree
             const float4 _tFarY  = msub(node->upper_y, rdir.y, org_rdir.y);
             const float4 _tFarZ  = msub(node->upper_z, rdir.z, org_rdir.z);
 
-            const bool4  nactive = float4(pos_inf) == node->lower_x;
+            //const bool4  nactive = float4(pos_inf) == node->lower_x;
+            const bool4  nactive = float4(pos_inf) != node->lower_x;
+
             const float4 tNearX  = mini(_tNearX,_tFarX);
             const float4 tNearY  = mini(_tNearY,_tFarY);
             const float4 tNearZ  = mini(_tNearZ,_tFarZ);
@@ -290,8 +297,10 @@ namespace embree
             
             const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
             const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-            const bool4 vmask  = nactive | cast(tNear) > cast(tFar);
-            unsigned int mask = movemask(vmask)^0xf;
+            //const bool4 vmask  = nactive | cast(tNear) > cast(tFar);
+            const bool4 vmask  = nactive & (tNear <= tFar);
+            //unsigned int mask = movemask(vmask)^0xf;
+            unsigned int mask = movemask(vmask);
             
             if (unlikely(mask == 0))
               goto pop;
@@ -316,7 +325,7 @@ namespace embree
 
             //
             int4 perm4i;
-            const unsigned int min_dist_index = networkSort(tNear,!vmask,perm4i);
+            const unsigned int min_dist_index = networkSort(tNear,vmask,perm4i);
 
             //perm4i = compactTable[mask];
             //const unsigned int min_dist_index = extract<0>(permute(int4(step),perm4i));
