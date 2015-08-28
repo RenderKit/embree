@@ -261,6 +261,10 @@ namespace embree
     return _mm256_permutevar8x32_epi32(a,index);
   }
 
+  __forceinline int8 permute4x32(const int8& a, const __m256i& index) {
+    return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(a),index));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
@@ -286,6 +290,9 @@ namespace embree
 
   __forceinline size_t select_min(const bool8& valid, const int8& v) { const int8 a = select(valid,v,int8(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
   __forceinline size_t select_max(const bool8& valid, const int8& v) { const int8 a = select(valid,v,int8(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+
+
+  __forceinline int8 assign( const int4& a ) { return _mm256_castsi128_si256(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

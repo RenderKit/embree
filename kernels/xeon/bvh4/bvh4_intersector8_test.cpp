@@ -83,8 +83,32 @@ namespace embree
       /* 0b1111 */ int4(0,1,2,3)
     };
 
+    static int8 compactTable64[16] = {
+      /* 0b0000 */ int8(6,7,6,7,6,7,6,7),
+      /* 0b0001 */ int8(0,1,6,7,6,7,6,7),
+      /* 0b0010 */ int8(2,3,6,7,6,7,6,7),
+      /* 0b0011 */ int8(0,1,2,3,6,7,6,7),
+      /* 0b0100 */ int8(4,5,6,7,6,7,6,7),
+      /* 0b0101 */ int8(0,1,4,5,6,7,6,7),
+      /* 0b0110 */ int8(2,3,4,5,6,7,6,7),
+      /* 0b0111 */ int8(0,1,2,3,4,5,6,7),
+
+      /* 0b1000 */ int8(6,7,0,1,0,1,0,1),
+      /* 0b1001 */ int8(0,1,6,7,2,3,2,3),
+      /* 0b1010 */ int8(2,3,6,7,0,1,0,1),
+      /* 0b1011 */ int8(0,1,2,3,6,7,4,5),
+      /* 0b1100 */ int8(4,5,6,7,0,1,0,1),
+      /* 0b1101 */ int8(0,1,4,5,6,7,2,3),
+      /* 0b1110 */ int8(2,3,4,5,6,7,0,1),
+      /* 0b1111 */ int8(0,1,2,3,4,5,6,7)
+    };
+
   static int8 comparePerm0(0,0,0,1,1,2,0,0);
   static int8 comparePerm1(1,2,3,2,3,3,0,0);
+
+  static int8 lowHighExtract(0,2,4,6,1,3,5,7);
+  static int8 lowHighInsert (0,4,1,5,2,6,3,7);
+
   namespace isa
   {
     __forceinline size_t getCompareMask(const float4 &v)
@@ -169,7 +193,7 @@ namespace embree
       size_t bits = movemask(active);
 
       /* switch to single ray traversal */
-#if 0 //!defined(__WIN32__) || defined(__X86_64__)
+#if 0 // !defined(__WIN32__) || defined(__X86_64__)
       /* compute near/far per ray */
 
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
@@ -177,7 +201,7 @@ namespace embree
       }
 #else
 
-#if defined(__AVX2__)
+#if 0 //  defined(__AVX2__)
 
       float4 t0(3,2,1,0);
 
@@ -189,14 +213,15 @@ namespace embree
       exit(0);
 #endif
 
-      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
+      NodeRef stackNode[stackSizeSingle];  //!< stack of nodes 
+      float   stackDist[stackSizeSingle];  //!< stack of nodes 
+
       for (size_t k=__bsf(bits); bits!=0; bits=__blsr(bits), k=__bsf(bits)) 
       {
-        StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
-        StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        size_t sindex = 1;
 
-        stack[0].ptr  = bvh->root;
-        stack[0].dist = neg_inf;
+        stackNode[0] = bvh->root;
+        stackDist[0] = neg_inf;
 
         /*! load the ray into SIMD registers */
         const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
@@ -205,21 +230,16 @@ namespace embree
         const Vec3f4 org_rdir(org*rdir);
         float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
       
-        /*! offsets to select the side that becomes the lower or upper bound */
-        const size_t nearX = nearXYZ.x[k];
-        const size_t nearY = nearXYZ.y[k];
-        const size_t nearZ = nearXYZ.z[k];
-
         /* pop loop */
         while (true) pop:
         {
           /*! pop next node */
-          if (unlikely(stackPtr == stack)) break;
-          stackPtr--;
-          NodeRef cur = NodeRef(stackPtr->ptr);
+          if (unlikely(sindex == 0)) break;
+          sindex--;
+          NodeRef cur = NodeRef(stackNode[sindex]);
           
           /*! if popped node is too far, pop next one */
-          if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
+          if (unlikely(stackDist[sindex] > ray.tfar[k]))
             continue;
         
           /* downtraversal loop */
@@ -259,19 +279,74 @@ namespace embree
             //const float4 dist = select(vmask,float4(neg_inf),tNear);
             //const float4 dist_perm = permute(dist,compactTable[mask]);
 
+#if 1
+            
+            int8 node4 = *(int8*)node->children;
+            const int4 perm4i = compactTable[mask];
+            const int8 perm8i = compactTable64[mask];
+            float4 dist4_perm = permute(tNear,perm4i);
+            int8   node4_perm = permute(node4,perm8i);
+
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 lowHigh32bit2 = permute(lowHigh32bit1,lowHighInsert);
+
+            PRINT(node4_perm);
+            PRINT(lowHigh32bit2);
+
+
+            store4f(&stackDist[sindex],dist4_perm);
+            store8i(&stackNode[sindex],node4_perm);
+#else
+            
 #pragma unroll
             for (size_t i=0;i<4;i++)
             {
               const unsigned int index = compactTable[mask][i];
-              stackPtr[i].ptr  = node->child(index);
-              stackPtr[i].dist = ((unsigned int*)&tNear)[index];
-            }
 
-            stackPtr += (ssize_t)__popcnt(mask) - 1;
-            cur = stackPtr->ptr;
+              // if ( stackDist[sindex+i] != tNear[index] )
+              //   PING;
+
+              // if ( stackNode[sindex+i] != node->child(index) )
+              // {
+              //   PING;
+              //   PRINT( stackNode[sindex+i] );
+              //   PRINT( node->child(index)  );
+              //   exit(0);
+              // }
+
+              stackNode[sindex+i] = node->child(index);
+
+              stackDist[sindex+i] = tNear[index];
+            }
+#endif
+
+            sindex += (ssize_t)__popcnt(mask) - 1;
+            cur = stackNode[sindex];
 
 
 #else
+#endif
+
+          }
+        
+          /*! this is a leaf node */
+          assert(cur != BVH4::emptyNode);
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          size_t lazy_node = 0;
+          PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
+          ray_far = ray.tfar[k];
+        }
+      }
+
+#endif
+      AVX_ZERO_UPPER();
+    }
+
+
+#if 0
             float4 tNear;
             size_t mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
             /*! if no child is hit, pop next node */
@@ -324,25 +399,8 @@ namespace embree
             sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
 
-#endif
-
-          }
-        
-          /*! this is a leaf node */
-          assert(cur != BVH4::emptyNode);
-          STAT3(normal.trav_leaves, 1, 1, 1);
-          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-
-          size_t lazy_node = 0;
-          PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
-          ray_far = ray.tfar[k];
-        }
-      }
 
 #endif
-      AVX_ZERO_UPPER();
-    }
-
     
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Test<types,robust,PrimitiveIntersector8>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
