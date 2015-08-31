@@ -29,6 +29,8 @@
 #define SWITCH_THRESHOLD 5
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
+#if !defined(__WIN32__)
+
 namespace embree
 {
     /* ----------------- */
@@ -515,3 +517,5 @@ namespace embree
     // FIXME: add Triangle4i intersector
   }
 }
+
+#endif

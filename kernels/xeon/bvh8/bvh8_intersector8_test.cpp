@@ -27,6 +27,8 @@
 
 #define OLD_TRAVERSAL 0
 
+#if !defined(__WIN32__)
+
 namespace embree
 {
   namespace isa
@@ -768,3 +770,4 @@ namespace embree
   }
 }  
 
+#endif

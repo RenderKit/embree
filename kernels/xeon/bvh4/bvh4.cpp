@@ -93,10 +93,12 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridAOSIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
 
+#if !defined(__WIN32__)
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle4Intersector8TestMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle4Intersector8TestMoellerNoFilter);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle8Intersector8TestMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle8Intersector8TestMoellerNoFilter);
+#endif
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1vIntersector16Chunk);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1iIntersector16Chunk);
@@ -278,10 +280,12 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4GridAOSIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
 
+#if !defined(__WIN32__)
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle4Intersector8TestMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle4Intersector8TestMoellerNoFilter);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle8Intersector8TestMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle8Intersector8TestMoellerNoFilter);
+#endif
 
     /* select intersectors16 */
     SELECT_SYMBOL_AVX512(features,BVH4Bezier1vIntersector16Chunk);

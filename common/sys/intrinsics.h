@@ -91,11 +91,9 @@ namespace embree
     return _mm_popcnt_u32(in);
   }
   
-#if !defined(_MSC_VER)
   __forceinline unsigned __popcnt(unsigned in) {
     return _mm_popcnt_u32(in);
   }
-#endif
   
 #if defined(__X86_64__)
   __forceinline long long __popcnt(long long in) { // FIXME: remove?
