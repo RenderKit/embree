@@ -340,17 +340,36 @@ namespace embree
 
   size_t getNumberOfLogicalThreads() 
   {
-#if (_WIN32_WINNT >= 0x0601)
-    int groups = GetActiveProcessorGroupCount();
-    int totalProcessors = 0;
-    for (int i = 0; i < groups; i++) 
-      totalProcessors += GetActiveProcessorCount(i);
-    return totalProcessors;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return sysinfo.dwNumberOfProcessors;
-#endif
+    static int nThreads = -1;
+    if (nThreads != -1) return nThreads;
+
+    OSVERSIONINFO osvi;
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osvi);
+
+    typedef WORD (WINAPI *GetActiveProcessorGroupCountFunc)();
+    typedef DWORD (WINAPI *GetActiveProcessorCountFunc)(WORD);
+    HMODULE hlib = LoadLibrary("Kernel32");
+    GetActiveProcessorGroupCountFunc pGetActiveProcessorGroupCount = (GetActiveProcessorGroupCountFunc)GetProcAddress(hlib, "GetActiveProcessorGroupCount");
+    GetActiveProcessorCountFunc      pGetActiveProcessorCount      = (GetActiveProcessorCountFunc)     GetProcAddress(hlib, "GetActiveProcessorCount");
+
+    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount &&
+       ((osvi.dwMajorVersion > 6) || ((osvi.dwMajorVersion == 6) && (osvi.dwMinorVersion >= 1)))) 
+    {
+      int groups = pGetActiveProcessorGroupCount();
+      int totalProcessors = 0;
+      for (int i = 0; i < groups; i++) 
+        totalProcessors += pGetActiveProcessorCount(i);
+      nThreads = totalProcessors;
+    }
+    else
+    {
+      SYSTEM_INFO sysinfo;
+      GetSystemInfo(&sysinfo);
+      nThreads = sysinfo.dwNumberOfProcessors;
+    }
+    return nThreads;
   }
 
   int getTerminalWidth() 

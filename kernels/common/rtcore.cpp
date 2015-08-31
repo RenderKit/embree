@@ -189,6 +189,7 @@ namespace embree
     std::cout << "  Platform : " << getPlatformName() << std::endl;
     std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
     std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
