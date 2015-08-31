@@ -24,10 +24,11 @@ namespace embree
   __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
   ThreadWorkState* SharedLazyTessellationCache::current_t_state = nullptr;
 
-  void resizeTessellationCache(const size_t new_size)
+  void resizeTessellationCache(size_t new_size)
   {    
-    if (SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE >= new_size &&
-	SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
+    if (new_size >= SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE)
+      new_size = SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE;
+    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
       SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);    
   }
 

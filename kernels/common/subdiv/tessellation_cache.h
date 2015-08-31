@@ -60,7 +60,7 @@ namespace embree
 
  };
 
-  void resizeTessellationCache(const size_t new_size);
+  void resizeTessellationCache(size_t new_size);
   void resetTessellationCache();
 
 
@@ -94,7 +94,6 @@ namespace embree
  class __aligned(64) SharedLazyTessellationCache 
  {
  public:
-   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29  // FIXME: why is this a maximal size?
    
    //static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 #if defined(__MIC__)
@@ -105,6 +104,8 @@ namespace embree
    static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
    static const size_t REF_TAG_MASK                    = 0xffffffffff;
+   static const size_t MAX_TESSELLATION_CACHE_SIZE     = REF_TAG_MASK+1;
+   
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
