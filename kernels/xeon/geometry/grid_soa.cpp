@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
  
-#include "subdivpatch1cached_intersector1.h"
+#include "grid_soa.h"
 
 namespace embree
 {
