@@ -47,6 +47,9 @@ namespace embree
           });
       }
 
+      /* reset memory allocator */
+      bvh->alloc.clear();
+      
       /* skip build for empty scene */
       const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
       if (numPrimitives == 0) {
