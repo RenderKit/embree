@@ -38,7 +38,7 @@ namespace embree
 #if defined(__MIC__)
     const size_t maxTasks = 256;
 #else
-    const size_t maxTasks = 64;
+    const size_t maxTasks = 64; // FIXME: increase!!!!
 #endif
     const size_t threadCount = TaskSchedulerTBB::threadCount();
     taskCount = min(taskCount,threadCount,maxTasks);
@@ -73,7 +73,7 @@ namespace embree
     return tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
       [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
       reduction);
-    if (tbb::task::self().group()->is_group_execution_cancelled())
+    if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task group cancelled");
 #endif
   }

@@ -46,14 +46,24 @@ namespace embree
     hair_traverser = "default";
     hair_builder_replication_factor = 3.0f;
     memory_preallocation_factor     = 1.0f; 
-    tessellation_cache_size         = 0;
+#if defined(__X86_64__)
+    tessellation_cache_size = 1024*1024*1024;
+#else
+    tessellation_cache_size = 128*1024*1024;
+#endif
     subdiv_accel = "default";
     
     scene_flags = -1;
     verbose = 0;
-    g_numThreads = 0;
     benchmark = 0;
     regression_testing = 0;
+
+    g_numThreads = 0;
+#if TASKING_TBB_INTERNAL || defined(__MIC__)
+    set_affinity = true;
+#else
+    set_affinity = false;
+#endif
 
     {
       Lock<MutexSys> lock(g_errors_mutex);
@@ -74,12 +84,9 @@ namespace embree
 
    bool State::parseFile(const FileName& fileName)
   {
-    Ref<Stream<int> > file;
-    try {
-      file = new FileStream(fileName);
-    } catch (const std::runtime_error&) {
-      return false;
-    }
+    FILE* f = fopen(fileName.c_str(),"r");
+    if (f == nullptr) return false;
+    Ref<Stream<int> > file = new FileStream(f,fileName);
 
     std::vector<std::string> syms;
 	  for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 
@@ -105,6 +112,22 @@ namespace embree
                                            TokenStream::separators,syms);
     parse(cin);
   }
+  
+  int string_to_cpufeatures(const std::string& isa)
+  {
+    if      (isa == "sse" ) return SSE;
+    else if (isa == "sse2") return SSE2;
+    else if (isa == "sse3") return SSE3;
+    else if (isa == "ssse3") return SSSE3;
+    else if (isa == "sse41") return SSE41;
+    else if (isa == "sse4.1") return SSE41;
+    else if (isa == "sse42") return SSE42;
+    else if (isa == "sse4.2") return SSE42;
+    else if (isa == "avx") return AVX;
+    else if (isa == "avxi") return AVXI;
+    else if (isa == "avx2") return AVX2;
+    else return SSE2;
+  }
 
   void State::parse(Ref<TokenStream> cin)
   {
@@ -116,20 +139,17 @@ namespace embree
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         g_numThreads = cin->get().Int();
       
-      else if (tok == Token::Id("isa") && cin->trySymbol("=")) 
-      {
-        std::string isa = cin->get().Identifier();
-        if      (isa == "sse" ) setCPUFeatures(SSE);
-        else if (isa == "sse2") setCPUFeatures(SSE2);
-        else if (isa == "sse3") setCPUFeatures(SSE3);
-        else if (isa == "ssse3") setCPUFeatures(SSSE3);
-        else if (isa == "sse41") setCPUFeatures(SSE41);
-        else if (isa == "sse4.1") setCPUFeatures(SSE41);
-        else if (isa == "sse42") setCPUFeatures(SSE42);
-        else if (isa == "sse4.2") setCPUFeatures(SSE42);
-        else if (isa == "avx") setCPUFeatures(AVX);
-        else if (isa == "int8") setCPUFeatures(AVXI);
-        else if (isa == "avx2") setCPUFeatures(AVX2);
+      else if (tok == Token::Id("set_affinity"))
+        set_affinity = cin->get().Int();
+      
+      else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
+        std::string isa = strlwr(cin->get().Identifier());
+        setCPUFeatures(string_to_cpufeatures(isa));
+      }
+
+      else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
+        std::string isa = strlwr(cin->get().Identifier());
+        setCPUFeatures(getCPUFeatures() & string_to_cpufeatures(isa));
       }
 
       else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 

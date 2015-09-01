@@ -24,11 +24,11 @@
 #include "../xeonphi/bvh4mb/bvh4mb.h"
 #include "../xeonphi/bvh4hair/bvh4hair.h"
 #endif
-
+ 
 namespace embree
 {
-#if TASKING_TBB
-  tbb::task_arena tbb_task_arena;
+#if USE_TASK_ARENA
+  tbb::task_arena* arena = nullptr;
 #endif
 
   /* error raising rtcIntersect and rtcOccluded functions */
@@ -37,6 +37,10 @@ namespace embree
   void invalid_rtcIntersect4() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect4 and rtcOccluded4 not enabled"); }
   void invalid_rtcIntersect8() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect8 and rtcOccluded8 not enabled"); }
   void invalid_rtcIntersect16() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect16 and rtcOccluded16 not enabled"); }
+
+ 
+/* number of created scene */
+  AtomicCounter Scene::numScenes = 0;
 
   Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
     : Accel(AccelData::TY_UNKNOWN),
@@ -47,9 +51,9 @@ namespace embree
       numTriangles(0), numTriangles2(0), 
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
-      numUserGeometries1(0), 
+      numUserGeometries1(0), numSubdivEnableDisableEvents(0),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
-      commitCounter(0), 
+      commitCounter(0), commitCounterSubdiv(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
 #if defined(TASKING_LOCKSTEP) 
@@ -57,6 +61,7 @@ namespace embree
 #elif defined(TASKING_TBB_INTERNAL)
     scheduler = nullptr;
 #else
+    //arena = new tbb::task_arena;
     group = new tbb::task_group;
 #endif
 
@@ -76,6 +81,7 @@ namespace embree
 
 #if defined(__MIC__)
     needBezierVertices = true;
+    needSubdivVertices = true;
 
     accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
     accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
@@ -142,6 +148,9 @@ namespace embree
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
 #endif
+
+    /* increment number of scenes */
+    numScenes++;
   }
 
 #if !defined(__MIC__)
@@ -157,8 +166,20 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (hasISA(AVX))
 	  {
-            if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
-            else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) {
+#if defined (__TARGET_AVX512__) && 0
+              accels.add(BVH8::BVH8Triangle8SpatialSplit(this)); 
+#else
+              accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+#endif
+            }
+            else {
+#if defined (__TARGET_AVX512__) && 0
+              accels.add(BVH8::BVH8Triangle8ObjectSplit(this)); 
+#else
+              accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+#endif
+            }
           }
           else 
 #endif
@@ -169,7 +190,7 @@ namespace embree
           break;
 
           case /*0b01*/ 1: 
-#if defined (__TARGET_AVX2__)
+#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
             if (hasISA(AVX2))
               accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
             else
@@ -252,9 +273,7 @@ namespace embree
     }
     else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
     else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-    else if (State::instance()->subdiv_accel == "bvh4.grid.adaptive"     ) accels.add(BVH4::BVH4SubdivGrid(this));
     else if (State::instance()->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
-    else if (State::instance()->subdiv_accel == "bvh4.grid.lazy"         ) accels.add(BVH4::BVH4SubdivGridLazy(this));
     else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->subdiv_accel);
   }
 
@@ -266,8 +285,12 @@ namespace embree
       delete geometries[i];
 
 #if TASKING_TBB
+    //delete arena; arena = nullptr;
     delete group; group = nullptr;
 #endif
+
+    /* decrement number of scenes */
+    numScenes--;
   }
 
   void Scene::clear() {
@@ -377,6 +400,12 @@ namespace embree
 
     /* update commit counter */
     commitCounter++;
+
+    /* do only reset tessellation cache on MIC */
+#if defined(__MIC__)
+    if (numScenes == 1)
+      resetTessellationCache();
+#endif
   }
 
   void Scene::build_task ()
@@ -496,45 +525,43 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+    AutoUnlock<MutexSys> buildLock(buildMutex);
+
+    /* allocates own taskscheduler for each build */
     Ref<TaskSchedulerTBB> scheduler = nullptr;
-    {
+    { 
       Lock<MutexSys> lock(schedulerMutex);
       scheduler = this->scheduler;
-      if (scheduler == null) this->scheduler = scheduler = new TaskSchedulerTBB;
+      if (scheduler == null) {
+        buildLock.lock();
+        this->scheduler = scheduler = new TaskSchedulerTBB;
+      }
     }
 
-    if (threadCount != 0) 
-    {
-      if (threadIndex > 0) {
-        scheduler->join();
-        return;
-      } else
-        scheduler->wait_for_threads(threadCount);
-    }
-
-    /* try to obtain build lock */
-    TryLock<MutexSys> lock(buildMutex);
-
-    /* join hierarchy build */
-    if (!lock.isLocked()) {
+    /* worker threads join build */
+    if (!buildLock.isLocked()) {
       scheduler->join();
       return;
     }
 
+    /* wait for all threads in rtcCommitThread mode */
+    if (threadCount != 0)
+      scheduler->wait_for_threads(threadCount);
+
+    /* fast path for unchanged scenes */
     if (!isModified()) {
-      this->scheduler = nullptr;
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
       return;
     }
 
-    progress_monitor_counter = 0;
-
+    /* report error if scene not ready */
     if (!ready()) {
-      this->scheduler = nullptr;
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
-    scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
-    this->scheduler = nullptr;
+    /* initiate build */
+    scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
   }
 
 #endif
@@ -557,23 +584,31 @@ namespace embree
 
     /* join hierarchy build */
     if (!lock.isLocked()) {
-      tbb_task_arena.execute([&]{ group->wait(); });
-      //group->wait();
+#if USE_TASK_ARENA
+      arena->execute([&]{ group->wait(); });
+#else
+      group->wait();
+#endif
       while (!buildMutex.try_lock()) {
         __pause_cpu();
         yield();
-        tbb_task_arena.execute([&]{ group->wait(); });
-        //group->wait();
+#if USE_TASK_ARENA
+        arena->execute([&]{ group->wait(); });
+#else
+        group->wait();
+#endif
       }
       buildMutex.unlock();
       return;
     }
 
     if (!isModified()) {
+      if (threadCount) group_barrier.wait(threadCount);
       return;
     }
 
     if (!ready()) {
+      if (threadCount) group_barrier.wait(threadCount);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
@@ -585,18 +620,26 @@ namespace embree
 #endif
     
     try {
-    
+
+#if TBB_INTERFACE_VERSION_MAJOR < 8    
+      tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
+#else
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
+#endif
       //ctx.set_priority(tbb::priority_high);
 
-      tbb_task_arena.execute([&]{
+#if USE_TASK_ARENA
+      arena->execute([&]{
+#endif
           group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), [&] (size_t) { build_task(); }, ctx);
+              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
             });
           if (threadCount) group_barrier.wait(threadCount);
           group->wait();
+#if USE_TASK_ARENA
         }); 
-      
+#endif
+     
       /* reset MXCSR register again */
 #if !defined(__MIC__)
       _mm_setcsr(mxcsr);

@@ -36,7 +36,8 @@ namespace embree
   };
   
   extern "C" void device_init(const char* cfg);
-  extern "C" void device_key_pressed (int key);
+  extern "C" void call_key_pressed_handler (int key);
+  extern "C" void (*key_pressed_handler)(int key);
 
   extern "C" void device_set_scene(Scene* scene);
   extern "C" void device_resize(int width, int height);

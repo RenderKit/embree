@@ -29,7 +29,7 @@ bool g_subdiv_mode = false;
 #define SPP 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 4
+#define FIXED_EDGE_TESSELLATION_VALUE 3
 
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
@@ -44,6 +44,7 @@ inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const
   const Vec3fa dist = cam_pos - P;
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
+
 
 void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t startID, size_t endID )
 {
@@ -63,30 +64,44 @@ void updateEdgeLevelBuffer( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, size_t 
 }
 
 #if defined(ISPC)
-task void updateEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
+task void updateSubMeshEdgeLevelBufferTask( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos )
 {
   const size_t size = mesh->numFaces;
   const size_t startID = ((taskIndex+0)*size)/taskCount;
   const size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
+task void updateMeshEdgeLevelBufferTask( ISPCScene* scene_in, const Vec3fa& cam_pos )
+{
+  ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[taskIndex];
+  unsigned int geomID = mesh->geomID;
+  if (mesh->numFaces < 10000) {
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);   
+  }
+}
 #endif
 
 void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 {
+  /* first update small meshes */
+#if defined(ISPC)
+  launch[ scene_in->numSubdivMeshes ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); 
+#endif
+
+  /* now update large meshes */
   for (size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
     ISPCSubdivMesh* mesh = g_ispc_scene->subdiv[g];
-    unsigned int geomID = mesh->geomID;
+    if (mesh->numFaces < 10000) continue;
 #if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); 	           
+    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); 	           
 #else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);    
   }
 }
-
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -112,6 +127,14 @@ void error_handler(const RTCError code, const char* str)
   exit(1);
 }
 
+bool g_use_smooth_normals = false;
+void device_key_pressed(int key)
+{
+  //printf("key = %\n",key);
+  if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
+  else device_key_pressed_default(key);
+}
+
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 
@@ -127,6 +150,7 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
+  key_pressed_handler = device_key_pressed;
 }
 
 RTCScene convertScene(ISPCScene* scene_in)
@@ -140,12 +164,12 @@ RTCScene convertScene(ISPCScene* scene_in)
   geomID_to_mesh = new void_ptr[numGeometries];
   geomID_to_type = new int[numGeometries];
 
-  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT| RTC_SCENE_ROBUST;
-
+  int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_aflags = RTC_INTERSECT1 | RTC_INTERPOLATE;
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT1);
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -214,6 +238,15 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa Ns = ray.Ng;
+
+  if (g_use_smooth_normals)
+  {
+    Vec3fa dPdu,dPdv;
+    int geomID = ray.geomID;  {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+    }
+    Ns = cross(dPdv,dPdu);
+  }
 
   int materialID = 0;
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi

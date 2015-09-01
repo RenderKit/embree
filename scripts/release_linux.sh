@@ -7,6 +7,29 @@
 
 #destdir=`readlink -f "$1"`
 
+export CPATH=
+export LD_LIBRARY_PATH=
+
+function check_symbols
+{
+  for sym in `nm $1 | grep $2_`
+  do
+    version=(`echo $sym | sed 's/.*@@\(.*\)$/\1/p' | grep -E -o "[0-9]+"`)
+    if [ ${#version[@]} -ne 0 ]; then
+      #echo "version0 = " ${version[0]}
+      #echo "version1 = " ${version[1]}
+      if [ ${version[0]} -gt $3 ]; then
+        echo "Error: problematic $2 symbol " $sym
+        exit 1
+      fi
+      if [ ${version[1]} -gt $4 ]; then
+        echo "Error: problematic $2 symbol " $sym
+        exit 1
+      fi
+    fi
+  done
+}
+
 TBB_PATH=$PWD/tbb
 
 mkdir -p build
@@ -17,7 +40,6 @@ rm version.h
 # set release settings
 cmake \
 -D COMPILER=ICC \
--D TBB_ROOT=$TBB_PATH \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
@@ -33,12 +55,16 @@ VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h
 # make docu after cmake to have correct version.h
 make -j 8 preinstall
 
-# create installers
-cmake -D ENABLE_INSTALLER=ON ..
-make -j 8 package
+check_symbols libembree.so GLIBC 2 3
+check_symbols libembree.so GLIBCXX 3 4
+check_symbols libembree.so CXXABI 1 3
 
 # create RPM files
-cmake -D ENABLE_INSTALLER=OFF ..
+cmake -D ENABLE_INSTALLER=ON -D TBB_ROOT=/usr ..
+make -j 8 package
+
+# create tar.gz files
+cmake -D ENABLE_INSTALLER=OFF -D TBB_ROOT=$TBB_PATH ..
 make -j 8 package
 
 # rename RPMs to have component name before version

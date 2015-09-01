@@ -65,6 +65,7 @@ namespace embree
       const tsimdf V = reduce_add(cross(v0+v1,e1)) ^ sgnDen;
       const tsimdf W = reduce_add(cross(v1+v2,e2)) ^ sgnDen;
       tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+
       if (unlikely(none(valid))) return;
       
       /* perform depth test */
@@ -89,6 +90,7 @@ namespace embree
       tri_Ng = tri_Ng * ray_dir_scale;
 
       size_t i = select_min(valid,t);
+
       int geomID = tri_geomIDs[i];
       
       /* intersection filter test */

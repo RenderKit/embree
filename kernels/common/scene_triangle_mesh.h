@@ -57,6 +57,7 @@ namespace embree
     void immutable ();
     bool verify ();
     void interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+    // FIXME: implement interpolateN
 
   public:
 

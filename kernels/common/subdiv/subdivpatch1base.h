@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cmath>
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
@@ -24,872 +23,474 @@
 #include "gregory_triangle_patch.h"
 #include "tessellation.h"
 #include "tessellation_cache.h"
-
-#define FORCE_TESSELLATION_BOUNDS 1
-#define USE_DISPLACEMENT_FOR_TESSELLATION_BOUNDS 1
-#define DISCRETIZED_UV 1
+#include "gridrange.h"
+#include "patch_eval_grid.h"
+#include "feature_adaptive_eval_grid.h"
+#include "../scene_subdiv_mesh.h"
 
 namespace embree
 {
-
-  template<class T> 
-    __forceinline T bilinear_interpolate(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v)
-    {
-      return (1.0f-u) * (1.0f-v) * x0 + u * (1.0f-v) * x1 + u * v * x2 + (1.0f-u) * v * x3; 
-    }
-
-
-  template<class T>
-    __forceinline T *aligned_alloca(size_t elements, const size_t alignment = 64) // FIXME: move to different place
-    {
-      void *ptr = alloca(elements * sizeof(T) + alignment);
-      return (T*)ALIGN_PTR(ptr,alignment);
-    }
-  
-  /* adjust discret tessellation level for feature-adaptive pre-subdivision */
-    __forceinline float adjustDiscreteTessellationLevel(float l, const int sublevel = 0)
-    {
-      for (size_t i=0; i<sublevel; i++) l *= 0.5f;
-      float r = ceilf(l);      
-      for (size_t i=0; i<sublevel; i++) r *= 2.0f;
-      return r;
-    }
-
-#if !defined(__MIC__)
-
-  /* 3x3 point grid => 2x2 quad grid */
-
-
-  struct __aligned(64) Quad2x2
-  {
-
-    /*  v00 - v01 - v02 */
-    /*  v10 - v11 - v12 */
-    /*  v20 - v21 - v22 */
-  
-    /* v00 - v10 - v01 - v11 - v02 - v12 */
-    /* v10 - v20 - v11 - v21 - v12 - v22 */
-   
-    Quad2x2() {}
-
-    float vtx_x[12];
-    float vtx_y[12];
-    float vtx_z[12];
-#if DISCRETIZED_UV == 1
-    unsigned short vtx_u[12];
-    unsigned short vtx_v[12];
-#else
-    float vtx_u[12];
-    float vtx_v[12];
-#endif
-
-    static __forceinline int4 u16_to_int4(const unsigned short* const source) // FIXME: move to int4 header
-    {
-#if defined (__SSE4_1__)
-      return _mm_cvtepu16_epi32(loadu4i(source));
-#else
-      return int4(source[0],source[1],source[2],source[3]);
-#endif
-    } 
-
-    static __forceinline float4 u16_to_float4(const unsigned short* const source) {
-      return float4(u16_to_int4(source)) * 1.0f/65535.0f;
-    } 
-
-    static __forceinline float u16_to_float(const unsigned short source) { return (float)source * 1.0f/65535.0f; } 
-    static __forceinline unsigned short float_to_u16(const float f) { return (unsigned short)(f*65535.0f); }
-    static __forceinline int4 float_to_u16(const float4 &f) { return (int4)(f*65535.0f); }
-
-    __forceinline void initFrom3x3Grid( const float *const source,
-                                        float *const dest,
-                                        const size_t offset_line0,
-                                        const size_t offset_line1,
-                                        const size_t offset_line2)
-    {
-      const float v00 = source[offset_line0 + 0];
-      const float v01 = source[offset_line0 + 1];
-      const float v02 = source[offset_line0 + 2];
-      const float v10 = source[offset_line1 + 0];
-      const float v11 = source[offset_line1 + 1];
-      const float v12 = source[offset_line1 + 2];
-      const float v20 = source[offset_line2 + 0];
-      const float v21 = source[offset_line2 + 1];
-      const float v22 = source[offset_line2 + 2];
-
-      /* v00 - v10 - v01 - v11 - v02 - v12 */
-      dest[ 0] = v00;
-      dest[ 1] = v10;
-      dest[ 2] = v01;
-      dest[ 3] = v11;
-      dest[ 4] = v02;
-      dest[ 5] = v12;
-      /* v10 - v20 - v11 - v21 - v12 - v22 */
-      dest[ 6] = v10;
-      dest[ 7] = v20;
-      dest[ 8] = v11;
-      dest[ 9] = v21;
-      dest[10] = v12;
-      dest[11] = v22;
-    }
-
-    __forceinline void initFrom3x3Grid( const float4 source[3],
-                                        float *const dest)
-    {
-      const float4 row0_a = unpacklo(source[0],source[1]); 
-      const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
-      const float4 row1_a = unpacklo(source[1],source[2]);
-      const float4 row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
-
-      storeu4f(&dest[2], row0_b);
-      storeu4f(&dest[8], row1_b);
-      storeu4f(&dest[0], row0_a);
-      storeu4f(&dest[6], row1_a);
-    }
-
-    __forceinline void initFrom3x3Grid_discretized( const float4 source[3],
-                                                    unsigned short *const dest)
-    {
-      const float4 row0_a = unpacklo(source[0],source[1]); 
-      const float4 row0_b = shuffle<0,1,0,1>(unpackhi(source[0],source[1]));
-      const float4 row1_a = unpacklo(source[1],source[2]);
-      const float4 row1_b = shuffle<0,1,0,1>(unpackhi(source[1],source[2]));
-
-      //FIXME: use intrinsics for conversion
-      for (size_t i=0;i<4;i++)
-        dest[2+i] = (unsigned short)(row0_b[i]*65535.0f);
-      for (size_t i=0;i<4;i++)
-        dest[8+i] = (unsigned short)(row1_b[i]*65535.0f);
-      for (size_t i=0;i<4;i++)
-        dest[0+i] = (unsigned short)(row0_a[i]*65535.0f);
-      for (size_t i=0;i<4;i++)
-        dest[6+i] = (unsigned short)(row1_a[i]*65535.0f);
-
-    }
-
-    __forceinline void initFrom3x3Grid_discretized( const float *const source,
-                                                    unsigned short *const dest,
-                                                    const size_t offset_line0,
-                                                    const size_t offset_line1,
-                                                    const size_t offset_line2)
-    {
-      const float v00 = source[offset_line0 + 0];
-      const float v01 = source[offset_line0 + 1];
-      const float v02 = source[offset_line0 + 2];
-      const float v10 = source[offset_line1 + 0];
-      const float v11 = source[offset_line1 + 1];
-      const float v12 = source[offset_line1 + 2];
-      const float v20 = source[offset_line2 + 0];
-      const float v21 = source[offset_line2 + 1];
-      const float v22 = source[offset_line2 + 2];
-
-      /* v00 - v10 - v01 - v11 - v02 - v12 */
-      dest[ 0] = float_to_u16(v00);
-      dest[ 1] = float_to_u16(v10);
-      dest[ 2] = float_to_u16(v01);
-      dest[ 3] = float_to_u16(v11);
-      dest[ 4] = float_to_u16(v02);
-      dest[ 5] = float_to_u16(v12);
-      /* v10 - v20 - v11 - v21 - v12 - v22 */
-      dest[ 6] = float_to_u16(v10);
-      dest[ 7] = float_to_u16(v20);
-      dest[ 8] = float_to_u16(v11);
-      dest[ 9] = float_to_u16(v21);
-      dest[10] = float_to_u16(v12);
-      dest[11] = float_to_u16(v22);
-    }
-
-    /* init from 3x3 point grid */
-    void init( const float * const grid_x,
-               const float * const grid_y,
-               const float * const grid_z,
-               const float * const grid_u,
-               const float * const grid_v,
-               const size_t offset_line0,
-               const size_t offset_line1,
-               const size_t offset_line2)
-    {
-      initFrom3x3Grid( grid_x, vtx_x, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid( grid_y, vtx_y, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid( grid_z, vtx_z, offset_line0, offset_line1, offset_line2 );
-#if DISCRETIZED_UV == 1
-      initFrom3x3Grid_discretized( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid_discretized( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
-#else
-      initFrom3x3Grid( grid_u, vtx_u, offset_line0, offset_line1, offset_line2 );
-      initFrom3x3Grid( grid_v, vtx_v, offset_line0, offset_line1, offset_line2 );
-#endif
-    }
-
-    /* init from 3x3 point grid */
-    void init( const float4 grid_x[3],
-               const float4 grid_y[3],
-               const float4 grid_z[3],
-               const float4 grid_u[3],
-               const float4 grid_v[3])
-    {
-      initFrom3x3Grid( grid_x, vtx_x);
-      initFrom3x3Grid( grid_y, vtx_y);
-      initFrom3x3Grid( grid_z, vtx_z);
-#if DISCRETIZED_UV == 1
-      
-      initFrom3x3Grid_discretized( grid_u, vtx_u);
-      initFrom3x3Grid_discretized( grid_v, vtx_v);
-#else
-      initFrom3x3Grid( grid_u, vtx_u );
-      initFrom3x3Grid( grid_v, vtx_v );
-#endif
-    }
-
-        /* init from 3x3 point grid */
-    void init_xyz( const float4 grid_x[3],
-		   const float4 grid_y[3],
-		   const float4 grid_z[3])
-    {
-      initFrom3x3Grid( grid_x, vtx_x);
-      initFrom3x3Grid( grid_y, vtx_y);
-      initFrom3x3Grid( grid_z, vtx_z);
-    }
-
-
-#if defined(__AVX__)
-
-    __forceinline float8 combine( const float *const source, const size_t offset) const {
-      return float8( float4::loadu(&source[0+offset]), float4::loadu(&source[6+offset]) ); // FIXME: unaligned loads
-    }
-
-    __forceinline int8 combine_discretized( const unsigned short *const source, const size_t offset) const {  
-      return int8( u16_to_int4(&source[0+offset]), u16_to_int4(&source[6+offset]) );            
-    }
-
-    __forceinline Vec3f8 getVtx( const size_t offset, const size_t delta = 0 ) const {
-      return Vec3f8(  combine(vtx_x,offset), combine(vtx_y,offset), combine(vtx_z,offset) );
-    }
-
-    __forceinline Vec2f8 getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRETIZED_UV == 1
-      return Vec2f8(  float8(combine_discretized(vtx_u,offset)) * 1.0f/65535.0f, float8(combine_discretized(vtx_v,offset)) * 1.0f/65535.0f )  ;
-#else
-      return Vec2f8(  combine(vtx_u,offset), combine(vtx_v,offset) );
-#endif
-    }
-
-#else
-
-    __forceinline Vec3f4 getVtx( const size_t offset, const size_t delta = 0 ) const {
-      return Vec3f4( loadu4f(&vtx_x[offset+delta]), loadu4f(&vtx_y[offset+delta]), loadu4f(&vtx_z[offset+delta]) );
-    }
-
-    __forceinline Vec2f4 getUV( const size_t offset, const size_t delta = 0 ) const {
-#if DISCRETIZED_UV == 1
-      return Vec2f4( u16_to_float4(&vtx_u[offset+delta]), u16_to_float4(&vtx_v[offset+delta]) );
-#else
-      return Vec2f4(  loadu4f(&vtx_u[offset+delta]), loadu4f(&vtx_v[offset+delta])  );
-#endif
-    }
-    
-#endif
-
-    
-    __forceinline BBox3fa bounds() const 
-    {
-      BBox3fa b( empty );
-      for (size_t i=0;i<12;i++)
-        b.extend( Vec3fa(vtx_x[i],vtx_y[i],vtx_z[i]) );
-      return b;
-    }
-    
-    __forceinline Vec3fa getVec3fa_xyz(const size_t i) const {
-      return Vec3fa( vtx_x[i], vtx_y[i], vtx_z[i] );
-    }
-
-    __forceinline Vec2f getVec2f_uv(const size_t i) const {
-      return Vec2f( vtx_u[i], vtx_v[i] );
-    }
-
-  };
-
-  inline std::ostream& operator<<(std::ostream& cout, const Quad2x2& qquad) {
-    for (size_t i=0;i<12;i++)
-      cout << "i = " << i << " -> xyz = " << qquad.getVec3fa_xyz(i) << " uv = " << qquad.getVec2f_uv(i) << std::endl;
-    return cout;
-  }
-
-#endif
-
-#if defined(__AVX__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f8 &v)
-  {
-    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
-#if defined(__SSE__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f4 &v)
-  {
-    const Vec3fa b_min( reduce_min(v.x), reduce_min(v.y), reduce_min(v.z) );
-    const Vec3fa b_max( reduce_max(v.x), reduce_max(v.y), reduce_max(v.z) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
-#if defined(__MIC__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f16 &v, const bool16 m_valid = 0xffff)
-  {
-    const float16 x_min = select(m_valid,v.x,float16::inf());
-    const float16 y_min = select(m_valid,v.y,float16::inf());
-    const float16 z_min = select(m_valid,v.z,float16::inf());
-
-    const float16 x_max = select(m_valid,v.x,float16::minus_inf());
-    const float16 y_max = select(m_valid,v.y,float16::minus_inf());
-    const float16 z_max = select(m_valid,v.z,float16::minus_inf());
-    
-    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
-    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
-    return BBox3fa( b_min, b_max );
-  }
-#endif
-
-  struct __aligned(16) GridRange
-  {
-    unsigned int u_start;
-    unsigned int u_end;
-    unsigned int v_start;
-    unsigned int v_end;
-
-    __forceinline GridRange() {}
-
-#if defined(__MIC__)    
-    __forceinline void operator=(const GridRange& v) {
-      store4f((float*)this,broadcast4to16f((float*)&v));
-    };
-#endif
-
-    __forceinline GridRange(unsigned int u_start, unsigned int u_end, unsigned int v_start, unsigned int v_end) : u_start(u_start), u_end(u_end), v_start(v_start), v_end(v_end) {}
-
-    __forceinline bool hasLeafSize() const
-    {
-
-#if defined(__MIC__)
-      return u_end-u_start <= 1 && v_end-v_start <= 1;
-#else
-      const unsigned int u_size = u_end-u_start+1;
-      const unsigned int v_size = v_end-v_start+1;
-      assert(u_size >= 1);
-      assert(v_size >= 1);
-
-      return u_size <= 3 && v_size <= 3;
-#endif
-    }
-
-
-    static __forceinline unsigned int split(unsigned int start,unsigned int end)
-    {
-      const unsigned int size = end-start+1;
-#if defined(__MIC__)
-      //assert( size > 4 );
-      //const unsigned int blocks4 = (end-start+1+4-1)/4;
-      //const unsigned int center  = (start + (blocks4/2)*4)-1; 
-      //assert ((center-start+1) % 4 == 0);
-      const unsigned int center = (start+end)/2;
-      assert(center<end);
-      return center;
-#else
-      // FIXME: for xeon the divide is 3!
-      const unsigned int center = (start+end)/2;
-#endif
-
-      assert (center > start);
-      assert (center < end);
-      return center;
-    }
-
-    __forceinline void split(GridRange &r0, GridRange &r1) const
-    {
-      //if (hasLeafSize()) return false;
-      assert( hasLeafSize() == false );
-      const unsigned int u_size = u_end-u_start+1;
-      const unsigned int v_size = v_end-v_start+1;
-      r0 = *this;
-      r1 = *this;
-
-      if (u_size >= v_size)
-        {
-          //assert(u_size >= 3);
-          const unsigned int u_mid = split(u_start,u_end);
-          r0.u_end   = u_mid;
-          r1.u_start = u_mid;
-        }
-      else
-        {
-          //assert(v_size >= 3);
-          const unsigned int v_mid = split(v_start,v_end);
-          r0.v_end   = v_mid;
-          r1.v_start = v_mid;
-        }
-
-    }
-
-    __forceinline unsigned int splitIntoSubRanges(GridRange r[4]) const
-    {
-      assert( !hasLeafSize() );
-      size_t children = 0;
-      GridRange first,second;
-      split(first,second);
-      if (first.hasLeafSize())
-	{
-	  children = 1;
-	  r[0] = first;
-	}
-      else
-	{
-	  first.split(r[0],r[1]);
-	  children = 2;
-	}
-
-      if (second.hasLeafSize())
-	{
-	  r[children] = second;
-	  children++;
-	}
-      else
-	{
-	  second.split(r[children+0],r[children+1]);
-	  children += 2;
-	}
-      return children;      
-    }
-
-  };
-
-  inline std::ostream& operator<<(std::ostream& cout, const GridRange& r) {
-    cout << "range: u_start " << r.u_start << " u_end " << r.u_end << " v_start " << r.v_start << " v_end " << r.v_end << std::endl;
-    return cout;
-  }
-
   struct __aligned(64) SubdivPatch1Base
   {
   public:
 
-    enum {
+    enum Type {
+      INVALID_PATCH          = 0,
       BSPLINE_PATCH          = 1,  
       BEZIER_PATCH           = 2,  
-      GREGORY_PATCH          = 4,
-      GREGORY_TRIANGLE_PATCH = 8,
-      TRANSITION_PATCH       = 16,  // needs stiching?
-      HAS_DISPLACEMENT       = 32   // 0 => no displacments
+      GREGORY_PATCH          = 3,
+      GREGORY_TRIANGLE_PATCH = 4,
+      EVAL_PATCH             = 5,
+    };
+
+    enum Flags {
+      TRANSITION_PATCH       = 16, 
     };
 
     /*! Default constructor. */
     __forceinline SubdivPatch1Base () {}
 
-    /*! Construction from vertices and IDs. */
-    SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
-                      const unsigned int gID,
-                      const unsigned int pID,
-                      const SubdivMesh *const mesh,
-                      const Vec2f uv[4],
-                      const float edge_level[4]);
-
     SubdivPatch1Base (const unsigned int gID,
                       const unsigned int pID,
-                      const SubdivMesh *const mesh);
-
-    __forceinline bool needsStitching() const
-    {
-      return (flags & TRANSITION_PATCH) == TRANSITION_PATCH;      
-    }
+                      const unsigned int subPatch,
+                      const SubdivMesh *const mesh,
+                      const Vec2f uv[4],
+                      const float edge_level[4],
+                      const int subdiv[4],
+                      const int simd_width);
 
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.eval(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::eval( patch.v, uu, vv );
+      if (likely(type == BEZIER_PATCH))
+        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == BSPLINE_PATCH))
+        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == GREGORY_PATCH))
+	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
+        return ((GregoryTrianglePatch3fa*)patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
-    __forceinline Vec3fa normal(const float& uu, const float& vv) const
+    __forceinline Vec3fa normal(const float uu, const float vv) const
     {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.normal(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal( patch.v, uu, vv );
+      if (likely(type == BEZIER_PATCH))
+        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == BSPLINE_PATCH))
+        return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == GREGORY_PATCH))
+	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
+	return ((GregoryTrianglePatch3fa*)patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
-    template<typename simdf, typename simdb = typename simdf::Mask>
+    template<typename simdf>
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.eval(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::eval_t<simdb>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-        return GregoryTrianglePatch3fa::eval<simdb,simdf>( patch.v, uu * (1.0f - vv), vv );
+      typedef typename simdf::Mask simdb;
+      if (likely(type == BEZIER_PATCH))
+        return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == BSPLINE_PATCH))
+        return ((BSplinePatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == GREGORY_PATCH))
+	return ((DenseGregoryPatch3fa*)patch_v)->eval(uu,vv);
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
+        return ((GregoryTrianglePatch3fa*)patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
-    template<typename simdf, typename simdb = typename simdf::Mask>
+    template<typename simdf>
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.normal(uu,vv);
-      else if (likely(isGregoryPatch()))
-	return DenseGregoryPatch3fa::normal_t<simdb>( patch.v, uu, vv );
-      else if (likely(isGregoryTrianglePatch()))
-	return GregoryTrianglePatch3fa::normal<simdb,simdf>( patch.v, uu, vv );
+      typedef typename simdf::Mask simdb;
+      if (likely(type == BEZIER_PATCH))
+        return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == BSPLINE_PATCH))
+        return ((BSplinePatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == GREGORY_PATCH))
+	return ((DenseGregoryPatch3fa*)patch_v)->normal(uu,vv);
+      else if (likely(type == GREGORY_TRIANGLE_PATCH))
+         return ((GregoryTrianglePatch3fa*)patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
-#if defined(__MIC__)
-
-    __forceinline Vec3f16 eval16(const float16& uu, const float16& vv) const
-    {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::eval( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-        return patch.eval(uu,vv);
-      else 
-        return DenseGregoryPatch3fa::eval16( patch.v, uu, vv );
+    __forceinline bool needsStitching() const {
+      return flags & TRANSITION_PATCH;      
     }
 
-    __forceinline Vec3f16 normal16(const float16& uu, const float16& vv) const
-    {
-      if (likely(isBezierPatch()))
-        return BezierPatch3fa::normal( patch.v, uu, vv );
-      else if (likely(isBSplinePatch()))
-	return patch.normal(uu,vv);
-      else
-        return DenseGregoryPatch3fa::normal16( patch.v, uu, vv );
-    }
-#endif
-
-
-    __forceinline bool isBSplinePatch() const
-    {
-      return (flags & BSPLINE_PATCH) == BSPLINE_PATCH;
+    __forceinline Vec2f getUV(const size_t i) const {
+      return Vec2f((float)u[i],(float)v[i]) * (1.0f/65535.0f);
     }
 
-    __forceinline bool isBezierPatch() const
-    {
-      return (flags & BEZIER_PATCH) == BEZIER_PATCH;
-    }
+    static void computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4]);
+    static Vec2i computeGridSize(const float level[4]);
+    bool updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width);
 
-    __forceinline bool isGregoryPatch() const
-    {
-      return (flags & GREGORY_PATCH) == GREGORY_PATCH;
-    }
-
-    __forceinline bool isGregoryTrianglePatch() const
-    {
-      return (flags & GREGORY_TRIANGLE_PATCH) == GREGORY_TRIANGLE_PATCH;
-    }
-
-    __forceinline bool hasDisplacement() const
-    {
-      return (flags & HAS_DISPLACEMENT) == HAS_DISPLACEMENT;
-    }
-
-    __forceinline void prefetchData() const
-    {
-      const char *const t = (char*)this;
-      prefetchL1(t + 0*64);
-      prefetchL1(t + 1*64);
-      prefetchL1(t + 2*64);
-      prefetchL1(t + 3*64);
-      prefetchL1(t + 4*64);
-    }
-
-    __forceinline Vec2f getUV(const size_t i) const
-    {
-      return Vec2f((float)u[i],(float)v[i]) * 1.0f/65535.0f;
-    }
-
-
-#if defined(__MIC__)
-    __forceinline void store(void *mem)
-    {
-      const float16 *const src = (float16*)this;
-      assert(sizeof(SubdivPatch1Base) % 64 == 0);
-      float16 *const dst = (float16*)mem;
-#pragma unroll
-      for (size_t i=0;i<sizeof(SubdivPatch1Base) / 64;i++)
-	store16f_ngo(&dst[i],src[i]);
-    }
-#endif
-
-    void updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh);
-
-    __forceinline size_t gridOffset(const size_t y, const size_t x) const
-    {
-      return grid_u_res*y+x;
-    }
-
-    void evalToOBJ(Scene *scene, size_t& vertex_index,size_t& numTotalTriangles);
-    
   private:
-
-    size_t get64BytesBlocksForGridSubTree(const GridRange& range,
-                                          const unsigned int leafBlocks)
-    {
-      if (range.hasLeafSize()) return leafBlocks;
-
-      __aligned(64) GridRange r[4];
-
-      const unsigned int children = range.splitIntoSubRanges(r);
-
-      size_t blocks = 2; /* 128 bytes bvh4 node layout */
-
-      for (unsigned int i=0;i<children;i++)
-	blocks += get64BytesBlocksForGridSubTree(r[i],
-						 leafBlocks);
-      return blocks;    
-    }
-
-
-
+    size_t get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks);
 
   public:
-    __forceinline unsigned int getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2)
-    {
-#if defined(__MIC__)
-      const unsigned int U_BLOCK_SIZE = 5;
-      const unsigned int V_BLOCK_SIZE = 3;
+    size_t getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2);
 
-      const unsigned int grid_u_blocks = (grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
-      const unsigned int grid_v_blocks = (grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
-
-      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_blocks,0,grid_v_blocks),leafBlocks);
-#else
-      return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
-#endif
+    __forceinline size_t getGridBytes() const {
+      const size_t grid_size_xyzuv = (grid_size_simd_blocks * vfloat::size) * 4;
+      return 64*((grid_size_xyzuv+15) / 16);
     }
 
-    __forceinline void read_lock()      { mtx.read_lock();    }
-    __forceinline void read_unlock()    { mtx.read_unlock();  }
     __forceinline void write_lock()     { mtx.write_lock();   }
     __forceinline void write_unlock()   { mtx.write_unlock(); }
-    
     __forceinline bool try_write_lock() { return mtx.try_write_lock(); }
     __forceinline bool try_read_lock()  { return mtx.try_read_lock(); }
-    
-    __forceinline void upgrade_read_to_write_lock() { mtx.upgrade_read_to_write_lock(); }
-    __forceinline void upgrade_write_to_read_lock() { mtx.upgrade_write_to_read_lock(); }
 
-    __forceinline void resetRootRef()
-    {
+    __forceinline void resetRootRef() {
       assert( mtx.hasInitialState() );
       root_ref = SharedLazyTessellationCache::Tag();
     }
 
+    __forceinline SharedLazyTessellationCache::CacheEntry& entry() {
+      return (SharedLazyTessellationCache::CacheEntry&) root_ref;
+    }
 
-    // 16bit discretized u,v coordinates
+  public:    
+    SharedLazyTessellationCache::Tag root_ref;
+    RWMutex mtx;
 
-    unsigned short u[4]; 
+    unsigned short u[4];                        //!< 16bit discretized u,v coordinates
     unsigned short v[4];
     float level[4];
 
-    unsigned short flags;
-    unsigned short grid_bvh_size_64b_blocks;
+    unsigned char flags;
+    unsigned char type;
+    unsigned short grid_u_res;
     unsigned int geom;                          //!< geometry ID of the subdivision mesh this patch belongs to
     unsigned int prim;                          //!< primitive ID of this subdivision patch
-    unsigned short grid_u_res;
     unsigned short grid_v_res;
 
     unsigned short grid_size_simd_blocks;
+#if defined (__MIC__)
+    unsigned short grid_bvh_size_64b_blocks;
     unsigned short grid_subtree_size_64b_blocks;
+#endif
 
-    RWMutex mtx;
-    SharedLazyTessellationCache::Tag root_ref;
+    struct PatchHalfEdge {
+      const HalfEdge* edge;
+      size_t subPatch;
+    };
 
-    __aligned(64) BSplinePatch3fa patch;
+      Vec3fa patch_v[4][4];
+
+      const HalfEdge *edge() const {
+        return ((PatchHalfEdge*)patch_v)->edge;
+      }
+
+      size_t subPatch() const {
+        return ((PatchHalfEdge*)patch_v)->subPatch;
+      }
+
+      void set_edge(const HalfEdge *h) const {
+        ((PatchHalfEdge*)patch_v)->edge = h;
+      }
+
+      void set_subPatch(const size_t s) const {
+        ((PatchHalfEdge*)patch_v)->subPatch = s;
+      }
+
   };
 
-  __forceinline std::ostream& operator<<(std::ostream& o, const SubdivPatch1Base& p)
+  namespace isa
   {
-    o << " flags " << p.flags << " geomID " << p.geom << " primID " << p.prim << " levels: " << p.level[0] << "," << p.level[1] << "," << p.level[2] << "," << p.level[3] << std::endl;
-    o << " patch " << p.patch;
+    /* eval grid over patch and stich edges when required */      
+    static __noinline void evalGrid(const SubdivPatch1Base& patch,
+                                    const size_t x0, const size_t x1,
+                                    const size_t y0, const size_t y1,
+                                    const size_t swidth, const size_t sheight,
+                                    float *__restrict__ const grid_x,
+                                    float *__restrict__ const grid_y,
+                                    float *__restrict__ const grid_z,
+                                    float *__restrict__ const grid_u,
+                                    float *__restrict__ const grid_v,
+                                    const SubdivMesh* const geom)
+    {
+      const size_t dwidth  = x1-x0+1;
+      const size_t dheight = y1-y0+1;
+      const size_t M = dwidth*dheight+vfloat::size;
+      const size_t grid_size_simd_blocks = (M-1)/vfloat::size;
 
-    return o;
-  } 
-
-  /* eval grid over patch and stich edges when required */      
-  static __forceinline void evalGrid(const SubdivPatch1Base& patch,
-                                     float *__restrict__ const grid_x,
-                                     float *__restrict__ const grid_y,
-                                     float *__restrict__ const grid_z,
-                                     float *__restrict__ const grid_u,
-                                     float *__restrict__ const grid_v,
-                                     const SubdivMesh* const geom)
-  {
-    /* grid_u, grid_v need to be padded as we write with SIMD granularity */
-    gridUVTessellator(patch.level,
-                      patch.grid_u_res,
-                      patch.grid_v_res,
-                      grid_u,
-                      grid_v);
-
-#if defined(__MIC__)
-    const size_t SIMD_WIDTH = 16;
-#else
-    const size_t SIMD_WIDTH = 8;
-#endif
-
-    /* set last elements in u,v array to 1.0f */
-    for (size_t i=patch.grid_u_res*patch.grid_v_res;i<patch.grid_size_simd_blocks*SIMD_WIDTH;i++)
+      if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
-	grid_u[i] = 1.0f;
-	grid_v[i] = 1.0f;
-      }
-
-    /* stitch edges if necessary */
-    if (unlikely(patch.needsStitching()))
-      stitchUVGrid(patch.level,patch.grid_u_res,patch.grid_v_res,grid_u,grid_v);
+        const bool displ = geom->displFunc;
+        const size_t N = displ ? M : 0;
+        dynamic_large_stack_array(float,grid_Ng_x,N,64*64);
+        dynamic_large_stack_array(float,grid_Ng_y,N,64*64);
+        dynamic_large_stack_array(float,grid_Ng_z,N,64*64);
         
-#if defined(__MIC__)
-
-       for (size_t i = 0; i<patch.grid_size_simd_blocks; i++)
+        if (geom->patch_eval_trees.size())
         {
-          const float16 u = load16f(&grid_u[i * 16]);
-          const float16 v = load16f(&grid_v[i * 16]);
-
-	  //prefetch<PFHINT_L2EX>(&grid_x[16*i]);
-	  //prefetch<PFHINT_L2EX>(&grid_y[16*i]);
-	  //prefetch<PFHINT_L2EX>(&grid_z[16*i]);
-
-          Vec3f16 vtx = patch.eval16(u, v);
-
-          /* eval displacement function */
-	  if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-            {
-              Vec3f16 normal = patch.normal16(u, v);
-              normal = normalize(normal);
-
-              const Vec2f uv0 = patch.getUV(0);
-              const Vec2f uv1 = patch.getUV(1);
-              const Vec2f uv2 = patch.getUV(2);
-              const Vec2f uv3 = patch.getUV(3);
-
-              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
-
-              ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-					     patch.geom,
-					     patch.prim,
-					     (const float*)&patch_uu,
-					     (const float*)&patch_vv,
-					     (const float*)&normal.x,
-					     (const float*)&normal.y,
-					     (const float*)&normal.z,
-					     (float*)&vtx.x,
-					     (float*)&vtx.y,
-					     (float*)&vtx.z,
-					     16);
-
-            }
-	  //prefetch<PFHINT_L1EX>(&grid_x[16*i]);
-	  //prefetch<PFHINT_L1EX>(&grid_y[16*i]);
-	  //prefetch<PFHINT_L1EX>(&grid_z[16*i]);
-
-	  store16f_ngo(&grid_x[16*i],vtx.x);
-	  store16f_ngo(&grid_y[16*i],vtx.y);
-	  store16f_ngo(&grid_z[16*i],vtx.z);
+          feature_adaptive_eval_grid<PatchEvalGrid> 
+            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+             x0,x1,y0,y1,swidth,sheight,
+             grid_x,grid_y,grid_z,grid_u,grid_v,
+             displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
+             dwidth,dheight);
         }
-   
-#else        
-#if defined(__AVX__)
-    for (size_t i=0;i<patch.grid_size_simd_blocks;i++)
-      {
-        float8 uu = load8f(&grid_u[8*i]);
-        float8 vv = load8f(&grid_v[8*i]);
-        Vec3f8 vtx = patch.eval(uu,vv);
-                 
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
-          {
-	    const Vec2f uv0 = patch.getUV(0);
-	    const Vec2f uv1 = patch.getUV(1);
-	    const Vec2f uv2 = patch.getUV(2);
-	    const Vec2f uv3 = patch.getUV(3);
+        else 
+        {
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
+          
+          feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
+            (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            x0,x1,y0,y1,swidth,sheight,
+            grid_x,grid_y,grid_z,grid_u,grid_v,
+            displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
+            dwidth,dheight);
+        }
 
-            Vec3f8 normal = patch.normal(uu,vv);
-            normal = normalize_safe(normal) ;
-            
-            const float8 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const float8 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           8);
-          }
-        *(float8*)&grid_x[8*i] = vtx.x;
-        *(float8*)&grid_y[8*i] = vtx.y;
-        *(float8*)&grid_z[8*i] = vtx.z;        
+        /* convert sub-patch UVs to patch UVs*/
+        const Vec2f uv0 = patch.getUV(0);
+        const Vec2f uv1 = patch.getUV(1);
+        const Vec2f uv2 = patch.getUV(2);
+        const Vec2f uv3 = patch.getUV(3);
+        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        {
+          const vfloat u = vfloat::load(&grid_u[i*vfloat::size]);
+          const vfloat v = vfloat::load(&grid_v[i*vfloat::size]);
+          const vfloat patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,u,v);
+          const vfloat patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,u,v);
+          vfloat::store(&grid_u[i*vfloat::size],patch_u);
+          vfloat::store(&grid_v[i*vfloat::size],patch_v);
+        }
+
+        /* call displacement shader */
+        if (geom->displFunc) 
+          geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+
+        /* set last elements in u,v array to 1.0f */
+        const float last_u = grid_u[dwidth*dheight-1];
+        const float last_v = grid_v[dwidth*dheight-1];
+        const float last_x = grid_x[dwidth*dheight-1];
+        const float last_y = grid_y[dwidth*dheight-1];
+        const float last_z = grid_z[dwidth*dheight-1];
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++)
+        {
+          grid_u[i] = last_u;
+          grid_v[i] = last_v;
+          grid_x[i] = last_x;
+          grid_y[i] = last_y;
+          grid_z[i] = last_z;
+        }
       }
-#else
-    for (size_t i=0;i<patch.grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
+      else
       {
-        float4 uu = load4f(&grid_u[4*i]);
-        float4 vv = load4f(&grid_v[4*i]);
-        Vec3f4 vtx = patch.eval(uu,vv);
-          
-          
-        if (unlikely(((SubdivMesh*)geom)->displFunc != nullptr))
+        /* grid_u, grid_v need to be padded as we write with SIMD granularity */
+        gridUVTessellator(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
+        /* set last elements in u,v array to last valid point */
+        const float last_u = grid_u[dwidth*dheight-1];
+        const float last_v = grid_v[dwidth*dheight-1];
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++) {
+          grid_u[i] = last_u;
+          grid_v[i] = last_v;
+        }
+
+        /* stitch edges if necessary */
+        if (unlikely(patch.needsStitching()))
+          stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
+        /* iterates over all grid points */
+        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        {
+          const vfloat u = vfloat::load(&grid_u[i*vfloat::size]);
+          const vfloat v = vfloat::load(&grid_v[i*vfloat::size]);
+          Vec3<vfloat> vtx = patch.eval(u,v);
+        
+          /* evaluate displacement function */
+          if (unlikely(geom->displFunc != nullptr))
           {
-	    const Vec2f uv0 = patch.getUV(0);
-	    const Vec2f uv1 = patch.getUV(1);
-	    const Vec2f uv2 = patch.getUV(2);
-	    const Vec2f uv3 = patch.getUV(3);
-
-            Vec3f4 normal = patch.normal(uu,vv);
-            normal = normalize_safe(normal);
-
-            const float4 patch_uu = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,uu,vv);
-            const float4 patch_vv = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,uu,vv);
-            
-            ((SubdivMesh*)geom)->displFunc(((SubdivMesh*)geom)->userPtr,
-                                           patch.geom,
-                                           patch.prim,
-                                           (const float*)&patch_uu,
-                                           (const float*)&patch_vv,
-                                           (const float*)&normal.x,
-                                           (const float*)&normal.y,
-                                           (const float*)&normal.z,
-                                           (float*)&vtx.x,
-                                           (float*)&vtx.y,
-                                           (float*)&vtx.z,
-                                           4);
-          }
+            const Vec3<vfloat> normal = normalize_safe(patch.normal(u, v)); 
+            geom->displFunc(geom->userPtr,patch.geom,patch.prim,
+                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                            &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloat::size);
           
-        *(float4*)&grid_x[4*i] = vtx.x;
-        *(float4*)&grid_y[4*i] = vtx.y;
-        *(float4*)&grid_z[4*i] = vtx.z;        
+          }
+          vfloat::store(&grid_x[i*vfloat::size],vtx.x);
+          vfloat::store(&grid_y[i*vfloat::size],vtx.y);
+          vfloat::store(&grid_z[i*vfloat::size],vtx.z);
+        }
       }
-#endif
-#endif        
+    }
+
+
+    /* eval grid over patch and stich edges when required */      
+    static __noinline BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
+                                                const size_t x0, const size_t x1,
+                                                const size_t y0, const size_t y1,
+                                                const size_t swidth, const size_t sheight,
+                                                const SubdivMesh* const geom)
+    {
+      BBox3fa b(empty);
+      const size_t dwidth  = x1-x0+1;
+      const size_t dheight = y1-y0+1;
+      const size_t M = dwidth*dheight+vfloat::size;
+      const size_t grid_size_simd_blocks = (M-1)/vfloat::size;
+      dynamic_large_stack_array(float,grid_u,M,64*64);
+      dynamic_large_stack_array(float,grid_v,M,64*64);
+
+      if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
+      {
+        const bool displ = geom->displFunc;
+        dynamic_large_stack_array(float,grid_x,M,64*64);
+        dynamic_large_stack_array(float,grid_y,M,64*64);
+        dynamic_large_stack_array(float,grid_z,M,64*64);
+        dynamic_large_stack_array(float,grid_Ng_x,displ ? M : 0,64*64);
+        dynamic_large_stack_array(float,grid_Ng_y,displ ? M : 0,64*64);
+        dynamic_large_stack_array(float,grid_Ng_z,displ ? M : 0,64*64);
+
+        if (geom->patch_eval_trees.size())
+        {
+          feature_adaptive_eval_grid<PatchEvalGrid> 
+            (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+             x0,x1,y0,y1,swidth,sheight,
+             grid_x,grid_y,grid_z,grid_u,grid_v,
+             displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
+             dwidth,dheight);
+        } 
+        else 
+        {
+          GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
+          
+          feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
+            (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
+            x0,x1,y0,y1,swidth,sheight,
+            grid_x,grid_y,grid_z,grid_u,grid_v,
+            displ ? (float*)grid_Ng_x : nullptr, displ ? (float*)grid_Ng_y : nullptr, displ ? (float*)grid_Ng_z : nullptr,
+            dwidth,dheight);
+        }
+
+        /* call displacement shader */
+        if (geom->displFunc) 
+          geom->displFunc(geom->userPtr,patch.geom,patch.prim,grid_u,grid_v,grid_Ng_x,grid_Ng_y,grid_Ng_z,grid_x,grid_y,grid_z,dwidth*dheight);
+
+        /* set last elements in u,v array to 1.0f */
+        const float last_u = grid_u[dwidth*dheight-1];
+        const float last_v = grid_v[dwidth*dheight-1];
+        const float last_x = grid_x[dwidth*dheight-1];
+        const float last_y = grid_y[dwidth*dheight-1];
+        const float last_z = grid_z[dwidth*dheight-1];
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++)
+        {
+          grid_u[i] = last_u;
+          grid_v[i] = last_v;
+          grid_x[i] = last_x;
+          grid_y[i] = last_y;
+          grid_z[i] = last_z;
+        }
+
+        vfloat bounds_min_x = pos_inf;
+        vfloat bounds_min_y = pos_inf;
+        vfloat bounds_min_z = pos_inf;
+        vfloat bounds_max_x = neg_inf;
+        vfloat bounds_max_y = neg_inf;
+        vfloat bounds_max_z = neg_inf;
+        for (size_t i = 0; i<grid_size_simd_blocks; i++)
+        {
+          vfloat x = vfloat::loadu(&grid_x[i * vfloat::size]);
+          vfloat y = vfloat::loadu(&grid_y[i * vfloat::size]);
+          vfloat z = vfloat::loadu(&grid_z[i * vfloat::size]);
+
+	  bounds_min_x = min(bounds_min_x,x);
+	  bounds_min_y = min(bounds_min_y,y);
+	  bounds_min_z = min(bounds_min_z,z);
+
+	  bounds_max_x = max(bounds_max_x,x);
+	  bounds_max_y = max(bounds_max_y,y);
+	  bounds_max_z = max(bounds_max_z,z);
+        }
+
+        b.lower.x = reduce_min(bounds_min_x);
+        b.lower.y = reduce_min(bounds_min_y);
+        b.lower.z = reduce_min(bounds_min_z);
+        b.upper.x = reduce_max(bounds_max_x);
+        b.upper.y = reduce_max(bounds_max_y);
+        b.upper.z = reduce_max(bounds_max_z);
+        b.lower.a = 0.0f;
+        b.upper.a = 0.0f;
+      }
+      else
+      {
+        /* grid_u, grid_v need to be padded as we write with SIMD granularity */
+        gridUVTessellator(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
+        /* set last elements in u,v array to last valid point */
+        const float last_u = grid_u[dwidth*dheight-1];
+        const float last_v = grid_v[dwidth*dheight-1];
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloat::size;i++) {
+          grid_u[i] = last_u;
+          grid_v[i] = last_v;
+        }
+
+        /* stitch edges if necessary */
+        if (unlikely(patch.needsStitching()))
+          stitchUVGrid(patch.level,swidth,sheight,x0,y0,dwidth,dheight,grid_u,grid_v);
+      
+        /* iterates over all grid points */
+        Vec3<vfloat> bounds_min;
+        bounds_min[0] = pos_inf;
+        bounds_min[1] = pos_inf;
+        bounds_min[2] = pos_inf;
+
+        Vec3<vfloat> bounds_max;
+        bounds_max[0] = neg_inf;
+        bounds_max[1] = neg_inf;
+        bounds_max[2] = neg_inf;
+
+        for (size_t i=0; i<grid_size_simd_blocks; i++)
+        {
+          const vfloat u = vfloat::load(&grid_u[i*vfloat::size]);
+          const vfloat v = vfloat::load(&grid_v[i*vfloat::size]);
+          Vec3<vfloat> vtx = patch.eval(u,v);
+        
+          /* evaluate displacement function */
+          if (unlikely(geom->displFunc != nullptr))
+          {
+            const Vec3<vfloat> normal = normalize_safe(patch.normal(u,v));
+            geom->displFunc(geom->userPtr,patch.geom,patch.prim,
+                            &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
+                            &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloat::size);
+          
+          }
+          bounds_min[0] = min(bounds_min[0],vtx.x);
+          bounds_max[0] = max(bounds_max[0],vtx.x);
+          bounds_min[1] = min(bounds_min[1],vtx.y);
+          bounds_max[1] = max(bounds_max[1],vtx.y);
+          bounds_min[2] = min(bounds_min[2],vtx.z);
+          bounds_max[2] = max(bounds_max[2],vtx.z);      
+        }
+
+        b.lower.x = reduce_min(bounds_min[0]);
+        b.lower.y = reduce_min(bounds_min[1]);
+        b.lower.z = reduce_min(bounds_min[2]);
+        b.upper.x = reduce_max(bounds_max[0]);
+        b.upper.y = reduce_max(bounds_max[1]);
+        b.upper.z = reduce_max(bounds_max[2]);
+        b.lower.a = 0.0f;
+        b.upper.a = 0.0f;
+      }
+
+      assert( std::isfinite(b.lower.x) );
+      assert( std::isfinite(b.lower.y) );
+      assert( std::isfinite(b.lower.z) );
+
+      assert( std::isfinite(b.upper.x) );
+      assert( std::isfinite(b.upper.y) );
+      assert( std::isfinite(b.upper.z) );
+
+
+      assert(b.lower.x <= b.upper.x);
+      assert(b.lower.y <= b.upper.y);
+      assert(b.lower.z <= b.upper.z);
+
+      return b;
+    }
   }
-
-
 }

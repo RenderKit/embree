@@ -16,8 +16,8 @@
 
 SET(EMBREE_VERSION_MAJOR 2)
 SET(EMBREE_VERSION_MINOR 6)
-SET(EMBREE_VERSION_PATCH 0)
-SET(EMBREE_VERSION_NOTE " (devel)")
+SET(EMBREE_VERSION_PATCH 3)
+SET(EMBREE_VERSION_NOTE "-alpha.0")
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
@@ -90,7 +90,7 @@ OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
-OPTION(RTCORE_RETURN_SUBDIV_NORMAL "Returns smooth subdivision surface normal in ray structure instead of triangle normal.")
+OPTION(RTCORE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
@@ -109,10 +109,54 @@ CONFIGURE_FILE(
 )
 
 ##############################################################
+# Compiler
+##############################################################
+
+SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
+
+IF (WIN32)
+  IF (NOT DEFAULT_CMAKE_CONFIGURATION_TYPES_SET)
+    SET(CMAKE_CONFIGURATION_TYPES "${CONFIGURATION_TYPES}" CACHE STRING "List of generated configurations." FORCE)
+    SET(DEFAULT_CMAKE_CONFIGURATION_TYPES_SET ON CACHE INTERNAL "Default CMake configuration types set.")
+  ENDIF()
+  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+  INCLUDE (msvc)
+
+ELSE (WIN32)
+  SET(COMPILER "GCC" CACHE STRING "Selects compiler to use.")
+  SET_PROPERTY(CACHE COMPILER PROPERTY STRINGS GCC CLANG ICC)
+
+  IF (COMPILER STREQUAL "GCC")
+    INCLUDE (gcc)
+  ELSEIF (COMPILER STREQUAL "CLANG")
+    INCLUDE (clang)
+  ELSEIF (COMPILER STREQUAL "ICC")
+    INCLUDE (icc)
+  ELSE ()
+    MESSAGE(FATAL_ERROR "Unknown compiler specified: " ${COMPILER})
+  ENDIF ()
+
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Specifies the build type." FORCE)
+    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CONFIGURATION_TYPES})
+  ENDIF(NOT CMAKE_BUILD_TYPE)
+
+  OPTION(CMAKE_VERBOSE_MAKEFILE "Enables verbose mode.")
+  MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
+
+ENDIF (WIN32)
+
+##############################################################
 # ISA configuration
 ##############################################################
 
-SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+SET(XEON_ISA "AVX512" CACHE STRING "Selects highest ISA to support.")
+
+IF ((NOT COMPILER STREQUAL "ICC") AND (XEON_ISA STREQUAL "AVX512"))
+  UNSET(XEON_ISA CACHE)
+  SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+ENDIF ()
+
 SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512)
 
 IF (XEON_ISA STREQUAL "SSE2")
@@ -201,47 +245,6 @@ IF (ISA GREATER 8)
   SET(TARGET_AVX512  ON)
   LIST(APPEND ISPC_TARGETS "avx512knl-i32x16")
 ENDIF ()
-
-SET(CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo")
-
-##############################################################
-# Windows specific
-##############################################################
-IF (WIN32)
-  IF (NOT DEFAULT_CMAKE_CONFIGURATION_TYPES_SET)
-    SET(CMAKE_CONFIGURATION_TYPES "${CONFIGURATION_TYPES}" CACHE STRING "List of generated configurations." FORCE)
-    SET(DEFAULT_CMAKE_CONFIGURATION_TYPES_SET ON CACHE INTERNAL "Default CMake configuration types set.")
-  ENDIF()
-
-  SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
-
-##############################################################
-# Compiler
-##############################################################
-  INCLUDE (msvc)
-ELSE (WIN32)
-  SET(COMPILER "GCC" CACHE STRING "Selects compiler to use.")
-  SET_PROPERTY(CACHE COMPILER PROPERTY STRINGS GCC CLANG ICC)
-
-  IF (COMPILER STREQUAL "GCC")
-    INCLUDE (gcc)
-  ELSEIF (COMPILER STREQUAL "CLANG")
-    INCLUDE (clang)
-  ELSEIF (COMPILER STREQUAL "ICC")
-    INCLUDE (icc)
-  ELSE ()
-    MESSAGE(FATAL_ERROR "Unknown compiler specified: " ${COMPILER})
-  ENDIF ()
-
-  IF(NOT CMAKE_BUILD_TYPE)
-    SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Specifies the build type." FORCE)
-    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CONFIGURATION_TYPES})
-  ENDIF(NOT CMAKE_BUILD_TYPE)
-
-  OPTION(CMAKE_VERBOSE_MAKEFILE "Enables verbose mode.")
-  MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-
-ENDIF (WIN32)
 
 INCLUDE (ispc)
 

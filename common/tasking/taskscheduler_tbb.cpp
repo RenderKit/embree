@@ -28,7 +28,7 @@ namespace embree
   size_t g_numThreads = 0;                              //!< number of threads to use in builders
   __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
   __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
-  __dllexport TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
+  TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
 
   template<typename Predicate, typename Body>
   __forceinline void TaskSchedulerTBB::steal_loop(Thread& thread, const Predicate& pred, const Body& body)
@@ -130,8 +130,8 @@ namespace embree
     exit(1);
   }
 
-  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads)
-    : numThreads(numThreads), running(false), terminate(false) 
+  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads, bool set_affinity)
+    : numThreads(numThreads), set_affinity(set_affinity), running(false), terminate(false) 
   {
     if (this->numThreads == 0)
       this->numThreads = getNumberOfLogicalThreads();
@@ -143,7 +143,7 @@ namespace embree
     {
       running = true;
       for (size_t t=1; t<numThreads; t++) {
-        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,t));
+        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,set_affinity ? t : -1));
       }
     }
   }
@@ -192,10 +192,6 @@ namespace embree
         if (terminate) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
-        if (threadIndex < 0) {
-          schedulers.pop_front();
-          continue;
-        }
       }
       scheduler->thread_loop(threadIndex);
     }
@@ -222,7 +218,7 @@ namespace embree
 #if TASKING_TBB
    __dllexport size_t TaskSchedulerTBB::threadIndex() {
 #if TBB_INTERFACE_VERSION_MAJOR < 8
-     return tbb::task_arena::current_slot();
+     return 0;
 #else
      return tbb::task_arena::current_thread_index();
 #endif
@@ -254,17 +250,17 @@ namespace embree
     return g_instance;
   }
 
-  void TaskSchedulerTBB::create(size_t numThreads)
+  void TaskSchedulerTBB::create(size_t numThreads, bool set_affinity)
   {
     if (threadPool) THROW_RUNTIME_ERROR("Embree threads already running.");
-    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads);
+    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads,set_affinity);
   }
 
   void TaskSchedulerTBB::destroy() {
     delete threadPool; threadPool = nullptr;
   }
 
-  ssize_t TaskSchedulerTBB::allocThreadIndex()
+  __dllexport ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
@@ -276,7 +272,6 @@ namespace embree
     mutex.lock();
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
-    //condition.wait(mutex, [&] () { return anyTasksRunning != 0; });
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
     thread_loop(threadIndex);
@@ -358,5 +353,17 @@ namespace embree
     }
 
     return false;
+  }
+
+  __dllexport void TaskSchedulerTBB::startThreads() {
+    threadPool->startThreads();
+  }
+
+  __dllexport void TaskSchedulerTBB::addScheduler(const Ref<TaskSchedulerTBB>& scheduler) {
+    threadPool->add(scheduler);
+  }
+
+  __dllexport void TaskSchedulerTBB::removeScheduler(const Ref<TaskSchedulerTBB>& scheduler) {
+    threadPool->remove(scheduler);
   }
 }

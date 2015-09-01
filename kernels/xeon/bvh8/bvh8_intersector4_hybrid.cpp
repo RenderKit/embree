@@ -169,8 +169,16 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-	PrimitiveIntersector4::intersect(pre,ray,k,prim,num,bvh->scene);
+
+        size_t lazy_node = 0;
+	PrimitiveIntersector4::intersect(pre,ray,k,prim,num,bvh->scene,lazy_node);
         rayFar = ray.tfar[k];
+
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
       }
     }
     
@@ -178,7 +186,11 @@ namespace embree
     void BVH8Intersector4Hybrid<PrimitiveIntersector4>::intersect(bool4* valid_i, BVH8* bvh, Ray4& ray)
     {
       /* load ray */
-      const bool4 valid0 = *valid_i;
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
       float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
       const Vec3f4 rdir = rcp_safe(ray_dir);
@@ -246,7 +258,7 @@ namespace embree
           cur = *sptr_node; 
           curDist = *sptr_near;
           
-#pragma unroll(4)
+#pragma unroll(8)
           for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
@@ -319,8 +331,15 @@ namespace embree
         const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
     }
@@ -439,9 +458,16 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
 	size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-        if (PrimitiveIntersector4::occluded(pre,ray,k,prim,num,bvh->scene)) {
+
+        size_t lazy_node = 0;
+        if (PrimitiveIntersector4::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
           ray.geomID[k] = 0;
           return true;
+        }
+
+        if (unlikely(lazy_node)) {
+          *stackPtr = lazy_node;
+          stackPtr++;
         }
       }
       return false;
@@ -451,7 +477,11 @@ namespace embree
     void BVH8Intersector4Hybrid<PrimitiveIntersector4>::occluded(bool4* valid_i, BVH8* bvh, Ray4& ray)
     {
       /* load ray */
-      const bool4 valid = *valid_i;
+      bool4 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       bool4 terminated = !valid;
       Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
       float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -522,7 +552,7 @@ namespace embree
           cur = *sptr_node;
           curDist = *sptr_near;
           
-#pragma unroll(4)
+#pragma unroll(8)
           for (unsigned i=0; i<BVH8::N; i++)
           {
             const NodeRef child = node->children[i];
@@ -594,9 +624,16 @@ namespace embree
         const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store4i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

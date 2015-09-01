@@ -17,6 +17,7 @@
 #include "../include/embree2/rtcore.h"
 #include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
+#include "../kernels/algorithms/parallel_for.h"
 #include <vector>
 
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE)
@@ -37,6 +38,7 @@ namespace embree
   static size_t g_plot_max = 0;
   static size_t g_plot_step= 0;
   static std::string g_plot_test = "";
+  static bool executed_benchmarks = false;
 
   /* vertex and triangle layout */
   struct Vertex   { float x,y,z,a; };
@@ -56,6 +58,7 @@ namespace embree
   LinearBarrierActive g_barrier_active;
   size_t g_num_mutex_locks = 100000;
   size_t g_num_threads = 0;
+  ssize_t g_num_threads_init = -1;
   atomic_t g_atomic_cntr = 0;
 
   class Benchmark
@@ -78,7 +81,7 @@ namespace embree
 	pavg = pavg + p/double(N);
       }
 
-      printf("%30s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
+      printf("%40s ... [%f / %f / %f] %s\n",name.c_str(),pmin,pavg,pmax,unit.c_str());
       fflush(stdout);
     }
   };
@@ -91,6 +94,7 @@ namespace embree
 
     static void benchmark_mutex_sys_thread(void* ptr) 
     {
+      g_barrier.wait();      
       while (true)
 	{
 	  if (atomic_add(&g_atomic_cntr,-1) < 0) break;
@@ -101,11 +105,12 @@ namespace embree
     
     double run (size_t numThreads)
     {
+      g_barrier.init(numThreads);
       g_atomic_cntr = g_num_mutex_locks;
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_mutex_sys_thread,nullptr,1000000,i));
       //setAffinity(0);
-      
+
       double t0 = getSeconds();
       benchmark_mutex_sys_thread(nullptr);
       double t1 = getSeconds();
@@ -113,7 +118,7 @@ namespace embree
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
       return 1000.0f*(t1-t0)/double(g_num_mutex_locks);
     }
@@ -149,7 +154,7 @@ namespace embree
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
     
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","barrier_sys",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
       return 1000.0f*(t1-t0)/double(N);
     }
@@ -191,7 +196,7 @@ namespace embree
       
       g_threads.clear();
       
-      //printf("%30s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
+      //printf("%40s ... %f ms (%f k/s)\n","barrier_active",1000.0f*(t1-t0)/double(N),1E-3*N/(t1-t0));
       //fflush(stdout);
       return 1E9*(t1-t0)/double(N);
     }
@@ -200,7 +205,7 @@ namespace embree
   class benchmark_atomic_inc : public Benchmark
   {
   public:
-    enum { N = 1000000 };
+    enum { N = 10000000 };
 
     benchmark_atomic_inc () 
      : Benchmark("atomic_inc","ns") {}
@@ -210,8 +215,11 @@ namespace embree
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      __memory_barrier();
       while (atomic_add(&g_atomic_cntr,-1) > 0);
+      __memory_barrier();
       if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      
     }
     
     double run (size_t numThreads)
@@ -222,34 +230,37 @@ namespace embree
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
 	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
-      //setAffinity(0);
+      setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
+      //size_t c0 = rdtsc();
       benchmark_atomic_inc_thread(nullptr);
+      //size_t c1 = rdtsc();
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
-      
-      //printf("%30s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
+      //PRINT(double(c1-c0)/N);
+
+      //printf("%40s ... %f ms (%f k/s)\n","mutex_sys",1000.0f*(t1-t0)/double(g_num_mutex_locks),1E-3*g_num_mutex_locks/(t1-t0));
       //fflush(stdout);
       return 1E9*(t1-t0)/double(N);
     }
   };
 
-  class benchmark_osmalloc : public Benchmark
+  class benchmark_pagefaults : public Benchmark
   {
   public:
-    enum { N = 1000000000 };
+    enum { N = 1024*1024*1024 };
 
     static char* ptr;
 
-    benchmark_osmalloc () 
-     : Benchmark("osmalloc","GB/s") {}
+    benchmark_pagefaults () 
+     : Benchmark("pagefaults","GB/s") {}
 
-    static void benchmark_osmalloc_thread(void* arg) 
+    static void benchmark_pagefaults_thread(void* arg) 
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
@@ -263,17 +274,20 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      ptr = (char*) os_malloc(N);
-
+#if !defined(__WIN32__)
+      ptr = (char*) os_reserve(N);
+#else
+      ptr = (char*)os_malloc(N);
+#endif
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_osmalloc_thread,(void*)i,1000000,i));
+	g_threads.push_back(createThread(benchmark_pagefaults_thread,(void*)i,1000000,i));
       //setAffinity(0);
       
       g_barrier_active.wait(0,numThreads);
       double t0 = getSeconds();
-      benchmark_osmalloc_thread(0);
+      benchmark_pagefaults_thread(0);
       double t1 = getSeconds();
       g_barrier_active.wait(0,numThreads);
       
@@ -285,7 +299,69 @@ namespace embree
     }
   };
 
-  char* benchmark_osmalloc::ptr = nullptr;
+  char* benchmark_pagefaults::ptr = nullptr;
+
+
+#if defined(__UNIX__)
+
+#include <sys/mman.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#endif
+
+  class benchmark_osmalloc_with_page_commit : public Benchmark
+  {
+  public:
+    enum { N = 1024*1024*1024 };
+
+    static char* ptr;
+
+    benchmark_osmalloc_with_page_commit () 
+     : Benchmark("osmalloc_with_page_commit","GB/s") {}
+
+    static void benchmark_osmalloc_with_page_commit_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+    }
+    
+    double run (size_t numThreads)
+    {
+      int flags = 0;
+#if defined(__UNIX__) && !defined(__APPLE__)
+      flags |= MAP_POPULATE;
+#endif
+      size_t startN = 1024*1024*16;
+
+      double t = 0.0f;
+      size_t iterations = 0;
+      for (size_t i=startN;i<=N;i*=2,iterations++)
+      {
+        double t0 = getSeconds();
+        char *ptr = (char*) os_malloc(i,flags);
+        double t1 = getSeconds();
+        os_free(ptr,i);
+        t += 1E-9*double(i)/(t1-t0);        
+      }      
+      
+      return t / (double)iterations;
+    }
+  };
+
+
+  // -------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------
+
+
+
+
 
   class benchmark_bandwidth : public Benchmark
   {
@@ -546,7 +622,6 @@ namespace embree
 	}
       }
       rtcCommit (scene);
-      
       double t0 = getSeconds();
       for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
       rtcCommit (scene);
@@ -559,6 +634,217 @@ namespace embree
       return 1E-6*double(numTriangles)/(t1-t0);
     }
   };
+
+  class update_scenes : public Benchmark
+  {
+  public:
+    RTCGeometryFlags flags; size_t numPhi; size_t numMeshes;
+    update_scenes(const std::string& name, RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
+      : Benchmark(name,"Mtris/s"), flags(flags), numPhi(numPhi), numMeshes(numMeshes) {}
+  
+    double run(size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+      std::vector<RTCScene> scenes;
+      
+      for (size_t i=0; i<numMeshes; i++) 
+      {
+        RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+	unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
+	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
+	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+	rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+	for (size_t i=0; i<mesh.vertices.size(); i++) {
+	  mesh.vertices[i].x += 1.0f;
+	  mesh.vertices[i].y += 1.0f;
+	  mesh.vertices[i].z += 1.0f;
+	}
+        scenes.push_back(scene);
+        rtcCommit (scene);
+      }
+            
+      double t0 = getSeconds();
+#if defined(__MIC__)
+      for (size_t i=0; i<scenes.size(); i++) {
+        rtcUpdate(scenes[i],0);
+        rtcCommit (scenes[i]);
+      }
+#else
+      parallel_for( scenes.size(), [&](size_t i) { 
+          rtcUpdate(scenes[i],0); 
+          rtcCommit (scenes[i]);
+        });
+#endif
+      
+      double t1 = getSeconds();
+      for (size_t i=0; i<scenes.size(); i++)
+        rtcDeleteScene(scenes[i]);
+      rtcExit();
+      
+      //return 1000.0f*(t1-t0);
+      size_t numTriangles = mesh.triangles.size() * numMeshes;
+      return 1E-6*double(numTriangles)/(t1-t0);
+    }
+  };
+
+
+  class benchmark_rtcore_intersect1_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect1_throughput () 
+      : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
+
+    virtual void trace(Vec3f* numbers)
+    {
+    }
+
+    static void benchmark_rtcore_intersect1_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      size_t start = (threadIndex+0)*N/threadCount;
+      size_t end   = (threadIndex+1)*N/threadCount;
+
+      for (size_t i=0; i<N; i++) {
+        RTCRay ray = makeRay(zero,numbers[i]);
+        rtcIntersect(scene,ray);
+      }        
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      delete [] numbers;
+    }
+    
+    double run (size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      int numPhi = 501;
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcNewScene(flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0,numThreads);
+      double t0 = getSeconds();
+
+      benchmark_rtcore_intersect1_throughput_thread(0);
+
+      g_barrier_active.wait(0,numThreads);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcExit();
+      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect1_throughput::scene;
+
+
+  class benchmark_rtcore_intersect16_throughput : public Benchmark
+  {
+  public:
+    enum { N = 1024*128 };
+    static RTCScene scene;
+
+    benchmark_rtcore_intersect16_throughput () 
+      : Benchmark("incoherent_intersect16_throughput","MRays/s (all HW threads)") {}
+
+    static void benchmark_rtcore_intersect16_throughput_thread(void* arg) 
+    {
+      size_t threadIndex = (size_t) arg;
+      size_t threadCount = g_num_threads;
+
+      srand48(threadIndex*334124);
+      Vec3f* numbers = new Vec3f[N];
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*drand48()-1.0f;
+        float y = 2.0f*drand48()-1.0f;
+        float z = 2.0f*drand48()-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }
+
+      __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      for (size_t i=0; i<N; i+=16) {
+        RTCRay16 ray16;
+        for (size_t j=0;j<16;j++)        
+          setRay(ray16,j,makeRay(zero,numbers[i+j]));
+        rtcIntersect16(valid16,scene,ray16);
+      }        
+
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+
+      delete [] numbers;
+    }
+    
+    double run (size_t numThreads)
+    {
+      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+
+      int numPhi = 501;
+      RTCSceneFlags flags = RTC_SCENE_STATIC;
+      scene = rtcNewScene(flags,aflags);
+      addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
+      rtcCommit (scene);
+
+
+      g_num_threads = numThreads;
+      g_barrier_active.init(numThreads);
+      for (size_t i=1; i<numThreads; i++)
+	g_threads.push_back(createThread(benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
+      setAffinity(0);
+      
+      g_barrier_active.wait(0,numThreads);
+      double t0 = getSeconds();
+
+      benchmark_rtcore_intersect16_throughput_thread(0);
+
+      g_barrier_active.wait(0,numThreads);
+      double t1 = getSeconds();
+      
+      for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
+      g_threads.clear();
+      
+      rtcDeleteScene(scene);
+      rtcExit();
+      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+    }
+  };
+
+  RTCScene benchmark_rtcore_intersect16_throughput::scene;
+
+
 
   void rtcore_coherent_intersect1(RTCScene scene)
   {
@@ -575,7 +861,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect1",1E-6*(double)(width*height)/(t1-t0));
     fflush(stdout);
   }
 
@@ -600,7 +886,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -625,7 +911,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -650,7 +936,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
+    printf("%40s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
 
@@ -663,7 +949,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect1",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect1",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -680,7 +966,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -697,7 +983,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -714,7 +1000,7 @@ namespace embree
     }
     double t1 = getSeconds();
 
-    printf("%30s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
+    printf("%40s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
 
@@ -725,7 +1011,7 @@ namespace embree
     RTCScene scene = rtcNewScene(flags,aflags);
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
-
+    
     rtcore_coherent_intersect1(scene);
 #if !defined(__MIC__)
     rtcore_coherent_intersect4(scene);
@@ -737,8 +1023,10 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
-    rtcore_coherent_intersect16(scene);
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
+    if (hasISA(AVX512KNL)) {    
+      rtcore_coherent_intersect16(scene);
+    }
 #endif
 
     size_t N = 1024*1024;
@@ -761,8 +1049,10 @@ namespace embree
     }
 #endif
 
-#if defined(__MIC__)
-    rtcore_incoherent_intersect16(scene,numbers,N);
+#if defined(__MIC__) || defined(__TARGET_AVX512__)
+    if (hasISA(AVX512F)) {
+      rtcore_incoherent_intersect16(scene,numbers,N);
+    }
 #endif
 
     delete numbers;
@@ -770,17 +1060,34 @@ namespace embree
     rtcDeleteScene(scene);
     rtcExit();
   }
+
+
+
   
   std::vector<Benchmark*> benchmarks;
 
   void create_benchmarks()
   {
-    //benchmarks.push_back(new benchmark_mutex_sys());
-    //benchmarks.push_back(new benchmark_barrier_sys());
-    //benchmarks.push_back(new benchmark_barrier_active());
+#if 1
+    benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
+
+#if defined(__TARGET_AVX512__) || defined(__MIC__)
+    if (hasISA(AVX512F)) {
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
+    }
+#endif
+
+    benchmarks.push_back(new benchmark_mutex_sys());
+    benchmarks.push_back(new benchmark_barrier_sys());
+    benchmarks.push_back(new benchmark_barrier_active());
+
     benchmarks.push_back(new benchmark_atomic_inc());
-    benchmarks.push_back(new benchmark_osmalloc());
+#if defined(__X86_64__)
+    benchmarks.push_back(new benchmark_osmalloc_with_page_commit());
+    benchmarks.push_back(new benchmark_pagefaults());
     benchmarks.push_back(new benchmark_bandwidth());
+#endif
+
  
     benchmarks.push_back(new create_geometry ("create_static_geometry_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,6,1));
     benchmarks.push_back(new create_geometry ("create_static_geometry_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,17,1));
@@ -806,11 +1113,14 @@ namespace embree
     benchmarks.push_back(new create_geometry ("create_dynamic_geometry_120_10000",RTC_SCENE_DYNAMIC,RTC_GEOMETRY_STATIC,6,8334));
 #endif
 
+
     benchmarks.push_back(new update_geometry ("refit_geometry_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
     benchmarks.push_back(new update_geometry ("refit_geometry_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+
+
     benchmarks.push_back(new update_geometry ("refit_geometry_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
     benchmarks.push_back(new update_geometry ("refit_geometry_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
     benchmarks.push_back(new update_geometry ("refit_geometry_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
@@ -828,6 +1138,37 @@ namespace embree
     benchmarks.push_back(new update_geometry ("update_geometry_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
+
+
+    benchmarks.push_back(new update_scenes ("refit_scenes_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
+#if !defined(__MIC__)
+    benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
+    benchmarks.push_back(new update_scenes ("refit_scenes_1k_1000" , RTC_GEOMETRY_DEFORMABLE,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
+#endif
+#endif
+
+#endif
+
+    benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
+#if !defined(__MIC__)
+    benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
+    benchmarks.push_back(new update_scenes ("update_scenes_1k_1000" , RTC_GEOMETRY_DYNAMIC,17,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
+#endif
 #endif
   }
 
@@ -896,7 +1237,13 @@ namespace embree
 	size_t numThreads = atoi(argv[++i]);
 	std::string name = argv[++i];
 	Benchmark* benchmark = getBenchmark(name);
-	benchmark->print(numThreads,64);
+	benchmark->print(numThreads,16);
+        executed_benchmarks = true;
+      }
+
+      else if (tag == "-threads" && i+1<argc) 
+      {
+	g_num_threads_init = atoi(argv[++i]);
       }
 
       /* skip unknown command line parameter */
@@ -913,19 +1260,28 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+    printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
 
     create_benchmarks();
 
     /* parse command line */  
     parseCommandLine(argc,argv);
 
-    if (argc == 1) 
+    if (!executed_benchmarks) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
+
 #if defined (__MIC__)
       numThreads -= 4;
 #endif
+      if (g_num_threads_init != -1)
+      {
+        numThreads = g_num_threads_init;
+        PRINT(numThreads);
+      }
+
       rtcore_intersect_benchmark(RTC_SCENE_STATIC, 501);
+
       for (size_t i=0; i<benchmarks.size(); i++) benchmarks[i]->print(numThreads,4);
     }
 

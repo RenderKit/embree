@@ -225,7 +225,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
-
+  key_pressed_handler = device_key_pressed_default;
 }
 
 #if !defined(__XEON_PHI__)

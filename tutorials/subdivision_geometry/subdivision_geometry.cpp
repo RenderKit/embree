@@ -102,9 +102,6 @@ namespace embree
       else if (term == "-cache") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
 
-      else if (term == "-lazy") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
-
       else if (term == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
 
@@ -139,7 +136,7 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-    std::cout << " === Possible cmd line options: -lazy, -pregenerate, -cache === " << std::endl;
+    std::cout << " === Possible cmd line options: -pregenerate, -cache === " << std::endl;
 
     /* set default camera */
     g_camera.from = Vec3fa(1.5f,1.5f,-1.5f);

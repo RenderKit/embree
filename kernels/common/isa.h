@@ -16,6 +16,8 @@
 
 #pragma once
 
+namespace embree
+{
 #define DECLARE_SYMBOL(type,name)                                       \
   namespace isa    { extern type name; }                                 \
   namespace sse41  { extern type name; }                                 \
@@ -77,7 +79,7 @@
 #define __TARGET_SIMD16__
 #endif
 #define SELECT_SYMBOL_AVX512(features,intersector) \
-  if ((features & AVX512) == AVX512) intersector = avx512::intersector;
+  if ((features & AVX512KNL) == AVX512KNL) intersector = avx512::intersector; 
 #else
 #define SELECT_SYMBOL_AVX512(features,intersector)
 #endif
@@ -120,6 +122,12 @@
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                       
 
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX512(features,intersector) \
+  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX512(features,intersector);                        
+               
+
 #define SELECT_SYMBOL_SSE42_AVX(features,intersector) \
   SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
@@ -129,3 +137,16 @@
   SELECT_SYMBOL_SSE41(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
+  struct VerifyMultiTargetLinking {
+    static __noinline int getISA(int depth = 5) { 
+      if (depth == 0) return ISA; 
+      else return getISA(depth-1); 
+    }
+  };
+  namespace isa    { int getISA(); };
+  namespace sse41  { int getISA(); };
+  namespace sse42  { int getISA(); };
+  namespace avx    { int getISA(); };
+  namespace avx2   { int getISA(); };
+  namespace avx512 { int getISA(); };
+}

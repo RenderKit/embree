@@ -16,7 +16,8 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "subdiv/patch.h"
+#include "subdiv/patch_eval.h"
+#include "subdiv/patch_eval_simd.h"
 
 #include "../algorithms/sort.h"
 #include "../algorithms/prefix.h"
@@ -52,12 +53,14 @@ namespace embree
 
   void SubdivMesh::enabling() 
   { 
+    atomic_add(&parent->numSubdivEnableDisableEvents,1);
     if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,numFaces); 
     else                   atomic_add(&parent->numSubdivPatches2,numFaces); 
   }
   
   void SubdivMesh::disabling() 
   { 
+    atomic_add(&parent->numSubdivEnableDisableEvents,1);
     if (numTimeSteps == 1) atomic_add(&parent->numSubdivPatches ,-(ssize_t)numFaces); 
     else                   atomic_add(&parent->numSubdivPatches2,-(ssize_t)numFaces);
   }
@@ -91,12 +94,15 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"data must be 4 bytes aligned");
 
     /* verify that all vertex accesses are 16 bytes aligned */
-#if defined(__MIC__)
+#if defined(__MIC__) && 0
     if (type == RTC_VERTEX_BUFFER0 || type == RTC_VERTEX_BUFFER1) {
       if (((size_t(ptr) + offset) & 0xF) || (stride & 0xF))
         throw_RTCError(RTC_INVALID_OPERATION,"data must be 16 bytes aligned");
     }
 #endif
+
+    if (type != RTC_LEVEL_BUFFER)
+      atomic_add(&parent->commitCounterSubdiv,1);
 
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.set(ptr,offset,stride); break;
@@ -191,6 +197,9 @@ namespace embree
 
   void SubdivMesh::updateBuffer (RTCBufferType type)
   {
+    if (type != RTC_LEVEL_BUFFER)
+      atomic_add(&parent->commitCounterSubdiv,1);
+
     switch (type) {
     case RTC_INDEX_BUFFER               : vertexIndices.setModified(true); break;
     case RTC_FACE_BUFFER                : faceVertices.setModified(true); break;
@@ -248,6 +257,7 @@ namespace embree
 #endif
 
     /* allocate temporary array */
+    invalidFace.resize(numFaces);
     halfEdges0.resize(numEdges);
     halfEdges1.resize(numEdges);
 
@@ -292,7 +302,8 @@ namespace embree
 	  edge->edge_crease_weight     = edgeCreaseMap.lookup(key,0.0f);
 	  edge->vertex_crease_weight   = vertexCreaseMap.lookup(startVertex,0.0f);
 	  edge->edge_level             = edge_level;
-          edge->type                   = COMPLEX_PATCH; // type gets updated below
+          edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
+          edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
 	  if (unlikely(holeSet.lookup(f))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(-1,edge);
@@ -324,19 +335,33 @@ namespace embree
 
         /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {
+          halfEdges1[e].edge->edge_crease_weight = float(inf);
 	}
 
         /* standard edge shared between two faces */
-	else if (N == 2) {
-	  halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
-	  halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
+        else if (N == 2)
+        {
+          if (halfEdges1[e+0].edge->next()->vtx_index != halfEdges1[e+1].edge->vtx_index) // FIXME: workaround for wrong winding order of opposite patch
+          {
+            halfEdges1[e+0].edge->edge_crease_weight = float(inf);
+            halfEdges1[e+1].edge->edge_crease_weight = float(inf);
+          }
+          else {
+            halfEdges1[e+0].edge->setOpposite(halfEdges1[e+1].edge);
+            halfEdges1[e+1].edge->setOpposite(halfEdges1[e+0].edge);
+          }
 	}
 
         /* non-manifold geometry is handled by keeping vertices fixed during subdivision */
         else {
 	  for (size_t i=0; i<N; i++) {
 	    halfEdges1[e+i].edge->vertex_crease_weight = inf;
+            halfEdges1[e+i].edge->vertex_type = HalfEdge::NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->edge_crease_weight = inf;
+
 	    halfEdges1[e+i].edge->next()->vertex_crease_weight = inf;
+            halfEdges1[e+i].edge->next()->vertex_type = HalfEdge::NON_MANIFOLD_EDGE_VERTEX;
+            halfEdges1[e+i].edge->next()->edge_crease_weight = inf;
 	  }
 	}
 	e+=N;
@@ -349,10 +374,12 @@ namespace embree
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
         HalfEdge* edge = &halfEdges[faceStartEdge[f]];
-        PatchType type = edge->patchType();
+        HalfEdge::PatchType patch_type = edge->patchType();
+        invalidFace[f] = !edge->valid(vertices[0]) || holeSet.lookup(f);
+          
         for (size_t i=0; i<faceVertices[f]; i++) 
         {
-          edge[i].type = type;
+          edge[i].patch_type = patch_type;
 
           /* calculate sharp corner vertices */
           if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge[i].isCorner()) 
@@ -390,17 +417,18 @@ namespace embree
 	if (updateEdgeCreases) {
 	  const unsigned int endVertex   = edge.next()->vtx_index;
 	  const uint64_t key = SubdivMesh::Edge(startVertex,endVertex);
-	  edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
+	  if (edge.hasOpposite()) // leave weight at inf for borders
+            edge.edge_crease_weight = edgeCreaseMap.lookup(key,0.0f);
 	}
 
-	if (updateVertexCreases) {
+        if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) {
 	  edge.vertex_crease_weight = vertexCreaseMap.lookup(startVertex,0.0f);
           if (boundary == RTC_BOUNDARY_EDGE_AND_CORNER && edge.isCorner()) 
             edge.vertex_crease_weight = float(inf);
         }
 
         if (updateEdgeCreases || updateVertexCreases) {
-          edge.type = edge.patchType();
+          edge.patch_type = edge.patchType();
         }
       }
     });
@@ -502,10 +530,10 @@ namespace embree
 
       for (size_t e=0, f=0; f<numFaces; e+=faceVertices[f++]) 
       {
-        switch (halfEdges[e].type) {
-        case REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
-        case IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
-        case COMPLEX_PATCH       : numComplexFaces++;   break;
+        switch (halfEdges[e].patch_type) {
+        case HalfEdge::REGULAR_QUAD_PATCH  : numRegularQuadFaces++;   break;
+        case HalfEdge::IRREGULAR_QUAD_PATCH: numIrregularQuadFaces++; break;
+        case HalfEdge::COMPLEX_PATCH       : numComplexFaces++;   break;
         }
       }
     
@@ -581,18 +609,87 @@ namespace embree
 
     for (size_t i=0; i<numFloats; i+=4)
     {
-      SharedLazyTessellationCache::CacheEntry& entry = baseEntry->at(interpolationSlot4(primID,i/4,stride));
-      Patch<float4,float4_t>* patch = SharedLazyTessellationCache::lookup(entry,parent->commitCounter,[&] () {
-          auto alloc = [](size_t bytes) { return SharedLazyTessellationCache::malloc(bytes); };
-          return Patch<float4,float4_t>::create(alloc,getHalfEdge(primID),src+i*sizeof(float),stride);
-        });
-      //Patch<float4,float4_t> patch (getHalfEdge(primID),src+i*sizeof(float),stride);
       float4 Pt, dPdut, dPdvt; 
-      patch->eval(u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
-      SharedLazyTessellationCache::unlock();
+      isa::PatchEval<float4,float4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
+                                      getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
+
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
       if (dPdu) for (size_t j=i; j<min(i+4,numFloats); j++) dPdu[j] = dPdut[j-i];
       if (dPdv) for (size_t j=i; j<min(i+4,numFloats); j++) dPdv[j] = dPdvt[j-i];
     }
+  }
+
+  void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                                RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    if ((parent->aflags & RTC_INTERPOLATE) == 0) 
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
+#endif
+
+    /* calculate base pointer and stride */
+    assert((buffer >= RTC_VERTEX_BUFFER0 && buffer <= RTC_VERTEX_BUFFER1) ||
+           (buffer >= RTC_USER_VERTEX_BUFFER0 && buffer <= RTC_USER_VERTEX_BUFFER1));
+    const char* src = nullptr; 
+    size_t stride = 0;
+    size_t bufID = buffer&0xFFFF;
+    std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
+    if (buffer >= RTC_USER_VERTEX_BUFFER0) {
+      src    = userbuffers[bufID]->getPtr();
+      stride = userbuffers[bufID]->getStride();
+      baseEntry = &user_buffer_tags[bufID];
+    } else {
+      src    = vertices[bufID].getPtr();
+      stride = vertices[bufID].getStride();
+      baseEntry = &vertex_buffer_tags[bufID];
+    }
+
+    const int* valid = (const int*) valid_i;
+    
+#if defined (__MIC__)
+    for (size_t i=0; i<numUVs; i+=16) 
+    {
+      bool16 valid1 = int16(i)+int16(step) < int16(numUVs);
+      if (valid) valid1 &= int16::loadu(&valid[i]) == int16(-1);
+      if (none(valid1)) continue;
+      
+      const int16 primID = int16::loadu(&primIDs[i]);
+      const float16 uu = float16::loadu(&u[i]);
+      const float16 vv = float16::loadu(&v[i]);
+
+      foreach_unique(valid1,primID,[&](const bool16& valid1, const int primID) 
+      {
+        for (size_t j=0; j<numFloats; j+=4) 
+        {
+          const size_t M = min(size_t(4),numFloats-j);
+          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
+                                                                   getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                   P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+        }
+      });
+    }
+#else
+    for (size_t i=0; i<numUVs; i+=4) 
+    {
+      bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
+      if (valid) valid1 &= int4::loadu(&valid[i]) == int4(-1);
+      if (none(valid1)) continue;
+      
+      const int4 primID = int4::loadu(&primIDs[i]);
+      const float4 uu = float4::loadu(&u[i]);
+      const float4 vv = float4::loadu(&v[i]);
+
+      foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) 
+      {
+        for (size_t j=0; j<numFloats; j+=4) 
+        {
+          const size_t M = min(size_t(4),numFloats-j);
+          isa::PatchEvalSimd<bool4,int4,float4,float4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
+                                                       getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                       P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
+        }
+      });
+    }
+#endif
   }
 }

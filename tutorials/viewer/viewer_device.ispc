@@ -45,6 +45,7 @@ inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, cons
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
+
 void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
 {
   for (uniform size_t f=startID; f<endID;f++) {
@@ -63,30 +64,44 @@ void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform 
 }
 
 #if defined(ISPC)
-task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
+task void updateSubMeshEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
 {
   const uniform size_t size = mesh->numFaces;
   const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
   const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
+task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos )
+{
+  uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[taskIndex];
+  uniform unsigned int geomID = mesh->geomID;
+  if (mesh->numFaces < 10000) {
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);   
+  }
+}
 #endif
 
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
+  /* first update small meshes */
+#if defined(ISPC)
+  launch[ scene_in->numSubdivMeshes ] updateMeshEdgeLevelBufferTask(scene_in,cam_pos); sync;
+#endif
+
+  /* now update large meshes */
   for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
   {
     uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
-    uniform unsigned int geomID = mesh->geomID;
+    if (mesh->numFaces < 10000) continue;
 #if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+    launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+    updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
 #endif
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+    rtcUpdateBuffer(g_scene,mesh->geomID,RTC_LEVEL_BUFFER);    
   }
 }
-
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -112,6 +127,14 @@ void error_handler(const uniform RTCError code, const uniform int8* uniform str)
   abort();
 }
 
+uniform bool g_use_smooth_normals = false;
+void device_key_pressed(uniform int key)
+{
+  //print("key = %\n",key);
+  if (key == 115 /*c*/) g_use_smooth_normals = !g_use_smooth_normals;
+  else device_key_pressed_default(key);
+}
+
 Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
 
@@ -127,6 +150,7 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //renderPixel = renderPixelEyeLight;	
+  key_pressed_handler = device_key_pressed;
 }
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
@@ -140,12 +164,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   geomID_to_mesh = uniform new void_ptr[numGeometries];
   geomID_to_type = uniform new uniform int[numGeometries];
 
-  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT| RTC_SCENE_ROBUST;
-
+  uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE;
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -209,11 +233,23 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
+    return make_Vec3f(0.0f);
+  }
   
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
   Vec3f Ns = ray.Ng;
+
+  if (g_use_smooth_normals)
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+  {
+    Vec3f dPdu,dPdv;
+    foreach_unique (geomID in ray.geomID) {
+      rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+    }
+    Ns = cross(dPdv,dPdu);
+  }
 
   int materialID = 0;
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi

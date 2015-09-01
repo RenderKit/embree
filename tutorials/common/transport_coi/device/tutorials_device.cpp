@@ -296,7 +296,7 @@ struct ISPCSubdivMeshKeyFrame {
                                   void*            in_pReturnValue,
                                   uint16_t         in_ReturnValueLength)
   {
-    device_key_pressed(in_pMiscData->key);
+    call_key_pressed_handler(in_pMiscData->key);
   }
 
   extern "C" void run_create_mesh(uint32_t         in_BufferCount,

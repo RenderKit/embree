@@ -136,9 +136,7 @@ namespace embree
       computeGregoryPatchFacePoints(face_valence_p2, p2_r_p, p2_r_m, p2(), e2_p(), e0_m(), face_valence_p0, e2_m(), e1_p(), face_valence_p1, f2_p(), f2_m(),4.0f );
 
     }
-    
-
-    
+        
     __forceinline void exportConrolPoints( Vertex matrix[4][4] ) const
     {
       for (size_t y=0;y<4;y++)
@@ -210,24 +208,28 @@ namespace embree
       return v1_2 - v0_2;      
     }
     
+     __forceinline Vec3fa eval(const float uu, const float vv) const {
+       return zero; // FIXME: not implemented
+     }
+     
+     __forceinline Vec3fa normal(const float uu, const float vv) const {
+       return zero; // FIXME: not implemented
+     }
         
-    template<class M, class T>
-      static __forceinline Vec3<T> eval_t(const GregoryTrianglePatchT &tpatch,
-				   const T &uu,
-				   const T &vv)
+     template<class T>
+     __forceinline Vec3<T> eval(const T &uu, const T &vv) const
     {
+      typedef typename T::Mask M;
       const T ww = T(1.0f) - uu - vv;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f) | (ww == 0.0f) | (ww == 1.0f);
       
-      const Vec3<T> f0_p = Vec3<T>(tpatch.f0_p().x,tpatch.f0_p().y,tpatch.f0_p().z);
-      const Vec3<T> f1_p = Vec3<T>(tpatch.f1_p().x,tpatch.f1_p().y,tpatch.f1_p().z);
-      const Vec3<T> f2_p = Vec3<T>(tpatch.f2_p().x,tpatch.f2_p().y,tpatch.f2_p().z);
+      const Vec3<T> f0_p = Vec3<T>(this->f0_p().x,this->f0_p().y,this->f0_p().z);
+      const Vec3<T> f1_p = Vec3<T>(this->f1_p().x,this->f1_p().y,this->f1_p().z);
+      const Vec3<T> f2_p = Vec3<T>(this->f2_p().x,this->f2_p().y,this->f2_p().z);
 
-      const Vec3<T> f0_m = Vec3<T>(tpatch.f0_m().x,tpatch.f0_m().y,tpatch.f0_m().z);
-      const Vec3<T> f1_m = Vec3<T>(tpatch.f1_m().x,tpatch.f1_m().y,tpatch.f1_m().z);
-      const Vec3<T> f2_m = Vec3<T>(tpatch.f2_m().x,tpatch.f2_m().y,tpatch.f2_m().z);
-      
-      
+      const Vec3<T> f0_m = Vec3<T>(this->f0_m().x,this->f0_m().y,this->f0_m().z);
+      const Vec3<T> f1_m = Vec3<T>(this->f1_m().x,this->f1_m().y,this->f1_m().z);
+      const Vec3<T> f2_m = Vec3<T>(this->f2_m().x,this->f2_m().y,this->f2_m().z);
       
       const T inv_uu_vv = rcp(uu+vv);
       const T inv_vv_ww = rcp(vv+ww);
@@ -251,71 +253,33 @@ namespace embree
       const T f0f1f2 = 12.0f * (uu * vv * ww);
       
       const T x = 
-	(uu3 * tpatch.p0().x + vv3 * tpatch.p1().x + ww3 * tpatch.p2().x) +
-	(e0e1 * (uu * tpatch.e0_p().x + vv * tpatch.e1_m().x)) +
-	(e1e2 * (vv * tpatch.e1_p().x + ww * tpatch.e2_m().x)) +
-	(e2e0 * (ww * tpatch.e2_p().x + uu * tpatch.e0_m().x)) +
+	(uu3 * p0().x + vv3 * p1().x + ww3 * p2().x) +
+	(e0e1 * (uu * this->e0_p().x + vv * this->e1_m().x)) +
+	(e1e2 * (vv * this->e1_p().x + ww * this->e2_m().x)) +
+	(e2e0 * (ww * this->e2_p().x + uu * this->e0_m().x)) +
 	(f0f1f2 * (uu * F0.x + vv * F1.x + ww * F2.x));
 
       const T y = 
-	(uu3 * tpatch.p0().y + vv3 * tpatch.p1().y + ww3 * tpatch.p2().y) +
-	(e0e1 * (uu * tpatch.e0_p().y + vv * tpatch.e1_m().y)) +
-	(e1e2 * (vv * tpatch.e1_p().y + ww * tpatch.e2_m().y)) +
-	(e2e0 * (ww * tpatch.e2_p().y + uu * tpatch.e0_m().y)) +
+	(uu3 * p0().y + vv3 * p1().y + ww3 * p2().y) +
+	(e0e1 * (uu * this->e0_p().y + vv * this->e1_m().y)) +
+	(e1e2 * (vv * this->e1_p().y + ww * this->e2_m().y)) +
+	(e2e0 * (ww * this->e2_p().y + uu * this->e0_m().y)) +
 	(f0f1f2 * (uu * F0.y + vv * F1.y + ww * F2.y));
 
       const T z = 
-	(uu3 * tpatch.p0().z + vv3 * tpatch.p1().z + ww3 * tpatch.p2().z) +
-	(e0e1 * (uu * tpatch.e0_p().z + vv * tpatch.e1_m().z)) +
-	(e1e2 * (vv * tpatch.e1_p().z + ww * tpatch.e2_m().z)) +
-	(e2e0 * (ww * tpatch.e2_p().z + uu * tpatch.e0_m().z)) +
+	(uu3 * p0().z + vv3 * p1().z + ww3 * p2().z) +
+	(e0e1 * (uu * this->e0_p().z + vv * this->e1_m().z)) +
+	(e1e2 * (vv * this->e1_p().z + ww * this->e2_m().z)) +
+	(e2e0 * (ww * this->e2_p().z + uu * this->e0_m().z)) +
 	(f0f1f2 * (uu * F0.z + vv * F1.z + ww * F2.z));
 
       return Vec3<T>(x,y,z);
     }
 
-
-    template<class M, class T>
-      static __forceinline Vec3<T> normal_t(const GregoryTrianglePatchT &tpatch,
-					    const T &uu,
-					    const T &vv)
-    {
-      FATAL("not implemented");
-      const T z( zero );
-      return Vec3<T>(z);
+    template<class T>
+     __forceinline Vec3<T> normal(const T &uu, const T &vv) const {
+      return Vec3<T>(T(zero)); // FIXME: not implemented
     }    
-    
-    template<class M, class T>
-    static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T &uu, const T &vv) 
-    {
-      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
-      return eval_t<M,T>(tpatch,uu,vv); 
-    }
-
-    template<class M, class T>
-    static __forceinline Vec3<T> normal(const Vertex matrix[4][4], const T &uu, const T &vv) 
-    {
-      const GregoryTrianglePatchT &tpatch = *(GregoryTrianglePatchT*)matrix;
-      return normal_t<M,T>(tpatch,uu,vv); 
-    }
-
-
-       
-    static __forceinline Vertex normal(const Vertex matrix[4][4],
-					 const float uu,
-					 const float vv) 
-    {
-      FATAL("not yet implemented");
-      return Vertex( zero );
-    }
-    
-     static __forceinline Vertex eval(const Vertex matrix[4][4],
-				      const float uu, 
-				      const float vv)
-     {
-      FATAL("not yet implemented");
-      return Vertex( zero );
-    }
     
     __forceinline BBox3fa bounds() const
     {
@@ -368,6 +332,5 @@ namespace embree
     } 
   };
 
-  typedef GregoryTrianglePatchT<Vec3fa,Vec3fa_t> GregoryTrianglePatch3fa;
-  
+  typedef GregoryTrianglePatchT<Vec3fa,Vec3fa_t> GregoryTrianglePatch3fa;  
 }

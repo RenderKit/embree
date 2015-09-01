@@ -21,21 +21,21 @@
 namespace embree
 {
   template<typename Vertex>
-    struct BezierCurve
+    struct BezierCurveT
   {
     Vertex v0,v1,v2,v3;
     float t0,t1;
     int depth;
 
-    __forceinline BezierCurve() {}
+    __forceinline BezierCurveT() {}
 
-    __forceinline BezierCurve(const Vertex& v0, 
-                                const Vertex& v1, 
-                                const Vertex& v2, 
-                                const Vertex& v3,
-                                const float t0,
-                                const float t1,
-                                const int depth)
+    __forceinline BezierCurveT(const Vertex& v0, 
+                               const Vertex& v1, 
+                               const Vertex& v2, 
+                               const Vertex& v3,
+                               const float t0 = 0.0f,
+                               const float t1 = 1.0f,
+                               const int depth = 0)
       : v0(v0), v1(v1), v2(v2), v3(v3), t0(t0), t1(t1), depth(depth) {}
 
     __forceinline const BBox3fa bounds() const {
@@ -43,7 +43,7 @@ namespace embree
       return enlarge(b,Vertex(b.upper.w));
     }
 
-    __forceinline void subdivide(BezierCurve& left, BezierCurve& right) const
+    __forceinline void subdivide(BezierCurveT& left, BezierCurveT& right) const
     {
       const Vertex p00 = v0;
       const Vertex p01 = v1;
@@ -96,18 +96,18 @@ namespace embree
       tangent = p21-p20;
     }
 
-    friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurve& curve) {
+    friend inline std::ostream& operator<<(std::ostream& cout, const BezierCurveT& curve) {
       return cout << "{ v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << ", depth = " << curve.depth << " }";
     }
   };
 
-  struct BezierCurve3fa : public BezierCurve<Vec3fa>
+  struct BezierCurve3fa : public BezierCurveT<Vec3fa>
   {
-    //using BezierCurve<Vec3fa>::BezierCurve; // FIXME: not supported by VS2010
+    //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
 
 	__forceinline BezierCurve3fa() {}
-	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0, const float t1, const int depth)
-      : BezierCurve<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
+	__forceinline BezierCurve3fa(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const float t0 = 0.0f, const float t1 = 1.0f, const int depth = 0)
+      : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
 #if defined(__SSE__)
     __forceinline sse4f eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in

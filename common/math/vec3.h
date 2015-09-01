@@ -102,10 +102,10 @@ namespace embree
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> __forceinline const Vec3<T> madd  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return a*b+c; }
-  template<typename T> __forceinline const Vec3<T> msub  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return a*b-c; }
-  template<typename T> __forceinline const Vec3<T> nmadd ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return -a*b+c;}
-  template<typename T> __forceinline const Vec3<T> nmsub ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return -a*b-c; }
+  template<typename T> __forceinline const Vec3<T> madd  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>( madd(a.x,b.x,c.x), madd(a.y,b.y,c.y), madd(a.z,b.z,c.z)); }
+  template<typename T> __forceinline const Vec3<T> msub  ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>( msub(a.x,b.x,c.x), msub(a.y,b.y,c.y), msub(a.z,b.z,c.z)); }
+  template<typename T> __forceinline const Vec3<T> nmadd ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y),nmadd(a.z,b.z,c.z));}
+  template<typename T> __forceinline const Vec3<T> nmsub ( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c) { return Vec3<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y),nmsub(a.z,b.z,c.z)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -230,7 +230,7 @@ namespace embree
 #include "../simd/avx.h"
 #endif
 
-#if defined __MIC__
+#if defined (__MIC__) || defined(__AVX512__)
 #include "../simd/avx512.h"
 #endif
 
@@ -291,7 +291,7 @@ namespace embree
 
 #endif
 
-#if defined(__MIC__)
+#if defined (__MIC__) || defined(__AVX512__)
   template<> __forceinline Vec3<float16>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }

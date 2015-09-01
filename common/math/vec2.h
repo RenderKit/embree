@@ -82,6 +82,15 @@ namespace embree
 
   template<typename T> __forceinline Vec2<T> min(const Vec2<T>& a, const Vec2<T>& b) { return Vec2<T>(min(a.x, b.x), min(a.y, b.y)); }
   template<typename T> __forceinline Vec2<T> max(const Vec2<T>& a, const Vec2<T>& b) { return Vec2<T>(max(a.x, b.x), max(a.y, b.y)); }
+  
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Ternary Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline const Vec2<T> madd  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( madd(a.x,b.x,c.x), madd(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline const Vec2<T> msub  ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>( msub(a.x,b.x,c.x), msub(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline const Vec2<T> nmadd ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmadd(a.x,b.x,c.x),nmadd(a.y,b.y,c.y) ); }
+  template<typename T> __forceinline const Vec2<T> nmsub ( const Vec2<T>& a, const Vec2<T>& b, const Vec2<T>& c) { return Vec2<T>(nmsub(a.x,b.x,c.x),nmsub(a.y,b.y,c.y) ); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -117,7 +126,8 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
  
-  template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return a.x*b.x + a.y*b.y; }
+  template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return madd(a.x,b.x,a.y*b.y); }
+
   template<typename T> __forceinline T       length   ( const Vec2<T>& a )                   { return sqrt(dot(a,a)); }
   template<typename T> __forceinline Vec2<T> normalize( const Vec2<T>& a )                   { return a*rsqrt(dot(a,a)); }
   template<typename T> __forceinline T       distance ( const Vec2<T>& a, const Vec2<T>& b ) { return length(a-b); }

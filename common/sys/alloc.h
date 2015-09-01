@@ -48,6 +48,12 @@ namespace embree
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align = 64);
   void alignedFree(const void* ptr);
+  
+  /*! alloca that returns aligned data */
+  template<class T>
+    __forceinline T* aligned_alloca(size_t elements, const size_t alignment = 64) {
+    return (T*)ALIGN_PTR(alloca(elements * sizeof(T) + alignment),alignment);
+  }
 
   /*! allocator that performs aligned allocations */
   template<typename T, size_t alignment = 64>
@@ -79,12 +85,12 @@ namespace embree
     };
 
   /*! allocates pages directly from OS */
-  void* os_malloc (size_t bytes);
+  void* os_malloc (size_t bytes, const int additional_flags = 0);
   void* os_reserve(size_t bytes);
   void  os_commit (void* ptr, size_t bytes);
-  void  os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
+  size_t os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
   void  os_free   (void* ptr, size_t bytes);
-  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld);
+  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld); // FIXME: remove, not used and not implemented completely
 
   /*! allocator that performs OS allocations */
   template<typename T>

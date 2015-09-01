@@ -45,16 +45,17 @@ namespace embree
     __forceinline Vec3fa& operator =( const Vec3<float>& other ) { x = other.x; y = other.y; z = other.z; return *this; }
 
     __forceinline Vec3fa            ( const Vec3fa& other ) { m128 = other.m128; }
+
     __forceinline Vec3fa& operator =( const Vec3fa& other ) { m128 = other.m128; return *this; }
 
     __forceinline explicit Vec3fa( const float a ) : m128(_mm_set1_ps(a)) {}
     __forceinline explicit Vec3fa( const float x, const float y, const float z) : m128(_mm_set_ps(z, z, y, x)) {}
 
     __forceinline explicit Vec3fa( const Vec3fa& other, const int      a1) { m128 = other.m128; a = a1; }
-    __forceinline explicit Vec3fa( const Vec3fa& other, const unsigned a1) { m128 = other.m128; a = a1; }
+    __forceinline explicit Vec3fa( const Vec3fa& other, const unsigned a1) { m128 = other.m128; u = a1; }
     __forceinline explicit Vec3fa( const Vec3fa& other, const float    w1) { m128 = other.m128; w = w1; }
-    __forceinline explicit Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {}
-    __forceinline explicit Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), a(a) {}
+    //__forceinline explicit Vec3fa( const float x, const float y, const float z, const int      a) : x(x), y(y), z(z), a(a) {} // not working properly!
+    //__forceinline explicit Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), u(a) {} // not working properly!
     __forceinline explicit Vec3fa( const float x, const float y, const float z, const float    w) : x(x), y(y), z(z), w(w) {}
 
     __forceinline explicit Vec3fa( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
@@ -72,13 +73,17 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-     static __forceinline Vec3fa load( const float* const a ) {
+     static __forceinline Vec3fa load( const void* const a ) {
        return Vec3fa(_mm_and_ps(_mm_load_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
      }
      
-     static __forceinline Vec3fa loadu( const float* const a ) {
+     static __forceinline Vec3fa loadu( const void* const a ) {
        return Vec3fa(_mm_and_ps(_mm_loadu_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
      }
+
+     static __forceinline void storeu ( void* ptr, const Vec3fa& v ) {
+       _mm_storeu_ps((float*)ptr,v);
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -115,7 +120,13 @@ namespace embree
   }
   __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
     const Vec3fa r = _mm_rcp_ps(a.m128);
-    return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#if defined(__AVX2__)
+    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, float4(2.0f)));     
+#else
+    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(float4(2.0f), _mm_mul_ps(r, a)));     
+    //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#endif
+    return res;
   }
   __forceinline const Vec3fa sqrt ( const Vec3fa& a ) { return _mm_sqrt_ps(a.m128); }
   __forceinline const Vec3fa sqr  ( const Vec3fa& a ) { return _mm_mul_ps(a,a); }

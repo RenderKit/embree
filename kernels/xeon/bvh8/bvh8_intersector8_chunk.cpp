@@ -33,7 +33,11 @@ namespace embree
 #if defined(__AVX__)
       
       /* load ray */
-      const bool8 valid0 = *valid_i;
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       const Vec3f8 rdir = rcp_safe(ray.dir);
       const Vec3f8 org_rdir = ray.org * rdir;
       float8 ray_tnear = select(valid0,ray.tnear,pos_inf);
@@ -149,8 +153,15 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,tri,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
 #endif       
@@ -162,7 +173,11 @@ namespace embree
 #if defined(__AVX__)
       
       /* load ray */
-      const bool8 valid = *valid_i;
+      bool8 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       bool8 terminated = !valid;
       const Vec3f8 rdir = rcp_safe(ray.dir);
       const Vec3f8 org_rdir = ray.org * rdir;
@@ -274,9 +289,16 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->scene);
+        
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,tri,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

@@ -121,8 +121,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
     
     intersectionFilter1 = filter;
   }
@@ -132,8 +132,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
     atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
@@ -146,8 +146,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
     atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
@@ -160,8 +160,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
     atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
@@ -174,8 +174,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     occlusionFilter1 = filter;
   }
@@ -185,8 +185,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
     atomic_add(&parent->numIntersectionFilters4,filter != nullptr);
@@ -199,8 +199,8 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES)
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
     atomic_add(&parent->numIntersectionFilters8,filter != nullptr);
@@ -213,12 +213,35 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != BEZIER_CURVES) 
-      throw_RTCError(RTC_INVALID_OPERATION,"filter functions only supported for triangle meshes and hair geometries"); 
+    if (type != TRIANGLE_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+      throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);
     atomic_add(&parent->numIntersectionFilters16,filter != nullptr);
     occlusionFilter16 = filter;
     ispcOcclusionFilter16 = ispc;
+  }
+
+  void Geometry::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
+  {
+    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
+    const int* valid = (const int*) valid_i;
+
+    __aligned(64) float P_tmp[256];
+    __aligned(64) float dPdu_tmp[256];
+    __aligned(64) float dPdv_tmp[256];
+    float* Pt = P ? P_tmp : nullptr;
+    float* dPdut = dPdu ? dPdu_tmp : nullptr;
+    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
+
+    for (size_t i=0; i<numUVs; i++)
+    {
+      if (valid && !valid[i]) continue;
+      interpolate(primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
+      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
+      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
+      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
+    }
   }
 }

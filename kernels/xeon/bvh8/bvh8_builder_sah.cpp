@@ -160,7 +160,10 @@ namespace embree
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) prims.clear();
+	if (staticGeom) {
+          prims.clear();
+          bvh->alloc2.shrink();
+        }
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
@@ -396,8 +399,10 @@ namespace embree
 #endif	
 
 	/* clear temporary data for static geometry */
-	//bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	//if (staticGeom) prims.resize(0,true);
+	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+	if (staticGeom) {
+          bvh->alloc2.shrink();
+        }
 	bvh->alloc2.cleanup();
 
         /* verbose mode */
@@ -421,10 +426,6 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
-
     Builder* BVH8Triangle8vSceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSpatialSAH<TriangleMesh,Triangle8v>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
-
-
-
   }
 }

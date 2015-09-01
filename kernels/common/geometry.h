@@ -122,6 +122,10 @@ namespace embree
       throw_RTCError(RTC_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! interpolates user data to the specified u/v locations */
+    virtual void interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
+                              RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats);
+
     /*! for subdivision surfaces only */
   public:
     virtual void setBoundaryMode (RTCBoundaryMode mode) {
@@ -289,7 +293,7 @@ namespace embree
   template<> __forceinline bool Geometry::hasOcclusionFilter   <float8>() const { return occlusionFilter8    != nullptr; }
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512__)
   template<> __forceinline bool Geometry::hasIntersectionFilter<float16>() const { return intersectionFilter16 != nullptr; }
   template<> __forceinline bool Geometry::hasOcclusionFilter   <float16>() const { return occlusionFilter16    != nullptr; }
 #endif

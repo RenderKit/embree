@@ -275,7 +275,7 @@ namespace embree
 
 
 
-      evalGrid(patch,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
+      evalGrid(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
 
       // ================================================================================================
 
@@ -308,7 +308,7 @@ namespace embree
 	  const float16 v = load16f(&local_grid_v[i]);
 	  const int16 u_i = int16(u * 65535.0f/2.0f);
 	  const int16 v_i = int16(v * 65535.0f/2.0f);
-	  const int16 uv_i = (u_i << 16) | v_i;
+	  const int16 uv_i = (v_i << 16) | u_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
@@ -464,11 +464,13 @@ namespace embree
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
               bool16 m_quad3x5 = 0xffff; 
-              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
                 m_quad3x5 = m_row | (m_row << 8);
               }
+              if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
+
 	      // ----------------------------------------------------------------------------------------------------
 
 	      STAT3(normal.trav_prims,1,1,1);
@@ -533,29 +535,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[new_primID[rayIndex]];
 	  ray16.primID[rayIndex] = subdiv_patch.prim;
 	  ray16.geomID[rayIndex] = subdiv_patch.geom;
-#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-
-	  if (unlikely(!subdiv_patch.hasDisplacement()))
-	    {
-	      const Vec3fa normal    = subdiv_patch.normal(ray16.v[rayIndex],ray16.u[rayIndex]);
-	      ray16.Ng.x[rayIndex]   = normal.x;
-	      ray16.Ng.y[rayIndex]   = normal.y;
-	      ray16.Ng.z[rayIndex]   = normal.z;
-	    }
-#endif
-
-#if FORCE_TRIANGLE_UV == 0
-
-	  const Vec2f uv0 = subdiv_patch.getUV(0);
-	  const Vec2f uv1 = subdiv_patch.getUV(1);
-	  const Vec2f uv2 = subdiv_patch.getUV(2);
-	  const Vec2f uv3 = subdiv_patch.getUV(3);
-	  
-	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray16.v[rayIndex],ray16.u[rayIndex]);
-	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray16.v[rayIndex],ray16.u[rayIndex]);
-	  ray16.u[rayIndex] = patch_u;
-	  ray16.v[rayIndex] = patch_v;
-#endif
 	}
 
     }
@@ -628,11 +607,12 @@ namespace embree
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
               bool16 m_quad3x5 = 0xffff; 
-              if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+              if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
                 m_quad3x5 = m_row | (m_row << 8);
               }
+              if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 
 	      // ----------------------------------------------------------------------------------------------------
 
@@ -765,11 +745,12 @@ namespace embree
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
           bool16 m_quad3x5 = 0xffff; 
-          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
             m_quad3x5 = m_row | (m_row << 8);
           }
+          if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 
 	  // ----------------------------------------------------------------------------------------------------
 
@@ -820,29 +801,6 @@ namespace embree
 	  const SubdivPatch1& subdiv_patch = ((SubdivPatch1*)accel)[ray.primID];
 	  ray.primID = subdiv_patch.prim;
 	  ray.geomID = subdiv_patch.geom;
-#if defined(RTCORE_RETURN_SUBDIV_NORMAL)
-
-	  if (unlikely(!subdiv_patch.hasDisplacement()))
-	    {
-	      const Vec3fa normal = subdiv_patch.normal(ray.v,ray.u);
-	      ray.Ng.x = normal.x;
-	      ray.Ng.y = normal.y;
-	      ray.Ng.z = normal.z;
-	    }
-#endif
-
-#if FORCE_TRIANGLE_UV == 0
-
-	  const Vec2f uv0 = subdiv_patch.getUV(0);
-	  const Vec2f uv1 = subdiv_patch.getUV(1);
-	  const Vec2f uv2 = subdiv_patch.getUV(2);
-	  const Vec2f uv3 = subdiv_patch.getUV(3);
-	  
-	  const float patch_u = bilinear_interpolate(uv0.x,uv1.x,uv2.x,uv3.x,ray.v,ray.u);
-	  const float patch_v = bilinear_interpolate(uv0.y,uv1.y,uv2.y,uv3.y,ray.v,ray.u);
-	  ray.u = patch_u;
-	  ray.v = patch_v;
-#endif
 	}
 
     }
@@ -910,11 +868,12 @@ namespace embree
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
           bool16 m_quad3x5 = 0xffff; 
-          if (unlikely(patch.grid_size_simd_blocks == 1 && patch.grid_u_res < 5))
+          if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
             m_quad3x5 = m_row | (m_row << 8);
-          }          
+          }
+          if (unlikely(patch.grid_v_res <= 2)) { m_quad3x5 &= ~0xff00; }
 	  // ----------------------------------------------------------------------------------------------------
 
 

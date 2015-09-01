@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define EMBREE_FLOAT4
+
 namespace embree
 {
   /*! 4-wide SSE float type. */
@@ -70,20 +72,8 @@ namespace embree
       return _mm_load_ps(a); 
     }
 
-    static __forceinline float4 loadu( const float* const a ) {
+    static __forceinline float4 loadu( const void* const a ) {
       return _mm_loadu_ps((float*)a); 
-    }
-
-    static __forceinline float4 loadu( const float* const a, const size_t n) // FIXME: optimize
-    {
-      assert(n<=4);
-      if (likely(n==4)) return loadu(a);
-      else switch (n) {
-        case 3: return float4(a[0],a[1],a[2],0.0f);
-        case 2: return float4(a[0],a[1],0.0f,0.0f);
-        case 1: return float4(a[0]);
-        default: return float4(0.0f);
-        }
     }
 
     static __forceinline float4 load_nt ( const float* ptr ) {
@@ -105,12 +95,16 @@ namespace embree
     }
 #endif
 
-    static __forceinline void store ( float4* ptr, const float4& v ) {  
+    static __forceinline float4 load(const unsigned short* const ptr) {
+      return _mm_mul_ps(float4(int4::load(ptr)),float4(1.0f/65535.0f));
+    } 
+
+    static __forceinline void store ( void* ptr, const float4& v ) {  
       _mm_store_ps((float*)ptr,v); 
     }
 
-    static __forceinline void storeu ( float* ptr, const float4& v ) {
-      _mm_storeu_ps(ptr,v);
+    static __forceinline void storeu ( void* ptr, const float4& v ) {
+      _mm_storeu_ps((float*)ptr,v);
     }
 
     static __forceinline void storeu ( float* ptr, const float4& v, size_t n) // FIXME: is there a better way of implementing this
@@ -130,7 +124,7 @@ namespace embree
 #endif
     }
     
-    static __forceinline void store ( const bool4& mask, float4* ptr, const float4& f ) 
+    static __forceinline void store ( const bool4& mask, void* ptr, const float4& f ) 
     { 
 #if defined (__AVX__)
       _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
@@ -138,8 +132,25 @@ namespace embree
       *(float4*)ptr = select(mask,f,*(float4*)ptr);
 #endif
     }
-   
 
+    static __forceinline void storeu( const bool4& mask, void* ptr, const float4& f ) { 
+      return _mm_storeu_ps((float*)ptr,select(mask,f,_mm_loadu_ps((float*)ptr)));
+    }
+
+    static __forceinline void store ( const bool4& mask, void* ptr, const int4& ofs, const float4& v, const int scale = 1 )
+    {
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+    }
+    static __forceinline void store ( const bool4& mask, char* ptr, const int4& ofs, const float4& v ) {
+      store(mask,ptr,ofs,v,1);
+    }
+    static __forceinline void store ( const bool4& mask, float* ptr, const int4& ofs, const float4& v ) {
+      store(mask,ptr,ofs,v,4);
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +181,11 @@ namespace embree
   
   __forceinline const float4 rcp  ( const float4& a ) {
     const float4 r = _mm_rcp_ps(a.m128);
-    return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+#if defined(__AVX2__)
+    return _mm_mul_ps(r,_mm_fnmadd_ps(r, a, float4(2.0f)));     
+#else
+    return _mm_mul_ps(r,_mm_sub_ps(float4(2.0f), _mm_mul_ps(r, a)));     
+#endif
   }
   __forceinline const float4 sqr  ( const float4& a ) { return _mm_mul_ps(a,a); }
   __forceinline const float4 sqrt ( const float4& a ) { return _mm_sqrt_ps(a.m128); }
@@ -301,6 +316,14 @@ namespace embree
   }
 #endif
 #endif
+
+  __forceinline float4  lerp(const float4& a, const float4& b, const float4& t) {
+#if defined(__AVX2__)
+    return madd(t, b, madd(-t, a, a));
+#else
+    return a + t*(b-a);
+#endif
+  }
   
   __forceinline bool isvalid ( const float4& v ) {
     return all((v > float4(-FLT_LARGE)) & (v < float4(+FLT_LARGE)));
@@ -310,7 +333,7 @@ namespace embree
     return all((a >= float4(-FLT_MAX) & (a <= float4(+FLT_MAX))));
   }
 
-  __forceinline bool is_finite ( const bool4 valid, const float4& a ) { 
+  __forceinline bool is_finite ( const bool4& valid, const float4& a ) { 
     return all(valid, a >= float4(-FLT_MAX) & (a <= float4(+FLT_MAX)));
   }
   
@@ -319,13 +342,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE4_1__)
-  __forceinline const float4 round_even( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
-  __forceinline const float4 round_down( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
-  __forceinline const float4 round_up  ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
-  __forceinline const float4 round_zero( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
   __forceinline const float4 floor     ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline const float4 ceil      ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline const float4 trunc     ( const float4& a ) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+#else
+  __forceinline const float4 floor     ( const float4& a ) { return float4(floorf(a[0]),floorf(a[1]),floorf(a[2]),floorf(a[3]));  }
+  __forceinline const float4 ceil      ( const float4& a ) { return float4(ceilf (a[0]),ceilf (a[1]),ceilf (a[2]),ceilf (a[3])); }
+  //__forceinline const float4 trunc     ( const float4& a ) { return float4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
 #endif
+  __forceinline const float4 frac      ( const float4& a ) { return a-floor(a); }
 
   __forceinline int4 floori (const float4& a) {
 #if defined (__SSE4_1__)
@@ -385,6 +410,13 @@ namespace embree
   __forceinline float4 broadcast4f( const float4& a, const size_t k ) {  
     return float4::broadcast(&a[k]);
   }
+
+#if defined (__AVX2__)
+  __forceinline float4 permute(const float4 &a, const __m128i &index) {
+    return _mm_permutevar_ps(a,index);
+  }
+#endif
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose

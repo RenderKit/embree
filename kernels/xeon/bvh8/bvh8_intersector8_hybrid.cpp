@@ -27,7 +27,6 @@
 
 #define SWITCH_THRESHOLD 7
 
-
 namespace embree
 {
   namespace isa
@@ -171,8 +170,16 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene,lazy_node);
         rayFar = ray.tfar[k];
+
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
       }
     }
    
@@ -181,7 +188,11 @@ namespace embree
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
-      const bool8 valid0 = *valid_i;
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       Vec3f8 ray_org = ray.org;
       Vec3f8 ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -239,7 +250,6 @@ namespace embree
           continue;
         }
 #endif
-
         while (1)
         {
           /* test if this is a leaf node */
@@ -326,8 +336,15 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* prim = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
+        
+        size_t lazy_node = 0;
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
     }
@@ -450,10 +467,17 @@ namespace embree
 	assert(cur != BVH8::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene)) {
+
+        size_t lazy_node = 0;
+        if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
           //ray.geomID = 0;
           //break;
 	  return true;
+        }
+
+        if (unlikely(lazy_node)) {
+          *stackPtr = lazy_node;
+          stackPtr++;
         }
       }
       return false;
@@ -463,7 +487,11 @@ namespace embree
     void BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
       /* load ray */
-      const bool8 valid = *valid_i;
+      bool8 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       bool8 terminated = !valid;
       Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
@@ -522,7 +550,7 @@ namespace embree
           continue;
         }
 #endif
-                
+
         while (1)
         {
           /* test if this is a leaf node */
@@ -606,9 +634,16 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* prim = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,float8(neg_inf),ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

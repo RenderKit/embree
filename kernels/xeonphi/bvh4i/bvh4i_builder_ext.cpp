@@ -17,7 +17,9 @@
 #include "bvh4i/bvh4i.h"
 #include "bvh4i/bvh4i_builder.h"
 #include "bvh4i/bvh4i_rotate.h"
-#include "../../common/subdiv/feature_adaptive_gregory.h"
+#include "../../common/subdiv/patch_eval.h"
+#include "../../common/subdiv/patch_eval_grid.h"
+#include "../../common/subdiv/subdivpatch1base.h"
 
 #define PRESPLIT_SPACE_FACTOR         1.30f
 
@@ -35,10 +37,24 @@
 
 //FIXME: use 8-bytes compact prim ref is used
 
-#define ENABLE_FEATURE_ADAPTIVE 1
-
 namespace embree
 {
+#if defined(__MIC__)
+  __forceinline BBox3fa getBBox3fa(const Vec3f16 &v, const bool16 m_valid = 0xffff)
+  {
+    const float16 x_min = select(m_valid,v.x,float16::inf());
+    const float16 y_min = select(m_valid,v.y,float16::inf());
+    const float16 z_min = select(m_valid,v.z,float16::inf());
+
+    const float16 x_max = select(m_valid,v.x,float16::minus_inf());
+    const float16 y_max = select(m_valid,v.y,float16::minus_inf());
+    const float16 z_max = select(m_valid,v.z,float16::minus_inf());
+    
+    const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
+    const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
+    return BBox3fa( b_min, b_max );
+  }
+#endif
 
   /* =================================================================================== */
   /* =================================================================================== */
@@ -874,43 +890,50 @@ PRINT(CORRECT_numPrims);
     leafItemThreshold = 1;
 
     fastUpdateMode = true;
-    fastUpdateMode_numFaces = 0;
 
     /* initialize all half edge structures */
     //const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
     if (numPrimitives > 0 || scene->isInterpolatable()) {
       Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
       for (size_t i=0; i<iter.size(); i++)
-        if (iter[i]) iter[i]->initializeHalfEdgeStructures();
+        if (iter[i]) 
+        {
+          fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
+          fastUpdateMode &= !iter[i]->faceVertices.isModified();
+          fastUpdateMode &= !iter[i]->holes.isModified();
+          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
+          //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
+          //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
+          //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
+          fastUpdateMode &= iter[i]->levels.isModified();
+          iter[i]->initializeHalfEdgeStructures();
+        }
     }
+
+    /* only enable fast mode of no subdiv mesh got enabled or disabled since last run */
+    fastUpdateMode &= numSubdivEnableDisableEvents == scene->numSubdivEnableDisableEvents;
+    numSubdivEnableDisableEvents = scene->numSubdivEnableDisableEvents;
 
     /* initialize all half edge structures */
     new (&iter) Scene::Iterator<SubdivMesh>(this->scene);
 
     DBG_CACHE_BUILDER( PRINT( iter.size() ) );
-
-    for (size_t i=0; i<iter.size(); i++)
-      if (iter[i]) 
-	{
-	  DBG_CACHE_BUILDER( PRINT( i ) );
-	  DBG_CACHE_BUILDER( PRINT( iter[i] ) );
-
-	  //iter[i]->initializeHalfEdgeStructures();
-	  fastUpdateMode_numFaces += iter[i]->size();
-	  if (!iter[i]->checkLevelUpdate()) fastUpdateMode = false;
-	}
     DBG_CACHE_BUILDER( PRINT( fastUpdateMode ) );
 
     pstate.init(iter,size_t(1024));
 
       /* deactivate fast update mode */
     if (numPrimitives == 0 || 
-	numPrimitives != fastUpdateMode_numFaces ||
+	// numPrimitives != fastUpdateMode_numFaces ||
 	bvh->root     == BVH4i::emptyNode ||
 	bvh->qbvh     == nullptr)
       {
 	fastUpdateMode = false;
       }
+
+    DBG_CACHE_BUILDER( PRINT(fastUpdateMode ) );
+
+    //fastUpdateMode = false;
 
     if (!fastUpdateMode)
       BVH4iBuilder::build(threadIndex,threadCount);
@@ -963,8 +986,7 @@ PRINT(CORRECT_numPrims);
 
   size_t BVH4iBuilderSubdivMesh::getNumPrimitives()
   {
-    /* in fast update mode we know the number of primitives in advance */
-    if (fastUpdateMode) return fastUpdateMode_numFaces;
+    DBG_CACHE_BUILDER( PING );
 
     TIMER(double msec = getSeconds());	
 
@@ -974,16 +996,7 @@ PRINT(CORRECT_numPrims);
        for (size_t f=r.begin(); f!=r.end(); ++f) 
 	{          
           if (!mesh->valid(f)) continue;
-#if ENABLE_FEATURE_ADAPTIVE == 1
-	  feature_adaptive_subdivision_gregory(f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-					       [&](const CatmullClarkPatch3fa& patch, const Vec2f uv[4], const int subdiv[4])
-					       {
-						 s++;
-					       });
-#else
-	      s++;
-#endif
-	    
+          s += isa::patch_eval_subdivision_count (mesh->getHalfEdge(f));  
 	}
        return PrimInfo(s,empty,empty);
      }, [](const PrimInfo& a, const PrimInfo b) -> PrimInfo { return PrimInfo(a.size()+b.size(),empty,empty); });
@@ -991,191 +1004,13 @@ PRINT(CORRECT_numPrims);
     TIMER(msec = getSeconds()-msec);    
     TIMER(std::cout << "getNumPrimitives " << 1000. * msec << " ms" << std::endl << std::flush);
 
+    DBG_CACHE_BUILDER( PRINT(pinfo.size()) );
+
     return pinfo.size();
-    /* count total number of subdivision surface objects */
-    // size_t numFaces = 0;       
-    // for (size_t i=0;i<scene->size();i++)
-    //   {
-    // 	if (unlikely(scene->get(i) == nullptr)) continue;
-    // 	if (unlikely((scene->get(i)->type != Geometry::SUBDIV_MESH) /*&& (scene->get(i)->type != INSTANCES)*/)) continue;
-    // 	if (unlikely(!scene->get(i)->isEnabled())) continue;
-    //     SubdivMesh* geom = (SubdivMesh*) scene->get(i);
-    // 	numFaces += geom->size();
-    //   }
-    // return numFaces;	
-  }
-
-
-#define FORCE_TESSELLATION_BOUNDS 1
-
-    BBox3fa getBounds(const SubdivPatch1Base &p,const SubdivMesh* const mesh)
-    {
-      
-#if FORCE_TESSELLATION_BOUNDS == 1
-       
-      __aligned(64) float u_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
-      __aligned(64) float v_array[(p.grid_size_simd_blocks + 1) * 16]; // +16 for unaligned access
-
-      const unsigned int real_grid_size = p.grid_u_res*p.grid_v_res;
-      gridUVTessellator(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
-
-      if (unlikely(p.needsStitching()))
-        stitchUVGrid(p.level, p.grid_u_res, p.grid_v_res, u_array, v_array);
-
-      // FIXME: remove
-      for (size_t i = real_grid_size; i<p.grid_size_simd_blocks * 16; i++)
-          {
-            u_array[i] = 1.0f;
-            v_array[i] = 1.0f;
-          }
-      
-      BBox3fa b(empty);
-      assert(p.grid_size_simd_blocks >= 1);
-
-      for (size_t i = 0; i<p.grid_size_simd_blocks; i++)
-        {
-          const float16 u = load16f(&u_array[i * 16]);
-          const float16 v = load16f(&v_array[i * 16]);
-
-          Vec3f16 vtx = p.eval16(u, v);
-
-
-          /* eval displacement function */
-          if (unlikely(mesh->displFunc != nullptr))
-            {
-              Vec3f16 normal = p.normal16(u, v);
-              normal = normalize(normal);
-
-              const Vec2f uv0 = p.getUV(0);
-              const Vec2f uv1 = p.getUV(1);
-              const Vec2f uv2 = p.getUV(2);
-              const Vec2f uv3 = p.getUV(3);
-
-              const float16 patch_uu = bilinear_interpolate(uv0.x, uv1.x, uv2.x, uv3.x, u, v);
-              const float16 patch_vv = bilinear_interpolate(uv0.y, uv1.y, uv2.y, uv3.y, u, v);
-
-              mesh->displFunc(mesh->userPtr,
-                              p.geom,
-                              p.prim,
-                              (const float*)&patch_uu,
-                              (const float*)&patch_vv,
-                              (const float*)&normal.x,
-                              (const float*)&normal.y,
-                              (const float*)&normal.z,
-                              (float*)&vtx.x,
-                              (float*)&vtx.y,
-                              (float*)&vtx.z,
-                              16);
-
-            }
-
-          /* extend bounding box */
-          b.extend(getBBox3fa(vtx));
-        }
-
-      b.lower.a = 0.0f;
-      b.upper.a = 0.0f;
-
-#if defined(DEBUG)
-      std::isfinite(b.lower.x);
-      std::isfinite(b.lower.y);
-      std::isfinite(b.lower.z);
-
-      std::isfinite(b.upper.x);
-      std::isfinite(b.upper.y);
-      std::isfinite(b.upper.z);
-#endif
-
-#else
-      BBox3fa b = patch.bounds();
-      if (unlikely(isGregoryPatch()))
-        {
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 0));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 1));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 2));
-          b.extend(GregoryPatch::extract_f_m_Vec3fa(patch.v, 3));
-        }
-#endif
-
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif
-
-      return b;
-    }
-
-  void BVH4iBuilderSubdivMesh::updatePatchTessellation(const size_t threadID, const size_t numThreads) 
-  {
-    /* count total number of virtual objects */
-    const size_t startID   = (threadID+0)*numPrimitives/numThreads;
-    const size_t endID     = (threadID+1)*numPrimitives/numThreads; 
-    SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
-
-    float16 bounds_scene_min((float)pos_inf);
-    float16 bounds_scene_max((float)neg_inf);
-    float16 bounds_centroid_min((float)pos_inf);
-    float16 bounds_centroid_max((float)neg_inf);
-
-    for (size_t i=startID;i<endID;i++)
-      {
-	SubdivPatch1 &subdiv_patch = subdiv_patches[i];
-	prefetch<PFHINT_L1EX>(&subdiv_patch);
-	prefetch<PFHINT_L1EX>(&prims[i]);
-
-	prefetch<PFHINT_L2EX>(&subdiv_patch + 2);
-	prefetch<PFHINT_L2EX>(&prims[i+2]);
-
-	const SubdivMesh* const mesh = (SubdivMesh*) scene->get(subdiv_patch.geom);
-	const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(subdiv_patch.prim);
-
-	float edge_level[4] = {
-	  first_half_edge[0].edge_level,
-	  first_half_edge[1].edge_level,
-	  first_half_edge[2].edge_level,
-	  first_half_edge[3].edge_level
-	};
- 
-	subdiv_patch.updateEdgeLevels(edge_level,mesh);
-	subdiv_patch.resetRootRef();
-	const BBox3fa bounds = getBounds(subdiv_patch,mesh);
-
-	assert(bounds.lower.x <= bounds.upper.x);
-	assert(bounds.lower.y <= bounds.upper.y);
-	assert(bounds.lower.z <= bounds.upper.z);
-
-	const float16 bmin = broadcast4to16f(&bounds.lower); 
-	const float16 bmax = broadcast4to16f(&bounds.upper);
-          
-	bounds_scene_min = min(bounds_scene_min,bmin);
-	bounds_scene_max = max(bounds_scene_max,bmax);
-	const float16 centroid2 = bmin+bmax;
-	bounds_centroid_min = min(bounds_centroid_min,centroid2);
-	bounds_centroid_max = max(bounds_centroid_max,centroid2);
-
-						     
-	prims[i] = PrimRef(bounds,i);
-      }
-
-    Centroid_Scene_AABB bounds;
-    
-    store4f(&bounds.centroid2.lower,bounds_centroid_min);
-    store4f(&bounds.centroid2.upper,bounds_centroid_max);
-    store4f(&bounds.geometry.lower,bounds_scene_min);
-    store4f(&bounds.geometry.upper,bounds_scene_max);
-
-    global_bounds.extend_atomic(bounds);    
   }
 
   void BVH4iBuilderSubdivMesh::computePrimRefs(const size_t threadIndex, const size_t threadCount)
   {
-#if 1
-    if (fastUpdateMode)
-      {
-	scene->lockstep_scheduler.dispatchTask( task_updatePatchTessellation, this, threadIndex, threadCount );	
-	return;
-      }
-#endif
-
     PrimInfo pinfo( empty );
     SubdivPatch1 *subdiv_patches = (SubdivPatch1*)accel;
 
@@ -1186,67 +1021,23 @@ PRINT(CORRECT_numPrims);
 	{
           if (!mesh->valid(f)) continue;
 
-	  if (!fastUpdateMode) 
-	    {
+          isa::patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
+            {
+              const unsigned int patchIndex = base.size()+s.size();
+              assert(patchIndex < numPrimitives);
+              if (likely(fastUpdateMode)) {
+                 subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                 subdiv_patches[patchIndex].resetRootRef();
+              }
+              else {
+                new (&subdiv_patches[patchIndex]) SubdivPatch1(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              }
+              const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
+              const BBox3fa bounds = knc::evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
+              prims[patchIndex] = PrimRef(bounds,patchIndex);
+              s.add(bounds);
+            });
 
-#if ENABLE_FEATURE_ADAPTIVE == 1
-	      feature_adaptive_subdivision_gregory(
-						   f,mesh->getHalfEdge(f),mesh->getVertexBuffer(),
-						   [&](const CatmullClarkPatch3fa& ipatch, const Vec2f uv[4], const int subdiv[4])
-						   {
-						     float edge_level[4] = {
-						       ipatch.ring[0].edge_level,
-						       ipatch.ring[1].edge_level,
-						       ipatch.ring[2].edge_level,
-						       ipatch.ring[3].edge_level
-						     };
-
-						     for (size_t i=0;i<4;i++)
-						       edge_level[i] = adjustDiscreteTessellationLevel(edge_level[i],subdiv[i]);
-
-						     const unsigned int patchIndex = base.size()+s.size();
-						     subdiv_patches[patchIndex] = SubdivPatch1(ipatch, mesh->id, f, mesh, uv, edge_level);
-#else
-						     const unsigned int patchIndex = base.size()+s.size();
-                                                     subdiv_patches[patchIndex] = SubdivPatch1(mesh->id, f, mesh);
-#endif                                                     
-						   
-						     /* compute patch bounds */
-						     const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
-						     assert(bounds.lower.x <= bounds.upper.x);
-						     assert(bounds.lower.y <= bounds.upper.y);
-						     assert(bounds.lower.z <= bounds.upper.z);
-						     
-						     prims[base.size()+s.size()] = PrimRef(bounds,patchIndex);
-						     s.add(bounds);
-#if ENABLE_FEATURE_ADAPTIVE == 1            
-						   });
-#endif
-
-	    }
-	  else
-	    {
-	      const unsigned int patchIndex = base.size()+s.size();
-	      const SubdivMesh::HalfEdge* first_half_edge = mesh->getHalfEdge(f);
-	      float edge_level[4] = {
-		first_half_edge[0].edge_level,
-		first_half_edge[1].edge_level,
-		first_half_edge[2].edge_level,
-		first_half_edge[3].edge_level
-	      };
-	      prefetch<PFHINT_L1EX>(&prims[patchIndex]);
-	      prefetch<PFHINT_L2EX>(&prims[patchIndex+16]);
- 
-	      subdiv_patches[patchIndex].updateEdgeLevels(edge_level,mesh);
-	      subdiv_patches[patchIndex].resetRootRef();
-	      const BBox3fa bounds = getBounds(subdiv_patches[patchIndex],mesh);
-	      assert(bounds.lower.x <= bounds.upper.x);
-	      assert(bounds.lower.y <= bounds.upper.y);
-	      assert(bounds.lower.z <= bounds.upper.z);
-						     
-	      prims[patchIndex] = PrimRef(bounds,patchIndex);
-	      s.add(bounds);	      
-	    }
         }
         return s;
       }, [](PrimInfo a, const PrimInfo& b) -> PrimInfo { a.merge(b); return a; });

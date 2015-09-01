@@ -24,46 +24,26 @@ namespace embree
   __thread ThreadWorkState* SharedLazyTessellationCache::init_t_state = nullptr;
   ThreadWorkState* SharedLazyTessellationCache::current_t_state = nullptr;
 
-  void resizeTessellationCache(const size_t new_size)
+  void resizeTessellationCache(size_t new_size)
   {    
-    if (new_size <= 1024 * 1024)
-      THROW_RUNTIME_ERROR("tessellation cache size is too small");
-
-    if (SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE >= new_size &&
-	SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
+    if (new_size >= SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE)
+      new_size = SharedLazyTessellationCache::MAX_TESSELLATION_CACHE_SIZE;
+    if (SharedLazyTessellationCache::sharedLazyTessellationCache.getSize() != new_size) 
       SharedLazyTessellationCache::sharedLazyTessellationCache.realloc(new_size);    
   }
 
-  void clearTessellationCache()
+  void resetTessellationCache()
   {
-    SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_SEGMENTS);
+    //SharedLazyTessellationCache::sharedLazyTessellationCache.addCurrentIndex(SharedLazyTessellationCache::NUM_CACHE_SEGMENTS);
+    SharedLazyTessellationCache::sharedLazyTessellationCache.reset();
   }
   
-  /* alloc cache memory */
-  float *alloc_tessellation_cache_mem(const size_t blocks)
-  {
-    return (float*)_mm_malloc(64 * blocks,64);
-  }
-  
-  /* free cache memory */
-  void free_tessellation_cache_mem(void *mem, const size_t blocks)
-  {
-    assert(mem);
-    _mm_free(mem);
-  }
-
-
   SharedLazyTessellationCache::SharedLazyTessellationCache()
   {
-    size                   = DEFAULT_TESSELLATION_CACHE_SIZE;
-#if defined(_MSC_VER)
-    data                   = (float*)os_malloc(size);
-#else
-    data                   = (float*)os_reserve(size);
-#endif
-
+    size = 0;
+    data = nullptr;
     maxBlocks              = size/64;
-    localTime              = 0; // 1
+    localTime              = NUM_CACHE_SEGMENTS;
     next_block             = 0;
     numRenderThreads       = 0;
 #if FORCE_SIMPLE_FLUSH == 1
@@ -77,11 +57,11 @@ namespace embree
       threadWorkState[i].reset();
 
     reset_state.reset();
+    linkedlist_mtx.reset();
   }
 
   void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
-    reset_state.lock();
     const size_t id = numRenderThreads.add(1); 
     if (id >= NUM_PREALLOC_THREAD_WORK_STATES) 
       { 
@@ -93,10 +73,14 @@ namespace embree
       init_t_state = &threadWorkState[id];
     }
 
+    /* critical section for updating link list with new thread state */
+
+    linkedlist_mtx.lock();
+
     init_t_state->prev = current_t_state;
     current_t_state = init_t_state;
 
-    reset_state.unlock();
+    linkedlist_mtx.unlock();
   }
 
   void SharedLazyTessellationCache::waitForUsersLessEqual(ThreadWorkState *const t_state,
@@ -115,24 +99,26 @@ namespace embree
        }
    }
 
-  void SharedLazyTessellationCache::resetCache() 
+  void SharedLazyTessellationCache::allocNextSegment() 
   {
     if (reset_state.try_lock())
       {
 	if (next_block >= switch_block_threshold)
 	  {
-	    //double msec = getSeconds();
+            /* lock the linked list of thread states */
 
+            linkedlist_mtx.lock();
+
+            /* block all threads */
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
-            {
 	      if (lockThread(t) == 1)
 		waitForUsersLessEqual(t,1);
-            }
 
+
+            /* switch to the next segment */
 
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
-	    //PRINT("RESET TESS CACHE");
 
 #if FORCE_SIMPLE_FLUSH == 1
 	    next_block = 0;
@@ -156,11 +142,15 @@ namespace embree
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
 
+            /* release all blocked threads */
+
 	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
 	      unlockThread(t);
+
+            /* unlock the linked list of thread states */
+
+            linkedlist_mtx.unlock();
 	    
-	    //msec = getSeconds()-msec;    
-	    //PRINT( 1000.0f * msec );
 
 	  }
 	reset_state.unlock();
@@ -169,22 +159,69 @@ namespace embree
       reset_state.wait_until_unlocked();	   
   }
 
-  void SharedLazyTessellationCache::realloc(const size_t new_size)
+
+  void SharedLazyTessellationCache::reset()
   {
-    if (data)
-      {
-	os_free(data,size);
-      }
-    size      = new_size;
-    data      = (float*)os_malloc(size);
-    maxBlocks = size/64;    
+
+#if 1
+    /* lock the reset_state */
+    reset_state.lock();
+
+
+    /* lock the linked list of thread states */
+    linkedlist_mtx.lock();
+
+    /* block all threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      if (lockThread(t) == 1)
+        waitForUsersLessEqual(t,1);
+#endif
+
+    /* reset to the first segment */
+    next_block = 0;
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
-    std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
+    /* reset local time */
+    localTime              = NUM_CACHE_SEGMENTS;
+
+#if 1
+    /* release all blocked threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      unlockThread(t);
+
+    /* unlock the linked list of thread states */
+    linkedlist_mtx.unlock();
+	    
+
+    /* unlock the reset_state */
+    reset_state.unlock();
+#endif
+
+
+  }
+
+  void SharedLazyTessellationCache::realloc(const size_t new_size)
+  {
+    if (data)
+      os_free(data,size);
+     
+    size      = new_size;
+    data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
+    maxBlocks = size/64;    
+    //localTime              = NUM_CACHE_SEGMENTS; // FIXME: has this to get set?
+    //next_block             = 0;                  // FIXME: has this to get set?
+#if FORCE_SIMPLE_FLUSH == 1
+    switch_block_threshold = maxBlocks;
+#else
+    switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
+#endif
+
+    if (State::instance()->verbose >= 1)
+      std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
   }
 
 

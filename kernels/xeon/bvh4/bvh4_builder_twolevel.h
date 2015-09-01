@@ -67,7 +67,7 @@ namespace embree
 
       void clear();
 
-      void open_sequential();
+      void open_sequential(size_t numPrimitives);
       
     public:
       BVH4* bvh;

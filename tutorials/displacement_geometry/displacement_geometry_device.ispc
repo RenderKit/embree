@@ -102,7 +102,7 @@ uniform unsigned int cube_faces[12] = {
 
 #endif
 
-float displacement(const Vec3f P)
+float displacement(const Vec3f& P)
 {
   float dN = 0.0f;
   for (float freq = 1.0f; freq<40.0f; freq*= 2) {
@@ -112,13 +112,13 @@ float displacement(const Vec3f P)
   return dN;
 }
 
-float displacement_du(const Vec3f P, const Vec3f dPdu)
+float displacement_du(const Vec3f& P, const Vec3f& dPdu)
 {
   const float du = 0.001f;
   return (displacement(P+du*dPdu)-displacement(P))/du;
 }
 
-float displacement_dv(const Vec3f P, const Vec3f dPdv)
+float displacement_dv(const Vec3f& P, const Vec3f& dPdv)
 {
   const float dv = 0.001f;
   return (displacement(P+dv*dPdv)-displacement(P))/dv;
@@ -211,6 +211,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
 }
 
 /* task that renders a single screen tile */

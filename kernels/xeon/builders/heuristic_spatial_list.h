@@ -59,6 +59,7 @@ namespace embree
         const Split parallel_find(Set& prims, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           const SpatialBinMapping<BINS> mapping(pinfo);
+          const SpatialBinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
           PrimRefList::iterator i=prims;
 
           const size_t threadCount = TaskSchedulerTBB::threadCount();
@@ -66,7 +67,7 @@ namespace embree
           {
             Binner binner(empty);
             while (PrimRefList::item* block = i.next()) {
-              binner.bin(splitPrimitive,block->base(),block->size(),pinfo,mapping);
+              binner.bin(splitPrimitive,block->base(),block->size(),pinfo,_mapping);
             }
             return binner;
           },[](const Binner& a, const Binner& b) -> Binner { return SpatialBinInfo<BINS,PrimRef>::reduce(a,b); });

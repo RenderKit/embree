@@ -24,6 +24,7 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
 
 #define SWITCH_THRESHOLD 5
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
@@ -36,9 +37,11 @@ namespace embree
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const bool8 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
       
       /* load ray */
@@ -108,12 +111,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const Node* __restrict__ const node = cur.node();
 	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+	    /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -129,25 +129,28 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -166,12 +169,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -180,32 +180,35 @@ namespace embree
 	      if (unlikely(child == BVH4::emptyNode)) break;
 	      float8 lnearP; const bool8 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
-	      /* if we hit the child we choose to continue with that child if it 
+              /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
-	      }	      
+	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -231,8 +234,15 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
     }
@@ -242,9 +252,11 @@ namespace embree
     void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
       /* verify correct input */
-      const bool8 valid = *valid_i;
-      assert(all(valid,ray.tnear >= 0.0f));
-      assert(all(valid,ray.tnear <= ray.tfar));
+      bool8 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
@@ -315,13 +327,10 @@ namespace embree
 	    const bool8 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const Node* __restrict__ const node = cur.node();
-	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -337,25 +346,28 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -374,12 +386,9 @@ namespace embree
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -387,33 +396,36 @@ namespace embree
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
 	      float8 lnearP; const bool8 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
-	      
-	      /* if we hit the child we choose to continue with that child if it 
+	      	      
+              /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
 	      if (likely(any(lhit)))
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
 		const float8 childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
-	      }	      
+	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
+
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
@@ -440,9 +452,16 @@ namespace embree
         const bool8 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,float8(neg_inf),ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store8i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
@@ -453,6 +472,9 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersector8_1<TriangleNvIntersectorMPluecker<Ray8 COMMA Triangle4v COMMA true> > >);
+    
+    DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8, BVH4Intersector8Hybrid<0x1 COMMA true COMMA SubdivPatch1CachedIntersector8>);
+               
 
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector

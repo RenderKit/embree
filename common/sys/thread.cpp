@@ -39,40 +39,57 @@ namespace embree
   /*! set the affinity of a given thread */
   void setAffinity(HANDLE thread, ssize_t affinity)
   {
-#if (_WIN32_WINNT >= 0x0601) // FIXME: use getProcAddress to activate this feature only if supported by Windows
-    int groups = GetActiveProcessorGroupCount();
-    int totalProcessors = 0, group = 0, number = 0;
-    for (int i = 0; i<groups; i++) {
-      int processors = GetActiveProcessorCount(i);
-      if (totalProcessors + processors > affinity) {
-        group = i;
-        number = (int)affinity - totalProcessors;
-        break;
+    OSVERSIONINFO osvi;
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osvi);
+    typedef WORD (WINAPI *GetActiveProcessorGroupCountFunc)();
+    typedef DWORD (WINAPI *GetActiveProcessorCountFunc)(WORD);
+    typedef BOOL (WINAPI *SetThreadGroupAffinityFunc)(HANDLE, const GROUP_AFFINITY *, PGROUP_AFFINITY);
+    typedef BOOL (WINAPI *SetThreadIdealProcessorExFunc)(HANDLE, PPROCESSOR_NUMBER, PPROCESSOR_NUMBER);
+    HMODULE hlib = LoadLibrary("Kernel32");
+    GetActiveProcessorGroupCountFunc pGetActiveProcessorGroupCount = (GetActiveProcessorGroupCountFunc)GetProcAddress(hlib, "GetActiveProcessorGroupCount");
+    GetActiveProcessorCountFunc pGetActiveProcessorCount = (GetActiveProcessorCountFunc)GetProcAddress(hlib, "GetActiveProcessorCount");
+    SetThreadGroupAffinityFunc pSetThreadGroupAffinity = (SetThreadGroupAffinityFunc)GetProcAddress(hlib, "SetThreadGroupAffinity");
+    SetThreadIdealProcessorExFunc pSetThreadIdealProcessorEx = (SetThreadIdealProcessorExFunc)GetProcAddress(hlib, "SetThreadIdealProcessorEx");
+    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount && pSetThreadGroupAffinity && pSetThreadIdealProcessorEx &&
+       ((osvi.dwMajorVersion > 6) || ((osvi.dwMajorVersion == 6) && (osvi.dwMinorVersion >= 1)))) 
+    {
+      int groups = pGetActiveProcessorGroupCount();
+      int totalProcessors = 0, group = 0, number = 0;
+      for (int i = 0; i<groups; i++) {
+        int processors = pGetActiveProcessorCount(i);
+        if (totalProcessors + processors > affinity) {
+          group = i;
+          number = (int)affinity - totalProcessors;
+          break;
+        }
+        totalProcessors += processors;
       }
-      totalProcessors += processors;
-    }
-
-    GROUP_AFFINITY groupAffinity;
-    groupAffinity.Group = (WORD)group;
-    groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
-    groupAffinity.Reserved[0] = 0;
-    groupAffinity.Reserved[1] = 0;
-    groupAffinity.Reserved[2] = 0;
-    if (!SetThreadGroupAffinity(thread, &groupAffinity, nullptr))
-      THROW_RUNTIME_ERROR("cannot set thread group affinity");
-
-    PROCESSOR_NUMBER processorNumber;
-    processorNumber.Group = group;
-    processorNumber.Number = number;
-    processorNumber.Reserved = 0;
-    if (!SetThreadIdealProcessorEx(thread, &processorNumber, nullptr))
-      THROW_RUNTIME_ERROR("cannot set ideal processor");
-#else
-    if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64_t(1) << affinity)))
-      THROW_RUNTIME_ERROR("cannot set thread affinity mask");
-    if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1)
-      THROW_RUNTIME_ERROR("cannot set ideal processor");
-#endif
+  
+      GROUP_AFFINITY groupAffinity;
+      groupAffinity.Group = (WORD)group;
+      groupAffinity.Mask = (KAFFINITY)(uint64_t(1) << number);
+      groupAffinity.Reserved[0] = 0;
+      groupAffinity.Reserved[1] = 0;
+      groupAffinity.Reserved[2] = 0;
+      if (!pSetThreadGroupAffinity(thread, &groupAffinity, nullptr))
+        THROW_RUNTIME_ERROR("cannot set thread group affinity");
+  
+      PROCESSOR_NUMBER processorNumber;
+      processorNumber.Group = group;
+      processorNumber.Number = number;
+      processorNumber.Reserved = 0;
+      if (!pSetThreadIdealProcessorEx(thread, &processorNumber, nullptr))
+        THROW_RUNTIME_ERROR("cannot set ideal processor");
+  
+    } else {
+  
+      if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64_t(1) << affinity)))
+        THROW_RUNTIME_ERROR("cannot set thread affinity mask");
+      if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1)
+        THROW_RUNTIME_ERROR("cannot set ideal processor");
+      }
   }
 
   /*! set affinity of the calling thread */
@@ -166,20 +183,6 @@ namespace embree
 
     if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
       std::cerr << "Thread: cannot set affinity" << std::endl;
-  }
-  
-  ssize_t getThreadAffinity(pthread_t pth)
-  {
-    cpu_set_t cset;
-    CPU_ZERO(&cset);
-    int error = pthread_getaffinity_np(pth, sizeof(cset), &cset);
-    if (error != 0) perror("pthread_getaffinity_np");
-    
-    for (int j=0; j<CPU_COUNT(&cset); j++)
-      if (CPU_ISSET(j, &cset))
-	return j;
-
-    return -1;
   }
 }
 #endif

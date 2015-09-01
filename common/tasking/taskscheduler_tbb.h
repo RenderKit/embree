@@ -27,10 +27,10 @@
 
 #include <list>
 
-#if !defined(TASKING_TBB_INTERNAL)
+#if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
 #define NOMINMAX
 #define __TBB_NO_IMPLICIT_LINKAGE 1
-#define TBB_PREVIEW_TASK_ARENA 1
+//#define is_trivially_copyable has_trivial_copy_constructor
 #include "tbb/tbb.h"
 #endif
 
@@ -40,7 +40,7 @@ namespace embree
 #  define SPAWN_BEGIN tbb::task_group __internal_task_group
 #  define SPAWN(closure) __internal_task_group.run(closure)
 #  define SPAWN_END __internal_task_group.wait();                       \
-  if (tbb::task::self().group()->is_group_execution_cancelled())        \
+  if (tbb::task::self().is_cancelled())        \
     throw std::runtime_error("task group cancelled");
 #else
 #  define SPAWN_BEGIN 
@@ -52,7 +52,6 @@ namespace embree
   {
     ALIGNED_STRUCT;
 
-    static const size_t MAX_THREADS = 1024;               // FIXME: there should be no maximal number of threads
     static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
     static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
@@ -216,7 +215,7 @@ namespace embree
     /*! pool of worker threads */
     struct ThreadPool
     {
-      ThreadPool (size_t numThreads = 0);
+      ThreadPool (size_t numThreads = 0, bool set_affinity = false);
       ~ThreadPool ();
 
       /*! starts the threads */
@@ -236,6 +235,7 @@ namespace embree
       
     private:
       size_t numThreads;
+      bool set_affinity;
       bool running;
       volatile bool terminate;
       std::vector<thread_t> threads;
@@ -250,7 +250,7 @@ namespace embree
     ~TaskSchedulerTBB ();
 
     /*! initializes the task scheduler */
-    static void create(size_t numThreads);
+    static void create(size_t numThreads, bool set_affinity);
 
     /*! destroys the task scheduler again */
     static void destroy();
@@ -260,7 +260,7 @@ namespace embree
     void reset();
 
     /*! let a worker thread allocate a thread index */
-    ssize_t allocThreadIndex();
+    __dllexport ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
@@ -278,34 +278,35 @@ namespace embree
     template<typename Closure>
     __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
     {
-      if (useThreadPool) threadPool->startThreads();
+      if (useThreadPool) startThreads();
       
-      Thread thread(0,this);
-      assert(threadLocal[0] == nullptr);
-      threadLocal[0] = &thread;
+      size_t threadIndex = allocThreadIndex();
+      Thread thread(threadIndex,this);
+      assert(threadLocal[threadIndex] == nullptr);
+      threadLocal[threadIndex] = &thread;
       Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
         Lock<MutexSys> lock(mutex);
-        atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);
         hasRootTask = true;
         condition.notify_all();
       }
       
-      if (useThreadPool) threadPool->add(this);
+      if (useThreadPool) addScheduler(this);
 
       while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
-      if (useThreadPool) threadPool->remove(this);
+      if (useThreadPool) removeScheduler(this);
       
-      threadLocal[0] = nullptr;
+      threadLocal[threadIndex] = nullptr;
       swapThread(oldThread);
 
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
-      while (threadCounter > 0)
+      while (threadCounter > 0) {
         yield();
+      }
 
       //assert(anyTasksRunning == -1);
       //anyTasksRunning = 0;
@@ -362,8 +363,17 @@ namespace embree
     /*! returns the taskscheduler object to be used by the master thread */
     __dllexport static TaskSchedulerTBB* instance();
 
+    /*! starts the threads */
+    __dllexport static void startThreads();
+
+    /*! adds a task scheduler object for scheduling */
+    __dllexport static void addScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+
+    /*! remove the task scheduler object again */
+    __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
+
   private:
-    Thread* threadLocal[MAX_THREADS];
+    Thread* threadLocal[MAX_THREADS]; // FIXME: thread should be no maximal number of threads
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;
@@ -373,7 +383,7 @@ namespace embree
   private:
     static __thread TaskSchedulerTBB* g_instance;
     static __thread Thread* thread_local_thread;
-    __dllexport static ThreadPool* threadPool;
+    static ThreadPool* threadPool;
   };
 };
 

@@ -14,377 +14,151 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../scene_subdiv_mesh.h"
 #include "subdivpatch1base.h"
-#include "../scene.h"
 
 namespace embree
 {
-
-  __forceinline Vec3fa computeInnerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
-  {
-    return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));
-  }
-  
-  __forceinline Vec3fa computeTopEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
-  {
-    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y-1][x+1]));
-  }
-
-  __forceinline Vec3fa computeButtomEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
-  {
-    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y+1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y+1][x-1] + v[y+1][x+1]);
-  }
-
-  __forceinline Vec3fa computeLeftEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
-  {
-    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x-1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x-1] + v[y+1][x-1]);
-  }
-
-  __forceinline Vec3fa computeRightEdgeBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x)
-  {
-    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x+1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x+1] + v[y+1][x+1]);
-  }
-
-  __forceinline Vec3fa computeCornerBezierControlPoint(const Vec3fa v[4][4], const size_t y, const size_t x, const ssize_t delta_y, const ssize_t delta_x)
-  {
-    return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
-  }
-
-  void convertToBicubicBezierPatch(const Vec3fa source[4][4],
-                                   Vec3fa dest[4][4])
-  {
-    /* compute inner bezier control points */
-    dest[0][0] = computeInnerBezierControlPoint(source,1,1);
-    dest[0][3] = computeInnerBezierControlPoint(source,1,2);
-    dest[3][3] = computeInnerBezierControlPoint(source,2,2);
-    dest[3][0] = computeInnerBezierControlPoint(source,2,1);
-
-    /* compute top edge control points */
-    dest[0][1] = computeRightEdgeBezierControlPoint(source,1,1);
-    dest[0][2] = computeLeftEdgeBezierControlPoint(source,1,2); 
- 
-    /* compute buttom edge control points */
-    dest[3][1] = computeRightEdgeBezierControlPoint(source,2,1);
-    dest[3][2] = computeLeftEdgeBezierControlPoint(source,2,2);
-    
-    /* compute left edge control points */
-    dest[1][0] = computeButtomEdgeBezierControlPoint(source,1,1);
-    dest[2][0] = computeTopEdgeBezierControlPoint(source,2,1);
-
-    /* compute right edge control points */
-    dest[1][3] = computeButtomEdgeBezierControlPoint(source,1,2);
-    dest[2][3] = computeTopEdgeBezierControlPoint(source,2,2);
-
-    /* compute corner control points */
-    dest[1][1] = computeCornerBezierControlPoint(source,1,1, 1, 1);
-    dest[1][2] = computeCornerBezierControlPoint(source,1,2, 1,-1);
-    dest[2][2] = computeCornerBezierControlPoint(source,2,2,-1,-1);
-    dest[2][1] = computeCornerBezierControlPoint(source,2,1,-1, 1);        
-  }
-  
-  /*! Construction from vertices and IDs. */
-  SubdivPatch1Base::SubdivPatch1Base (const CatmullClarkPatch3fa& ipatch,
-                                      const unsigned int gID,
+  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID,
                                       const unsigned int pID,
+                                      const unsigned int subPatch,
                                       const SubdivMesh *const mesh,
                                       const Vec2f uv[4],
-                                      const float edge_level[4]) 
-    : geom(gID),prim(pID),flags(0)
+                                      const float edge_level[4],
+                                      const int subdiv[4],
+                                      const int simd_width)
+    : geom(gID),prim(pID),flags(0),type(INVALID_PATCH)
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
     mtx.reset();
+
+    const HalfEdge* edge = mesh->getHalfEdge(pID);
+
+    if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
+    {
+#if PATCH_USE_BEZIER_PATCH 
+      type = BEZIER_PATCH;
+      new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
+#else
+      type = BSPLINE_PATCH;
+      new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())); // FIXME: init BSpline directly from half edge structure
+#endif      
+    }
+#if PATCH_USE_GREGORY == 2
+    else if (edge->patch_type == HalfEdge::IRREGULAR_QUAD_PATCH) 
+    {
+      type = GREGORY_PATCH;
+      new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer())));
+    }
+#endif
+    else
+    {
+      type = EVAL_PATCH;
+      set_edge(mesh->getHalfEdge(pID));
+      set_subPatch(subPatch);
+    }
 
     for (size_t i=0; i<4; i++) {
       u[i] = (unsigned short)(uv[i].x * 65535.0f);
       v[i] = (unsigned short)(uv[i].y * 65535.0f);
     }
 
-    updateEdgeLevels(edge_level,mesh);
-    
-    /* determine whether patch is regular or not */
-
-    if (ipatch.isRegular1() && !ipatch.hasBorder()) /* only select b-spline/bezier in the interior */
-    {
-
-#if 0
-      /* bezier */
-      BSplinePatch3fa tmp;
-      tmp.init( ipatch );
-      convertToBicubicBezierPatch(tmp.v,patch.v);
-      flags |= BEZIER_PATCH;
-#else
-      /* bspline */
-
-      flags |= BSPLINE_PATCH;
-      patch.init( ipatch );
-#endif      
-    }
-    else
-    {
-      /* greogy */
-      flags |= GREGORY_PATCH;
-      GregoryPatch3fa gpatch; 
-      gpatch.init( ipatch ); 
-      gpatch.exportDenseConrolPoints( patch.v );
-    }
+    updateEdgeLevels(edge_level,subdiv,mesh,simd_width);
   }
 
-  
-
-  
-  SubdivPatch1Base::SubdivPatch1Base (const unsigned int gID, // FIXME: remove this function?
-                                      const unsigned int pID,
-                                      const SubdivMesh *const mesh) 
-    : geom(gID),prim(pID),flags(0)
-  {
-    static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-    mtx.reset();
-
-    int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE];
-
-    const SubdivMesh::HalfEdge* h_start = mesh->getHalfEdge(pID);
-
-    const size_t numEdges = h_start->numEdges();
-
-
-    const SubdivMesh::HalfEdge* h       = h_start;
-
-    int needAdaptiveSubdivision = 0;   
-    for (size_t i=0; i<numEdges; i++) {
-      neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-      needAdaptiveSubdivision += neighborSubdiv[i];
-    }
-    //assert(needAdaptiveSubdivision == 0);
-
-    if (numEdges == 4)
-      {
-	GeneralCatmullClarkPatch3fa cpatch;
-	cpatch.init(h_start,mesh->getVertexBuffer());
-	float edge_level[4] = {
-	  cpatch.ring[0].edge_level,
-	  cpatch.ring[1].edge_level,
-	  cpatch.ring[2].edge_level,
-	  cpatch.ring[3].edge_level
-	};
-        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-
-	for (size_t i=0; i<4; i++) {
-	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
-	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
-	}
-
-	updateEdgeLevels(edge_level,mesh);
-	
-	//new (this) SubdivPatch1Base(cpatch,gID,pID,mesh,uv,edge_level);
-	flags |= GREGORY_PATCH;
-	GregoryPatch3fa gpatch; 
-	gpatch.init( cpatch ); 
-	gpatch.exportDenseConrolPoints( patch.v );	
-
-      }
-    else if (numEdges == 3)
-      {
-	GeneralCatmullClarkPatch3fa cpatch;
-	cpatch.init(h_start,mesh->getVertexBuffer());
-
-	GregoryTrianglePatch3fa gpatch; 
-	gpatch.init( cpatch ); 
-	gpatch.exportConrolPoints( patch.v );	
-
-
-	float edge_level[4] = {
-	  cpatch.ring[0].edge_level,
-	  cpatch.ring[1].edge_level,
-	  cpatch.ring[2].edge_level,
-	  cpatch.ring[1].edge_level
-	};
-
-        const Vec2f uv[4] = { Vec2f(0.0f,0.0f),Vec2f(1.0f,0.0f),Vec2f(1.0f,1.0f),Vec2f(0.0f,1.0f) };
-
-	for (size_t i=0; i<4; i++) {
-	  u[i] = (unsigned short)(uv[i].x * 65535.0f);
-	  v[i] = (unsigned short)(uv[i].y * 65535.0f);
-	}
-
-       
-	updateEdgeLevels(edge_level,mesh);
-
-#if 0
-	gpatch.convertGregoryTrianglePatchToBezierPatch( patch.v );
-	flags |= BEZIER_PATCH;
-#else	
-	flags |= GREGORY_TRIANGLE_PATCH;
-#endif
-
-      }
-
-  }
-
-  void SubdivPatch1Base::updateEdgeLevels(const float edge_level[4],const SubdivMesh *const mesh)
+  void SubdivPatch1Base::computeEdgeLevels(const float edge_level[4], const int subdiv[4], float level[4])
   {
     /* init discrete edge tessellation levels and grid resolution */
-
     assert( edge_level[0] >= 0.0f );
     assert( edge_level[1] >= 0.0f );
     assert( edge_level[2] >= 0.0f );
     assert( edge_level[3] >= 0.0f );
 
-#if defined(__MIC__)
-    const size_t SIMD_WIDTH = 16;
-#else
-    const size_t SIMD_WIDTH = 8;
-#endif
-
-    level[0] = max(ceilf(edge_level[0]),1.0f);
-    level[1] = max(ceilf(edge_level[1]),1.0f);
-    level[2] = max(ceilf(edge_level[2]),1.0f);
-    level[3] = max(ceilf(edge_level[3]),1.0f);
-
-    grid_u_res = max(level[0],level[2])+1; // n segments -> n+1 points
-    grid_v_res = max(level[1],level[3])+1;
-    
-#if defined(__MIC__)    
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+15)&(-16)) / 16;
-    grid_subtree_size_64b_blocks = 5; // single leaf with u,v,x,y,z      
-#else
-    /* 8-wide SIMD is default on Xeon */
-    grid_size_simd_blocks        = ((grid_u_res*grid_v_res+7)&(-8)) / 8;
-    grid_subtree_size_64b_blocks = (sizeof(Quad2x2)+63) / 64; // single Quad2x2
-
-#endif
-    /* need stiching? */
-
-    flags &= ~TRANSITION_PATCH;
-
-    const unsigned int int_edge_points0 = (unsigned int)level[0] + 1;
-    const unsigned int int_edge_points1 = (unsigned int)level[1] + 1;
-    const unsigned int int_edge_points2 = (unsigned int)level[2] + 1;
-    const unsigned int int_edge_points3 = (unsigned int)level[3] + 1;
-      
-    if (int_edge_points0 < (unsigned int)grid_u_res ||
-	int_edge_points2 < (unsigned int)grid_u_res ||
-	int_edge_points1 < (unsigned int)grid_v_res ||
-	int_edge_points3 < (unsigned int)grid_v_res)
-      flags |= TRANSITION_PATCH;
-
-    /* tessellate into grid blocks for larger grid resolutions, generate bvh4 subtree over grid blocks*/
-
-#if defined(__MIC__)
-    const size_t leafBlocks = 4;
-#else
-    const size_t leafBlocks = (sizeof(Quad2x2)+63) / 64;
-#endif
-    grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
-    
-    const size_t grid_size_xyzuv = (grid_size_simd_blocks * SIMD_WIDTH) * 4;
-    grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
-
-
-    /* has displacements? */
-    flags &= ~HAS_DISPLACEMENT;
-    if (mesh->displFunc != nullptr)
-      flags |= HAS_DISPLACEMENT;
-
+    level[0] = max(ceilf(adjustTessellationLevel(edge_level[0],subdiv[0])),1.0f);
+    level[1] = max(ceilf(adjustTessellationLevel(edge_level[1],subdiv[1])),1.0f);
+    level[2] = max(ceilf(adjustTessellationLevel(edge_level[2],subdiv[2])),1.0f);
+    level[3] = max(ceilf(adjustTessellationLevel(edge_level[3],subdiv[3])),1.0f);
   }
 
+  Vec2i SubdivPatch1Base::computeGridSize(const float level[4])
+  {
+    int width  = (int)max(level[0],level[2])+1; // n segments -> n+1 points
+    int height = (int)max(level[1],level[3])+1;
+    
+    /* workaround for 2x2 intersection stencil */
+#if !defined(__MIC__)
+    width = max(width,3); // FIXME: this triggers stitching
+    height = max(height,3);
+#endif
 
+    return Vec2i(width,height);
+  }
+  
+  bool SubdivPatch1Base::updateEdgeLevels(const float edge_level[4], const int subdiv[4], const SubdivMesh *const mesh, const int simd_width)
+  {
+    /* calculate edge levels */
+    float new_level[4];
+    computeEdgeLevels(edge_level,subdiv,new_level);
 
-  void SubdivPatch1Base::evalToOBJ(Scene *scene,size_t &vertex_index, size_t &numTotalTriangles)
+    /* calculate if tessellation pattern changed */
+    bool grid_changed = false;
+    for (size_t i=0; i<4; i++) {
+      grid_changed |= (int)new_level[i] != (int)level[i]; 
+      level[i] = new_level[i];
+    }
+
+    /* compute grid resolution */
+    Vec2i res = computeGridSize(level);
+    grid_u_res = res.x; grid_v_res = res.y;
+    
+    grid_size_simd_blocks = ((grid_u_res*grid_v_res+simd_width-1)&(-simd_width)) / simd_width;
+#if defined(__MIC__)
+    grid_bvh_size_64b_blocks = getSubTreeSize64bBlocks( 0 );
+    const size_t grid_size_xyzuv = (grid_size_simd_blocks * simd_width) * 4;
+    grid_subtree_size_64b_blocks = grid_bvh_size_64b_blocks + ((grid_size_xyzuv+15) / 16);
+#endif
+
+    /* need stiching? */
+    flags &= ~TRANSITION_PATCH;
+    const int int_edge_points0 = (int)level[0] + 1;
+    const int int_edge_points1 = (int)level[1] + 1;
+    const int int_edge_points2 = (int)level[2] + 1;
+    const int int_edge_points3 = (int)level[3] + 1;
+    if (int_edge_points0 < (int)grid_u_res ||
+	int_edge_points2 < (int)grid_u_res ||
+	int_edge_points1 < (int)grid_v_res ||
+	int_edge_points3 < (int)grid_v_res) {
+      flags |= TRANSITION_PATCH;
+    }
+
+    return grid_changed;
+  }
+
+   size_t SubdivPatch1Base::get64BytesBlocksForGridSubTree(const GridRange& range, const unsigned int leafBlocks)
+   {
+     if (range.hasLeafSize()) 
+       return leafBlocks;
+     
+     __aligned(64) GridRange r[4];
+     const unsigned int children = range.splitIntoSubRanges(r);
+     
+     size_t blocks = 2; /* 128 bytes bvh4 node layout */
+     for (unsigned int i=0;i<children;i++)
+       blocks += get64BytesBlocksForGridSubTree(r[i],leafBlocks);
+     return blocks;    
+   }
+
+  size_t SubdivPatch1Base::getSubTreeSize64bBlocks(const unsigned int leafBlocks)
   {
 #if defined(__MIC__)
-    THROW_RUNTIME_ERROR("EVALTOOBJ NOT SUPPORTED ON MIC");
-#else
-
-#if !defined(_MSC_VER) || defined(__INTEL_COMPILER)
-    __aligned(64) float grid_x[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_y[(grid_size_simd_blocks+1)*8];
-    __aligned(64) float grid_z[(grid_size_simd_blocks+1)*8]; 
+    const unsigned int U_BLOCK_SIZE = 5;
+    const unsigned int V_BLOCK_SIZE = 3;
     
-    __aligned(64) float grid_u[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_v[(grid_size_simd_blocks+1)*8];
-
-    __aligned(64) float grid_nx[(grid_size_simd_blocks+1)*8]; 
-    __aligned(64) float grid_ny[(grid_size_simd_blocks+1)*8];
-    __aligned(64) float grid_nz[(grid_size_simd_blocks+1)*8]; 
- 
+    const unsigned int grid_u_blocks = (grid_u_res + U_BLOCK_SIZE-2) / (U_BLOCK_SIZE-1);
+    const unsigned int grid_v_blocks = (grid_v_res + V_BLOCK_SIZE-2) / (V_BLOCK_SIZE-1);
+    
+    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_blocks,0,grid_v_blocks),leafBlocks);
 #else
-      const size_t array_elements = (grid_size_simd_blocks + 1) * 8;
-      float *const ptr = (float*)_malloca(8 * array_elements * sizeof(float) + 64);
-      float *const grid_arrays = (float*)ALIGN_PTR(ptr,64);
-
-      float *grid_x = &grid_arrays[array_elements * 0];
-      float *grid_y = &grid_arrays[array_elements * 1];
-      float *grid_z = &grid_arrays[array_elements * 2];
-      float *grid_u = &grid_arrays[array_elements * 3];
-      float *grid_v = &grid_arrays[array_elements * 4];
-
-      float *grid_nx = &grid_arrays[array_elements * 5];
-      float *grid_ny = &grid_arrays[array_elements * 6];
-      float *grid_nz = &grid_arrays[array_elements * 7];
-
-#endif
-      SubdivMesh *mesh = (SubdivMesh *)scene->getSubdivMesh(geom);
-  
-      evalGrid(*this,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
-
-#if defined(__AVX__)
-    for (size_t i=0;i<grid_size_simd_blocks;i++)
-      {
-        float8 uu = load8f(&grid_u[8*i]);
-        float8 vv = load8f(&grid_v[8*i]);
-        Vec3f8 normal = normalize(patch.normal(uu,vv));
-        *(float8*)&grid_nx[8*i] = normal.x;
-        *(float8*)&grid_ny[8*i] = normal.y;
-        *(float8*)&grid_nz[8*i] = normal.z;        
-      }
-#else
-    for (size_t i=0;i<grid_size_simd_blocks*2;i++) // 4-wide blocks for SSE
-      {
-        float4 uu      = load4f(&grid_u[4*i]);
-        float4 vv      = load4f(&grid_v[4*i]);
-        Vec3f4 normal = normalize(patch.normal(uu,vv));
-        *(float4*)&grid_nx[4*i] = normal.x;
-        *(float4*)&grid_ny[4*i] = normal.y;
-        *(float4*)&grid_nz[4*i] = normal.z;        
-      }
-#endif
-      
-      std::cout << "# grid_u_res " << grid_u_res << std::endl;
-      std::cout << "# grid_v_res " << grid_v_res << std::endl;
-
-      /* vertex */
-      for (size_t v=0;v<grid_v_res;v++)
-        for (size_t u=0;u<grid_u_res;u++)
-          {
-            size_t offset = v * grid_u_res + u;
-            std::cout << "v " << grid_x[offset] << " " << grid_y[offset] << " " << grid_z[offset] << std::endl;
-          }
-
-      /* normal */
-      for (size_t v=0;v<grid_v_res;v++)
-        for (size_t u=0;u<grid_u_res;u++)
-          {
-            size_t offset = v * grid_u_res + u;
-            std::cout << "vn " << grid_nx[offset] << " " << grid_ny[offset] << " " << grid_nz[offset] << std::endl;
-          }
-
-      for (size_t v=0;v<grid_v_res-1;v++)
-        for (size_t u=0;u<grid_u_res-1;u++)
-          {
-            size_t offset0 = vertex_index + v * grid_u_res + u;
-            size_t offset1 = offset0 + grid_u_res;
-            //std::cout << "f " << offset0+1 << " " << offset0+2 << " " << offset1+2 << " " << offset1+1 << std::endl;
-            std::cout << "f " << offset0+1 << "//" << offset0+1 << " " << offset0+2<< "//" << offset0+2 << " " << offset1+2<< "//" << offset1+2 << " " << offset1+1<< "//" << offset1+1 << std::endl;
-	    numTotalTriangles += 2;
-          }
-      vertex_index += grid_u_res*grid_v_res;
-      
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-      _freea(ptr);
-#endif      
-
+    return get64BytesBlocksForGridSubTree(GridRange(0,grid_u_res-1,0,grid_v_res-1),leafBlocks);
 #endif
   }
-
 }

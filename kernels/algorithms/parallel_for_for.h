@@ -35,7 +35,7 @@ namespace embree
   {
   public:
 
-    enum { MAX_TASKS = 32 };
+    enum { MAX_TASKS = MAX_THREADS };
 
     __forceinline ParallelForForState () 
       : taskCount(0) {}

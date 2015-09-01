@@ -34,14 +34,34 @@
 
 namespace embree
 {
-  void resizeTessellationCache(const size_t new_size);
-  void clearTessellationCache();
+////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////
 
-  /* alloc cache memory */
-  float *alloc_tessellation_cache_mem(const size_t blocks);
 
-  /* free cache memory */
-  void free_tessellation_cache_mem(void *mem, const size_t blocks = 0);
+ class SharedTessellationCacheStats
+ {
+ public:
+    /* stats */
+   static AtomicCounter cache_accesses;
+   static AtomicCounter cache_hits;
+   static AtomicCounter cache_misses;
+   static AtomicCounter cache_flushes;                
+   static AtomicCounter *cache_patch_builds;                
+   static size_t        cache_num_patches;
+   static float **      cache_new_delete_ptr;  
+   __aligned(64) static AtomicMutex mtx;
+
+    /* print stats for debugging */                 
+    static void printStats();
+    static void clearStats();
+    static void incPatchBuild(const size_t ID, const size_t numPatches);
+    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
+
+ };
+
+  void resizeTessellationCache(size_t new_size);
+  void resetTessellationCache();
 
 
 #if defined(__MIC__)
@@ -74,8 +94,8 @@ namespace embree
  class __aligned(64) SharedLazyTessellationCache 
  {
  public:
-   static const size_t MAX_TESSELLATION_CACHE_SIZE     = 2*512*1024*1024; // 1024 MB = 2^29
-   static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
+   
+   //static const size_t DEFAULT_TESSELLATION_CACHE_SIZE = MAX_TESSELLATION_CACHE_SIZE; 
 #if defined(__MIC__)
    static const size_t NUM_CACHE_SEGMENTS              = 4;
 #else
@@ -83,6 +103,9 @@ namespace embree
 #endif
    static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
+   static const size_t REF_TAG_MASK                    = 0xffffffffff;
+   static const size_t MAX_TESSELLATION_CACHE_SIZE     = REF_TAG_MASK+1;
+   
 
     /*! Per thread tessellation ref cache */
    static __thread ThreadWorkState* init_t_state;
@@ -100,14 +123,23 @@ namespace embree
    {
      __forceinline Tag() : data(0) {}
 
-     __forceinline Tag(void* ptr, size_t combinedTime)
+     __forceinline Tag(void* ptr, size_t combinedTime) { 
+       init(ptr,combinedTime);
+     }
+
+     __forceinline Tag(size_t ptr, size_t combinedTime) {
+       init((void*)ptr,combinedTime); 
+     }
+
+     __forceinline void init(void* ptr, size_t combinedTime)
      {
+       if (ptr == nullptr) {
+         data = 0;
+         return;
+       }
        int64_t new_root_ref = (int64_t) ptr;
        new_root_ref -= (int64_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr();                                
-       assert( new_root_ref <= 0xffffffff );
-       static const size_t REF_TAG      = 1;
-       assert( !(new_root_ref & REF_TAG) );
-       new_root_ref |= REF_TAG;
+       assert( new_root_ref <= REF_TAG_MASK );
        new_root_ref |= (int64_t)combinedTime << COMMIT_INDEX_SHIFT; 
        data = new_root_ref;
      }
@@ -119,8 +151,8 @@ namespace embree
 
    struct CacheEntry
    {
-     RWMutex mutex;
      Tag tag;
+     RWMutex mutex;
    };
 
  private:
@@ -133,6 +165,7 @@ namespace embree
    __aligned(64) AtomicCounter localTime;
    __aligned(64) AtomicCounter next_block;
    __aligned(64) AtomicMutex   reset_state;
+   __aligned(64) AtomicMutex   linkedlist_mtx;
    __aligned(64) AtomicCounter switch_block_threshold;
    __aligned(64) AtomicCounter numRenderThreads;
 
@@ -152,7 +185,7 @@ namespace embree
    }
 
    __forceinline unsigned int lockThread  (ThreadWorkState *const t_state) { return t_state->counter.add(1);  }
-   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { return t_state->counter.add(-1); }
+   __forceinline unsigned int unlockThread(ThreadWorkState *const t_state) { assert(isLocked(t_state)); return t_state->counter.add(-1); }
    __forceinline bool isLocked(ThreadWorkState *const t_state) { return t_state->counter != 0; }
 
    static __forceinline void lock  () { sharedLazyTessellationCache.lockThread(threadState()); }
@@ -175,14 +208,18 @@ namespace embree
      }
    }
 
-   static __forceinline void* lookup(volatile Tag* tag, unsigned globalTime)
-   {
-     static const size_t REF_TAG      = 1;
-     static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-       
-     const int64_t subdiv_patch_root_ref = tag->data; 
+   static __forceinline void* lookup(CacheEntry& entry, unsigned globalTime)
+   {   
+#if defined(__X86_64__)
+     const int64_t subdiv_patch_root_ref = entry.tag.data; 
+#else
+     entry.mutex.read_lock();
+     const int64_t subdiv_patch_root_ref = entry.tag.data; 
+     entry.mutex.read_unlock();
+#endif
+     CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
      
-     if (likely(subdiv_patch_root_ref)) 
+     if (likely(subdiv_patch_root_ref != 0)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK) + (size_t)sharedLazyTessellationCache.getDataPtr();
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
@@ -205,20 +242,22 @@ namespace embree
      while (true)
      {
        sharedLazyTessellationCache.lockThreadLoop(t_state);
-       void* patch = SharedLazyTessellationCache::lookup(&entry.tag,globalTime);
+       void* patch = SharedLazyTessellationCache::lookup(entry,globalTime);
        if (patch) return (decltype(constructor())) patch;
        
        if (entry.mutex.try_write_lock())
        {
          if (!validTag(entry.tag,globalTime)) 
          {
+           auto time = sharedLazyTessellationCache.getTime(globalTime);
            auto ret = constructor();
            __memory_barrier();
            //const size_t commitIndex = SharedLazyTessellationCache::sharedLazyTessellationCache.getCurrentIndex();
-           entry.tag = SharedLazyTessellationCache::Tag(ret,sharedLazyTessellationCache.getTime(globalTime));
+           entry.tag = SharedLazyTessellationCache::Tag(ret,time);
            __memory_barrier();
            entry.mutex.write_unlock();
-           return ret;
+           if (!validTag(entry.tag,globalTime)) return nullptr;
+           else return ret;
          }
          entry.mutex.write_unlock();
        }
@@ -228,12 +267,10 @@ namespace embree
    
    static __forceinline size_t lookupIndex(volatile Tag* tag, unsigned globalTime)
    {
-     static const size_t REF_TAG      = 1;
-     static const size_t REF_TAG_MASK = (~REF_TAG) & 0xffffffff;
-       
      const int64_t subdiv_patch_root_ref = tag->data; 
      
-     if (likely(subdiv_patch_root_ref)) 
+     CACHE_STATS(SharedTessellationCacheStats::cache_accesses++);
+     if (likely(subdiv_patch_root_ref != 0)) 
      {
        const size_t subdiv_patch_root = (subdiv_patch_root_ref & REF_TAG_MASK);
        const size_t subdiv_patch_cache_index = extractCommitIndex(subdiv_patch_root_ref);
@@ -276,6 +313,11 @@ namespace embree
     
    __forceinline size_t alloc(const size_t blocks)
    {
+     if (unlikely(blocks >= switch_block_threshold))
+     {
+       throw_RTCError(RTC_INVALID_OPERATION,"allocation exceeds size of tessellation cache segment");
+     }
+     assert(blocks < switch_block_threshold);
      size_t index = next_block.add(blocks);
      if (unlikely(index + blocks >= switch_block_threshold)) return (size_t)-1;
      return index;
@@ -290,7 +332,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -308,7 +350,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -327,7 +369,7 @@ namespace embree
        if (block_index == (size_t)-1)
        {
          sharedLazyTessellationCache.unlockThread(t_state);		  
-         sharedLazyTessellationCache.resetCache();
+         sharedLazyTessellationCache.allocNextSegment();
          sharedLazyTessellationCache.lockThread(t_state);
          continue; 
        }
@@ -347,37 +389,13 @@ namespace embree
    __forceinline size_t getMaxBlocks()    { return maxBlocks; }
    __forceinline size_t getSize()         { return size; }
 
-   void resetCache();
+   void allocNextSegment();
    void realloc(const size_t newSize);
+
+   void reset();
 
    static SharedLazyTessellationCache sharedLazyTessellationCache;
     
- };
-
- ////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
- ////////////////////////////////////////////////////////////////////////////////
-
-
- class SharedTessellationCacheStats
- {
- public:
-    /* stats */
-   static AtomicCounter cache_accesses;
-   static AtomicCounter cache_hits;
-   static AtomicCounter cache_misses;
-   static AtomicCounter cache_flushes;                
-   static AtomicCounter *cache_patch_builds;                
-   static size_t        cache_num_patches;
-   static float **      cache_new_delete_ptr;  
-   __aligned(64) static AtomicMutex mtx;
-
-    /* print stats for debugging */                 
-    static void printStats();
-    static void clearStats();
-    static void incPatchBuild(const size_t ID, const size_t numPatches);
-    static void newDeletePatchPtr(const size_t ID,  const size_t numPatches, const size_t size);
-
  };
 
   // =========================================================================================================

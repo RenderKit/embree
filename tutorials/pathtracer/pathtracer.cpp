@@ -41,12 +41,12 @@ namespace embree
   static bool g_only_subdivs = false;
   static bool g_anim_mode = false;
   static bool g_loop_mode = false;
-  static FileName keyframeList = "";
   static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
   OBJScene g_obj_scene;
   static FileName filename = "";
+  std::vector<FileName> keyframeList;
   std::vector<OBJScene*> g_keyframes;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -91,15 +91,13 @@ namespace embree
       }
 
       else if (tag == "-objlist") {
-        keyframeList = cin->getFileName();
+        while (cin->peek() != "" && cin->peek()[0] != '-')
+          keyframeList.push_back(path + cin->getFileName());
       }
 
       /* subdivision mode */
       else if (tag == "-cache") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-
-      else if (tag == "-lazy") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
 
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
@@ -226,49 +224,22 @@ namespace embree
     cleanup();
   }
 
-  void loadKeyFrameAnimation(FileName &fileName)
+  void loadKeyFrameAnimation(std::vector<FileName>& fileName)
   {
-    PRINT(fileName);
-    std::ifstream cin;
-    cin.open(fileName.c_str());
-    if (!cin.is_open()) {
-      std::cerr << "cannot open " << fileName.str() << std::endl;
-      return;
-    }
-    
-    FileName path;
-    path = fileName.path();
-
-    char line[10000];
-    memset(line, 0, sizeof(line));
-
-    int cur = 0;
-    while (cin.peek() != -1)
+    for (size_t i=0; i<fileName.size(); i++)
     {
-      /* load next multiline */
-      char* pline = line;
-      while (true) {
-        cin.getline(pline, sizeof(line) - (pline - line) - 16, '\n');
-        ssize_t last = strlen(pline) - 1;
-        if (last < 0 || pline[last] != '\\') break;
-        pline += last;
-        *pline++ = ' ';
-      }
+      PRINT(fileName[i].str());
       OBJScene *scene = new OBJScene;
-      FileName keyframe = path + FileName(line);
+      FileName keyframe = fileName[i];
       loadOBJ(keyframe,one,*scene,true);	
-      PRINT(keyframe);
       if (g_obj_scene.subdiv.size() != scene->subdiv.size())
-	FATAL("#subdiv meshes differ");
+        FATAL("#subdiv meshes differ");
       for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
 	if (g_obj_scene.subdiv[i]->positions.size() != scene->subdiv[i]->positions.size())
 	  FATAL("#positions differ");
 
       g_keyframes.push_back(scene);
-    } 
-    cin.close();
-
-    
+    }
   }
 
 
@@ -315,7 +286,7 @@ namespace embree
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
     
     /* load keyframes */
-    if (keyframeList.str() != "")
+    if (keyframeList.size())
       loadKeyFrameAnimation(keyframeList);
     
     /* initialize ray tracing core */

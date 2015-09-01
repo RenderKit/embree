@@ -17,39 +17,19 @@
 #pragma once
 
 #include "catmullclark_patch.h"
+#include "bezier_patch.h"
+#include "bezier_curve.h"
+#include "catmullclark_coefficients.h"
 
 namespace embree
 {  
-  template<class T, class S> // FIXME: can be moved back to bezier_patch.h if bezier patch does no longer need Gregory for interpolation
-    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-  {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1 = one_minus_uu * v0   + uu * v1;
-    const T v1_1 = one_minus_uu * v1   + uu * v2;
-    const T v2_1 = one_minus_uu * v2   + uu * v3;      
-    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
-    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
-    return v0_3;
-  }
-  
-  template<class T, class S>
-    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
-  {
-    const S one_minus_uu = 1.0f - uu;      
-    const T v0_1         = one_minus_uu * v0   + uu * v1;
-    const T v1_1         = one_minus_uu * v1   + uu * v2;
-    const T v2_1         = one_minus_uu * v2   + uu * v3;      
-    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
-    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
-    return S(3.0f)*(v1_2-v0_2);
-  }
-
   template<typename Vertex, typename Vertex_t = Vertex>
   class __aligned(64) GregoryPatchT
   {
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClark1Ring;
+    typedef BezierCurveT<Vertex> BezierCurve;
 
   public:
     Vertex v[4][4];
@@ -61,12 +41,14 @@ namespace embree
       init(patch);
     }
 
-    template<typename Loader>
-    __forceinline GregoryPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
+    __forceinline GregoryPatchT(const CatmullClarkPatch& patch, 
+                                const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
     {
-      CatmullClarkPatch ccpatch; 
-      ccpatch.init2(edge,loader); 
-      init(ccpatch);
+      init_crackfix(patch,border0,border1,border2,border3);
+    }
+
+    __forceinline GregoryPatchT (const HalfEdge* edge, const char* vertices, size_t stride) { 
+      init(CatmullClarkPatch(edge,vertices,stride));
     }
       
     __forceinline Vertex& p0() { return v[0][0]; }
@@ -126,6 +108,22 @@ namespace embree
     __forceinline Vertex initNegativeEdgeVertex(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
       return 1.0f/3.0f * irreg_patch.ring[index].getSecondLimitTangent() + p_vtx;
     }
+
+    __forceinline Vertex initPositiveEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+      CatmullClark1Ring3fa r0,r1,r2;
+      irreg_patch.ring[index].subdivide(r0);
+      r0.subdivide(r1);
+      r1.subdivide(r2);
+      return 8.0f/3.0f * r2.getLimitTangent() + p_vtx;
+    }
+    
+    __forceinline Vertex initNegativeEdgeVertex2(const CatmullClarkPatch& irreg_patch, const size_t index, const Vertex& p_vtx) {
+      CatmullClark1Ring3fa r0,r1,r2;
+      irreg_patch.ring[index].subdivide(r0);
+      r0.subdivide(r1);
+      r1.subdivide(r2);
+      return 8.0f/3.0f * r2.getSecondLimitTangent() + p_vtx;
+    }
     
     void initFaceVertex(const CatmullClarkPatch& irreg_patch, 
 			const size_t index, 
@@ -166,7 +164,7 @@ namespace embree
       }
       
       Vertex c_i_m_2, e_i_m_2;
-      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge))
+      if (unlikely(border_index == 2 || face_valence == 2 || hasHardEdge)) // FIXME: face_valence correct?
       {
         /* mirror quad center and edge mid-point */
         c_i_m_2  = c_i_m_1 + 2 * (e_i_m_1 - c_i_m_1);
@@ -179,10 +177,14 @@ namespace embree
       }      
       
       const float d = 3.0f;
-      const float c     = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
-      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+      //const float c     = cosf(2.0f*M_PI/(float)face_valence);
+      //const float c_e_p = cosf(2.0f*M_PI/(float)face_valence_p1);
+      //const float c_e_m = cosf(2.0f*M_PI/(float)face_valence_p3);
       
+      const float c     = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence);
+      const float c_e_p = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p1);
+      const float c_e_m = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p3);
+
       const Vertex r_e_p = 1.0f/3.0f * (e_i_m_1 - e_i_p_1) + 2.0f/3.0f * (c_i_m_1 - c_i);
       const Vertex r_e_m = 1.0f/3.0f * (e_i     - e_i_m_2) + 2.0f/3.0f * (c_i_m_1 - c_i_m_2);
 
@@ -223,6 +225,76 @@ namespace embree
       initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
 
     }
+
+    __noinline void init_crackfix(const CatmullClarkPatch& patch, 
+                                  const BezierCurve* border0, 
+                                  const BezierCurve* border1,
+                                  const BezierCurve* border2, 
+                                  const BezierCurve* border3)
+    {
+      assert( patch.ring[0].hasValidPositions() );
+      assert( patch.ring[1].hasValidPositions() );
+      assert( patch.ring[2].hasValidPositions() );
+      assert( patch.ring[3].hasValidPositions() );
+      
+      p0() = initCornerVertex(patch,0);
+      p1() = initCornerVertex(patch,1);
+      p2() = initCornerVertex(patch,2);
+      p3() = initCornerVertex(patch,3);
+
+      e0_p() = initPositiveEdgeVertex(patch,0, p0());
+      e1_p() = initPositiveEdgeVertex(patch,1, p1());
+      e2_p() = initPositiveEdgeVertex(patch,2, p2());
+      e3_p() = initPositiveEdgeVertex(patch,3, p3());
+
+      e0_m() = initNegativeEdgeVertex(patch,0, p0());
+      e1_m() = initNegativeEdgeVertex(patch,1, p1());
+      e2_m() = initNegativeEdgeVertex(patch,2, p2());
+      e3_m() = initNegativeEdgeVertex(patch,3, p3());
+
+      if (unlikely(border0 != nullptr)) 
+      {         
+        p0()   = border0->v0;
+        e0_p() = border0->v1; 
+        e1_m() = border0->v2; 
+        p1()   = border0->v3;
+      }
+      
+      if (unlikely(border1 != nullptr))
+      {          
+        p1()   = border1->v0; 
+        e1_p() = border1->v1; 
+        e2_m() = border1->v2; 
+        p2()   = border1->v3; 
+      }
+
+      if (unlikely(border2 != nullptr))
+      {          
+        p2()   = border2->v0; 
+        e2_p() = border2->v1; 
+        e3_m() = border2->v2; 
+        p3()   = border2->v3; 
+      }
+
+      if (unlikely(border3 != nullptr))
+      {          
+        p3()   = border3->v0; 
+        e3_p() = border3->v1; 
+        e0_m() = border3->v2; 
+        p0()   = border3->v3; 
+      }
+
+      const unsigned int face_valence_p0 = patch.ring[0].face_valence;
+      const unsigned int face_valence_p1 = patch.ring[1].face_valence;
+      const unsigned int face_valence_p2 = patch.ring[2].face_valence;
+      const unsigned int face_valence_p3 = patch.ring[3].face_valence;
+      
+      initFaceVertex(patch,0,p0(),e0_p(),e1_m(),face_valence_p1,e0_m(),e3_p(),face_valence_p3,f0_p(),f0_m() );
+      initFaceVertex(patch,1,p1(),e1_p(),e2_m(),face_valence_p2,e1_m(),e0_p(),face_valence_p0,f1_p(),f1_m() );
+      initFaceVertex(patch,2,p2(),e2_p(),e3_m(),face_valence_p3,e2_m(),e1_p(),face_valence_p1,f2_p(),f2_m() );
+      initFaceVertex(patch,3,p3(),e3_p(),e0_m(),face_valence_p0,e3_m(),e2_p(),face_valence_p3,f3_p(),f3_m() );
+    }
+
     
     void computeGregoryPatchFacePoints(const unsigned int face_valence,
 				       const Vertex& r_e_p, 
@@ -238,10 +310,15 @@ namespace embree
 				       Vertex& f_m_vtx,
                                        const float d = 3.0f)
     {
-      const float c     = cosf(2.0*M_PI/(float)face_valence);
-      const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
-      const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
-      
+      //const float c     = cosf(2.0*M_PI/(float)face_valence);
+      //const float c_e_p = cosf(2.0*M_PI/(float)face_valence_p1);
+      //const float c_e_m = cosf(2.0*M_PI/(float)face_valence_p3);
+
+      const float c     = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence);
+      const float c_e_p = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p1);
+      const float c_e_m = CatmullClarkPrecomputedCoefficients::table.cos_2PI_div_n(face_valence_p3);
+
+
       f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
       f_m_vtx = 1.0f / d * (c_e_m * p_vtx + (d - 2.0f*c - c_e_m) * e0_m_vtx + 2.0f*c* e3_p_vtx + r_e_m);      
       f_p_vtx = 1.0f / d * (c_e_p * p_vtx + (d - 2.0f*c - c_e_p) * e0_p_vtx + 2.0f*c* e1_m_vtx + r_e_p);      
@@ -281,10 +358,8 @@ namespace embree
     }
    
     
-    __noinline void init_bezier(const CatmullClarkPatch& patch) // FIXME: this should go to bezier class, initialization is not correct
+    __forceinline void convert_to_bezier()
     {
-      assert( patch.isRegular1() );
-      init( patch );
       f0_p() = (f0_p() + f0_m()) * 0.5f;
       f1_p() = (f1_p() + f1_m()) * 0.5f;
       f2_p() = (f2_p() + f2_m()) * 0.5f;
@@ -294,45 +369,6 @@ namespace embree
       f2_m() = Vertex( zero );
       f3_m() = Vertex( zero );      
     }
-    
-    __forceinline void exportControlPoints( Vertex matrix[4][4], Vertex f_m[2][2] ) const
-    {
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)v[y][x];
-      
-      for (size_t y=0; y<2; y++)
-	for (size_t x=0; x<2; x++)
-	  f_m[y][x] = (Vertex_t)f[y][x];
-    }
-    
-    __forceinline void exportDenseConrolPoints( Vertex matrix[4][4] ) const 
-    {
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)v[y][x];
-      
-      matrix[0][0].w = f[0][0].x;
-      matrix[0][1].w = f[0][0].y;
-      matrix[0][2].w = f[0][0].z;
-      matrix[0][3].w = 0.0f;
-      
-      matrix[1][0].w = f[0][1].x;
-      matrix[1][1].w = f[0][1].y;
-      matrix[1][2].w = f[0][1].z;
-      matrix[1][3].w = 0.0f;
-      
-      matrix[2][0].w = f[1][1].x;
-      matrix[2][1].w = f[1][1].y;
-      matrix[2][2].w = f[1][1].z;
-      matrix[2][3].w = 0.0f;
-      
-      matrix[3][0].w = f[1][0].x;
-      matrix[3][1].w = f[1][0].y;
-      matrix[3][2].w = f[1][0].z;
-      matrix[3][3].w = 0.0f;
-    }
-   
     
     static __forceinline void computeInnerVertices(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv,
 						   Vertex_t& matrix_11, Vertex_t& matrix_12, Vertex_t& matrix_22, Vertex_t& matrix_21)
@@ -363,28 +399,49 @@ namespace embree
       }
     } 
 
+    template<typename vfloat>
+    static __forceinline void computeInnerVertices(const Vertex v[4][4], const Vertex f[2][2], 
+                                                   size_t i, const vfloat& uu, const vfloat& vv, vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21) 
+    {
+      const auto m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
+
+      const vfloat f0_p = v[1][1][i];
+      const vfloat f1_p = v[1][2][i];
+      const vfloat f2_p = v[2][2][i];
+      const vfloat f3_p = v[2][1][i];
+      
+      const vfloat f0_m = f[0][0][i];
+      const vfloat f1_m = f[0][1][i];
+      const vfloat f2_m = f[1][1][i];
+      const vfloat f3_m = f[1][0][i];
+      
+      const vfloat one_minus_uu = vfloat(1.0f) - uu;
+      const vfloat one_minus_vv = vfloat(1.0f) - vv;      
+      
+      const vfloat f0_i = (          uu * f0_p +           vv * f0_m) * rcp(uu+vv);
+      const vfloat f1_i = (one_minus_uu * f1_m +           vv * f1_p) * rcp(one_minus_uu+vv);
+      const vfloat f2_i = (one_minus_uu * f2_p + one_minus_vv * f2_m) * rcp(one_minus_uu+one_minus_vv);
+      const vfloat f3_i = (          uu * f3_m + one_minus_vv * f3_p) * rcp(uu+one_minus_vv);
+      
+      matrix_11 = select(m_border,f0_p,f0_i);
+      matrix_12 = select(m_border,f1_p,f1_i);
+      matrix_22 = select(m_border,f2_p,f2_i);
+      matrix_21 = select(m_border,f3_p,f3_i);
+    }
+
     static __forceinline Vertex eval(const Vertex matrix[4][4], const Vertex f[2][2], const float& uu, const float& vv) 
     {
       Vertex_t v_11, v_12, v_22, v_21;
       computeInnerVertices(matrix,f,uu,vv,v_11, v_12, v_22, v_21);
       
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
+      const Vec4<float> Bu = BezierBasis::eval(uu);
+      const Vec4<float> Bv = BezierBasis::eval(vv);
       
       const Vertex_t res = 
-	(B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-	(B0_u * matrix[1][0] + B1_u * v_11    + B2_u * v_12    + B3_u * matrix[1][3]) * B1_v + 
-	(B0_u * matrix[2][0] + B1_u * v_21    + B2_u * v_22    + B3_u * matrix[2][3]) * B2_v + 
-	(B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+	(Bu.x * matrix[1][0] + Bu.y * v_11         + Bu.z * v_12         + Bu.w * matrix[1][3]) * Bv.y + 
+	(Bu.x * matrix[2][0] + Bu.y * v_21         + Bu.z * v_22         + Bu.w * matrix[2][3]) * Bv.z + 
+	(Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
       
       return res;
     }
@@ -408,6 +465,10 @@ namespace embree
       return deCasteljau_tangent(uu, col0, col1, col2, col3);
     }
 
+    __forceinline Vertex tangentU( const float uu, const float vv) const {
+      return tangentU(v,f,uu,vv);
+    }
+
     static __forceinline Vertex tangentV(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv) // FIXME: why not using basis functions
     {
       /* interpolate inner vertices */
@@ -421,6 +482,10 @@ namespace embree
       const Vertex_t row3 = deCasteljau(uu, (Vertex_t)matrix[3][0], (Vertex_t)matrix[3][1], (Vertex_t)matrix[3][2], (Vertex_t)matrix[3][3]);
       
       return deCasteljau_tangent(vv, row0, row1, row2, row3);
+    }
+
+    __forceinline Vertex tangentV( const float uu, const float vv) const {
+      return tangentV(v,f,uu,vv);
     }
 
     static __forceinline Vertex normal(const Vertex matrix[4][4], const Vertex f_m[2][2], const float uu, const float vv)  // FIXME: why not using basis functions
@@ -453,15 +518,7 @@ namespace embree
    
     __forceinline Vertex normal( const float uu, const float vv) const {
       return normal(v,f,uu,vv);
-    }
-
-    __forceinline Vertex tangentU( const float uu, const float vv) const {
-      return tangentU(v,f,uu,vv);
-    }
-
-    __forceinline Vertex tangentV( const float uu, const float vv) const {
-      return tangentV(v,f,uu,vv);
-    }
+    }    
     
     __forceinline void eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale = 1.0f) const
     {
@@ -470,9 +527,60 @@ namespace embree
       if (dPdv) *dPdv = tangentV(u,v)*dscale; 
     }
 
-    template<class M, class T>
+    template<class vfloat>
+    static __forceinline vfloat eval(const Vertex v[4][4], const Vertex f[2][2], 
+                                     const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n,
+                                     vfloat& matrix_11, vfloat& matrix_12, vfloat& matrix_22, vfloat& matrix_21)
+    {
+      const vfloat curve0_x = v_n[0] * vfloat(v[0][0][i]) + v_n[1] * vfloat(v[1][0][i]) + v_n[2] * vfloat(v[2][0][i]) + v_n[3] * vfloat(v[3][0][i]);
+      const vfloat curve1_x = v_n[0] * vfloat(v[0][1][i]) + v_n[1] * vfloat(matrix_11 ) + v_n[2] * vfloat(matrix_21 ) + v_n[3] * vfloat(v[3][1][i]);
+      const vfloat curve2_x = v_n[0] * vfloat(v[0][2][i]) + v_n[1] * vfloat(matrix_12 ) + v_n[2] * vfloat(matrix_22 ) + v_n[3] * vfloat(v[3][2][i]);
+      const vfloat curve3_x = v_n[0] * vfloat(v[0][3][i]) + v_n[1] * vfloat(v[1][3][i]) + v_n[2] * vfloat(v[2][3][i]) + v_n[3] * vfloat(v[3][3][i]);
+      return u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x;
+    }
+    
+    template<typename vbool, typename vfloat>
+    static __forceinline void eval(const Vertex v[4][4], const Vertex f[2][2], 
+                                   const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) 
+    {
+      if (P) {
+        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21); // FIXME: calculated multiple times
+          vfloat::store(valid,P+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21));
+        }
+      }
+      if (dPdu) {
+        const Vec4<vfloat> u_n = BezierBasis::derivative(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::eval(vv);
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          vfloat::store(valid,dPdu+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+        }
+      }
+      if (dPdv) {
+        const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+        const Vec4<vfloat> v_n = BezierBasis::derivative(vv);
+        for (size_t i=0; i<N; i++) {
+          vfloat matrix_11, matrix_12, matrix_22, matrix_21;
+          computeInnerVertices(v,f,i,uu,vv,matrix_11,matrix_12,matrix_22,matrix_21);  // FIXME: calculated multiple times
+          vfloat::store(valid,dPdv+i*dstride,eval(v,f,i,uu,vv,u_n,v_n,matrix_11,matrix_12,matrix_22,matrix_21)*dscale);
+        }
+      }
+    }
+
+    template<typename vbool, typename vfloat>
+    __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const {
+      return eval(v,f,valid,uu,vv,P,dPdu,dPdv,dscale,dstride,N);
+    }
+
+    template<class T>
       static __forceinline Vec3<T> eval_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
+      typedef typename T::Mask M;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
 
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
@@ -564,10 +672,22 @@ namespace embree
             
       return Vec3<T>(x,y,z);
     }
-    
-    template<class M, class T>
+
+    template<class T>
+    __forceinline Vec3<T> eval(const T& uu, const T& vv) const 
+    {
+      Vec3<T> ff[2][2];
+      ff[0][0] = Vec3<T>(f[0][0]);
+      ff[0][1] = Vec3<T>(f[0][1]);
+      ff[1][1] = Vec3<T>(f[1][1]);
+      ff[1][0] = Vec3<T>(f[1][0]);
+      return eval_t(v,ff,uu,vv);
+    }
+
+    template<class T>
       static __forceinline Vec3<T> normal_t(const Vertex matrix[4][4], const Vec3<T> f[2][2], const T& uu, const T& vv) 
     {
+      typedef typename T::Mask M;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f);
       
       const Vec3<T> f0_p = Vec3<T>(matrix[1][1].x,matrix[1][1].y,matrix[1][1].z);
@@ -641,7 +761,18 @@ namespace embree
       const Vec3<T> n = cross(tangentV,tangentU);
       return n;
     }
-    
+
+     template<class T>
+    __forceinline Vec3<T> normal(const T& uu, const T& vv) const 
+    {
+      Vec3<T> ff[2][2];
+      ff[0][0] = Vec3<T>(f[0][0]);
+      ff[0][1] = Vec3<T>(f[0][1]);
+      ff[1][1] = Vec3<T>(f[1][1]);
+      ff[1][0] = Vec3<T>(f[1][0]);
+      return normal_t(v,ff,uu,vv);
+    }
+
     __forceinline BBox<Vertex> bounds() const
     {
       const Vertex *const cv = &v[0][0];
@@ -669,4 +800,39 @@ namespace embree
   };
 
   typedef GregoryPatchT<Vec3fa,Vec3fa_t> GregoryPatch3fa;
+
+  template<typename Vertex, typename Vertex_t>
+    __forceinline  BezierPatchT<Vertex,Vertex_t>::BezierPatchT (const HalfEdge* edge, const char* vertices, size_t stride) 
+  {
+    CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,vertices,stride);
+    GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 
+    gpatch.convert_to_bezier(); 
+    for (size_t y=0; y<4; y++)
+      for (size_t x=0; x<4; x++)
+        matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+  }
+  
+   template<typename Vertex, typename Vertex_t>
+    __forceinline BezierPatchT<Vertex,Vertex_t>::BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
+    {
+      GregoryPatchT<Vertex,Vertex_t> gpatch(patch); 
+      gpatch.convert_to_bezier(); 
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
+
+   template<typename Vertex, typename Vertex_t>
+     __forceinline BezierPatchT<Vertex,Vertex_t>::BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch, 
+                                                               const BezierCurveT<Vertex>* border0,
+                                                               const BezierCurveT<Vertex>* border1,
+                                                               const BezierCurveT<Vertex>* border2,
+                                                               const BezierCurveT<Vertex>* border3) 
+    {
+      GregoryPatchT<Vertex,Vertex_t> gpatch(patch,border0,border1,border2,border3); 
+      gpatch.convert_to_bezier(); 
+      for (size_t y=0; y<4; y++)
+	for (size_t x=0; x<4; x++)
+	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+    }
 }

@@ -22,23 +22,31 @@
 #include "bezier_patch.h"
 #include "gregory_patch.h"
 #include "gregory_triangle_patch.h"
+#include "tessellation_cache.h"
 
 #if 1
-#define PATCH_DEBUG_SUBDIVISION(x,y,z)
+#define PATCH_DEBUG_SUBDIVISION(ptr,x,y,z)
 #else
-#define PATCH_DEBUG_SUBDIVISION(x,y,z)                  \
+#define PATCH_DEBUG_SUBDIVISION(ptr,x,y,z)            \
   {                                                   \
-    size_t hex = (size_t)this;                          \
+    size_t hex = (size_t)ptr;                          \
     for (size_t i=0; i<4; i++) hex = hex ^ (hex >> 8);  \
-    const float c = (float)(hex&0xff)/255.0f;           \
+    const float c = (float)(((hex >> 0) ^ (hex >> 4) ^ (hex >> 8) ^ (hex >> 12) ^ (hex >> 16))&0xf)/15.0f; \
     if (P) *P = Vertex(0.5f+0.5f*x,0.5f+0.5f*y,0.5f+0.5f*z,0.0f);         \
     }               
 #endif
 
-#define PATCH_MAX_CACHE_DEPTH 4
-#define PATCH_MAX_EVAL_DEPTH 8     // has to be larger or equal than PATCH_MAX_CACHE_DEPTH
+#define PATCH_MAX_CACHE_DEPTH 2
+#define PATCH_MIN_RESOLUTION 1     // FIXME: not yet completely implemented
+#define PATCH_MAX_EVAL_DEPTH_IRREGULAR 2     // maximal evaluation depth at irregular vertices (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
+#define PATCH_MAX_EVAL_DEPTH_CREASE 10       // maximal evaluation depth at crease features (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
 #define PATCH_USE_GREGORY 1        // 0 = no gregory, 1 = fill, 2 = as early as possible
-#define PATCH_USE_BEZIER_PATCH 0   // enable use of bezier instead of gregory patches
+
+#if PATCH_USE_GREGORY==2
+#define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of b-spline patches
+#else
+#define PATCH_USE_BEZIER_PATCH 0   // enable use of bezier instead of b-spline patches
+#endif
 
 #if PATCH_USE_BEZIER_PATCH
 #  define RegularPatch  BezierPatch
@@ -48,98 +56,142 @@
 #  define RegularPatchT BSplinePatchT<Vertex,Vertex_t>
 #endif
 
+#if PATCH_USE_GREGORY
+#define IrregularFillPatch GregoryPatch
+#define IrregularFillPatchT GregoryPatchT<Vertex,Vertex_t>
+#else
+#define IrregularFillPatch BilinearPatch
+#define IrregularFillPatchT BilinearPatchT<Vertex,Vertex_t>
+#endif
+
 namespace embree
 {
-  __forceinline Vec2f map_tri_to_quad(const Vec2f& uv)
+  template<typename vfloat>
+  __forceinline Vec2<vfloat> map_tri_to_quad(const Vec2<vfloat>& uv)
   {
-    const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
-    const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
-    const Vec2f A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
-    const float AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
-    const float vv = (-BB+sqrtf(BB*BB-4.0f*AA*CC))/(2.0f*AA);
-    const float uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
-    return Vec2f(uu,vv);
+    const Vec2<vfloat> a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
+    const Vec2<vfloat> ab = vfloat(0.5f)*(a+b), ac = vfloat(0.5f)*(a+c), bc = vfloat(0.5f)*(b+c), abc = vfloat(1.0f/3.0f)*(a+b+c);
+    const Vec2<vfloat> A = a, B = ab-a, C = ac-a, D = a-ab-ac+abc;
+    const vfloat AA = det(D,C), BB = det(D,A) + det(B,C) + det(uv,D), CC = det(B,A) + det(uv,B);
+    const vfloat vv = (-BB+sqrt(BB*BB-4.0f*AA*CC))/(2.0f*AA);
+    const vfloat uu = (uv.x - A.x - vv*C.x)/(B.x + vv*D.x);
+    return Vec2<vfloat>(uu,vv);
   }
   
-  __forceinline Vec2f map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
-    return (1.0f-xy.y)*(ab-a) + xy.y*(abc-ac);
+  template<typename vfloat>
+    __forceinline Vec2<vfloat> map_quad_to_tri_dx(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
+    return (1.0f-xy.y)*Vec2<vfloat>(ab-a) + xy.y*Vec2<vfloat>(abc-ac);
   }
   
-  __forceinline Vec2f map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2f& xy) {
-    return (1.0f-xy.x)*(ac-a) + xy.x*(abc-ab);
+  template<typename vfloat>
+    __forceinline Vec2<vfloat> map_quad_to_tri_dy(const Vec2f& a, const Vec2f& ab, const Vec2f& abc, const Vec2f& ac, const Vec2<vfloat>& xy) {
+    return (1.0f-xy.x)*Vec2<vfloat>(ac-a) + xy.x*Vec2<vfloat>(abc-ab);
   }
   
-  __forceinline bool right_of_line(const Vec2f& A, const Vec2f& B, const Vec2f& P) {
-    return det(A-P,B-P) <= 0.0f;
+  template<typename vfloat>
+    __forceinline auto right_of_line(const Vec2f& A, const Vec2f& B, const Vec2<vfloat>& P) -> decltype(P.x<P.x) {
+    return det(Vec2<vfloat>(A)-P,Vec2<vfloat>(B)-P) <= 0.0f;
   }
   
-  __forceinline bool right_of_line_ab_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_ab_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(ab,abc,uv);
   }
   
-  __forceinline bool right_of_line_ac_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_ac_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(ac,abc,uv);
   }
   
-  __forceinline bool right_of_line_bc_abc(const Vec2f& uv)
+  template<typename vfloat>
+    __forceinline auto right_of_line_bc_abc(const Vec2<vfloat>& uv) -> decltype(uv.x<uv.x)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     return right_of_line(bc,abc,uv);
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad0_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad0_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(a,ab,abc,ac,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(a,ab,abc,ac,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad1_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad1_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(b,bc,abc,ab,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(b,bc,abc,ab,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
   
-  template<typename Vertex>
-    __forceinline void map_quad2_to_tri(const Vec2f& xy, Vertex& dPdu, Vertex& dPdv)
+  template<typename vfloat, typename Vertex>
+    __forceinline void map_quad2_to_tri(const Vec2<vfloat>& xy, Vertex& dPdu, Vertex& dPdv)
   {
     const Vec2f a(0.0f,0.0f), b(1.0f,0.0f), c(0.0f,1.0f);
     const Vec2f ab = 0.5f*(a+b), ac = 0.5f*(a+c), bc = 0.5f*(b+c), abc = (1.0f/3.0f)*(a+b+c);
     const Vertex dpdx = dPdu, dpdy = dPdv;
-    const Vec2f duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
-    const Vec2f duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
-    const LinearSpace2f J = rcp(LinearSpace2f(duvdx,duvdy));
+    const Vec2<vfloat> duvdx = map_quad_to_tri_dx(c,ac,abc,bc,xy);
+    const Vec2<vfloat> duvdy = map_quad_to_tri_dy(c,ac,abc,bc,xy);
+    const LinearSpace2<Vec2<vfloat> > J = rcp(LinearSpace2<Vec2<vfloat> >(duvdx,duvdy));
     dPdu = dpdx*J.vx.x + dpdy*J.vx.y;
     dPdv = dpdx*J.vy.x + dpdy*J.vy.y;
   }
   
+  template<typename vbool, typename vfloat>
+    __forceinline void map_quad0_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
+  {
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
+    map_quad0_to_tri(xy,dPdut,dPdvt); 
+    vfloat::store(valid,dPdu+i*dstride,dPdut);
+    vfloat::store(valid,dPdv+i*dstride,dPdvt);
+  }
+
+  template<typename vbool, typename vfloat>
+    __forceinline void map_quad1_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
+  {
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
+    map_quad1_to_tri(xy,dPdut,dPdvt); 
+    vfloat::store(valid,dPdu+i*dstride,dPdut);
+    vfloat::store(valid,dPdv+i*dstride,dPdvt);
+  }
+
+  template<typename vbool, typename vfloat>
+    __forceinline void map_quad2_to_tri(const vbool& valid, const Vec2<vfloat>& xy, float* dPdu, float* dPdv, size_t dstride, size_t i)
+  {
+    vfloat dPdut = vfloat::loadu(dPdu+i*dstride), dPdvt = vfloat::loadu(dPdv+i*dstride);
+    map_quad2_to_tri(xy,dPdut,dPdvt); 
+    vfloat::store(valid,dPdu+i*dstride,dPdut);
+    vfloat::store(valid,dPdv+i*dstride,dPdvt);
+  }
+
   template<typename Vertex, typename Vertex_t = Vertex>
-    struct __aligned(64) Patch
+    struct __aligned(64) PatchT
     {
     public:
     
     typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
     typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+    typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
+    typedef BezierCurveT<Vertex> BezierCurve;
     
     enum Type {
       INVALID_PATCH = 0,
@@ -147,413 +199,210 @@ namespace embree
       BSPLINE_PATCH = 2,  
       BEZIER_PATCH = 3,  
       GREGORY_PATCH = 4,
-      EVAL_PATCH = 5,
-      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 6,
-      SUBDIVIDED_GENERAL_QUAD_PATCH = 7,
-      SUBDIVIDED_QUAD_PATCH = 8
+      SUBDIVIDED_GENERAL_TRIANGLE_PATCH = 5,
+      //SUBDIVIDED_GENERAL_QUAD_PATCH = 6,
+      SUBDIVIDED_GENERAL_PATCH = 7,
+      SUBDIVIDED_QUAD_PATCH = 8,
+      EVAL_PATCH = 9,
+    };
+    
+    struct Ref
+    {
+      __forceinline Ref(void* p = nullptr) 
+        : ptr((size_t)p) {}
+
+      __forceinline operator bool() const { return ptr != 0; }
+      __forceinline operator size_t() const { return ptr; }
+
+      __forceinline Ref (Type ty, void* in) 
+        : ptr(((size_t)in)+ty) { assert((((size_t)in) & 0xF) == 0); }
+
+      __forceinline Type  type  () const { return (Type)(ptr & 0xF); }
+      __forceinline void* object() const { return (void*) (ptr & ~0xF); }
+
+      size_t ptr;
+    };
+
+    struct EvalPatch 
+    {
+      /* creates EvalPatch from a CatmullClarkPatch */
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch) 
+      {
+        size_t ofs = 0, bytes = patch.bytes();
+        void* ptr = alloc(bytes);
+        patch.serialize(ptr,ofs);
+        assert(ofs == bytes);
+        return Ref(EVAL_PATCH, ptr);
+      }
     };
 
     struct BilinearPatch 
     {
       /* creates BilinearPatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BilinearPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BILINEAR_PATCH, new (alloc(sizeof(BilinearPatch))) BilinearPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BilinearPatch (const CatmullClarkPatch& patch) 
-        : type(BILINEAR_PATCH), patch(patch) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
-      {
-        patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(c,c,-1);
-        return true;
-      }
+      __forceinline BilinearPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
-      Type type;
       BilinearPatchT<Vertex,Vertex_t> patch;
     };
     
     struct BSplinePatch 
     {
       /* creates BSplinePatch from a half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static BSplinePatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,loader);
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline BSplinePatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(BSPLINE_PATCH), patch(edge,loader) {}
+      __forceinline BSplinePatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(edge,vertices,stride) {}
       
       /* creates BSplinePatch from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BSplinePatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BSPLINE_PATCH, new (alloc(sizeof(BSplinePatch))) BSplinePatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BSplinePatch (const CatmullClarkPatch& patch) 
-        : type(BSPLINE_PATCH), patch(patch) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
-      {
-        patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-        return true;
-      }
+      __forceinline BSplinePatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
-      Type type;
       BSplinePatchT<Vertex,Vertex_t> patch;
     };
 
     struct BezierPatch
     {
       /* creates BezierPatch from a half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static BezierPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(BezierPatch))) BezierPatch(edge,loader);
+      template<typename Allocator>
+        __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline BezierPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(BEZIER_PATCH), patch(edge,loader) {}
+      __forceinline BezierPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(edge,vertices,stride) {}
       
       /* creates Bezier from a CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static BezierPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(BezierPatch))) BezierPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(BEZIER_PATCH, new (alloc(sizeof(BezierPatch))) BezierPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline BezierPatch (const CatmullClarkPatch& patch) 
-        : type(BEZIER_PATCH), patch(patch) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
-      {
-        patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(-1,c,-1);
-        return true;
-      }
+      __forceinline BezierPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
-      Type type;
       BezierPatchT<Vertex,Vertex_t> patch;
     };
     
     struct GregoryPatch
     {
       /* creates GregoryPatch from half edge */
-      template<typename Loader, typename Allocator>
-        __noinline static GregoryPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const Loader& loader) {
-        return new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,loader);
+      template<typename Allocator>
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(edge,vertices,stride));
       }
       
-      template<typename Loader>
-      __forceinline GregoryPatch (const SubdivMesh::HalfEdge* edge, const Loader& loader) 
-      : type(GREGORY_PATCH) { CatmullClarkPatch ccpatch; ccpatch.init2(edge,loader); patch.init(ccpatch); }
-      
+      __forceinline GregoryPatch (const HalfEdge* edge, const char* vertices, size_t stride) 
+        : patch(CatmullClarkPatch(edge,vertices,stride)) {}
+       
       /* creates GregoryPatch from CatmullClarkPatch */
       template<typename Allocator>
-      __noinline static GregoryPatch* create(const Allocator& alloc, const CatmullClarkPatch& patch) {
-        return new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch);
+      __noinline static Ref create(const Allocator& alloc, const CatmullClarkPatch& patch,
+                                   const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) {
+        return Ref(GREGORY_PATCH, new (alloc(sizeof(GregoryPatch))) GregoryPatch(patch,border0,border1,border2,border3));
       }
       
-      __forceinline GregoryPatch (const CatmullClarkPatch& patch) 
-        : type(GREGORY_PATCH), patch(patch) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
-      {
-        patch.eval(u,v,P,dPdu,dPdv,dscale);
-        PATCH_DEBUG_SUBDIVISION(-1,-1,c);
-        return true;
-      }
+      __forceinline GregoryPatch (const CatmullClarkPatch& patch, const BezierCurve* border0, const BezierCurve* border1, const BezierCurve* border2, const BezierCurve* border3) 
+        : patch(patch,border0,border1,border2,border3) {}
       
     public:
-      Type type;
       GregoryPatchT<Vertex,Vertex_t> patch;
-    };
-    
-    struct EvalPatch
-    {
-      /* creates the EvalPatch from a half edge */
-      template<typename Allocator>
-      __noinline static EvalPatch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride) {
-        return new (alloc(sizeof(EvalPatch))) EvalPatch(edge,vertices,stride);
-      }
-      
-      __forceinline EvalPatch (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
-        : type(EVAL_PATCH), edge(edge), vertices(vertices), stride(stride), child(nullptr) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
-      {
-        /* first try to fast path using cached subdivision tree */
-        if (child && child->eval(u,v,P,dPdu,dPdv,1.0f)) 
-          return true;
-        
-        /* if this fails as the cache does not store the required sub-patch, fallback into full evaluation */
-        Patch::eval_direct(edge,vertices,stride,u,v,P,dPdu,dPdv);
-        PATCH_DEBUG_SUBDIVISION(c,-1,-1);
-        return true;
-      }
-      
-    public:
-      Type type;
-      const SubdivMesh::HalfEdge* const edge;
-      const char* const vertices;
-      const size_t stride;
-      Patch* child;
     };
     
     struct SubdividedGeneralTrianglePatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralTrianglePatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch;
+      __noinline static Ref create(const Allocator& alloc, Ref children[3]) {
+        return Ref(SUBDIVIDED_GENERAL_TRIANGLE_PATCH, new (alloc(sizeof(SubdividedGeneralTrianglePatch))) SubdividedGeneralTrianglePatch(children));
       }
       
-      __forceinline SubdividedGeneralTrianglePatch() 
-        : type(SUBDIVIDED_GENERAL_TRIANGLE_PATCH) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      {
-        const bool ab_abc = right_of_line_ab_abc(Vec2f(u,v));
-        const bool ac_abc = right_of_line_ac_abc(Vec2f(u,v));
-        const bool bc_abc = right_of_line_bc_abc(Vec2f(u,v));
-        
-        const float w = 1.0f-u-v;
-        if  (!ab_abc &&  ac_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-          if (!child[0]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
-        }
-        else if ( ab_abc && !bc_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-          if (!child[1]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
-        }
-        else {
-          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-          if (!child[2]->eval(xy.x,xy.y,P,dPdu,dPdv,1.0f)) return false;
-          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
-        }
-        return true;
-      }
-
-      static void eval_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
-      {
-        const bool ab_abc = right_of_line_ab_abc(uv);
-        const bool ac_abc = right_of_line_ac_abc(uv);
-        const bool bc_abc = right_of_line_bc_abc(uv);
-        
-        const float u = uv.x, v = uv.y, w = 1.0f-u-v;
-        if  (!ab_abc &&  ac_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
-          Patch::eval_direct(patches[0],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
-        }
-        else if ( ab_abc && !bc_abc) {
-          const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
-          Patch::eval_direct(patches[1],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
-        }
-        else {
-          const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
-          Patch::eval_direct(patches[2],xy,P,dPdu,dPdv,1.0f,depth+1);
-          if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
-        }
+      __forceinline SubdividedGeneralTrianglePatch(Ref children[3]) {
+        for (size_t i=0; i<3; i++) child[i] = children[i];
       }
       
-      Type type;
-      Patch* child[3];
+      Ref child[3];
     };
     
     struct SubdividedQuadPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedQuadPatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch;
+      __noinline static Ref create(const Allocator& alloc, Ref children[4]) {
+        return Ref(SUBDIVIDED_QUAD_PATCH, new (alloc(sizeof(SubdividedQuadPatch))) SubdividedQuadPatch(children));
       }
       
-      __forceinline SubdividedQuadPatch() : type(SUBDIVIDED_QUAD_PATCH) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale)
-      {
-        if (v < 0.5f) {
-          if (u < 0.5f) return child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
-          else          return child[1]->eval(2.0f*u-1.0f,2.0f*v,P,dPdu,dPdv,2.0f*dscale);
-        } else {
-          if (u > 0.5f) return child[2]->eval(2.0f*u-1.0f,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
-          else          return child[3]->eval(2.0f*u,2.0f*v-1.0f,P,dPdu,dPdv,2.0f*dscale);
-        }
-      }
-
-      __forceinline static void eval_direct(CatmullClarkPatch& patch, Vec2f& uv, float& dscale)
-      {
-        array_t<CatmullClarkPatch,4> patches; 
-        patch.subdivide(patches); // FIXME: only have to generate one of the patches
-          
-        const float u = uv.x, v = uv.y;
-        if (v < 0.5f) {
-          if (u < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); dscale *= 2.0f; }
-          else          { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); dscale *= 2.0f; }
-        } else {
-          if (u > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); dscale *= 2.0f; }
-          else          { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); dscale *= 2.0f; }
-        }
+      __forceinline SubdividedQuadPatch(Ref children[4]) {
+        for (size_t i=0; i<4; i++) child[i] = children[i];
       }
       
     public:
-      Type type;
-      Patch* child[4];
+      Ref child[4];
     };
     
-    struct SubdividedGeneralQuadPatch
+    struct SubdividedGeneralPatch
     {
       template<typename Allocator>
-      __noinline static SubdividedGeneralQuadPatch* create(const Allocator& alloc) {
-        return new (alloc(sizeof(SubdividedGeneralQuadPatch))) SubdividedGeneralQuadPatch;
+      __noinline static Ref create(const Allocator& alloc, Ref* children, const size_t N) {
+        return Ref(SUBDIVIDED_GENERAL_PATCH, new (alloc(sizeof(SubdividedGeneralPatch))) SubdividedGeneralPatch(children,N));
       }
       
-      __forceinline SubdividedGeneralQuadPatch() : type(SUBDIVIDED_GENERAL_QUAD_PATCH) {}
-      
-      bool eval(const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-      {
-        if (v < 0.5f) {
-          if (u < 0.5f) {
-            if (!child[0]->eval(2.0f*u,2.0f*v,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdx; *dPdv = dpdy;
-            }
-            return true;
-          }
-          else {
-            if (!child[1]->eval(2.0f*v,2.0f-2.0f*u,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdy; *dPdv = dpdx;
-            }
-            return true;
-          }
-        } else {
-          if (u > 0.5f) {
-            if (!child[2]->eval(2.0f-2.0f*u,2.0f-2.0f*v,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdx; *dPdv = -dpdy;
-            }
-            return true;
-          }
-          else {
-            if (!child[3]->eval(2.0f-2.0f*v,2.0f*u,P,dPdu,dPdv,2.0f)) return false;
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdy; *dPdv = -dpdx;
-            }
-            return true;
-          }
-        }
-      }
-
-      static void eval_direct(array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, size_t depth)
-      {
-        float u = uv.x, v = uv.y;
-        if (v < 0.5f) {
-          if (u < 0.5f) {
-            Patch::eval_direct(patches[0],Vec2f(2.0f*u,2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdx; *dPdv = dpdy;
-            }
-          }
-          else {
-            Patch::eval_direct(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),P,dPdu,dPdv,2.0f,depth+1);
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdy; *dPdv = dpdx;
-            }
-          }
-        } else {
-          if (u > 0.5f) {
-            Patch::eval_direct(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),P,dPdu,dPdv,2.0f,depth+1);
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = -dpdx; *dPdv = -dpdy;
-            }
-          }
-          else {
-            Patch::eval_direct(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),P,dPdu,dPdv,2.0f,depth+1);
-            if (dPdu && dPdv) {
-              const Vertex dpdx = *dPdu, dpdy = *dPdv;
-              *dPdu = dpdy; *dPdv = -dpdx;
-            }
-          }
-        }
+      __forceinline SubdividedGeneralPatch(Ref* children, const size_t N) : N(N) {
+        for (size_t i=0; i<N; i++) child[i] = children[i];
       }
       
-      Type type;
-      Patch* child[4];
+      size_t N;
+      Ref child[MAX_PATCH_VALENCE];
     };
     
     /*! Default constructor. */
-    __forceinline Patch () {}
+    __forceinline PatchT () {}
     
     template<typename Allocator>
-    __noinline static Patch* create(const Allocator& alloc, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride)
+      __noinline static Ref create(const Allocator& alloc, const HalfEdge* edge, const char* vertices, size_t stride)
     {
-      auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-        const unsigned vtx = p->getStartVertexIndex();
-        return Vertex_t::loadu((float*)&vertices[vtx*stride]);
-      };
-      
-      EvalPatch* root = EvalPatch::create(alloc,edge,vertices,stride);
       if (PATCH_MAX_CACHE_DEPTH == 0) 
-        return (Patch*) root;
-      
-      switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH:   root->child = (Patch*) RegularPatch::create(alloc,edge,loader); break;
+        return nullptr;
+
+      Ref child(0);
+      switch (edge->patch_type) {
+      case HalfEdge::REGULAR_QUAD_PATCH:   child = RegularPatch::create(alloc,edge,vertices,stride); break;
 #if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: root->child = (Patch*) GregoryPatch::create(alloc,edge,loader); break;
+      case HalfEdge::IRREGULAR_QUAD_PATCH: child = GregoryPatch::create(alloc,edge,vertices,stride); break;
 #endif
       default: {
-        GeneralCatmullClarkPatch patch(edge,loader);
-        root->child = (Patch*) Patch::create(alloc,patch,edge,vertices,stride,0);
-        break;
+        GeneralCatmullClarkPatch patch(edge,vertices,stride);
+        child = PatchT::create(alloc,patch,edge,vertices,stride,0);
       }
       }
-      return (Patch*) root;
+      return child;
     }
 
-    static void eval_direct (const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
-    {
-      auto loader = [&](const SubdivMesh::HalfEdge* p) -> Vertex { 
-          const unsigned vtx = p->getStartVertexIndex();
-          return Vertex_t::loadu((float*)&vertices[vtx*stride]); 
-        };
-
-      switch (edge->type) {
-      case SubdivMesh::REGULAR_QUAD_PATCH: RegularPatchT(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#if PATCH_USE_GREGORY == 2
-      case SubdivMesh::IRREGULAR_QUAD_PATCH: GregoryPatchT<Vertex,Vertex_t>(edge,loader).eval(u,v,P,dPdu,dPdv); break;
-#endif
-      default: {
-        GeneralCatmullClarkPatch patch(edge,loader);
-        eval_direct(patch,Vec2f(u,v),P,dPdu,dPdv,0);
-        break;
-      }
-      }
-    }
-    
     template<typename Allocator>
-    __noinline static Patch* create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+    __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
     {
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {
         CatmullClarkPatch qpatch; patch.init(qpatch);
-        return Patch::create(alloc,qpatch,edge,vertices,stride,depth);
+        return PatchT::create(alloc,qpatch,edge,vertices,stride,depth);
       }
       
       if (depth >= PATCH_MAX_CACHE_DEPTH)
@@ -564,140 +413,112 @@ namespace embree
       array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
       patch.subdivide(patches,N);
       
-      if (N == 3) {
-        SubdividedGeneralTrianglePatch* node = SubdividedGeneralTrianglePatch::create(alloc);
+      if (N == 3) 
+      {
+        Ref child[3];
+#if PATCH_USE_GREGORY == 2
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; patch.getLimitBorder(borders);
+        BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+        BezierCurve border1l,border1r; borders[1].subdivide(border1l,border1r);
+        BezierCurve border2l,border2r; borders[2].subdivide(border2l,border2r);
+        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1, &border1l, nullptr, nullptr, &border0r);
+        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1, &border2l, nullptr, nullptr, &border1r);
+#else
         for (size_t i=0; i<3; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+#endif
+        return SubdividedGeneralTrianglePatch::create(alloc,child);
       } 
-      else if (N == 4) {
-        SubdividedGeneralQuadPatch* node = SubdividedGeneralQuadPatch::create(alloc);
+      else if (N == 4) 
+      {
+        Ref child[4];
+#if PATCH_USE_GREGORY == 2
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; patch.getLimitBorder(borders);
+        BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+        BezierCurve border1l,border1r; borders[1].subdivide(border1l,border1r);
+        BezierCurve border2l,border2r; borders[2].subdivide(border2l,border2r);
+        BezierCurve border3l,border3r; borders[3].subdivide(border3l,border3r);
+        GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
+        child[0] = PatchT::create(alloc,patches[0],edge,vertices,stride,depth+1,&border0l,nullptr,nullptr,&border3r);
+        child[1] = PatchT::create(alloc,patches[1],edge,vertices,stride,depth+1,&border0r,&border1l,nullptr,nullptr);
+        child[2] = PatchT::create(alloc,patches[2],edge,vertices,stride,depth+1,nullptr,&border1r,&border2l,nullptr);
+        child[3] = PatchT::create(alloc,patches[3],edge,vertices,stride,depth+1,nullptr,nullptr,&border2r,&border3l);
+#else
+        GeneralCatmullClarkPatch::fix_quad_ring_order(patches);
         for (size_t i=0; i<4; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+#endif
+        return SubdividedQuadPatch::create(alloc,child);
       }
       else 
-        assert(false);
+      {
+        assert(N<MAX_PATCH_VALENCE);
+        Ref child[MAX_PATCH_VALENCE];
+        
+#if PATCH_USE_GREGORY == 2
+        BezierCurve borders[GeneralCatmullClarkPatch::SIZE]; 
+        patch.getLimitBorder(borders);
+
+        for (size_t i0=0; i0<N; i0++) {
+          const size_t i2 = i0==0 ? N-1 : i0-1; 
+          BezierCurve border0l,border0r; borders[i0].subdivide(border0l,border0r);
+          BezierCurve border2l,border2r; borders[i2].subdivide(border2l,border2r);
+          child[i0] = PatchT::create(alloc,patches[i0],edge,vertices,stride,depth+1, &border0l, nullptr, nullptr, &border2r);
+        }
+#else
+        for (size_t i=0; i<N; i++)
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+#endif
+        return SubdividedGeneralPatch::create(alloc,child,N);
+      }
       
       return nullptr;
     }
 
-    static void eval_direct(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, const size_t depth) 
+    static __forceinline bool final(const CatmullClarkPatch& patch, const typename CatmullClarkRing::Type type, size_t depth) 
     {
-      /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch())) 
-      {
-        CatmullClarkPatch qpatch; patch.init(qpatch);
-        return eval_direct(qpatch,uv,P,dPdu,dPdv,1.0f,depth); 
-      }
-      
-      /* subdivide patch */
-      size_t N;
-      array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
-      patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
-      
-      /* parametrization for triangles */
-      if (N == 3) 
-        SubdividedGeneralTrianglePatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
-      
-      /* parametrization for quads */
-      else if (N == 4) 
-        SubdividedGeneralQuadPatch::eval_direct(patches,uv,P,dPdu,dPdv,depth);
-      
-      /* parametrization for arbitrary polygons */
-      else 
-      {
-        const unsigned i = floorf(uv.x); assert(i<N);
-        eval_direct(patches[i],Vec2f(floorf(uv.x),uv.y),P,dPdu,dPdv,1.0f,depth+1); // FIXME: uv encoding creates issues as uv=(1,0) will refer to second quad
-      }
+      const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
+//#if PATCH_MIN_RESOLUTION
+//      return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
+//#else
+      return depth>=max_eval_depth;
+//#endif
     }
-    
+
     template<typename Allocator>
-    __noinline static Patch* create(const Allocator& alloc, CatmullClarkPatch& patch, const SubdivMesh::HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
+      __noinline static Ref create(const Allocator& alloc, CatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth,
+                                   const BezierCurve* border0 = nullptr, const BezierCurve* border1 = nullptr, const BezierCurve* border2 = nullptr, const BezierCurve* border3 = nullptr)
     {
-      if (unlikely(patch.isRegular2())) { 
-        assert(depth > 0); return (Patch*) RegularPatch::create(alloc,patch); 
+      const typename CatmullClarkPatch::Type ty = patch.type();
+      if (unlikely(final(patch,ty,depth))) {
+        if (ty & CatmullClarkRing::TYPE_REGULAR) return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
+        else                                     return IrregularFillPatch::create(alloc,patch,border0,border1,border2,border3); 
+      }
+      else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
+        assert(depth > 0); return RegularPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
 #if PATCH_USE_GREGORY == 2
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) { 
-        assert(depth > 0); return (Patch*) GregoryPatch::create(alloc,patch); 
-      }
-#else
-      else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-      {
-#if PATCH_USE_GREGORY == 1
-        return (Patch*) GregoryPatch::create(alloc,patch); 
-#else
-        return (Patch*) BilinearPatch::create(alloc,patch);
-#endif
+      else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
+        assert(depth > 0); return GregoryPatch::create(alloc,patch,border0,border1,border2,border3); 
       }
 #endif
-      else if (depth >= PATCH_MAX_CACHE_DEPTH) 
-        return nullptr;
+      else if (depth >= PATCH_MAX_CACHE_DEPTH) {
+        return EvalPatch::create(alloc,patch); 
+      }
       
       else 
       {
-        SubdividedQuadPatch* node = SubdividedQuadPatch::create(alloc);
+        Ref child[4];
         array_t<CatmullClarkPatch,4> patches; 
         patch.subdivide(patches);
+        
         for (size_t i=0; i<4; i++)
-          node->child[i] = Patch::create(alloc,patches[i],edge,vertices,stride,depth+1);
-        return (Patch*) node;
+          child[i] = PatchT::create(alloc,patches[i],edge,vertices,stride,depth+1);
+        return SubdividedQuadPatch::create(alloc,child);
       }
     }
-
-    static void eval_direct(CatmullClarkPatch& patch, Vec2f uv, Vertex* P, Vertex* dPdu, Vertex* dPdv, float dscale, size_t depth)
-    {
-      while (true) 
-      {
-        if (unlikely(patch.isRegular2())) { 
-          assert(depth > 0); RegularPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
-        }
-#if PATCH_USE_GREGORY == 2
-        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH || patch.isGregory())) {
-          assert(depth > 0); GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); return;
-        }
-#else
-        else if (unlikely(depth>=PATCH_MAX_EVAL_DEPTH))
-        {
-#if PATCH_USE_GREGORY == 1
-          GregoryPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-#else
-          BilinearPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,dscale);
-#endif
-          return;
-        }
-#endif
-        else {
-          SubdividedQuadPatch::eval_direct(patch,uv,dscale);
-          depth++;
-        }
-      }
-    }  
-    
-    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv, const float dscale) const
-    {
-      if (this == nullptr) return false;
-      
-      switch (type) {
-      case BILINEAR_PATCH: return ((BilinearPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
-      case BSPLINE_PATCH: return ((BSplinePatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
-      case BEZIER_PATCH: return ((BezierPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
-      case GREGORY_PATCH: return ((GregoryPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale); 
-      case SUBDIVIDED_QUAD_PATCH: return ((SubdividedQuadPatch*)this)->eval(u,v,P,dPdu,dPdv,dscale);
-      case SUBDIVIDED_GENERAL_QUAD_PATCH:     { assert(dscale == 1.0f); return ((SubdividedGeneralQuadPatch*)this)->eval(u,v,P,dPdu,dPdv); }
-      case SUBDIVIDED_GENERAL_TRIANGLE_PATCH: { assert(dscale == 1.0f); return ((SubdividedGeneralTrianglePatch*)this)->eval(u,v,P,dPdu,dPdv); }
-      default: assert(false); return false;
-      }
-    }
-    
-    bool eval(const float& u, const float& v, Vertex* P, Vertex* dPdu, Vertex* dPdv) const
-    {
-      assert(type == EVAL_PATCH);
-      return ((EvalPatch*)this)->eval(u,v,P,dPdu,dPdv); 
-    }
-
-  public:
-    Type type;
   };
+
+  typedef PatchT<Vec3fa,Vec3fa_t> Patch3fa;
 }

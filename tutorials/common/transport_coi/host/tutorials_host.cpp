@@ -66,7 +66,7 @@ namespace embree
     std::cout << "Found Xeon Phi device with " << info.NumCores << " cores and " << (info.PhysicalMemory/1024/1024) << "MB memory" << std::endl;
     
     /* create process */
-    const std::string executable = std::string(tutorialName)+"_xeonphi_device";
+    const FileName executable = FileName::executableFolder()+(std::string(tutorialName)+"_xeonphi_device");
     result = COIProcessCreateFromFile
       (engine,
        executable.c_str(), // The local path to the sink side binary to launch.
@@ -79,7 +79,7 @@ namespace embree
        );
     
     if (result != COI_SUCCESS) 
-      THROW_RUNTIME_ERROR("Failed to create process " + std::string(executable) +": " + COIResultGetName(result));
+      THROW_RUNTIME_ERROR("Failed to create process " + executable.str() +": " + COIResultGetName(result));
 
     /* create pipeline */
     COI_CPU_MASK cpuMask;

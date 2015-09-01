@@ -30,21 +30,20 @@
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/subdivpatch1_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/grid_intersector1.h"
+#include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
 
 namespace embree
 { 
   namespace isa
   {
+    int getISA() { 
+      return VerifyMultiTargetLinking::getISA(); 
+    }
+
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
-      /* verify correct input */
-      assert(ray.tnear >= 0.0f);
-      assert(ray.tnear <= ray.tfar);
-      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
-
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -54,7 +53,17 @@ namespace embree
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr  = bvh->root;
       stack[0].dist = neg_inf;
-            
+
+      /* filter out invalid rays */
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      if (!ray.valid()) return;
+#endif
+
+      /* verify correct input */
+      assert(ray.tnear > -FLT_MIN);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
+
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
@@ -181,11 +190,6 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
     {
-      /* verify correct input */
-      assert(ray.tnear >= 0.0f);
-      assert(ray.tnear <= ray.tfar);
-      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
-
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -195,6 +199,15 @@ namespace embree
       NodeRef* stackEnd = stack+stackSize;
       stack[0] = bvh->root;
       
+      /* filter out invalid rays */
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      if (!ray.valid()) return;
+#endif
+
+      /* verify correct input */
+      assert(ray.tnear > -FLT_MIN);
+      assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+
       /*! load the ray into SIMD registers */
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
@@ -321,8 +334,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > >);
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1>);
 
-    DEFINE_INTERSECTOR1(BVH4GridIntersector1,BVH4Intersector1<0x1 COMMA true COMMA GridIntersector1>);
-    DEFINE_INTERSECTOR1(BVH4GridLazyIntersector1,BVH4Intersector1<0x1 COMMA true COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> >);
+    DEFINE_INTERSECTOR1(BVH4GridAOSIntersector1,BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1>);
 
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >);
 

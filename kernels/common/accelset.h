@@ -51,7 +51,7 @@ namespace embree
     typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
 #endif
 
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512__)
     typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
     typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
 #endif
@@ -200,7 +200,7 @@ namespace embree
       /*! Intersects a packet of 16 rays with the scene. */
       __forceinline void intersect16 (const void* valid, RTCRay16& ray, size_t item) 
       {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512__)
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
@@ -242,7 +242,7 @@ namespace embree
 #endif
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512__)
       __forceinline void occluded16 (const void* valid, RTCRay16& ray, size_t item) 
       {
         assert(item < size());

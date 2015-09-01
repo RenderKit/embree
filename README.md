@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.5.1
+% Embree: High Performance Ray Tracing Kernels 2.6.2
 % Intel Corporation
 
 Embree Overview
@@ -9,7 +9,7 @@ developed at Intel. The target user of Embree are graphics application
 engineers that want to improve the performance of their application by
 leveraging the optimized ray tracing kernels of Embree. The kernels are
 optimized for photo-realistic rendering on the latest Intel® processors
-with support for SSE, AVX, AVX2, and the 16-wide Intel® Xeon Phi™
+with support for SSE, AVX, AVX2, AVX512, and the 16-wide Intel® Xeon Phi™
 coprocessor vector instructions. Embree supports runtime code selection
 to choose the traversal and build algorithms that best matches the
 instruction set of your CPU. We recommend using Embree through its API
@@ -20,7 +20,7 @@ license](http://www.apache.org/licenses/LICENSE-2.0).
 Embree supports applications written with the Intel SPMD Programm
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
-write a renderer in ISPC that leverages SSE, AVX, AVX2, and Xeon Phi
+write a renderer in ISPC that leverages SSE, AVX, AVX2, AVX512, and Xeon Phi
 instructions without any code change. ISPC also supports runtime code
 selection, thus ISPC will select the best code path for your
 application, while Embree selects the optimal code path for the ray
@@ -76,22 +76,20 @@ list](https://groups.google.com/d/forum/embree/).
 Installation of Embree
 ======================
 
-This section describes how to install Embree. You can download the
-referenced installers from the embree webpage
-[https://embree.github.com/](https://embree.github.com/).
-
 Windows Installer
 -----------------
 
 You can install the 64\ bit version of the Embree library using the
 Windows installer application
-`embree-2.5.1.x64.exe`. This will install the 64
-bit Embree version by default in `Program Files\Intel\Embree
-2.5.1`. To install the 32\ bit Embree library use the
-`embree-2.5.1.win32.exe` installer. This will
-install the 32\ bit Embree version by default in `Program
-Files\Intel\Embree 2.5.1` on 32\ bit systems and `Program
-Files (x86)\Intel\Embree 2.5.1` on 64\ bit systems.
+[embree-2.6.2-x64.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.exe). This
+will install the 64 bit Embree version by default in `Program
+Files\Intel\Embree v2.6.2 x64`. To install the 32\ bit
+Embree library use the
+[embree-2.6.2-win32.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.exe)
+installer. This will install the 32\ bit Embree version by default in
+`Program Files\Intel\Embree v2.6.2 win32` on 32\ bit
+systems and `Program Files (x86)\Intel\Embree v2.6.2 win32`
+on 64\ bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
 environment variable for applications to find Embree. To compile
@@ -102,18 +100,20 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.5.1` and uninstall it.
+2.6.2` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree is also delivered as a ZIP file
-`embree-2.5.1.x64.windows.zip`. After unpacking this ZIP
-file you should set the path to the `lib` folder manually to your
-`PATH` environment variable for applications to find Embree. To
-compile applications with Embree you also have to set the `Include
-Directories` path in Visual Studio to the `include` folder of the
-Embree installation.
+Embree is also delivered as a ZIP file for 64 bit
+[embree-2.6.2.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.windows.zip)
+and 32 bit
+[embree-2.6.2.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.windows.zip). After
+unpacking this ZIP file you should set the path to the `lib` folder
+manually to your `PATH` environment variable for applications to find
+Embree. To compile applications with Embree you also have to set the
+`Include Directories` path in Visual Studio to the `include` folder of
+the Embree installation.
 
 If you plan to ship Embree with your application, best use the Embree
 version from this ZIP file.
@@ -121,19 +121,33 @@ version from this ZIP file.
 Linux RPMs
 ----------
 
-Use the provided RPMs to install Embree on your Linux system:
+Uncompress the 'tar.gz' file
+[embree-2.6.2.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.rpm.tar.gz)
+to
+obtain the individual RPM files:
 
-    sudo rpm --install embree-devel-2.5.1-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.5.1-1.x86_64.rpm
+    tar xzf embree-2.6.2.x86_64.rpm.tar.gz
+
+To install the Embree using the RPM packages on your Linux system type
+the following:
+
+    sudo rpm --install embree-lib-2.6.2-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.6.2-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.6.2-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install embree-devel_xeonphi-2.5.1-1.x86_64.rpm
-    sudo rpm --install embree-examples_xeonphi-2.5.1-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.2-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.2-1.x86_64.rpm
 
-You also have to install the Intel® Threading Building Blocks (TBB) of
-at least version 4.3 either using `yum`:
+To use the Xeon Phi™ version of Embree you additionally have configure your
+`SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
+
+    export SINK_LD_LIBRARY_PATH=/usr/local:${SINK_LD_LIBRARY_PATH}
+
+You also have to install the Intel® Threading Building Blocks (TBB)
+using `yum`:
 
     sudo yum install tbb.x86_64 tbb-devel.x86_64
 
@@ -146,33 +160,41 @@ Alternatively you can download the latest TBB version from
 and set the `LD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
+Note that the Embree RPMs are linked against the TBB version coming
+with CentOS. This older TBB version is missing some features required
+to get optimal build performance and does not support building of
+scenes lazily during rendering. To get a full featured Embree please
+install using the tar.gz files, which always ship with the latest TBB version.
+
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.5.1` folder. Specify the full path to
+`/usr/bin/embree-2.6.2` folder. Specify the full path to
 the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-devel-2.5.1-1.x86_64
-    sudo rpm --erase embree-examples-2.5.1-1.x86_64
+    sudo rpm --erase embree-lib-2.6.2-1.x86_64
+    sudo rpm --erase embree-devel-2.6.2-1.x86_64
+    sudo rpm --erase embree-examples-2.6.2-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-devel_xeonphi-2.5.1-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.5.1-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.6.2-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.6.2-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-`embree-2.5.1.x64.linux.tar.gz`. Unpack this file using
-`tar` and source the provided `embree-vars.sh` to setup the
-environment properly:
+[embree-2.6.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.linux.tar.gz). Unpack
+this file using `tar` and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the
+C shell) to setup the environment properly:
 
-    tar xzf embree-2.5.1.x64.linux.tar.gz
-    source embree-2.5.1.x64.linux/embree-vars.sh
+    tar xzf embree-2.6.2.x64.linux.tar.gz
+    source embree-2.6.2.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -182,10 +204,10 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-`embree-2.5.1.x86_64.dmg`. This will install Embree by
-default into `/opt/local/lib` and `/opt/local/include`
-directories. The Embree tutorials are installed into the
-`/Applications/embree-2.5.1` folder.
+[embree-2.6.2.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.dmg). This
+will install Embree by default into `/opt/local/lib` and
+`/opt/local/include` directories. The Embree tutorials are installed
+into the `/Applications/Embree2` folder.
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using [MacPorts](http://www.macports.org/):
@@ -198,18 +220,19 @@ and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
 To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.5.1/uninstall.command`.
+`/Applications/embree-2.6.2/uninstall.command`.
 
 Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-`embree-2.5.1.x64.macosx.tar.gz`. Unpack this file using
-`tar` and source the provided `embree-vars.sh` to setup the
-environment properly:
+[embree-2.6.2.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.macosx.tar.gz). Unpack
+this file using `tar` and and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the
+C shell) to setup the environment properly:
 
-    tar xzf embree-2.5.1.x64.macosx.tar.gz
-    source embree-2.5.1.x64.macosx/embree-vars.sh
+    tar xzf embree-2.6.2.x64.macosx.tar.gz
+    source embree-2.6.2.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -235,8 +258,8 @@ Linux and Mac OS\ X
 
 To compile Embree you need a modern C++ compiler that supports C++11.
 Embree is tested with Intel® Compiler 15.0.2, CLANG 3.4.2, and GCC
-4.8.2. If the GCC that comes with your Fedora/Redhat/CentOS distribution
-is too old then you can run the provided script
+4.8.2. If the GCC that comes with your Fedora/Red Hat/CentOS
+distribution is too old then you can run the provided script
 `scripts/install_linux_gcc.sh` to locally install a recent GCC into
 `$HOME/devtools-2`.
 
@@ -250,7 +273,7 @@ Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.8.0) from
+tested ISPC version 1.8.2) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -284,7 +307,7 @@ Type the following to install the dependencies using `apt-get`:
     sudo apt-get install libxmu-dev libxi-dev
 
 Finally you can compile Embree using CMake. Create a build directory
-inside the Embree root directory and execute "ccmake .." inside this
+inside the Embree root directory and execute `ccmake ..` inside this
 build directory.
 
     mkdir build
@@ -334,11 +357,9 @@ implementation will always use some internal tasking system.
 Windows
 -------
 
-To compile Embree under Windows you need a recent version of Visual
-Studio that supports C++11. We have tested Visual Studio 2013, Visual
-Studio 2012, and Visual Studio 2010. Under Visual Studio 2013 you can
-enable AVX2 in CMake, however, Visual Studio 2012 supports at most
-AVX, and Visual Studio 2010 at most the SSE4.2 CMake configuration.
+To compile Embree under Windows you need Visual Studio 2013 or Visual
+Studio 2012. Under Visual Studio 2013 you can enable AVX2 in CMake,
+however, Visual Studio 2012 supports at most AVX.
 
 Embree supports to use the Intel® Threading Building Blocks (TBB) as
 tasking system. For performance and flexibility reasons we recommend
@@ -359,7 +380,7 @@ Embree supported the Intel® SPMD Program Compiler (ISPC), which allows
 straight forward parallelization of an entire renderer. If you do not
 want to use ISPC then you can disable `ENABLE_ISPC_SUPPORT` in
 CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.8.0) from
+tested ISPC version 1.8.2) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc.exe` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -426,6 +447,10 @@ Studio command prompt:
     cmake -G "Visual Studio 12 2013 Win64" ..
     cmake --build . --config Release
 
+To switch to the Intel Compiler use
+
+    ICProjConvert150 embree2.sln /IC /s /f
+
 You can also build only some projects with the `--target` switch.
 Additional parameters after "`--`" will be passed to `msbuild`. For
 example, to build the Embree library in parallel use
@@ -476,10 +501,11 @@ parameters that can be configured in CMake:
 
   RTCORE_RAY_MASK              Enables the ray masking feature. OFF
 
-  RTCORE_RETURN_SUBDIV_NORMAL  Instead of the triangle normal   OFF
-                               the ray returns a smooth normal
-                               based on evaluating the
-                               subdivision surface patch.
+  RTCORE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
+                               risk of full-tree traversals
+                               caused by invalid rays (e.g.
+                               rays containing INF/NaN as
+                               origins).
 
   RTCORE_TASKING_SYSTEM        Chooses between Intel® Threading TBB
                                Building Blocks (TBB) or an
@@ -489,7 +515,7 @@ parameters that can be configured in CMake:
   XEON_ISA                     Select highest supported ISA on  AVX2
                                Intel® Xeon® CPUs (SSE2, SSE3,
                                SSSE3, SSE4.1, SSE4.2, AVX,
-                               AVX-I, or AVX2).
+                               AVX-I, AVX2, or AVX512).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 Embree API
@@ -654,16 +680,19 @@ ray query is undefined. During in `rtcCommit` call modifications to
 the scene are not allowed.
 
 A static scene is created by the `rtcNewScene` call with the
-`RTC_SCENE_STATIC` flag. Geometries can only be created and modified
-until the first `rtcCommit` call. After the `rtcCommit` call, each
-access to any geometry of that static scene is invalid, including
-enabling, disabling, modifying, and deletion of geometries.
-Consequently, geometries that got created inside a static scene can only
+`RTC_SCENE_STATIC` flag. Geometries can only get created, enabled,
+disabled and modified until the first `rtcCommit` call. After the
+`rtcCommit` call, each access to any geometry of that static scene is
+invalid. Geometries that got created inside a static scene can only
 get deleted by deleting the entire scene.
 
 The modification of geometry, building of hierarchies using
 `rtcCommit`, and tracing of rays have always to happen separately,
 never at the same time.
+
+Embree silently ignores primitives that would cause numerical issues,
+e.g. primitives containing NaNs, INFs, or values greater
+than 1.844E18f.
 
 The following flags can be used to tune the used acceleration structure.
 These flags are only hints and may be ignored by the implementation.
@@ -717,7 +746,12 @@ if the user enables any ray packet query.
                     functions (8-wide packet interface) for this scene.
 
   RTC_INTERSECT16   Enables the `rtcIntersect16` and `rtcOccluded16`
-                    functions (16-wide packet interface) for this scene.
+                    functions (16-wide packet interface) for this
+                    scene.
+
+  RTC_INTERPOLATE   Enables the `rtcInterpolate` and `rtcInterpolateN`
+                    interpolation functions.
+
   ----------------- ----------------------------------------------------
   : Enabled algorithm flags for `rtcNewScene`.
 
@@ -817,6 +851,19 @@ buffers have to get unmapped before an `rtcCommit` call to the scene.
 Also see tutorial [Triangle Geometry] for an example of how to create
 triangle meshes.
 
+The parametrization of a triangle uses the first vertex `p0` as base
+point, and the vector `p1 - p0` as u-direction and `p2 - p0` as
+v-direction. The following picture additionally illustrates the
+direction the geometry normal is pointing into.
+
+![][imgTriangleUV]
+
+Some texture coordinates `t0,t1,t2` can be linearly interpolated over
+the triangle the following way:
+
+    t_uv = (1-u-v)*t0 + u*(t1-t0) + v*(t2-t0)
+
+
 ### Subdivision Surfaces
 
 Catmull-Clark subdivision surfaces for meshes consisting of triangle
@@ -894,12 +941,49 @@ multiple times with the same crease weight is allowed, but has lower
 performance. Storing a vertex multiple times with different crease
 weights results in undefined behavior.
 
-Like for triangle meshes, the user can also specify a geometry mask
-and additional flags that choose the strategy to handle that
-subdivision mesh in dynamic scenes.
+One triangles and quadrilaterals are supported as primitives of a
+subdivision mesh. The parametrization of a triangle uses the first
+vertex `p0` as base point, and the vector `p1 - p0` as u-direction and
+`p2 - p0` as v-direction. The following picture additionally
+illustrates the direction the geometry normal is pointing into.
+
+![][imgTriangleUV]
+
+Some texture coordinates `t0,t1,t2` can be linearly
+interpolated over the triangle the following way:
+
+    t_uv = (1-u-v)*t0 + u*(t1-t0) + v*(t2-t0)
+
+The parametrization of a quadrilateral uses the first vertex `p0` as
+base point, and the vector `p1 - p0` as u-direction and `p3 - p0` as
+v-direction. The following picture additionally illustrates the
+direction the geometry normal is pointing into.
+
+![][imgQuadUV]
+
+Some texture coordinates `t0,t1,t2,t3` can be bi-linearly
+interpolated over the quadrilateral the following way:
+
+    t_uv = (1-v)((1-u)*t0 + u*t1) + v*((1-u)*t3 + u*t2) 
+
+To smoothly interpolate texture coordinates over the subdivision
+surface we recommend using the `rtcInterpolate` function, which will
+apply the standard subdivision rules for interpolation.
+
+Using the `rtcSetBoundaryMode` API call one can specify how corner
+vertices are handled. Specifying `RTC_BOUNDARY_NONE` ignores all
+boundary patches, `RTC_BOUNDARY_EDGE_ONLY` makes all boundaries soft,
+while `RTC_BOUNDARY_EDGE_AND_CORNER` makes corner vertices sharp.
+
+The user can also specify a geometry mask and additional flags that
+choose the strategy to handle that subdivision mesh in dynamic scenes.
+
+The implementation of subdivision surfaces uses an internal software cache,
+which can get configured to some desired size (see [Configuring Embree]).
 
 Also see tutorial [Subdivision Geometry] for an example of how to create
 subdivision surfaces.
+
 
 ### Hair Geometry
 
@@ -1005,7 +1089,7 @@ geometries:
     userGeom[1] = ...
     unsigned geomID = rtcNewUserGeometry(scene, 2);
     rtcSetUserData(scene, geomID, userGeom);
-    rtcSetBounds(scene, geomID, userBoundsFunction);
+    rtcSetBoundsFunction(scene, geomID, userBoundsFunction);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
     rtcSetOccludedFunction(scene, geomID, userOccludedFunction);
 
@@ -1047,7 +1131,7 @@ the following way:
     rtcSetTransform(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4);
 
 One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
-scene A. When modifying scene B one has to call `rtcModified` for all
+scene A. When modifying scene B one has to call `rtcUpdate` for all
 instances of that scene. If a ray hits the instance, then the `geomID`
 and `primID` members of the ray are set to the geometry ID and primitive
 ID of the primitive hit in scene B, and the `instID` member of the ray
@@ -1190,6 +1274,76 @@ ray is undefined after calling `rtcOccluded`.
 
 See tutorial [Triangle Geometry] for an example of how to trace rays.
 
+Interpolation of Vertex Data
+----------------------------
+
+Smooth interpolation of per-vertex data is supported for triangle
+meshes, hair geometry, and subdivision geometry using the
+`rtcInterpolate` API call. This interpolation function does ignore
+displacements and always interpolates the underlying base surface.
+
+    void rtcInterpolate(RTCScene scene,
+                        unsigned geomID, unsigned primID,
+                        float u, float v,
+                        RTCBufferType buffer, 
+                        float* P, float* dPdu, float* dPdv,
+                        size_t numFloats);
+
+This call smoothly interpolates the per-vertex data stored in the
+specified geometry buffer (`buffer` parameter) to the u/v location
+(`u` and `v` parameters) of the primitive (`primID` parameter) of the
+geometry (`geomID` parameter) of the specified scene (`scene`
+parameter). The interpolation buffer (`buffer` parameter) has to
+contain (at least) `numFloats` floating point values per vertex to
+interpolate. As interpolation buffer one can specify the
+`RTC_VERTEX_BUFFER0` and `RTC_VERTEX_BUFFER1` as well as one of two
+special user vertex buffers `RTC_USER_VERTEX_BUFFER0` and
+`RTC_USER_VERTEX_BUFFER1`. These user vertex buffers can only get set
+using the `rtcSetBuffer` call, they cannot get managed internally by
+Embree as they have no default layout. The last element of the buffer
+has to be padded to 16 bytes, such that it can be read safely using
+SSE instructions.
+
+The `rtcInterpolate` call stores `numFloats` interpolated floating
+point values to the memory location pointed to by `P`. The derivative
+of the interpolation by u and v are stored at `dPdu` and `dPdv`. The
+`P` pointer can be NULL to avoid calculating the interpolated
+value. Similar the `dPdu` and `dPdv` parameters can both be NULL to
+not calculate derivatives. If `dPdu` is NULL also `dPdv` has to be
+NULL.
+
+The `RTC_INTERPOLATE` algorithm flag of a scene has to be enabled to
+perform interpolations.
+
+It is explicitly allowed to call this function on disabled
+geometries. This makes it possible to use a separate subdivision mesh
+with different vertex creases, edge creases, and boundary handling for
+interpolation of texture coordinates if that is necessary.
+
+The applied interpolation will do linear interpolation for triangle
+meshes, cubic Bézier interpolation for hair, and apply the full
+subdivision rules for subdivision geometry.
+
+There is also a second interpolate call `rtcInterpolateN` that can be
+used for ray packets.
+
+    void rtcInterpolateN(RTCScene scene, unsigned geomID, 
+                         const void* valid, const unsigned* primIDs,
+                         const float* u, const float* v, size_t numUVs, 
+                         RTCBufferType buffer, 
+                         float* dP, float* dPdu, float* dPdv,
+                         size_t numFloats);
+
+This call is similar to the first version, but gets passed `numUVs`
+many u/v coordinates and a valid mask (`valid` parameter) that
+specifies which of these coordinates are valid. The valid mask points
+to `numUVs` integers and a value of -1 denotes valid and 0 invalid. If
+the valid pointer is NULL all elements are considers valid. The
+destination arrays are filled in structure of array (SoA) layout.
+
+See tutorial [Interpolation] for an example of using the
+`rtcInterpolate` function.
+
 Buffer Sharing
 --------------
 
@@ -1207,7 +1361,7 @@ internally and the call to `rtcSetBuffer` will fail. The buffer has to
 remain valid as long as the geometry exists, and the user is responsible
 to free the buffer when the geometry gets deleted. When a buffer is
 shared, it is safe to modify that buffer without mapping and unmapping
-it. However, for dynamic scenes one still has to call `rtcModified` for
+it. However, for dynamic scenes one still has to call `rtcUpdate` for
 modified geometries and the buffer data has to stay constant from the
 `rtcCommit` call to after the last ray query invocation.
 
@@ -1219,9 +1373,11 @@ these buffers, however, some restrictions apply. Index buffers always
 store 32\ bit indices and vertex buffers always store single precision
 floating point data. The start address ptr+offset and stride always have
 to be aligned to 4 bytes on Intel® Xeon® CPUs and 16 bytes on Xeon Phi
-accelerators, otherwise the `rtcSetBuffer` function will fail. For
-vertex buffers, the 4 bytes after the z-coordinate of the last vertex
-have to be readable memory, thus padding is required for some layouts.
+accelerators, otherwise the `rtcSetBuffer` function will fail.
+
+For vertex buffers (`RTC_VERTEX_BUFFER` and `RTC_USER_VERTEX_BUFFER`),
+the last element must be readable using SSE instructions, thus padding
+the last element to 16 bytes size is required for some layouts.
 
 The following is an example of how to create a mesh with shared index
 and vertex buffers:
@@ -1423,27 +1579,29 @@ again from this function after the scene commit is finished.
 Multiple such scene commit operations can also be running at the same
 time, e.g. it is possible to commit many small scenes in parallel
 using one thread per commit operation. Subsequent commit operations
-for the same scene can use different number of threads in the `void
-rtcCommitThread()` or use the Embree internal threads using the `void
-rtcCommit()` call.
+for the same scene can use different number of threads in the
+`rtcCommitThread` or use the Embree internal threads using the
+`rtcCommit` call.
 
 *Note:* When using Embree with the Intel® Threading Building Blocks
-(which is the default) sharing of threads is not possible through
-`rtcCommitThread`, as TBB will always generate its own set of
-threads. Thus when using TBB the `rtcCommitThread()` call will still
-function, but always use the TBB threads for hierarchy building. We
-recommend to also use TBB inside your application to share threads
-with the Embree library. When enabling the Embree internal tasking
-system the `rtcCommitThread()` feature will work as expected and use
-the application threads for hierarchy building.
+(which is the default) you should not use the `rtcCommitThread`
+function. Sharing of your threads with TBB is not possible and TBB
+will always generate its own set of threads. We recommend to also use
+TBB inside your application to share threads with the Embree
+library. When using TBB inside your application do never use the
+`rtcCommitThread` function.
 
-*Note:* On the Intel® Xeon Phi™ coprocessor the `rtcCommitThread()`
+*Note:* When enabling the Embree internal tasking system the
+`rtcCommitThread` feature will work as expected and use the
+application threads for hierarchy building.
+
+*Note:* On the Intel® Xeon Phi™ coprocessor the `rtcCommitThread`
 feature is recommended to be used.
 
 Join Build Operation
 --------------------
 
-If `rtcCommit` is called multiple times from different TBB threads on
+If `rtcCommit` is called multiple times from different threads on
 the same scene, then all these threads will join the same scene build
 operation.
 
@@ -1456,13 +1614,14 @@ by also invoking `rtcCommit`. A thread that calls `rtcCommit` after
 the build finishes, will directly return from the `rtcCommit`
 call (even for static scenes).
 
-*Note:* This mode only works with the Intel® Threading Building Blocks
- enabled as tasking system in Embree and your application. Embree will
- tag the hierarchy build task as a high priority TBB task, which
- guarantees that worker threads that join the build operation, will
- only pick TBB build tasks and no TBB render tile tasks of your
- application. For this reason, never make your application's render tile
- task high priority in TBB.
+*Note:* Due to some limitation of the task_arena implementation of the
+Intel® Threading Building Blocks, threads that call `rtcCommit` to
+join a running build will just wait for the build to finish. Thus the
+join mode does just not work properly when using TBB, and might cause
+the build to run sequential (if all threads want to join).
+
+*Note:* The join mode works properly with the internal tasking
+ scheduler of Embree.
 
 Memory Monitor Callback
 ---------------------------
@@ -1534,6 +1693,35 @@ When returning `true` from the callback function, Embree will continue
 the build operation normally. When returning `false` Embree will
 cancel the build operation with the RTC_CANCELLED error code. Issuing
 multiple cancel requests for the same build operation is allowed.
+
+Configuring Embree
+------------------
+
+Some internal parameters can get configured using the
+`rtcSetParameter1i` API call. 
+
+Currently we support to configure the size of the internal software
+cache that is used to handle subdivision surfaces by setting the
+`RTC_SOFTWARE_CACHE_SIZE` parameter to the desired size of the cache
+in bytes:
+
+    rtcSetParameter1i(RTC_SOFTWARE_CACHE_SIZE, bytes);
+
+The software cache cannot get configured while any Embree API call is
+executed. Best configure the size of the cache only once at
+application start.
+
+Limiting number of Build Threads
+--------------------------------
+
+You can use the TBB API to limit the number of threads used by Embree
+during hierarchy construction. Therefore just create a global
+taskscheduler_init object, initialized with the number of threads to
+use:
+
+    #include <tbb/tbb.h>
+
+    tbb::task_scheduler_init init(numThreads);
 Embree Tutorials
 ================
 
@@ -1630,7 +1818,7 @@ q
 Triangle Geometry
 -----------------
 
-![](images/triangle_geometry.jpg)
+![][imgTriangleGeometry]
 
 This tutorial demonstrates the creation of a static cube and ground
 plane using triangle meshes. It also demonstrates the use of the
@@ -1641,7 +1829,7 @@ primitive.
 Dynamic Scene
 -------------
 
-![](images/dynamic_scene.jpg)
+![][imgDynamicScene]
 
 This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deformed spheres. Half of the spheres use the
@@ -1654,7 +1842,7 @@ sphere geometry.
 User Geometry
 -------------
 
-![](images/user_geometry.jpg)
+![][imgUserGeometry]
 
 This tutorial shows the use of user defined geometry, to re-implement
 instancing and to add analytic spheres. A two level scene is created,
@@ -1667,7 +1855,7 @@ ways can be distinguished.
 Viewer
 ------
 
-![](images/viewer.jpg)
+![][imgViewer]
 
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
@@ -1678,12 +1866,12 @@ shading normals.
 You need to specify an OBJ file at the command line for this tutorial to
 work:
 
-    ./tutorial03 -i model.obj
+    ./viewer -i model.obj
 
 Instanced Geometry
 ------------------
 
-![](images/instanced_geometry.jpg)
+![][imgInstancedGeometry]
 
 This tutorial demonstrates the in-build instancing feature of Embree, by
 instancing a number of other scenes build from triangulated spheres. The
@@ -1694,7 +1882,7 @@ ways can be distinguished.
 Intersection Filter
 -------------------
 
-![](images/intersection_filter.jpg)
+![][imgIntersectionFilter]
 
 This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used for
@@ -1707,19 +1895,32 @@ the ray, and terminates traversal if an opaque occluder is hit.
 Pathtracer
 ----------
 
-![](images/pathtracer.jpg)
+![][imgPathtracer]
 
-This tutorial is a simple path tracer, building on tutorial03.
+This tutorial is a simple path tracer, building on the viewer tutorial.
 
 You need to specify an OBJ file and light source at the command line for
 this tutorial to work:
 
-    ./tutorial06 -i model.obj -ambientlight 1 1 1
+    ./pathtracer -i model.obj -ambientlight 1 1 1
+
+As example models we provide the "Austrian Imperial Crown" model by
+[Martin Lubich](www.loramel.net) and the "Asian Dragon" model from the
+[Stanford 3D Scanning Repository](http://graphics.stanford.edu/data/3Dscanrep/).
+
+[crown.zip](https://github.com/embree/models/releases/download/release/crown.zip)
+
+[asian_dragon.zip](https://github.com/embree/models/releases/download/release/asian_dragon.zip)
+
+To render these models execute the following:
+
+    ./pathtracer -c crown/crown.ecs
+    ./pathtracer -c asian_dragon/asian_dragon.ecs
 
 Hair
 ----
 
-![](images/hair_geometry.jpg)
+![][imgHairGeometry]
 
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
@@ -1727,7 +1928,7 @@ hairball.
 Subdivision Geometry
 --------------------
 
-![](images/subdivision_geometry.jpg)
+![][imgSubdivisionGeometry]
 
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces. Per default the edge tessellation level is set adaptively
@@ -1751,11 +1952,26 @@ changing per frame.
 Displacement Geometry
 ---------------------
 
-![](images/displacement_geometry.jpg)
+![][imgDisplacementGeometry]
 
 This tutorial demonstrates the use of Catmull Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
+
+Motion Blur Geometry
+--------------------
+
+![][imgMotionBlurGeometry]
+
+This tutorial demonstrates rendering motion blur using the linear
+motion blur feature for triangles and hair geometry.
+
+Interpolation
+-------------
+
+![][imgInterpolation]
+
+This tutorial demonstrates interpolation of user defined per vertex data.
 
 BVH Builder
 -----------
@@ -1765,11 +1981,18 @@ of Embree to build a bounding volume hierarchy with a user defined
 memory layout using a high quality SAH builder and very fast morton
 builder.
 
+BVH Access
+-----------
+
+This tutorial demonstrates how to access the internal triangle
+acceleration structure build by Embree. Please be aware that the
+internal Embree data structures might change between Embree updates.
+
 Find Embree
 -----------
 
-This tutorial demonstrates howto use the `FIND_PACKAGE` CMake feature
-to use an installed Embree. Under Linux and MacOSX the tutorial finds
+This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
+to use an installed Embree. Under Linux and Mac\ OS\ X the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable has to be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree
@@ -1785,3 +2008,19 @@ X.Y.Z\lib\cmake\embree-X.Y.Z`.
 [Subdivision Geometry]: #subdivision-geometry
 [Displacement Geometry]: #displacement-geometry
 [BVH Builder]: #bvh-builder
+[Interpolation]: #interpolation
+[Configuring Embree]: #configuring-embree
+[imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
+[imgQuadUV]: https://embree.github.io/images/quad_uv.png
+[imgTriangleGeometry]: https://embree.github.io/images/triangle_geometry.jpg
+[imgDynamicScene]: https://embree.github.io/images/dynamic_scene.jpg
+[imgUserGeometry]: https://embree.github.io/images/user_geometry.jpg
+[imgViewer]: https://embree.github.io/images/viewer.jpg
+[imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
+[imgPathtracer]: https://embree.github.io/images/pathtracer.jpg
+[imgHairGeometry]: https://embree.github.io/images/hair_geometry.jpg
+[imgSubdivisionGeometry]: https://embree.github.io/images/subdivision_geometry.jpg
+[imgDisplacementGeometry]: https://embree.github.io/images/displacement_geometry.jpg
+[imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
+[imgInterpolation]: https://embree.github.io/images/interpolation.jpg

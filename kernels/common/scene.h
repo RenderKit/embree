@@ -93,7 +93,7 @@ namespace embree
     private:
       Scene* scene;
       bool all;
-    };
+      };
 
   public:
     
@@ -233,10 +233,13 @@ namespace embree
   public:
     std::vector<int> usedIDs; // FIXME: encapsulate this functionality into own class
     std::vector<Geometry*> geometries; //!< list of all user geometries
+
+    static AtomicCounter numScenes;
     
   public:
     AccelN accels;
     unsigned int commitCounter;
+    atomic_t commitCounterSubdiv;
     atomic_t numMappedBuffers;         //!< number of mapped buffers
     RTCSceneFlags flags;
     RTCAlgorithmFlags aflags;
@@ -258,6 +261,7 @@ namespace embree
     MutexSys schedulerMutex;
     Ref<TaskSchedulerTBB> scheduler;
 #else
+    //tbb::task_arena* arena;
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
 #endif
@@ -277,6 +281,7 @@ namespace embree
     atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
     atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
+    atomic_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
     __forceinline size_t numPrimitives() const {
     return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;

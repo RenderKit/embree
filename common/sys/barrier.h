@@ -17,6 +17,7 @@
 #pragma once
 
 #include "intrinsics.h"
+#include "sysinfo.h"
 
 namespace embree
 {
@@ -101,9 +102,6 @@ namespace embree
   // =================================================
   // === fast memory barrier with linear reduction ===
   // =================================================
-
-#define MAX_MIC_THREADS 256 // FIXME
-#define MAX_MIC_CORES (MAX_MIC_THREADS/4) // FIXME
 
 #define MIN_MIC_BARRIER_WAIT_CYCLES 8
 #define MAX_MIC_BARRIER_WAIT_CYCLES 256

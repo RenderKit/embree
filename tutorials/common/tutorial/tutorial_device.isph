@@ -65,6 +65,9 @@ inline Vec3f faceforward( Vec3f N, Vec3f I, Vec3f Ng ) {
 /* standard shading function */
 typedef Vec3f (* uniform renderPixelFunc)(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
+extern void device_key_pressed_default(uniform int key);
+extern void (* uniform key_pressed_handler)(uniform int key);
+
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);
 
 Vec3f renderPixelEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p);

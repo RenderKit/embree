@@ -17,10 +17,95 @@
 #pragma once
 
 #include "catmullclark_patch.h"
-#include "gregory_patch.h"
+#include "bezier_curve.h"
 
 namespace embree
 {  
+  template<class T, class S>
+    static __forceinline T deCasteljau(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1 = one_minus_uu * v0   + uu * v1;
+    const T v1_1 = one_minus_uu * v1   + uu * v2;
+    const T v2_1 = one_minus_uu * v2   + uu * v3;      
+    const T v0_2 = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2 = one_minus_uu * v1_1 + uu * v2_1;      
+    const T v0_3 = one_minus_uu * v0_2 + uu * v1_2;
+    return v0_3;
+  }
+  
+  template<class T, class S>
+    static __forceinline T deCasteljau_tangent(const S& uu, const T& v0, const T& v1, const T& v2, const T& v3)
+  {
+    const S one_minus_uu = 1.0f - uu;      
+    const T v0_1         = one_minus_uu * v0   + uu * v1;
+    const T v1_1         = one_minus_uu * v1   + uu * v2;
+    const T v2_1         = one_minus_uu * v2   + uu * v3;      
+    const T v0_2         = one_minus_uu * v0_1 + uu * v1_1;
+    const T v1_2         = one_minus_uu * v1_1 + uu * v2_1;      
+    return S(3.0f)*(v1_2-v0_2);
+  }
+
+  class BezierBasis
+  {
+  public:
+
+    template<class T>
+      static __forceinline Vec4<T>  eval(const T& uu)
+    {
+      const T t  =  uu;
+      const T s  = 1.0f - t;
+      const T n0 = s * s * s;
+      const T n1 = 3.0f * (s * t * s);
+      const T n2 = 3.0f * (t * s * t);
+      const T n3 = t * t * t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+    
+    template<class T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t  = u;
+      const T s  = 1.0f - u;
+      const T n0 = -3.0f*(s*s);
+      const T n1 = -6.0f*(s*t) + 3.0f*(s*s);
+      const T n2 = +6.0f*(s*t) - 3.0f*(t*t);
+      const T n3 = 3.0f*(t*t);
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+  };
+
+  template<typename Vertex>
+    __forceinline Vertex computeInnerBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 36.0f * (16.0f * v[y][x] + 4.0f * (v[y-1][x] +  v[y+1][x] + v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y+1][x+1] + v[y-1][x+1] + v[y+1][x-1]));
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeTopEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y-1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + (v[y-1][x-1] + v[y-1][x+1]));
+  }
+
+  template<typename Vertex>
+    __forceinline Vertex computeBottomEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y+1][x] + 2.0f * (v[y][x-1] + v[y][x+1]) + v[y+1][x-1] + v[y+1][x+1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeLeftEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x-1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x-1] + v[y+1][x-1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeRightEdgeBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x) {
+    return 1.0f / 18.0f * (8.0f * v[y][x] + 4.0f * v[y][x+1] + 2.0f * (v[y-1][x] + v[y+1][x]) + v[y-1][x+1] + v[y+1][x+1]);
+  }
+  
+  template<typename Vertex>
+    __forceinline Vertex computeCornerBezierControlPoint(const Vertex v[4][4], const size_t y, const size_t x, const ssize_t delta_y, const ssize_t delta_x)
+  {
+    return 1.0f / 9.0f * (4.0f * v[y][x] + 2.0f * (v[y+delta_y][x] + v[y][x+delta_x]) + v[y+delta_y][x+delta_x]);
+  }
+
   template<typename Vertex, typename Vertex_t>
     class __aligned(64) BezierPatchT
   {
@@ -31,49 +116,56 @@ namespace embree
 
     __forceinline BezierPatchT() {}
 
-    template<typename Loader>
-      __forceinline BezierPatchT (const SubdivMesh::HalfEdge* edge, Loader& loader) 
-    {
-      CatmullClarkPatchT<Vertex,Vertex_t> patch(edge,loader);
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
-    }
+    __forceinline BezierPatchT (const HalfEdge* edge, const char* vertices, size_t stride);
 
-    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch) 
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch);
+
+    __forceinline BezierPatchT(const CatmullClarkPatchT<Vertex,Vertex_t>& patch,
+                               const BezierCurveT<Vertex>* border0,
+                               const BezierCurveT<Vertex>* border1,
+                               const BezierCurveT<Vertex>* border2,
+                               const BezierCurveT<Vertex>* border3);
+                               
+    __forceinline BezierPatchT(const BSplinePatchT<Vertex,Vertex_t>& source)
     {
-      GregoryPatchT<Vertex,Vertex_t> gpatch; 
-      gpatch.init_bezier(patch); 
-      //gpatch.exportDenseConrolPoints(matrix);
-      for (size_t y=0; y<4; y++)
-	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = (Vertex_t)gpatch.v[y][x];
+      /* compute inner bezier control points */
+      matrix[0][0] = computeInnerBezierControlPoint(source.v,1,1);
+      matrix[0][3] = computeInnerBezierControlPoint(source.v,1,2);
+      matrix[3][3] = computeInnerBezierControlPoint(source.v,2,2);
+      matrix[3][0] = computeInnerBezierControlPoint(source.v,2,1);
+      
+      /* compute top edge control points */
+      matrix[0][1] = computeRightEdgeBezierControlPoint(source.v,1,1);
+      matrix[0][2] = computeLeftEdgeBezierControlPoint(source.v,1,2); 
+      
+      /* compute buttom edge control points */
+      matrix[3][1] = computeRightEdgeBezierControlPoint(source.v,2,1);
+      matrix[3][2] = computeLeftEdgeBezierControlPoint(source.v,2,2);
+      
+      /* compute left edge control points */
+      matrix[1][0] = computeBottomEdgeBezierControlPoint(source.v,1,1);
+      matrix[2][0] = computeTopEdgeBezierControlPoint(source.v,2,1);
+      
+      /* compute right edge control points */
+      matrix[1][3] = computeBottomEdgeBezierControlPoint(source.v,1,2);
+      matrix[2][3] = computeTopEdgeBezierControlPoint(source.v,2,2);
+      
+      /* compute corner control points */
+      matrix[1][1] = computeCornerBezierControlPoint(source.v,1,1, 1, 1);
+      matrix[1][2] = computeCornerBezierControlPoint(source.v,1,2, 1,-1);
+      matrix[2][2] = computeCornerBezierControlPoint(source.v,2,2,-1,-1);
+      matrix[2][1] = computeCornerBezierControlPoint(source.v,2,1,-1, 1);      
     }
 
     static __forceinline Vertex_t eval(const Vertex matrix[4][4], const float uu, const float vv) 
     {      
-      const float one_minus_uu = 1.0f - uu;
-      const float one_minus_vv = 1.0f - vv;      
-      
-      const float B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
-      const float B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
-      const float B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
-      const float B1_v = 3.0f * (one_minus_vv * vv * one_minus_vv);
-      const float B2_u = 3.0f * (uu * one_minus_uu * uu);
-      const float B2_v = 3.0f * (vv * one_minus_vv * vv);
-      const float B3_u = uu * uu * uu;
-      const float B3_v = vv * vv * vv;
-
-      const Vertex_t res = 
-       (B0_u * matrix[0][0] + B1_u * matrix[0][1] + B2_u * matrix[0][2] + B3_u * matrix[0][3]) * B0_v + 
-       (B0_u * matrix[1][0] + B1_u * matrix[1][1] + B2_u * matrix[1][2] + B3_u * matrix[1][3]) * B1_v + 
-       (B0_u * matrix[2][0] + B1_u * matrix[2][1] + B2_u * matrix[2][2] + B3_u * matrix[2][3]) * B2_v + 
-       (B0_u * matrix[3][0] + B1_u * matrix[3][1] + B2_u * matrix[3][2] + B3_u * matrix[3][3]) * B3_v; 
-      
-      return res;
+      const Vec4f Bu = BezierBasis::eval(uu);
+      const Vec4f Bv = BezierBasis::eval(vv);
+      return 
+        (Bu.x * matrix[0][0] + Bu.y * matrix[0][1] + Bu.z * matrix[0][2] + Bu.w * matrix[0][3]) * Bv.x + 
+        (Bu.x * matrix[1][0] + Bu.y * matrix[1][1] + Bu.z * matrix[1][2] + Bu.w * matrix[1][3]) * Bv.y + 
+        (Bu.x * matrix[2][0] + Bu.y * matrix[2][1] + Bu.z * matrix[2][2] + Bu.w * matrix[2][3]) * Bv.z + 
+        (Bu.x * matrix[3][0] + Bu.y * matrix[3][1] + Bu.z * matrix[3][2] + Bu.w * matrix[3][3]) * Bv.w; 
     }
 
     static __forceinline Vertex_t tangentU(const Vertex matrix[4][4], const float uu, const float vv) 
@@ -101,6 +193,13 @@ namespace embree
       return cross(dPdv,dPdu);
     }
 
+    __forceinline Vertex_t normal(const float uu, const float vv) 
+    {
+      const Vertex_t dPdu = tangentU(matrix,uu,vv);
+      const Vertex_t dPdv = tangentV(matrix,uu,vv);
+      return cross(dPdv,dPdu);
+    }
+
     __forceinline Vertex_t eval(const float uu, const float vv) const {
       return eval(matrix,uu,vv);
     }
@@ -119,6 +218,36 @@ namespace embree
       if (dPdu) *dPdu = tangentU(u,v)*dscale; 
       if (dPdv) *dPdv = tangentV(u,v)*dscale; 
     }
+
+    template<class vfloat>
+      __forceinline vfloat eval(const size_t i, const vfloat& uu, const vfloat& vv, const Vec4<vfloat>& u_n, const Vec4<vfloat>& v_n) const
+      {
+        const vfloat curve0_x = v_n[0] * vfloat(matrix[0][0][i]) + v_n[1] * vfloat(matrix[1][0][i]) + v_n[2] * vfloat(matrix[2][0][i]) + v_n[3] * vfloat(matrix[3][0][i]);
+        const vfloat curve1_x = v_n[0] * vfloat(matrix[0][1][i]) + v_n[1] * vfloat(matrix[1][1][i]) + v_n[2] * vfloat(matrix[2][1][i]) + v_n[3] * vfloat(matrix[3][1][i]);
+        const vfloat curve2_x = v_n[0] * vfloat(matrix[0][2][i]) + v_n[1] * vfloat(matrix[1][2][i]) + v_n[2] * vfloat(matrix[2][2][i]) + v_n[3] * vfloat(matrix[3][2][i]);
+        const vfloat curve3_x = v_n[0] * vfloat(matrix[0][3][i]) + v_n[1] * vfloat(matrix[1][3][i]) + v_n[2] * vfloat(matrix[2][3][i]) + v_n[3] * vfloat(matrix[3][3][i]);
+        return u_n[0] * curve0_x + u_n[1] * curve1_x + u_n[2] * curve2_x + u_n[3] * curve3_x;
+      }
+
+    template<typename vbool, typename vfloat>
+      __forceinline void eval(const vbool& valid, const vfloat& uu, const vfloat& vv, float* P, float* dPdu, float* dPdv, const float dscale, const size_t dstride, const size_t N) const
+      {
+        if (P) {
+          const Vec4<vfloat> u_n = BezierBasis::eval(uu); 
+          const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+          for (size_t i=0; i<N; i++) vfloat::store(valid,P+i*dstride,eval(i,uu,vv,u_n,v_n));
+        }
+        if (dPdu) {
+          const Vec4<vfloat> u_n = BezierBasis::derivative(uu);
+          const Vec4<vfloat> v_n = BezierBasis::eval(vv); 
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdu+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        }
+        if (dPdv) {
+          const Vec4<vfloat> u_n = BezierBasis::eval(uu);
+          const Vec4<vfloat> v_n = BezierBasis::derivative(vv); 
+          for (size_t i=0; i<N; i++) vfloat::store(valid,dPdv+i*dstride,eval(i,uu,vv,u_n,v_n)*dscale);
+        }
+      }
     
     template<class T>
       static __forceinline Vec3<T> eval(const Vertex matrix[4][4], const T& uu, const T& vv) 
@@ -154,6 +283,11 @@ namespace embree
 	(B0_u * matrix[3][0].z + B1_u * matrix[3][1].z + B2_u * matrix[3][2].z + B3_u * matrix[3][3].z) * B3_v; 
             
       return Vec3<T>(x,y,z);
+    }
+
+    template<typename vfloat>
+      __forceinline Vec3<vfloat> eval(const vfloat& uu, const vfloat& vv) const {     
+      return eval(matrix,uu,vv);
     }
 
     template<class T>
@@ -199,6 +333,11 @@ namespace embree
       /* normal = tangentU x tangentV */
       const Vec3<T> n = cross(tangentV,tangentU);
       return n;
+    }
+
+    template<typename vfloat>
+      __forceinline Vec3<vfloat> normal(const vfloat& uu, const vfloat& vv) const {     
+      return normal(matrix,uu,vv);
     }
   };
 

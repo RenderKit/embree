@@ -117,6 +117,7 @@ namespace embree
       {
 	CentGeomBBox3fa::merge(other);
 	//assert(begin == 0);
+        begin += other.begin;
 	end += other.end;
       }
 

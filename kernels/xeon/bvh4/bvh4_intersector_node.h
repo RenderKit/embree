@@ -159,6 +159,39 @@ namespace embree
       return lhit;
     }
 #endif
+
+
+    /*! intersection with ray packet of size 8 */
+#if defined(__AVX512__)
+    template<bool robust>
+      __forceinline bool16 intersect16_node(const BVH4::Node* node, size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, float16& dist) 
+    {
+      const float16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+      const float16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+      const float16 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+      const float16 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+      const float16 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+      const float16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+      
+      if (robust) { // FIXME: use per instruction rounding
+        const float round_down = 1.0f-2.0f*float(ulp);
+        const float round_up   = 1.0f+2.0f*float(ulp);
+        const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+        const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+        const bool16 lhit   = round_down*max(lnearP,tnear) <= round_up*min(lfarP,tfar);      
+        dist = lnearP;
+        return lhit;
+      }
+      
+      const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const bool16 lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+      dist = lnearP;
+      return lhit;
+    }
+#endif
+
+
     
     /*! intersection with single rays */
     __forceinline size_t intersect_node(const BVH4::NodeMB* node, size_t nearX, size_t nearY, size_t nearZ,
@@ -262,6 +295,33 @@ namespace embree
       return lhit;
     }
 #endif
+
+
+    /*! intersection with ray packet of size 8 */
+#if defined(__AVX512__)
+    __forceinline bool16 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, const float16& time, float16& dist) 
+    {
+      const float16 vlower_x = float16(node->lower_x[i]) + time * float16(node->lower_dx[i]);
+      const float16 vlower_y = float16(node->lower_y[i]) + time * float16(node->lower_dy[i]);
+      const float16 vlower_z = float16(node->lower_z[i]) + time * float16(node->lower_dz[i]);
+      const float16 vupper_x = float16(node->upper_x[i]) + time * float16(node->upper_dx[i]);
+      const float16 vupper_y = float16(node->upper_y[i]) + time * float16(node->upper_dy[i]);
+      const float16 vupper_z = float16(node->upper_z[i]) + time * float16(node->upper_dz[i]);
+      
+      const float16 lclipMinX = msub(vlower_x,rdir.x,org_rdir.x);
+      const float16 lclipMinY = msub(vlower_y,rdir.y,org_rdir.y);
+      const float16 lclipMinZ = msub(vlower_z,rdir.z,org_rdir.z);
+      const float16 lclipMaxX = msub(vupper_x,rdir.x,org_rdir.x);
+      const float16 lclipMaxY = msub(vupper_y,rdir.y,org_rdir.y);
+      const float16 lclipMaxZ = msub(vupper_z,rdir.z,org_rdir.z);
+      const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const bool16 lhit   = max(lnearP,tnear) <= min(lfarP,tfar);      
+      dist = lnearP;
+      return lhit;
+    }
+#endif
+
 
     /*! intersect 4 OBBs with single ray */
     __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const Vec3f4& ray_org, const Vec3f4& ray_dir, 

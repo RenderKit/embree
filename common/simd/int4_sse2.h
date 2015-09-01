@@ -71,6 +71,15 @@ namespace embree
     }
 #endif
 
+    static __forceinline int4 load(const unsigned short* const ptr)
+    {
+#if defined (__SSE4_1__)
+      return _mm_cvtepu16_epi32(_mm_loadu_si128((__m128i*)ptr));
+#else
+      return int4(ptr[0],ptr[1],ptr[2],ptr[3]);
+#endif
+    } 
+
     static  __forceinline int4 load( const void* const a ) { 
       return _mm_load_si128((__m128i*)a); 
     }
@@ -110,6 +119,9 @@ namespace embree
       _mm_store_si128((__m128i*)ptr,v);
 #endif
     }
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -152,9 +164,11 @@ namespace embree
 
 #if defined(__SSE4_1__)
   __forceinline const int4 operator *( const int4& a, const int4& b ) { return _mm_mullo_epi32(a.m128, b.m128); }
+#else
+  __forceinline const int4 operator *( const int4& a, const int4& b ) { return int4(a[0]*b[0],a[1]*b[1],a[2]*b[2],a[3]*b[3]); }
+#endif
   __forceinline const int4 operator *( const int4& a, const int&  b ) { return a * int4(b); }
   __forceinline const int4 operator *( const int&  a, const int4& b ) { return int4(a) * b; }
-#endif
 
   __forceinline const int4 operator &( const int4& a, const int4& b ) { return _mm_and_si128(a.m128, b.m128); }
   __forceinline const int4 operator &( const int4& a, const int&  b ) { return a & int4(b); }
@@ -177,6 +191,10 @@ namespace embree
 #if defined(__SSE4_1__)
   __forceinline const int4 min( const int4& a, const int4& b ) { return _mm_min_epi32(a.m128, b.m128); }
   __forceinline const int4 max( const int4& a, const int4& b ) { return _mm_max_epi32(a.m128, b.m128); }
+
+  __forceinline const int4 umin( const int4& a, const int4& b ) { return _mm_min_epu32(a.m128, b.m128); }
+  __forceinline const int4 umax( const int4& a, const int4& b ) { return _mm_max_epu32(a.m128, b.m128); }
+
 #else
   __forceinline const int4 min( const int4& a, const int4& b ) { return int4(min(a[0],b[0]),min(a[1],b[1]),min(a[2],b[2]),min(a[3],b[3])); }
   __forceinline const int4 max( const int4& a, const int4& b ) { return int4(max(a[0],b[0]),max(a[1],b[1]),max(a[2],b[2]),max(a[3],b[3])); }

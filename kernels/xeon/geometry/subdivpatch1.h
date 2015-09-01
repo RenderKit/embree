@@ -46,7 +46,7 @@ namespace embree
     //__forceinline SubdivPatch1 () {}
     
     /*! Construction from vertices and IDs. */
-    __forceinline SubdivPatch1 (const SubdivMesh::HalfEdge* edge, 
+    __forceinline SubdivPatch1 (const HalfEdge* edge, 
                                 const BufferT<Vec3fa>& vertices, 
                                 const unsigned int geom, 
                                 const unsigned int prim, 
@@ -129,11 +129,11 @@ namespace embree
     }
     
     __forceinline void init( GeneralCatmullClarkPatch3fa& patch) const {
-      patch.init(first_half_edge,vertices);
+      new (&patch) GeneralCatmullClarkPatch3fa(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
 
     __forceinline void init( CatmullClarkPatch3fa& patch) const {
-      patch.init(first_half_edge,vertices);
+      new (&patch) CatmullClarkPatch3fa(first_half_edge,vertices.getPtr(),vertices.getStride());
     }
     
     /*__forceinline void init( BSplinePatch& cc_patch) const
@@ -142,7 +142,7 @@ namespace embree
         }*/
     
   public:
-    const SubdivMesh::HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
+    const HalfEdge* first_half_edge;  //!< pointer to first half edge of this patch
     const BufferT<Vec3fa>& vertices;                       //!< pointer to vertex array
     unsigned int subdivision_level;
     unsigned int flags;

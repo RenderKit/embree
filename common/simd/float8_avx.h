@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define EMBREE_FLOAT8
+
 namespace embree
 {
   /*! 8-wide AVX float type. */
@@ -84,28 +86,24 @@ namespace embree
       return _mm256_load_ps(a); 
     }
     
-    static __forceinline void store(float8* ptr, const float8& f ) { 
+    static __forceinline void store(void* ptr, const float8& f ) { 
       return _mm256_store_ps((float*)ptr,f);
     }
 
-    static __forceinline float8 loadu( const float* const a) { 
-      return _mm256_loadu_ps(a); 
+    static __forceinline float8 loadu( const void* const a) { 
+      return _mm256_loadu_ps((float*)a); 
     }
     
-    static __forceinline void storeu(float* ptr, const float8& f ) { 
-      return _mm256_storeu_ps(ptr,f);
+    static __forceinline void storeu(void* ptr, const float8& f ) { 
+      return _mm256_storeu_ps((float*)ptr,f);
     }
 
-    static __forceinline float8 loadu( const float* const a, const size_t n) 
-    { 
-      assert(n<=8);
-      if (likely(n==8)) return loadu(a);
-      else if (n>4) return float8(float4::loadu(a),float4::loadu(a+4,n-4));
-      else return float8(float4::loadu(a,n));
+    static __forceinline void store( const bool8& mask, void* ptr, const float8& f ) { 
+      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
     }
     
-    static __forceinline void store( const bool8& mask, float8* ptr, const float8& f ) { 
-      return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
+    static __forceinline void storeu( const bool8& mask, void* ptr, const float8& f ) { 
+      return _mm256_storeu_ps((float*)ptr,_mm256_blendv_ps(_mm256_loadu_ps((float*)ptr),f,mask));
     }
     
 #if defined (__AVX2__)
@@ -116,6 +114,24 @@ namespace embree
     
     static __forceinline void store_nt(float* ptr, const float8& v) {
       _mm256_stream_ps(ptr,v);
+    }
+
+    static __forceinline void store ( const bool8& mask, void* ptr, const int8& ofs, const float8& v, const int scale = 1 )
+    {
+      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*ofs[0]) = v[0];
+      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*ofs[1]) = v[1];
+      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*ofs[2]) = v[2];
+      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*ofs[3]) = v[3];
+      if (likely(mask[4])) *(float*)(((char*)ptr)+scale*ofs[4]) = v[4];
+      if (likely(mask[5])) *(float*)(((char*)ptr)+scale*ofs[5]) = v[5];
+      if (likely(mask[6])) *(float*)(((char*)ptr)+scale*ofs[6]) = v[6];
+      if (likely(mask[7])) *(float*)(((char*)ptr)+scale*ofs[7]) = v[7];
+    }
+    static __forceinline void store ( const bool8& mask, char* ptr, const int8& ofs, const float8& v ) {
+      store(mask,ptr,ofs,v,1);
+    }
+    static __forceinline void store ( const bool8& mask, float* ptr, const int8& ofs, const float8& v ) {
+      store(mask,ptr,ofs,v,4);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -146,8 +162,12 @@ namespace embree
   __forceinline const float8 signmsk ( const float8& a ) { return _mm256_and_ps(a.m256,_mm256_castsi256_ps(_mm256_set1_epi32(0x80000000))); }
 
   __forceinline const float8 rcp  ( const float8& a ) { 
-    const float8 r = _mm256_rcp_ps(a.m256); 
-    return _mm256_sub_ps(_mm256_add_ps(r, r), _mm256_mul_ps(_mm256_mul_ps(r, r), a)); 
+    const float8 r   = _mm256_rcp_ps(a.m256); 
+#if defined(__AVX2__)
+    return _mm256_mul_ps(r,_mm256_fnmadd_ps(r, a, float8(2.0f)));     
+#else
+    return _mm256_mul_ps(r,_mm256_sub_ps(float8(2.0f), _mm256_mul_ps(r, a)));     
+#endif
   }
   __forceinline const float8 sqr  ( const float8& a ) { return _mm256_mul_ps(a,a); }
   __forceinline const float8 sqrt ( const float8& a ) { return _mm256_sqrt_ps(a.m256); }
@@ -278,6 +298,14 @@ namespace embree
   }
 #endif
 
+  __forceinline float8  lerp(const float8& a, const float8& b, const float8& t) {
+#if defined(__AVX2__)
+    return madd(t, b, madd(-t, a, a));
+#else
+    return a + t*(b-a);
+#endif
+  }
+
   __forceinline bool isvalid ( const float8& v ) {
     return all((v > float8(-FLT_LARGE)) & (v < float8(+FLT_LARGE)));
   }
@@ -294,12 +322,10 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const float8 round_even( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
-  __forceinline const float8 round_down( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
-  __forceinline const float8 round_up  ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
-  __forceinline const float8 round_zero( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO       ); }
   __forceinline const float8 floor     ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline const float8 ceil      ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline const float8 trunc     ( const float8& a ) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+  __forceinline const float8 frac      ( const float8& a ) { return a-floor(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
@@ -338,6 +364,8 @@ namespace embree
   template<>         __forceinline const float4 extract<0>(const float8& a            ) { return _mm256_castps256_ps128(a); }
 
   template<size_t i> __forceinline float fextract   (const float8& a            ) { return _mm_cvtss_f32(_mm256_extractf128_ps(a  ,i)); }
+
+  __forceinline float8 assign( const float4& a ) { return _mm256_castps128_ps256(a); }
 
 #if defined (__AVX2__)
   __forceinline float8 permute(const float8 &a, const __m256i &index) {

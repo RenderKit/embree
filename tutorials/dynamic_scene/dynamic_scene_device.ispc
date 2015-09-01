@@ -173,6 +173,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
+  key_pressed_handler = device_key_pressed_default;
 }
 
 /* animates the sphere */

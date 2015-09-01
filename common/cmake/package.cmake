@@ -15,6 +15,7 @@
 ## ======================================================================== ##
 
 OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
+MARK_AS_ADVANCED(ENABLE_INSTALLER)
 
 IF (ENABLE_INSTALLER AND APPLE)
   #SET(CMAKE_MACOSX_RPATH ON)
@@ -72,6 +73,11 @@ INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${DOC_INSTALL_DIR} 
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
 INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${DOC_INSTALL_DIR} COMPONENT lib)
 
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${DOC_INSTALL_DIR}/LICENSE.txt" "LICENSE")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${DOC_INSTALL_DIR}/CHANGELOG.txt" "CHANGELOG")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${DOC_INSTALL_DIR}/README.md" "README.md")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${DOC_INSTALL_DIR}/readme.pdf" "readme.pdf")
+
 # currently CMake does not support solution folders without projects
 # SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
 
@@ -83,14 +89,22 @@ IF (NOT ENABLE_INSTALLER)
   IF (WIN32)
   ELSEIF(APPLE)
     INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT lib)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.csh DESTINATION "." COMPONENT lib)
   ELSE()
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh DESTINATION "." COMPONENT lib)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh  DESTINATION "." COMPONENT lib)
+    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.csh DESTINATION "." COMPONENT lib)
   ENDIF()
 ENDIF()
 
 ##############################################################
 # Install Embree CMake Configuration
 ##############################################################
+IF (ENABLE_INSTALLER)
+  SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION})
+ELSE()
+  SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION_MAJOR})
+ENDIF()
+
 IF (WIN32)
   CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
 ELSEIF (APPLE)
@@ -105,16 +119,14 @@ ENDIF()
 
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
-IF (ENABLE_INSTALLER)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-  INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-ENDIF()
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 
 ##############################################################
 # CPack specific stuff
 ##############################################################
 
-SET(CPACK_PACKAGE_NAME Embree)
+SET(CPACK_PACKAGE_NAME "Embree")
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}")
 #SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png)
 #SET(CPACK_PACKAGE_RELOCATABLE TRUE)
@@ -157,9 +169,11 @@ IF(WIN32)
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(ARCH x64)
     SET(PROGRAMFILES "\$PROGRAMFILES64")
+	SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME} x64")
   ELSE()
     SET(ARCH win32)
     SET(PROGRAMFILES "\$PROGRAMFILES")
+	SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME} Win32")
   ENDIF()
 
   # NSIS specific settings
@@ -168,12 +182,19 @@ IF(WIN32)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}")
     SET(CPACK_COMPONENTS_ALL lib devel examples)
     SET(CPACK_NSIS_INSTALL_ROOT "${PROGRAMFILES}\\\\Intel")
-    SET(CPACK_NSIS_DISPLAY_NAME "Embree: High Performance Ray Tracing Kernels")
-    SET(CPACK_NSIS_PACKAGE_NAME "Embree ${EMBREE_VERSION}")
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Embree v${EMBREE_VERSION} ${ARCH}")
+    SET(CPACK_NSIS_DISPLAY_NAME "Embree v${EMBREE_VERSION} ${ARCH}")
+    SET(CPACK_NSIS_PACKAGE_NAME "Embree v${EMBREE_VERSION} ${ARCH}")
     SET(CPACK_NSIS_URL_INFO_ABOUT http://embree.github.io/)
     #SET(CPACK_NSIS_HELP_LINK http://embree.github.io/downloads.html#windows)
     SET(CPACK_NSIS_MUI_ICON ${PROJECT_SOURCE_DIR}/scripts/install_windows/icon32.ico)
     SET(CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT})
+	#SET(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS ${CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS} "\n CreateDirectory \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\"")
+	#SET(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS ${CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS} "\n CreateDirectory \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\documentation\\\"")
+	#SET(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS ${CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS} "\n CreateDirectory \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\tutorials\\\" \n")
+	#SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS  ${CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS} "\n ${UNINSTALL_LIST}\n RMDir \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\documentation\\\"")
+	#SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS  ${CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS} "\n ${UNINSTALL_LIST}\n RMDir \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\tutorials\\\"")
+	#SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS  ${CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS} "\n ${UNINSTALL_LIST}\n RMDir \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\"\n")
   ELSE()
     SET(CPACK_GENERATOR ZIP)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")

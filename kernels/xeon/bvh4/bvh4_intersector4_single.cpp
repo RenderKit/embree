@@ -21,7 +21,7 @@
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/subdivpatch1_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
-#include "../geometry/grid_intersector1.h"
+#include "../geometry/grid_aos_intersector1.h"
 
 namespace embree
 {
@@ -31,9 +31,11 @@ namespace embree
     void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
 
       /* load ray */
       Vec3f4 ray_org = ray.org;
@@ -65,9 +67,11 @@ namespace embree
     void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
 
       /* load ray */
       const bool4 valid = *valid_i;
@@ -130,7 +134,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
-    DEFINE_INTERSECTOR4(BVH4GridIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA GridIntersector1> >);
-    DEFINE_INTERSECTOR4(BVH4GridLazyIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA Switch2Intersector1<GridIntersector1 COMMA GridLazyIntersector1> > >);
+    DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
   }
 }

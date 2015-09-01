@@ -48,11 +48,11 @@ namespace embree
     }
    
     __forceinline explicit int16(const __m512 f) { 
+#if defined(__AVX512__)
+      v = _mm512_cvt_roundps_epi32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); // FIXME: round down as default?
+#else
       v = _mm512_cvtfxpnt_round_adjustps_epi32(f,_MM_FROUND_FLOOR,_MM_EXPADJ_NONE);
-    }
-
-    static __forceinline void store(const bool16& mask, void* __restrict__ addr, const int16& v2) {
-      _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
+#endif
     }
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -68,6 +68,52 @@ namespace embree
     __forceinline static int16 zero() { return _mm512_setzero_epi32(); }
     __forceinline static int16 one () { return _mm512_set_1to16_epi32(1); }
     __forceinline static int16 neg_one () { return _mm512_set_1to16_epi32(-1); }
+
+
+    static __forceinline int16 loadu(const void* addr) 
+    {
+#if defined(__AVX512__)
+      return _mm512_loadu_si512(addr);
+#else
+      int16 r = _mm512_undefined_epi32();
+      r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+      return _mm512_extloadunpackhi_epi32(r, (int*)addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+#endif
+    }
+
+    static __forceinline int16 load(const void* addr) {
+      return _mm512_load_si512(addr);
+    }
+
+    static __forceinline void store(void* addr, const int16& v2) {
+      _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
+    }
+
+    static __forceinline void storeu(void* ptr, const int16& f ) { 
+#if defined(__AVX512__)
+       _mm512_storeu_si512(ptr,f);
+#else
+       _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+       _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
+
+    static __forceinline void storeu(const bool16& mask, int* ptr, const int16& f ) { 
+#if defined(__AVX512__)
+      _mm512_mask_storeu_epi32(ptr,mask,f);
+#else
+      __m512 r = _mm512_undefined();
+      r = _mm512_extloadunpacklo_ps(r, ptr,    _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_extloadunpackhi_ps(r, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+      r = _mm512_mask_blend_ps(mask,r,_mm512_castsi512_ps(f));
+      _mm512_extpackstorelo_ps(ptr,    r, _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+    }
+
+    static __forceinline void store(const bool16& mask, void* addr, const int16& v2) {
+      _mm512_mask_store_epi32(addr,mask,v2);
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -470,7 +516,11 @@ namespace embree
   }
 
   __forceinline int16 convert_uint32_t(const __m512 f) { 
+#if defined(__AVX512__)
+    return _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); // FIXME: round down as default?
+#else
     return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
+#endif
   }
   
   ////////////////////////////////////////////////////////////////////////////////

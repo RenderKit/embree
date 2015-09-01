@@ -28,12 +28,18 @@ namespace embree
   {    
     
     template<typename PrimitiveIntersector16>    
-    void BVH8Intersector16Chunk<PrimitiveIntersector16>::intersect(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Chunk<PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
       /* load ray */
-      const bool16 valid0 = *valid_i;
+      bool16 valid0 = *valid_i == -1;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
+      //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+
       const Vec3f16 rdir = rcp_safe(ray.dir);
       const Vec3f16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
@@ -72,7 +78,7 @@ namespace embree
             break;
           
           const bool16 valid_node = ray_tfar > curDist;
-          STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+          STAT3(normal.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (BVH8::Node*)cur.node();
           
           /* pop of next node */
@@ -135,22 +141,35 @@ namespace embree
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
         const bool16 valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
+        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        PrimitiveIntersector16::intersect(valid_leaf,pre,ray,tri,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector16::intersect(valid_leaf,pre,ray,tri,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
 #endif       
     }
     
      template<typename PrimitiveIntersector16>
-    void BVH8Intersector16Chunk<PrimitiveIntersector16>::occluded(bool16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Chunk<PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512__)
       
       /* load ray */
-      const bool16 valid = *valid_i;
+      const bool16 valid = *valid_i == -1;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
+      //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+
       bool16 terminated = !valid;
       const Vec3f16 rdir = rcp_safe(ray.dir);
       const Vec3f16 org_rdir = ray.org * rdir;
@@ -190,7 +209,7 @@ namespace embree
             break;
           
           const bool16 valid_node = ray_tfar > curDist;
-          STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
+          STAT3(shadow.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (Node*)cur.node();
           
           /* pop of next node */
@@ -248,11 +267,18 @@ namespace embree
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
         const bool16 valid_leaf = ray_tfar > curDist;
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
+        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
-        terminated |= PrimitiveIntersector16::occluded(!terminated,pre,ray,tri,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector16::occluded(!terminated,pre,ray,tri,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,neg_inf,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store16i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

@@ -94,12 +94,9 @@ namespace embree
       else if (tag == "-cache") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
 
-      else if (tag == "-lazy") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.lazy";
-
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-      
+
       else if (tag == "-loop") 
 	g_loop_mode = true;
 
@@ -225,15 +222,14 @@ namespace embree
     g_rtcore += g_subdiv_mode;
 
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-      {
-	if (g_subdiv_mode != "") {
-	  std::cout << "enabling subdiv mode" << std::endl;
-	  loadOBJ(filename,one,g_obj_scene,true);	
-	}
-	else
-	  loadOBJ(filename,one,g_obj_scene);
+    if (strlwr(filename.ext()) == std::string("obj")) {
+      if (g_subdiv_mode != "") {
+        std::cout << "enabling subdiv mode" << std::endl;
+        loadOBJ(filename,one,g_obj_scene,true);	
       }
+      else
+        loadOBJ(filename,one,g_obj_scene);
+    }
     else if (strlwr(filename.ext()) == std::string("xml"))
       loadXML(filename,one,g_obj_scene);
     else if (filename.ext() != "")
@@ -256,7 +252,7 @@ namespace embree
     /* interactive mode */
     if (g_interactive) {
       initWindowState(argc,argv,tutorialName, g_width, g_height, g_fullscreen);
-      enterWindowRunLoop();
+      enterWindowRunLoop(g_anim_mode);
     }
 
     return 0;

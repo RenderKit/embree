@@ -166,8 +166,16 @@ namespace embree
 	assert(cur != BVH4::emptyNode);
 	STAT3(normal.trav_leaves, 1, 1, 1);
 	size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-	PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->scene);
+
+        size_t lazy_node = 0;
+	PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
         ray_far = ray.tfar[k];
+
+        if (unlikely(lazy_node)) {
+          stackPtr->ptr = lazy_node;
+          stackPtr->dist = neg_inf;
+          stackPtr++;
+        }
       }
     }
     
@@ -273,10 +281,17 @@ namespace embree
 	assert(cur != BVH4::emptyNode);
 	STAT3(shadow.trav_leaves,1,1,1);
 	size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
-	if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene)) {
+
+        size_t lazy_node = 0;
+	if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
 	  ray.geomID[k] = 0;
 	  return true;
 	}
+
+        if (unlikely(lazy_node)) {
+          *stackPtr = lazy_node;
+          stackPtr++;
+        }
       }
       return false;
     }

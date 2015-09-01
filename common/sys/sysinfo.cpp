@@ -116,7 +116,7 @@ namespace embree
     if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
     if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
     if (model == 0x45) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    // FIXME: add Haswell
+    if (model == 0x3C) return CPU_HASWELL;           // Haswell
     return CPU_UNKNOWN;
   }
 
@@ -128,6 +128,7 @@ namespace embree
     case CPU_CORE2           : return "Core2";
     case CPU_CORE_NEHALEM    : return "Nehalem";
     case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
+    case CPU_HASWELL         : return "Haswell";
     default                  : return "Unknown CPU";
     }
   }
@@ -154,11 +155,19 @@ namespace embree
   static const int CPU_FEATURE_BIT_LZCNT = 1 << 5;
 
   /* cpuid[eax=7,ecx=0].ebx */
-  static const int CPU_FEATURE_BIT_BMI1  = 1 << 3;
-  static const int CPU_FEATURE_BIT_AVX2  = 1 << 5;
-  static const int CPU_FEATURE_BIT_BMI2  = 1 << 8;
+  static const int CPU_FEATURE_BIT_BMI1    = 1 << 3;
+  static const int CPU_FEATURE_BIT_AVX2    = 1 << 5;
+  static const int CPU_FEATURE_BIT_BMI2    = 1 << 8;
+  static const int CPU_FEATURE_BIT_AVX512F = 1 << 16;     // AVX-512 foundation
+  static const int CPU_FEATURE_BIT_AVX512DQ = 1 << 17;    
+  static const int CPU_FEATURE_BIT_AVX512PF = 1 << 26;    // AVX-512 prefetch
+  static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX-512 exponential and reciprocal
+  static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX-512 conflict detection
+  static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;
+  static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;
+  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;  // uses ECX!
 
-  __noinline bool check_xcr0_ymm() 
+  __noinline int64_t get_xcr0() 
   {
 #if defined (__WIN32__)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
@@ -170,7 +179,7 @@ namespace embree
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
-    return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
+    return xcr0;
 
 #else
 
@@ -185,7 +194,7 @@ namespace embree
 #pragma message ("WARNING: AVX not supported by your compiler.")
     xcr0 = 0;
 #endif
-    return ((xcr0 & 6) == 6); /* checking if xmm and ymm state are enabled in XCR0 */
+    return xcr0;
 #endif
   }
 
@@ -217,8 +226,12 @@ namespace embree
     if (nExIds >= 0x80000001) __cpuid(infoe1,0x80000001);
 
     bool has_ymm = false;
-    if (info1[2] & CPU_FEATURE_BIT_OXSAVE)
-      has_ymm = check_xcr0_ymm();
+    bool has_zmm = false;
+    if (info1[2] & CPU_FEATURE_BIT_OXSAVE) {
+      int64_t xcr0 = get_xcr0();
+      has_ymm = ((xcr0 & 0x06) == 0x06); /* checking if xmm and ymm state are enabled in XCR0 */
+      has_zmm = ((xcr0 & 0xE0) == 0xE0); /* OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled by OS */
+    }
     
     if (info1[3] & CPU_FEATURE_BIT_SSE) cpu_features |= CPU_FEATURE_SSE;
     if (info1[3] & CPU_FEATURE_BIT_SSE2) cpu_features |= CPU_FEATURE_SSE2;
@@ -235,6 +248,15 @@ namespace embree
     if (infoe1[2] & CPU_FEATURE_BIT_LZCNT) cpu_features |= CPU_FEATURE_LZCNT;
     if (info7[1] & CPU_FEATURE_BIT_BMI1) cpu_features |= CPU_FEATURE_BMI1;
     if (info7[1] & CPU_FEATURE_BIT_BMI2) cpu_features |= CPU_FEATURE_BMI2;
+
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512F)  cpu_features |= CPU_FEATURE_AVX512F;
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512DQ) cpu_features |= CPU_FEATURE_AVX512DQ;
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512PF) cpu_features |= CPU_FEATURE_AVX512PF;
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512ER) cpu_features |= CPU_FEATURE_AVX512ER; 
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512CD) cpu_features |= CPU_FEATURE_AVX512CD;
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512BW) cpu_features |= CPU_FEATURE_AVX512BW;
+    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
+    if (has_zmm && info7[2] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI; // info7[2] is no typo!
 
 #if defined(__MIC__)
     cpu_features |= CPU_FEATURE_KNC;
@@ -265,6 +287,14 @@ namespace embree
     if (features & CPU_FEATURE_BMI1  ) str += "BMI1 ";
     if (features & CPU_FEATURE_BMI2  ) str += "BMI2 ";
     if (features & CPU_FEATURE_KNC   ) str += "KNC ";
+    if (features & CPU_FEATURE_AVX512F) str += "AVX512F ";
+    if (features & CPU_FEATURE_AVX512DQ) str += "AVX512DQ ";
+    if (features & CPU_FEATURE_AVX512PF) str += "AVX512PF ";
+    if (features & CPU_FEATURE_AVX512ER) str += "AVX512ER ";
+    if (features & CPU_FEATURE_AVX512CD) str += "AVX512CD ";
+    if (features & CPU_FEATURE_AVX512BW) str += "AVX512BW ";
+    if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
+    if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
     return str;
   }
 
@@ -286,6 +316,7 @@ namespace embree
     if (isa == AVXI) return "AVXI";
     if (isa == AVX2) return "AVX2";
     if (isa == KNC) return "KNC";
+    if (isa == AVX512KNL) return "AVX512KNL";
     return "UNKNOWN";
   }
 }
@@ -309,17 +340,36 @@ namespace embree
 
   size_t getNumberOfLogicalThreads() 
   {
-#if (_WIN32_WINNT >= 0x0601)
-    int groups = GetActiveProcessorGroupCount();
-    int totalProcessors = 0;
-    for (int i = 0; i < groups; i++) 
-      totalProcessors += GetActiveProcessorCount(i);
-    return totalProcessors;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-    return sysinfo.dwNumberOfProcessors;
-#endif
+    static int nThreads = -1;
+    if (nThreads != -1) return nThreads;
+
+    OSVERSIONINFO osvi;
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    GetVersionEx(&osvi);
+
+    typedef WORD (WINAPI *GetActiveProcessorGroupCountFunc)();
+    typedef DWORD (WINAPI *GetActiveProcessorCountFunc)(WORD);
+    HMODULE hlib = LoadLibrary("Kernel32");
+    GetActiveProcessorGroupCountFunc pGetActiveProcessorGroupCount = (GetActiveProcessorGroupCountFunc)GetProcAddress(hlib, "GetActiveProcessorGroupCount");
+    GetActiveProcessorCountFunc      pGetActiveProcessorCount      = (GetActiveProcessorCountFunc)     GetProcAddress(hlib, "GetActiveProcessorCount");
+
+    if (pGetActiveProcessorGroupCount && pGetActiveProcessorCount &&
+       ((osvi.dwMajorVersion > 6) || ((osvi.dwMajorVersion == 6) && (osvi.dwMinorVersion >= 1)))) 
+    {
+      int groups = pGetActiveProcessorGroupCount();
+      int totalProcessors = 0;
+      for (int i = 0; i < groups; i++) 
+        totalProcessors += pGetActiveProcessorCount(i);
+      nThreads = totalProcessors;
+    }
+    else
+    {
+      SYSTEM_INFO sysinfo;
+      GetSystemInfo(&sysinfo);
+      nThreads = sysinfo.dwNumberOfProcessors;
+    }
+    return nThreads;
   }
 
   int getTerminalWidth() 

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "platform.h"
+#include "alloc.h"
 
 namespace embree
 {
@@ -123,4 +124,30 @@ namespace embree
       size_t M;
       T items[N];
     };
+
+  /*! dynamic sized array that is allocated on the stack */
+#define dynamic_large_stack_array(Ty,Name,N,M) StackArray<Ty,M> Name(N)
+  template<typename Ty, size_t M>
+    struct __aligned(64) StackArray
+  {
+    __forceinline StackArray (const size_t N) 
+    {
+      if (N < M) data = &arr[0];
+      else       data = (Ty*) alignedMalloc(N*sizeof(Ty),64); 
+    }
+
+    __forceinline ~StackArray () {
+      if (data != &arr[0]) alignedFree(data);
+    }
+
+    __forceinline operator       Ty* ()       { return data; }
+    __forceinline operator const Ty* () const { return data; }
+
+    __forceinline       Ty& operator[](const size_t i)       { return data[i]; }
+    __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
+
+  private:
+    Ty arr[M];
+    Ty* data;
+  };
 }

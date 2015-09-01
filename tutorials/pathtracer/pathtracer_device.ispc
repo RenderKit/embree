@@ -27,7 +27,7 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-#define FIX_SAMPLING 0
+#define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
 #define ENABLE_TEXTURING 0
@@ -863,6 +863,15 @@ uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
 extern uniform bool g_changed;
 
+uniform bool g_animation = true;
+uniform bool g_use_smooth_normals = false;
+void device_key_pressed(uniform int key)
+{
+  if (key == 32  /* */) g_animation = !g_animation;
+  if (key == 115 /*c*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
+  else device_key_pressed_default(key);
+}
+
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
@@ -881,6 +890,7 @@ export void device_init (uniform int8* uniform cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //  renderPixel = renderPixelEyeLight;
+  key_pressed_handler = device_key_pressed;
 
 } // device_init
 
@@ -1012,7 +1022,7 @@ void updateKeyFrame(uniform ISPCScene* uniform scene_in)
       {
 	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
 	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(Vec3fa  ));
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
 	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
       }
   }
@@ -1083,11 +1093,14 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
 
   /* create scene */
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  uniform int scene_aflags = RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  scene_aflags |= RTC_INTERPOLATE;
+
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1280,6 +1293,17 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 #endif
       break;
     }
+    Vec3f Ns = normalize(ray.Ng);
+
+    if (g_use_smooth_normals)
+      if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+    {
+      Vec3f dPdu,dPdv;
+      foreach_unique (geomID in ray.geomID) {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,NULL,&dPdu.x,&dPdv.x,3);
+      }
+      Ns = normalize(cross(dPdv,dPdu));
+    }
 
     /* compute differential geometry */
     DifferentialGeometry dg;
@@ -1289,9 +1313,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    //Vec3f _Ns = interpolate_normal(ray);
-    Vec3f _Ns = normalize(ray.Ng);
-    dg.Ns = face_forward(ray.dir,_Ns);
+    dg.Ns = face_forward(ray.dir,Ns);
 
     /* shade all rays that hit something */
     int materialID = getMaterialID(ray,dg);
@@ -1504,14 +1526,14 @@ export void device_render (uniform int* uniform pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
 
-  if (g_ispc_scene->numSubdivMeshKeyFrames)
+  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames)
     {
       updateKeyFrame(g_ispc_scene);
       rtcCommit(g_scene);
       g_changed = true;
     }
 
-#if  FIX_SAMPLING == 0
+#if  FIXED_SAMPLING == 0
   g_accu_count++;
 #endif
 

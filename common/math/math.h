@@ -57,11 +57,16 @@ namespace embree
 
 #ifndef __MIC__
   __forceinline float rcp  ( const float x ) 
-  { 
-    const __m128 vx = _mm_set_ss(x);
-    const __m128 r = _mm_rcp_ps(vx);
-    return _mm_cvtss_f32(_mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), vx)));
+  {
+    const __m128 a = _mm_set_ss(x);
+    const __m128 r = _mm_rcp_ps(a);
+#if defined(__AVX2__)
+    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_fnmadd_ps(r, a, _mm_set_ss(2.0f))));
+#else
+    return _mm_cvtss_f32(_mm_mul_ps(r,_mm_sub_ps(_mm_set_ss(2.0f), _mm_mul_ps(r, a))));
+#endif
   }
+
   __forceinline float signmsk ( const float x ) { 
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(0x80000000))));
   }
@@ -107,6 +112,7 @@ namespace embree
   __forceinline float floor( const float x ) { return ::floorf (x); }
   __forceinline float ceil ( const float x ) { return ::ceilf (x); }
 #endif
+  __forceinline float frac ( const float x ) { return x-floor(x); }
 
   __forceinline double abs  ( const double x ) { return ::fabs(x); }
   __forceinline double sign ( const double x ) { return x<0?-1.0:1.0; }
@@ -211,12 +217,21 @@ namespace embree
   __forceinline double drand48() {
     return double(rand())/double(RAND_MAX);
   }
+
+  __forceinline void srand48(long seed) {
+    return srand(seed);
+  }
 #endif
 
   /*! selects */
   __forceinline bool  select(bool s, bool  t , bool f) { return s ? t : f; }
   __forceinline int   select(bool s, int   t,   int f) { return s ? t : f; }
   __forceinline float select(bool s, float t, float f) { return s ? t : f; }
+
+  template<typename T> 
+    __forceinline T lerp2(const float x0, const float x1, const float x2, const float x3,const T &u, const T &v) {
+    return (1.0f-u)*(1.0f-v)*x0 + u*(1.0f-v)*x1 + (1.0f-u)*v*x2 + u*v*x3; 
+  }
 
   /*! exchange */
   template<typename T> __forceinline void xchg ( T& a, T& b ) { const T tmp = a; a = b; b = tmp; }

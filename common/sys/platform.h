@@ -211,8 +211,8 @@
 #define   likely(expr) (expr)
 #define unlikely(expr) (expr)
 #else
-#define   likely(expr) __builtin_expect((expr),true )
-#define unlikely(expr) __builtin_expect((expr),false)
+#define   likely(expr) __builtin_expect((bool)(expr),true )
+#define unlikely(expr) __builtin_expect((bool)(expr),false)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +268,8 @@ typedef int32_t ssize_t;
 #pragma warning(disable:1599) // declaration hides parameter
 #pragma warning(disable:424 ) // extra ";" ignored
 #pragma warning(disable:2196) // routine is both "inline" and "noinline"
-#pragma warning(disable:177 )  // label was declared but never referenced
+#pragma warning(disable:177 ) // label was declared but never referenced
+#pragma warning(disable:114 ) // function was referenced but not defined
 #endif
 
 #if defined(_MSC_VER)

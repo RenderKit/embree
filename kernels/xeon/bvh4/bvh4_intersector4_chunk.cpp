@@ -38,9 +38,11 @@ namespace embree
     void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid0 = *valid_i;
-      assert(all(valid0,ray.tnear >= 0.0f));
-      assert(all(valid0,ray.tnear <= ray.tfar));
+      bool4 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
@@ -193,8 +195,15 @@ namespace embree
         const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        PrimitiveIntersector4::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       AVX_ZERO_UPPER();
     }
@@ -203,9 +212,11 @@ namespace embree
     void BVH4Intersector4Chunk<types,robust,PrimitiveIntersector4>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      const bool4 valid = *valid_i;
-      assert(all(valid,ray.tnear >= 0.0f));
-      assert(all(valid,ray.tnear <= ray.tfar));
+      bool4 valid = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid &= ray.valid();
+#endif
+      assert(all(valid,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
@@ -359,9 +370,16 @@ namespace embree
         const bool4 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
-        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene);
+
+        size_t lazy_node = 0;
+        terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
         ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
+
+        if (unlikely(lazy_node)) {
+          *sptr_node = lazy_node; sptr_node++;
+          *sptr_near = neg_inf;   sptr_near++;
+        }
       }
       store4i(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();

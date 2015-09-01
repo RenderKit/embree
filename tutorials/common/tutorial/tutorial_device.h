@@ -67,6 +67,9 @@ enum Shader {
 /* standard shading function */
 typedef Vec3fa (* renderPixelFunc)(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 
+extern "C" void device_key_pressed_default(int key);
+extern "C" void (*key_pressed_handler)(int key);
+
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 Vec3fa renderPixelUV      (float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
 Vec3fa renderPixelGeomIDPrimID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);

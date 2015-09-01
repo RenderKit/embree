@@ -27,7 +27,7 @@
 #define TILE_SIZE_X 4
 #define TILE_SIZE_Y 4
 
-#define FIX_SAMPLING 0
+#define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
 #define ENABLE_TEXTURING 0
@@ -863,6 +863,15 @@ Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
 extern "C" bool g_changed;
 
+bool g_animation = true;
+bool g_use_smooth_normals = false;
+void device_key_pressed(int key)
+{
+  if (key == 32  /* */) g_animation = !g_animation;
+  if (key == 115 /*c*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
+  else device_key_pressed_default(key);
+}
+
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
@@ -881,6 +890,7 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderPixel = renderPixelStandard;
   //  renderPixel = renderPixelEyeLight;
+  key_pressed_handler = device_key_pressed;
 
 } // device_init
 
@@ -1083,11 +1093,14 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
+  int scene_aflags = RTC_INTERSECT1;
 
   if (g_subdiv_mode)   
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, RTC_INTERSECT1);
+  scene_aflags |= RTC_INTERPOLATE;
+
+  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1280,6 +1293,16 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 #endif
       break;
     }
+    Vec3fa Ns = normalize(ray.Ng);
+
+    if (g_use_smooth_normals)
+    {
+      Vec3fa dPdu,dPdv;
+      int geomID = ray.geomID;  {
+        rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
+      }
+      Ns = normalize(cross(dPdv,dPdu));
+    }
 
     /* compute differential geometry */
     DifferentialGeometry dg;
@@ -1289,9 +1312,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    //Vec3fa _Ns = interpolate_normal(ray);
-    Vec3fa _Ns = normalize(ray.Ng);
-    dg.Ns = face_forward(ray.dir,_Ns);
+    dg.Ns = face_forward(ray.dir,Ns);
 
     /* shade all rays that hit something */
     int materialID = getMaterialID(ray,dg);
@@ -1504,14 +1525,14 @@ extern "C" void device_render (int* pixels,
   camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
   camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
 
-  if (g_ispc_scene->numSubdivMeshKeyFrames)
+  if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames)
     {
       updateKeyFrame(g_ispc_scene);
       rtcCommit(g_scene);
       g_changed = true;
     }
 
-#if  FIX_SAMPLING == 0
+#if  FIXED_SAMPLING == 0
   g_accu_count++;
 #endif
 

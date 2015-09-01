@@ -61,14 +61,49 @@ namespace embree
   DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
   
 #if defined(TASKING_TBB)
+
+  template <typename R, typename S>
+  R tbb_pi( S num_steps )
+  {
+    const R step = R(1) / num_steps;
+    return step * tbb::parallel_reduce( tbb::blocked_range<S>( 0, num_steps ), R(0),
+                                        [step] ( const tbb::blocked_range<S> r, R local_sum ) -> R {
+                                          for ( S i = r.begin(); i < r.end(); ++i ) {
+                                            R x = (i + R(0.5)) * step;
+                                            local_sum += R(4) / (R(1) + x*x);
+                                          }
+                                          return local_sum;
+                                        },
+                                        std::plus<R>()
+      );
+  }
+
   bool g_tbb_threads_initialized = false;
   tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
+    tbb::atomic<int> num_threads;
+
     void on_scheduler_entry( bool ) {
+      ++num_threads;
       setAffinity(TaskSchedulerTBB::threadIndex());
+      //PING;
+      //PRINT(num_threads);
     }
+
+    void on_scheduler_exit( bool ) { 
+      --num_threads; 
+      //PING;
+      //PRINT(num_threads);
+    }
+  public:
+    
+    TBBAffinity() { num_threads = 0; }
+
+    int  get_concurrency()      { return num_threads; }
+    void set_concurrency(int i) { num_threads = i; }
+
   } tbb_affinity;
 #endif
 
@@ -154,14 +189,21 @@ namespace embree
     std::cout << "  Platform : " << getPlatformName() << std::endl;
     std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
     std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
     std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
     std::cout << "  Config   : ";
+#if defined(DEBUG)
+    std::cout << "Debug ";
+#else
+    std::cout << "Release ";
+#endif
 #if defined(TASKING_TBB)
-    std::cout << "TBB ";
+    std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
+    std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
 #if defined(__TARGET_SSE41__)
     std::cout << "SSE4.1 ";
@@ -248,8 +290,8 @@ namespace embree
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::instance()->parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     
-    if (State::instance()->tessellation_cache_size)
-      resizeTessellationCache( State::instance()->tessellation_cache_size );
+    /*! set tessellation cache size */
+    resizeTessellationCache( State::instance()->tessellation_cache_size );
 
     /*! enable some floating point exceptions to catch bugs */
     if (State::instance()->float_exceptions)
@@ -279,6 +321,31 @@ namespace embree
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
 #endif
 
+    /* verify that calculations stay in range */
+    assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
+
+    /* here we verify that CPP files compiled for a specific ISA only
+     * call that same or lower ISA version of non-inlined class member
+     * functions */
+#if !defined (__MIC__) && defined(DEBUG)
+    assert(isa::getISA() == ISA);
+#if defined(__TARGET_SSE41__)
+    assert(sse41::getISA() <= SSE41);
+#endif
+#if defined(__TARGET_SSE42__)
+    assert(sse42::getISA() <= SSE42);
+#endif
+#if defined(__TARGET_AVX__)
+    assert(avx::getISA() <= AVX);
+#endif
+#if defined(__TARGET_AVX2__)
+    assert(avx2::getISA() <= AVX2);
+#endif
+#if defined (__TARGET_AVX512__)
+    assert(avx512::getISA() <= AVX512KNL);
+#endif
+#endif
+
 #if !defined(__MIC__)
     BVH4Register();
 #else
@@ -299,22 +366,39 @@ namespace embree
       State::instance()->print();
 
 #if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(g_numThreads);
+    TaskScheduler::create(g_numThreads,State::instance()->set_affinity);
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(g_numThreads);
+    TaskSchedulerTBB::create(g_numThreads,State::instance()->set_affinity);
 #endif
 
 #if defined(TASKING_TBB)
+
+    /* only set affinity of requested by the user */
+    if (State::instance()->set_affinity) {
+      tbb_affinity.set_concurrency(0);
+      tbb_affinity.observe(true); 
+    }
+    
     if (g_numThreads == 0) {
       g_tbb_threads_initialized = false;
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
       tbb_threads.initialize(g_numThreads);
-      tbb_affinity.observe(true); 
+
+#if 0
+      const size_t N = 1024*1024;
+      //PRINT(g_numThreads );
+      while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
+        tbb_pi<double> (N);
+      PRINT( tbb_affinity.get_concurrency() );
+#endif
     }
+#if USE_TASK_ARENA
+    arena = new tbb::task_arena(g_numThreads);
+#endif
 #endif
 
     /* execute regression tests */
@@ -351,6 +435,9 @@ namespace embree
 #endif
 
 #if defined(TASKING_TBB)
+#if USE_TASK_ARENA
+    delete arena; arena = nullptr;
+#endif
     if (g_tbb_threads_initialized)
       tbb_threads.terminate();
 #endif
@@ -405,7 +492,7 @@ namespace embree
     Stat::clear();
 #endif
 
-#if defined(DEBUG) && 0
+#if defined(DEBUG) && 1
     extern void printTessCacheStats();
     printTessCacheStats();
 #endif
@@ -1130,24 +1217,7 @@ namespace embree
     RTCORE_TRACE(rtcInterpolateN);
     RTCORE_VERIFY_HANDLE(scene);
     RTCORE_VERIFY_GEOMID(geomID);
-    if (numFloats > 256) throw_RTCError(RTC_INVALID_OPERATION,"maximally 256 floating point values can be interpolated per vertex");
-    const int* valid = (const int*) valid_i;
-
-    __aligned(64) float P_tmp[256];
-    __aligned(64) float dPdu_tmp[256];
-    __aligned(64) float dPdv_tmp[256];
-    float* Pt = P ? P_tmp : nullptr;
-    float* dPdut = dPdu ? dPdu_tmp : nullptr;
-    float* dPdvt = dPdv ? dPdv_tmp : nullptr;
-
-    for (size_t i=0; i<numUVs; i++) // FIXME: implement fast path for packet queries
-    {
-      if (valid && !valid[i]) continue;
-      embree::rtcInterpolate(scene,geomID,primIDs[i],u[i],v[i],buffer,Pt,dPdut,dPdvt,numFloats);
-      if (P   ) for (size_t j=0; j<numFloats; j++) P[j*numUVs+i] = Pt[j];
-      if (dPdu) for (size_t j=0; j<numFloats; j++) dPdu[j*numUVs+i] = dPdut[j];
-      if (dPdv) for (size_t j=0; j<numFloats; j++) dPdv[j*numUVs+i] = dPdvt[j];
-    }
+    ((Scene*)scene)->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END;
   }
 }

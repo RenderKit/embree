@@ -16,228 +16,266 @@
 
 #pragma once
 
-#include "catmullclark_patch.h"
-#include "bspline_patch.h"
-#include "gregory_patch.h"
+#include "patch.h"
 
 namespace embree
 {
-  struct FeatureAdaptiveEval
+  namespace isa
   {
-    const size_t x0,x1;
-    const size_t y0,y1;
-    const size_t swidth,sheight;
-    Vec3fa* const P;
-    Vec3fa* const Ng;
-    const size_t dwidth,dheight;
-    
-    __forceinline FeatureAdaptiveEval (const CatmullClarkPatch3fa& patch, 
-				       const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-				       Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
-      : x0(x0), x1(x1), y0(y0), y1(y1), swidth(swidth), sheight(sheight), P(P), Ng(Ng), dwidth(dwidth), dheight(dheight)
-    {
-      assert(swidth < (2<<20) && sheight < (2<<20));
-      const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(swidth-1,sheight-1));
-      const BBox2f erange(Vec2f(x0,y0),Vec2f(x1,y1));
-      eval(patch, srange, erange, 0);
-    }
-
-    void dice(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange)
-    {
-      float lx0 = ceilf (erange.lower.x);
-      float lx1 = erange.upper.x + (erange.upper.x >= x1);
-      float ly0 = ceilf (erange.lower.y);
-      float ly1 = erange.upper.y + (erange.upper.y >= y1);
-      if (lx0 >= lx1 || ly0 >= ly1) return;
-
-      const float scale_x = rcp(srange.upper.x-srange.lower.x);
-      const float scale_y = rcp(srange.upper.y-srange.lower.y);
-
-      if (patch.isRegular1())
-      //if (true)
+    template<typename Vertex, typename Vertex_t = Vertex>
+      struct FeatureAdaptiveEval
       {
-	BSplinePatch3fa patcheval; patcheval.init(patch);
-	//GregoryPatch patcheval; patcheval.init(patch);
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    const float fx = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x;
-	    const float fy = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y;
+      public:
+        
+        typedef PatchT<Vertex,Vertex_t> Patch;
+        typedef typename Patch::Ref Ref;
+        typedef GeneralCatmullClarkPatchT<Vertex,Vertex_t> GeneralCatmullClarkPatch;
+        typedef CatmullClark1RingT<Vertex,Vertex_t> CatmullClarkRing;
+        typedef CatmullClarkPatchT<Vertex,Vertex_t> CatmullClarkPatch;
+        typedef BSplinePatchT<Vertex,Vertex_t> BSplinePatch;
+        typedef BezierPatchT<Vertex,Vertex_t> BezierPatch;
+        typedef GregoryPatchT<Vertex,Vertex_t> GregoryPatch;
+        typedef BilinearPatchT<Vertex,Vertex_t> BilinearPatch;
+        typedef BezierCurveT<Vertex> BezierCurve;
+        
+      public:
+        
+        FeatureAdaptiveEval (const HalfEdge* edge, const char* vertices, size_t stride, const float u, const float v, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+        : P(P), dPdu(dPdu), dPdv(dPdv)
+        {
+          switch (edge->patch_type) {
+          case HalfEdge::REGULAR_QUAD_PATCH: RegularPatchT(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+#if PATCH_USE_GREGORY == 2
+          case HalfEdge::IRREGULAR_QUAD_PATCH: GregoryPatch(edge,vertices,stride).eval(u,v,P,dPdu,dPdv,1.0f); break;
+#endif
+          default: {
+            GeneralCatmullClarkPatch patch(edge,vertices,stride);
+            eval(patch,Vec2f(u,v),0);
+            break;
+          }
+          }
+        }
 
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
+        FeatureAdaptiveEval (CatmullClarkPatch& patch, const float u, const float v, float dscale, size_t depth, Vertex* P, Vertex* dPdu, Vertex* dPdv)
+        : P(P), dPdu(dPdu), dPdv(dPdv)
+        {
+          eval(patch,Vec2f(u,v),dscale,depth);
+        }
+        
+        void eval_general_triangle(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
+        {
+          const bool ab_abc = right_of_line_ab_abc(uv);
+          const bool ac_abc = right_of_line_ac_abc(uv);
+          const bool bc_abc = right_of_line_bc_abc(uv);
+          
+          const float u = uv.x, v = uv.y, w = 1.0f-u-v;
+          if  (!ab_abc &&  ac_abc) {
+            const Vec2f xy = map_tri_to_quad(Vec2f(u,v));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,0);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[0],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+            eval(patches[0],xy,1.0f,depth+1);
+#endif
+            if (dPdu && dPdv) map_quad0_to_tri(xy,*dPdu,*dPdv);
+          }
+          else if ( ab_abc && !bc_abc) {
+            const Vec2f xy = map_tri_to_quad(Vec2f(v,w));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,1);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[1],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+            eval(patches[1],xy,1.0f,depth+1);
+#endif
+            if (dPdu && dPdv) map_quad1_to_tri(xy,*dPdu,*dPdv);
+          }
+          else {
+            const Vec2f xy = map_tri_to_quad(Vec2f(w,u));
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,2);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[2],xy,1.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+            eval(patches[2],xy,1.0f,depth+1);
+#endif
+            if (dPdu && dPdv) map_quad2_to_tri(xy,*dPdu,*dPdv);
+          }
+        }
+        
+        void eval_general_quad(const GeneralCatmullClarkPatch& patch, array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE>& patches, const Vec2f& uv, size_t depth)
+        {
+          float u = uv.x, v = uv.y;
+          if (v < 0.5f) {
+            if (u < 0.5f) {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,0);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+              eval(patches[0],Vec2f(2.0f*u,2.0f*v),2.0f,depth+1);
+#endif
+              if (dPdu && dPdv) {
+                const Vertex dpdx = *dPdu, dpdy = *dPdv;
+                *dPdu = dpdx; *dPdv = dpdy;
+              }
+            }
+            else {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,1);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+              eval(patches[1],Vec2f(2.0f*v,2.0f-2.0f*u),2.0f,depth+1);
+#endif
+              if (dPdu && dPdv) {
+                const Vertex dpdx = *dPdu, dpdy = *dPdv;
+                *dPdu = -dpdy; *dPdv = dpdx;
+              }
+            }
+          } else {
+            if (u > 0.5f) {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,2);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+              eval(patches[2],Vec2f(2.0f-2.0f*u,2.0f-2.0f*v),2.0f,depth+1);
+#endif
+              if (dPdu && dPdv) {
+                const Vertex dpdx = *dPdu, dpdy = *dPdv;
+                *dPdu = -dpdx; *dPdv = -dpdy;
+              }
+            }
+            else {
+#if PATCH_USE_GREGORY == 2
+              BezierCurve borders[2]; patch.getLimitBorder(borders,3);
+              BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+              BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+              eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+              eval(patches[3],Vec2f(2.0f-2.0f*v,2.0f*u),2.0f,depth+1);
+#endif
+              if (dPdu && dPdv) {
+                const Vertex dpdx = *dPdu, dpdy = *dPdv;
+                *dPdu = dpdy; *dPdv = -dpdx;
+              }
+            }
+          }
+        }
 
-	    P [(iy-y0)*dwidth+(ix-x0)] = patcheval.eval  (fx,fy);
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(patcheval.normal(fx,fy));
-	  }
-	}
-      }
-      else 
-      {
-	for (float y=ly0; y<ly1; y++) 
-	{
-	  for (float x=lx0; x<lx1; x++) 
-	  { 
-	    assert(x<swidth && y<sheight);
-	    
-	    const float sx1 = x == srange.upper.x ? 1.0f : (float(x)-srange.lower.x)*scale_x, sx0 = 1.0f-sx1;
-	    const float sy1 = y == srange.upper.y ? 1.0f : (float(y)-srange.lower.y)*scale_y, sy0 = 1.0f-sy1;
-	    const size_t ix = (size_t) x, iy = (size_t) y;
-	    assert(ix-x0 < dwidth && iy-y0 < dheight);
+        __forceinline bool final(const CatmullClarkPatch& patch, const typename CatmullClarkRing::Type type, size_t depth) 
+        {
+          const int max_eval_depth = (type & CatmullClarkRing::TYPE_CREASES) ? PATCH_MAX_EVAL_DEPTH_CREASE : PATCH_MAX_EVAL_DEPTH_IRREGULAR;
+#if PATCH_MIN_RESOLUTION
+          return patch.isFinalResolution(PATCH_MIN_RESOLUTION) || depth>=max_eval_depth;
+#else
+          return depth>=max_eval_depth;
+#endif
+        }
+        
+        void eval(CatmullClarkPatch& patch, Vec2f uv, float dscale, size_t depth, 
+                  BezierCurve* border0 = nullptr, BezierCurve* border1 = nullptr, BezierCurve* border2 = nullptr, BezierCurve* border3 = nullptr)
+        {
+          while (true) 
+          {
+            typename CatmullClarkPatch::Type ty = patch.type();
 
-	    const Vec3fa P0 = patch.ring[0].getLimitVertex();
-	    const Vec3fa P1 = patch.ring[1].getLimitVertex();
-	    const Vec3fa P2 = patch.ring[2].getLimitVertex();
-	    const Vec3fa P3 = patch.ring[3].getLimitVertex();
-	    P [(iy-y0)*dwidth+(ix-x0)] = sy0*(sx0*P0+sx1*P1) + sy1*(sx0*P3+sx1*P2);
+            if (unlikely(final(patch,ty,depth)))
+            {
+              if (ty & CatmullClarkRing::TYPE_REGULAR) { 
+                RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                PATCH_DEBUG_SUBDIVISION(234423,c,c,-1);
+                return;
+              } else {
+                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+                PATCH_DEBUG_SUBDIVISION(34534,c,-1,c);
+                return;
+              }
+            }
+            else if (ty & CatmullClarkRing::TYPE_REGULAR_CREASES) { 
+              assert(depth > 0); 
+              RegularPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              PATCH_DEBUG_SUBDIVISION(43524,c,c,-1);
+              return;
+            }
+#if PATCH_USE_GREGORY == 2
+            else if (ty & CatmullClarkRing::TYPE_GREGORY_CREASES) { 
+              assert(depth > 0); 
+              GregoryPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,dscale); 
+              PATCH_DEBUG_SUBDIVISION(23498,c,-1,c);
+              return;
+            }
+#endif
+            else
+            {
+              array_t<CatmullClarkPatch,4> patches; 
+              patch.subdivide(patches); // FIXME: only have to generate one of the patches
+              
+              const float u = uv.x, v = uv.y;
+              if (v < 0.5f) {
+                if (u < 0.5f) { patch = patches[0]; uv = Vec2f(2.0f*u,2.0f*v); dscale *= 2.0f; }
+                else          { patch = patches[1]; uv = Vec2f(2.0f*u-1.0f,2.0f*v); dscale *= 2.0f; }
+              } else {
+                if (u > 0.5f) { patch = patches[2]; uv = Vec2f(2.0f*u-1.0f,2.0f*v-1.0f); dscale *= 2.0f; }
+                else          { patch = patches[3]; uv = Vec2f(2.0f*u,2.0f*v-1.0f); dscale *= 2.0f; }
+              }
+              depth++;
+            }
+          }
+        }
+        
+        void eval(const GeneralCatmullClarkPatch& patch, const Vec2f& uv, const size_t depth) 
+        {
+          /* convert into standard quad patch if possible */
+          if (likely(patch.isQuadPatch())) 
+          {
+            CatmullClarkPatch qpatch; patch.init(qpatch);
+            return eval(qpatch,uv,1.0f,depth); 
+          }
+          
+          /* subdivide patch */
+          size_t N;
+          array_t<CatmullClarkPatch,GeneralCatmullClarkPatch::SIZE> patches; 
+          patch.subdivide(patches,N); // FIXME: only have to generate one of the patches
+          
+          /* parametrization for triangles */
+          if (N == 3)
+            eval_general_triangle(patch,patches,uv,depth);
+          
+          /* parametrization for quads */
+          else if (N == 4) 
+            eval_general_quad(patch,patches,uv,depth);
+          
+          /* parametrization for arbitrary polygons */
+          else 
+          {
+            const unsigned l = floor(4.0f*uv.x); const float u = 2.0f*frac(4.0f*uv.x); 
+            const unsigned h = floor(4.0f*uv.y); const float v = 2.0f*frac(4.0f*uv.y); 
+            const unsigned i = 4*h+l; assert(i<N);
 
-	    const Vec3fa Ng0 = patch.ring[0].getNormal();
-	    const Vec3fa Ng1 = patch.ring[1].getNormal();
-	    const Vec3fa Ng2 = patch.ring[2].getNormal();
-	    const Vec3fa Ng3 = patch.ring[3].getNormal();
-	    Ng[(iy-y0)*dwidth+(ix-x0)] = normalize_safe(sy0*(sx0*Ng0+sx1*Ng1) + sy1*(sx0*Ng3+sx1*Ng2));
-	  }
-	}
-      }
-    }
-
-    void eval(const CatmullClarkPatch3fa& patch, const BBox2f& srange, const BBox2f& erange, const size_t depth)
-    {
-      if (erange.empty())
-	return;
-      
-      if (patch.isRegularOrFinal(depth))
-	return dice(patch,srange,erange);
-
-      array_t<CatmullClarkPatch3fa,4> patches; 
-      patch.subdivide(patches);
-
-      const Vec2f c = srange.center();
-      const BBox2f srange0(srange.lower,c);
-      const BBox2f srange1(Vec2f(c.x,srange.lower.y),Vec2f(srange.upper.x,c.y));
-      const BBox2f srange2(c,srange.upper);
-      const BBox2f srange3(Vec2f(srange.lower.x,c.y),Vec2f(c.x,srange.upper.y));
-
-      eval(patches[0],srange0,intersect(srange0,erange),depth+1);
-      eval(patches[1],srange1,intersect(srange1,erange),depth+1);
-      eval(patches[2],srange2,intersect(srange2,erange),depth+1);
-      eval(patches[3],srange3,intersect(srange3,erange),depth+1);
-    }
-  };
-
-  __forceinline void feature_adaptive_eval (const CatmullClarkPatch3fa& patch, 
-					    const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-					    Vec3fa* P, Vec3fa* Ng, const size_t dwidth, const size_t dheight)
-  {
-    FeatureAdaptiveEval eval(patch,x0,x1,y0,y1,swidth,sheight,P,Ng,dwidth,dheight);
+#if PATCH_USE_GREGORY == 2
+            BezierCurve borders[2]; patch.getLimitBorder(borders,i);
+            BezierCurve border0l,border0r; borders[0].subdivide(border0l,border0r);
+            BezierCurve border2l,border2r; borders[1].subdivide(border2l,border2r);
+            eval(patches[i],Vec2f(u,v),8.0f,depth+1, &border0l, nullptr, nullptr, &border2r);
+#else
+            eval(patches[i],Vec2f(u,v),8.0f,depth+1);
+#endif
+          }
+        }
+        
+      private:
+        Vertex* const P;
+        Vertex* const dPdu;
+        Vertex* const dPdv;
+      };
   }
-
-  template<typename Tessellator>
-  struct FeatureAdaptiveEvalSubdivision
-  {
-    Tessellator& tessellator;
-
-    __forceinline FeatureAdaptiveEvalSubdivision (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator& tessellator)
-      : tessellator(tessellator)
-    {
-      int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE]; // FIXME: use array_t
-      GeneralCatmullClarkPatch3fa patch;
-      patch.init(h,vertices);
-      for (size_t i=0; i<patch.size(); i++) {
-	neighborSubdiv[i] = h->hasOpposite() ? !h->opposite()->isGregoryFace() : 0; h = h->next();
-      }
-      subdivide(patch,0,neighborSubdiv);
-    }
-
-    void subdivide(const GeneralCatmullClarkPatch3fa& patch, int depth, int neighborSubdiv[GeneralCatmullClarkPatch3fa::SIZE])
-    {
-      /* convert into standard quad patch if possible */
-      if (likely(patch.isQuadPatch())) 
-      {
-	const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
-	CatmullClarkPatch3fa qpatch; patch.init(qpatch);
-	subdivide(qpatch,depth,uv,neighborSubdiv,0);
-	return;
-      }
-
-      /* subdivide patch */
-      size_t N;
-      array_t<CatmullClarkPatch3fa,GeneralCatmullClarkPatch3fa::SIZE> patches; 
-      patch.subdivide(patches,N);
-
-      /* check if subpatches need further subdivision */
-      array_t<bool,GeneralCatmullClarkPatch3fa::SIZE> childSubdiv;
-      for (size_t i=0; i<N; i++)
-        childSubdiv[i] = !patches[i].isGregoryOrFinal(depth);
-
-      /* parametrization for triangles */
-      if (N == 3) {
-	const Vec2f uv_0(0.0f,0.0f);
-	const Vec2f uv01(0.5f,0.0f);
-	const Vec2f uv_1(1.0f,0.0f);
-	const Vec2f uv12(0.5f,0.5f);
-	const Vec2f uv_2(0.0f,1.0f);
-	const Vec2f uv20(0.0f,0.5f);
-	const Vec2f uvcc(1.0f/3.0f);
-	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv20 };
-	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
-	const Vec2f uv2[4] = { uv_2,uv20,uvcc,uv12 };
-	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[2],false };
-	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
-	const int neighborSubdiv2[4] = { false,childSubdiv[0],childSubdiv[1],false };
-	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
-	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
-	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
-      } 
-
-      /* parametrization for quads */
-      else if (N == 4) { 
-	const Vec2f uv_0(0.0f,0.0f);
-	const Vec2f uv01(0.5f,0.0f);
-	const Vec2f uv_1(1.0f,0.0f);
-	const Vec2f uv12(1.0f,0.5f);
-	const Vec2f uv_2(1.0f,1.0f);
-	const Vec2f uv23(0.5f,1.0f);
-	const Vec2f uv_3(0.0f,1.0f);
-	const Vec2f uv30(0.0f,0.5f);
-	const Vec2f uvcc(0.5f,0.5f);
-	const Vec2f uv0[4] = { uv_0,uv01,uvcc,uv30 };
-	const Vec2f uv1[4] = { uv_1,uv12,uvcc,uv01 };
-	const Vec2f uv2[4] = { uv_2,uv23,uvcc,uv12 };
-	const Vec2f uv3[4] = { uv_3,uv30,uvcc,uv23 };
-	const int neighborSubdiv0[4] = { false,childSubdiv[1],childSubdiv[3],false };
-	const int neighborSubdiv1[4] = { false,childSubdiv[2],childSubdiv[0],false };
-	const int neighborSubdiv2[4] = { false,childSubdiv[3],childSubdiv[1],false };
-	const int neighborSubdiv3[4] = { false,childSubdiv[0],childSubdiv[2],false };
-	subdivide(patches[0],depth+1, uv0, neighborSubdiv0, 0);
-	subdivide(patches[1],depth+1, uv1, neighborSubdiv1, 1);
-	subdivide(patches[2],depth+1, uv2, neighborSubdiv2, 2);
-	subdivide(patches[3],depth+1, uv3, neighborSubdiv3, 3);
-      } 
-
-      /* parametrization for arbitrary polygons */
-      else 
-      {
-	for (size_t i=0; i<N; i++) 
-	{
-	  const Vec2f uv[4] = { Vec2f(float(i)+0.0f,0.0f),Vec2f(float(i)+1.0f,0.0f),Vec2f(float(i)+1.0f,1.0f),Vec2f(float(i)+0.0f,1.0f) };
-	  const int neighborSubdiv[4] = { false,childSubdiv[(i+1)%N],childSubdiv[(i-1)%N],false };
-	  subdivide(patches[i],depth+1,uv,neighborSubdiv, i);
-	}
-      }
-    }
-    
-    void subdivide(const CatmullClarkPatch3fa& patch, int depth, const Vec2f uv[4], const int neighborSubdiv[4], const int id) {
-      return tessellator(patch,uv,neighborSubdiv,id);
-    }
-  };
-
-   template<typename Tessellator>
-     inline void feature_adaptive_subdivision_eval (const SubdivMesh::HalfEdge* h, const BufferT<Vec3fa>& vertices, Tessellator tessellator)
-   {
-     FeatureAdaptiveEvalSubdivision<Tessellator>(h,vertices,tessellator);
-   }
 }
-

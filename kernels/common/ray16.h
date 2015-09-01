@@ -38,8 +38,21 @@ namespace embree
                         const float16& time = zero, const int16& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), mask(mask), time(time) {}
 
+    /*! returns the size of the ray */
+    static __forceinline size_t size() { return 16; }
+
     /*! Tests if we hit something. */
     __forceinline operator bool16() const { return geomID != int16(-1); }
+
+    /*! calculates if this is a valid ray that does not cause issues during traversal */
+    __forceinline bool16 valid() const {
+      const bool16 vx = abs(org.x) <= float16(FLT_LARGE) & abs(dir.x) <= float16(FLT_LARGE);
+      const bool16 vy = abs(org.y) <= float16(FLT_LARGE) & abs(dir.y) <= float16(FLT_LARGE);
+      const bool16 vz = abs(org.z) <= float16(FLT_LARGE) & abs(dir.z) <= float16(FLT_LARGE);
+      const bool16 vn = abs(tnear) <= float16(inf);
+      const bool16 vf = abs(tfar) <= float16(inf);
+      return vx & vy & vz & vn & vf;
+    }
 
   public:
     Vec3f16 org;      //!< Ray origin
@@ -111,6 +124,35 @@ namespace embree
       store16i(m_mask,(int*)&geomID,new_geomID);
       store16i(m_mask,(int*)&primID,new_primID);     
     }
+
+    /* converts ray packet to single rays */
+    __forceinline void get(Ray ray[16]) const
+    {
+      for (size_t i=0; i<16; i++) // FIXME: use SSE and AVX transpose
+      {
+	ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i]; 
+	ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i];
+	ray[i].tnear = tnear[i]; ray[i].tfar  = tfar [i]; ray[i].time  = time[i]; ray[i].mask = mask[i];
+	ray[i].Ng.x = Ng.x[i]; ray[i].Ng.y = Ng.y[i]; ray[i].Ng.z = Ng.z[i];
+	ray[i].u = u[i]; ray[i].v = v[i];
+	ray[i].geomID = geomID[i]; ray[i].primID = primID[i]; ray[i].instID = instID[i];
+      }
+    }
+
+    /* converts single rays to ray packet */
+    __forceinline void set(const Ray ray[16])
+    {
+      for (size_t i=0; i<16; i++)
+      {
+	org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z;
+	dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z;
+	tnear[i] = ray[i].tnear; tfar [i] = ray[i].tfar;  time[i] = ray[i].time; mask[i] = ray[i].mask;
+	Ng.x[i] = ray[i].Ng.x; Ng.y[i] = ray[i].Ng.y; Ng.z[i] = ray[i].Ng.z;
+	u[i] = ray[i].u; v[i] = ray[i].v;
+	geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
+      }
+    }
+
   };
 
   /*! Outputs ray to stream. */

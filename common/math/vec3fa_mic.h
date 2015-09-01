@@ -41,6 +41,7 @@ namespace embree
     __forceinline Vec3fa () {}
     __forceinline Vec3fa ( float x                   ) : x(x), y(x), z(x), a(0) {}
     __forceinline Vec3fa ( float x, float y, float z ) : x(x), y(y), z(z), a(0) {}
+    __forceinline Vec3fa ( float x, float y, float z, float w ) : x(x), y(y), z(z), w(w) {}
     __forceinline Vec3fa ( const Vec3f & o           ) : x(o.x), y(o.y), z(o.z), a(0) {}
     __forceinline Vec3fa ( const Vec3fa& other, const int other_a ) : x(other.x), y(other.y), z(other.z), a(other_a) {}
     
@@ -61,8 +62,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline const float& operator []( const size_t index ) const { assert(index < 3); return (&x)[index]; }
-    __forceinline       float& operator []( const size_t index )       { assert(index < 3); return (&x)[index]; }
+    __forceinline const float& operator []( const size_t index ) const { assert(index <= 3); return (&x)[index]; }
+    __forceinline       float& operator []( const size_t index )       { assert(index <= 3); return (&x)[index]; }
   };
   
   /*! 3-wide vectors emulated with 16-wide vectors. */
@@ -97,9 +98,17 @@ namespace embree
     /// Loading
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline Vec3fa_t loadu( const float* const a ) { 
+    static __forceinline Vec3fa_t loadu( const void* const a ) { 
       const bool16 m_4f = 0xf;
-      return (__m512)permute<0,0,0,0>(uload16f(m_4f,a));
+      return (__m512)permute<0,0,0,0>(uload16f(m_4f,(float*)a));
+    }
+
+    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  // FIXME: implement fast version
+    {
+      ((float*)ptr)[0] = ((float*)&v)[0];
+      ((float*)ptr)[1] = ((float*)&v)[1];
+      ((float*)ptr)[2] = ((float*)&v)[2];
+      ((float*)ptr)[3] = ((float*)&v)[3];
     }
   };
 

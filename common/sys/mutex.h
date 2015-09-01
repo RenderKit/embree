@@ -165,6 +165,18 @@ namespace embree
     bool locked;
   };
 
+  /*! safe mutex try_lock and unlock helper */
+  template<typename Mutex> class AutoUnlock {
+  public:
+    AutoUnlock (Mutex& mutex) : mutex(mutex), locked(false) {}
+    ~AutoUnlock() { if (locked) mutex.unlock(); }
+    __forceinline bool lock() { locked = true; mutex.lock(); }
+    __forceinline bool isLocked() const { return locked; }
+  protected:
+    Mutex& mutex;
+    bool locked;
+  };
+
   class TicketMutex
   {
   public:
