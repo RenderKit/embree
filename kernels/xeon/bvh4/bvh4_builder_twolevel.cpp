@@ -48,7 +48,7 @@ namespace embree
       }
 
       /* reset memory allocator */
-      bvh->alloc.clear();
+      bvh->alloc.reset();
       
       /* skip build for empty scene */
       const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
