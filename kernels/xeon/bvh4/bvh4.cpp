@@ -30,7 +30,7 @@
 
 #include "../../common/accelinstance.h"
 
-#define ENABLE_TEST_INTERSECTOR 0
+#define ENABLE_TEST_INTERSECTOR 1
 
 namespace embree
 {

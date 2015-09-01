@@ -26,44 +26,10 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
-#define SWITCH_THRESHOLD 5
-#define SWITCH_DURING_DOWN_TRAVERSAL 1
-
 #if !defined(__WIN32__)
 
 namespace embree
 {
-    /* ----------------- */
-    /* -- 0 0 0 1 1 2 -- */
-    /* -- 1 2 3 2 3 3 -- */
-    /* ----------------- */
-
-    __forceinline unsigned int countBits3(const unsigned int bits, const unsigned int flip_mask, const unsigned int and_mask)
-    {
-      return __popcnt((bits ^ flip_mask) & and_mask);
-
-    }
-      
-    __forceinline int4 cmpT(unsigned int bits)
-    {
-      const unsigned int count0 = countBits3(bits,0b000000,0b000111);
-      const unsigned int count1 = countBits3(bits,0b000001,0b011001);
-      const unsigned int count2 = countBits3(bits,0b001010,0b101010);
-      const unsigned int count3 = countBits3(bits,0b110100,0b110100);
-
-      return int4(count0,count1,count2,count3);
-    }
-
-    static int4 compareTable[64] = {
-      cmpT(0*8+0), cmpT(0*8+1), cmpT(0*8+2), cmpT(0*8+3), cmpT(0*8+4), cmpT(0*8+5), cmpT(0*8+6), cmpT(0*8+7),
-      cmpT(1*8+0), cmpT(1*8+1), cmpT(1*8+2), cmpT(1*8+3), cmpT(1*8+4), cmpT(1*8+5), cmpT(1*8+6), cmpT(1*8+7),
-      cmpT(2*8+0), cmpT(2*8+1), cmpT(2*8+2), cmpT(2*8+3), cmpT(2*8+4), cmpT(2*8+5), cmpT(2*8+6), cmpT(2*8+7),
-      cmpT(3*8+0), cmpT(3*8+1), cmpT(3*8+2), cmpT(3*8+3), cmpT(3*8+4), cmpT(3*8+5), cmpT(3*8+6), cmpT(3*8+7),
-      cmpT(4*8+0), cmpT(4*8+1), cmpT(4*8+2), cmpT(4*8+3), cmpT(4*8+4), cmpT(4*8+5), cmpT(4*8+6), cmpT(4*8+7),
-      cmpT(5*8+0), cmpT(5*8+1), cmpT(5*8+2), cmpT(5*8+3), cmpT(5*8+4), cmpT(5*8+5), cmpT(5*8+6), cmpT(5*8+7),
-      cmpT(6*8+0), cmpT(6*8+1), cmpT(6*8+2), cmpT(6*8+3), cmpT(6*8+4), cmpT(6*8+5), cmpT(6*8+6), cmpT(6*8+7),
-      cmpT(7*8+0), cmpT(7*8+1), cmpT(7*8+2), cmpT(7*8+3), cmpT(7*8+4), cmpT(7*8+5), cmpT(7*8+6), cmpT(7*8+7)
-    };
 
     static int4 compactTable[16] = {
       /* 0b0000 */ int4(3,3,3,3),
@@ -132,25 +98,6 @@ namespace embree
     }
 #endif
    
-    __forceinline size_t getCompareMask(const float4 &v)
-    {
-#if defined (__AVX2__)
-      const float8 v8  = assign(v);
-      const float8 c0  = permute(v8,comparePerm0);
-      const float8 c1  = permute(v8,comparePerm1);
-      const bool8 mask = c0 < c1;
-      return movemask(mask);
-#else
-      return 0;
-#endif
-    }
-
-    __forceinline int4 getPermuteSequence(const float4 &v)
-    {
-      const size_t mask = getCompareMask(v);
-      assert(mask < 64);
-      return compareTable[mask];
-    }
 
     __forceinline int4 merge(const int4 &a, const int4 &b, const int imm)
     {
@@ -213,15 +160,6 @@ namespace embree
       const bool8 active = ray_tnear < ray_tfar;
       size_t bits = movemask(active);
 
-      /* switch to single ray traversal */
-#if 0 // !defined(__WIN32__) || defined(__X86_64__)
-      /* compute near/far per ray */
-
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
-      }
-#else
-
 #if 0 // defined(__AVX2__)
 
       float4 t0(3,0,1,2);
@@ -241,15 +179,26 @@ namespace embree
       exit(0);
 #endif
 
+      /* switch to single ray traversal */
+#if 0 // !defined(__WIN32__) || defined(__X86_64__)
+      /* compute near/far per ray */
+
+      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+        BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
+      }
+#else
+
       NodeRef stackNode[stackSizeSingle];  //!< stack of nodes 
       float   stackDist[stackSizeSingle];  //!< stack of nodes 
 
       for (size_t k=__bsf(bits); bits!=0; bits=__blsr(bits), k=__bsf(bits)) 
       {
-        size_t sindex = 1;
+        size_t sindex = 2;
 
-        stackNode[0] = bvh->root;
-        stackDist[0] = neg_inf;
+        stackNode[0] = BVH4::invalidNode;
+        stackDist[0] = pos_inf;
+        stackNode[1] = bvh->root;
+        stackDist[1] = neg_inf;
 
         /*! load the ray into SIMD registers */
         const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
@@ -259,16 +208,13 @@ namespace embree
         float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
       
         /* pop loop */
-        while (true) pop:
+        while (true)
         {
           /*! pop next node */
-          if (unlikely(sindex == 0)) break;
+          //if (unlikely(sindex == 0)) break;
           sindex--;
           NodeRef cur = NodeRef(stackNode[sindex]);
-          
-          /*! if popped node is too far, pop next one */
-          if (unlikely(stackDist[sindex] > ray.tfar[k]))
-            continue;
+          STAT3(normal.trav_stack_pop,1,1,1);
         
           /* downtraversal loop */
           while (true)
@@ -289,6 +235,9 @@ namespace embree
             //const bool4  nactive = float4(pos_inf) == node->lower_x;
             const bool4  nactive = float4(pos_inf) != node->lower_x;
 
+            sindex--;
+            const BVH4::NodeRef stack_cur = stackNode[sindex];
+
             const float4 tNearX  = mini(_tNearX,_tFarX);
             const float4 tNearY  = mini(_tNearY,_tFarY);
             const float4 tNearZ  = mini(_tNearZ,_tFarZ);
@@ -303,9 +252,15 @@ namespace embree
             const bool4 vmask  = nactive & (tNear <= tFar);
             //unsigned int mask = movemask(vmask)^0xf;
             unsigned int mask = movemask(vmask);
-            
-            if (unlikely(mask == 0))
-              goto pop;
+
+            STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+
+#if 0            
+            cur = stack_cur;
+
+            if (unlikely(mask == 0)) continue;
+
+            sindex++;
 
             const size_t setbits = __popcnt(mask);
             const int4 rc = reverseCompact[setbits];
@@ -313,19 +268,15 @@ namespace embree
             //const float4 dist = select(vmask,float4(neg_inf),tNear);
             //const float4 dist_perm = permute(dist,compactTable[mask]);
 
-#if 1
             
             int8 node4 = *(int8*)node->children;
 
-#if 0
-            const int4 perm4i = compactTable[mask];
-            float4 dist4_perm = permute(tNear,perm4i);
+            // const int4 perm4i = compactTable[mask];
+            // float4 dist4_perm = permute(tNear,perm4i);
 
-            const int8 perm8i = compactTable64[mask];
-            int8   node4_perm = permute(node4,perm8i);
-#else
+            // const int8 perm8i = compactTable64[mask];
+            // int8   node4_perm = permute(node4,perm8i);
 
-            //
             int4 perm4i;
             const unsigned int min_dist_index = networkSort(tNear,vmask,perm4i);
 
@@ -344,9 +295,6 @@ namespace embree
             const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
             const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
 
-#endif            
-
-
             store4f(&stackDist[sindex],dist4_perm);
             store8i(&stackNode[sindex],node4_perm);
 
@@ -357,39 +305,56 @@ namespace embree
             
 #else
             
-#pragma unroll
-            for (size_t i=0;i<4;i++)
-            {
-              const unsigned int index = compactTable[mask][i];
+            const int4 or_mask = select(vmask,step4,allSet4); //optimize
+            const int4 vi = cast(tNear); 
+            const int4 a0 = (vi & mask2) | or_mask;
+            const int4 b0 = shuffle<1,0,3,2>(a0);
+            const int4 c0 = umin(a0,b0);
+            const int4 d0 = umax(a0,b0);
+            const int4 a1 = merge(c0,d0,0b0101);
+            const int4 b1 = shuffle<2,3,0,1>(a1);
+            const int4 c1 = umin(a1,b1);
+            const unsigned int min_index0 = extract<0>(c1) & 3;
+            assert(min_dist_index < 4);
+            cur = node->child(min_index0);
+            cur = mask != 0 ? cur : stack_cur;
+            const size_t hits = __popcnt(mask);
+            sindex += hits;
+            if (likely(hits <= 1)) continue;
 
-              // if ( stackDist[sindex+i] != tNear[index] )
-              //   PING;
+            int8 node4 = *(int8*)node->children;
 
-              // if ( stackNode[sindex+i] != node->child(index) )
-              // {
-              //   PING;
-              //   PRINT( stackNode[sindex+i] );
-              //   PRINT( node->child(index)  );
-              //   exit(0);
-              // }
+            const int4 d1 = umax(a1,b1);
+            const int4 a2 = merge(c1,d1,0b0011);
+            const int4 b2 = shuffle<0,2,1,3>(a2);
+            const int4 c2 = umin(a2,b2);
+            const int4 d2 = umax(a2,b2);
+            const int4 a3 = merge(c2,d2,0b0010);
+            assert(*(unsigned int*)&a3[0] <= *(unsigned int*)&a3[1]);
+            assert(*(unsigned int*)&a3[1] <= *(unsigned int*)&a3[2]);
+            assert(*(unsigned int*)&a3[2] <= *(unsigned int*)&a3[3]);
+            int4 perm4i = a3 & 3;
+                          
+            perm4i                   = permute(perm4i,reverseCompact[hits]);            
+            const float4 dist4_perm  = permute(tNear,perm4i);
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
 
-              stackNode[sindex+i] = node->child(index);
-
-              stackDist[sindex+i] = tNear[index];
-            }
-
-            sindex += (ssize_t)__popcnt(mask) - 1;
-            cur = stackNode[sindex];
+            store4f(&stackDist[sindex-hits+1],dist4_perm);
+            store8i(&stackNode[sindex-hits+1],node4_perm);
+            
             
 #endif
 
 
 
-#else
 #endif
 
           }
         
+          if (unlikely(cur == BVH4::invalidNode)) break;
+
           /*! this is a leaf node */
           assert(cur != BVH4::emptyNode);
           STAT3(normal.trav_leaves, 1, 1, 1);
@@ -398,6 +363,20 @@ namespace embree
           
           size_t lazy_node = 0;
           PrimitiveIntersector8::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
+
+          /*! stack compaction */
+          if (unlikely(any(ray_far != ray.tfar[k])))
+          {
+            size_t new_sindex = 1;
+            for (size_t s=1;s<sindex;s++)
+              if (unlikely(stackDist[s] <= ray.tfar[k]))
+              {
+                stackNode[new_sindex] = stackNode[s];
+                stackDist[new_sindex] = stackDist[s];
+                new_sindex++;
+              }
+            sindex = new_sindex;
+          }
           ray_far = ray.tfar[k];
         }
       }

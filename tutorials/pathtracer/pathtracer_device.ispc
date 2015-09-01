@@ -1555,7 +1555,7 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
-  //rtcDebug();
+  rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */
