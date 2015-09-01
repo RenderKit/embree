@@ -106,6 +106,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_subdiv.cpp
+  ../common/subdiv/feature_adaptive_eval_grid.cpp
 
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
@@ -157,6 +158,7 @@ IF (TARGET_AVX)
     bvh4/bvh4_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
+    ../common/subdiv/feature_adaptive_eval_grid.avx.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
@@ -238,6 +240,7 @@ IF (TARGET_AVX512)
     bvh4/bvh4_intersector16_chunk.cpp
     bvh4/bvh4_intersector16_hybrid.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp
+    ../common/subdiv/feature_adaptive_eval_grid.avx512.cpp
 
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
