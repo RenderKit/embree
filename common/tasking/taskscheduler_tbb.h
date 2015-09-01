@@ -260,7 +260,7 @@ namespace embree
     void reset();
 
     /*! let a worker thread allocate a thread index */
-    ssize_t allocThreadIndex();
+    __dllexport ssize_t allocThreadIndex();
 
     /*! wait for some number of threads available (threadCount includes main thread) */
     void wait_for_threads(size_t threadCount);
