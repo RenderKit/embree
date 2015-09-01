@@ -27,7 +27,7 @@ SET(CMAKE_CXX_COMPILER "icpc")
 SET(CMAKE_C_COMPILER "icc")
 SET(CMAKE_CXX_FLAGS "-Wall -fPIC -std=c++11 -no-ansi-alias -static-intel -fasm-blocks")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O0")
-SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict -g")
+SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -g -O3 -restrict")
 SET(CMAKE_EXE_LINKER_FLAGS "") 
 
