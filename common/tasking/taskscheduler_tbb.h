@@ -280,14 +280,14 @@ namespace embree
     {
       if (useThreadPool) startThreads();
       
-      Thread thread(0,this);
-      assert(threadLocal[0] == nullptr);
-      threadLocal[0] = &thread;
+      size_t threadIndex = allocThreadIndex();
+      Thread thread(threadIndex,this);
+      assert(threadLocal[threadIndex] == nullptr);
+      threadLocal[threadIndex] = &thread;
       Thread* oldThread = swapThread(&thread);
       thread.tasks.push_right(thread,size,closure);
       {
         Lock<MutexSys> lock(mutex);
-        atomic_add(&threadCounter,+1);
 	atomic_add(&anyTasksRunning,+1);
         hasRootTask = true;
         condition.notify_all();
@@ -299,13 +299,14 @@ namespace embree
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
       
-      threadLocal[0] = nullptr;
+      threadLocal[threadIndex] = nullptr;
       swapThread(oldThread);
 
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
-      while (threadCounter > 0)
+      while (threadCounter > 0) {
         yield();
+      }
 
       //assert(anyTasksRunning == -1);
       //anyTasksRunning = 0;

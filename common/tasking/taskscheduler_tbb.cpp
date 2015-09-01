@@ -192,10 +192,6 @@ namespace embree
         if (terminate) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
-        if (threadIndex < 0) {
-          schedulers.pop_front();
-          continue;
-        }
       }
       scheduler->thread_loop(threadIndex);
     }
@@ -264,7 +260,7 @@ namespace embree
     delete threadPool; threadPool = nullptr;
   }
 
-  ssize_t TaskSchedulerTBB::allocThreadIndex()
+  __dllexport ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
@@ -276,7 +272,6 @@ namespace embree
     mutex.lock();
     size_t threadIndex = atomic_add(&threadCounter,1);
     assert(threadIndex < MAX_THREADS);
-    //condition.wait(mutex, [&] () { return anyTasksRunning != 0; });
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
     thread_loop(threadIndex);

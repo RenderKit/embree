@@ -525,45 +525,43 @@ namespace embree
 
   void Scene::build (size_t threadIndex, size_t threadCount) 
   {
+    AutoUnlock<MutexSys> buildLock(buildMutex);
+
+    /* allocates own taskscheduler for each build */
     Ref<TaskSchedulerTBB> scheduler = nullptr;
-    {
+    { 
       Lock<MutexSys> lock(schedulerMutex);
       scheduler = this->scheduler;
-      if (scheduler == null) this->scheduler = scheduler = new TaskSchedulerTBB;
+      if (scheduler == null) {
+        buildLock.lock();
+        this->scheduler = scheduler = new TaskSchedulerTBB;
+      }
     }
 
-    if (threadCount != 0) 
-    {
-      if (threadIndex > 0) {
-        scheduler->join();
-        return;
-      } else
-        scheduler->wait_for_threads(threadCount);
-    }
-
-    /* try to obtain build lock */
-    TryLock<MutexSys> lock(buildMutex);
-
-    /* join hierarchy build */
-    if (!lock.isLocked()) {
+    /* worker threads join build */
+    if (!buildLock.isLocked()) {
       scheduler->join();
       return;
     }
 
+    /* wait for all threads in rtcCommitThread mode */
+    if (threadCount != 0)
+      scheduler->wait_for_threads(threadCount);
+
+    /* fast path for unchanged scenes */
     if (!isModified()) {
-      this->scheduler = nullptr;
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
       return;
     }
 
-    progress_monitor_counter = 0;
-
+    /* report error if scene not ready */
     if (!ready()) {
-      this->scheduler = nullptr;
+      scheduler->spawn_root([&]() { this->scheduler = nullptr; }, 1, threadCount == 0);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
     }
 
-    scheduler->spawn_root  ([&]() { build_task(); }, 1, threadCount == 0);
-    this->scheduler = nullptr;
+    /* initiate build */
+    scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
   }
 
 #endif

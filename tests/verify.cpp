@@ -2648,7 +2648,10 @@ namespace embree
 	if (thread->threadIndex < task->numActiveThreads) 
 	{
           if (build_join_test) rtcCommit(task->scene);
-          else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          else                 {
+            rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+            rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          }
 	  //CountErrors();
           if (rtcGetError() != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
@@ -2728,7 +2731,10 @@ namespace embree
 	task->numActiveThreads = max(size_t(1),random<int>() % thread->threadCount);
 	task->barrier.wait();
         if (build_join_test) rtcCommit(task->scene);
-        else                 rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+        else                 {
+          rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
+          rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);          
+        }
       } else {
         if (!hasError) {
           rtcCommit(task->scene);
