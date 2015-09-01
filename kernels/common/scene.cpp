@@ -603,10 +603,12 @@ namespace embree
     }
 
     if (!isModified()) {
+      if (threadCount) group_barrier.wait(threadCount);
       return;
     }
 
     if (!ready()) {
+      if (threadCount) group_barrier.wait(threadCount);
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
       return;
     }
