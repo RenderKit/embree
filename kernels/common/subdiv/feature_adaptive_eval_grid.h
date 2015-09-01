@@ -136,7 +136,7 @@ namespace embree
       }
 
       template<typename Patch>
-      __forceinline void evalLocalGrid(const Patch& patch, const BBox2f& srange, const int lx0, const int lx1, const int ly0, const int ly1)
+      void evalLocalGrid(const Patch& patch, const BBox2f& srange, const int lx0, const int lx1, const int ly0, const int ly1)
       {
         const float scale_x = rcp(srange.upper.x-srange.lower.x);
         const float scale_y = rcp(srange.upper.y-srange.lower.y);
@@ -268,9 +268,9 @@ namespace embree
     };
     
     template<typename Eval, typename Patch>
-      __forceinline bool stitch_col(const Patch& patch, int subPatch,
-                                    const bool right, const size_t y0, const size_t y1, const int fine_y, const int coarse_y, 
-                                    float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dx0, const size_t dwidth, const size_t dheight)
+      bool stitch_col(const Patch& patch, int subPatch,
+                      const bool right, const size_t y0, const size_t y1, const int fine_y, const int coarse_y, 
+                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dx0, const size_t dwidth, const size_t dheight)
     {
       assert(coarse_y <= fine_y);
       if (likely(fine_y == coarse_y))
@@ -300,9 +300,9 @@ namespace embree
     }
     
     template<typename Eval, typename Patch>
-      __forceinline bool stitch_row(const Patch& patch, int subPatch, 
-                                    const bool bottom, const size_t x0, const size_t x1, const int fine_x, const int coarse_x, 
-                                    float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dy0, const size_t dwidth, const size_t dheight)
+      bool stitch_row(const Patch& patch, int subPatch, 
+                      const bool bottom, const size_t x0, const size_t x1, const int fine_x, const int coarse_x, 
+                      float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dy0, const size_t dwidth, const size_t dheight)
     {
       assert(coarse_x <= fine_x);
       if (likely(fine_x == coarse_x))
@@ -332,9 +332,9 @@ namespace embree
     }
     
     template<typename Eval, typename Patch>
-    __forceinline void feature_adaptive_eval_grid (const Patch& patch, size_t subPatch, const float levels[4],
-                                                   const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
-                                                   float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
+    void feature_adaptive_eval_grid (const Patch& patch, size_t subPatch, const float levels[4],
+                                     const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight, 
+                                     float* Px, float* Py, float* Pz, float* U, float* V, float* Nx, float* Ny, float* Nz, const size_t dwidth, const size_t dheight)
     {
       bool sl = false, sr = false, st = false, sb = false;
       if (levels) {

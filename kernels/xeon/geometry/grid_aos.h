@@ -392,7 +392,7 @@ namespace embree
           unsigned char ofs;
         };
         
-        __forceinline const BBox3fa getBounds(const size_t x0, const size_t x1, const size_t y0, const size_t y1) const 
+        const BBox3fa getBounds(const size_t x0, const size_t x1, const size_t y0, const size_t y1) const 
         {
           BBox3fa bounds = empty;
           for (size_t y=y0; y<=y1; y++)
@@ -405,7 +405,7 @@ namespace embree
         __forceinline EagerLeaf (const GridAOS& grid) 
           : grid(grid) {}
         
-        __forceinline const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
+        const BBox3fa init (size_t x0, size_t x1, size_t y0, size_t y1) 
         {
           BBox3fa box_list[16];
           
@@ -465,7 +465,7 @@ namespace embree
       __forceinline       Vec3fa& point(const size_t x, const size_t y)       { assert(y*width+x < width*height); return P[y*width+x]; }
       __forceinline const Vec3fa& point(const size_t x, const size_t y) const { assert(y*width+x < width*height); return P[y*width+x]; }
       
-      __forceinline BBox3fa bounds() const
+      BBox3fa bounds() const
       {
         BBox3fa bounds = empty;
         for (size_t y=0; y<height; y++)
@@ -481,9 +481,9 @@ namespace embree
       }
       
       template<typename Allocator>
-      __forceinline size_t createEagerPrims(Allocator& alloc, PrimRef* prims, 
-                                            const size_t x0, const size_t x1,
-                                            const size_t y0, const size_t y1)
+      size_t createEagerPrims(Allocator& alloc, PrimRef* prims, 
+                              const size_t x0, const size_t x1,
+                              const size_t y0, const size_t y1)
       {
         size_t i=0;
         for (size_t y=y0; y<y1; y+=8) {
@@ -498,17 +498,17 @@ namespace embree
         return i;
       }
       
-      __forceinline void build(Scene* scene, SubdivMesh* mesh, unsigned primID,
-                               const SubdivPatch1Base& patch, 
-                               const size_t x0, const size_t x1,
-                               const size_t y0, const size_t y1)
+      void build(Scene* scene, SubdivMesh* mesh, unsigned primID,
+                 const SubdivPatch1Base& patch, 
+                 const size_t x0, const size_t x1,
+                 const size_t y0, const size_t y1)
       {
         __aligned(64) float grid_x[17*17+16]; 
         __aligned(64) float grid_y[17*17+16];
         __aligned(64) float grid_z[17*17+16];         
         __aligned(64) float grid_u[17*17+16]; 
         __aligned(64) float grid_v[17*17+16];
-        isa::evalGrid(patch,x0,x1,y0,y1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
+        evalGrid(patch,x0,x1,y0,y1,patch.grid_u_res,patch.grid_v_res,grid_x,grid_y,grid_z,grid_u,grid_v,mesh);
         
         const size_t dwidth  = x1-x0+1;
         const size_t dheight = y1-y0+1;
@@ -541,7 +541,7 @@ namespace embree
       }
       
       template<typename Allocator>
-      __forceinline static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
+      static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
       {
         size_t N = 0;
         const size_t x0 = 0, x1 = patch.grid_u_res-1;

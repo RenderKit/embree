@@ -202,15 +202,15 @@ namespace embree
   {
     /* eval grid over patch and stich edges when required */      
     static __noinline void evalGrid(const SubdivPatch1Base& patch,
-                                       const size_t x0, const size_t x1,
-                                       const size_t y0, const size_t y1,
-                                       const size_t swidth, const size_t sheight,
-                                       float *__restrict__ const grid_x,
-                                       float *__restrict__ const grid_y,
-                                       float *__restrict__ const grid_z,
-                                       float *__restrict__ const grid_u,
-                                       float *__restrict__ const grid_v,
-                                       const SubdivMesh* const geom)
+                                    const size_t x0, const size_t x1,
+                                    const size_t y0, const size_t y1,
+                                    const size_t swidth, const size_t sheight,
+                                    float *__restrict__ const grid_x,
+                                    float *__restrict__ const grid_y,
+                                    float *__restrict__ const grid_z,
+                                    float *__restrict__ const grid_u,
+                                    float *__restrict__ const grid_v,
+                                    const SubdivMesh* const geom)
     {
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
@@ -227,7 +227,7 @@ namespace embree
         
         if (geom->patch_eval_trees.size())
         {
-          isa::feature_adaptive_eval_grid<PatchEvalGrid> 
+          feature_adaptive_eval_grid<PatchEvalGrid> 
             (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -238,7 +238,7 @@ namespace embree
         {
           GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
           
-          isa::feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
+          feature_adaptive_eval_grid<FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa> 
             (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -348,7 +348,7 @@ namespace embree
 
         if (geom->patch_eval_trees.size())
         {
-          isa::feature_adaptive_eval_grid<PatchEvalGrid> 
+          feature_adaptive_eval_grid<PatchEvalGrid> 
             (geom->patch_eval_trees[patch.prim], patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
              x0,x1,y0,y1,swidth,sheight,
              grid_x,grid_y,grid_z,grid_u,grid_v,
@@ -359,7 +359,7 @@ namespace embree
         {
           GeneralCatmullClarkPatch3fa ccpatch(patch.edge(),geom->getVertexBuffer(0));
           
-          isa::feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
+          feature_adaptive_eval_grid <FeatureAdaptiveEvalGrid,GeneralCatmullClarkPatch3fa>
             (ccpatch, patch.subPatch(), patch.needsStitching() ? patch.level : nullptr,
             x0,x1,y0,y1,swidth,sheight,
             grid_x,grid_y,grid_z,grid_u,grid_v,
