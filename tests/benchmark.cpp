@@ -564,12 +564,12 @@ namespace embree
 
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
       double t0 = getSeconds();
-      RTCScene scene = rtcNewScene(sflags,aflags);
+      RTCScene scene = rtcNewScene2(device,sflags,aflags);
       
       for (size_t i=0; i<numMeshes; i++) 
       {
@@ -587,7 +587,7 @@ namespace embree
       rtcCommit (scene);
       double t1 = getSeconds();
       rtcDeleteScene(scene);
-      rtcExit();
+      rtcDeleteDevice(device);
       
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
@@ -603,10 +603,10 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
-      RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+      RTCScene scene = rtcNewScene2(device,RTC_SCENE_DYNAMIC,aflags);
       
       for (size_t i=0; i<numMeshes; i++) 
       {
@@ -627,7 +627,7 @@ namespace embree
       rtcCommit (scene);
       double t1 = getSeconds();
       rtcDeleteScene(scene);
-      rtcExit();
+      rtcDeleteDevice(device);
       
       //return 1000.0f*(t1-t0);
       size_t numTriangles = mesh.triangles.size() * numMeshes;
@@ -644,14 +644,14 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       std::vector<RTCScene> scenes;
       
       for (size_t i=0; i<numMeshes; i++) 
       {
-        RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC,aflags);
+        RTCScene scene = rtcNewScene2(device,RTC_SCENE_DYNAMIC,aflags);
 	unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
 	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
 	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
@@ -682,7 +682,7 @@ namespace embree
       double t1 = getSeconds();
       for (size_t i=0; i<scenes.size(); i++)
         rtcDeleteScene(scenes[i]);
-      rtcExit();
+      rtcDeleteDevice(device);
       
       //return 1000.0f*(t1-t0);
       size_t numTriangles = mesh.triangles.size() * numMeshes;
@@ -734,11 +734,11 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
-      scene = rtcNewScene(flags,aflags);
+      scene = rtcNewScene2(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
       rtcCommit (scene);
 
@@ -761,7 +761,7 @@ namespace embree
       g_threads.clear();
       
       rtcDeleteScene(scene);
-      rtcExit();
+      rtcDeleteDevice(device);
       return 1E-6*double(N)/(t1-t0)*double(numThreads);
     }
   };
@@ -810,11 +810,11 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      rtcInit((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
-      scene = rtcNewScene(flags,aflags);
+      scene = rtcNewScene2(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
       rtcCommit (scene);
 
@@ -837,7 +837,7 @@ namespace embree
       g_threads.clear();
       
       rtcDeleteScene(scene);
-      rtcExit();
+      rtcDeleteDevice(device);
       return 1E-6*double(N)/(t1-t0)*double(numThreads);
     }
   };
@@ -1006,9 +1006,9 @@ namespace embree
 
   void rtcore_intersect_benchmark(RTCSceneFlags flags, size_t numPhi)
   {
-    rtcInit(g_rtcore.c_str());
+    RTCDevice device = rtcNewDevice(g_rtcore.c_str());
 
-    RTCScene scene = rtcNewScene(flags,aflags);
+    RTCScene scene = rtcNewScene2(device,flags,aflags);
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
     
@@ -1058,7 +1058,7 @@ namespace embree
     delete numbers;
 
     rtcDeleteScene(scene);
-    rtcExit();
+    rtcDeleteDevice(device);
   }
 
 

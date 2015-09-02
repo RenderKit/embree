@@ -27,6 +27,7 @@ const int numPhi = 120;
 const int numTheta = 2*numPhi;
 
 /* scene data */
+RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 Vec3fa position[numSpheres];
 Vec3fa colors[numSpheres+1];
@@ -138,14 +139,14 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT1);
+  g_scene = rtcNewScene2(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT1);
 
   /* create some triangulated spheres */
   for (int i=0; i<numSpheres; i++)
@@ -333,5 +334,5 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

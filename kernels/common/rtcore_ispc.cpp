@@ -22,6 +22,14 @@ namespace embree
 #define size_t int  // FIXME: workaround for ISPC bug
 #define ssize_t int  // FIXME: workaround for ISPC bug
 
+  extern "C" RTCDevice ispcNewDevice(const char* cfg) {
+    return rtcNewDevice(cfg);
+  }
+
+  extern "C" void ispcDeleteDevice(RTCDevice device) {
+    rtcDeleteDevice(device);
+  }
+
   extern "C" void ispcInit(const char* cfg) {
     rtcInit(cfg);
   }
@@ -54,6 +62,12 @@ namespace embree
   {
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
     return rtcNewScene(flags,aflags);
+  }
+ 
+  extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
+  {
+    if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
+    return rtcNewScene2(device,flags,aflags);
   }
 
   extern "C" void ispcSetProgressMonitorFunction(RTCScene scene, void* func, void* ptr) {
@@ -373,3 +387,5 @@ namespace embree
     rtcInterpolateN(scene,geomID,valid,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats);
   }
 }
+
+

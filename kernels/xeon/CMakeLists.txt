@@ -69,6 +69,7 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../algorithms/pmap.cpp
   ../algorithms/prefix.cpp
 
+  ../common/device.cpp
   ../common/stat.cpp
   ../common/globals.cpp
   ../common/acceln.cpp

@@ -56,10 +56,6 @@ typedef int ssize_t;
 #define RTCORE_VERSION_PATCH @EMBREE_VERSION_PATCH@
 #define RTCORE_VERSION       @EMBREE_VERSION_NUMBER@
 
-#include "rtcore_scene.h"
-#include "rtcore_geometry.h"
-#include "rtcore_geometry_user.h"
-
 /*! \file rtcore.h Defines the Embree Ray Tracing Kernel API for C and C++ 
 
    This file defines the Embree ray tracing kernel API for C and
@@ -69,7 +65,38 @@ typedef int ssize_t;
 
 /*! \{ */
 
+/*! \brief Defines an opaque device type */
+typedef struct __RTCDevice {}* RTCDevice;
+
+/*! \brief Creates a new Embree device.
+
+  Creates a new Embree device to be used by the application. An
+  application typically creates only a single Embree device, but it is
+  valid to use multiple devices inside an application. A configuration
+  string can be passed at construction time, that allows to configure
+  implementation specific parameters. If this string is NULL, a
+  default configuration is used. The following configuration flags are
+  supported by the Embree implementation of the API:
+  
+  threads = num,       // sets the number of threads to use (default is to use all threads)
+  verbose = num,       // sets verbosity level (default is 0)
+
+  If Embree is started on an unsupported CPU, rtcNewDevice will fail and
+  set the RTC_UNSUPPORTED_CPU error code.
+  
+*/
+RTCORE_API RTCDevice rtcNewDevice(const char* cfg = NULL);
+
+/*! \brief Deletes an Embree device.
+
+  Deletes the Embree device again. After deletion, all scene handles
+  are invalid. The application should invoke this call before
+  terminating. */
+RTCORE_API void rtcDeleteDevice(RTCDevice device);
+
 /*! \brief Initializes the Embree ray tracing core
+
+  WARNING: This function is deprecated, use rtcNewDevice instead.
 
   Initializes the ray tracing core and passed some configuration
   string. The configuration string allows to configure implementation
@@ -84,16 +111,18 @@ typedef int ssize_t;
   set the RTC_UNSUPPORTED_CPU error code.
   
 */
-RTCORE_API void rtcInit(const char* cfg = NULL);
+RTCORE_API RTCORE_DEPRECATED void rtcInit(const char* cfg = NULL);
 
-/*! \brief Shuts down Embree. 
+/*! \brief Shuts down Embree
+
+  WARNING: This function is deprecated, use rtcDeleteDevice instead.
 
   Shuts down the ray tracing core. After shutdown, all scene handles
   are invalid, and invoking any API call except rtcInit is not
   allowed. The application should invoke this call before
   terminating. It is safe to call rtcInit again after an rtcExit
   call. */
-RTCORE_API void rtcExit();
+RTCORE_API RTCORE_DEPRECATED void rtcExit();
 
 /*! \brief Parameters that can get configured using the rtcSetParameter functions. */
 enum RTCParameter {
@@ -146,6 +175,10 @@ RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
   This function is implementation specific and only for debugging
   purposes. Do not call it. */
 RTCORE_API RTCORE_DEPRECATED void rtcDebug(); // FIXME: remove
+
+#include "rtcore_scene.h"
+#include "rtcore_geometry.h"
+#include "rtcore_geometry_user.h"
 
 /*! \brief Helper to easily combing scene flags */
 inline RTCSceneFlags operator|(const RTCSceneFlags a, const RTCSceneFlags b) {

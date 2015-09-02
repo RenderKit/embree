@@ -19,6 +19,8 @@
 #define size_tt int // FIXME: workaround of ISPC bug
 #define ssize_tt int // FIXME: workaround of ISPC bug
 
+extern "C" RTCDevice ispcNewDevice(const uniform int8* uniform cfg);
+extern "C" void ispcDeleteDevice(RTCDevice device);
 extern "C" void ispcInit(const uniform int8* uniform cfg);
 extern "C" void ispcExit();
 extern "C" void ispcSetParameter1i(const uniform RTCParameter parm, uniform ssize_tt val);
@@ -27,6 +29,7 @@ extern "C" void ispcSetErrorFunction (void* uniform ptr);
 extern "C" void ispcSetMemoryMonitorFunction (void* uniform ptr);
 extern "C" void ispcDebug();
 extern "C" RTCScene ispcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
+extern "C" RTCScene ispcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 extern "C" void ispcSetProgressMonitorFunction (RTCScene scene, void* uniform func, void* uniform ptr);
 extern "C" void ispcCommitScene (RTCScene scene);
 extern "C" void ispcCommitSceneThread (RTCScene scene, uniform unsigned int threadID, uniform unsigned int numThreads);
@@ -105,6 +108,14 @@ extern "C" void ispcInterpolateN(RTCScene scene, uniform unsigned int geomID,
                                  uniform RTCBufferType buffer, 
                                  uniform float* uniform P, uniform float* uniform dPdu, uniform float* uniform dPdv, uniform size_tt numFloats);
 
+RTCDevice rtcNewDevice(const uniform int8* uniform cfg) {
+  return ispcNewDevice(cfg);
+}
+
+void rtcDeleteDevice(RTCDevice device) {
+  ispcDeleteDevice(device);
+}
+
 void rtcInit(const uniform int8* uniform cfg) {
   ispcInit(cfg);
 }
@@ -144,6 +155,19 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
       aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
   }
   return ispcNewScene(flags,aflags);
+}
+
+RTCScene rtcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
+{  
+  if (aflags & RTC_INTERSECT_VARYING) {
+    if (sizeof(varying float) == 16)
+      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 1));
+    else if (sizeof(varying float) == 32)
+      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 2));
+    else if (sizeof(varying float) == 64)
+      aflags = (uniform RTCAlgorithmFlags) ((aflags & ~RTC_INTERSECT_VARYING) | (1 << 3));
+  }
+  return ispcNewScene2(device,flags,aflags);
 }
 
 void rtcSetProgressMonitorFunction(RTCScene scene, uniform RTC_PROGRESS_MONITOR_FUNCTION func, void* uniform ptr) {

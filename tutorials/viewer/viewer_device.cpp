@@ -21,6 +21,7 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 
 /* scene data */
+RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 void** geomID_to_mesh = nullptr;
 int* geomID_to_type = nullptr;
@@ -141,8 +142,8 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -169,7 +170,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcNewScene2(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -233,13 +234,16 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   rtcIntersect(g_scene,ray);
   
   /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
+    return Vec3fa(0.0f);
+  }
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa Ns = ray.Ng;
 
   if (g_use_smooth_normals)
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
     Vec3fa dPdu,dPdv;
     int geomID = ray.geomID;  {
@@ -405,5 +409,5 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

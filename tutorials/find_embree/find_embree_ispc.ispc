@@ -18,9 +18,9 @@
 
 export void ispcEntry()
 {
-  /* initialize Embree */
-  rtcInit();
+  /* create new Embree device */
+  RTCDevice device = rtcNewDevice();
 
-  /* cleanup Embree again */
-  rtcExit();
+  /* delete Embree device again */
+  rtcDeleteDevice(device);
 }

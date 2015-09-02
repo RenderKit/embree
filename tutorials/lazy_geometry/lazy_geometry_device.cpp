@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+RTCDevice g_device = nullptr;
+
 const int numPhi = 20;
 const int numTheta = 2*numPhi;
 const int numSpheres = 64;
@@ -138,7 +140,7 @@ void lazyCreate(LazyGeometry* instance)
   {
     /* create the geometry */
     printf("creating sphere %i\n",instance->userID);
-    instance->object = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+    instance->object = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* now switch to the LAZY_COMMIT state */
@@ -230,14 +232,14 @@ RTCScene g_scene  = nullptr;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -351,5 +353,5 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

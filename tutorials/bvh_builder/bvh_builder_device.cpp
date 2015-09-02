@@ -19,9 +19,8 @@
 #include "../../kernels/xeon/builders/bvh_builder_sah.h"
 #include "../../kernels/xeon/builders/bvh_builder_morton.h"
 
-/* scene data */
-RTCScene g_scene = nullptr;
-Vec3fa* colors = nullptr;
+RTCDevice g_device = nullptr;
+RTCScene g_scene  = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -233,8 +232,8 @@ void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -313,6 +312,6 @@ extern "C" void device_render (int* pixels,
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup () {
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }
 

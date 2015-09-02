@@ -72,6 +72,7 @@ void filterDispatch(void* ptr, struct RTCRay2& ray);
 
 /* scene data */
 extern "C" ISPCScene* g_ispc_scene;
+RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 
 /* error reporting function */
@@ -120,7 +121,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   //scene_in->numMeshes = 0;
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene(RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+  RTCScene scene_out = rtcNewScene2(g_device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)
@@ -216,8 +217,8 @@ extern "C" void device_init (char* cfg)
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
   hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -694,5 +695,5 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

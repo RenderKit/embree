@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+RTCDevice g_device = NULL;
+
 const uniform int numPhi = 20;
 const uniform int numTheta = 2*numPhi;
 const uniform int numSpheres = 64;
@@ -138,7 +140,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   {
     /* create the geometry */
     print("creating sphere %i\n",instance->userID);
-    instance->object = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+    instance->object = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* now switch to the LAZY_COMMIT state */
@@ -230,14 +232,14 @@ RTCScene g_scene  = NULL;
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
@@ -351,5 +353,5 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

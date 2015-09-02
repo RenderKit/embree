@@ -817,6 +817,7 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
 
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
+RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 void* uniform* uniform geomID_to_mesh = NULL;
 uniform int* uniform geomID_to_type = NULL;
@@ -881,8 +882,8 @@ export void device_init (uniform int8* uniform cfg)
   g_accu_vz = make_Vec3f(0.0f);
   g_accu_p  = make_Vec3f(0.0f);
 
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
   rtcSetErrorFunction(error_handler);
@@ -1100,7 +1101,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
 
   scene_aflags |= RTC_INTERPOLATE;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcNewScene2(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1561,9 +1562,9 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  delete[] g_accu;
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
+  delete[] g_accu;
 } // device_cleanup
 
 #endif

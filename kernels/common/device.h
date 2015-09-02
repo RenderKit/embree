@@ -14,29 +14,31 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include <embree2/rtcore.h>
+#pragma once
 
-#include <xmmintrin.h>
-//#include <pmmintrin.h> // use this to get _MM_SET_DENORMALS_ZERO_MODE when compiling for SSE3 or higher
+#include "default.h"
+#include "state.h"
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
-
-int main(int argc, char* argv[])
+namespace embree
 {
-  /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
-  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+  class Device //: public State
+  {
+    ALIGNED_CLASS;
 
-  /* create new Embree device */
-  RTCDevice device = rtcNewDevice("verbose=1");
+  public:
 
-  /* ddelete device again */
-  rtcDeleteDevice(device);
-  
-  return 0;
+    /*! Device construction */
+    Device (const char* cfg);
+
+    /*! Device destruction */
+    ~Device ();
+
+    /*! prints info about the device */
+    void print();
+
+  public:
+#if USE_TASK_ARENA
+  tbb::task_arena* arena;
+#endif
+  };
 }

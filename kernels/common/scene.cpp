@@ -27,10 +27,6 @@
  
 namespace embree
 {
-#if USE_TASK_ARENA
-  tbb::task_arena* arena = nullptr;
-#endif
-
   /* error raising rtcIntersect and rtcOccluded functions */
   void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
   void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
@@ -42,8 +38,9 @@ namespace embree
 /* number of created scene */
   AtomicCounter Scene::numScenes = 0;
 
-  Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : Accel(AccelData::TY_UNKNOWN),
+  Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+    : device(device), 
+      Accel(AccelData::TY_UNKNOWN),
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
@@ -61,7 +58,6 @@ namespace embree
 #elif defined(TASKING_TBB_INTERNAL)
     scheduler = nullptr;
 #else
-    //arena = new tbb::task_arena;
     group = new tbb::task_group;
 #endif
 
@@ -285,7 +281,6 @@ namespace embree
       delete geometries[i];
 
 #if TASKING_TBB
-    //delete arena; arena = nullptr;
     delete group; group = nullptr;
 #endif
 
@@ -585,7 +580,7 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked()) {
 #if USE_TASK_ARENA
-      arena->execute([&]{ group->wait(); });
+      device->arena->execute([&]{ group->wait(); });
 #else
       group->wait();
 #endif
@@ -593,7 +588,7 @@ namespace embree
         __pause_cpu();
         yield();
 #if USE_TASK_ARENA
-        arena->execute([&]{ group->wait(); });
+        device->arena->execute([&]{ group->wait(); });
 #else
         group->wait();
 #endif
@@ -629,7 +624,7 @@ namespace embree
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
-      arena->execute([&]{
+      device->arena->execute([&]{
 #endif
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);
