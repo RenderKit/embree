@@ -154,6 +154,11 @@ namespace embree
 	}
       }
 
+      __forceinline void prefetchMem() const {
+	prefetchL1(((char*)ptr)+0*64);
+	//prefetchL2(((char*)ptr)+1*64);
+      }
+
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { assert(!isBarrier()); ptr |= barrier_mask; }
       

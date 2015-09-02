@@ -106,9 +106,9 @@ namespace embree
 
     __forceinline unsigned int networkSort(const float4 &v, const bool4 &active, int4 &result)
     {
-      const int4 or_mask = select(active,step4,allSet4); //optimize
-      const int4 vi = cast(v); 
-      const int4 a0 = (vi & mask2) | or_mask;
+     // const int4 or_mask = select(active,step4,allSet4); //optimize
+      const int4 vi = (cast(v) & mask2) | step4; 
+      const int4 a0 = select(active,vi,int4( True ));
       const int4 b0 = shuffle<1,0,3,2>(a0);
       const int4 c0 = umin(a0,b0);
       const int4 d0 = umax(a0,b0);
@@ -151,12 +151,7 @@ namespace embree
       ray_tfar  = select(valid0,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid0,ray);
-
-      Vec3i8 nearXYZ;
-      nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
-      nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
-      nearXYZ.z = select(ray_rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
-
+      const Vec3f8 ray_org_rdir(ray_org*ray_rdir);
       const bool8 active = ray_tnear < ray_tfar;
       size_t bits = movemask(active);
 
@@ -180,12 +175,19 @@ namespace embree
 #endif
 
       /* switch to single ray traversal */
-#if 0 // !defined(__WIN32__) || defined(__X86_64__)
+#if 1 // !defined(__WIN32__) || defined(__X86_64__)
+
+      Vec3i8 nearXYZ;
+      nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
+      nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
+      nearXYZ.z = select(ray_rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
+
       /* compute near/far per ray */
 
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
         BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
       }
+
 #else
 
       NodeRef stackNode[stackSizeSingle];  //!< stack of nodes 
@@ -201,10 +203,10 @@ namespace embree
         stackDist[1] = neg_inf;
 
         /*! load the ray into SIMD registers */
-        const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-        const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        //const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        //const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
         const Vec3f4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-        const Vec3f4 org_rdir(org*rdir);
+        const Vec3f4 org_rdir(ray_org_rdir.x[k], ray_org_rdir.y[k], ray_org_rdir.z[k]);
         float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
       
         /* pop loop */
@@ -225,18 +227,36 @@ namespace embree
 
             const BVH4::Node* node = cur.node();
 #if defined(__AVX2__)
+
+#if 1
+            const float4 rdir_x = broadcast1f(&ray_rdir.x[k]);
+            const float4 rdir_y = broadcast1f(&ray_rdir.y[k]);
+            const float4 rdir_z = broadcast1f(&ray_rdir.z[k]);
+
+            const float4 org_rdir_x = broadcast1f(&ray_org_rdir.x[k]);
+            const float4 org_rdir_y = broadcast1f(&ray_org_rdir.y[k]);
+            const float4 org_rdir_z = broadcast1f(&ray_org_rdir.z[k]);
+
+            const float4 _tNearX = msub(node->lower_x, rdir_x, org_rdir_x);
+            const float4 _tNearY = msub(node->lower_y, rdir_y, org_rdir_y);
+            const float4 _tNearZ = msub(node->lower_z, rdir_z, org_rdir_z);
+            const float4 _tFarX  = msub(node->upper_x, rdir_x, org_rdir_x);
+            const float4 _tFarY  = msub(node->upper_y, rdir_y, org_rdir_y);
+            const float4 _tFarZ  = msub(node->upper_z, rdir_z, org_rdir_z);
+#else
             const float4 _tNearX = msub(node->lower_x, rdir.x, org_rdir.x);
             const float4 _tNearY = msub(node->lower_y, rdir.y, org_rdir.y);
             const float4 _tNearZ = msub(node->lower_z, rdir.z, org_rdir.z);
             const float4 _tFarX  = msub(node->upper_x, rdir.x, org_rdir.x);
             const float4 _tFarY  = msub(node->upper_y, rdir.y, org_rdir.y);
             const float4 _tFarZ  = msub(node->upper_z, rdir.z, org_rdir.z);
-
+#endif
             //const bool4  nactive = float4(pos_inf) == node->lower_x;
             const bool4  nactive = float4(pos_inf) != node->lower_x;
 
             sindex--;
             const BVH4::NodeRef stack_cur = stackNode[sindex];
+            stack_cur.prefetchMem();
 
             const float4 tNearX  = mini(_tNearX,_tFarX);
             const float4 tNearY  = mini(_tNearY,_tFarY);
@@ -255,7 +275,7 @@ namespace embree
 
             STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
 
-#if 0            
+#if 1
             cur = stack_cur;
 
             if (unlikely(mask == 0)) continue;
@@ -305,9 +325,9 @@ namespace embree
             
 #else
             
-            const int4 or_mask = select(vmask,step4,allSet4); //optimize
-            const int4 vi = cast(tNear); 
-            const int4 a0 = (vi & mask2) | or_mask;
+            //const int4 or_mask = select(vmask,step4,allSet4); //optimize
+            const int4 vi = (cast(tNear) & mask2) | step4;
+            const int4 a0 = select(vmask,vi,int4( True )); //optimize
             const int4 b0 = shuffle<1,0,3,2>(a0);
             const int4 c0 = umin(a0,b0);
             const int4 d0 = umax(a0,b0);
@@ -445,6 +465,7 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Test<types,robust,PrimitiveIntersector8>::occluded(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
+#if defined(__AVX2__)
       /* verify correct input */
       bool8 valid = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -457,31 +478,405 @@ namespace embree
       bool8 terminated = !valid;
       Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f8 rdir = rcp_safe(ray_dir);
-      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      const Vec3f8 ray_rdir = rcp_safe(ray_dir);
       ray_tnear = select(valid,ray_tnear,float8(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid,ray);
+      const Vec3f8 ray_org_rdir(ray_org*ray_rdir);
+
+
+
+      const bool8 active = ray_tnear < ray_tfar;
+      size_t m_active = movemask(active);
+
+        /* switch to single ray traversal */
+#if 1
+
+#if 0
 
       /* compute near/far per ray */
       Vec3i8 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
+      nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
+      nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
+      nearXYZ.z = select(ray_rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
 
-      const bool8 active = ray_tnear < ray_tfar;
-
-        /* switch to single ray traversal */
-#if !defined(__WIN32__) || defined(__X86_64__)
-      size_t bits = movemask(active);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        if (BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::occluded1(bvh,bvh->root,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+      for (size_t bits = m_active, i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+        if (BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::occluded1(bvh,bvh->root,i,pre,ray,ray_org,ray_dir,ray_rdir,ray_tnear,ray_tfar,nearXYZ))
           terminated[i] = -1;
       }
+#else
+
+      NodeRef stackNode[8][64];  //!< stack of nodes 
+      unsigned int sindex[8];
+      size_t m_traversal = (bvh->root.isLeaf(types) ? 0x0 : 0xff) & m_active;
+      BVH4::NodeRef cur[8];
+
+      for (size_t bits = m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+        {
+          sindex[i]       = 1;
+          stackNode[i][0] = BVH4::invalidNode;
+          cur[i]          = bvh->root;
+          //PRINT(i);
+          //PRINT(cur[i].isLeaf(types));
+          //PRINT(cur[i].isNode(types));
+        }
+
+
+      while(m_active)
+      {
+        //PRINT("");
+        //PRINT("NEW ITERATION");
+        //PRINT(m_active);
+        //PRINT("TRAVERSAL");
+        //PRINT(m_traversal);
+        m_traversal &= m_active;
+        size_t m_intersection = 0;
+
+        int8 mask8( zero );
+        int8 count8( zero );
+
+        for (size_t bits = m_traversal, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+        {
+          STAT3(shadow.trav_nodes,1,1,1);
+          assert(cur[i].isNode(types));
+          const BVH4::Node* node = cur[i].node();
+          const float4 rdir_x = broadcast1f(&ray_rdir.x[i]);
+          const float4 rdir_y = broadcast1f(&ray_rdir.y[i]);
+          const float4 rdir_z = broadcast1f(&ray_rdir.z[i]);
+
+          const float4 org_rdir_x = broadcast1f(&ray_org_rdir.x[i]);
+          const float4 org_rdir_y = broadcast1f(&ray_org_rdir.y[i]);
+          const float4 org_rdir_z = broadcast1f(&ray_org_rdir.z[i]);
+
+          const float4 _tNearX = msub(node->lower_x, rdir_x, org_rdir_x);
+          const float4 _tNearY = msub(node->lower_y, rdir_y, org_rdir_y);
+          const float4 _tNearZ = msub(node->lower_z, rdir_z, org_rdir_z);
+          const float4 _tFarX  = msub(node->upper_x, rdir_x, org_rdir_x);
+          const float4 _tFarY  = msub(node->upper_y, rdir_y, org_rdir_y);
+          const float4 _tFarZ  = msub(node->upper_z, rdir_z, org_rdir_z);
+
+          const bool4  nactive = float4(pos_inf) != node->lower_x;
+
+          const float4 tNearX  = mini(_tNearX,_tFarX);
+          const float4 tNearY  = mini(_tNearY,_tFarY);
+          const float4 tNearZ  = mini(_tNearZ,_tFarZ);
+            
+          const float4 tFarX   = maxi(_tNearX,_tFarX);
+          const float4 tFarY   = maxi(_tNearY,_tFarY);
+          const float4 tFarZ   = maxi(_tNearZ,_tFarZ);
+            
+          const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_tnear[i]));
+          const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_tfar[i] ));
+          const bool4 vmask  = nactive & (tNear <= tFar);
+          unsigned int mask = movemask(vmask);
+          mask8[i] = mask;
+          //count8[i] = __popcnt(mask);
+        }
+
+        for (size_t bits = m_traversal, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+        {
+          //PRINT(mask);
+          //PRINT(__popcnt(mask));
+
+          unsigned int mask = mask8[i];
+          const BVH4::Node* node = cur[i].node();
+
+          assert(sindex[i] > 0);
+          sindex[i]--;
+          cur[i] = stackNode[i][sindex[i]];
+          m_intersection &= ~((size_t)1 << i);
+          m_intersection |= cur[i].isLeaf(types) ? ((size_t)1 << i) : 0;
+
+          //cur[i].prefetch(types);
+          
+          if (unlikely(mask == 0)) 
+          {
+            //PRINT(cur[i]);
+            //PRINT(cur[i].isLeaf(types));
+            cur[i].prefetchMem();
+            continue;
+          }
+          sindex[i]++;
+
+          STAT3(shadow.trav_hit_boxes[__popcnt(mask)],1,1,1);
+
+          const size_t setbits = __popcnt(mask);
+
+          int8 node4 = *(int8*)node->children;
+
+          int4 perm4i = compactTable[mask];
+          const unsigned int min_dist_index = extract<0>(permute(int4(step),perm4i));
+            
+          cur[i] = node->child(min_dist_index);
+          cur[i].prefetchMem();
+          m_intersection &= ~((size_t)1 << i);
+          m_intersection |= cur[i].isLeaf(types) ? ((size_t)1 << i) : 0;
+
+          //PRINT(cur[i]);
+          //PRINT(cur[i].isLeaf(types));
+          //PRINT(m_intersection);
+
+          perm4i = permute(perm4i,reverseCompact[setbits]);
+            
+          const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+          const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+          const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+          store8i(&stackNode[i][sindex[i]],node4_perm);
+
+          sindex[i] += setbits - 1;
+        }
+
+        //PRINT("INTERSECTION");
+        //PRINT(m_intersection);
+        for (size_t bits = m_intersection, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+        {
+          do 
+          {
+            //PRINT(i);
+            //PRINT(cur[i]);
+            //PRINT(cur[i].isLeaf(types));
+            assert(m_active & ((size_t)1 << i));
+
+            assert(cur[i].isLeaf(types));
+            if (unlikely(cur[i] == BVH4::invalidNode))
+            {
+              m_active ^= (size_t)1 << i;
+              //PRINT("TERMINATE");
+              break;
+            }
+
+            /*! this is a leaf node */
+            assert(cur[i] != BVH4::emptyNode);
+            STAT3(shadow.trav_leaves, 1, 1, 1);
+            size_t num; Primitive* prim = (Primitive*)cur[i].leaf(num);
+
+            size_t lazy_node = 0;
+            if (PrimitiveIntersector8::occluded(pre,ray,i,prim,num,bvh->scene,lazy_node)) {
+              ray.geomID[i] = 0;
+              m_active ^= (size_t)1 << i;
+              //PRINT("INTERSECTION");
+              break;
+            }
+            
+            assert(sindex[i] > 0);
+            sindex[i]--;
+            cur[i] = stackNode[i][sindex[i]];
+            //PRINT(cur[i].isLeaf(types));            
+          }
+          while(cur[i].isLeaf());
+          if (m_active & ((size_t)1 << i))
+            assert(cur[i].isNode());
+          //PRINT(m_active);
+        }       
+
+        //PRINT("FINAL");
+        //PRINT(m_active);
+      }
+
+
+#endif
+
+#else
+
+      NodeRef stackNode[stackSizeSingle];  //!< stack of nodes 
+
+      for (size_t bits = m_active, k=__bsf(bits); bits!=0; bits=__blsr(bits), k=__bsf(bits)) 
+      {
+        size_t sindex = 2;
+
+        stackNode[0] = BVH4::invalidNode;
+        stackNode[1] = bvh->root;
+
+        /*! load the ray into SIMD registers */
+        //const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        //const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        const Vec3f4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        const Vec3f4 org_rdir(ray_org_rdir.x[k], ray_org_rdir.y[k], ray_org_rdir.z[k]);
+        const float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+        
+        /* pop loop */
+        while (true)
+        {
+          /*! pop next node */
+          //if (unlikely(sindex == 0)) break;
+          assert(sindex < 64);
+          sindex--;
+          NodeRef cur = NodeRef(stackNode[sindex]);
+          STAT3(shadow.trav_stack_pop,1,1,1);
+        
+          /* downtraversal loop */
+          while (true)
+          {
+            /*! stop if we found a leaf node */
+            if (unlikely(cur.isLeaf(types))) break;
+            STAT3(shadow.trav_nodes,1,1,1);
+
+            const BVH4::Node* node = cur.node();
+
+#if 1
+            const float4 rdir_x = broadcast1f(&ray_rdir.x[k]);
+            const float4 rdir_y = broadcast1f(&ray_rdir.y[k]);
+            const float4 rdir_z = broadcast1f(&ray_rdir.z[k]);
+
+            const float4 org_rdir_x = broadcast1f(&ray_org_rdir.x[k]);
+            const float4 org_rdir_y = broadcast1f(&ray_org_rdir.y[k]);
+            const float4 org_rdir_z = broadcast1f(&ray_org_rdir.z[k]);
+
+            const float4 _tNearX = msub(node->lower_x, rdir_x, org_rdir_x);
+            const float4 _tNearY = msub(node->lower_y, rdir_y, org_rdir_y);
+            const float4 _tNearZ = msub(node->lower_z, rdir_z, org_rdir_z);
+            const float4 _tFarX  = msub(node->upper_x, rdir_x, org_rdir_x);
+            const float4 _tFarY  = msub(node->upper_y, rdir_y, org_rdir_y);
+            const float4 _tFarZ  = msub(node->upper_z, rdir_z, org_rdir_z);
+
+#else
+            const float4 _tNearX = msub(node->lower_x, rdir.x, org_rdir.x);
+            const float4 _tNearY = msub(node->lower_y, rdir.y, org_rdir.y);
+            const float4 _tNearZ = msub(node->lower_z, rdir.z, org_rdir.z);
+            const float4 _tFarX  = msub(node->upper_x, rdir.x, org_rdir.x);
+            const float4 _tFarY  = msub(node->upper_y, rdir.y, org_rdir.y);
+            const float4 _tFarZ  = msub(node->upper_z, rdir.z, org_rdir.z);
+#endif
+            //const bool4  nactive = float4(pos_inf) == node->lower_x;
+            const bool4  nactive = float4(pos_inf) != node->lower_x;
+
+            sindex--;
+            const BVH4::NodeRef stack_cur = stackNode[sindex];
+            stack_cur.prefetchMem();
+
+            const float4 tNearX  = mini(_tNearX,_tFarX);
+            const float4 tNearY  = mini(_tNearY,_tFarY);
+            const float4 tNearZ  = mini(_tNearZ,_tFarZ);
+            
+            const float4 tFarX   = maxi(_tNearX,_tFarX);
+            const float4 tFarY   = maxi(_tNearY,_tFarY);
+            const float4 tFarZ   = maxi(_tNearZ,_tFarZ);
+            
+            const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
+            const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
+            //const bool4 vmask  = nactive | cast(tNear) > cast(tFar);
+            const bool4 vmask  = nactive & (tNear <= tFar);
+            //unsigned int mask = movemask(vmask)^0xf;
+            unsigned int mask = movemask(vmask);
+
+            STAT3(shadow.trav_hit_boxes[__popcnt(mask)],1,1,1);
+
+#if 1
+            cur = stack_cur;
+
+            if (unlikely(mask == 0)) continue;
+
+            sindex++;
+
+            const size_t setbits = __popcnt(mask);
+            //const int4 rc = reverseCompact[setbits];
+
+            //const float4 dist = select(vmask,float4(neg_inf),tNear);
+            //const float4 dist_perm = permute(dist,compactTable[mask]);
+
+            
+            int8 node4 = *(int8*)node->children;
+
+            // const int4 perm4i = compactTable[mask];
+            // float4 dist4_perm = permute(tNear,perm4i);
+
+            // const int8 perm8i = compactTable64[mask];
+            // int8   node4_perm = permute(node4,perm8i);
+
+            int4 perm4i;
+            //const unsigned int min_dist_index = networkSort(tNear,vmask,perm4i);
+
+            perm4i = compactTable[mask];
+            const unsigned int min_dist_index = extract<0>(permute(int4(step),perm4i));
+
+            
+            cur = node->child(min_dist_index);
+            //cur.prefetchMem();
+            perm4i         = permute(perm4i,reverseCompact[setbits]);
+            
+            //dist4_perm = permute(dist4_perm,reverseCompact[setbits]);
+
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store8i(&stackNode[sindex],node4_perm);
+
+            //for (size_t i=0;i<(ssize_t)__popcnt(mask) - 1;i++)
+            //  std::cout << "i " << i << " => " << stackNode[sindex+i] << " " << stackDist[sindex+i] << std::endl; 
+            sindex += setbits - 1;
+            //cur = stackNode[sindex];
+            
+#else
+            
+            //const int4 or_mask = select(vmask,step4,allSet4); //optimize
+            const int4 vi = (cast(tNear) & mask2) | step4;
+            const int4 a0 = select(vmask,vi,int4( True )); //optimize
+            const int4 b0 = shuffle<1,0,3,2>(a0);
+            const int4 c0 = umin(a0,b0);
+            const int4 d0 = umax(a0,b0);
+            const int4 a1 = merge(c0,d0,0b0101);
+            const int4 b1 = shuffle<2,3,0,1>(a1);
+            const int4 c1 = umin(a1,b1);
+            const unsigned int min_index0 = extract<0>(c1) & 3;
+            assert(min_dist_index < 4);
+            cur = node->child(min_index0);
+            cur = mask != 0 ? cur : stack_cur;
+            const size_t hits = __popcnt(mask);
+            sindex += hits;
+            if (likely(hits <= 1)) continue;
+
+            int8 node4 = *(int8*)node->children;
+
+            const int4 d1 = umax(a1,b1);
+            const int4 a2 = merge(c1,d1,0b0011);
+            const int4 b2 = shuffle<0,2,1,3>(a2);
+            const int4 c2 = umin(a2,b2);
+            const int4 d2 = umax(a2,b2);
+            const int4 a3 = merge(c2,d2,0b0010);
+            assert(*(unsigned int*)&a3[0] <= *(unsigned int*)&a3[1]);
+            assert(*(unsigned int*)&a3[1] <= *(unsigned int*)&a3[2]);
+            assert(*(unsigned int*)&a3[2] <= *(unsigned int*)&a3[3]);
+            int4 perm4i = a3 & 3;
+                          
+            perm4i                   = permute(perm4i,reverseCompact[hits]);            
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store8i(&stackNode[sindex-hits+1],node4_perm);
+                        
+#endif
+
+
+
+
+          }
+        
+          if (unlikely(cur == BVH4::invalidNode)) break;
+
+          /*! this is a leaf node */
+          assert(cur != BVH4::emptyNode);
+          STAT3(shadow.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          
+          size_t lazy_node = 0;
+          if (PrimitiveIntersector8::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
+            ray.geomID[k] = 0;
+            break;
+          }
+        }
+      }
+
+
+
 #endif
                 
       store8i(valid & terminated,&ray.geomID,0);
+#endif
       AVX_ZERO_UPPER();
     }
     
