@@ -170,7 +170,7 @@ namespace embree
   public:
     AutoUnlock (Mutex& mutex) : mutex(mutex), locked(false) {}
     ~AutoUnlock() { if (locked) mutex.unlock(); }
-    __forceinline bool lock() { locked = true; mutex.lock(); }
+    __forceinline void lock() { locked = true; mutex.lock(); }
     __forceinline bool isLocked() const { return locked; }
   protected:
     Mutex& mutex;
