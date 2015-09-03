@@ -42,16 +42,32 @@ namespace embree
     rtcSetParameter1i(parm,val);
   }
 
+  extern "C" void ispcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val) {
+    rtcDeviceSetParameter1i(device,parm,val);
+  }
+
   extern "C" RTCError ispcGetError() {
     return rtcGetError();
+  }
+
+  extern "C" RTCError ispcDeviceGetError(RTCDevice device) {
+    return rtcDeviceGetError(device);
   }
 
   extern "C" void ispcSetErrorFunction(void* f) {
     return rtcSetErrorFunction((RTCErrorFunc)f);
   }
 
+  extern "C" void ispcDeviceSetErrorFunction(RTCDevice device, void* f) {
+    return rtcDeviceSetErrorFunction(device,(RTCErrorFunc)f);
+  }
+
   extern "C" void ispcSetMemoryMonitorFunction(void* f) {
     return rtcSetMemoryMonitorFunction((RTCMemoryMonitorFunc)f);
+  }
+
+  extern "C" void ispcDeviceSetMemoryMonitorFunction(RTCDevice device, void* f) {
+    return rtcDeviceSetMemoryMonitorFunction(device,(RTCMemoryMonitorFunc)f);
   }
 
   extern "C" void ispcDebug() {

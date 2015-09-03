@@ -223,7 +223,7 @@ namespace embree
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
     
     /* set error handler */
-    rtcSetErrorFunction(error_handler);
+    rtcDeviceSetErrorFunction(device,error_handler);
     
     /* create scene */
     RTCScene scene = rtcNewScene2(device,RTC_SCENE_STATIC,RTC_INTERSECT1);

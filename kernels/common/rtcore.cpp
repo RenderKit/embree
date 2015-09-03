@@ -81,13 +81,43 @@ namespace embree
     RTCORE_CATCH_END(g_device);
   }
 
-  RTCORE_API RTCError rtcGetError() // FIXME: add version that uses device
+  RTCORE_API void rtcDeviceSetParameter1i(RTCDevice hdevice, const RTCParameter parm, ssize_t val)
   {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetParameter1i);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    switch (parm) {
+    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
+    };
+    RTCORE_CATCH_END(device);
+  }
+
+  RTCORE_API RTCError rtcGetError()
+  {
+    RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
     RTCError* stored_error = g_device->error();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
     return error;
+    RTCORE_CATCH_END(g_device);
+    return RTC_UNKNOWN_ERROR;
+  }
+
+  RTCORE_API RTCError rtcDeviceGetError(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceGetError);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    RTCError* stored_error = device->error();
+    RTCError error = *stored_error;
+    *stored_error = RTC_NO_ERROR;
+    return error;
+    RTCORE_CATCH_END(device);
+    return RTC_UNKNOWN_ERROR;
   }
 
   RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func) 
@@ -98,12 +128,31 @@ namespace embree
     RTCORE_CATCH_END(g_device);
   }
 
+  RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice hdevice, RTCErrorFunc func) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetErrorFunction);
+    RTCORE_VERIFY_HANDLE(hdevice);
+    device->error_function = func;
+    RTCORE_CATCH_END(device);
+  }
+
   RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func) 
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMemoryMonitorFunction);
     g_device->memory_monitor_function = func;
     RTCORE_CATCH_END(g_device);
+  }
+
+  RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunc func) 
+  {
+    Device* device = (Device*) hdevice;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcDeviceSetMemoryMonitorFunction);
+    device->memory_monitor_function = func;
+    RTCORE_CATCH_END(device);
   }
 
   RTCORE_API void rtcDebug() 

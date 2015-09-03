@@ -223,10 +223,10 @@ extern "C" void device_init (char* cfg)
   g_device = rtcNewDevice(cfg);
 
   /* configure the size of the software cache used for subdivision geometry */
-  rtcSetParameter1i(RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
+  rtcDeviceSetParameter1i(g_device,RTC_SOFTWARE_CACHE_SIZE,100*1024*1024);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
   g_scene = rtcNewScene2(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST,RTC_INTERSECT1 | RTC_INTERPOLATE);

@@ -236,7 +236,7 @@ extern "C" void device_init (char* cfg)
   g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
   
   /* set start render mode */
   renderPixel = renderPixelStandard;

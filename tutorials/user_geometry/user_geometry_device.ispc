@@ -336,7 +336,7 @@ export void device_init (uniform int8* uniform cfg)
   g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
   g_scene = rtcNewScene2(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);

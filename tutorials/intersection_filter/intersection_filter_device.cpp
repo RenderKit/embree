@@ -219,7 +219,7 @@ extern "C" void device_init (char* cfg)
   g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
   g_scene = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);

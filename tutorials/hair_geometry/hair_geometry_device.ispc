@@ -221,7 +221,7 @@ export void device_init (uniform int8* uniform cfg)
   g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;

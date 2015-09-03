@@ -134,8 +134,13 @@ enum RTCParameter {
                                      rendering. */
 };
 
-/*! \brief Configures some parameters. */
-RTCORE_API void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
+/*! \brief Configures some parameters. 
+    WARNING: This function is deprecated, use rtcDeviceSetParameter1i instead.
+*/
+RTCORE_API RTCORE_DEPRECATED void rtcSetParameter1i(const RTCParameter parm, ssize_t val);
+
+/*! \brief Configures some device parameters. */
+RTCORE_API void rtcDeviceSetParameter1i(RTCDevice device, const RTCParameter parm, ssize_t val);
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
@@ -150,25 +155,45 @@ enum RTCError {
 
 /*! \brief Returns the value of the per-thread error flag. 
 
+  WARNING: This function is deprecated, use rtcDeviceGetError instead.
+
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
-RTCORE_API RTCError rtcGetError();
+RTCORE_API RTCORE_DEPRECATED RTCError rtcGetError();
+
+/*! \brief Returns the value of the per-thread error flag. 
+
+  If an error occurs this flag is set to an error code if it stores no
+  previous error. The rtcGetError function reads and returns the
+  currently stored error and clears the error flag again. */
+RTCORE_API RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
 typedef void (*RTCErrorFunc)(const RTCError code, const char* str);
 RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
+/*! \brief Sets a callback function that is called whenever an error occurs. 
+   WARNING: This function is deprecated, use rtcDeviceSetErrorFunction instead.
+   */
+RTCORE_API RTCORE_DEPRECATED void rtcSetErrorFunction(RTCErrorFunc func);
+
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-RTCORE_API void rtcSetErrorFunction(RTCErrorFunc func);
+RTCORE_API void rtcDeviceSetErrorFunction(RTCDevice device, RTCErrorFunc func);
 
 /*! \brief Type of memory consumption callback function. */
 typedef bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
 RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
 
 /*! \brief Sets the memory consumption callback function which is
+ *  called before or after the library allocates or frees memory. 
+   WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction instead.
+*/
+RTCORE_API RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
+
+/*! \brief Sets the memory consumption callback function which is
  *  called before or after the library allocates or frees memory. */
-RTCORE_API void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
+RTCORE_API void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
 /*! \brief Implementation specific (do not call).
 

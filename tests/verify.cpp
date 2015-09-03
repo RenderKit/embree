@@ -86,13 +86,13 @@ namespace embree
 #endif
 
 #define CountErrors() \
-  if (rtcGetError() != RTC_NO_ERROR) atomic_add(&errorCounter,1);
+  if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) atomic_add(&errorCounter,1);
 #define AssertNoError() \
-  if (rtcGetError() != RTC_NO_ERROR) return false;
+  if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) return false;
 #define AssertAnyError() \
-  if (rtcGetError() == RTC_NO_ERROR) return false;
+  if (rtcDeviceGetError(g_device) == RTC_NO_ERROR) return false;
 #define AssertError(code) \
-  if (rtcGetError() != code) return false;
+  if (rtcDeviceGetError(g_device) != code) return false;
 #define POSITIVE(name,test) {                                               \
     printf("%30s ...",name);                                            \
     bool ok = test;                                                     \
@@ -2655,7 +2655,7 @@ namespace embree
             rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
           }
 	  //CountErrors();
-          if (rtcGetError() != RTC_NO_ERROR) {
+          if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
@@ -2721,7 +2721,7 @@ namespace embree
         }
 	}
         //CountErrors();
-        if (rtcGetError() != RTC_NO_ERROR) {
+        if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) {
           atomic_add(&errorCounter,1);
 
           hasError = true;
@@ -2744,7 +2744,7 @@ namespace embree
       }
       //CountErrors();
 
-      if (rtcGetError() != RTC_NO_ERROR) {
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) {
         atomic_add(&errorCounter,1);
       }
       else {
@@ -2781,7 +2781,7 @@ namespace embree
           if (build_join_test) rtcCommit(task->scene);
           else	               rtcCommitThread(task->scene,thread->threadIndex,task->numActiveThreads);
 	  //CountErrors();
-          if (rtcGetError() != RTC_NO_ERROR) {
+          if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
           }
           else {
@@ -2855,7 +2855,7 @@ namespace embree
           case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
           }; 
 	  //CountErrors();
-          if (rtcGetError() != RTC_NO_ERROR) {
+          if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) {
             atomic_add(&errorCounter,1);
             hasError = true;
             break;
@@ -2921,7 +2921,7 @@ namespace embree
       }
       //CountErrors();
 
-      if (rtcGetError() != RTC_NO_ERROR)
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR)
         atomic_add(&errorCounter,1);
       else
         if (!hasError)
@@ -3001,7 +3001,7 @@ namespace embree
   bool rtcore_regression_memory_monitor (thread_func func)
   {
     g_enable_build_cancel = true;
-    rtcSetMemoryMonitorFunction(monitorMemoryFunction);
+    rtcDeviceSetMemoryMonitorFunction(g_device,monitorMemoryFunction);
     
     size_t sceneIndex = 0;
     while (sceneIndex < regressionN/5) 
@@ -3020,15 +3020,15 @@ namespace embree
       monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
       if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
-        rtcSetMemoryMonitorFunction(nullptr);
-        //rtcSetProgressMonitorFunction(nullptr);
+        rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
+        //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
         return false;
       }
       sceneIndex++;
       clearBuffers();
     }
     g_enable_build_cancel = false;
-    rtcSetMemoryMonitorFunction(nullptr);
+    rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
     return true;
   }
 

@@ -109,8 +109,13 @@ enum RTCParameter {
                                      rendering. */
 };
 
-/*! \brief Configures some parameters.*/
-void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
+/*! \brief Configures some parameters. 
+   WARNING: This function is deprecated, use rtcDeviceSetParameter1i instead.
+*/
+RTCORE_DEPRECATED void rtcSetParameter1i(const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
+
+/*! \brief Configures some device parameters.*/
+void rtcDeviceSetParameter1i(RTCDevice device, const uniform RTCParameter parm, uniform size_t val); // FIXME: should be ssize_t
 
 /*! \brief Error codes returned by the rtcGetError function. */
 enum RTCError {
@@ -125,17 +130,31 @@ enum RTCError {
 
 /*! \brief Returns the value of the per-thread error flag. 
 
+  WARNING: This function is deprecated, use rtcDeviceGetError instead.
+
   If an error occurs this flag is set to an error code if it stores no
   previous error. The rtcGetError function reads and returns the
   currently stored error and clears the error flag again. */
-uniform RTCError rtcGetError();
+RTCORE_DEPRECATED uniform RTCError rtcGetError();
+
+/*! \brief Returns the value of the per-thread error flag. 
+
+  If an error occurs this flag is set to an error code if it stores no
+  previous error. The rtcGetError function reads and returns the
+  currently stored error and clears the error flag again. */
+uniform RTCError rtcDeviceGetError(RTCDevice device);
 
 /*! \brief Type of error callback function. */
 typedef void (*uniform RTCErrorFunc)(const uniform RTCError code, const uniform int8* uniform str);
 RTCORE_DEPRECATED typedef RTCErrorFunc RTC_ERROR_FUNCTION;
 
+/*! \brief Sets a callback function that is called whenever an error occurs. 
+    WARNING: This function is deprecated, use rtcDeviceSetErrorFunction instead.
+*/
+RTCORE_DEPRECATED void rtcSetErrorFunction(uniform RTCErrorFunc func);
+
 /*! \brief Sets a callback function that is called whenever an error occurs. */
-void rtcSetErrorFunction(uniform RTCErrorFunc func);
+void rtcDeviceSetErrorFunction(RTCDevice device, uniform RTCErrorFunc func);
 
 /*! \brief Type of memory consumption callback function. */
 typedef uniform bool (*uniform RTCMemoryMonitorFunc)(const uniform size_t bytes, const uniform bool post); // FIXME: should be ssize_t
@@ -143,8 +162,15 @@ RTCORE_DEPRECATED typedef RTCMemoryMonitorFunc RTC_MEMORY_MONITOR_FUNCTION;
 
 /*! \brief Sets the memory consumption callback function which is
  *  called before the library allocates or after the library frees
+ *  memory. 
+ *  WARNING: This function is deprecated, use rtcDeviceSetMemoryMonitorFunction instead.
+*/
+RTCORE_DEPRECATED void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
+
+/*! \brief Sets the memory consumption callback function which is
+ *  called before the library allocates or after the library frees
  *  memory. */
-void rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
+void rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
 /*! \brief Implementation specific (do not call).
 
