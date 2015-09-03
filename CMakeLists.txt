@@ -150,11 +150,12 @@ ENDIF (WIN32)
 # ISA configuration
 ##############################################################
 
-SET(XEON_ISA "AVX512" CACHE STRING "Selects highest ISA to support.")
-
-IF ((NOT COMPILER STREQUAL "ICC") AND (XEON_ISA STREQUAL "AVX512"))
-  UNSET(XEON_ISA CACHE)
+IF(APPLE)
   SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+ELSEIF(NOT COMPILER STREQUAL "ICC")
+  SET(XEON_ISA "AVX2" CACHE STRING "Selects highest ISA to support.")
+ELSE()
+  SET(XEON_ISA "AVX512" CACHE STRING "Selects highest ISA to support.")
 ENDIF ()
 
 SET_PROPERTY(CACHE XEON_ISA PROPERTY STRINGS SSE2 SSE3 SSSE3 SSE4.1 SSE4.2 AVX AVX-I AVX2 AVX512)
