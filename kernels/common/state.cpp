@@ -19,10 +19,6 @@
 
 namespace embree
 {
-  tls_t State::thread_error;
-  std::vector<RTCError*> State::thread_errors;
-  MutexSys State::errors_mutex;
-
   State::State () {
     clear();
   }

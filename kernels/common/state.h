@@ -94,9 +94,9 @@ namespace embree
     bool set_affinity;                     //!< sets affinity for worker threads
 
   public:
-    static tls_t thread_error;
-    static std::vector<RTCError*> thread_errors;
-    static MutexSys errors_mutex;
+    tls_t thread_error;
+    std::vector<RTCError*> thread_errors;
+    MutexSys errors_mutex;
 
   public:
     RTCErrorFunc error_function;

@@ -2,6 +2,7 @@
 ./verify
 ./benchmark
 ./bvh_builder
+./bvh_access
 
 ./triangle_geometry
 ./triangle_geometry_ispc
