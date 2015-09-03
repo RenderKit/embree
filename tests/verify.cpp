@@ -3548,6 +3548,7 @@ namespace embree
 
     /* perform tests */
     g_device = rtcNewDevice(g_rtcore.c_str());
+    //POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());

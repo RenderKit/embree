@@ -273,7 +273,7 @@ namespace embree
 
       const size_t size_morton_tmp = numPrims * sizeof(MortonID64Bit) + additional_size;
 
-      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
+      size_node         = (double)((numNodes * MORTON_BVH4I_NODE_PREALLOC_FACTOR + minAllocNodes) * sizeNodeInBytes + additional_size) * scene->device->memory_preallocation_factor;
       size_accel        = numPrims * sizeAccelInBytes + additional_size;
       numAllocatedNodes = size_node / sizeof(BVH4i::Node);
 
@@ -742,7 +742,7 @@ namespace embree
       FATAL("threadIndex != 0");
     }
 
-    if (unlikely(State::instance()->verbosity(2)))
+    if (unlikely(scene->device->verbosity(2)))
       {
 	std::cout << "building BVH4i with 64-bit Morton builder (MIC)... " << std::flush;
       }
@@ -819,7 +819,7 @@ namespace embree
 	build_main(0,1);
       }
 
-    if (State::instance()->verbosity(2)) {
+    if (scene->device->verbosity(2)) {
       double perf = numPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4iStatistics<BVH4i::Node>(bvh).str();
@@ -1229,7 +1229,7 @@ namespace embree
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
 #endif
       t0 = getSeconds();
 
@@ -1366,7 +1366,7 @@ namespace embree
 
     /* stop measurement */
 #if !defined(PROFILE)
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
 #endif
       dt = getSeconds()-t0;
 

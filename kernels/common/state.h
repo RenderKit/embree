@@ -28,6 +28,9 @@ namespace embree
     /*! state construction */
     State ();
 
+    /*! state destruction */
+    ~State();
+
     /*! clears the state to its defaults */
     void clear();
 
@@ -47,15 +50,15 @@ namespace embree
     bool verbosity(int N);
 
     /*! returns single state instance */
-    static __forceinline State* instance() {
+    /*static __forceinline State* instance() {
       return &state;
-    }
+      }*/
 
     /*! returns thread local error code */
-    static RTCError* error();
+    RTCError* error();
 
   private:
-    static State state;                      //!< single state object
+    //static State state;                      //!< single state object
 
   public:
     std::string tri_accel;                 //!< acceleration structure to use for triangles
@@ -91,12 +94,12 @@ namespace embree
     bool set_affinity;                     //!< sets affinity for worker threads
 
   public:
-    static tls_t g_error; // FIXME: use thread local
-    static std::vector<RTCError*> g_errors; // FIXME: use thread local
-    static MutexSys g_errors_mutex;
+    static tls_t thread_error;
+    static std::vector<RTCError*> thread_errors;
+    static MutexSys errors_mutex;
 
   public:
-    RTCErrorFunc g_error_function;
-    RTCMemoryMonitorFunc g_memory_monitor_function;
+    RTCErrorFunc error_function;
+    RTCMemoryMonitorFunc memory_monitor_function;
   };
 }

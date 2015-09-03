@@ -29,7 +29,7 @@ namespace embree
     Buffer (); 
 
     /*! Buffer construction */
-    Buffer (size_t num_in, size_t stride_in); 
+    Buffer (MemoryMonitorInterface* device, size_t num_in, size_t stride_in); 
     
     /*! Buffer destruction */
     ~Buffer ();
@@ -37,7 +37,7 @@ namespace embree
   public:
     
     /*! initialized the buffer */
-    void init(size_t num_in, size_t stride_in);
+    void init(MemoryMonitorInterface* device, size_t num_in, size_t stride_in);
 
     /*! sets shared buffer */
     void set(void* ptr_in, size_t ofs_in, size_t stride_in);
@@ -100,7 +100,7 @@ namespace embree
     }
 
   protected:
-    bool initialized;//!< true if buffer got initialized
+    MemoryMonitorInterface* device; //!< device to report memory usage to 
     bool shared;     //!< set if memory is shared with application
     bool mapped;     //!< set if buffer is mapped
     bool modified;   //!< true if the buffer got modified

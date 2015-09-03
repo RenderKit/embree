@@ -21,12 +21,24 @@ namespace embree
     {
     public:
 
+#if defined(VECTOR_INIT_ALLOCATOR)
+    template<typename M>
+    vector_t (M alloc) 
+      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
+
+    template<typename M>
+    vector_t (M alloc, size_t sz) 
+      : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+
+#else
       vector_t () 
         : size_active(0), size_alloced(0), items(nullptr) {}
-
+    
       vector_t (size_t sz) 
         : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
+#endif
 
+      
       ~vector_t() {
         clear();
       }

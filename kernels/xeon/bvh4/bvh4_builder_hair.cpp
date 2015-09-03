@@ -32,7 +32,7 @@ namespace embree
       mvector<BezierPrim> prims;
 
       BVH4HairBuilderSAH (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene) {}
+        : bvh(bvh), scene(scene), prims(scene->device) {}
       
       void build(size_t, size_t) 
       {
@@ -127,7 +127,7 @@ namespace embree
       mvector<BezierPrim> prims;
 
       BVH4HairMBBuilderSAH (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene) {}
+        : bvh(bvh), scene(scene), prims(scene->device) {}
       
       void build(size_t, size_t) 
       {

@@ -19,7 +19,9 @@
 namespace embree
 {
   /*! invokes the memory monitor callback */
-  void memoryMonitor(ssize_t bytes, bool post);
+  struct MemoryMonitorInterface {
+    virtual void memoryMonitor(ssize_t bytes, bool post) = 0;
+  };
 
   /*! allocator that performs aligned monitored allocations */
   template<typename T, size_t alignment = 64>
@@ -33,16 +35,21 @@ namespace embree
       typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
       typedef std::ptrdiff_t difference_type;
 
+      __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
+        : device(device) {}
+
       __forceinline pointer allocate( size_type n ) 
       {
-        memoryMonitor(n*sizeof(T),false);
+        assert(device);
+        device->memoryMonitor(n*sizeof(T),false);
         return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
       }
 
       __forceinline void deallocate( pointer p, size_type n ) 
       {
+        assert(device);
         alignedFree(p);
-        memoryMonitor(-n*sizeof(T),true);
+        device->memoryMonitor(-n*sizeof(T),true);
       }
 
       __forceinline void construct( pointer p, const_reference val ) {
@@ -52,15 +59,20 @@ namespace embree
       __forceinline void destroy( pointer p ) {
         p->~T();
       }
+
+    private:
+      MemoryMonitorInterface* device;
     };
 }
 
 /*! instantiate vector using monitored aligned allocations */
+#define VECTOR_INIT_ALLOCATOR
 #define vector_t mvector
 #define allocator_t aligned_monitored_allocator<T,std::alignment_of<T>::value>
 #include "../../common/sys/vector_t.h"
 #undef vector_t
 #undef allocator_t
+#undef VECTOR_INIT_ALLOCATOR
 
 namespace embree
 {

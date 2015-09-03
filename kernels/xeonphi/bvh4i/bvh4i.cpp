@@ -145,34 +145,34 @@ namespace embree
       }
     else
       {
-	if      (State::instance()->tri_traverser == "default" || State::instance()->tri_traverser == "hybrid") 
+	if      (bvh->device->tri_traverser == "default" || bvh->device->tri_traverser == "hybrid") 
 	  {
 	    intersectors.intersector16          = BVH4iTriangle1Intersector16HybridMoeller;
 	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16HybridMoeller;
 	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16HybridMoellerNoFilter;
 	  }
-	else if (State::instance()->tri_traverser == "chunk"  ) 
+	else if (bvh->device->tri_traverser == "chunk"  ) 
 	  {
 	    intersectors.intersector16          = BVH4iTriangle1Intersector16ChunkMoeller;
 	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16ChunkMoeller;
 	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16ChunkMoellerNoFilter;
 
 	  }
-	else if (State::instance()->tri_traverser == "single" ) 
+	else if (bvh->device->tri_traverser == "single" ) 
 	  {
 	    intersectors.intersector16          = BVH4iTriangle1Intersector16SingleMoeller;
 	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16SingleMoeller;
 	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16SingleMoellerNoFilter;
 
 	  }
-	else if (State::instance()->tri_traverser == "test" ) 
+	else if (bvh->device->tri_traverser == "test" ) 
 	  {
 	    intersectors.intersector16          = BVH4iTriangle1Intersector16TestMoeller;
 	    intersectors.intersector16_filter   = BVH4iTriangle1Intersector16TestMoeller;
 	    intersectors.intersector16_nofilter = BVH4iTriangle1Intersector16TestMoellerNoFilter;
 
 	  }
-	else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4i<Triangle1>");      
+	else THROW_RUNTIME_ERROR("unknown traverser "+bvh->device->tri_traverser+" for BVH4i<Triangle1>");      
       }
     return intersectors;
   }
@@ -182,28 +182,28 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4iTriangle1mcIntersector1; 
-    if      (State::instance()->tri_traverser == "default" || State::instance()->tri_traverser == "hybrid") 
+    if      (bvh->device->tri_traverser == "default" || bvh->device->tri_traverser == "hybrid") 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16HybridMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16HybridMoellerNoFilter;
 
       }
-    else if (State::instance()->tri_traverser == "chunk"  ) 
+    else if (bvh->device->tri_traverser == "chunk"  ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16ChunkMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16ChunkMoellerNoFilter;
 
       }
-    else if (State::instance()->tri_traverser == "single" ) 
+    else if (bvh->device->tri_traverser == "single" ) 
       {
 	intersectors.intersector16          = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_filter   = BVH4iTriangle1mcIntersector16SingleMoeller;
 	intersectors.intersector16_nofilter = BVH4iTriangle1mcIntersector16SingleMoellerNoFilter;
 
       }
-    else THROW_RUNTIME_ERROR("unknown traverser "+State::instance()->tri_traverser+" for BVH4i<Triangle1>");      
+    else THROW_RUNTIME_ERROR("unknown traverser "+bvh->device->tri_traverser+" for BVH4i<Triangle1>");      
     return intersectors;
   }
 

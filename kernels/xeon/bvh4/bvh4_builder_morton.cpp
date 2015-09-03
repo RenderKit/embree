@@ -361,7 +361,7 @@ namespace embree
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize) {}
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device) {}
 
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
@@ -514,7 +514,7 @@ namespace embree
     public:
       
       BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1) {}
+        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device) {}
       
       /*! Destruction */
       ~BVH4SceneBuilderMorton () {

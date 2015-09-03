@@ -23,9 +23,9 @@ namespace embree
   BezierCurves::BezierCurves (Scene* parent, RTCGeometryFlags flags, size_t numPrimitives, size_t numVertices, size_t numTimeSteps) 
     : Geometry(parent,BEZIER_CURVES,numPrimitives,numTimeSteps,flags)
   {
-    curves.init(numPrimitives,sizeof(int));
+    curves.init(parent->device,numPrimitives,sizeof(int));
     for (size_t i=0; i<numTimeSteps; i++) {
-      vertices[i].init(numVertices,sizeof(Vec3fa));
+      vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
@@ -81,12 +81,12 @@ namespace embree
       vertices[1].checkPadding16();
       break;
     case RTC_USER_VERTEX_BUFFER0  : 
-      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices(),stride)); 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices(),stride)); 
       userbuffers[0]->set(ptr,offset,stride);  
       userbuffers[0]->checkPadding16();
       break;
     case RTC_USER_VERTEX_BUFFER1  : 
-      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices(),stride)); 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices(),stride)); 
       userbuffers[1]->set(ptr,offset,stride);  
       userbuffers[1]->checkPadding16();
       break;

@@ -69,7 +69,7 @@ namespace embree
       mvector<PrimRef> prims;
       
       BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene) {}
+        : bvh(bvh), scene(scene), prims(scene->device) {}
 
       void build(size_t, size_t) 
       {
@@ -127,7 +127,7 @@ namespace embree
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
       BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene) {}
+        : bvh(bvh), scene(scene), prims(scene->device) {}
 
       void build(size_t, size_t) 
       {
@@ -253,7 +253,7 @@ namespace embree
       size_t numSubdivEnableDisableEvents;
 
       BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), refitter(nullptr), scene(scene), numSubdivEnableDisableEvents(0) {}
+        : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
       
       virtual const BBox3fa leafBounds (BVH4::NodeRef& ref) const 
       {

@@ -232,14 +232,14 @@ namespace embree
       
       /* refit BVH */
       double t0 = 0.0;
-      if (State::instance()->verbosity(2)) {
+      if (bvh->device->verbosity(2)) {
         std::cout << "refitting BVH4 <" << bvh->primTy.name << "> ... " << std::flush;
         t0 = getSeconds();
       }
       
       refitter->refit();
 
-      if (State::instance()->verbosity(2)) 
+      if (bvh->device->verbosity(2)) 
       {
         double t1 = getSeconds();
         std::cout << "[DONE]" << std::endl;

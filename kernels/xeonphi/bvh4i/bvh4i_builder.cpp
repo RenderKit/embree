@@ -166,7 +166,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizeof(PrimRef) + additional_size;
-    const size_t size_node     = (double)(numNodes * bvh4iNodePreallocFactor * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
+    const size_t size_node     = (double)(numNodes * bvh4iNodePreallocFactor * sizeNodeInBytes + additional_size) * scene->device->memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(float16);
@@ -240,7 +240,7 @@ namespace embree
     const size_t totalNumPrimitives = getNumPrimitives();
 
     /* print builder name */
-    if (unlikely(State::instance()->verbosity(2))) {
+    if (unlikely(scene->device->verbosity(2))) {
       printBuilderName();
 
       DBG(
@@ -305,7 +305,7 @@ namespace embree
 	build_main(0,1);
       }
 
-    if (State::instance()->verbosity(2)) {
+    if (scene->device->verbosity(2)) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << getStatistics();
@@ -1100,7 +1100,7 @@ namespace embree
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
 #endif
       t0 = getSeconds();
 
@@ -1196,7 +1196,7 @@ namespace embree
 
     /* stop measurement */
 #if !defined(PROFILE)
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
 #endif
       dt = getSeconds()-t0;
   }

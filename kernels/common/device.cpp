@@ -141,17 +141,17 @@ namespace embree
   {
     /* initialize global state */
     init_globals();
-    State::instance()->clear();
-    State::instance()->parseString(cfg);
-    State::instance()->parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    State::clear();
+    State::parseString(cfg);
+    State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
-      State::instance()->parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     
     /*! set tessellation cache size */
-    resizeTessellationCache( State::instance()->tessellation_cache_size );
+    resizeTessellationCache( State::tessellation_cache_size );
 
     /*! enable some floating point exceptions to catch bugs */
-    if (State::instance()->float_exceptions)
+    if (State::float_exceptions)
     {
       int exceptions = _MM_MASK_MASK;
       //exceptions &= ~_MM_MASK_INVALID;
@@ -169,7 +169,7 @@ namespace embree
 #endif
 
     /* print info header */
-    if (State::instance()->verbosity(1))
+    if (State::verbosity(1))
       print();
 
     /* CPU has to support at least SSE2 */
@@ -219,21 +219,21 @@ namespace embree
     
     InstanceIntersectorsRegister();
 
-    if (State::instance()->verbosity(2)) 
-      State::instance()->print();
+    if (State::verbosity(2)) 
+      State::print();
 
 #if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(g_numThreads,State::instance()->set_affinity); // FIXME: prevents creation of two devices
+    TaskScheduler::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
 #endif
 
 #if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(g_numThreads,State::instance()->set_affinity); // FIXME: prevents creation of two devices
+    TaskSchedulerTBB::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
 #endif
 
 #if defined(TASKING_TBB)
 
     /* only set affinity of requested by the user */
-    if (State::instance()->set_affinity) {
+    if (State::set_affinity) {
       tbb_affinity.set_concurrency(0);
       tbb_affinity.observe(true); 
     }
@@ -259,7 +259,7 @@ namespace embree
 #endif
 
     /* execute regression tests */
-    if (State::instance()->regression_testing) 
+    if (State::regression_testing) 
     {
 #if defined(TASKING_LOCKSTEP)
       TaskScheduler::EventSync event;
@@ -289,7 +289,7 @@ namespace embree
     if (g_tbb_threads_initialized)
       tbb_threads.terminate();
 #endif
-    State::instance()->clear();
+    State::clear();
   }
 
   void Device::print()
@@ -354,7 +354,7 @@ namespace embree
 #if !defined(__MIC__)
     if (!hasFTZ || !hasDAZ) {
 #if !defined(_DEBUG)
-      if (State::instance()->verbosity(1)) 
+      if (State::verbosity(1)) 
 #endif
       {
         std::cout << std::endl;
@@ -376,8 +376,49 @@ namespace embree
 #endif
 
 #if defined (__MIC__) && defined(RTCORE_BUFFER_STRIDE)
-    if (State::instance()->verbosity(1))
+    if (State::verbosity(1))
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
 #endif
+  }
+
+  void Device::process_error(RTCError error, const char* str)
+  { 
+    /* print error when in verbose mode */
+    if (State::verbosity(1)) 
+    {
+      switch (error) {
+      case RTC_NO_ERROR         : std::cerr << "Embree: No error"; break;
+      case RTC_UNKNOWN_ERROR    : std::cerr << "Embree: Unknown error"; break;
+      case RTC_INVALID_ARGUMENT : std::cerr << "Embree: Invalid argument"; break;
+      case RTC_INVALID_OPERATION: std::cerr << "Embree: Invalid operation"; break;
+      case RTC_OUT_OF_MEMORY    : std::cerr << "Embree: Out of memory"; break;
+      case RTC_UNSUPPORTED_CPU  : std::cerr << "Embree: Unsupported CPU"; break;
+      default                   : std::cerr << "Embree: Invalid error code"; break;                   
+      };
+      if (str) std::cerr << ", (" << str << ")";
+      std::cerr << std::endl;
+    }
+
+    /* call user specified error callback */
+    if (State::error_function) 
+      State::error_function(error,str); 
+
+    /* record error code */
+    RTCError* stored_error = State::error();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
+  }
+
+  void Device::memoryMonitor(ssize_t bytes, bool post)
+  {
+    if (State::memory_monitor_function && bytes != 0) {
+      if (!State::memory_monitor_function(bytes,post)) {
+#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
+        if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
+          throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
+        }
+#endif
+      }
+    }
   }
 }

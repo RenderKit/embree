@@ -94,7 +94,7 @@ void build_sah(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
   size_t N = pinfo.size();
 
   /* fast allocator that supports thread local operation */
-  FastAllocator allocator;
+  FastAllocator allocator(nullptr);
 
   for (size_t i=0; i<2; i++)
   {
@@ -156,7 +156,7 @@ void build_morton(avector<PrimRef>& prims, isa::PrimInfo& pinfo)
     morton_src[i].index = i;
 
   /* fast allocator that supports thread local operation */
-  FastAllocator allocator;
+  FastAllocator allocator(nullptr);
 
   for (size_t i=0; i<2; i++)
   {

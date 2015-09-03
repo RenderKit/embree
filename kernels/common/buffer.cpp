@@ -19,22 +19,22 @@
 namespace embree
 {
   Buffer::Buffer () 
-    : initialized(false), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
+    : device(nullptr), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true) {}
   
-  Buffer::Buffer (size_t num_in, size_t stride_in) 
-    : initialized(false), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true)
+  Buffer::Buffer (MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
+    : device(nullptr), ptr(nullptr), bytes(0), ptr_ofs(nullptr), stride(0), num(0), shared(false), mapped(false), modified(true)
 	//  : Buffer() // FIXME: not supported by VS2010
   {
-    init(num_in,stride_in);
+    init(device_in,num_in,stride_in);
   }
   
   Buffer::~Buffer () {
     free();
   }
 
-  void Buffer::init(size_t num_in, size_t stride_in) 
+  void Buffer::init(MemoryMonitorInterface* device_in, size_t num_in, size_t stride_in) 
   {
-    initialized = true;
+    device = device_in;
     ptr = nullptr;
     bytes = num_in*stride_in;
     ptr_ofs = nullptr;
@@ -48,7 +48,7 @@ namespace embree
   void Buffer::set(void* ptr_in, size_t ofs_in, size_t stride_in)
   {
     /* report error if buffer is not existing */
-    if (!initialized)
+    if (!device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
 
 #if !defined(RTCORE_BUFFER_STRIDE)
@@ -66,7 +66,7 @@ namespace embree
   }
 
   void Buffer::alloc() {
-    memoryMonitor(bytes,false);
+    if (device) device->memoryMonitor(bytes,false);
     ptr = ptr_ofs = (char*) alignedMalloc(bytes);
   }
 
@@ -74,14 +74,14 @@ namespace embree
   {
     if (shared || !ptr) return;
     alignedFree(ptr); 
-    memoryMonitor(-bytes,true);
+    if (device) device->memoryMonitor(-bytes,true);
     ptr = nullptr; ptr_ofs = nullptr; bytes = 0;
   }
 
   void* Buffer::map(atomic_t& cntr)
   {
     /* report error if buffer is not existing */
-    if (!initialized)
+    if (!device)
       throw_RTCError(RTC_INVALID_ARGUMENT,"invalid buffer specified");
 
     /* report error if buffer is already mapped */

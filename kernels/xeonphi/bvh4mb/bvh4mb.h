@@ -86,7 +86,7 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4mb (const PrimitiveType& primTy, void* geometry = nullptr) : BVH4i(primTy,geometry)
+    BVH4mb (const PrimitiveType& primTy, Scene* geometry) : BVH4i(primTy,geometry)
     {
     }
 

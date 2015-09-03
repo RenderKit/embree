@@ -24,21 +24,22 @@ namespace embree
 #  define USE_TASK_ARENA 1
 #endif
 
-  /*! processes error codes, do not call directly */
-  void process_error(RTCError error, const char* str);
-
 /*! Makros used in the rtcore API implementation */
 #define RTCORE_CATCH_BEGIN try {
-#define RTCORE_CATCH_END                                                \
-  } catch (std::bad_alloc&) {                                           \
-    process_error(RTC_OUT_OF_MEMORY,"out of memory");                   \
+#define RTCORE_CATCH_END(device)                                        \
+  } catch (std::bad_alloc&) {                                            \
+    if (device) (device)->process_error(RTC_OUT_OF_MEMORY,"out of memory"); \
   } catch (rtcore_error& e) {                                           \
-    process_error(e.error,e.what());                                    \
+    if (device) (device)->process_error(e.error,e.what());              \
   } catch (std::exception& e) {                                         \
-    process_error(RTC_UNKNOWN_ERROR,e.what());                          \
+    if (device) (device)->process_error(RTC_UNKNOWN_ERROR,e.what());    \
   } catch (...) {                                                       \
-    process_error(RTC_UNKNOWN_ERROR,"unknown exception caught");        \
-    }
+    if (device) (device)->process_error(RTC_UNKNOWN_ERROR,"unknown exception caught"); \
+  }
+
+#define RTCORE_CATCH_END_NOREPORT                                     \
+  } catch (...) {                                                     \
+  }
 
 #define RTCORE_VERIFY_HANDLE(handle)                                    \
   if (handle == nullptr) {                                              \

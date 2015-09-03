@@ -21,7 +21,7 @@
 
 namespace embree
 {
-  class Device //: public State
+  class Device : public State, public MemoryMonitorInterface
   {
     ALIGNED_CLASS;
 
@@ -36,7 +36,14 @@ namespace embree
     /*! prints info about the device */
     void print();
 
+    /*! processes error codes, do not call directly */
+    void process_error(RTCError error, const char* str);
+
+    /*! invokes the memory monitor callback */
+    void memoryMonitor(ssize_t bytes, bool post);
+
   public:
+
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif

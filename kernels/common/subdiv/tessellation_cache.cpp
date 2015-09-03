@@ -220,8 +220,8 @@ namespace embree
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
-    if (State::instance()->verbose >= 1)
-      std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
+    //if (state->verbose >= 1)
+    //std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
   }
 
 
