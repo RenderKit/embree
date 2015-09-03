@@ -293,7 +293,7 @@ namespace embree
         NodeRef cur0 = NodeRef(stackNode[0][sindex[0]]);
         NodeRef cur1 = NodeRef(stackNode[1][sindex[1]]);
 
-        STAT3(normal.trav_stack_pop,2,2,2);
+        STAT3(normal.trav_stack_pop,1,1,1);
 
         
         while(1)
@@ -311,6 +311,7 @@ namespace embree
           DBG_PRINT(cur);
 
           if (unlikely(cur.isLeaf(types))) break;
+          STAT3(normal.trav_nodes,1,1,1);
 
           assert(cur0.isNode());
           assert(cur1.isNode());
@@ -355,10 +356,24 @@ namespace embree
 
           DBG_PRINT(mask);
 
+          STAT(if (mask == 0) STAT3(normal.trav_hit_boxes[0],1,1,1));
+
           if (unlikely(mask == 0)) continue;
 
           const size_t mask0 = mask & 0xf;
           const size_t mask1 = mask >> 4;
+
+          STAT(
+        if (__popcnt(mask0) <= 1 && __popcnt(mask1) <= 1) 
+        {
+                 STAT3(normal.trav_hit_boxes[1],1,1,1);
+      }
+          else
+          {
+                 STAT3(normal.trav_hit_boxes[2],1,1,1);
+      }
+        );
+
 
           DBG_PRINT(mask0);
           DBG_PRINT(mask1);
@@ -436,8 +451,11 @@ namespace embree
         DBG_PRINT(cur0);
         DBG_PRINT(cur1);
 
-        // LOOP UNTIL NON LEAF
         BVH4::NodeRef current[2];
+        if (unlikely(rayIndex[0] == rayIndex[1])) cur1 = BVH4::invalidNode;
+
+        // LOOP UNTIL NON LEAF
+
         current[0] = cur0;
         current[1] = cur1;
         for (size_t i=0;i<2;i++)
@@ -465,7 +483,7 @@ namespace embree
           PrimitiveIntersector8::intersect(pre, ray, rindex, prim, num, bvh->scene, lazy_node);
 
           /*! stack compaction */
-#if 0
+#if 1
           if (unlikely(old_tfar != ray.tfar[rindex]))
           {
             size_t new_sindex = 1;
