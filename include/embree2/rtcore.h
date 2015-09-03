@@ -78,7 +78,6 @@ typedef struct __RTCDevice {}* RTCDevice;
   default configuration is used. The following configuration flags are
   supported by the Embree implementation of the API:
   
-  threads = num,       // sets the number of threads to use (default is to use all threads)
   verbose = num,       // sets verbosity level (default is 0)
 
   If Embree is started on an unsupported CPU, rtcNewDevice will fail and
@@ -104,7 +103,6 @@ RTCORE_API void rtcDeleteDevice(RTCDevice device);
   is used. The following configuration flags are supported by the
   Embree implementation of the API:
   
-  threads = num,       // sets the number of threads to use (default is to use all threads)
   verbose = num,       // sets verbosity level (default is 0)
 
   If Embree is started on an unsupported CPU, rtcInit will fail and
