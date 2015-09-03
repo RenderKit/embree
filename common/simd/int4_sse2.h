@@ -60,8 +60,6 @@ namespace embree
     __forceinline int4( PosInfTy ) : m128(_mm_set_epi32(pos_inf, pos_inf, pos_inf, pos_inf)) {}
     __forceinline int4( NegInfTy ) : m128(_mm_set_epi32(neg_inf, neg_inf, neg_inf, neg_inf)) {}
     __forceinline int4( StepTy )   : m128(_mm_set_epi32(3, 2, 1, 0)) {}
-
-    //__forceinline int4( TrueTy  ) : m128(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128())) {}
     __forceinline int4( TrueTy  ) { m128 = _mm_undefined_si128(); m128 = _mm_cmpeq_epi32(m128,m128); }
 
 

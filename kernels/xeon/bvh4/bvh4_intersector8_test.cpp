@@ -89,6 +89,9 @@ namespace embree
   static int4 allSet4( 0xffffffff,0xffffffff,0xffffffff,0xffffffff );
   static int4 mask2( 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc );
 
+  static int8 step2x4( 0,1,2,3, 0,1,2,3 );
+  static unsigned int mask1x8 = 0xfffffffc;
+ 
 #undef DBG_PRINT
 #define DBG_PRINT(x) 
 //#define DBG_PRINT(x) PRINT(x)
@@ -109,6 +112,11 @@ namespace embree
     }
 
     __forceinline float8 merge(const float8 &a, const float8 &b, const int imm)
+    {
+      return select(imm,a,b);
+    }
+
+    __forceinline int8 merge(const int8 &a, const int8 &b, const int imm)
     {
       return select(imm,a,b);
     }
@@ -195,7 +203,7 @@ namespace embree
       /* switch to single ray traversal */
 #if 1 // !defined(__WIN32__) || defined(__X86_64__)
 
-#if 0
+#if 1
       Vec3i8 nearXYZ;
       nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
       nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
@@ -360,19 +368,90 @@ namespace embree
 
           if (unlikely(mask == 0)) continue;
 
+#if 1
+          const size_t mask0 = mask & 0xf;
+          const size_t mask1 = mask >> 4;
+          const int8 vi = (cast(tNear) & mask1x8) | step2x4;
+          const int8 a0 = select(vmask,vi,int8( True )); //optimize
+          const int8 b0 = shuffle<1,0,3,2>(a0);
+          const int8 c0 = umin(a0,b0);
+          const int8 d0 = umax(a0,b0);
+          const int8 a1 = merge(c0,d0,0b01010101);
+          const int8 b1 = shuffle<2,3,0,1>(a1);
+          const int8 c1 = umin(a1,b1);
+          const unsigned int min_index0 = extract<0>(extract<0>(c1)) & 3;
+          const unsigned int min_index1 = extract<0>(extract<1>(c1)) & 3;
+          cur0 = mask0 ? node0->child(min_index0) : cur0;
+          cur1 = mask1 ? node1->child(min_index1) : cur1;
+
+          assert(cur0 != BVH4::emptyNode);
+          assert(cur1 != BVH4::emptyNode);
+
+          assert(min_index0 < 4);
+          assert(min_index1 < 4);
+          const int8 d1 = umax(a1,b1);
+          const int8 a2 = merge(c1,d1,0b00110011);
+          const int8 b2 = shuffle<0,2,1,3>(a2);
+          const int8 c2 = umin(a2,b2);
+          const int8 d2 = umax(a2,b2);
+          const int8 a3 = merge(c2,d2,0b00100010);
+          const int8 result = a3 & 3;
+
+          if (mask0)
+          {
+            sindex[0]++;
+            const size_t setbits = __popcnt(mask0);
+            DBG_PRINT(setbits);
+            const int4 rc            = reverseCompact[setbits];
+            const int8 node4         = *(int8*)node0->children;
+            int4 perm4i              = extract<0>(result);
+            const float4 tNear4      = extract<0>(tNear);
+            perm4i                   = permute(perm4i,reverseCompact[setbits]);            
+            const float4 dist4_perm  = permute(tNear4,perm4i);
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store4f(&stackDist[0][sindex[0]],dist4_perm);
+            store8i(&stackNode[0][sindex[0]],node4_perm);            
+            sindex[0] += setbits - 1;
+          }
+
+          if (mask1)
+          {
+            sindex[1]++;
+            const size_t setbits = __popcnt(mask1);
+            DBG_PRINT(setbits);
+            const int4 rc            = reverseCompact[setbits];
+            const int8 node4         = *(int8*)node1->children;
+            int4 perm4i              = extract<1>(result);
+            const float4 tNear4      = extract<1>(tNear);
+            perm4i                   = permute(perm4i,reverseCompact[setbits]);            
+            const float4 dist4_perm  = permute(tNear4,perm4i);
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store4f(&stackDist[1][sindex[1]],dist4_perm);
+            store8i(&stackNode[1][sindex[1]],node4_perm);            
+            sindex[1] += setbits - 1;            
+          }
+
+
+#else
           const size_t mask0 = mask & 0xf;
           const size_t mask1 = mask >> 4;
 
           STAT(
-        if (__popcnt(mask0) <= 1 && __popcnt(mask1) <= 1) 
-        {
-                 STAT3(normal.trav_hit_boxes[1],1,1,1);
-      }
-          else
-          {
-                 STAT3(normal.trav_hit_boxes[2],1,1,1);
-      }
-        );
+            if (__popcnt(mask0) <= 1 && __popcnt(mask1) <= 1) 
+            {
+              STAT3(normal.trav_hit_boxes[1],1,1,1);
+            }
+            else
+            {
+              STAT3(normal.trav_hit_boxes[2],1,1,1);
+            }
+            );
 
 
           DBG_PRINT(mask0);
@@ -425,7 +504,7 @@ namespace embree
             store8i(&stackNode[1][sindex[1]],node4_perm);            
             sindex[1] += setbits - 1;
           }
-
+#endif
 
           DBG_PRINT(sindex[0]);
           DBG_PRINT(sindex[1]);

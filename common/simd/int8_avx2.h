@@ -61,6 +61,7 @@ namespace embree
     __forceinline int8( PosInfTy ) : m256(_mm256_set1_epi32(pos_inf)) {}
     __forceinline int8( NegInfTy ) : m256(_mm256_set1_epi32(neg_inf)) {}
     __forceinline int8( StepTy   ) : m256(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
+    __forceinline int8( TrueTy  ) { m256 = _mm256_undefined_si256(); m256 = _mm256_cmpeq_epi32(m256,m256); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
@@ -157,6 +158,9 @@ namespace embree
   __forceinline const int8 max( const int8& a, const int8& b ) { return _mm256_max_epi32(a.m256, b.m256); }
   __forceinline const int8 max( const int8& a, const int   b ) { return max(a,int8(b)); }
   __forceinline const int8 max( const int   a, const int8& b ) { return max(int8(a),b); }
+
+  __forceinline const int8 umin( const int8& a, const int8& b ) { return _mm256_min_epu32(a.m256, b.m256); }
+  __forceinline const int8 umax( const int8& a, const int8& b ) { return _mm256_max_epu32(a.m256, b.m256); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators

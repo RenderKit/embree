@@ -26,6 +26,7 @@
 #define DBG(x) 
 
 #define SWITCH_THRESHOLD 7
+#define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
 {
@@ -221,7 +222,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       float8*    __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -323,6 +324,17 @@ namespace embree
               }
             }	      
           }
+
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
+          // seems to be the best place for testing utilization
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node++ = cur;
+              *sptr_near++ = curDist;
+              goto pop;
+            }
+#endif
+          
         }
         
         /* return if stack is empty */
@@ -519,7 +531,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       float8*    __restrict__ sptr_near = stack_near + 2;
 
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -621,6 +633,16 @@ namespace embree
               }
             }	      
           }
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
+          // seems to be the best place for testing utilization
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node++ = cur;
+              *sptr_near++ = curDist;
+              goto pop;
+            }
+#endif
+          
         }
         
         /* return if stack is empty */
