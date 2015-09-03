@@ -102,17 +102,17 @@ namespace embree
   /*! Outputs ray to stream. */
   inline std::ostream& operator<<(std::ostream& cout, const Ray8& ray) {
     return cout << "{ " 
-                << "org = " << ray.org 
-                << ", dir = " << ray.dir 
-                << ", near = " << ray.tnear 
-                << ", far = " << ray.tfar 
-                << ", time = " << ray.time 
-                << ", instID = " << ray.instID 
-                << ", geomID = " << ray.geomID 
-                << ", primID = " << ray.primID 
-                <<  ", u = " << ray.u 
-                <<  ", v = " << ray.v 
-                << ", Ng = " << ray.Ng 
+                << "org = " << ray.org << std::endl
+                << ", dir = " << ray.dir << std::endl
+                << ", near = " << ray.tnear << std::endl
+                << ", far = " << ray.tfar << std::endl
+                << ", time = " << ray.time << std::endl
+                << ", instID = " << ray.instID << std::endl
+                << ", geomID = " << ray.geomID << std::endl
+                << ", primID = " << ray.primID << std::endl
+                <<  ", u = " << ray.u << std::endl
+                <<  ", v = " << ray.v << std::endl
+                << ", Ng = " << ray.Ng << std::endl
                 << " }";
   }
 }

@@ -88,6 +88,10 @@ namespace embree
   static int4 step4( 0,1,2,3 );
   static int4 allSet4( 0xffffffff,0xffffffff,0xffffffff,0xffffffff );
   static int4 mask2( 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc );
+
+#undef DBG_PRINT
+#define DBG_PRINT(x) 
+//#define DBG_PRINT(x) PRINT(x)
   
   namespace isa
   {
@@ -100,6 +104,11 @@ namespace embree
    
 
     __forceinline int4 merge(const int4 &a, const int4 &b, const int imm)
+    {
+      return select(imm,a,b);
+    }
+
+    __forceinline float8 merge(const float8 &a, const float8 &b, const int imm)
     {
       return select(imm,a,b);
     }
@@ -131,9 +140,35 @@ namespace embree
       return min_dist_index;
     }
 
+    __forceinline float8 merge2x4(const float& a, const float& b)
+    {
+      const float8 va = broadcast(&a);
+      const float8 vb = broadcast(&b);
+      return merge(va,vb,0b00001111);
+    }
+
+#if 0 //
+
+      float4 t0(3,0,1,2);
+
+      int4 p0;
+      const unsigned int index = networkSort(t0, bool4(1,0,1,1), p0);
+      PRINT(index);
+      
+      int4 p1         = permute(p0,reverseCompact[3]);
+      const float4 t1 = permute(t0,p0);
+      const float4 t2 = permute(t0,p1);
+      PRINT(t0);
+      PRINT(p0);
+      PRINT(t1);
+      PRINT(p1);
+      PRINT(t2);
+      exit(0);
+#endif
     template<int types, bool robust, typename PrimitiveIntersector8>
     void BVH4Intersector8Test<types,robust,PrimitiveIntersector8>::intersect(bool8* valid_i, BVH4* bvh, Ray8& ray)
     {
+#if defined(__AVX2__)
       /* verify correct input */
       bool8 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -155,28 +190,12 @@ namespace embree
       const bool8 active = ray_tnear < ray_tfar;
       size_t bits = movemask(active);
 
-#if 0 // defined(__AVX2__)
 
-      float4 t0(3,0,1,2);
-
-      int4 p0;
-      const unsigned int index = networkSort(t0, bool4(1,0,1,1), p0);
-      PRINT(index);
-      
-      int4 p1         = permute(p0,reverseCompact[3]);
-      const float4 t1 = permute(t0,p0);
-      const float4 t2 = permute(t0,p1);
-      PRINT(t0);
-      PRINT(p0);
-      PRINT(t1);
-      PRINT(p1);
-      PRINT(t2);
-      exit(0);
-#endif
 
       /* switch to single ray traversal */
 #if 1 // !defined(__WIN32__) || defined(__X86_64__)
 
+#if 0
       Vec3i8 nearXYZ;
       nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
       nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
@@ -187,6 +206,345 @@ namespace embree
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
         BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
       }
+#else
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+      NodeRef stackNode[2][stackSizeSingle];  //!< stack of nodes 
+      float   stackDist[2][stackSizeSingle];  //!< stack of nodes 
+
+      size_t m_active = bits;
+
+      /* only a single ray active */
+      const size_t numActiveRays = __popcnt(m_active);
+      if (unlikely(numActiveRays <= 1))
+      {
+        Vec3i8 nearXYZ;
+        nearXYZ.x = select(ray_rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
+        nearXYZ.y = select(ray_rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
+        nearXYZ.z = select(ray_rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
+
+        for (size_t i=__bsf(m_active); m_active!=0; m_active=__btc(m_active,i), i=__bsf(m_active)) 
+          BVH4Intersector8Single<types,robust,PrimitiveIntersector8>::intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, ray_rdir, ray_tnear, ray_tfar, nearXYZ);
+        return;
+      }
+
+      for (size_t i=0;i<2;i++)
+      {
+        stackNode[i][0] = BVH4::invalidNode;
+        stackDist[i][0] = pos_inf;
+        stackNode[i][1] = bvh->root;
+        stackDist[i][1] = neg_inf;
+      }
+
+      size_t rayIndex[2];
+      rayIndex[0] = __bsf(m_active); m_active=__blsr(m_active);
+      rayIndex[1] = __bsf(m_active); m_active=__blsr(m_active);
+      assert(rayIndex[0] < 8);
+      assert(rayIndex[1] < 8);
+
+      size_t sindex[2];
+      sindex[0] = 2;
+      sindex[1] = 2;
+
+
+      while(1)
+      {
+        DBG_PRINT("");
+        DBG_PRINT("NEW TOP-DOWN ITERATION");
+        DBG_PRINT(rayIndex[0]);
+        DBG_PRINT(rayIndex[1]);
+        
+        const float8 ray_rdir_x     = merge2x4(ray_rdir.x[rayIndex[0]],ray_rdir.x[rayIndex[1]]);
+        const float8 ray_rdir_y     = merge2x4(ray_rdir.y[rayIndex[0]],ray_rdir.y[rayIndex[1]]);
+        const float8 ray_rdir_z     = merge2x4(ray_rdir.z[rayIndex[0]],ray_rdir.z[rayIndex[1]]);
+        const float8 ray_org_rdir_x = merge2x4(ray_org_rdir.x[rayIndex[0]],ray_org_rdir.x[rayIndex[1]]);
+        const float8 ray_org_rdir_y = merge2x4(ray_org_rdir.y[rayIndex[0]],ray_org_rdir.y[rayIndex[1]]);
+        const float8 ray_org_rdir_z = merge2x4(ray_org_rdir.z[rayIndex[0]],ray_org_rdir.z[rayIndex[1]]);
+        const float8 ray_near       = merge2x4(ray.tnear[rayIndex[0]],ray.tnear[rayIndex[1]]);
+        const float8 ray_far        = merge2x4(ray.tfar[rayIndex[0]],ray.tfar[rayIndex[1]]);
+
+        DBG_PRINT(ray_rdir_x);
+        DBG_PRINT(ray_rdir_y);
+        DBG_PRINT(ray_rdir_z);
+        DBG_PRINT(ray_org_rdir_x);
+        DBG_PRINT(ray_org_rdir_y);
+        DBG_PRINT(ray_org_rdir_z);
+        DBG_PRINT(ray_near);
+        DBG_PRINT(ray_far);
+
+        DBG_PRINT(sindex[0]);
+        DBG_PRINT(sindex[1]);
+
+#if PRINT_STACK == 1
+        std::cout << "stack0 ";
+        for (size_t i=0;i<sindex[0];i++)
+          std::cout << stackNode[0][i] << " ";
+        std::cout << std::endl;
+
+        std::cout << "stack1 ";
+        for (size_t i=0;i<sindex[1];i++)
+          std::cout << stackNode[1][i] << " ";
+        std::cout << std::endl;
+#endif
+
+        sindex[0]--;
+        sindex[1]--;
+        NodeRef cur0 = NodeRef(stackNode[0][sindex[0]]);
+        NodeRef cur1 = NodeRef(stackNode[1][sindex[1]]);
+
+        STAT3(normal.trav_stack_pop,2,2,2);
+
+        
+        while(1)
+        {
+
+          DBG_PRINT("");
+          DBG_PRINT("TRAVERSAL");
+          DBG_PRINT(cur0);
+          DBG_PRINT(cur1);
+          DBG_PRINT(sindex[0]);
+          DBG_PRINT(sindex[1]);
+
+          BVH4::NodeRef cur = cur0 | cur1;
+
+          DBG_PRINT(cur);
+
+          if (unlikely(cur.isLeaf(types))) break;
+
+          assert(cur0.isNode());
+          assert(cur1.isNode());
+
+          const BVH4::Node* node0 = cur0.node();
+          const BVH4::Node* node1 = cur1.node();
+          
+          const float8 lower_x(node0->lower_x,node1->lower_x);
+          const float8 lower_y(node0->lower_y,node1->lower_y);
+          const float8 lower_z(node0->lower_z,node1->lower_z);
+
+          const float8 upper_x(node0->upper_x,node1->upper_x);
+          const float8 upper_y(node0->upper_y,node1->upper_y);
+          const float8 upper_z(node0->upper_z,node1->upper_z);
+
+          const float8 _tNearX = msub(lower_x, ray_rdir_x, ray_org_rdir_x);
+          const float8 _tNearY = msub(lower_y, ray_rdir_y, ray_org_rdir_y);
+          const float8 _tNearZ = msub(lower_z, ray_rdir_z, ray_org_rdir_z);
+          const float8 _tFarX  = msub(upper_x, ray_rdir_x, ray_org_rdir_x);
+          const float8 _tFarY  = msub(upper_y, ray_rdir_y, ray_org_rdir_y);
+          const float8 _tFarZ  = msub(upper_z, ray_rdir_z, ray_org_rdir_z);
+
+          const bool8  nactive = float8(pos_inf) != lower_x;
+
+          sindex[0]--;
+          cur0 = stackNode[0][sindex[0]];
+          sindex[1]--;
+          cur1 = stackNode[1][sindex[1]];
+
+          const float8 tNearX  = mini(_tNearX,_tFarX);
+          const float8 tNearY  = mini(_tNearY,_tFarY);
+          const float8 tNearZ  = mini(_tNearZ,_tFarZ);
+          
+          const float8 tFarX   = maxi(_tNearX,_tFarX);
+          const float8 tFarY   = maxi(_tNearY,_tFarY);
+          const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
+            
+          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
+          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
+          const bool8 vmask  = nactive & (tNear <= tFar);
+          const size_t mask  = movemask(vmask);
+
+          DBG_PRINT(mask);
+
+          if (unlikely(mask == 0)) continue;
+
+          const size_t mask0 = mask & 0xf;
+          const size_t mask1 = mask >> 4;
+
+          DBG_PRINT(mask0);
+          DBG_PRINT(mask1);
+
+          if (mask0)
+          {
+            sindex[0]++;
+            const size_t setbits = __popcnt(mask0);
+            DBG_PRINT(setbits);
+            const int4 rc        = reverseCompact[setbits];
+            const int8 node4     = *(int8*)node0->children;
+            const float4 tNear4  = extract<0>(tNear);
+            const bool4  vmask4  = extract<0>(vmask);
+            int4 perm4i;
+            const unsigned int min_dist_index = networkSort(tNear4,vmask4,perm4i);
+            assert(min_dist_index < 4);
+            cur0 = node0->child(min_dist_index);
+            perm4i         = permute(perm4i,reverseCompact[setbits]);            
+            const float4 dist4_perm  = permute(tNear4,perm4i);
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store4f(&stackDist[0][sindex[0]],dist4_perm);
+            store8i(&stackNode[0][sindex[0]],node4_perm);            
+            sindex[0] += setbits - 1;
+          }
+
+          if (mask1)
+          {
+            sindex[1]++;
+            const size_t setbits = __popcnt(mask1);
+            DBG_PRINT(setbits);
+            const int4 rc        = reverseCompact[setbits];
+            const int8 node4     = *(int8*)node1->children;
+            const float4 tNear4  = extract<1>(tNear);
+            const bool4  vmask4  = extract<1>(vmask);
+            int4 perm4i;
+            const unsigned int min_dist_index = networkSort(tNear4,vmask4,perm4i);
+            assert(min_dist_index < 4);
+            cur1 = node1->child(min_dist_index);
+            perm4i         = permute(perm4i,reverseCompact[setbits]);            
+            const float4 dist4_perm  = permute(tNear4,perm4i);
+            const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+            const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
+            const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+
+            store4f(&stackDist[1][sindex[1]],dist4_perm);
+            store8i(&stackNode[1][sindex[1]],node4_perm);            
+            sindex[1] += setbits - 1;
+          }
+
+
+          DBG_PRINT(sindex[0]);
+          DBG_PRINT(sindex[1]);
+
+#if PRINT_STACK == 1
+          std::cout << "stack0 ";
+          for (size_t i=0;i<sindex[0];i++)
+            std::cout << stackNode[0][i] << " ";
+          std::cout << std::endl;
+          
+          std::cout << "stack1 ";
+          for (size_t i=0;i<sindex[1];i++)
+            std::cout << stackNode[1][i] << " ";
+          std::cout << std::endl;
+#endif
+        }
+
+        DBG_PRINT("LEAF");
+
+        assert(cur0 != BVH4::emptyNode);
+        assert(cur1 != BVH4::emptyNode);
+
+        DBG_PRINT(cur0);
+        DBG_PRINT(cur1);
+
+        // LOOP UNTIL NON LEAF
+        BVH4::NodeRef current[2];
+        current[0] = cur0;
+        current[1] = cur1;
+        for (size_t i=0;i<2;i++)
+        {          
+          const BVH4::NodeRef cur = current[i];
+          DBG_PRINT(cur);
+          DBG_PRINT(cur.isLeaf());
+          DBG_PRINT(sindex[i]);
+          if (unlikely(cur.isNode())) {
+            stackNode[i][sindex[i]++] = cur;
+            continue;
+          }
+          assert(cur.isLeaf());
+          if (unlikely(cur == BVH4::invalidNode)) continue;
+
+          const size_t rindex = rayIndex[i];
+
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          DBG_PRINT("INTERSECTION");
+          DBG_PRINT(prim->primID());
+          const float old_tfar = ray.tfar[rindex];
+          size_t lazy_node = 0;
+          PrimitiveIntersector8::intersect(pre, ray, rindex, prim, num, bvh->scene, lazy_node);
+
+          /*! stack compaction */
+#if 0
+          if (unlikely(old_tfar != ray.tfar[rindex]))
+          {
+            size_t new_sindex = 1;
+            for (size_t s=1;s<sindex[i];s++)
+              if (unlikely(stackDist[i][s] <= ray.tfar[rindex]))
+              {
+                stackNode[i][new_sindex] = stackNode[i][s];
+                stackDist[i][new_sindex] = stackDist[i][s];
+                new_sindex++;
+              }
+            sindex[i] = new_sindex;
+          }
+#endif
+        }
+
+        if (unlikely(current[0] == BVH4::invalidNode && 
+                     current[1] == BVH4::invalidNode && 
+              m_active == 0)) 
+        {
+          DBG_PRINT(rayIndex[0]);
+          DBG_PRINT(rayIndex[1]);
+          DBG_PRINT(current[0]);
+          DBG_PRINT(current[1]);
+          DBG_PRINT("ALL RAYS TERMINATED");
+          break;
+        }
+
+#if PRINT_STACK == 1
+        DBG_PRINT(sindex[0]);
+        DBG_PRINT(sindex[1]);
+
+          std::cout << "stack0 ";
+          for (size_t i=0;i<sindex[0];i++)
+            std::cout << stackNode[0][i] << " ";
+          std::cout << std::endl;
+          
+          std::cout << "stack1 ";
+          for (size_t i=0;i<sindex[1];i++)
+            std::cout << stackNode[1][i] << " ";
+          std::cout << std::endl;
+#endif
+
+        for (size_t i=0;i<2;i++)
+          if (current[i] == BVH4::invalidNode)
+          {
+            if (m_active)
+            {
+              DBG_PRINT("REFILL");
+              DBG_PRINT(i);
+              rayIndex[i]     = __bsf(m_active); m_active=__blsr(m_active); 
+              sindex[i]       = 2;
+              stackNode[i][1] = bvh->root;
+              stackDist[i][1] = neg_inf;
+              DBG_PRINT(ray);
+
+              DBG_PRINT(rayIndex[i]);
+              DBG_PRINT(sindex[i]);
+            }
+            else
+            {
+              
+              rayIndex[i] = rayIndex[1-i];
+              sindex[i]   = sindex[1-i];
+              for (size_t j=1;j<sindex[i];j++)
+              {
+                stackNode[i][j] = stackNode[1-i][j];
+                stackDist[i][j] = stackDist[1-i][j];
+              }
+            }
+          }
+      }
+
+      
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif
+
+          //PRINT(ray);
+          //exit(0);
 
 #else
 
@@ -401,6 +759,7 @@ namespace embree
         }
       }
 
+#endif
 #endif
       AVX_ZERO_UPPER();
     }
