@@ -214,6 +214,10 @@ namespace embree
           }
 #endif
 
+          const size_t k = __bsf(m_active);
+          const size_t nearX = nearXYZ.x[k];
+          const size_t nearY = nearXYZ.y[k];
+          const size_t nearZ = nearXYZ.z[k];
 
           while (1)
           {
@@ -236,6 +240,18 @@ namespace embree
 
             STAT3(normal.trav_hit_boxes[__popcnt(m_active)],1,1,1);
 
+            const size_t farX  = nearX ^ sizeof(float8);
+            const size_t farY  = nearY ^ sizeof(float8);
+            const size_t farZ  = nearZ ^ sizeof(float8);
+                        
+            const float8 lower_x = load8f((const char*)node+nearX);
+            const float8 lower_y = load8f((const char*)node+nearY);
+            const float8 lower_z = load8f((const char*)node+nearZ);
+
+            const float8 upper_x = load8f((const char*)node+farX);
+            const float8 upper_y = load8f((const char*)node+farY);
+            const float8 upper_z = load8f((const char*)node+farZ);
+
             for (size_t bits=m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
             {
               DBG_PRINT(i);
@@ -249,39 +265,57 @@ namespace embree
               const float8 ray_org_rdir_y = broadcast(&org_rdir.y[i]);
               const float8 ray_org_rdir_z = broadcast(&org_rdir.z[i]);
 
-              prefetchL1(node->children);
 
-              const float8 _tNearX = msub(node->lower_x, ray_rdir_x, ray_org_rdir_x);
-              const float8 _tNearY = msub(node->lower_y, ray_rdir_y, ray_org_rdir_y);
-              const float8 _tNearZ = msub(node->lower_z, ray_rdir_z, ray_org_rdir_z);
-              const float8 _tFarX  = msub(node->upper_x, ray_rdir_x, ray_org_rdir_x);
-              const float8 _tFarY  = msub(node->upper_y, ray_rdir_y, ray_org_rdir_y);
-              const float8 _tFarZ  = msub(node->upper_z, ray_rdir_z, ray_org_rdir_z);
+              const float8 _tNearX = msub(lower_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 _tNearY = msub(lower_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 _tNearZ = msub(lower_z, ray_rdir_z, ray_org_rdir_z);
+              const float8 _tFarX  = msub(upper_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 _tFarY  = msub(upper_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 _tFarZ  = msub(upper_z, ray_rdir_z, ray_org_rdir_z);
 
-              const bool8  nactive = inf != node->lower_x;
+              //const float8 _tNearX = msub(node->lower_x, ray_rdir_x, ray_org_rdir_x);
+              //const float8 _tNearY = msub(node->lower_y, ray_rdir_y, ray_org_rdir_y);
+              //const float8 _tNearZ = msub(node->lower_z, ray_rdir_z, ray_org_rdir_z);
+              //const float8 _tFarX  = msub(node->upper_x, ray_rdir_x, ray_org_rdir_x);
+              //const float8 _tFarY  = msub(node->upper_y, ray_rdir_y, ray_org_rdir_y);
+              //const float8 _tFarZ  = msub(node->upper_z, ray_rdir_z, ray_org_rdir_z);
 
-              //const int8 m_node((unsigned int)1 << i);
+              //const bool8  nactive = inf != node->lower_x;
+
               const int8 m_node = broadcast(&shiftTable[i]);
-              const float8 tNearX  = mini(_tNearX,_tFarX);
-              const float8 tNearY  = mini(_tNearY,_tFarY);
-              const float8 tNearZ  = mini(_tNearZ,_tFarZ);
+              //const float8 tNearX  = mini(_tNearX,_tFarX);
+              //const float8 tNearY  = mini(_tNearY,_tFarY);
+              //const float8 tNearZ  = mini(_tNearZ,_tFarZ);
           
-              const float8 tFarX   = maxi(_tNearX,_tFarX);
-              const float8 tFarY   = maxi(_tNearY,_tFarY);
-              const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
+              //const float8 tFarX   = maxi(_tNearX,_tFarX);
+              //const float8 tFarY   = maxi(_tNearY,_tFarY);
+              //const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
             
-              const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
-              const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i])));
-              const bool8 vmask  = nactive & (tNear <= tFar);
+              //const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
+              //const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i])));
+              //const bool8 vmask  = nactive & (tNear <= tFar);
               //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);
 
+              const float8 tNearX  = _tNearX;
+              const float8 tNearY  = _tNearY;
+              const float8 tNearZ  = _tNearZ;
+              
+              const float8 tFarX   = _tFarX;
+              const float8 tFarY   = _tFarY;
+              const float8 tFarZ   = _tFarZ;
+              
+              const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
+              const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i]) ));
+              const bool8 vmask = tNear <= tFar;
+
               DBG_PRINT(vmask);
+
+              const float8 dist = select(vmask,tNear,inf);               
 
               rays_mask_per_node |= m_node & int8((__m256i)vmask);
               DBG_PRINT(m_node & int8((__m256i)vmask));
               DBG_PRINT(rays_mask_per_node);
 
-              const float8 dist = select(vmask,tNear,inf); 
               hit_dist = mini(hit_dist,dist); //optimize
               DBG_PRINT(dist);
               DBG_PRINT(hit_dist);
