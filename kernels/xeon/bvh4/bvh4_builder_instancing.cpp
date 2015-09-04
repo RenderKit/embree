@@ -228,10 +228,11 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
+      PRINT(refs.size());
       //PRINT(refs.size());
       //PRINT(numPrimitives);
       //size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
-      size_t N = numPrimitives/200;
+      size_t N = numPrimitives;
       //size_t N = 0;
       //PRINT(N);
       refs.reserve(N);

@@ -44,6 +44,24 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
+      struct TravRay 
+      {
+        __forceinline TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
+        {
+          const Vec3fa ray_rdir = rcp_safe(ray_dir);
+          const Vec3fa ray_org_rdir = ray_org*ray_rdir;
+          org = Vec3f4(ray_org.x,ray_org.y,ray_org.z);
+          dir = Vec3f4(ray_dir.x,ray_dir.y,ray_dir.z);
+          rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+          org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
+          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
+          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+        }
+        Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
+        size_t nearX, nearY, nearZ;
+      };
+
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -63,21 +81,11 @@ namespace embree
       assert(ray.tnear > -FLT_MIN);
       assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
-
       /*! load the ray into SIMD registers */
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const Vec3f4 org(ray.org.x,ray.org.y,ray.org.z);
-      const Vec3f4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const Vec3f4 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3f4 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const float4  ray_near(ray.tnear);
-      float4 ray_far(ray.tfar);
-
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
-      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
-      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+      TravRay vray(ray.org,ray.dir);
+      const TravRay tlray = vray;
+      float4 ray_near(ray.tnear);
+      float4 ray_far (ray.tfar);
 
       /* pop loop */
       while (true) pop:
@@ -103,19 +111,32 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	    mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+	    mask = intersect_node(cur.nodeMB(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode(types)))
-            mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+            mask = intersect_node(cur.unalignedNode(),vray.org,vray.dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = intersect_node(cur.unalignedNodeMB(),vray.org,vray.dir,ray_near,ray_far,ray.time,tNear);
+
+          /*! process transformation nodes */
+          else if (unlikely(cur.isTransformNode(types))) 
+          {
+            const BVH4::TransformNode* node = cur.transformNode();
+            const Vec3fa ray_org = xfmPoint (node->world2local,ray.org);
+            const Vec3fa ray_dir = xfmVector(node->world2local,ray.dir);
+            new (&vray) TravRay(ray_org,ray_dir);
+            stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
+            cur = node->child;
+          }
+
+          else assert(false);
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
@@ -168,6 +189,11 @@ namespace embree
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+        }
+
+        /*! restore toplevel ray */
+        if (cur == BVH4::popRay) {
+          vray = tlray; continue;
         }
         
         /*! this is a leaf node */
@@ -324,7 +350,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >);
 
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x10001 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
 #if defined(__AVX__)
     DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
 #endif
