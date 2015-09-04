@@ -44,6 +44,7 @@ namespace embree
   private:
     BVH4* bvh;
     float bvhSAH;                      //!< SAH cost.
+    float leafSAH;
     size_t numAlignedNodes;            //!< Number of aligned internal nodes.
     size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
     size_t numAlignedNodesMB;            //!< Number of aligned internal nodes.

@@ -26,10 +26,11 @@ namespace embree
     numLeaves = numPrims = numPrimBlocks = depth = 0;
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
-    bvhSAH = 0.0f;
+    bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
     bvhSAH /= halfArea(bvh->bounds);
+    leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4::maxDepth);
   }
   
@@ -60,7 +61,7 @@ namespace embree
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
     stream.precision(4);
-    stream << "  sah = " << bvhSAH;
+    stream << "  sah = " << bvhSAH+leafSAH << " (" << bvhSAH << " + " << leafSAH << ")";
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
     stream << ", depth = " << depth << std::endl;
@@ -184,7 +185,7 @@ namespace embree
         numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       
       float sah = A * BVH4::intCost * num;
-      bvhSAH += sah;
+      leafSAH += sah;
     }
   } 
 }
