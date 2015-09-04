@@ -26,12 +26,29 @@
 #define DBG(x) 
 
 #define OLD_TRAVERSAL 0
-#define INTERSECTION_CHUNK_THRESHOLD 6
+#define INTERSECTION_CHUNK_THRESHOLD 4
+#undef DBG_PRINT
+#define DBG_PRINT(x) 
+//#define DBG_PRINT(x) PRINT(x)
+
+#define SWITCH_THRESHOLD 2
 
 #if !defined(__WIN32__)
 
 namespace embree
 {
+  static int shiftTable[8] = {
+    1 << 0,
+    1 << 1,
+    1 << 2,
+    1 << 3,
+    1 << 4,
+    1 << 5,
+    1 << 6,
+    1 << 7
+  };
+
+
   namespace isa
   { 
 
@@ -45,12 +62,85 @@ namespace embree
     {
 #if defined(__AVX2__)
       struct __aligned(16) StackItemHybrid  {
-        float dist;
+
+        /*! assert that the xchg function works */
+
+        union { float dist; unsigned int dist_i; };
         unsigned int mask;
         BVH8::NodeRef ref;
-        __forceinline StackItemHybrid() {}
+        __forceinline StackItemHybrid() {
+          assert(sizeof(StackItemHybrid) == 16);
+
+        }
         __forceinline StackItemHybrid(const float dist, const unsigned int mask, const BVH8::NodeRef ref) :
           dist(dist), mask(mask), ref(ref) {}
+
+        /*! use SSE instructions to swap stack items */
+        __forceinline static void xchg(StackItemHybrid& a, StackItemHybrid& b) 
+        { 
+          const float4 sse_a = load4f(&a); 
+          const float4 sse_b = load4f(&b);
+          store4f(&a,sse_b);
+          store4f(&b,sse_a);
+        }
+
+        __forceinline static void compare_xchg(int4& a, int4& b) 
+        {
+          //int4 a_dist = shuffle<0,0,0,0>(a);
+          //int4 b_dist = shuffle<0,0,0,0>(b);
+          bool4 mask  = shuffle<0,0,0,0>(b < a);
+          int4 a_new  = select(mask,a,b);
+          int4 b_new  = select(mask,b,a);
+          a = a_new;
+          b = b_new;
+        }
+
+        /*! Sort 3 stack items. */
+        __forceinline static void sort3(StackItemHybrid& s1, StackItemHybrid& s2, StackItemHybrid& s3)
+        {
+#if 0
+          if (s2.dist < s1.dist) xchg(s2,s1);
+          if (s3.dist < s2.dist) xchg(s3,s2);
+          if (s2.dist < s1.dist) xchg(s2,s1);
+#else
+          int4 a1 = *(int4*)&s1;
+          int4 a2 = *(int4*)&s2;
+          int4 a3 = *(int4*)&s3;
+          compare_xchg(a2,a1);
+          compare_xchg(a3,a2);
+          compare_xchg(a2,a1);
+          *(int4*)&s1 = a1;
+          *(int4*)&s2 = a2;
+          *(int4*)&s3 = a3;
+#endif
+        }
+    
+        /*! Sort 4 stack items. */
+        __forceinline static void sort4(StackItemHybrid& s1, StackItemHybrid& s2, StackItemHybrid& s3, StackItemHybrid& s4)
+        {
+#if 1
+          if (s2.dist < s1.dist) xchg(s2,s1);
+          if (s4.dist < s3.dist) xchg(s4,s3);
+          if (s3.dist < s1.dist) xchg(s3,s1);
+          if (s4.dist < s2.dist) xchg(s4,s2);
+          if (s3.dist < s2.dist) xchg(s3,s2);
+#else
+          int4 a1 = *(int4*)&s1;
+          int4 a2 = *(int4*)&s2;
+          int4 a3 = *(int4*)&s3;
+          int4 a4 = *(int4*)&s4;
+          compare_xchg(a2,a1);
+          compare_xchg(a4,a3);
+          compare_xchg(a3,a1);
+          compare_xchg(a4,a2);
+          compare_xchg(a3,a2);
+          *(int4*)&s1 = a1;
+          *(int4*)&s2 = a2;
+          *(int4*)&s3 = a3;          
+          *(int4*)&s3 = a4;          
+#endif
+        }
+
 
       } stack[stackSizeChunk];
       
@@ -80,155 +170,276 @@ namespace embree
       // for (size_t i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) {
       //   intersect1(bvh,bvh->root,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ);
       // }
-      const unsigned int m_root_active = movemask(ray_tnear < ray_tfar);
+      unsigned int m_root_active = movemask(ray_tnear < ray_tfar);
 
-      stack[0] = StackItemHybrid(pos_inf,m_root_active,BVH8::invalidNode);
-      stack[1] = StackItemHybrid(0.0f   ,m_root_active,bvh->root);
-
-      size_t sindex = 2;
-
-      while(1) pop:
+      while(m_root_active)
       {
-        STAT3(normal.trav_stack_pop,1,1,1);
+        unsigned int rindex = __bsf(m_root_active);
+        unsigned int m_octant_active = movemask( (int8(nearXYZ.x[rindex]) == nearXYZ.x) & 
+                                                 (int8(nearXYZ.y[rindex]) == nearXYZ.y) & 
+                                                 (int8(nearXYZ.z[rindex]) == nearXYZ.z) );
 
-        assert(sindex);
-        sindex--;
-        NodeRef cur           = stack[sindex].ref;        
-        float8 curDist        = broadcast(&stack[sindex].dist);
-        unsigned int m_active = stack[sindex].mask & movemask(curDist < ray_tfar);
-        if (unlikely(cur == BVH8::invalidNode)) break;
-        if (unlikely(m_active == 0)) continue;
-        
-        while (1)
+        m_root_active &= ~m_octant_active;
+
+        stack[0] = StackItemHybrid(pos_inf,m_octant_active,BVH8::invalidNode);
+        stack[1] = StackItemHybrid(0.0f   ,m_octant_active,bvh->root);
+
+        size_t sindex = 2;
+
+        while(1) pop:
         {
-          assert(m_active);
-          /* test if this is a leaf node */
-          if (unlikely(cur.isLeaf())) break;
-          
-          int8 rays_mask_per_node(zero);
-          float8 hit_dist(inf);
-          const BVH8::Node* node = cur.node();
+          STAT3(normal.trav_stack_pop,1,1,1);
+          DBG_PRINT("STACK_POP");
+          assert(sindex);
+          sindex--;
+          NodeRef cur           = stack[sindex].ref;        
+          float8 curDist        = broadcast(&stack[sindex].dist);
+          unsigned int m_active = stack[sindex].mask & movemask(curDist < ray_tfar);
+          if (unlikely(cur == BVH8::invalidNode)) break;
+          if (unlikely(m_active == 0)) continue;
+        
+          DBG_PRINT(cur);
+          DBG_PRINT(m_active);
 
-          for (size_t bits=m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+#if 0
           {
-            STAT3(normal.trav_nodes,1,1,1);
-            assert(i < 8);
-            const float8 ray_rdir_x     = broadcast(&rdir.x[i]);
-            const float8 ray_rdir_y     = broadcast(&rdir.y[i]);
-            const float8 ray_rdir_z     = broadcast(&rdir.z[i]);
-            const float8 ray_org_rdir_x = broadcast(&org_rdir.x[i]);
-            const float8 ray_org_rdir_y = broadcast(&org_rdir.y[i]);
-            const float8 ray_org_rdir_z = broadcast(&org_rdir.z[i]);
-
-            const float8 _tNearX = msub(node->lower_x, ray_rdir_x, ray_org_rdir_x);
-            const float8 _tNearY = msub(node->lower_y, ray_rdir_y, ray_org_rdir_y);
-            const float8 _tNearZ = msub(node->lower_z, ray_rdir_z, ray_org_rdir_z);
-            const float8 _tFarX  = msub(node->upper_x, ray_rdir_x, ray_org_rdir_x);
-            const float8 _tFarY  = msub(node->upper_y, ray_rdir_y, ray_org_rdir_y);
-            const float8 _tFarZ  = msub(node->upper_z, ray_rdir_z, ray_org_rdir_z);
-
-            const bool8  nactive = inf != node->lower_x;
-
-            const int8 m_node((unsigned int)1 << i);
-            const float8 tNearX  = mini(_tNearX,_tFarX);
-            const float8 tNearY  = mini(_tNearY,_tFarY);
-            const float8 tNearZ  = mini(_tNearZ,_tFarZ);
-          
-            const float8 tFarX   = maxi(_tNearX,_tFarX);
-            const float8 tFarY   = maxi(_tNearY,_tFarY);
-            const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
-            
-            const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
-            const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i])));
-            const bool8 vmask  = nactive & (tNear <= tFar);
-            STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);
-
-            rays_mask_per_node |= m_node & int8((__m256i)vmask);
-            const float8 dist = select(vmask,tNear,inf); 
-            hit_dist = min(hit_dist,dist); //optimize
+            size_t bits = m_active;
+            if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
+              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+                intersect1(bvh,cur,i,pre,ray,ray.org,ray.dir,rdir,ray_tnear,ray_tfar,nearXYZ);
+              }
+              ray_tfar = ray.tfar;
+              continue;
+            }
           }
+#endif
+
+
+          while (1)
+          {
+            DBG_PRINT("TRAVERSAL_STEP");
+            DBG_PRINT(cur);
+            DBG_PRINT(m_active);
           
-          size_t hit_bits = movemask(rays_mask_per_node != int8(zero));
+            assert(m_active);
+            assert(__popcnt(m_active) <= __popcnt(m_octant_active));
 
-          /*! if no child is hit, pop next node */
-          if (likely(hit_bits == 0))
-            goto pop;
+            /* test if this is a leaf node */
+            if (unlikely(cur.isLeaf())) break;
+          
+            int8 rays_mask_per_node(zero);
+            float8 hit_dist(inf);
+            const BVH8::Node* node = cur.node();
 
-          /*! one child is hit, continue with that child */
-          const size_t index0 = __bsf(hit_bits); __blsr(hit_bits);
-          assert(rays_mask_per_node[index0]);
-          assert(hit_dist[index0] != (float)pos_inf);
+            DBG_PRINT(__popcnt(m_active));
+            DBG_PRINT(rays_mask_per_node);
 
-	  if (likely(hit_bits == 0)) 
-          {
-            cur = node->child(index0);
-            m_active = rays_mask_per_node[index0];
-            continue;            
-          }
+            STAT3(normal.trav_hit_boxes[__popcnt(m_active)],1,1,1);
 
-          /*! two children are hit, push far child, and continue with closer child */
-          const size_t index1 = __bsf(hit_bits); __blsr(hit_bits);
-          assert(rays_mask_per_node[index1]);
-          assert(hit_dist[index1] != (float)pos_inf);
-
-	  if (likely(hit_bits == 0)) 
-          {
-            if (hit_dist[index0] < hit_dist[index1])
+            for (size_t bits=m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
             {
+              DBG_PRINT(i);
+
+              STAT3(normal.trav_nodes,1,1,1);
+              assert(i < 8);
+              const float8 ray_rdir_x     = broadcast(&rdir.x[i]);
+              const float8 ray_rdir_y     = broadcast(&rdir.y[i]);
+              const float8 ray_rdir_z     = broadcast(&rdir.z[i]);
+              const float8 ray_org_rdir_x = broadcast(&org_rdir.x[i]);
+              const float8 ray_org_rdir_y = broadcast(&org_rdir.y[i]);
+              const float8 ray_org_rdir_z = broadcast(&org_rdir.z[i]);
+
+              prefetchL1(node->children);
+
+              const float8 _tNearX = msub(node->lower_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 _tNearY = msub(node->lower_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 _tNearZ = msub(node->lower_z, ray_rdir_z, ray_org_rdir_z);
+              const float8 _tFarX  = msub(node->upper_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 _tFarY  = msub(node->upper_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 _tFarZ  = msub(node->upper_z, ray_rdir_z, ray_org_rdir_z);
+
+              const bool8  nactive = inf != node->lower_x;
+
+              //const int8 m_node((unsigned int)1 << i);
+              const int8 m_node = broadcast(&shiftTable[i]);
+              const float8 tNearX  = mini(_tNearX,_tFarX);
+              const float8 tNearY  = mini(_tNearY,_tFarY);
+              const float8 tNearZ  = mini(_tNearZ,_tFarZ);
+          
+              const float8 tFarX   = maxi(_tNearX,_tFarX);
+              const float8 tFarY   = maxi(_tNearY,_tFarY);
+              const float8 tFarZ   = maxi(_tNearZ,_tFarZ);
+            
+              const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
+              const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i])));
+              const bool8 vmask  = nactive & (tNear <= tFar);
+              //STAT3(normal.trav_hit_boxes[__popcnt(movemask(vmask))],1,1,1);
+
+              DBG_PRINT(vmask);
+
+              rays_mask_per_node |= m_node & int8((__m256i)vmask);
+              DBG_PRINT(m_node & int8((__m256i)vmask));
+              DBG_PRINT(rays_mask_per_node);
+
+              const float8 dist = select(vmask,tNear,inf); 
+              hit_dist = mini(hit_dist,dist); //optimize
+              DBG_PRINT(dist);
+              DBG_PRINT(hit_dist);
+            }
+          
+            DBG_PRINT("TRAVERSAL_SORT");
+            DBG_PRINT(rays_mask_per_node);
+
+            size_t hit_bits = movemask(rays_mask_per_node != int8(zero));
+
+            DBG_PRINT(hit_bits);
+            DBG_PRINT(__popcnt(hit_bits));
+
+            /*! if no child is hit, pop next node */
+            if (likely(hit_bits == 0))
+            {
+              DBG_PRINT("CASE 0");
+              //STAT3(normal.trav_hit_boxes[0],1,1,1);
+              goto pop;
+            }
+
+            /*! one child is hit, continue with that child */
+            const size_t index0 = __bsf(hit_bits); hit_bits = __blsr(hit_bits);
+            assert(rays_mask_per_node[index0]);
+            assert(hit_dist[index0] != (float)pos_inf);
+            assert(__popcnt(rays_mask_per_node[index0]) <= __popcnt(m_active));
+            
+            if (likely(hit_bits == 0)) 
+            {
+              DBG_PRINT("CASE 1");
+              //STAT3(normal.trav_hit_boxes[1],1,1,1);
               cur = node->child(index0);
               m_active = rays_mask_per_node[index0];
-              stack[sindex++] = StackItemHybrid(hit_dist[index1],rays_mask_per_node[index1],node->child(index1));
               continue;            
             }
-            else
+
+            /*! two children are hit, push far child, and continue with closer child */
+            const size_t index1 = __bsf(hit_bits); hit_bits = __blsr(hit_bits);
+            assert(rays_mask_per_node[index1]);
+            assert(hit_dist[index1] != (float)pos_inf);
+            assert(__popcnt(rays_mask_per_node[index1]) <= __popcnt(m_active));
+
+            if (likely(hit_bits == 0)) 
             {
-              cur = node->child(index1);
-              m_active = rays_mask_per_node[index1];
-              stack[sindex++] = StackItemHybrid(hit_dist[index0],rays_mask_per_node[index0],node->child(index0));
-              continue;                          
+              DBG_PRINT("CASE 2");
+              //STAT3(normal.trav_hit_boxes[2],1,1,1);
+
+              if ( ((unsigned int*)&hit_dist)[index0] < ((unsigned int*)&hit_dist)[index1])
+              {
+                cur = node->child(index0);
+                m_active = rays_mask_per_node[index0];
+                stack[sindex++] = StackItemHybrid(hit_dist[index1],rays_mask_per_node[index1],node->child(index1));
+                node->child(index1).prefetch();
+                continue;            
+              }
+              else
+              {
+                cur = node->child(index1);
+                m_active = rays_mask_per_node[index1];
+                stack[sindex++] = StackItemHybrid(hit_dist[index0],rays_mask_per_node[index0],node->child(index0));
+                node->child(index0).prefetch();
+                continue;                          
+              }
             }
-          }
 
-          cur = node->child(index0);
-          m_active = rays_mask_per_node[index0];
-          stack[sindex++] = StackItemHybrid(hit_dist[index1],rays_mask_per_node[index1],node->child(index1));
-          
-          for (size_t bits=hit_bits, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
-          {
-            assert(rays_mask_per_node[i]);
-            assert(hit_dist[i] != (float)pos_inf);            
-            stack[sindex++] = StackItemHybrid(hit_dist[i],rays_mask_per_node[i],node->child(i));
-            assert(sindex < stackSizeChunk);
-          }
+            const size_t index2 = __bsf(hit_bits); hit_bits = __blsr(hit_bits);
+            assert(rays_mask_per_node[index2]);
+            assert(hit_dist[index2] != (float)pos_inf);
+            assert(__popcnt(rays_mask_per_node[index2]) <= __popcnt(m_active));
+
+            /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+
+            stack[sindex+0] = StackItemHybrid(hit_dist[index0],rays_mask_per_node[index0],node->child(index0));
+            stack[sindex+1] = StackItemHybrid(hit_dist[index1],rays_mask_per_node[index1],node->child(index1));
+            stack[sindex+2] = StackItemHybrid(hit_dist[index2],rays_mask_per_node[index2],node->child(index2));
+
+            if (likely(hit_bits == 0)) 
+            {
+              DBG_PRINT("CASE 3");
+              //STAT3(normal.trav_hit_boxes[3],1,1,1);
+              StackItemHybrid::sort3(stack[sindex+0],stack[sindex+1],stack[sindex+2]);
+              cur      = stack[sindex+2].ref;
+              cur.prefetch();
+              m_active = stack[sindex+2].mask;
+              sindex += 2;
+              continue;
+            }          
+
+
+            const size_t index3 = __bsf(hit_bits); hit_bits = __blsr(hit_bits);
+            assert(rays_mask_per_node[index3]);
+            assert(hit_dist[index3] != (float)pos_inf);
+            assert(__popcnt(rays_mask_per_node[index3]) <= __popcnt(m_active));
+
+            /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
+
+            stack[sindex+3] = StackItemHybrid(hit_dist[index3],rays_mask_per_node[index3],node->child(index3));
+
+            StackItemHybrid::sort4(stack[sindex+0],stack[sindex+1],stack[sindex+2],stack[sindex+3]);
+            if (likely(hit_bits == 0)) 
+            {
+              DBG_PRINT("CASE 4");
+              //STAT3(normal.trav_hit_boxes[4],1,1,1);
+              cur      = stack[sindex+3].ref;
+              cur.prefetch();
+              m_active = stack[sindex+3].mask;
+              sindex += 3;
+              continue;
+            }
+
+            /*! more than four children are hit, push all onto stack */
+            DBG_PRINT("CASE 4+");
+            sindex += 4;
+            //STAT3(normal.trav_hit_boxes[4+__popcnt(hit_bits)],1,1,1);
+
+            for (size_t bits=hit_bits, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+              stack[sindex++] = StackItemHybrid(hit_dist[i],rays_mask_per_node[i],node->child(i));
+            sindex--;
+            cur      = stack[sindex].ref;
+            cur.prefetch();
+
+            m_active = stack[sindex].mask;          
                                 
-        }
-
-
-        ///* return if stack is empty */
-        //if (unlikely(cur == BVH8::invalidNode)) break;
-
-        /*! this is a leaf node */
-	assert(cur != BVH8::emptyNode);
-        assert(m_active);
-
-        STAT3(normal.trav_leaves,1,1,1);
-        size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
-        size_t lazy_node = 0;
-
-        if (__popcnt(m_active) >= INTERSECTION_CHUNK_THRESHOLD)
-        {
-          PrimitiveIntersector8::intersect(bool8((int)m_active),pre,ray,prim,num,bvh->scene,lazy_node);
-          ray_tfar = min(ray.tfar,ray_tfar);          
-        }
-        else
-          for (size_t bits=m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
-          {
-            PrimitiveIntersector8::intersect(pre,ray,i,prim,num,bvh->scene,lazy_node);
-            ray_tfar[i] = ray.tfar[i];
           }
+
+
+          ///* return if stack is empty */
+          //if (unlikely(cur == BVH8::invalidNode)) break;
+
+          DBG_PRINT("INTERSECTION_STEP");
+          DBG_PRINT(cur);
+          DBG_PRINT(m_active);
+
+          /*! this is a leaf node */
+          assert(cur != BVH8::emptyNode);
+          assert(m_active);
+
+          STAT3(normal.trav_leaves,1,1,1);
+          size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
+          size_t lazy_node = 0;
+
+          if (__popcnt(m_active) >= INTERSECTION_CHUNK_THRESHOLD)
+          {
+            PrimitiveIntersector8::intersect(bool8((int)m_active),pre,ray,prim,num,bvh->scene,lazy_node);
+            ray_tfar = min(ray.tfar,ray_tfar);          
+          }
+          else
+            for (size_t bits=m_active, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+            {
+              PrimitiveIntersector8::intersect(pre,ray,i,prim,num,bvh->scene,lazy_node);
+              ray_tfar[i] = ray.tfar[i];
+            }
         
+        }
       }
 #endif
+      //PRINT(ray);
+      //exit(0);
       AVX_ZERO_UPPER();
     }
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +450,7 @@ namespace embree
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
-      Context context[8];
+      //Context context[8];
       StackItemT<BVH8::NodeRef>  contextStack[8][stackSizeSingle];  //!< stack of nodes 
       
       /* load ray */
