@@ -123,6 +123,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
 
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
+  DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
@@ -172,6 +173,7 @@ namespace embree
 
     /* select builders */
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderInstancingSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
@@ -803,7 +805,15 @@ namespace embree
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
-  } 
+  }
+
+  Accel* BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4::type,scene,LeafMode);
+    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
+    return new AccelInstance(accel,builder,intersectors);
+  }
 
   Accel* BVH4::BVH4BVH4Triangle4ObjectSplit(Scene* scene)
   {

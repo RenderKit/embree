@@ -209,6 +209,7 @@ namespace embree
         }
       }
     }
+    else if (device->tri_accel == "bvh4.instanced_bvh4.triangle4")    accels.add(BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
