@@ -17,9 +17,10 @@
 #include "bvh4_builder_instancing.h"
 #include "bvh4_statistics.h"
 #include "../builders/bvh_builder_sah.h"
+#include "../geometry/triangle4.h"
 
 #define PROFILE 0
-#define MAX_OPEN_SIZE 10000
+//#define MAX_OPEN_SIZE 100000
 
 namespace embree
 {
@@ -71,7 +72,7 @@ namespace embree
       if (refs.size()     < N) refs.resize(N);
       nextRef = 0;
       
-      /* create of acceleration structures */
+      /* creation of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
@@ -202,13 +203,37 @@ namespace embree
 
       refs.clear();
     }
+    
+    void set_primID(BVH4::NodeRef node, unsigned primID)
+    {
+      if (node.isLeaf())
+      {
+        size_t num;
+        Triangle4* prims = (Triangle4*) node.leaf(num);
+        for (size_t i=0; i<num; i++)
+          for (size_t j=0; j<4; j++)
+            if (prims[i].geomIDs[j] != -1) 
+              prims[i].primIDs[j] = primID;
+      }
+      else 
+      {
+        BVH4::Node* n = node.node();
+        for (size_t c=0; c<BVH4::N; c++)
+          set_primID(n->child(c),primID);
+      }
+    }
 
     void BVH4BuilderInstancing::open_sequential(size_t numPrimitives)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
+      //PRINT(refs.size());
+      //PRINT(numPrimitives);
+      //size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
+      size_t N = numPrimitives/200;
+      //size_t N = 0;
+      //PRINT(N);
       refs.reserve(N);
       
       std::make_heap(refs.begin(),refs.end());
@@ -226,6 +251,9 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
+
+      //for (size_t i=0; i<refs.size(); i++)
+      //set_primID((BVH4::NodeRef) refs[i].node, i);
     }
     
     Builder* BVH4BuilderInstancingSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {

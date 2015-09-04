@@ -27,10 +27,12 @@ namespace embree
 
   void GeometryInstance::enabling () {
     atomic_add(&geom->used,+1);
+    atomic_add(&parent->numTriangles,+ssize_t(geom->size())); // FIXME: currently only triangle meshes are supported
   }
 
   void GeometryInstance::disabling() {
      atomic_add(&geom->used,-1);
+     atomic_add(&parent->numTriangles,-ssize_t(geom->size())); // FIXME: currently only triangle meshes are supported
   }
   
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm)
