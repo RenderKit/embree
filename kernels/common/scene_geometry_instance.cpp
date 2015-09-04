@@ -20,7 +20,18 @@
 namespace embree
 {
   GeometryInstance::GeometryInstance (Scene* parent, Geometry* geom) 
-    : Geometry(parent,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) {}
+    : Geometry(parent,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
+  {
+    enabling();
+  }
+
+  void GeometryInstance::enabling () {
+    atomic_add(&geom->used,+1);
+  }
+
+  void GeometryInstance::disabling() {
+     atomic_add(&geom->used,-1);
+  }
   
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm)
   {

@@ -27,8 +27,8 @@ namespace embree
     GeometryInstance (Scene* parent, Geometry* geom); 
     virtual void setTransform(const AffineSpace3fa& local2world);
     virtual void build(size_t threadIndex, size_t threadCount) {}
-    virtual void enabling () {} // FIXME: required to implement?
-    virtual void disabling() {}
+    virtual void enabling ();
+    virtual void disabling();
     
   public:
     AffineSpace3fa local2world; //!< transforms from local space to world space

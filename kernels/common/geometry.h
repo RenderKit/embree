@@ -53,6 +53,9 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
+    /*! tests if geomery is used by any instance (including world space instance) */
+    __forceinline bool isUsed() const { return used; }
+
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return numPrimitives && modified; }
 
@@ -259,6 +262,7 @@ namespace embree
     bool erasing;              //!< true if geometry is tagged for deletion
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
+    atomic_t used;             //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;
