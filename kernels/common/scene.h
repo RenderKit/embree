@@ -21,6 +21,7 @@
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
+#include "scene_geometry_instance.h"
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
@@ -115,6 +116,9 @@ namespace embree
 
     /*! Creates a new scene instance. */
     unsigned int newInstance (Scene* scene);
+
+    /*! Creates a new geometry instance. */
+    unsigned int newGeometryInstance (Geometry* geom);
 
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
