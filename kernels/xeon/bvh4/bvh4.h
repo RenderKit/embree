@@ -149,7 +149,7 @@ namespace embree
       __forceinline void prefetch(int types) const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
-	if (types > 0x1) {
+	if (types & 0x1110) {
 	  prefetchL1(((char*)ptr)+2*64);
 	  prefetchL1(((char*)ptr)+3*64);
 	  /*prefetchL1(((char*)ptr)+4*64);
@@ -174,6 +174,7 @@ namespace embree
       /*! checks if this is a leaf */
       __forceinline int isLeaf(int types) const { 
 	if      (types == 0x0001) return !isNode();
+        else if (types == 0x10001) return !isNode();
 	/*else if (types == 0x0010) return !isNodeMB();
 	else if (types == 0x0100) return !isUnalignedNode();
 	else if (types == 0x1000) return !isUnalignedNodeMB();*/
@@ -182,7 +183,7 @@ namespace embree
       
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
-      __forceinline int isNode(int types) const { return (types == 0x1) || ((types & 0x1) && isNode()); }
+      __forceinline int isNode(int types) const { return ((types & ~0x10000) == 0x1) || ((types & 0x1) && isNode()); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
@@ -204,7 +205,7 @@ namespace embree
       __forceinline BaseNode* baseNode(int types) 
       { 
 	assert(!isLeaf()); 
-	if (types == 0x1) { 
+	if (types == 0x1 || types == 0x10001) { 
           assert((ptr & (size_t)align_mask) == 0); 
           return (BaseNode*)ptr; 
         }
@@ -214,7 +215,7 @@ namespace embree
       __forceinline const BaseNode* baseNode(int types) const 
       { 
 	assert(!isLeaf()); 
-	if (types == 0x1) { 
+	if (types == 0x1 || types == 0x10001) { 
           assert((ptr & (size_t)align_mask) == 0); 
           return (const BaseNode*)ptr; 
         }

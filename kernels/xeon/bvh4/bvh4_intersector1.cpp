@@ -57,9 +57,13 @@ namespace embree
           nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
           nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
           nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+          farX  = nearX ^ sizeof(float4);
+          farY  = nearY ^ sizeof(float4);
+          farZ  = nearZ ^ sizeof(float4);
         }
         Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
         size_t nearX, nearY, nearZ;
+        size_t farX, farY, farZ;
       };
 
       /*! perform per ray precalculations required by the primitive intersector */
@@ -107,11 +111,11 @@ namespace embree
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;
-	  STAT3(normal.trav_nodes,1,1,1);
+          STAT3(normal.trav_nodes,1,1,1);
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.farX,vray.farY,vray.farZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
@@ -124,17 +128,6 @@ namespace embree
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
             mask = intersect_node(cur.unalignedNodeMB(),vray.org,vray.dir,ray_near,ray_far,ray.time,tNear);
-
-          /*! process transformation nodes */
-          else if (unlikely(cur.isTransformNode(types))) 
-          {
-            const BVH4::TransformNode* node = cur.transformNode();
-            const Vec3fa ray_org = xfmPoint (node->world2local,ray.org);
-            const Vec3fa ray_dir = xfmVector(node->world2local,ray.dir);
-            new (&vray) TravRay(ray_org,ray_dir);
-            stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
-            cur = node->child;
-          }
 
           else assert(false);
 
@@ -189,6 +182,18 @@ namespace embree
           assert(c != BVH4::emptyNode);
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+        }
+
+        /*! process transformation nodes */
+        if (unlikely(cur.isTransformNode(types))) 
+        {
+          const BVH4::TransformNode* node = cur.transformNode();
+          const Vec3fa ray_org = xfmPoint (node->world2local,ray.org);
+          const Vec3fa ray_dir = xfmVector(node->world2local,ray.dir);
+          new (&vray) TravRay(ray_org,ray_dir);
+          stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
+          stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
+          goto pop;
         }
 
         /*! restore toplevel ray */
@@ -349,7 +354,6 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVH4Intersector1<0x101 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVH4Intersector1<0x1010 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >);
-
     DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVH4Intersector1<0x10001 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
 #if defined(__AVX__)
     DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
@@ -365,5 +369,5 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >);
 
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<TriangleNMblurIntersector1MoellerTrumbore<Triangle4vMB COMMA true> > >);
-  }
+    }
 }
