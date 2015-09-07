@@ -87,7 +87,8 @@ namespace embree
 
       /*! load the ray into SIMD registers */
       TravRay vray(ray.org,ray.dir);
-      const TravRay tlray = vray;
+      __aligned(32) char tlray[sizeof(TravRay)];
+      new (tlray) TravRay(vray);
       float4 ray_near(ray.tnear);
       float4 ray_far (ray.tfar);
 
@@ -198,7 +199,7 @@ namespace embree
 
         /*! restore toplevel ray */
         if (cur == BVH4::popRay) {
-          vray = tlray; goto pop;
+          vray = (TravRay&) tlray; goto pop;
         }
         
         /*! this is a leaf node */
