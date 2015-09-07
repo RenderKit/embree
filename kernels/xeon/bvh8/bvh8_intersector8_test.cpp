@@ -57,12 +57,11 @@ namespace embree
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
-#if 1 
+#if 1
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
 #if defined(__AVX2__)
-      float8 curDist[8];
       struct __aligned(32) SharedStackItem {
         BVH8::NodeRef ref;
         size_t mask;
@@ -112,21 +111,26 @@ namespace embree
         size_t sindex = 1;
 
         const size_t k = __bsf(m_octant_active);
-        const size_t nearX = nearXYZ.x[k];
-        const size_t nearY = nearXYZ.y[k];
-        const size_t nearZ = nearXYZ.z[k];
 
         while(sindex)
         {
+          STAT3(normal.trav_stack_pop,1,1,1);
+
           sindex--;
           NodeRef cur      = stack[sindex].ref;        
           size_t m_current = stack[sindex].mask;
           // optimize: cull stack nodes
-          const BVH8::Node* node = cur.node();
 
           if (likely(cur.isNode()))
           {
-            int8 count( zero );
+            const BVH8::Node* node = cur.node();
+            //float8 curDist[8];
+            int8 mask8(zero);
+            //int8 rays_per_count8( zero );
+
+            const size_t nearX = nearXYZ.x[k];
+            const size_t nearY = nearXYZ.y[k];
+            const size_t nearZ = nearXYZ.z[k];
 
             const size_t farX  = nearX ^ sizeof(float8);
             const size_t farY  = nearY ^ sizeof(float8);
@@ -166,15 +170,47 @@ namespace embree
               const bool8 vmask    = tNear <= tFar;
               const size_t m_mask  = movemask(vmask);
               const float8 dist    = select(vmask,tNear,inf);               
-              const size_t m_count = __popcnt(m_mask);
-              curDist[i] = dist;
-              count[m_count] |= (unsigned int)1 << i;
+              //const size_t m_count = __popcnt(m_mask);
+              //curDist[i] = dist;
+              mask8[i]   = m_mask;
+              //rays_per_count8[m_count] |= (unsigned int)1 << i;
             }
+            size_t m_ray_hit = movemask(mask8 != int8(zero)); 
+            if (unlikely(m_ray_hit == 0)) continue;
 
-            if (likely(count[1]))
-            {
-              stack[sindex].mask = count[1];
-            }
+            STAT(size_t iter= 0);
+            do {
+              STAT(iter++);
+              assert(m_ray_hit);
+              const size_t index = __bsf(m_ray_hit);
+              const size_t m_equal = movemask(mask8 == int8(mask8[index]));
+              assert(m_equal);
+              m_ray_hit &=~m_equal;
+              const size_t mask = mask8[index];
+              const size_t count_mask = __popcnt(mask);
+              assert(mask);
+              if (likely(count_mask == 1))
+              {
+                const size_t node_index = __bsf(mask); 
+                stack[sindex].dist = ray_tfar;                
+                stack[sindex].mask = m_equal;
+                stack[sindex].ref  = node->child(node_index);                  
+                sindex++;
+              }                
+              else
+              {
+                for (size_t bits=mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+                {
+                  stack[sindex].dist = ray_tfar;                
+                  stack[sindex].mask = m_equal;
+                  stack[sindex].ref  = node->child(i);                  
+                  sindex++;                    
+                }                  
+              }
+            } while(m_ray_hit);            
+
+            STAT3(normal.trav_hit_boxes[iter],1,1,1);
+
           }
           else
           {
@@ -187,7 +223,7 @@ namespace embree
             size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
             size_t lazy_node = 0;
 
-            if (__popcnt(m_current) >= INTERSECTION_CHUNK_THRESHOLD)
+            if (unlikely(__popcnt(m_current) >= INTERSECTION_CHUNK_THRESHOLD))
             {
               // optimize mask to intersector
               PrimitiveIntersector8::intersect(bool8((int)m_current),pre,ray,prim,num,bvh->scene,lazy_node);
@@ -780,7 +816,6 @@ namespace embree
       const Vec3f8 norg = -org;
       const Vec3f8 org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
-     
 /* pop loop */
 
       while (true) //pop:
@@ -930,6 +965,7 @@ namespace embree
 
         size_t lazy_node = 0;
         PrimitiveIntersector8::intersect(pre,ray,k,prim,num,bvh->scene,lazy_node);
+#if 1
         if (unlikely(ray.tfar[k] < old_tfar))
         {
           StackItemT<NodeRef>* new_stackPtr = stack+1;        //!< current stack pointer            
@@ -938,6 +974,7 @@ namespace embree
               *new_stackPtr++ = *s;
           stackPtr = new_stackPtr;
         }
+#endif
         rayFar = ray.tfar[k];
 
       }
