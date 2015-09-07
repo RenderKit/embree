@@ -198,7 +198,7 @@ namespace embree
 
         /*! restore toplevel ray */
         if (cur == BVH4::popRay) {
-          vray = tlray; continue;
+          vray = tlray; goto pop;
         }
         
         /*! this is a leaf node */
