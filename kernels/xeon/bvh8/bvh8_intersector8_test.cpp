@@ -56,6 +56,14 @@ namespace embree
 
 
 #if 1
+
+    __forceinline void gatherDist(const float8 curDist[8], const size_t index,float8 &dest)
+    {
+      for (size_t i=0;i<8;i++)
+        dest[i] = curDist[i][index];
+    }
+
+
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
     {
@@ -105,7 +113,7 @@ namespace embree
 
         stack[0].ref  = bvh->root;
         stack[0].mask = m_octant_active;
-        stack[0].dist = min(ray_tfar,ray.tfar);
+        stack[0].dist = 0.0f;
         size_t sindex = 1;
 
         const size_t k = __bsf(m_octant_active);
@@ -116,7 +124,9 @@ namespace embree
 
           sindex--;
           NodeRef cur      = stack[sindex].ref;        
-          size_t m_current = stack[sindex].mask;
+          //size_t m_current = stack[sindex].mask;
+          size_t m_current = movemask(stack[sindex].dist < ray_tfar) & stack[sindex].mask;
+          if (unlikely(m_current == 0)) { continue; }
           // optimize: cull stack nodes
 
 #if 0
@@ -205,7 +215,8 @@ namespace embree
               if (likely(count_mask == 1))
               {
                 const size_t node_index = __bsf(mask); 
-                stack[sindex].dist = ray_tfar;                
+                //stack[sindex].dist = neg_inf; // ray_tfar;                
+                gatherDist(curDist,node_index,stack[sindex].dist);
                 stack[sindex].mask = m_equal;
                 stack[sindex].ref  = node->child(node_index);                  
                 node->child(node_index).prefetch();
@@ -223,12 +234,15 @@ namespace embree
                   std::swap(node_index0,node_index1);
 
                 node->child(node_index0).prefetch();
+                
+                //stack[sindex+0].dist = neg_inf; //ray_tfar;                
+                gatherDist(curDist,node_index0,stack[sindex+0].dist);
 
-                stack[sindex+0].dist = ray_tfar;                
                 stack[sindex+0].mask = m_equal;
                 stack[sindex+0].ref  = node->child(node_index1);                  
 
-                stack[sindex+1].dist = ray_tfar;                
+                //stack[sindex+1].dist = neg_inf; //ray_tfar;                
+                gatherDist(curDist,node_index1,stack[sindex+1].dist);
                 stack[sindex+1].mask = m_equal;
                 stack[sindex+1].ref  = node->child(node_index0);                  
 
@@ -254,13 +268,17 @@ namespace embree
 
                 node->child(node_index0).prefetch();
 
-                stack[sindex+0].dist = ray_tfar;                
+                //stack[sindex+0].dist = neg_inf; // ray_tfar;                
+                gatherDist(curDist,node_index0,stack[sindex+0].dist);
+                gatherDist(curDist,node_index1,stack[sindex+1].dist);
+                gatherDist(curDist,node_index2,stack[sindex+2].dist);
+
                 stack[sindex+0].mask = m_equal;
                 stack[sindex+0].ref  = node->child(node_index2);                  
-                stack[sindex+1].dist = ray_tfar;                
+                //stack[sindex+1].dist = neg_inf; //ray_tfar;                
                 stack[sindex+1].mask = m_equal;
                 stack[sindex+1].ref  = node->child(node_index1);                  
-                stack[sindex+2].dist = ray_tfar;                
+                //stack[sindex+2].dist = neg_inf; //ray_tfar;                
                 stack[sindex+2].mask = m_equal;
                 stack[sindex+2].ref  = node->child(node_index0);                  
                 sindex+=3;                                      
@@ -270,7 +288,8 @@ namespace embree
               {
                 for (size_t bits=mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
                 {
-                  stack[sindex].dist = ray_tfar;                
+                  //stack[sindex].dist = neg_inf; //ray_tfar;                
+                  gatherDist(curDist,i,stack[sindex].dist);
                   stack[sindex].mask = m_equal;
                   stack[sindex].ref  = node->child(i);                  
                   sindex++;                    

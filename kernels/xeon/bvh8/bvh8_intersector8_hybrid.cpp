@@ -146,7 +146,8 @@ namespace embree
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
             continue;
           }
-          
+        
+#if 1 
 	  /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
@@ -155,7 +156,7 @@ namespace embree
 	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
 	    continue;
 	  }
-
+#endif
 	  /*! fallback case if more than 4 children are hit */
 	  while (1)
 	  {
