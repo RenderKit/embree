@@ -25,7 +25,8 @@
 
 #define DBG(x) 
 
-#define SWITCH_THRESHOLD 7
+//#define SWITCH_THRESHOLD 7
+#define SWITCH_THRESHOLD 16
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
@@ -239,7 +240,7 @@ namespace embree
         const bool8 active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
-        
+
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);

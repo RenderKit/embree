@@ -31,8 +31,6 @@
 #define DBG_PRINT(x) 
 //#define DBG_PRINT(x) PRINT(x)
 
-#define SWITCH_THRESHOLD 2
-
 #if !defined(__WIN32__)
 
 namespace embree
@@ -121,10 +119,25 @@ namespace embree
           size_t m_current = stack[sindex].mask;
           // optimize: cull stack nodes
 
+#if 0
+#define SWITCH_THRESHOLD 2
+          {
+            size_t bits = m_current;
+            if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
+              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+                intersect1(bvh,cur,i,pre,ray,ray.org,ray.dir,rdir,ray_tnear,ray_tfar,nearXYZ);
+              }
+              ray_tfar = min(ray_tfar,ray.tfar);
+              continue;
+            }
+          }
+#endif
+
+
           if (likely(cur.isNode()))
           {
             const BVH8::Node* node = cur.node();
-            //float8 curDist[8];
+            float8 curDist[8];
             int8 mask8(zero);
             //int8 rays_per_count8( zero );
 
@@ -144,7 +157,7 @@ namespace embree
             const float8 upper_y = load8f((const char*)node+farY);
             const float8 upper_z = load8f((const char*)node+farZ);
 
-
+            prefetchL1(node->children);
             for (size_t bits=m_current, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
             {
               DBG_PRINT(i);
@@ -171,7 +184,7 @@ namespace embree
               const size_t m_mask  = movemask(vmask);
               const float8 dist    = select(vmask,tNear,inf);               
               //const size_t m_count = __popcnt(m_mask);
-              //curDist[i] = dist;
+              curDist[i] = dist;
               mask8[i]   = m_mask;
               //rays_per_count8[m_count] |= (unsigned int)1 << i;
             }
@@ -186,7 +199,7 @@ namespace embree
               const size_t m_equal = movemask(mask8 == int8(mask8[index]));
               assert(m_equal);
               m_ray_hit &=~m_equal;
-              const size_t mask = mask8[index];
+              size_t mask = mask8[index];
               const size_t count_mask = __popcnt(mask);
               assert(mask);
               if (likely(count_mask == 1))
@@ -195,8 +208,64 @@ namespace embree
                 stack[sindex].dist = ray_tfar;                
                 stack[sindex].mask = m_equal;
                 stack[sindex].ref  = node->child(node_index);                  
+                node->child(node_index).prefetch();
                 sindex++;
-              }                
+              }   
+              else if (likely(count_mask == 2))
+              {
+                size_t node_index0 = __bsf(mask); 
+                assert(mask);
+                mask = __blsr(mask);
+                assert(mask);
+                size_t node_index1 = __bsf(mask); 
+                
+                if (curDist[index][node_index0] > curDist[index][node_index1])
+                  std::swap(node_index0,node_index1);
+
+                node->child(node_index0).prefetch();
+
+                stack[sindex+0].dist = ray_tfar;                
+                stack[sindex+0].mask = m_equal;
+                stack[sindex+0].ref  = node->child(node_index1);                  
+
+                stack[sindex+1].dist = ray_tfar;                
+                stack[sindex+1].mask = m_equal;
+                stack[sindex+1].ref  = node->child(node_index0);                  
+
+                sindex+=2;                                      
+              }
+              else if (likely(count_mask == 3))
+              {
+                size_t node_index0 = __bsf(mask); 
+                assert(mask);
+                mask = __blsr(mask);
+                assert(mask);
+                size_t node_index1 = __bsf(mask); 
+                mask = __blsr(mask);
+                assert(mask);
+                size_t node_index2 = __bsf(mask); 
+                
+                if (curDist[index][node_index0] > curDist[index][node_index1])
+                  std::swap(node_index0,node_index1);
+                if (curDist[index][node_index0] > curDist[index][node_index2])
+                  std::swap(node_index0,node_index2);
+                if (curDist[index][node_index1] > curDist[index][node_index2])
+                  std::swap(node_index1,node_index2);
+
+                node->child(node_index0).prefetch();
+
+                stack[sindex+0].dist = ray_tfar;                
+                stack[sindex+0].mask = m_equal;
+                stack[sindex+0].ref  = node->child(node_index2);                  
+                stack[sindex+1].dist = ray_tfar;                
+                stack[sindex+1].mask = m_equal;
+                stack[sindex+1].ref  = node->child(node_index1);                  
+                stack[sindex+2].dist = ray_tfar;                
+                stack[sindex+2].mask = m_equal;
+                stack[sindex+2].ref  = node->child(node_index0);                  
+                sindex+=3;                                      
+                
+              }
               else
               {
                 for (size_t bits=mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
