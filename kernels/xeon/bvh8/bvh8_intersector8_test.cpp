@@ -46,6 +46,39 @@ namespace embree
     1 << 7
   };
 
+  __forceinline unsigned int ct(unsigned int bits)
+  {
+    unsigned int result = 0;
+    unsigned int shift  = 0;
+    while(bits)
+    {
+      const unsigned int index = __bsf(bits);
+      result |= index << shift;
+      shift += 4;
+      bits = __blsr(bits);      
+    }
+    return result;
+  }
+
+  static unsigned int compressTable[16*16] = {
+    ct(0*16+0),ct(0*16+1),ct(0*16+2),ct(0*16+3),ct(0*16+4),ct(0*16+5),ct(0*16+6),ct(0*16+7),ct(0*16+8),ct(0*16+9),ct(0*16+10),ct(0*16+11),ct(0*16+12),ct(0*16+13),ct(0*16+14),ct(0*16+15),
+    ct(1*16+0),ct(1*16+1),ct(1*16+2),ct(1*16+3),ct(1*16+4),ct(1*16+5),ct(1*16+6),ct(1*16+7),ct(1*16+8),ct(1*16+9),ct(1*16+10),ct(1*16+11),ct(1*16+12),ct(1*16+13),ct(1*16+14),ct(1*16+15),
+    ct(2*16+0),ct(2*16+1),ct(2*16+2),ct(2*16+3),ct(2*16+4),ct(2*16+5),ct(2*16+6),ct(2*16+7),ct(2*16+8),ct(2*16+9),ct(2*16+10),ct(2*16+11),ct(2*16+12),ct(2*16+13),ct(2*16+14),ct(2*16+15),
+    ct(3*16+0),ct(3*16+1),ct(3*16+2),ct(3*16+3),ct(3*16+4),ct(3*16+5),ct(3*16+6),ct(3*16+7),ct(3*16+8),ct(3*16+9),ct(3*16+10),ct(3*16+11),ct(3*16+12),ct(3*16+13),ct(3*16+14),ct(3*16+15),
+    ct(4*16+0),ct(4*16+1),ct(4*16+2),ct(4*16+3),ct(4*16+4),ct(4*16+5),ct(4*16+6),ct(4*16+7),ct(4*16+8),ct(4*16+9),ct(4*16+10),ct(4*16+11),ct(4*16+12),ct(4*16+13),ct(4*16+14),ct(4*16+15),
+    ct(5*16+0),ct(5*16+1),ct(5*16+2),ct(5*16+3),ct(5*16+4),ct(5*16+5),ct(5*16+6),ct(5*16+7),ct(5*16+8),ct(5*16+9),ct(5*16+10),ct(5*16+11),ct(5*16+12),ct(5*16+13),ct(5*16+14),ct(5*16+15),
+    ct(6*16+0),ct(6*16+1),ct(6*16+2),ct(6*16+3),ct(6*16+4),ct(6*16+5),ct(6*16+6),ct(6*16+7),ct(6*16+8),ct(6*16+9),ct(6*16+10),ct(6*16+11),ct(6*16+12),ct(6*16+13),ct(6*16+14),ct(6*16+15),
+    ct(7*16+0),ct(7*16+1),ct(7*16+2),ct(7*16+3),ct(7*16+4),ct(7*16+5),ct(7*16+6),ct(7*16+7),ct(7*16+8),ct(7*16+9),ct(7*16+10),ct(7*16+11),ct(7*16+12),ct(7*16+13),ct(7*16+14),ct(7*16+15),
+    ct(8*16+0),ct(8*16+1),ct(8*16+2),ct(8*16+3),ct(8*16+4),ct(8*16+5),ct(8*16+6),ct(8*16+7),ct(8*16+8),ct(8*16+9),ct(8*16+10),ct(8*16+11),ct(8*16+12),ct(8*16+13),ct(8*16+14),ct(8*16+15),
+    ct(9*16+0),ct(9*16+1),ct(9*16+2),ct(9*16+3),ct(9*16+4),ct(9*16+5),ct(9*16+6),ct(9*16+7),ct(9*16+8),ct(9*16+9),ct(9*16+10),ct(9*16+11),ct(9*16+12),ct(9*16+13),ct(9*16+14),ct(9*16+15),
+    ct(10*16+0),ct(10*16+1),ct(10*16+2),ct(10*16+3),ct(10*16+4),ct(10*16+5),ct(10*16+6),ct(10*16+7),ct(10*16+8),ct(10*16+9),ct(10*16+10),ct(10*16+11),ct(10*16+12),ct(10*16+13),ct(10*16+14),ct(10*16+15),
+    ct(11*16+0),ct(11*16+1),ct(11*16+2),ct(11*16+3),ct(11*16+4),ct(11*16+5),ct(11*16+6),ct(11*16+7),ct(11*16+8),ct(11*16+9),ct(11*16+10),ct(11*16+11),ct(11*16+12),ct(11*16+13),ct(11*16+14),ct(11*16+15),
+    ct(12*16+0),ct(12*16+1),ct(12*16+2),ct(12*16+3),ct(12*16+4),ct(12*16+5),ct(12*16+6),ct(12*16+7),ct(12*16+8),ct(12*16+9),ct(12*16+10),ct(12*16+11),ct(12*16+12),ct(12*16+13),ct(12*16+14),ct(12*16+15),
+    ct(13*16+0),ct(13*16+1),ct(13*16+2),ct(13*16+3),ct(13*16+4),ct(13*16+5),ct(13*16+6),ct(13*16+7),ct(13*16+8),ct(13*16+9),ct(13*16+10),ct(13*16+11),ct(13*16+12),ct(13*16+13),ct(13*16+14),ct(13*16+15),
+    ct(14*16+0),ct(14*16+1),ct(14*16+2),ct(14*16+3),ct(14*16+4),ct(14*16+5),ct(14*16+6),ct(14*16+7),ct(14*16+8),ct(14*16+9),ct(14*16+10),ct(14*16+11),ct(14*16+12),ct(14*16+13),ct(14*16+14),ct(14*16+15),
+    ct(15*16+0),ct(15*16+1),ct(15*16+2),ct(15*16+3),ct(15*16+4),ct(15*16+5),ct(15*16+6),ct(15*16+7),ct(15*16+8),ct(15*16+9),ct(15*16+10),ct(15*16+11),ct(15*16+12),ct(15*16+13),ct(15*16+14),ct(15*16+15)
+  };
+  
 
   namespace isa
   { 
@@ -57,6 +90,26 @@ namespace embree
 
 #if 1
 
+    const static int8 shiftbits4(int8(step) * 4);
+
+#if defined(__AVX2__)
+    __forceinline int8 getCompactPerm(const unsigned int m)
+    {
+      const int8 compressedIndices = broadcast((int*)&compressTable[m]);
+      return sra(compressedIndices,shiftbits4) & 7;
+    }
+
+    __forceinline float8 merge(const float8 &a, const float8 &b, const int imm)
+    {
+      return select(imm,a,b);
+    }
+
+    __forceinline int8 merge(const int8 &a, const int8 &b, const int imm)
+    {
+      return select(imm,a,b);
+    }
+
+#endif
     __forceinline void gatherDist(const float8 curDist[8], const size_t index,float8 &dest)
     {
       for (size_t i=0;i<8;i++)
@@ -76,6 +129,19 @@ namespace embree
 
       SharedStackItem stack[128];
 
+      // int8 t(step);
+      // t += 1;
+      // bool8 mask(0,1,0,1,0,1,0,1);
+      // unsigned int m_mask = movemask(mask);
+      // int8 perm = getCompactPerm(m_mask);
+      // PRINT(t);
+      // PRINT(mask);
+      // PRINT(m_mask);
+      // PRINT(perm);
+      // PRINT(permute(t,perm));
+      // exit(0);
+
+      
       /* load ray */
       bool8 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -124,9 +190,10 @@ namespace embree
 
           sindex--;
           NodeRef cur      = stack[sindex].ref;        
-          //size_t m_current = stack[sindex].mask;
           size_t m_current = movemask(stack[sindex].dist < ray_tfar) & stack[sindex].mask;
           if (unlikely(m_current == 0)) { continue; }
+
+          //size_t m_current = stack[sindex].mask;
           // optimize: cull stack nodes
 
 #if 0
@@ -286,6 +353,7 @@ namespace embree
               }
               else
               {
+#if 1
                 for (size_t bits=mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
                 {
                   //stack[sindex].dist = neg_inf; //ray_tfar;                
@@ -294,6 +362,37 @@ namespace embree
                   stack[sindex].ref  = node->child(i);                  
                   sindex++;                    
                 }                  
+#else
+                int8 perm = getCompactPerm(mask);
+                const int8 vi = (cast(curDist[index]) & (~7)) | perm;
+                const int8 a0 = vi; // select(bool8((int)m_current),vi,int8( True )); //optimize
+                const int8 b0 = shuffle<1,0,3,2>(a0);
+                const int8 c0 = umin(a0,b0);
+                const int8 d0 = umax(a0,b0);
+                const int8 a1 = merge(c0,d0,0b01010101);
+                const int8 b1 = shuffle<2,3,0,1>(a1);
+                const int8 c1 = umin(a1,b1);
+                const int8 d1 = umax(a1,b1);
+                const int8 a2 = merge(c1,d1,0b00110011);
+                const int8 b2 = shuffle<0,2,1,3>(a2);
+                const int8 c2 = umin(a2,b2);
+                const int8 d2 = umax(a2,b2);
+                const int8 a3 = merge(c2,d2,0b00100010);
+                const int8 order = a3 & 7;
+                                        
+                for (size_t i=0;i<count_mask;i++) 
+                {
+                  const unsigned int index = order[i];
+                  assert( ((size_t)1 << index) & mask );
+                  gatherDist(curDist,index,stack[sindex].dist);
+                  stack[sindex].mask = m_equal;
+                  stack[sindex].ref  = node->child(index);                  
+                  sindex++;
+                }
+                                        
+                
+                
+#endif
               }
             } while(m_ray_hit);            
 

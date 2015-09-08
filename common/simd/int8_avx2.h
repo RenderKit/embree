@@ -150,6 +150,9 @@ namespace embree
 
   __forceinline const int8 sra ( const int8& a, const int b ) { return _mm256_srai_epi32(a.m256, b); }
   __forceinline const int8 srl ( const int8& a, const int b ) { return _mm256_srli_epi32(a.m256, b); }
+
+  __forceinline const int8 sra ( const int8& a, const int8 &b ) { return _mm256_srav_epi32(a.m256, b.m256); }
+  __forceinline const int8 srl ( const int8& a, const int8 &b ) { return _mm256_srlv_epi32(a.m256, b.m256); }
   
   __forceinline const int8 min( const int8& a, const int8& b ) { return _mm256_min_epi32(a.m256, b.m256); }
   __forceinline const int8 min( const int8& a, const int   b ) { return min(a,int8(b)); }
