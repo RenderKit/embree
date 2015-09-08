@@ -33,8 +33,8 @@ namespace embree
     public:
       __forceinline BuildRef () {}
       
-      __forceinline BuildRef (const BBox3fa& bounds, BVH4::NodeRef node) 
-        : lower(bounds.lower), upper(bounds.upper), node(node)
+      __forceinline BuildRef (const BBox3fa& bounds, BVH4::NodeRef node, const AffineSpace3fa& local2world) 
+        : lower(bounds.lower), upper(bounds.upper), node(node), local2world(local2world)
       {
         if (node.isLeaf())
           lower.w = 0.0f;
@@ -54,6 +54,7 @@ namespace embree
       Vec3fa lower;
       Vec3fa upper;
       BVH4::NodeRef node;
+      AffineSpace3fa local2world;
     };
       
       /*! Constructor. */
@@ -80,7 +81,8 @@ namespace embree
       
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
-      AlignedAtomicCounter32 nextRef;
+      AtomicCounter nextRef;
+      AtomicCounter numInstancedPrimitives; 
     };
   }
 }

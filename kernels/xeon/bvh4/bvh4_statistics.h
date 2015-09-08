@@ -49,6 +49,7 @@ namespace embree
     size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
     size_t numAlignedNodesMB;            //!< Number of aligned internal nodes.
     size_t numUnalignedNodesMB;          //!< Number of unaligned internal nodes.
+    size_t numTransformNodes;           //!< Number of transformation nodes;
     size_t childrenAlignedNodes;       //!< Number of children of aligned nodes
     size_t childrenUnalignedNodes;     //!< Number of children of unaligned internal nodes.
     size_t childrenAlignedNodesMB;       //!< Number of children of aligned nodes

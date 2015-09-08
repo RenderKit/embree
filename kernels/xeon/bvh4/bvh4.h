@@ -83,6 +83,7 @@ namespace embree
     static const int travCost = 1;
     static const int travCostAligned = 1;
     static const int travCostUnaligned = 3; // FIXME: find best cost
+    static const int travCostTransform = 1;
     static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
     /*! flags used to enable specific node types in intersectors */
@@ -625,6 +626,12 @@ namespace embree
 
     struct TransformNode
     {
+      __forceinline TransformNode () {}
+
+      __forceinline TransformNode(const BBox3fa& worldBounds, const AffineSpace3fa& world2local, NodeRef child) 
+        : worldBounds(worldBounds), world2local(world2local), child(child) {}
+
+      BBox3fa worldBounds;
       AffineSpace3fa world2local; //!< transforms from world space to local space
       NodeRef child;
     };
@@ -785,6 +792,11 @@ namespace embree
     /*! Encodes an unaligned motion blur node */
     static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
       return NodeRef((size_t) node | tyUnalignedNodeMB);
+    }
+
+    /*! Encodes a transformation node */
+    static __forceinline NodeRef encodeNode(TransformNode* node) { 
+      return NodeRef((size_t) node | tyTransformNode);
     }
     
     /*! Encodes a leaf */

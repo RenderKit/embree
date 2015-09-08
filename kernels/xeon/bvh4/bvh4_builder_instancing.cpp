@@ -27,7 +27,8 @@ namespace embree
   namespace isa
   {
     BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device), 
+        nextRef(0), numInstancedPrimitives(0) {}
     
     BVH4BuilderInstancing::~BVH4BuilderInstancing ()
     {
@@ -71,7 +72,7 @@ namespace embree
       if (builders.size() < N) builders.resize(N);
       if (refs.size()     < N) refs.resize(N);
       nextRef = 0;
-      
+
       /* creation of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
       {
@@ -99,6 +100,8 @@ namespace embree
         }
       });
 
+       numInstancedPrimitives = 0;
+
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
       {
@@ -106,7 +109,7 @@ namespace embree
         {
           /* ignore if no triangle mesh or not enabled */
           TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-          if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
+          if (mesh == nullptr || mesh->numTimeSteps != 1) 
             continue;
         
           BVH4*    object  = objects [objectID]; assert(object);
@@ -114,31 +117,58 @@ namespace embree
           
           /* build object if it got modified */
 #if !PROFILE 
-          if (mesh->isModified()) 
+          if (mesh->isModified() && mesh->isUsed()) 
 #endif
             builder->build(0,0);
           
           /* create build primitive */
-          if (!object->bounds.empty())
-            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(object->bounds,object->root);
+          if (!object->bounds.empty() && mesh->isEnabled()) {
+            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(object->bounds,object->root,one);
+            numInstancedPrimitives += mesh->size();
+          }
+        }
+      });
+
+      /* creates all instances */
+      parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
+      {
+        for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
+        {
+          /* ignore if no triangle mesh or not enabled */
+          Geometry* geom = scene->get(objectID);
+          if (geom->getType() != (Geometry::TRIANGLE_MESH | Geometry::INSTANCE))
+            continue;
+            
+          GeometryInstance* instance = (GeometryInstance*) geom;
+          if (!instance->isEnabled() || instance->numTimeSteps != 1) 
+            continue;
+        
+          BVH4*    object  = objects [objectID]; assert(object);
+          
+          /* create build primitive */
+          if (!object->bounds.empty()) {
+            BBox3fa worldBounds = xfmBounds(instance->local2world,object->bounds);
+            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(worldBounds,object->root,instance->local2world);
+            numInstancedPrimitives += instance->geom->size();
+          }
         }
       });
       
       /* fast path for single geometry scenes */
-      if (nextRef == 1) { 
+      /*if (nextRef == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
-      }
+        }*/
 
       /* open all large nodes */
       refs.resize(nextRef);
       open_sequential(numPrimitives); 
       
       /* fast path for small geometries */
-      if (refs.size() == 1) { 
+      /*if (refs.size() == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
         return;
-      }
+        }*/
 
       /* compute PrimRefs */
       prims.resize(refs.size());
@@ -147,7 +177,7 @@ namespace embree
         PrimInfo pinfo(empty);
         for (size_t i=r.begin(); i<r.end(); i++) {
           pinfo.add(refs[i].bounds());
-          prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
+          prims[i] = PrimRef(refs[i].bounds(),(size_t)&refs[i]);
         }
         return pinfo;
       }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -176,7 +206,10 @@ namespace embree
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
            {
              assert(current.prims.size() == 1);
-             *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
+             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
+             BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
+             new (node) BVH4::TransformNode(ref->bounds(),rcp(ref->local2world),ref->node); // FIXME: rcp should be precalculated somewhere
+             *current.parent = BVH4::encodeNode(node);
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
@@ -228,13 +261,10 @@ namespace embree
       if (refs.size() == 0)
 	return;
 
-      PRINT(refs.size());
-      //PRINT(refs.size());
-      //PRINT(numPrimitives);
-      //size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
-      size_t N = numPrimitives;
       //size_t N = 0;
-      //PRINT(N);
+      size_t N = numInstancedPrimitives/2000;
+      //size_t N = numInstancedPrimitives;
+      
       refs.reserve(N);
       
       std::make_heap(refs.begin(),refs.end());
@@ -242,19 +272,21 @@ namespace embree
       {
         std::pop_heap (refs.begin(),refs.end()); 
         BVH4::NodeRef ref = refs.back().node;
+        const AffineSpace3fa local2world = refs.back().local2world;
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
         BVH4::Node* node = ref.node();
-        for (size_t i=0; i<4; i++) {
+        for (size_t i=0; i<BVH4::N; i++) {
           if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(node->bounds(i),node->child(i)));
+          const BBox3fa worldBounds = xfmBounds(local2world,node->bounds(i));
+          refs.push_back(BuildRef(worldBounds,node->child(i),local2world));
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
 
       //for (size_t i=0; i<refs.size(); i++)
-      //set_primID((BVH4::NodeRef) refs[i].node, i);
+      //  set_primID((BVH4::NodeRef) refs[i].node, i);
     }
     
     Builder* BVH4BuilderInstancingSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
