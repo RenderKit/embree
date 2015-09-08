@@ -210,6 +210,7 @@ namespace embree
              BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
              new (node) BVH4::TransformNode(ref->bounds(),rcp(ref->local2world),ref->node); // FIXME: rcp should be precalculated somewhere
              *current.parent = BVH4::encodeNode(node);
+             //*current.parent = ref->node;
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
@@ -262,7 +263,8 @@ namespace embree
 	return;
 
       //size_t N = 0;
-      size_t N = numInstancedPrimitives/2000;
+      //size_t N = numInstancedPrimitives/2000;
+      size_t N = numInstancedPrimitives/200;
       //size_t N = numInstancedPrimitives;
       
       refs.reserve(N);
