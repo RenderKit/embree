@@ -106,13 +106,13 @@ namespace embree
 
 #if defined(__AVX2__)
 
-  void PRINTU(const int8 &v)
-  {
-    std::cout << "vector ";
-    for (size_t i=0;i<8;i++)
-      std::cout << ((unsigned int*)&v)[i] << " ";
-    std::cout << std::endl;
-  }
+    void PRINTU(const int8 &v)
+    {
+      std::cout << "vector ";
+      for (size_t i=0;i<8;i++)
+        std::cout << ((unsigned int*)&v)[i] << " ";
+      std::cout << std::endl;
+    }
 
     __forceinline int8 getCompactPerm(const unsigned int m)
     {
@@ -193,69 +193,57 @@ namespace embree
 
         const size_t k = __bsf(m_octant_active);
 
-        while(sindex)
+        while(1) pop:
         {
+          if (unlikely(sindex==0)) break;
           STAT3(normal.trav_stack_pop,1,1,1);
-
           sindex--;
+
           NodeRef cur      = stack[sindex].ref;     
           
           size_t m_current = movemask(stack[sindex].dist < ray_tfar) & stack[sindex].mask;
           if (unlikely(m_current == 0)) { continue; }
+
+          // optimize: move intersection here and loop
           
           //size_t m_current = stack[sindex].mask;
-          // optimize: cull stack nodes
 
-#if 0
-#define SWITCH_THRESHOLD 2
+          STAT3(normal.trav_hit_boxes[__popcnt(m_current)],1,1,1);
+
+          if (unlikely(__popcnt(m_current) == 1 && 0))
           {
-            size_t bits = m_current;
-            if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
-              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-                intersect1(bvh,cur,i,pre,ray,ray.org,ray.dir,rdir,ray_tnear,ray_tfar,nearXYZ);
-              }
-              ray_tfar = min(ray_tfar,ray.tfar);
-              continue;
-            }
-          }
-#endif
+            const size_t ray_index = __bsf(m_current);
+            const float8 ray_rdir_x     = broadcast(&rdir.x[ray_index]);
+            const float8 ray_rdir_y     = broadcast(&rdir.y[ray_index]);
+            const float8 ray_rdir_z     = broadcast(&rdir.z[ray_index]);
+            const float8 ray_org_rdir_x = broadcast(&org_rdir.x[ray_index]);
+            const float8 ray_org_rdir_y = broadcast(&org_rdir.y[ray_index]);
+            const float8 ray_org_rdir_z = broadcast(&org_rdir.z[ray_index]);
 
-
-          if (likely(cur.isNode()))
-          {
-            const BVH8::Node* node = cur.node();
-            int8 mask8(zero);
-
-            const size_t nearX = nearXYZ.x[k];
-            const size_t nearY = nearXYZ.y[k];
-            const size_t nearZ = nearXYZ.z[k];
+            const size_t nearX = nearXYZ.x[ray_index];
+            const size_t nearY = nearXYZ.y[ray_index];
+            const size_t nearZ = nearXYZ.z[ray_index];
 
             const size_t farX  = nearX ^ sizeof(float8);
             const size_t farY  = nearY ^ sizeof(float8);
             const size_t farZ  = nearZ ^ sizeof(float8);
-                        
-            const float8 lower_x = load8f((const char*)node+nearX);
-            const float8 lower_y = load8f((const char*)node+nearY);
-            const float8 lower_z = load8f((const char*)node+nearZ);
 
-            const float8 upper_x = load8f((const char*)node+farX);
-            const float8 upper_y = load8f((const char*)node+farY);
-            const float8 upper_z = load8f((const char*)node+farZ);
-
-            prefetchL1(node->children);
-            float8 minDist = inf;
-            for (size_t bits=m_current, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+            /* downtraversal loop */
+            while (true)
             {
-              DBG_PRINT(i);
+              /*! stop if we found a leaf */
+              if (unlikely(cur.isLeaf())) break;
               STAT3(normal.trav_nodes,1,1,1);
-              assert(i < 8);
 
-              const float8 ray_rdir_x     = broadcast(&rdir.x[i]);
-              const float8 ray_rdir_y     = broadcast(&rdir.y[i]);
-              const float8 ray_rdir_z     = broadcast(&rdir.z[i]);
-              const float8 ray_org_rdir_x = broadcast(&org_rdir.x[i]);
-              const float8 ray_org_rdir_y = broadcast(&org_rdir.y[i]);
-              const float8 ray_org_rdir_z = broadcast(&org_rdir.z[i]);
+              const Node* node = cur.node();
+
+              const float8 lower_x = load8f((const char*)node+nearX);
+              const float8 lower_y = load8f((const char*)node+nearY);
+              const float8 lower_z = load8f((const char*)node+nearZ);
+            
+              const float8 upper_x = load8f((const char*)node+farX);
+              const float8 upper_y = load8f((const char*)node+farY);
+              const float8 upper_z = load8f((const char*)node+farZ);
 
               const float8 tNearX = msub(lower_x, ray_rdir_x, ray_org_rdir_x);
               const float8 tNearY = msub(lower_y, ray_rdir_y, ray_org_rdir_y);
@@ -264,143 +252,71 @@ namespace embree
               const float8 tFarY  = msub(upper_y, ray_rdir_y, ray_org_rdir_y);
               const float8 tFarZ  = msub(upper_z, ray_rdir_z, ray_org_rdir_z);
               
-              const float8 tNear   = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
-              const float8 tFar    = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i]) ));
+              const float8 tNear   = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[ray_index])));
+              const float8 tFar    = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[ray_index]) ));
               const bool8 vmask    = tNear <= tFar;
-              const size_t m_mask  = movemask(vmask);
-              const float8 dist    = select(vmask,tNear,inf);               
-              minDist = min(minDist,dist);
-              mask8[i]   = m_mask;
-            }
-            size_t m_ray_hit = movemask(mask8 != int8(zero)); 
-            if (unlikely(m_ray_hit == 0)) continue;
+              size_t mask  = movemask(vmask);
+              
+              /*! if no child is hit, pop next node */
+              if (unlikely(mask == 0))
+                goto pop;
 
-            STAT(size_t iter= 0);
-            do {
-              STAT(iter++);
-              assert(m_ray_hit);
-              const size_t index = __bsf(m_ray_hit);
-              const bool8 m_equal_mask = mask8 == int8(mask8[index]);
-              const size_t m_equal = movemask(m_equal_mask);
-              assert(m_equal);
-              m_ray_hit &=~m_equal;
-              size_t ray_mask = mask8[index];
-              const size_t count_mask = __popcnt(ray_mask);
-              assert(ray_mask);
-              if (likely(count_mask == 1))
-              {
-                const size_t node_index = __bsf(ray_mask); 
-                stack[sindex].dist = minDist[node_index]; // ray_tfar;                
-                stack[sindex].mask = m_equal;
-                stack[sindex].ref  = node->child(node_index);                  
-                node->child(node_index).prefetch();
-                sindex++;
-              }   
-              else if (likely(count_mask == 2))
-              {
-                size_t node_index0 = __bsf(ray_mask); 
-                assert(ray_mask);
-                ray_mask = __blsr(ray_mask);
-                assert(ray_mask);
-                size_t node_index1 = __bsf(ray_mask); 
-                
-                if (minDist[node_index0] > minDist[node_index1])
-                  std::swap(node_index0,node_index1);
-
-                node->child(node_index0).prefetch();
-                
-                stack[sindex+0].dist = minDist[node_index1]; //ray_tfar;                
-                stack[sindex+0].mask = m_equal;
-                stack[sindex+0].ref  = node->child(node_index1);                  
-
-                stack[sindex+1].dist = minDist[node_index0]; //ray_tfar;                
-                stack[sindex+1].mask = m_equal;
-                stack[sindex+1].ref  = node->child(node_index0);                  
-
-                sindex+=2;                                      
+              /*! one child is hit, continue with that child */
+              size_t r = __bscf(mask);
+              if (likely(mask == 0)) {
+                cur = node->child(r); 
+                cur.prefetch();
+                assert(cur != BVH8::emptyNode);
+                continue;
               }
-              else if (likely(count_mask == 3))
-              {
-                size_t node_index0 = __bsf(ray_mask); 
-                assert(ray_mask);
-                ray_mask = __blsr(ray_mask);
-                assert(ray_mask);
-                size_t node_index1 = __bsf(ray_mask); 
-                ray_mask = __blsr(ray_mask);
-                assert(ray_mask);
-                size_t node_index2 = __bsf(ray_mask); 
-                
-                if (minDist[node_index0] > minDist[node_index1])
-                  std::swap(node_index0,node_index1);
-                if (minDist[node_index0] > minDist[node_index2])
-                  std::swap(node_index0,node_index2);
-                if (minDist[node_index1] > minDist[node_index2])
-                  std::swap(node_index1,node_index2);
-
-                node->child(node_index0).prefetch();
-
-                stack[sindex+0].dist = minDist[node_index2]; // ray_tfar;                
-                stack[sindex+0].mask = m_equal;
-                stack[sindex+0].ref  = node->child(node_index2);                  
-                stack[sindex+1].dist = minDist[node_index1];
-                stack[sindex+1].mask = m_equal;
-                stack[sindex+1].ref  = node->child(node_index1);                  
-                stack[sindex+2].dist = minDist[node_index0];
-                stack[sindex+2].mask = m_equal;
-                stack[sindex+2].ref  = node->child(node_index0);                  
-                sindex+=3;                                      
-                
-              }
-              else
-              {
 #if 0
-                for (size_t bits=ray_mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
-                {
-                  stack[sindex].dist = minDist[i]; //ray_tfar;                
-                  stack[sindex].mask = m_equal;
-                  stack[sindex].ref  = node->child(i);                  
-                  sindex++;                 
-                }                  
-#else
-                int8 dist = cast(minDist);
-                int8 perm = getCompactPerm(ray_mask);
-                dist = permute(dist,perm);
-                dist = select(bool8((int)countMaskTable[count_mask]),dist,int8(True));
-                const int8 vi = (dist & (~7)) | perm;
-                const int8 a0 = vi; // 
-                const int8 b0 = shuffle<1,0,3,2>(a0);
-                const int8 c0 = umin(a0,b0);
-                const int8 d0 = umax(a0,b0);
-                const int8 a1 = merge(c0,d0,0b01010101);
-                const int8 b1 = shuffle<2,3,0,1>(a1);
-                const int8 c1 = umin(a1,b1);
-                const int8 d1 = umax(a1,b1);
-                const int8 a2 = merge(c1,d1,0b00110011);
-                const int8 b2 = shuffle<0,2,1,3>(a2);
-                const int8 c2 = umin(a2,b2);
-                const int8 d2 = umax(a2,b2);
-                const int8 a3 = merge(c2,d2,0b00100010);
-                const int8 order = a3 & 7;
-                for (size_t i=0;i<count_mask;i++) 
-                {
-                  const unsigned int index = order[count_mask-1-i];
-                  assert( ((size_t)1 << index) & ray_mask );
-                  stack[sindex].dist = minDist[index];                  
-                  stack[sindex].mask = m_equal;
-                  stack[sindex].ref  = node->child(index);                  
+              /*! two children are hit, push far child, and continue with closer child */
+              NodeRef c0 = node->child(r); 
+              c0.prefetch(); 
+              const float d0 = tNear[r];
+              r = __bscf(mask);
+              NodeRef c1 = node->child(r); 
+              c1.prefetch(); 
+              const float d1 = tNear[r];
+              assert(c0 != BVH8::emptyNode);
+              assert(c1 != BVH8::emptyNode);
+              if (likely(mask == 0)) 
+              {
+                if (d0 < d1) { 
+                  stack[sindex].ref  = c1; 
+                  stack[sindex].dist = d1; 
+                  stack[sindex].mask = m_current;                   
                   sindex++;
+                  cur = c0; 
+                  continue; 
                 }
-#endif
+                else { 
+                  stack[sindex].ref  = c0; 
+                  stack[sindex].dist = d0; 
+                  stack[sindex].mask = m_current;                   
+                  sindex++; 
+                  cur = c1; 
+                  continue; 
+                }
               }
-            } while(m_ray_hit);            
+#endif
+              while (1)
+              {
+                r = __bscf(mask);
+                NodeRef c = node->child(r); 
+                c.prefetch(); 
+                stack[sindex].dist = tNear[r]; 
+                stack[sindex].ref  = c; 
+                stack[sindex].mask = m_current; 
+                sindex++;
+                if (unlikely(mask == 0)) break;
+              }
+              sindex--;
+              cur = stack[sindex].ref;
+              assert(m_current == stack[sindex].mask);
 
-            STAT3(normal.trav_hit_boxes[iter],1,1,1);
-
-          }
-          else
-          {
-
-            /*! this is a leaf node */
+              //m_current = stack[sindex].mask;
+            }
             assert(cur != BVH8::emptyNode);
             assert(m_current);
 
@@ -408,21 +324,211 @@ namespace embree
             size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
             size_t lazy_node = 0;
 
-            if (unlikely(__popcnt(m_current) >= INTERSECTION_CHUNK_THRESHOLD))
+            PrimitiveIntersector8::intersect(pre,ray,ray_index,prim,num,bvh->scene,lazy_node);
+            ray_tfar[ray_index] = ray.tfar[ray_index];
+            goto pop;
+          }
+          else
+          {
+            while(1)
             {
-              // optimize mask to intersector
-              PrimitiveIntersector8::intersect(bool8((int)m_current),pre,ray,prim,num,bvh->scene,lazy_node);
-              ray_tfar = min(ray.tfar,ray_tfar);          
-            }
-            else
+              if (unlikely(cur.isLeaf())) break;
+            
+              const BVH8::Node* node = cur.node();
+              int8 mask8(zero);
+
+              const size_t nearX = nearXYZ.x[k];
+              const size_t nearY = nearXYZ.y[k];
+              const size_t nearZ = nearXYZ.z[k];
+
+              const size_t farX  = nearX ^ sizeof(float8);
+              const size_t farY  = nearY ^ sizeof(float8);
+              const size_t farZ  = nearZ ^ sizeof(float8);
+                        
+              const float8 lower_x = load8f((const char*)node+nearX);
+              const float8 lower_y = load8f((const char*)node+nearY);
+              const float8 lower_z = load8f((const char*)node+nearZ);
+            
+              const float8 upper_x = load8f((const char*)node+farX);
+              const float8 upper_y = load8f((const char*)node+farY);
+              const float8 upper_z = load8f((const char*)node+farZ);
+
+              prefetchL1(node->children);
+              float8 minDist = inf;
               for (size_t bits=m_current, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
               {
-                PrimitiveIntersector8::intersect(pre,ray,i,prim,num,bvh->scene,lazy_node);
-                ray_tfar[i] = ray.tfar[i];
-              }            
+                DBG_PRINT(i);
+                STAT3(normal.trav_nodes,1,1,1);
+                assert(i < 8);
+
+                const float8 ray_rdir_x     = broadcast(&rdir.x[i]);
+                const float8 ray_rdir_y     = broadcast(&rdir.y[i]);
+                const float8 ray_rdir_z     = broadcast(&rdir.z[i]);
+                const float8 ray_org_rdir_x = broadcast(&org_rdir.x[i]);
+                const float8 ray_org_rdir_y = broadcast(&org_rdir.y[i]);
+                const float8 ray_org_rdir_z = broadcast(&org_rdir.z[i]);
+
+                const float8 tNearX = msub(lower_x, ray_rdir_x, ray_org_rdir_x);
+                const float8 tNearY = msub(lower_y, ray_rdir_y, ray_org_rdir_y);
+                const float8 tNearZ = msub(lower_z, ray_rdir_z, ray_org_rdir_z);
+                const float8 tFarX  = msub(upper_x, ray_rdir_x, ray_org_rdir_x);
+                const float8 tFarY  = msub(upper_y, ray_rdir_y, ray_org_rdir_y);
+                const float8 tFarZ  = msub(upper_z, ray_rdir_z, ray_org_rdir_z);
+              
+                const float8 tNear   = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[i])));
+                const float8 tFar    = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[i]) ));
+                const bool8 vmask    = tNear <= tFar;
+                const size_t m_mask  = movemask(vmask);
+                const float8 dist    = select(vmask,tNear,inf);               
+                minDist = min(minDist,dist); // optimize
+                mask8[i]   = m_mask;
+              }
+              size_t m_ray_hit = movemask(mask8 != int8(zero)); 
+              if (unlikely(m_ray_hit == 0)) goto pop;
+
+              STAT(size_t iter= 0);
+              do {
+                STAT(iter++);
+                assert(m_ray_hit);
+                const size_t index = __bsf(m_ray_hit);
+                const bool8 m_equal_mask = mask8 == int8(mask8[index]);
+                const size_t m_equal = movemask(m_equal_mask);
+                assert(m_equal);
+                m_ray_hit &=~m_equal;
+                size_t ray_mask = mask8[index];
+                const size_t count_mask = __popcnt(ray_mask);
+                assert(ray_mask);
+                if (likely(count_mask == 1))
+                {
+                  const size_t node_index = __bsf(ray_mask); 
+                  stack[sindex].dist = minDist[node_index]; // ray_tfar;                
+                  stack[sindex].mask = m_equal;
+                  stack[sindex].ref  = node->child(node_index);                  
+                  node->child(node_index).prefetch();
+                  sindex++;
+                }   
+                else if (likely(count_mask == 2))
+                {
+                  size_t node_index0 = __bsf(ray_mask); 
+                  assert(ray_mask);
+                  ray_mask = __blsr(ray_mask);
+                  assert(ray_mask);
+                  size_t node_index1 = __bsf(ray_mask); 
+                
+                  if (minDist[node_index0] > minDist[node_index1])
+                    std::swap(node_index0,node_index1);
+
+                  node->child(node_index0).prefetch();
+                
+                  stack[sindex+0].dist = minDist[node_index1]; //ray_tfar;                
+                  stack[sindex+0].mask = m_equal;
+                  stack[sindex+0].ref  = node->child(node_index1);                  
+
+                  stack[sindex+1].dist = minDist[node_index0]; //ray_tfar;                
+                  stack[sindex+1].mask = m_equal;
+                  stack[sindex+1].ref  = node->child(node_index0);                  
+
+                  sindex+=2;                                      
+                }
+                else if (likely(count_mask == 3))
+                {
+                  size_t node_index0 = __bsf(ray_mask); 
+                  assert(ray_mask);
+                  ray_mask = __blsr(ray_mask);
+                  assert(ray_mask);
+                  size_t node_index1 = __bsf(ray_mask); 
+                  ray_mask = __blsr(ray_mask);
+                  assert(ray_mask);
+                  size_t node_index2 = __bsf(ray_mask); 
+                
+                  if (minDist[node_index0] > minDist[node_index1])
+                    std::swap(node_index0,node_index1);
+                  if (minDist[node_index0] > minDist[node_index2])
+                    std::swap(node_index0,node_index2);
+                  if (minDist[node_index1] > minDist[node_index2])
+                    std::swap(node_index1,node_index2);
+
+                  node->child(node_index0).prefetch();
+
+                  stack[sindex+0].dist = minDist[node_index2]; // ray_tfar;                
+                  stack[sindex+0].mask = m_equal;
+                  stack[sindex+0].ref  = node->child(node_index2);                  
+                  stack[sindex+1].dist = minDist[node_index1];
+                  stack[sindex+1].mask = m_equal;
+                  stack[sindex+1].ref  = node->child(node_index1);                  
+                  stack[sindex+2].dist = minDist[node_index0];
+                  stack[sindex+2].mask = m_equal;
+                  stack[sindex+2].ref  = node->child(node_index0);                  
+                  sindex+=3;                                                      
+                }
+                else
+                {
+#if 0
+                  for (size_t bits=ray_mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+                  {
+                    stack[sindex].dist = minDist[i]; //ray_tfar;                
+                    stack[sindex].mask = m_equal;
+                    stack[sindex].ref  = node->child(i);                  
+                    sindex++;                 
+                  }                  
+#else
+                  int8 dist = cast(minDist);
+                  int8 perm = getCompactPerm(ray_mask);
+                  dist = permute(dist,perm);
+                  dist = select(bool8((int)countMaskTable[count_mask]),dist,int8(True));
+                  const int8 vi = (dist & (~7)) | perm;
+                  const int8 a0 = vi; // 
+                  const int8 b0 = shuffle<1,0,3,2>(a0);
+                  const int8 c0 = umin(a0,b0);
+                  const int8 d0 = umax(a0,b0);
+                  const int8 a1 = merge(c0,d0,0b01010101);
+                  const int8 b1 = shuffle<2,3,0,1>(a1);
+                  const int8 c1 = umin(a1,b1);
+                  const int8 d1 = umax(a1,b1);
+                  const int8 a2 = merge(c1,d1,0b00110011);
+                  const int8 b2 = shuffle<0,2,1,3>(a2);
+                  const int8 c2 = umin(a2,b2);
+                  const int8 d2 = umax(a2,b2);
+                  const int8 a3 = merge(c2,d2,0b00100010);
+                  const int8 order = a3 & 7;
+                  for (size_t i=0;i<count_mask;i++) 
+                  {
+                    const unsigned int index = order[count_mask-1-i];
+                    assert( ((size_t)1 << index) & ray_mask );
+                    stack[sindex].dist = minDist[index];                  
+                    stack[sindex].mask = m_equal;
+                    stack[sindex].ref  = node->child(index);                  
+                    sindex++;
+                  }
+#endif
+                }
+              } while(m_ray_hit);            
+              assert(sindex);
+              sindex--;
+              cur = stack[sindex].ref;     
+              m_current = stack[sindex].mask;     
+            }            
           }
+          /*! this is a leaf node */
+          assert(cur != BVH8::emptyNode);
+          assert(m_current);
+
+          STAT3(normal.trav_leaves,1,1,1);
+          size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
+          size_t lazy_node = 0;
           
-          
+          if (unlikely(__popcnt(m_current) >= INTERSECTION_CHUNK_THRESHOLD))
+          {
+            // optimize mask to intersector
+            PrimitiveIntersector8::intersect(bool8((int)m_current),pre,ray,prim,num,bvh->scene,lazy_node);
+            ray_tfar = min(ray.tfar,ray_tfar);          
+          }
+          else
+            for (size_t bits=m_current, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
+            {
+              PrimitiveIntersector8::intersect(pre,ray,i,prim,num,bvh->scene,lazy_node);
+              ray_tfar[i] = ray.tfar[i];
+            }            
         }
 
 
