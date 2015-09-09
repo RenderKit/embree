@@ -98,6 +98,8 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
+    assert(g_device);
+    if (g_device == nullptr) return RTC_UNKNOWN_ERROR;
     RTCError* stored_error = g_device->error();
     RTCError error = *stored_error;
     *stored_error = RTC_NO_ERROR;
@@ -124,7 +126,8 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetErrorFunction);
-    g_device->error_function = func;
+    assert(g_device);
+    if (g_device) g_device->error_function = func;
     RTCORE_CATCH_END(g_device);
   }
 
@@ -142,7 +145,8 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetMemoryMonitorFunction);
-    g_device->memory_monitor_function = func;
+    assert(g_device);
+    if (g_device) g_device->memory_monitor_function = func;
     RTCORE_CATCH_END(g_device);
   }
 
@@ -176,6 +180,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewScene);
+    assert(g_device);
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_INCOHERENT);
     return (RTCScene) new Scene(g_device,flags,aflags);
     RTCORE_CATCH_END(g_device);
