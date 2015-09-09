@@ -189,7 +189,8 @@ namespace embree
       bvhSAH += A*BVH4::travCostTransform;
 
       depth = 0;
-      const float Ai = max(0.0f,halfArea(n->worldBounds));
+      const BBox3fa worldBounds = xfmBounds(n->local2world,n->localBounds);
+      const float Ai = max(0.0f,halfArea(worldBounds));
       size_t cdepth; statistics(n->child,Ai,cdepth); 
       depth=max(depth,cdepth)+1;
     }

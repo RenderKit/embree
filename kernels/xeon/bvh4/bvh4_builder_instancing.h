@@ -33,28 +33,29 @@ namespace embree
     public:
       __forceinline BuildRef () {}
       
-      __forceinline BuildRef (const BBox3fa& bounds, BVH4::NodeRef node, const AffineSpace3fa& local2world) 
-        : lower(bounds.lower), upper(bounds.upper), node(node), local2world(local2world)
+      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node) 
+        : local2world(local2world), localBounds(localBounds_in), node(node)
       {
         if (node.isLeaf())
-          lower.w = 0.0f;
-        else
-          lower.w = area(this->bounds());
+          localBounds.lower.w = 0.0f;
+        else {
+          const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
+          localBounds.lower.w = area(worldBounds);
+        }
       }
       
-      __forceinline BBox3fa bounds () const {
-        return BBox3fa(lower,upper);
+      __forceinline BBox3fa worldBounds() const {
+        return xfmBounds(local2world,localBounds);
       }
       
       friend bool operator< (const BuildRef& a, const BuildRef& b) {
-        return a.lower.w < b.lower.w;
+        return a.localBounds.lower.w < b.localBounds.lower.w;
       }
       
     public:
-      Vec3fa lower;
-      Vec3fa upper;
-      BVH4::NodeRef node;
       AffineSpace3fa local2world;
+      BBox3fa localBounds;
+      BVH4::NodeRef node;
     };
       
       /*! Constructor. */
@@ -68,7 +69,9 @@ namespace embree
 
       void clear();
 
-      void open_sequential(size_t numPrimitives);
+      void open(size_t numPrimitives);
+
+      BVH4::NodeRef collapse(BVH4::NodeRef& node);
       
     public:
       BVH4* bvh;
