@@ -46,6 +46,18 @@ namespace embree
     1 << 7
   };
 
+  static int countMaskTable[9] = {
+    0b00000000,
+    0b00000001,
+    0b00000011,
+    0b00000111,
+    0b00001111,
+    0b00011111,
+    0b00111111,
+    0b01111111,
+    0b11111111
+  };
+
   __forceinline unsigned int ct(unsigned int bits)
   {
     unsigned int result = 0;
@@ -93,6 +105,15 @@ namespace embree
     const static int8 shiftbits4(int8(step) * 4);
 
 #if defined(__AVX2__)
+
+  void PRINTU(const int8 &v)
+  {
+    std::cout << "vector ";
+    for (size_t i=0;i<8;i++)
+      std::cout << ((unsigned int*)&v)[i] << " ";
+    std::cout << std::endl;
+  }
+
     __forceinline int8 getCompactPerm(const unsigned int m)
     {
       const int8 compressedIndices = broadcast((int*)&compressTable[m]);
@@ -127,19 +148,7 @@ namespace embree
         float8 dist;
       };
 
-      SharedStackItem stack[256];
-
-      // int8 t(step);
-      // t += 1;
-      // bool8 mask(0,1,0,1,0,1,0,1);
-      // unsigned int m_mask = movemask(mask);
-      // int8 perm = getCompactPerm(m_mask);
-      // PRINT(t);
-      // PRINT(mask);
-      // PRINT(m_mask);
-      // PRINT(perm);
-      // PRINT(permute(t,perm));
-      // exit(0);
+      SharedStackItem stack[128];
 
       
       /* load ray */
@@ -192,7 +201,7 @@ namespace embree
           NodeRef cur      = stack[sindex].ref;        
           //size_t m_current = movemask(stack[sindex].dist < ray_tfar) & stack[sindex].mask;
           //if (unlikely(m_current == 0)) { continue; }
-
+          
           size_t m_current = stack[sindex].mask;
           // optimize: cull stack nodes
 
@@ -354,6 +363,8 @@ namespace embree
               }
               else
               {
+                //PRINT("4+ stack");
+
 #if 0
                 for (size_t bits=ray_mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
                 {
@@ -361,18 +372,27 @@ namespace embree
                   gatherDist(curDist,i,stack[sindex].dist);
                   stack[sindex].mask = m_equal;
                   stack[sindex].ref  = node->child(i);                  
-                  sindex++;                    
+                  sindex++;                 
+                  //PRINT(i);
+                  //PRINT(node->child(i) - bvh->root);
                 }                  
 #else
                 //PRINT(count_mask);
+                //PRINT(bool8((int)countMaskTable[count_mask]));
+                //PRINT(curDist[index]);
                 int8 dist = cast(curDist[index]);
-                dist = select(bool8((int)ray_mask),dist,int8(0xffffffff));
-                int8 perm = getCompactPerm(ray_mask);
-                dist = permute(dist,perm);
-                //PRINT(perm);
                 //PRINT(dist);
+                int8 perm = getCompactPerm(ray_mask);
+                //PRINT(perm);
+                dist = permute(dist,perm);
+                //PRINT(dist);
+                dist = select(bool8((int)countMaskTable[count_mask]),dist,int8(True));
+                //PRINT(dist);
+                //PRINTU(dist);
                 const int8 vi = (dist & (~7)) | perm;
                 //PRINT(vi);
+                //PRINTU(vi);
+                //PRINT(vi & 7);
                 const int8 a0 = vi; // select(bool8((int)m_current),vi,int8( True )); //optimize
                 const int8 b0 = shuffle<1,0,3,2>(a0);
                 const int8 c0 = umin(a0,b0);
@@ -386,6 +406,9 @@ namespace embree
                 const int8 c2 = umin(a2,b2);
                 const int8 d2 = umax(a2,b2);
                 const int8 a3 = merge(c2,d2,0b00100010);
+                //PRINT(a3);
+                //PRINTU(a3);
+
                 const int8 order = a3 & 7;
                 //PRINT(a3);
                 //PRINT(order);
@@ -394,11 +417,15 @@ namespace embree
                 for (size_t i=0;i<count_mask;i++) 
                 {
                   const unsigned int index = order[count_mask-1-i];
+                  //PRINT(index);
+
                   assert( ((size_t)1 << index) & ray_mask );
                   //gatherDist(curDist,index,stack[sindex].dist);
                   stack[sindex].dist = neg_inf;                  
                   stack[sindex].mask = m_equal;
                   stack[sindex].ref  = node->child(index);                  
+                  //PRINT(node->child(index) - bvh->root);
+
                   sindex++;
                 }
                                         
@@ -444,6 +471,11 @@ namespace embree
       }
 
 #endif
+      //if (any(ray.primID <= 0))
+      {
+        //PRINT(ray);
+        //exit(0);
+      }
       AVX_ZERO_UPPER();
     }
 

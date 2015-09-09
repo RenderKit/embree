@@ -348,7 +348,6 @@ task void renderTile(uniform int* uniform pixels,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
