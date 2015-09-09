@@ -198,7 +198,7 @@ namespace embree
             new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node); // FIXME: rcp should be precalculated somewhere
             *current.parent = BVH4::encodeNode(node);
             //*current.parent = ref->node;
-            //((BVH4::NodeRef*)current.parent)->setBarrier();
+            ((BVH4::NodeRef*)current.parent)->setBarrier();
             return 1;
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
@@ -207,7 +207,7 @@ namespace embree
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
       
-      //bvh->root = collapse(bvh->root);
+      bvh->root = collapse(bvh->root);
       
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
@@ -287,6 +287,7 @@ namespace embree
       BVH4::Node* n = node.node();
       BVH4::TransformNode* first = nullptr;
       for (size_t c=0; c<BVH4::N; c++) {
+        if (n->child(c) == BVH4::emptyNode) continue;
         BVH4::NodeRef child = n->child(c) = collapse(n->child(c));
         if (child.isTransformNode()) first = child.transformNode();
       }
