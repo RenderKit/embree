@@ -107,8 +107,215 @@ namespace embree
 ///////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
+    template<typename PrimitiveIntersector8>    
+    void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
+    {
+#if defined(__AVX2__)
+      struct __aligned(16) SharedStackItem {
+        BVH8::NodeRef ref;
+        unsigned int dummy;
+        float dist;
+      };
+
+      assert(sizeof(SharedStackItem) == 16);
+
+      SharedStackItem stack[128];
+
+      /* load ray */
+      bool8 valid0 = *valid_i;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear > -FLT_MIN));
+      float8 ray_tnear = ray.tnear;
+      float8 ray_tfar  = ray.tfar;
+
+      const Vec3f8 rdir = rcp_safe(ray.dir);
+      const Vec3f8 org(ray.org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,float8(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,float8(neg_inf));
+      const float8 inf = float8(pos_inf);
+      Precalculations pre(valid0,ray);
+
+      /* compute near/far per ray */
+      Vec3i8 nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float8)),int8(1*(int)sizeof(float8)));
+      nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float8)),int8(3*(int)sizeof(float8)));
+      nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float8)),int8(5*(int)sizeof(float8)));
+
+      unsigned int m_all_active = movemask(ray_tnear < ray_tfar);
+
+      while(m_all_active)
+      {
+        const unsigned int rindex = __bsf(m_all_active);
+        const unsigned int m_octant_active = movemask( (int8(nearXYZ.x[rindex]) == nearXYZ.x) & 
+                                                       (int8(nearXYZ.y[rindex]) == nearXYZ.y) & 
+                                                       (int8(nearXYZ.z[rindex]) == nearXYZ.z) ) & m_all_active;
+        m_all_active &= ~m_octant_active;
+
+        for (size_t bits = m_octant_active, ray_index=__bsf(bits); bits!=0; bits=__blsr(bits), ray_index=__bsf(bits)) 
+        {
+          stack[0].ref  = bvh->root;
+          stack[0].dist = 0.0f;
+          SharedStackItem* stackPtr = stack+1;        //!< current stack pointer
+
+          const float8 ray_rdir_x     = broadcast(&rdir.x[ray_index]);
+          const float8 ray_rdir_y     = broadcast(&rdir.y[ray_index]);
+          const float8 ray_rdir_z     = broadcast(&rdir.z[ray_index]);
+          const float8 ray_org_rdir_x = broadcast(&org_rdir.x[ray_index]);
+          const float8 ray_org_rdir_y = broadcast(&org_rdir.y[ray_index]);
+          const float8 ray_org_rdir_z = broadcast(&org_rdir.z[ray_index]);
+
+          const size_t nearX = nearXYZ.x[ray_index];
+          const size_t nearY = nearXYZ.y[ray_index];
+          const size_t nearZ = nearXYZ.z[ray_index];
+          
+          const size_t farX  = nearX ^ sizeof(float8);
+          const size_t farY  = nearY ^ sizeof(float8);
+          const size_t farZ  = nearZ ^ sizeof(float8);
+
+          while(1) pop:
+          {
+            if (unlikely(stackPtr==stack)) break;
+            STAT3(normal.trav_stack_pop,1,1,1);
+            stackPtr--;
+            
+            NodeRef cur      = stackPtr->ref;     
+          
+            //if (unlikely(stackPtr->dist >= ray.tfar[ray_index])) { continue; }
+
+            /* downtraversal loop */
+            while (true)
+            {
+              /*! stop if we found a leaf */
+              if (unlikely(cur.isLeaf())) break;
+              STAT3(normal.trav_nodes,1,1,1);
+
+              const Node* node = cur.node();
+
+              const float8 lower_x = load8f((const char*)node+nearX);
+              const float8 lower_y = load8f((const char*)node+nearY);
+              const float8 lower_z = load8f((const char*)node+nearZ);
+            
+              const float8 upper_x = load8f((const char*)node+farX);
+              const float8 upper_y = load8f((const char*)node+farY);
+              const float8 upper_z = load8f((const char*)node+farZ);
+
+              const float8 tNearX = msub(lower_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 tNearY = msub(lower_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 tNearZ = msub(lower_z, ray_rdir_z, ray_org_rdir_z);
+              const float8 tFarX  = msub(upper_x, ray_rdir_x, ray_org_rdir_x);
+              const float8 tFarY  = msub(upper_y, ray_rdir_y, ray_org_rdir_y);
+              const float8 tFarZ  = msub(upper_z, ray_rdir_z, ray_org_rdir_z);
+              
+              const float8 tNear   = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[ray_index])));
+              const float8 tFar    = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[ray_index]) ));
+              const bool8 vmask    = tNear <= tFar;
+              size_t mask  = movemask(vmask) ;
+
+              STAT3(normal.trav_hit_boxes[__popcnt(mask)],1,1,1);
+              
+              /*! if no child is hit, pop next node */
+              if (unlikely(mask == 0))
+                goto pop;
+
+              const size_t hits = __popcnt(mask);
+
+              /*! one child is hit, continue with that child */
+              size_t r = __bscf(mask);
+              cur = node->child(r); 
+              cur.prefetch(); 
+
+              if (likely(mask == 0)) {
+                //cur = node->child(r); 
+                //cur.prefetch();
+                assert(cur != BVH8::emptyNode);
+                continue;
+              }
 
 #if 1
+              /*! two children are hit, push far child, and continue with closer child */
+              const float d0 = tNear[r];
+              r = __bscf(mask);
+              NodeRef c1 = node->child(r); 
+              c1.prefetch(); 
+              const float d1 = tNear[r];
+              assert(c0 != BVH8::emptyNode);
+              assert(c1 != BVH8::emptyNode);
+              if (likely(mask == 0)) 
+              {
+                if (d0 < d1) { 
+                  stackPtr->ref  = c1; 
+                  stackPtr->dist = d1; 
+                  stackPtr++;
+                  continue; 
+                }
+                else { 
+                  stackPtr->ref  = cur; 
+                  stackPtr->dist = d0; 
+                  stackPtr++; 
+                  cur = c1; 
+                  continue; 
+                }
+              }
+#endif
+
+
+              
+              const int8 tNear_i = cast(tNear);
+              const int8 dist    = select(vmask,(tNear_i & (~7)) | int8(step),int8( True ));
+              const int8 order   = sortNetwork(dist) & 7;
+              const unsigned int cur_index = extract<0>(extract<0>(order));
+              cur = node->child(cur_index);
+              cur.prefetch();
+
+              for (size_t i=0;i<hits-1;i++) 
+              {
+                const unsigned int index = order[hits-1-i];
+                assert( ((size_t)1 << index) & movemask(vmask) );
+                const NodeRef c = node->child(index); 
+                c.prefetchL2C(); 
+                stackPtr->ref  = c;                   
+                stackPtr->dist = tNear[index];                  
+                stackPtr++;
+              }              
+
+            }
+            assert(cur != BVH8::emptyNode);
+
+            STAT3(normal.trav_leaves,1,1,1);
+            size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
+            size_t lazy_node = 0;
+
+            const float old_tfar = ray.tfar[ray_index];
+
+            PrimitiveIntersector8::intersect(pre,ray,ray_index,prim,num,bvh->scene,lazy_node);
+            if (unlikely(old_tfar != ray.tfar[ray_index]))
+            {
+              SharedStackItem* new_stackPtr = stack;        //!< current stack pointer
+              for (SharedStackItem*s = stack;s != stackPtr;s++)
+                if (unlikely(s->dist <= ray.tfar[ray_index]))
+                  *new_stackPtr++ = *s;
+              stackPtr = new_stackPtr;
+              
+            }
+
+            ray_tfar[ray_index] = ray.tfar[ray_index];
+          }
+        }
+      }
+      //if (any(ray.primID <= 0))
+      {
+        //PRINT(ray);
+        //exit(0);
+      }
+#endif
+      AVX_ZERO_UPPER();
+    }
+
+
+
+#if 0
 
     const static int8 shiftbits4(int8(step) * 4);
 
@@ -128,18 +335,7 @@ namespace embree
       return sra(compressedIndices,shiftbits4) & 7;
     }
 
-    __forceinline float8 merge(const float8 &a, const float8 &b, const int imm)
-    {
-      return select(imm,a,b);
-    }
-
-
 #endif
-    __forceinline void gatherDist(const float8 curDist[8], const size_t index,float8 &dest)
-    {
-      for (size_t i=0;i<8;i++)
-        dest[i] = curDist[i][index];
-    }
 
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
@@ -147,10 +343,12 @@ namespace embree
 #if defined(__AVX2__)
       struct __aligned(16) SharedStackItem {
         BVH8::NodeRef ref;
-        size_t mask;
+        unsigned int mask;
         float dist;
       };
 
+      assert(sizeof(SharedStackItem) == 16);
+      
       SharedStackItem stack[128];
 
 
@@ -378,7 +576,7 @@ namespace embree
             goto pop;
 #endif
           }
-#if 1
+#if 0
           else
           {
             while(1)

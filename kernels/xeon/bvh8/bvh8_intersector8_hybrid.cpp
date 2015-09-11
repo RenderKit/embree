@@ -25,8 +25,8 @@
 
 #define DBG(x) 
 
-#define SWITCH_THRESHOLD 7
-//#define SWITCH_THRESHOLD 16
+//#define SWITCH_THRESHOLD 7
+#define SWITCH_THRESHOLD 16
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
@@ -60,6 +60,8 @@ namespace embree
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
+        STAT3(normal.trav_stack_pop,1,1,1);
+
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ptr);
         
@@ -415,6 +417,8 @@ namespace embree
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
+        STAT3(shadow.trav_stack_pop,1,1,1);
+
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
         
