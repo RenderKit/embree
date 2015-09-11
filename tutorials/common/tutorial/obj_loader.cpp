@@ -23,8 +23,6 @@
 #include <vector>
 #include <string.h>
 
-#define FORCE_ONLY_QUADS 0
-
 namespace embree
 {
   /*! Three-index vertex, indexing start at 0, -1 means invalid vertex. */
@@ -400,18 +398,10 @@ namespace embree
       {
 	OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
 	model.subdiv.push_back(mesh);
-#if 0
-	PRINT(curGroup.size());
-	PRINT(v.size());
-	PRINT(vn.size());
-	PRINT(vt.size());
-#endif	
-
 	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
 	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
 	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
 	
-#if 1
 	for (size_t i=0;i<ec.size();++i) {
 	  if (ec[i].a < v.size() && ec[i].b < v.size())
 	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
@@ -419,7 +409,6 @@ namespace embree
 	  mesh->edge_crease_weights.push_back(pos_inf);
 
 	}
-#endif
 
 	for (size_t i=0;i<vc.size();++i) 
 	  mesh->vertex_creases.push_back(vc[i]);
@@ -432,31 +421,22 @@ namespace embree
 	    /* iterate over all faces */
 	    const std::vector<Vertex>& face = curGroup[j];
 
-#if FORCE_ONLY_QUADS == 1
-	    if ( face.size() == 4)
-#endif
-	      {
-		for (size_t i=0;i<face.size();i++)
-		  {
-		    mesh->position_indices.push_back(face[i].v);
-		    if (face[i].vt != -1)
-		      {
-			assert( face[i].vt < vt.size() );
-			mesh->texcoord_indices.push_back(face[i].vt);
-		      }
-		  }
-		if (mesh->texcoord_indices.size())
-		  {
-		    //PRINT( mesh->texcoord_indices.size() );
-		    //PRINT( mesh->position_indices.size() );
-
-		    //assert( mesh->texcoord_indices.size() == mesh->position_indices.size() );
-		  }
-		mesh->verticesPerFace.push_back(face.size());
-	      }
-            
-	    mesh->materialID = curMaterial;	
-	  }
+            for (size_t i=0;i<face.size();i++)
+            {
+              mesh->position_indices.push_back(face[i].v);
+              if (face[i].vt != -1)
+              {
+                assert( face[i].vt < vt.size() );
+                mesh->texcoord_indices.push_back(face[i].vt);
+              }
+            }
+            if (mesh->texcoord_indices.size())
+            {
+            }
+            mesh->verticesPerFace.push_back(face.size());
+          }
+        
+        mesh->materialID = curMaterial;	
       }
     else
       {
@@ -492,47 +472,6 @@ namespace embree
 
   void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool subdivMode) {
     OBJLoader loader(fileName,space,mesh_o,subdivMode); 
-  }
-
-  void OBJScene::Mesh::set_motion_blur(const Mesh* other)
-  {
-    if (v.size() != other->v.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    bool different = false;
-    for (size_t i=0; i<v.size(); i++) 
-      different |= v[i] != other->v[i];
-
-    if (different)
-      v2 = other->v;
-  }
-
-  void OBJScene::HairSet::set_motion_blur(const HairSet* other)
-  {
-    if (v.size() != other->v.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    bool different = false;
-    for (size_t i=0; i<v.size(); i++) 
-      different |= v[i] != other->v[i];
-
-    if (different)
-      v2 = other->v;
-  }
-
-  void OBJScene::set_motion_blur(OBJScene& other)
-  {
-    if (meshes.size() != other.meshes.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-    
-    for (size_t i=0; i<meshes.size(); i++) 
-      meshes[i]->set_motion_blur(other.meshes[i]);
-
-    if (hairsets.size() != other.hairsets.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    for (size_t i=0; i<hairsets.size(); i++) 
-      hairsets[i]->set_motion_blur(other.hairsets[i]);
   }
 }
 
