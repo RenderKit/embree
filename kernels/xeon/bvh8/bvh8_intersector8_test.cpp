@@ -482,7 +482,7 @@ namespace embree
 
                   sindex+=2;                                      
                 }
-#if 0
+#if 1
                 else if (likely(count_mask == 3))
                 {
                   bool8 vmask((int)ray_mask);
@@ -495,14 +495,6 @@ namespace embree
                   assert(ray_mask);
                   size_t node_index2 = __bsf(ray_mask); 
                 
-                  // PRINT(minDist[node_index0]);
-                  // PRINT(minDist[node_index1]);
-                  // PRINT(minDist[node_index2]);
-
-                  //   PRINT(node_index0);
-                  //   PRINT(node_index1);
-                  //   PRINT(node_index2);
-
                   if (minDist[node_index0] > minDist[node_index1])
                     std::swap(node_index0,node_index1);
                   if (minDist[node_index0] > minDist[node_index2])
@@ -511,40 +503,6 @@ namespace embree
                     std::swap(node_index1,node_index2);
 
                   node->child(node_index0).prefetch();
-
-                  // const int8 tNear_i = cast(minDist);                  
-                  // const int8 dist    = select(vmask,(tNear_i & (~7)) | int8(step),int8( True ));
-                  // const int8 order   = sortNetwork(dist) & 7;
-                  
-                  // const unsigned int index2 = order[count_mask-1-0];
-                  // const unsigned int index1 = order[count_mask-1-1];
-                  // const unsigned int index0 = order[count_mask-1-2];
-                  // if (index0 != node_index0 ||
-                  //     index1 != node_index1 ||
-                  //     index2 != node_index2)
-                  // {
-                  //   PRINT(node_index0);
-                  //   PRINT(node_index1);
-                  //   PRINT(node_index2);
-
-                  //   PRINT(minDist);
-                  //   PRINTU(dist);
-                  //   PRINTU(sortNetwork(dist));
-                  //   PRINT(order);
-
-                  //   PRINT(index0);
-                  //   PRINT(index1);
-                  //   PRINT(index2);
-
-                  //   exit(0);
-                  // }
-
-
-
-
-
-
-
 
                   stack[sindex+0].dist = minDist[node_index2]; // ray_tfar;                
                   stack[sindex+0].mask = m_equal;
@@ -562,7 +520,7 @@ namespace embree
                 {
 #if 1
 
-#if 0
+#if 1
                   for (size_t bits=ray_mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
                   {
                     stack[sindex].dist = minDist[i]; //ray_tfar;                

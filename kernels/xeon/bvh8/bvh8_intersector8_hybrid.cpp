@@ -25,8 +25,8 @@
 
 #define DBG(x) 
 
-//#define SWITCH_THRESHOLD 7
-#define SWITCH_THRESHOLD 16
+#define SWITCH_THRESHOLD 7
+//#define SWITCH_THRESHOLD 16
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
@@ -128,7 +128,33 @@ namespace embree
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
             else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
           }
-          
+
+          /*! use 8-wide sorting network in the AVX2 */
+#if defined(__AVX2__) && 1
+
+          const bool8 mask8 = !vmask;
+          const size_t hits = __popcnt(movemask(mask8));
+          const int8 tNear_i = cast(tNear);
+          const int8 dist    = select(mask8,(tNear_i & (~7)) | int8(step),int8( True ));
+          const int8 order   = sortNetwork(dist) & 7;
+          const unsigned int cur_index = extract<0>(extract<0>(order));
+          cur = node->child(cur_index);
+          cur.prefetch();
+
+          for (size_t i=0;i<hits-1;i++) 
+          {
+            r = order[hits-1-i];
+            assert( ((unsigned int)1 << r) & movemask(mask8));
+            const NodeRef c = node->child(r); 
+            assert(c != BVH8::emptyNode);
+            c.prefetch(); 
+            const unsigned int d = *(unsigned int*)&tNear[r]; 
+            stackPtr->ptr = c; 
+            stackPtr->dist = d; 
+            stackPtr++;            
+          }
+#else
+
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
@@ -147,7 +173,6 @@ namespace embree
             continue;
           }
         
-#if 1 
 	  /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
@@ -156,17 +181,17 @@ namespace embree
 	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
 	    continue;
 	  }
-#endif
+
 	  /*! fallback case if more than 4 children are hit */
 	  while (1)
 	  {
 	    r = __bscf(mask);
 	    assert(stackPtr < stackEnd);
-	    c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	    const NodeRef c = node->child(r); c.prefetch(); const unsigned int d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	    if (unlikely(mask == 0)) break;
 	  }
-	  
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
 	}
         
         /*! this is a leaf node */

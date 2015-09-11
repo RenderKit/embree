@@ -22,7 +22,7 @@
 #include "../geometry/trianglepairs8.h"
 #include "../../common/accelinstance.h"
 
-#define ENABLE_TEST_INTERSECTOR 1
+#define ENABLE_TEST_INTERSECTOR 0
 
 namespace embree
 {
