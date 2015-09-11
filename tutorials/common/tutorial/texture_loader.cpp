@@ -35,9 +35,9 @@ namespace embree
   }
 
   /*! read png texture from disk */
-  OBJScene::Texture *loadTexture(const FileName& fileName)
+  Texture *loadTexture(const FileName& fileName)
   {
-    OBJScene::Texture *texture = new OBJScene::Texture();
+    Texture *texture = new Texture();
     
     std::string ext = strlwr(fileName.ext());
     if (ext == "ptx" ) return loadPtexTexture(fileName);
@@ -46,7 +46,7 @@ namespace embree
 
     texture->width         = img.ptr->width;
     texture->height        = img.ptr->height;    
-    texture->format        = OBJScene::Texture::RGBA8;
+    texture->format        = Texture::RGBA8;
     texture->bytesPerTexel = 4;
     texture->data          = _mm_malloc(sizeof(int)*texture->width*texture->height,64);
     texture->width_mask    = isPowerOf2(texture->width) ? texture->width-1 : 0;
@@ -55,7 +55,7 @@ namespace embree
     return texture;
   }
   
-  OBJScene::Texture *loadPtexTexture(const FileName& filename)
+  Texture *loadPtexTexture(const FileName& filename)
   {
 #if defined(USE_PTEX)
     std::string fn = filename.str();
@@ -72,14 +72,14 @@ namespace embree
     int geom_faces = 0;
     metadata->getValue("PtexFaceVertCounts", vertices_per_face, geom_faces);
 
-    OBJScene::Texture **face_textures = new OBJScene::Texture *[geom_faces];
+    Texture **face_textures = new Texture *[geom_faces];
     for (size_t i=0;i<geom_faces;i++)
       face_textures[i] = nullptr;
 
-    OBJScene::Texture *texture = new OBJScene::Texture();
+    Texture *texture = new Texture();
     texture->width         = 0;
     texture->height        = 0;    
-    texture->format        = OBJScene::Texture::PTEX_RGBA8;
+    texture->format        = Texture::PTEX_RGBA8;
     texture->faceTextures  = geom_faces;
     texture->data          = face_textures;
     texture->width_mask    = 0;
@@ -93,7 +93,7 @@ namespace embree
       }
 
     if (nchan == 1)
-      texture->format = OBJScene::Texture::PTEX_FLOAT32;
+      texture->format = Texture::PTEX_FLOAT32;
 
     float px[3];
     int ptex_face_id = 0;
@@ -108,7 +108,7 @@ namespace embree
 	  {
 	    Ptex::Res res = fi.res;
 			  
-	    OBJScene::Texture *face_txt = new OBJScene::Texture();
+	    Texture *face_txt = new Texture();
 	    face_txt->width         = res.u();
 	    face_txt->height        = res.v();    
 	    face_txt->width_mask    =  0;
@@ -118,7 +118,7 @@ namespace embree
 	  
 	    if (nchan == 3) /* rgb color data */
 	      {
-		face_txt->format        = OBJScene::Texture::RGBA8;
+		face_txt->format        = Texture::RGBA8;
 		face_txt->bytesPerTexel = 4;
 		unsigned char *data     = new unsigned char[face_txt->bytesPerTexel*face_txt->width*face_txt->height];
 		face_txt->data          = data;
@@ -134,7 +134,7 @@ namespace embree
 	      }
 	    else if (nchan == 1) /* displacement data */
 	      {
-		face_txt->format        = OBJScene::Texture::FLOAT32;
+		face_txt->format        = Texture::FLOAT32;
 		face_txt->bytesPerTexel = 4;
 		float*data              = new float[face_txt->width*face_txt->height];
 		face_txt->data          = data;

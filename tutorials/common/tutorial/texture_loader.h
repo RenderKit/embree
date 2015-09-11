@@ -29,7 +29,34 @@
 
 namespace embree
 {
+  struct Texture {
+    
+    enum {
+      RGBA8        = 1,
+      RGB8         = 2,
+      FLOAT32      = 3,
+      PTEX_RGBA8   = 4,
+      PTEX_FLOAT32 = 5
+    };
+    
+    int width;
+    int height;    
+    int format;
+    union {
+      int bytesPerTexel;
+      int faceTextures;
+    };
+    int width_mask;
+    int height_mask;
+    
+    void *data;
+    
+  Texture() 
+  : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
+
+  };
+
   /*! read texture from disk */
-  OBJScene::Texture *loadTexture(const FileName& fileName);
-  OBJScene::Texture *loadPtexTexture(const FileName& fileName);   
+  Texture *loadTexture(const FileName& fileName);
+  Texture *loadPtexTexture(const FileName& fileName);   
 }

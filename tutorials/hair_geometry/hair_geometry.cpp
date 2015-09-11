@@ -128,7 +128,7 @@ namespace embree
 
   void tessellateHair(OBJScene& scene)
   {
-    OBJScene::OBJMaterial material; material.illum = 1;
+    OBJMaterial material; material.illum = 1;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 
@@ -394,7 +394,7 @@ float noise(float x, float y, float z)
     const size_t numTheta = 2*numPhi;
     OBJScene::Mesh* mesh = new OBJScene::Mesh;
 
-    OBJScene::Material material;
+    Material material;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
     
@@ -480,7 +480,7 @@ float noise(float x, float y, float z)
   {
     OBJScene::Mesh* mesh = new OBJScene::Mesh;
 
-    OBJScene::Material material;
+    Material material;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 

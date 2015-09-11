@@ -138,7 +138,7 @@ namespace embree
       else if (tag == "-ambientlight") 
       {
         const Vec3fa L = cin->getVec3fa();
-        g_obj_scene.ambientLights.push_back(OBJScene::AmbientLight(L));
+        g_obj_scene.ambientLights.push_back(AmbientLight(L));
       }
 
       /* point light source */
@@ -146,7 +146,7 @@ namespace embree
       {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        g_obj_scene.pointLights.push_back(OBJScene::PointLight(P,I));
+        g_obj_scene.pointLights.push_back(PointLight(P,I));
       }
 
       /* directional light source */
@@ -154,7 +154,7 @@ namespace embree
       {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        g_obj_scene.directionalLights.push_back(OBJScene::DirectionalLight(D,E));
+        g_obj_scene.directionalLights.push_back(DirectionalLight(D,E));
       }
 
       /* distant light source */
@@ -163,7 +163,7 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        g_obj_scene.distantLights.push_back(OBJScene::DistantLight(D,L,halfAngle));
+        g_obj_scene.distantLights.push_back(DistantLight(D,L,halfAngle));
       }
 
       /* converts triangle meshes into subdiv meshes */
@@ -280,8 +280,10 @@ namespace embree
       else
         loadOBJ(filename,one,g_obj_scene);
     }
-    else if (strlwr(filename.ext()) == std::string("xml"))
-      loadXML(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == std::string("xml")) {
+      Ref<SceneGraph::Node> node = loadXML(filename,one);
+      g_obj_scene.add(node);
+    }
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
     

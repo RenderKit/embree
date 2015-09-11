@@ -170,7 +170,7 @@ namespace embree
     }
 
     /* generate default material */
-    model.materials.push_back(OBJScene::OBJMaterial());
+    model.materials.push_back(OBJMaterial());
     curMaterial = 0;
 
     char line[10000];
@@ -304,7 +304,7 @@ namespace embree
         parseSep(token+=6);
         std::string name(token);
         material[name] = cur = model.materials.size();
-        model.materials.push_back(OBJScene::OBJMaterial());
+        model.materials.push_back(OBJMaterial());
         continue;
       }
 
@@ -341,7 +341,7 @@ namespace embree
 	continue; 
       }
       if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
-      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Tf = getVec3f(token); continue; }
+      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kt = getVec3f(token); continue; }
     }
     cin.close();
   }

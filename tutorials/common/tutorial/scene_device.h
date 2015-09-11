@@ -118,7 +118,7 @@ struct ISPCDistantLight
   float cosHalfAngle;  //!< Cosine of half illumination angle
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
+//enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
 
 struct ISPCMaterial
 {
@@ -127,120 +127,12 @@ struct ISPCMaterial
   Vec3fa v[7];
 };
 
-struct MatteMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa reflectance;
-};
-
-struct MirrorMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa reflectance;
-};
-
 enum TEXTURE_FORMAT {
   RGBA8        = 1,
   RGB8         = 2,
   FLOAT32      = 3,
   PTEX_RGBA8   = 4,
   PTEX_FLOAT32 = 5
-};
-
-struct Texture {      
-  int width;
-  int height;    
-  int format;
-  union {
-    int bytesPerTexel;
-    int faceTextures;
-  };
-  int width_mask;
-  int height_mask;
-  void *data;
-};
-
-
-struct OBJMaterial
-{
-  int ty;
-  int align[3];
-
-  int illum;             /*< illumination model */
-  float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-  float Ns;              /*< specular exponent */
-  float Ni;              /*< optical density for the surface (index of refraction) */
-  
-  Vec3fa Ka;              /*< ambient reflectivity */
-  Vec3fa Kd;              /*< diffuse reflectivity */
-  Vec3fa Ks;              /*< specular reflectivity */
-  Vec3fa Kt;              /*< transmission filter */
-
-  Texture* map_Kd;       /*< dummy */
-  Texture* map_Displ;       /*< dummy */
-};
-
-struct MetalMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
-struct ReflectiveMetalMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa eta;
-  Vec3fa k;
-  float roughness;
-};
-
-struct VelvetMaterial
-{
-  int ty;
-  int align[3];
-
-  Vec3fa reflectance;
-  Vec3fa horizonScatteringColor;
-  float backScattering;
-  float horizonScatteringFallOff;
-};
-
-struct DielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmissionOutside;
-  Vec3fa transmissionInside;
-  float etaOutside;
-  float etaInside;
-};
-
-
-struct ThinDielectricMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa transmission;
-  float eta;
-};
-
-struct MetallicPaintMaterial
-{
-  int ty;
-  int align[3];
-  Vec3fa shadeColor;
-  Vec3fa glitterColor;
-  float glitterSpread;
-  float eta;
 };
 
 struct ISPCSubdivMeshKeyFrame {

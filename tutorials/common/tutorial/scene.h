@@ -16,14 +16,16 @@
 
 #pragma once
 
+#include "../../../common/sys/ref.h"
 #include "../../../common/sys/vector.h"
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
+#include "scenegraph.h"
 
 #include <vector>
 #include <memory>
-
+#include <map>
 
 namespace embree
 {
@@ -31,6 +33,9 @@ namespace embree
   struct OBJScene  // FIXME: name Scene
   {
     OBJScene () {}
+
+    void add (Ref<SceneGraph::Node> node);
+
     ~OBJScene () 
     {
       for (size_t i=0; i<meshes.size(); i++)
@@ -44,6 +49,11 @@ namespace embree
     struct Triangle 
     {
     public:
+      Triangle () {}
+      
+      Triangle (const Triangle& other) 
+      : v0(other.v0), v1(other.v1), v2(other.v2), materialID(other.materialID) {}
+
       Triangle (int v0, int v1, int v2, int materialID) 
       : v0(v0), v1(v1), v2(v2), materialID(materialID) {}
 
@@ -113,57 +123,6 @@ namespace embree
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
-    };
-
-    struct AmbientLight
-    {
-    public:
-      AmbientLight () {}
-
-      AmbientLight (const Vec3fa& L) : L(L) {}
-
-    public:
-      Vec3fa L;                  //!< radiance of ambient light
-    };
-
-    struct PointLight
-    {
-    public:
-      PointLight () {}
-
-      PointLight (const Vec3fa& P, const Vec3fa& I) : P(P), I(I) {}
-
-    public:
-      Vec3fa P;                  //!< position of point light
-      Vec3fa I;                  //!< radiant intensity of point light
-    };
-
-    struct DirectionalLight
-    {
-    public:
-      DirectionalLight () {}
-
-      DirectionalLight (const Vec3fa& D, const Vec3fa& E) : D(D), E(E) {}
-
-    public:
-      Vec3fa D;                  //!< Light direction
-      Vec3fa E;                  //!< Irradiance (W/m^2)
-    };
-
-    struct DistantLight
-    {
-    public:
-      DistantLight() {}
-
-      DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle) 
-      : D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
-
-    public:
-      Vec3fa D;             //!< Light direction
-      Vec3fa L;             //!< Radiance (W/(m^2*sr))
-      float halfAngle;     //!< Half illumination angle
-      float radHalfAngle;  //!< Half illumination angle in radians
-      float cosHalfAngle;  //!< Cosine of half illumination angle
     };
 
     bool empty() const {

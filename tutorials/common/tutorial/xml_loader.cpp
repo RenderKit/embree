@@ -206,27 +206,38 @@ namespace embree
   {
   public:
 
-    XMLLoader(const FileName& fileName, const AffineSpace3f& space, const Ref<SceneGraph>& sg);
+    static Ref<SceneGraph::Node> load(const FileName& fileName, const AffineSpace3fa& space);
+    XMLLoader(const FileName& fileName, const AffineSpace3fa& space);
    ~XMLLoader();
 
   public:
-    void loadPointLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadSpotLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadDirectionalLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadDistantLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadAmbientLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadTriangleLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadHDRILight(const Ref<XML>& xml, const AffineSpace3f& space);
     Parms loadMaterialParms(const Ref<XML>& parms);
-    int loadMaterial(const Ref<XML>& xml);
-    void loadTriangleMesh(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadSubdivMesh(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadSphere(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadDisk(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadQuadLight(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadScene(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadTransformNode(const Ref<XML>& xml, const AffineSpace3f& space);
-    void loadGroupNode(const Ref<XML>& xml, const AffineSpace3f& space);
+    Ref<SceneGraph::MaterialNode> addMaterial(const std::string& type, const Parms& parms);
+
+  public:
+    Ref<SceneGraph::Node> loadPointLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadSpotLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadDirectionalLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadDistantLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadAmbientLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadTriangleLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadQuadLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadHDRILight(const Ref<XML>& xml);
+    
+    Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
+
+  private:
+    Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadNode(const Ref<XML>& xml);
+
+  private:
+    Ref<SceneGraph::MaterialNode> loadBGFMaterial(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBGFTransformNode(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBGFGroupNode(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBGFNode(const Ref<XML>& xml);
 
   private:
     template<typename T> T load(const Ref<XML>& xml) { assert(false); return T(zero); }
@@ -246,12 +257,14 @@ namespace embree
     FileName binFileName;  //!< name of the .bin file
 
   private:
-    std::map<std::string,int> materialMap;     //!< named materials
-    std::map<Ref<XML>, int> materialCache;     //!< map for detecting repeated materials
-    std::map<size_t, Ref<SceneGraph::Node> > nodes;    //!< mapping from ID to node
+    std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
+    std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
+    std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+    std::map<size_t, Ref<SceneGraph::Node> > id2node;
+    std::map<size_t, Ref<SceneGraph::MaterialNode> > id2material;
 
   public:
-    Ref<SceneGraph> sg;
+    Ref<SceneGraph::Node> root;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -326,33 +339,33 @@ namespace embree
     return Vec4f(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float(),xml->body[3].Float());
   }
 
-  template<> AffineSpace3f XMLLoader::load<AffineSpace3f>(const Ref<XML>& xml) 
+  template<> AffineSpace3fa XMLLoader::load<AffineSpace3fa>(const Ref<XML>& xml) 
   {
     if (xml->parm("translate") != "") {
       float x,y,z; sscanf(xml->parm("translate").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3f::translate(Vec3f(x,y,z));
+      return AffineSpace3fa::translate(Vec3f(x,y,z));
     } else if (xml->parm("scale") != "") {
       float x,y,z; sscanf(xml->parm("scale").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3f::scale(Vec3f(x,y,z));
+      return AffineSpace3fa::scale(Vec3f(x,y,z));
     } else if (xml->parm("rotate_x") != "") {
       float degrees; sscanf(xml->parm("rotate_x").c_str(),"%f",&degrees);
-      return AffineSpace3f::rotate(Vec3f(1,0,0),deg2rad(degrees));
+      return AffineSpace3fa::rotate(Vec3f(1,0,0),deg2rad(degrees));
     } else if (xml->parm("rotate_y") != "") {
       float degrees; sscanf(xml->parm("rotate_y").c_str(),"%f",&degrees);
-      return AffineSpace3f::rotate(Vec3f(0,1,0),deg2rad(degrees));
+      return AffineSpace3fa::rotate(Vec3f(0,1,0),deg2rad(degrees));
     } else if (xml->parm("rotate_z") != "") {
       float degrees; sscanf(xml->parm("rotate_z").c_str(),"%f",&degrees);
-      return AffineSpace3f::rotate(Vec3f(0,0,1),deg2rad(degrees));
+      return AffineSpace3fa::rotate(Vec3f(0,0,1),deg2rad(degrees));
     } else if (xml->parm("rotate") != "" && xml->parm("axis") != "") {
       float degrees; sscanf(xml->parm("rotate").c_str(),"%f",&degrees);
       float x,y,z; sscanf(xml->parm("axis").c_str(),"%f %f %f",&x,&y,&z);
-      return AffineSpace3f::rotate(Vec3f(x,y,z),deg2rad(degrees));
+      return AffineSpace3fa::rotate(Vec3f(x,y,z),deg2rad(degrees));
     } else {
       if (xml->body.size() != 12) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong AffineSpace body");
-      return AffineSpace3f(LinearSpace3f(xml->body[0].Float(),xml->body[1].Float(),xml->body[ 2].Float(),
-					 xml->body[4].Float(),xml->body[5].Float(),xml->body[ 6].Float(),
-					 xml->body[8].Float(),xml->body[9].Float(),xml->body[10].Float()),
-			   Vec3f(xml->body[3].Float(),xml->body[7].Float(),xml->body[11].Float()));
+      return AffineSpace3fa(LinearSpace3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[ 2].Float(),
+                                           xml->body[4].Float(),xml->body[5].Float(),xml->body[ 6].Float(),
+                                           xml->body[8].Float(),xml->body[9].Float(),xml->body[10].Float()),
+                            Vec3fa(xml->body[3].Float(),xml->body[7].Float(),xml->body[11].Float()));
     }
   }
 
@@ -518,70 +531,70 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadPointLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa I = load<Vec3f>(xml->child("I"));
     const Vec3fa P = Vec3fa(zero);
-    return new SceneGraph::TransformNode(space, new SceneGraph::PointLight(P,I));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadSpotLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa I = load<Vec3fa>(xml->child("I"));
     const Vec3fa P = Vec3fa(zero);
     const Vec3fa D = Vec3fa(0,0,1);
     const float angleMin = load<float>(xml->child("angleMin"));
     const float angleMax = load<float>(xml->child("angleMax"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::SpotLight(P,D,I,angleMin,angleMax));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<SpotLight>(SpotLight(P,D,I,angleMin,angleMax)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDirectionalLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa E = load<Vec3fa>(xml->child("E"));
     const Vec3fa D = Vec3fa(0,0,1);
-    return new SceneGraph::TransformNode(space, new SceneGraph::DirectionalLight(D,E));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadDistantLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
     const Vec3fa D = Vec3fa(0,0,1);
     const float halfAngle = load<float>(xml->child("halfAngle"));
-    return new SceneGraph::TransformNode(space, new SceneGraph::DistantLight(D,L,halfAngle));
+    return new SceneGraph::TransformNode(space, new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadAmbientLight(const Ref<XML>& xml) 
   {
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
-    return new SceneGraph::AmbientLight(L);
+    return new SceneGraph::LightNode<AmbientLight>(AmbientLight(L));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTriangleLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
     const Vec3fa v0 = xfmPoint(space, Vec3fa(1, 0, 0));
     const Vec3fa v1 = xfmPoint(space, Vec3fa(0, 1, 0));
     const Vec3fa v2 = xfmPoint(space, Vec3fa(0, 0, 0));
-    return new SceneGraph::TriangleLight(v0,v1,v2,L);
+    return new SceneGraph::LightNode<TriangleLight>(TriangleLight(v0,v1,v2,L));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadQuadLight(const Ref<XML>& xml) 
   {
-    const AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     const Vec3fa L = load<Vec3fa>(xml->child("L"));
     const Vec3fa v0 = xfmPoint(space, Vec3fa(0, 0, 0));
     const Vec3fa v1 = xfmPoint(space, Vec3fa(0, 1, 0));
     const Vec3fa v2 = xfmPoint(space, Vec3fa(1, 1, 0));
     const Vec3fa v3 = xfmPoint(space, Vec3fa(1, 0, 0));
-    return new SceneGraph::QuadLight(v0,v1,v2,v3,L);
+    return new SceneGraph::LightNode<QuadLight>(QuadLight(v0,v1,v2,v3,L));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadHDRILight(const Ref<XML>& xml) 
   {
-    AffineSpace3f space = load<AffineSpace3f>(xml->child("AffineSpace"));
+    AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
     Vec3fa L = load<Vec3fa>(xml->child("L"));
     //image =  rtLoadImage(path + load<std::string>(xml->child("image"))));
     std::cout << "Warning: ignoring HDRILight" << std::endl; // FIXME: HDRI light not yet supported
@@ -624,7 +637,7 @@ namespace embree
     return material;
   }
 
-  int XMLLoader::loadMaterial(const Ref<XML>& xml) 
+  Ref<SceneGraph::MaterialNode> XMLLoader::loadMaterial(const Ref<XML>& xml) 
   {
     if (xml->parm("id") != "") {
       return materialMap[xml->parm("id")];
@@ -637,31 +650,23 @@ namespace embree
 
     std::string type = load<std::string>(xml->child("code")).c_str();
     Parms parms = loadMaterialParms(parameters);
-    int materialID = addMaterial(type,*name,parms);
-    materialCache[parameters] = materialID;
-    return materialID;
+    Ref<SceneGraph::MaterialNode> material = addMaterial(type,parms);
+    materialCache[parameters] = material;
+    return material;
   }
 
-  int XMLLoader::loadBGFMaterial(const Ref<XML>& xml) 
+  Ref<SceneGraph::MaterialNode> XMLLoader::addMaterial(const std::string& type, const Parms& parms) 
   {
-    std::string type = xml->parm("type");
-    std::string name = xml->parm("name");
-    Parms parms = loadMaterialParms(xml);
-    return addMaterial(type,name,parms);
-  }
-
-  int XMLLoader::addMaterial(const std::string& type, const std::string& name, const Parms& parms) 
-  {
-    OBJScene::Material material;
+    Material material;
     if (type == "Matte")
     {
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
-      new (&material) OBJScene::MatteMaterial(reflectance);
+      new (&material) MatteMaterial(reflectance);
     }
     else if (type == "Mirror")
     {
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
-      new (&material) OBJScene::MirrorMaterial(reflectance);
+      new (&material) MirrorMaterial(reflectance);
     }
     else if (type == "OBJ") 
     {
@@ -674,21 +679,21 @@ namespace embree
       //map_Ns = parms.getTexture("map_Ns");  
       const float Ns = parms.getFloat("Ns", 10.0f);
       //map_Bump = parms.getTexture("map_Bump");
-      new (&material) OBJScene::OBJMaterial(d,Kd,Ks,Ns);
+      new (&material) OBJMaterial(d,Kd,Ks,Ns);
     }
     else if (type == "ThinDielectric" || type == "ThinGlass")
     {
       const Vec3fa transmission = parms.getVec3fa("transmission",one);
       const float eta          = parms.getFloat("eta",1.4f);
       const float thickness    = parms.getFloat("thickness",0.1f);
-      new (&material) OBJScene::ThinDielectricMaterial(transmission,eta,thickness);
+      new (&material) ThinDielectricMaterial(transmission,eta,thickness);
     }
     else if (type == "Plastic")
     {
       const Vec3fa pigmentColor = parms.getVec3fa("pigmentColor",one);
       const float eta          = parms.getFloat("eta",1.4f);
       const float roughness    = parms.getFloat("roughness",0.01f);
-      new (&material) OBJScene::MetallicPaintMaterial(pigmentColor,pigmentColor,roughness,eta);
+      new (&material) MetallicPaintMaterial(pigmentColor,pigmentColor,roughness,eta);
     }
     else if (type == "Metal")
     {
@@ -697,9 +702,9 @@ namespace embree
       const Vec3fa k            = parms.getVec3fa("k",Vec3fa(0.0f));
       const float roughness     = parms.getFloat("roughness",0.01f);
       if (roughness == 0.0f)
-        new (&material) OBJScene::MetalMaterial(reflectance,eta,k);
+        new (&material) MetalMaterial(reflectance,eta,k);
       else 
-        new (&material) OBJScene::MetalMaterial(reflectance,eta,k,roughness);
+        new (&material) MetalMaterial(reflectance,eta,k,roughness);
     }
     else if (type == "Velvet")
     {
@@ -707,7 +712,7 @@ namespace embree
       const float backScattering = parms.getFloat("backScattering",zero);
       const Vec3fa horizonScatteringColor = parms.getVec3fa("horizonScatteringColor",one);
       const float horizonScatteringFallOff = parms.getFloat("horizonScatteringFallOff",zero);
-      new (&material) OBJScene::VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
+      new (&material) VelvetMaterial(reflectance,backScattering,horizonScatteringColor,horizonScatteringFallOff);
     }
     else if (type == "Dielectric")
     {
@@ -715,7 +720,7 @@ namespace embree
       const Vec3fa transmissionInside  = parms.getVec3fa("transmission",one);
       const float etaOutside = parms.getFloat("etaOutside",1.0f);
       const float etaInside  = parms.getFloat("etaInside",1.4f);
-      new (&material) OBJScene::DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
+      new (&material) DielectricMaterial(transmissionOutside,transmissionInside,etaOutside,etaInside);
     }
     else if (type == "MetallicPaint")
     {
@@ -723,22 +728,20 @@ namespace embree
       const Vec3fa glitterColor  = parms.getVec3fa("glitterColor",zero);
       const float glitterSpread = parms.getFloat("glitterSpread",1.0f);
       const float eta           = parms.getFloat("eta",1.4f);
-      new (&material) OBJScene::MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
+      new (&material) MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
     }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
-      new (&material) OBJScene::OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
+      new (&material) OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
     }
-    int materialID = scene.materials.size();
-    scene.materials.push_back(material);
-    return materialID;
+    return new SceneGraph::MaterialNode(material);
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
-    int materialID = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
 
-    Ref<SceneGraph::SubdivMesh> mesh = new SceneGraph::SubdivMesh;
+    SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     for (size_t i=0; i<positions.size(); i++) mesh->positions.push_back(positions[i]);
     std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
@@ -753,124 +756,143 @@ namespace embree
     mesh->edge_crease_weights = loadFloatArray(xml->childOpt("edge_crease_weights"));
     mesh->vertex_creases      = loadIntArray(xml->childOpt("vertex_creases"));
     mesh->vertex_crease_weights = loadFloatArray(xml->childOpt("vertex_crease_weights"));
-    mesh->materialID = materialID;
     return mesh;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
   {
-    int materialID = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     std::vector<Vec3f> motions   = loadVec3fArray(xml->childOpt("motions"  ));
     std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
     std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
     std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
 
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
     for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
     for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
     for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
-    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMesh::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
-    mesh->materialID = materialID;
+    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
     return mesh;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
-    AffineSpace3f space = load<AffineSpace3f>(xml->children[0]);
+    AffineSpace3fa space = load<AffineSpace3fa>(xml->children[0]);
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
     for (size_t i=1; i<xml->children.size(); i++) {
-      group->add(loadScene(xml->children[i]));
+      group->add(loadNode(xml->children[i]));
     }
-    return new SceneGraph::TransformNode(space,group);
-  }
-
-  Ref<SceneGraph::Node> XMLLoader::loadBGFTransformNode(const Ref<XML>& xml) 
-  {
-    const size_t id    = atoi(xml->parm("id"));
-    const size_t child = atoi(ml->parm("child")); 
-    const AffineSpace3f space = load<AffineSpace3f>(xml);
-    Ref<SceneGraph::Node> node = new SceneGraph::TransformNode(space,nodes[child]);
-    return nodes[id] = node;
+    return new SceneGraph::TransformNode(space,group.cast<SceneGraph::Node>());
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadGroupNode(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
     for (size_t i=0; i<xml->children.size(); i++)
-      group->add(loadScene(xml->children[i]));
-    return group;
+      group->add(loadNode(xml->children[i]));
+    return group.cast<SceneGraph::Node>();
   }
-
-  Ref<SceneGraph::Node> XMLLoader::loadBGFGroupNode(const Ref<XML>& xml) 
-  {
-    const size_t id = atoi(xml->parm("id"));
-    const size_t N  = atoi(xml->parm("numChildren"));
-    if (xml->body.size() != N) 
-      THROW_RUNTIME_ERROR(entry->loc.str()+": invalid group node");
-
-    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode(N);
-    for (size_t i=0; i<xml->children.size(); i++)
-      group->set(i,nodes[xml->body[i].Int());
-    return group;
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-  //// Loading of scene graph node from XML file
-  //////////////////////////////////////////////////////////////////////////////
   
-  Ref<SceneGraph::Node> XMLLoader::loadScene(const Ref<XML>& xml)
+  Ref<SceneGraph::Node> XMLLoader::loadNode(const Ref<XML>& xml)
   {
     if (xml->name == "assign") 
     {
-      if (xml->parm("type") == "material")
-        materialMap[xml->parm("id")] = loadMaterial(xml->child(0));
-      //else if (xml->parm("type") == "scene")
-      //sceneMap[xml->parm("id")] = loadScene(xml->child(0));
+      if (xml->parm("type") == "material") 
+      {
+        Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child(0));
+        materialMap[xml->parm("id")] = material;
+        return material.cast<SceneGraph::Node>();
+      }
+      else if (xml->parm("type") == "scene") 
+        return sceneMap[xml->parm("id")] = loadNode(xml->child(0));
       else 
         THROW_RUNTIME_ERROR(xml->loc.str()+": unknown type: "+xml->parm("type"));
     }
     else 
     {
       if (xml->name == "xml") {
-        XMLLoader loader(path + xml->parm("src"),one,sg);
-        return sg->root;
+        return XMLLoader::load(path + xml->parm("src"),one);
       }
       else if (xml->name == "extern") {
         FileName fname = path + xml->parm("src");
-        if      (fname.ext() == "xml") loadXML(path + xml->parm("src"),space,scene);
-        else if (fname.ext() == "obj") loadOBJ(path + xml->parm("src"),space,scene);
+        if (fname.ext() == "xml") return XMLLoader::load(path + xml->parm("src"),one);
         else THROW_RUNTIME_ERROR("unknown file type:" + fname.str());
       }
-      //else if (xml->name == "ref") {
-      //  prims = sceneMap[xml->parm("id")];
-      //  for (size_t i=0; i<prims.size(); i++)
-      //    prims[i] = g_device->rtTransformPrimitive(prims[i],copyToArray(transforms.top()));
-      //}
+      else if (xml->name == "ref"             ) return sceneMap[xml->parm("id")];
       
-      else if (xml->name == "PointLight"      ) loadPointLight      (xml,space);
-      else if (xml->name == "SpotLight"       ) loadSpotLight       (xml,space);
-      else if (xml->name == "DirectionalLight") loadDirectionalLight(xml,space);
-      else if (xml->name == "DistantLight"    ) loadDistantLight    (xml,space);
-      else if (xml->name == "AmbientLight"    ) loadAmbientLight    (xml,space);
-      else if (xml->name == "TriangleLight"   ) loadTriangleLight   (xml,space);
-      else if (xml->name == "QuadLight"       ) loadQuadLight       (xml,space);
-      else if (xml->name == "HDRILight"       ) loadHDRILight       (xml,space);
+      else if (xml->name == "PointLight"      ) return loadPointLight      (xml);
+      else if (xml->name == "SpotLight"       ) return loadSpotLight       (xml);
+      else if (xml->name == "DirectionalLight") return loadDirectionalLight(xml);
+      else if (xml->name == "DistantLight"    ) return loadDistantLight    (xml);
+      else if (xml->name == "AmbientLight"    ) return loadAmbientLight    (xml);
+      else if (xml->name == "TriangleLight"   ) return loadTriangleLight   (xml);
+      else if (xml->name == "QuadLight"       ) return loadQuadLight       (xml);
+      else if (xml->name == "HDRILight"       ) return loadHDRILight       (xml);
 
-      else if (xml->name == "TriangleMesh"    ) loadTriangleMesh    (xml,space);
-      else if (xml->name == "SubdivisionMesh" ) loadSubdivMesh      (xml,space);
-      else if (xml->name == "Sphere"          ) loadSphere          (xml,space);
-      else if (xml->name == "Disk"            ) loadDisk            (xml,space);
-      else if (xml->name == "Group"           ) loadGroupNode       (xml,space);
-      else if (xml->name == "Transform"       ) loadTransformNode   (xml,space);
+      else if (xml->name == "TriangleMesh"    ) return loadTriangleMesh    (xml);
+      else if (xml->name == "SubdivisionMesh" ) return loadSubdivMesh      (xml);
+      else if (xml->name == "Group"           ) return loadGroupNode       (xml);
+      else if (xml->name == "Transform"       ) return loadTransformNode   (xml);
 
-      else if (xml->name == "Material"        ) loadBGFMaterial (xml); 
-      
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
+
+    return nullptr;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3f& space) : binFile(nullptr), sg(sg)
+  /*******************************************************************************************/
+
+  Ref<SceneGraph::MaterialNode> XMLLoader::loadBGFMaterial(const Ref<XML>& xml) 
+  {
+    std::string type = xml->parm("type");
+    std::string name = xml->parm("name");
+    Parms parms = loadMaterialParms(xml);
+    return addMaterial(type,parms);
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadBGFTransformNode(const Ref<XML>& xml) 
+  {
+    const size_t child = stoi(xml->parm("child")); 
+    const AffineSpace3fa space = load<AffineSpace3fa>(xml);
+    return new SceneGraph::TransformNode(space,id2node[child]);
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadBGFGroupNode(const Ref<XML>& xml) 
+  {
+    const size_t N  = stoi(xml->parm("numChildren"));
+    if (xml->body.size() != N) 
+      THROW_RUNTIME_ERROR(xml->loc.str()+": invalid group node");
+
+    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode(N);
+    for (size_t i=0; i<xml->children.size(); i++)
+      group->set(i,id2node[xml->body[i].Int()]);
+    return group.cast<SceneGraph::Node>();
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadBGFNode(const Ref<XML>& xml)
+  {
+    const size_t id = stoi(xml->parm("id"));
+    if      (xml->name == "TriangleMesh") return id2node[id] = loadTriangleMesh(xml);
+    else if (xml->name == "Group"       ) return id2node[id] = loadBGFGroupNode(xml);
+    else if (xml->name == "Transform"   ) return id2node[id] = loadBGFTransformNode(xml);
+    else if (xml->name == "Material"    ) 
+    {
+      Ref<SceneGraph::MaterialNode> material = loadBGFMaterial(xml); 
+      id2material[id] = material;
+      return material.cast<SceneGraph::Node>();
+    }
+    else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
+  }
+
+  /*******************************************************************************************/
+  
+
+  Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space) {
+    XMLLoader loader(fileName,space); return loader.root;
+  }
+
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
@@ -885,18 +907,24 @@ namespace embree
     {
       Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
       for (size_t i=0; i<xml->children.size(); i++) { 
-        group->add(loadScene(xml->children[i]));
+        group->add(loadNode(xml->children[i]));
       }
-      sg.root = new SceneGraph::TransformNode(space,group);
+      root = group.cast<SceneGraph::Node>();
     }
     else if (xml->name == "BGFscene") 
     {
+      Ref<SceneGraph::Node> last = nullptr;
       for (size_t i=0; i<xml->children.size(); i++) { 
-        group->add(loadScene(xml->children[i]));
+        root = loadBGFNode(xml->children[i]);
       }
     }
     else 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid scene tag");
+
+    if (space == AffineSpace3fa(one)) 
+      return;
+    
+    root = new SceneGraph::TransformNode(space,root);
   }
 
   XMLLoader::~XMLLoader() {
@@ -904,9 +932,7 @@ namespace embree
   }
 
   /*! read from disk */
-  void loadXML(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene) 
-  {
-    Ref<SceneGraph> sg(new SceneGraph);
-    XMLLoader loader(fileName,space,sg);
+  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space) {
+    return XMLLoader::load(fileName,space);
   }
 }

@@ -18,11 +18,12 @@
 #define __EMBREE_XML_LOADER_H__
 
 #include "obj_loader.h"
+#include "scenegraph.h"
 
 namespace embree
 {
   /*! read from disk */
-  void loadXML(const FileName& fileName, const AffineSpace3f& space, OBJScene& scene);
+  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space);
 }
 
 #endif
