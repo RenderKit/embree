@@ -524,7 +524,8 @@ float noise(float x, float y, float z)
 
    /* load cy_hair */
     if (cy_hairFilename.str() != "") {
-      loadCYHair(cy_hairFilename,g_obj_scene,offset);
+      Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename,offset);
+      g_obj_scene.add(node);
     }
 
     /* if scene is empty, create default scene */
