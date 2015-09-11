@@ -518,14 +518,14 @@ float noise(float x, float y, float z)
       }
     }
 
-    if (!g_obj_scene2.empty()) {
-      g_obj_scene.set_motion_blur(g_obj_scene2);
-    }
-
-   /* load cy_hair */
+    /* load cy_hair */
     if (cy_hairFilename.str() != "") {
       Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
       g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+    }
+
+    if (!g_obj_scene2.empty()) {
+      g_obj_scene.set_motion_blur(g_obj_scene2);
     }
 
     /* if scene is empty, create default scene */
