@@ -37,10 +37,6 @@ namespace embree
   static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
 
-  static int tessellate_subdivisions = -1;
-  static int tessellate_strips = -1;
-  extern float g_reduce_hair_segment_error;
-
   /* scene */
   OBJScene g_obj_scene;
   OBJScene g_obj_scene2;
@@ -54,39 +50,8 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
 
-  static bool hairy_triangles = false;
-  static float hairy_triangles_length = 1.0f;
-  static float hairy_triangles_thickness = 0.1f;
-  static int hairy_triangles_strands_per_triangle = 1;
-
   Vec3fa offset = zero;
   Vec3fa offset_mb = zero;
-
-  void addHairSegment(OBJScene::Mesh& mesh, int materialID, const Vec3fa& p0, const Vec3fa& p1)
-  {
-    const size_t N = tessellate_strips;
-    if (length(p1-p0) <= 1E-6f) return;
-    const LinearSpace3fa xfm = frame(p1-p0);
-    const int base = mesh.v.size();
-    for (size_t i=0; i<N; i++) {
-      const float a = 2.0f*float(pi)*float(i)/float(N);
-      const float u = sinf(a), v = cosf(a);
-      mesh.v.push_back(p0+u*p0.w*xfm.vx+v*p0.w*xfm.vy);
-      mesh.v.push_back(p1+u*p1.w*xfm.vx+v*p1.w*xfm.vy);
-      mesh.vn.push_back(p1-p0);
-      mesh.vn.push_back(p1-p0);
-      mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
-      mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
-    }
-    for (size_t i=0; i<N; i++) {
-      const int v0 = base + (2*i+0)%(2*N);
-      const int v1 = base + (2*i+1)%(2*N);
-      const int v2 = base + (2*i+2)%(2*N);
-      const int v3 = base + (2*i+3)%(2*N);
-      mesh.triangles.push_back(OBJScene::Triangle(v0,v1,v2,materialID));
-      mesh.triangles.push_back(OBJScene::Triangle(v1,v3,v2,materialID));
-    }
-  }
 
   Vec3fa uniformSampleSphere(const float& u, const float& v) 
   {
@@ -416,32 +381,6 @@ float noise(float x, float y, float z)
       /* ambient light */
       else if (tag == "--ambient") {
         g_ambient_intensity = cin->getVec3fa();
-      }
-
-      /* tessellation flags */
-      else if (tag == "--tessellate-hair") {
-        tessellate_subdivisions = cin->getInt();
-        tessellate_strips = cin->getInt();
-      }
-
-      /* create hairy spheres */
-      else if (tag == "--hairy-sphere") {
-        const Vec3fa p = cin->getVec3fa();
-        const float  r = cin->getFloat();
-        addHairySphere(g_obj_scene,p,r);
-      }
-
-      /* create hair on geometry */
-      else if (tag == "--hairy-triangles") {
-        hairy_triangles_strands_per_triangle = cin->getInt();
-        hairy_triangles_length = cin->getFloat();
-        hairy_triangles_thickness = cin->getFloat();
-        hairy_triangles = true;
-      }
-
-      /* reduce number of hair segments */
-      else if (tag == "--reduce-hair-segment-error") {
-        g_reduce_hair_segment_error = cin->getFloat();
       }
 
       /* output filename */
