@@ -70,7 +70,7 @@ namespace embree
   typedef Vec3<int4> Vec3i4;
   typedef Vec2<float4> Vec2f4;
   typedef Vec3<float4> Vec3f4;
-  typedef Vec4<float4> sse4f;
+  typedef Vec4<float4> sse4f; // FIXME: rename
   typedef LinearSpace3<Vec3f4> LinearSpaceSSE3f;
   typedef AffineSpaceT<LinearSpace3<Vec3f4 > > AffineSpaceSSE3f;
   typedef BBox<Vec3f4 > BBoxSSE3f;
@@ -83,7 +83,7 @@ namespace embree
   typedef Vec3<int8> Vec3i8;
   typedef Vec2<float8> Vec2f8;
   typedef Vec3<float8> Vec3f8;
-  typedef Vec4<float8> avx4f;
+  typedef Vec4<float8> avx4f; // FIXME: rename
 #endif
 
 #if defined (__AVX512__) || defined (__MIC__)

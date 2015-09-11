@@ -422,7 +422,7 @@ namespace embree
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*! Intersect a ray with the multiple triangles and updates the hit. */
-    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi>
+    template<bool enableIntersectionFilter, typename tsimdb, typename tsimdf, typename tsimdi> // FIXME: remove
       __forceinline void triangle_intersect_pluecker(const Vec3<tsimdf>& ray_rdir, 
 						     const Vec3<tsimdf>& ray_org_rdir, 
 						     const Vec3<tsimdf>& ray_dir_scale, 

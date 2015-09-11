@@ -55,7 +55,7 @@ namespace embree
       
       /* calculate geometry normal and denominator */
       const tsimd3f Ng1 = cross(e1,e0);
-            tsimd3f tri_Ng = Ng1+Ng1;
+      tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den     = reduce_add(tri_Ng);
       const tsimdf absDen  = abs(den);
       const tsimdf sgnDen  = signmsk(den);

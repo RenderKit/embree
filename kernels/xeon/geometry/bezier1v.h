@@ -260,7 +260,7 @@ namespace embree
     Vec3fa p1;            //!< 2nd control point (x,y,z,r)
     Vec3fa p2;            //!< 3rd control point (x,y,z,r)
     Vec3fa p3;            //!< 4th control point (x,y,z,r)
-    float t0,t1;          //!< t range of this sub-curve
+    float t0,t1;          //!< t range of this sub-curve // FIXME: required?
     unsigned geom;      //!< geometry ID
     unsigned prim;      //!< primitive ID
   };

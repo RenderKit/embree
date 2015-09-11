@@ -819,7 +819,7 @@ namespace embree
   //// Loading of scene graph node from XML file
   //////////////////////////////////////////////////////////////////////////////
   
-  void XMLLoader::loadScene(const Ref<XML>& xml, const AffineSpace3f& space)
+  Ref<SceneGraph::Node> XMLLoader::loadScene(const Ref<XML>& xml)
   {
     if (xml->name == "assign") 
     {
@@ -833,10 +833,8 @@ namespace embree
     else 
     {
       if (xml->name == "xml") {
-        loadXML(path + xml->parm("src"),space,scene);
-      }
-      else if (xml->name == "obj") {
-        loadOBJ(path + xml->parm("src"),space,scene);
+        XMLLoader loader(path + xml->parm("src"),one,sg);
+        return sg->root;
       }
       else if (xml->name == "extern") {
         FileName fname = path + xml->parm("src");
