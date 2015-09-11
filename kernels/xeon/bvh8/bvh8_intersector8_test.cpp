@@ -72,6 +72,14 @@ namespace embree
     return result;
   }
 
+  __forceinline void PRINTU(int8 &u)
+  {
+    std::cout << "VECTOR : ";
+    for (size_t i=0;i<8;i++)
+      std::cout << u[i] << " ";
+    std::cout << std::endl;
+  }
+
   static unsigned int compressTable[16*16] = {
     ct(0*16+0),ct(0*16+1),ct(0*16+2),ct(0*16+3),ct(0*16+4),ct(0*16+5),ct(0*16+6),ct(0*16+7),ct(0*16+8),ct(0*16+9),ct(0*16+10),ct(0*16+11),ct(0*16+12),ct(0*16+13),ct(0*16+14),ct(0*16+15),
     ct(1*16+0),ct(1*16+1),ct(1*16+2),ct(1*16+3),ct(1*16+4),ct(1*16+5),ct(1*16+6),ct(1*16+7),ct(1*16+8),ct(1*16+9),ct(1*16+10),ct(1*16+11),ct(1*16+12),ct(1*16+13),ct(1*16+14),ct(1*16+15),
@@ -125,10 +133,6 @@ namespace embree
       return select(imm,a,b);
     }
 
-    __forceinline int8 merge(const int8 &a, const int8 &b, const int imm)
-    {
-      return select(imm,a,b);
-    }
 
 #endif
     __forceinline void gatherDist(const float8 curDist[8], const size_t index,float8 &dest)
@@ -136,7 +140,6 @@ namespace embree
       for (size_t i=0;i<8;i++)
         dest[i] = curDist[i][index];
     }
-
 
     template<typename PrimitiveIntersector8>    
     void BVH8Intersector8Test<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
@@ -150,7 +153,7 @@ namespace embree
 
       SharedStackItem stack[128];
 
-      
+
       /* load ray */
       bool8 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -181,17 +184,21 @@ namespace embree
 
       while(m_all_active)
       {
-        unsigned int rindex = __bsf(m_all_active);
-        unsigned int m_octant_active = movemask( (int8(nearXYZ.x[rindex]) == nearXYZ.x) & 
-                                                 (int8(nearXYZ.y[rindex]) == nearXYZ.y) & 
-                                                 (int8(nearXYZ.z[rindex]) == nearXYZ.z) );
-
+        const unsigned int rindex = __bsf(m_all_active);
+#if 0
+        const unsigned int m_octant_active = movemask( (int8(nearXYZ.x[rindex]) == nearXYZ.x) & 
+                                                       (int8(nearXYZ.y[rindex]) == nearXYZ.y) & 
+                                                       (int8(nearXYZ.z[rindex]) == nearXYZ.z) ) & m_all_active;
+#else
+        const unsigned int m_octant_active = (unsigned int)1 << rindex;
+#endif
         stack[0].ref  = bvh->root;
         stack[0].mask = m_octant_active;
         stack[0].dist = 0.0f;
         size_t sindex = 1;
 
-        const size_t k = __bsf(m_octant_active);
+
+        m_all_active &= ~m_octant_active;
 
         while(1) pop:
         {
@@ -201,18 +208,20 @@ namespace embree
 
           NodeRef cur      = stack[sindex].ref;     
           
-          size_t m_current = movemask(stack[sindex].dist < ray_tfar) & stack[sindex].mask;
+          size_t m_current =    movemask(stack[sindex].dist < ray_tfar) &  stack[sindex].mask;
+
           if (unlikely(m_current == 0)) { continue; }
 
           // optimize: move intersection here and loop
           
-          //size_t m_current = stack[sindex].mask;
-
           STAT3(normal.trav_hit_boxes[__popcnt(m_current)],1,1,1);
 
-          if (unlikely(__popcnt(m_current) == 1 && 0))
+          const size_t k = __bsf(m_current);
+
+
+          if (unlikely(__popcnt(m_current) == 1 && 1 /* && !cur.isLeaf()*/) )
           {
-            const size_t ray_index = __bsf(m_current);
+            const size_t ray_index = k; //__bsf(m_current);
             const float8 ray_rdir_x     = broadcast(&rdir.x[ray_index]);
             const float8 ray_rdir_y     = broadcast(&rdir.y[ray_index]);
             const float8 ray_rdir_z     = broadcast(&rdir.z[ray_index]);
@@ -255,11 +264,14 @@ namespace embree
               const float8 tNear   = maxi(maxi(tNearX,tNearY),maxi(tNearZ,broadcast(&ray_tnear[ray_index])));
               const float8 tFar    = mini(mini(tFarX ,tFarY ),mini(tFarZ ,broadcast(&ray_tfar[ray_index]) ));
               const bool8 vmask    = tNear <= tFar;
-              size_t mask  = movemask(vmask);
+              size_t mask  = movemask(vmask) ;
               
               /*! if no child is hit, pop next node */
               if (unlikely(mask == 0))
                 goto pop;
+
+#if 1
+              const size_t hits = __popcnt(mask);
 
               /*! one child is hit, continue with that child */
               size_t r = __bscf(mask);
@@ -269,7 +281,6 @@ namespace embree
                 assert(cur != BVH8::emptyNode);
                 continue;
               }
-#if 0
               /*! two children are hit, push far child, and continue with closer child */
               NodeRef c0 = node->child(r); 
               c0.prefetch(); 
@@ -299,11 +310,47 @@ namespace embree
                   continue; 
                 }
               }
+
+              // stack[sindex].dist = d0; 
+              // stack[sindex].ref  = c0; 
+              // stack[sindex].mask = m_current; 
+              // sindex++;
+              // stack[sindex].dist = d1; 
+              // stack[sindex].ref  = c1; 
+              // stack[sindex].mask = m_current; 
+              // sindex++;
 #endif
+
+
+              
+#if 1
+              const int8 tNear_i = cast(tNear);
+              const int8 dist    = select(vmask,(tNear_i & (~7)) | int8(step),int8( True ));
+              const int8 order   = sortNetwork(dist) & 7;
+
+              for (size_t i=0;i<hits;i++) 
+              {
+                const unsigned int index = order[hits-1-i];
+                assert( ((size_t)1 << index) & movemask(vmask) );
+                stack[sindex].dist = tNear[index];                  
+                stack[sindex].mask = m_current;
+                stack[sindex].ref  = node->child(index);                  
+                sindex++;
+              }              
+
+              sindex--;
+              cur = stack[sindex].ref;
+              assert(m_current == stack[sindex].mask);
+              
+
+#else
               while (1)
               {
-                r = __bscf(mask);
+                assert(mask);
+                size_t r = __bscf(mask);
                 NodeRef c = node->child(r); 
+                assert(c != BVH8::emptyNode);
+
                 c.prefetch(); 
                 stack[sindex].dist = tNear[r]; 
                 stack[sindex].ref  = c; 
@@ -314,12 +361,14 @@ namespace embree
               sindex--;
               cur = stack[sindex].ref;
               assert(m_current == stack[sindex].mask);
-
+#endif
               //m_current = stack[sindex].mask;
             }
             assert(cur != BVH8::emptyNode);
             assert(m_current);
+            assert(__popcnt(m_current)==1);
 
+#if 1
             STAT3(normal.trav_leaves,1,1,1);
             size_t num; Triangle* prim = (Triangle*) cur.leaf(num);
             size_t lazy_node = 0;
@@ -327,10 +376,13 @@ namespace embree
             PrimitiveIntersector8::intersect(pre,ray,ray_index,prim,num,bvh->scene,lazy_node);
             ray_tfar[ray_index] = ray.tfar[ray_index];
             goto pop;
+#endif
           }
+#if 1
           else
           {
             while(1)
+              //if (likely(cur.isNode()))
             {
               if (unlikely(cur.isLeaf())) break;
             
@@ -430,8 +482,10 @@ namespace embree
 
                   sindex+=2;                                      
                 }
+#if 0
                 else if (likely(count_mask == 3))
                 {
+                  bool8 vmask((int)ray_mask);
                   size_t node_index0 = __bsf(ray_mask); 
                   assert(ray_mask);
                   ray_mask = __blsr(ray_mask);
@@ -441,6 +495,14 @@ namespace embree
                   assert(ray_mask);
                   size_t node_index2 = __bsf(ray_mask); 
                 
+                  // PRINT(minDist[node_index0]);
+                  // PRINT(minDist[node_index1]);
+                  // PRINT(minDist[node_index2]);
+
+                  //   PRINT(node_index0);
+                  //   PRINT(node_index1);
+                  //   PRINT(node_index2);
+
                   if (minDist[node_index0] > minDist[node_index1])
                     std::swap(node_index0,node_index1);
                   if (minDist[node_index0] > minDist[node_index2])
@@ -449,6 +511,40 @@ namespace embree
                     std::swap(node_index1,node_index2);
 
                   node->child(node_index0).prefetch();
+
+                  // const int8 tNear_i = cast(minDist);                  
+                  // const int8 dist    = select(vmask,(tNear_i & (~7)) | int8(step),int8( True ));
+                  // const int8 order   = sortNetwork(dist) & 7;
+                  
+                  // const unsigned int index2 = order[count_mask-1-0];
+                  // const unsigned int index1 = order[count_mask-1-1];
+                  // const unsigned int index0 = order[count_mask-1-2];
+                  // if (index0 != node_index0 ||
+                  //     index1 != node_index1 ||
+                  //     index2 != node_index2)
+                  // {
+                  //   PRINT(node_index0);
+                  //   PRINT(node_index1);
+                  //   PRINT(node_index2);
+
+                  //   PRINT(minDist);
+                  //   PRINTU(dist);
+                  //   PRINTU(sortNetwork(dist));
+                  //   PRINT(order);
+
+                  //   PRINT(index0);
+                  //   PRINT(index1);
+                  //   PRINT(index2);
+
+                  //   exit(0);
+                  // }
+
+
+
+
+
+
+
 
                   stack[sindex+0].dist = minDist[node_index2]; // ray_tfar;                
                   stack[sindex+0].mask = m_equal;
@@ -461,8 +557,11 @@ namespace embree
                   stack[sindex+2].ref  = node->child(node_index0);                  
                   sindex+=3;                                                      
                 }
+#endif
                 else
                 {
+#if 1
+
 #if 0
                   for (size_t bits=ray_mask, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
                   {
@@ -472,25 +571,30 @@ namespace embree
                     sindex++;                 
                   }                  
 #else
+                  const int8 tNear_i = cast(minDist);
+                  const int8 dist    = select(bool8((int)ray_mask),(tNear_i & (~7)) | int8(step),int8( True ));
+                  const int8 order   = sortNetwork(dist) & 7;
+                  
+                  for (size_t i=0;i<count_mask;i++) 
+                  {
+                    const unsigned int index = order[count_mask-1-i];
+                    assert( ((size_t)1 << index) & ray_mask );
+                    stack[sindex].dist = minDist[index];                  
+                    stack[sindex].mask = m_current;
+                    stack[sindex].ref  = node->child(index);                  
+                    sindex++;
+                  }              
+
+#endif
+
+#else
                   int8 dist = cast(minDist);
                   int8 perm = getCompactPerm(ray_mask);
                   dist = permute(dist,perm);
                   dist = select(bool8((int)countMaskTable[count_mask]),dist,int8(True));
                   const int8 vi = (dist & (~7)) | perm;
-                  const int8 a0 = vi; // 
-                  const int8 b0 = shuffle<1,0,3,2>(a0);
-                  const int8 c0 = umin(a0,b0);
-                  const int8 d0 = umax(a0,b0);
-                  const int8 a1 = merge(c0,d0,0b01010101);
-                  const int8 b1 = shuffle<2,3,0,1>(a1);
-                  const int8 c1 = umin(a1,b1);
-                  const int8 d1 = umax(a1,b1);
-                  const int8 a2 = merge(c1,d1,0b00110011);
-                  const int8 b2 = shuffle<0,2,1,3>(a2);
-                  const int8 c2 = umin(a2,b2);
-                  const int8 d2 = umax(a2,b2);
-                  const int8 a3 = merge(c2,d2,0b00100010);
-                  const int8 order = a3 & 7;
+
+                  const int8 order = sortNetwork2x4(vi) & 7;
                   for (size_t i=0;i<count_mask;i++) 
                   {
                     const unsigned int index = order[count_mask-1-i];
@@ -507,10 +611,13 @@ namespace embree
               sindex--;
               cur = stack[sindex].ref;     
               m_current = stack[sindex].mask;     
-            }            
+              continue;
+            }
           }
+#endif
           /*! this is a leaf node */
           assert(cur != BVH8::emptyNode);
+          assert(cur.isLeaf());
           assert(m_current);
 
           STAT3(normal.trav_leaves,1,1,1);
@@ -524,15 +631,16 @@ namespace embree
             ray_tfar = min(ray.tfar,ray_tfar);          
           }
           else
+          {
             for (size_t bits=m_current, i=__bsf(bits); bits!=0; bits=__blsr(bits), i=__bsf(bits)) 
             {
               PrimitiveIntersector8::intersect(pre,ray,i,prim,num,bvh->scene,lazy_node);
               ray_tfar[i] = ray.tfar[i];
-            }            
+            }
+          }            
         }
 
 
-        m_all_active &= ~m_octant_active;
       }
 
 #endif
