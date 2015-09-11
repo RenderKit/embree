@@ -21,5 +21,5 @@
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadHair(const FileName& fileName, Vec3fa& offset);
+  Ref<SceneGraph::Node> loadHair(const FileName& fileName);
 }

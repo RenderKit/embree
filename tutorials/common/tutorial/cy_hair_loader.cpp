@@ -143,7 +143,7 @@ namespace embree
     float		*colors;    
   };
   
-  Ref<SceneGraph::Node> loadCYHair(const FileName& fileName, Vec3fa& offset)
+  Ref<SceneGraph::Node> loadCYHair(const FileName& fileName)
   {
     cyHairFile cyFile;
     int numHairs = cyFile.load(fileName.c_str());
@@ -159,9 +159,6 @@ namespace embree
       v.y = cyFile.points[3*i+1];
       v.z = cyFile.points[3*i+2];
       v.w = cyFile.thickness ? cyFile.thickness[i] : 0.1f;
-      v.x-=offset.x;
-      v.y-=offset.y;
-      v.z-=offset.z;
       hairset->v.push_back(v);
     }
     

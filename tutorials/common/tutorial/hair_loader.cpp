@@ -22,7 +22,7 @@ namespace embree
 {
   const int hair_bin_magick = 0x12EF3F90;
 
-  int loadHairASCII(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset, Vec3fa& offset)
+  int loadHairASCII(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset)
   {  
     /* open hair file */
     FILE* f = fopen(fileName.c_str(),"r");
@@ -62,9 +62,6 @@ namespace embree
           if (i == 0) sscanf(line,"%d : Bezier %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
           else        sscanf(line,"%d : %f %f %f %f",&id,&v.x,&v.y,&v.z,&v.w);
           //printf("%d %d : %f %f %f %f \n",id,vertex_start_id+id,v.x,v.y,v.z,v.w);		
-          v.x-=offset.x;
-          v.y-=offset.y;
-          v.z-=offset.z;
           hairset->v.push_back(v);
         }
         
@@ -82,7 +79,7 @@ namespace embree
     return numCurves;
   }
 
-  int loadHairBin(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset, Vec3fa& offset)
+  int loadHairBin(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset)
   {  
     FILE* fin = fopen(fileName.c_str(),"rb");
     if (!fin) THROW_RUNTIME_ERROR("could not open " + fileName.str());
@@ -97,30 +94,21 @@ namespace embree
     if (numPoints) fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin);
     if (numSegments) fread(&hairset->hairs[0],sizeof(OBJScene::Hair),numSegments,fin);
     fclose(fin);
-
-    for (size_t i=0; i<numPoints; i++) {
-      hairset->v[i].x-=offset.x;
-      hairset->v[i].y-=offset.y;
-      hairset->v[i].z-=offset.z;
-    }
     return numHairs;
   }
 
-  Ref<SceneGraph::Node> loadHair(const FileName& fileName, Vec3fa& offset)
+  Ref<SceneGraph::Node> loadHair(const FileName& fileName)
   {
     /* add new hair set to scene */
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
-#if CONVERT_TO_BINARY   
-    offset = Vec3fa(zero);
-#endif
 
     int numHairs = 0;
     if (fileName.ext() == "txt")
-      numHairs = loadHairASCII(fileName,hairset,offset);
+      numHairs = loadHairASCII(fileName,hairset);
     else
-      numHairs = loadHairBin(fileName,hairset,offset);
+      numHairs = loadHairBin(fileName,hairset);
     
 #if CONVERT_TO_BINARY
     int numPoints = hairset->v.size();
