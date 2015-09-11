@@ -112,15 +112,19 @@ namespace embree
         OBJScene::HairSet* hairset = new OBJScene::HairSet;
 
         hairset->v.resize(mesh->v.size()); 
-        for (size_t i=0; i<mesh->v.size(); i++) 
+        for (size_t i=0; i<mesh->v.size(); i++) {
           hairset->v[i] = xfmPoint(space,mesh->v[i]);
-
+          hairset->v[i].w = mesh->v[i].w;
+        }
+      
         hairset->v2.resize(mesh->v2.size()); 
-        for (size_t i=0; i<mesh->v2.size(); i++) 
+        for (size_t i=0; i<mesh->v2.size(); i++) {
           hairset->v2[i] = xfmPoint(space,mesh->v2[i]);
+          hairset->v2[i].w = mesh->v2[i].w;
+        }
 
         hairset->hairs.resize(mesh->hairs.size()); 
-        for (size_t i=0; i<mesh->hairs.size(); i++) 
+        for (size_t i=0; i<mesh->hairs.size(); i++)
           hairset->hairs[i] = OBJScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
 
         scene->hairsets.push_back(hairset);

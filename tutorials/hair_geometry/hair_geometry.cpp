@@ -510,9 +510,12 @@ float noise(float x, float y, float z)
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
-      loadHair(hairFilename,g_obj_scene,offset);
-      if (hairFilename2.str() != "")
-        loadHair(hairFilename2,g_obj_scene2,offset_mb);
+      Ref<SceneGraph::Node> node = loadHair(hairFilename,offset);
+      g_obj_scene.add(node);
+      if (hairFilename2.str() != "") {
+        Ref<SceneGraph::Node> node2 = loadHair(hairFilename2,offset_mb);
+        g_obj_scene2.add(node2);
+      }
     }
 
     if (!g_obj_scene2.empty()) {

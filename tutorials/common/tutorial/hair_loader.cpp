@@ -22,7 +22,7 @@ namespace embree
 {
   const int hair_bin_magick = 0x12EF3F90;
 
-  int loadHairASCII(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
+  int loadHairASCII(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset, Vec3fa& offset)
   {  
     /* open hair file */
     FILE* f = fopen(fileName.c_str(),"r");
@@ -70,7 +70,7 @@ namespace embree
         
         /* add indices to hair starts */
         for (int i=0; i<points-1; i+=3)
-          hairset->hairs.push_back(OBJScene::Hair(vertex_start_id + i,numCurves));
+          hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(vertex_start_id + i,numCurves));
 	
         if (id != points-1) 
           THROW_RUNTIME_ERROR("hair parsing error");
@@ -82,7 +82,7 @@ namespace embree
     return numCurves;
   }
 
-  int loadHairBin(const FileName& fileName, OBJScene::HairSet* hairset, Vec3fa& offset)
+  int loadHairBin(const FileName& fileName, Ref<SceneGraph::HairSetNode> hairset, Vec3fa& offset)
   {  
     FILE* fin = fopen(fileName.c_str(),"rb");
     if (!fin) THROW_RUNTIME_ERROR("could not open " + fileName.str());
@@ -106,10 +106,12 @@ namespace embree
     return numHairs;
   }
 
-  void loadHair(const FileName& fileName, OBJScene& scene, Vec3fa& offset)
+  Ref<SceneGraph::Node> loadHair(const FileName& fileName, Vec3fa& offset)
   {
     /* add new hair set to scene */
-    OBJScene::HairSet* hairset = new OBJScene::HairSet; 
+    Material objmtl; new (&objmtl) OBJMaterial;
+    Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
 #if CONVERT_TO_BINARY   
     offset = Vec3fa(zero);
 #endif
@@ -120,13 +122,9 @@ namespace embree
     else
       numHairs = loadHairBin(fileName,hairset,offset);
     
-    /* add hairset to scene */
-    scene.hairsets.push_back(hairset);
-
+#if CONVERT_TO_BINARY
     int numPoints = hairset->v.size();
     int numSegments = hairset->hairs.size();
-
-#if CONVERT_TO_BINARY
     FILE* fout = fopen(fileName.setExt(".bin").c_str(),"wb");
     if (!fout) THROW_RUNTIME_ERROR("could not open " + fileName.str());
     fwrite(&hair_bin_magick,sizeof(int),1,fout);
@@ -134,9 +132,11 @@ namespace embree
     fwrite(&numPoints,sizeof(int),1,fout);
     fwrite(&numSegments,sizeof(int),1,fout);
     if (numPoints) fwrite(&hairset->v[0],sizeof(Vec3fa),numPoints,fout);
-    if (numSegments) fwrite(&hairset->hairs[0],sizeof(OBJScene::Hair),numSegments,fout);
+    if (numSegments) fwrite(&hairset->hairs[0],sizeof(SceneGraph::HairSet::Hair),numSegments,fout);
     fclose(fout);
 #endif
+
+    return hairset.cast<SceneGraph::Node>();
   }
 }
 
