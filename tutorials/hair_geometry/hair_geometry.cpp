@@ -31,9 +31,7 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
-  static std::string g_subdiv_mode = "";
 
-  /* output settings */
   static size_t g_width = 512;
   static size_t g_height = 512;
   static bool g_fullscreen = false;
@@ -486,14 +484,6 @@ float noise(float x, float y, float z)
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
 
-      /* subdivision mode */
-      else if (tag == "-cache") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-
-      else if (tag == "-pregenerate") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-
-
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -566,26 +556,16 @@ float noise(float x, float y, float z)
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
 
-    /* subdiv mode */
-    g_rtcore += g_subdiv_mode;
-
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      if (g_subdiv_mode != "")
-	{
-	  std::cout << "enabling subdiv mode" << std::endl;
-	  loadOBJ(objFilename,one,g_obj_scene,true);	
-	}
-      else
-	{
-	  loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
-	  if (objFilename2.str() != "")
-	    loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
-	}
+      loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
+      if (objFilename2.str() != "")
+        loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
     }
+
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       loadHair(hairFilename,g_obj_scene,offset);
@@ -603,16 +583,14 @@ float noise(float x, float y, float z)
     }
 
     /* if scene is empty, create default scene */
-    if (g_subdiv_mode == "")
-      if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) 
-	{
-	  addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
-	  addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
-	}
+    if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) {
+      addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
+      addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+    }
 
     /* send model */
     set_scene(&g_obj_scene);
-
+    
     /* benchmark mode */
     if (g_numBenchmarkFrames)
       renderBenchmark(outFilename);
