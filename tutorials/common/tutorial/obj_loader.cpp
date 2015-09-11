@@ -109,7 +109,7 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode);
+    OBJLoader(const FileName& fileName, const bool subdivMode);
  
     /*! output model */
     Ref<SceneGraph::GroupNode> group;
@@ -129,7 +129,6 @@ namespace embree
     std::vector<Crease> ec;
 
     std::vector<std::vector<Vertex> > curGroup;
-    AffineSpace3f space;
 
     /*! Material handling. */
     Ref<SceneGraph::MaterialNode> curMaterial;
@@ -145,8 +144,8 @@ namespace embree
     uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, const bool subdivMode) 
-    : path(fileName.path()), group(new SceneGraph::GroupNode), space(space), subdivMode(subdivMode)
+  OBJLoader::OBJLoader(const FileName &fileName, const bool subdivMode) 
+    : path(fileName.path()), group(new SceneGraph::GroupNode), subdivMode(subdivMode)
   {
     /* open file */
     std::ifstream cin;
@@ -180,14 +179,12 @@ namespace embree
 
       /*! parse position */
       if (token[0] == 'v' && isSep(token[1])) { 
-        const Vec3f p = xfmPoint(space,getVec3f(token += 2));
-        v.push_back(p); continue;
+        v.push_back(getVec3f(token += 2)); continue;
       }
 
       /* parse normal */
       if (token[0] == 'v' && token[1] == 'n' && isSep(token[2])) { 
-        const Vec3f n = xfmVector(space,getVec3f(token += 3));
-        vn.push_back(n); 
+        vn.push_back(getVec3f(token += 3)); 
         continue; 
       }
 
@@ -423,8 +420,8 @@ namespace embree
     ec.clear();
   }
   
-  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode) {
-    OBJLoader loader(fileName,space,subdivMode); return loader.group.cast<SceneGraph::Node>();
+  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const bool subdivMode) {
+    OBJLoader loader(fileName,subdivMode); return loader.group.cast<SceneGraph::Node>();
   }
 }
 

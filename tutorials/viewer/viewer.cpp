@@ -223,7 +223,7 @@ namespace embree
 
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj")) {
-      Ref<SceneGraph::Node> node = loadOBJ(filename,one,g_subdiv_mode != "");	
+      Ref<SceneGraph::Node> node = loadOBJ(filename,g_subdiv_mode != "");	
       g_obj_scene.add(node);
     }
     else if (strlwr(filename.ext()) == std::string("xml")) {

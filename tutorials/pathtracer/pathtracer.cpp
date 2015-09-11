@@ -232,7 +232,7 @@ namespace embree
       OBJScene *scene = new OBJScene;
       FileName keyframe = fileName[i];
 
-      Ref<SceneGraph::Node> node = loadOBJ(keyframe,one,true);	
+      Ref<SceneGraph::Node> node = loadOBJ(keyframe,true);	
       scene->add(node);
       if (g_obj_scene.subdiv.size() != scene->subdiv.size())
         FATAL("#subdiv meshes differ");
@@ -275,7 +275,7 @@ namespace embree
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj"))
     {
-      Ref<SceneGraph::Node> node = loadOBJ(filename,one,g_subdiv_mode != "");	
+      Ref<SceneGraph::Node> node = loadOBJ(filename,g_subdiv_mode != "");	
       g_obj_scene.add(node);
     }
     else if (strlwr(filename.ext()) == std::string("xml")) {

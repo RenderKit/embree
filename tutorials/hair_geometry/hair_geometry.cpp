@@ -500,10 +500,10 @@ float noise(float x, float y, float z)
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = loadOBJ(objFilename,AffineSpace3f::translate(-offset),false);
+      Ref<SceneGraph::Node> node = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),loadOBJ(objFilename,false));
       g_obj_scene.add(node);
       if (objFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),false);
+        Ref<SceneGraph::Node> node = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),loadOBJ(objFilename2,false));
         g_obj_scene2.add(node);
       }
     }
