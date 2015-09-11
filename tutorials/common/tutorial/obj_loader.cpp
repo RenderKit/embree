@@ -40,8 +40,6 @@ namespace embree
     Crease(float w, int a, int b) : w(w), a(a), b(b) {};
   };
 
-
-
   static inline bool operator < ( const Vertex& a, const Vertex& b ) {
     if (a.v  != b.v)  return a.v  < b.v;
     if (a.vn != b.vn) return a.vn < b.vn;
@@ -111,23 +109,19 @@ namespace embree
   public:
 
     /*! Constructor. */
-    OBJLoader(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool
-              subdivMode);
-
-    /*! Destruction */
-    ~OBJLoader();
+    OBJLoader(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode);
  
-    /*! Public methods. */
+    /*! output model */
+    Ref<SceneGraph::GroupNode> group;
+  
+  private:
     void loadMTL(const FileName& fileName);
 
   private:
 
     /*! file to load */
     FileName path;
-
-    /*! output model */
-    OBJScene& model;
-    
+  
     /*! load only quads and ignore triangles */
     bool subdivMode;
 
@@ -137,15 +131,12 @@ namespace embree
     std::vector<Vec2f> vt;
     std::vector<Crease> ec;
 
-    std::vector<int> vc;    
-    std::vector<float> vcw; 
-
     std::vector<std::vector<Vertex> > curGroup;
     AffineSpace3f space;
 
     /*! Material handling. */
-    int curMaterial;
-    std::map<std::string, int> material;
+    Ref<SceneGraph::MaterialNode> curMaterial;
+    std::map<std::string, Ref<SceneGraph::MaterialNode> > material;
 
     /*! Internal methods. */
     int fix_v (int index);
@@ -153,11 +144,11 @@ namespace embree
     int fix_vn(int index);
     void flushFaceGroup();
     Vertex getInt3(const char*& token);
-    uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i);
+    uint32_t getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i);
   };
 
-  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode) 
-    : path(fileName.path()), model(mesh), space(space), subdivMode(subdivMode)
+  OBJLoader::OBJLoader(const FileName &fileName, const AffineSpace3f& space, const bool subdivMode) 
+    : path(fileName.path()), group(new SceneGraph::GroupNode), space(space), subdivMode(subdivMode)
   {
     /* open file */
     std::ifstream cin;
@@ -168,8 +159,8 @@ namespace embree
     }
 
     /* generate default material */
-    model.materials.push_back(OBJMaterial());
-    curMaterial = 0;
+    Material objmtl; new (&objmtl) OBJMaterial;
+    curMaterial = new SceneGraph::MaterialNode(objmtl);
 
     char line[10000];
     memset(line, 0, sizeof(line));
@@ -231,14 +222,6 @@ namespace embree
 	int b = fix_v(getInt(token));
 	parseSepOpt(token);
 	ec.push_back(Crease(w, a, b));
-
-	// HACK: EDGE CREASES FORCE VERTEX CREASES
-#if 1
-	vc.push_back(a);
-	vc.push_back(b);
-	vcw.push_back(w);
-	vcw.push_back(w);
-#endif
 	continue;
       }
 
@@ -265,9 +248,6 @@ namespace embree
     cin.close();
   }
 
-  OBJLoader::~OBJLoader() {
-  }
-  
   /* load material file */
   void OBJLoader::loadMTL(const FileName &fileName)
   {
@@ -281,7 +261,7 @@ namespace embree
     char line[10000];
     memset(line, 0, sizeof(line));
 
-    int cur = 0;
+    OBJMaterial* cur = nullptr;
     while (cin.peek() != -1)
     {
       /* load next multiline */
@@ -301,8 +281,10 @@ namespace embree
       if (!strncmp(token, "newmtl", 6)) {
         parseSep(token+=6);
         std::string name(token);
-        material[name] = cur = model.materials.size();
-        model.materials.push_back(OBJMaterial());
+        Material objmtl; new (&objmtl) OBJMaterial;
+        Ref<SceneGraph::MaterialNode> mtl = new SceneGraph::MaterialNode(objmtl);
+        material[name] = mtl;
+        cur = (OBJMaterial*) &mtl->material;
         continue;
       }
 
@@ -310,14 +292,14 @@ namespace embree
 
       if (!strncmp(token, "illum", 5)) { parseSep(token += 5);  continue; }
 
-      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  model.materials[cur].obj().d  = getFloat(token); continue; }
-      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ns = getFloat(token); continue; }
-      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ni = getFloat(token); continue; }
+      if (!strncmp(token, "d",  1)) { parseSep(token += 1);  cur->d  = getFloat(token); continue; }
+      if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  cur->Ns = getFloat(token); continue; }
+      if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  cur->Ni = getFloat(token); continue; }
 
       if (!strncmp(token, "Ka_map", 6)) { continue; }
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);
-        model.materials[cur].obj().map_Kd = loadTexture(path + FileName(token));
+        cur->map_Kd = loadTexture(path + FileName(token));
         continue;
       }
 
@@ -326,20 +308,14 @@ namespace embree
       if (!strncmp(token, "Tf_map", 6)) { continue; }
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
         parseSep(token += 9);
-        model.materials[cur].obj().map_Displ = loadTexture(path + FileName(token));
+        cur->map_Displ = loadTexture(path + FileName(token));
         continue;
       }
       
-      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ka = getVec3f(token); continue; }
-      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kd = getVec3f(token); 
-#if 0
-	if (model.materials[cur].obj().Kd == Vec3f(0,0,0))
-	  model.materials[cur].obj().Kd = Vec3f(1,1,1);
-#endif
-	continue; 
-      }
-      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  model.materials[cur].obj().Ks = getVec3f(token); continue; }
-      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  model.materials[cur].obj().Kt = getVec3f(token); continue; }
+      if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  cur->Ka = getVec3f(token); continue; }
+      if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  cur->Kd = getVec3f(token); continue; }
+      if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  cur->Ks = getVec3f(token); continue; }
+      if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  cur->Kt = getVec3f(token); continue; }
     }
     cin.close();
   }
@@ -379,7 +355,7 @@ namespace embree
     return(v);
   }
 
-  uint32_t OBJLoader::getVertex(std::map<Vertex,uint32_t>& vertexMap, OBJScene::Mesh* mesh, const Vertex& i)
+  uint32_t OBJLoader::getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i)
   {
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
@@ -395,83 +371,62 @@ namespace embree
     if (curGroup.empty()) return;
     
     if (subdivMode)
-      {
-	OBJScene::SubdivMesh* mesh = new OBJScene::SubdivMesh;
-	model.subdiv.push_back(mesh);
-	for (size_t i=0;i<v.size();i++)  mesh->positions.push_back(v[i]);
-	for (size_t i=0;i<vn.size();i++) mesh->normals.push_back(vn[i]);
-	for (size_t i=0;i<vt.size();i++) mesh->texcoords.push_back(vt[i]);
-	
-	for (size_t i=0;i<ec.size();++i) {
-	  if (ec[i].a < v.size() && ec[i].b < v.size())
-	    mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
-	  //mesh->edge_crease_weights.push_back(ec[i].w);
-	  mesh->edge_crease_weights.push_back(pos_inf);
+    {
+      Ref<SceneGraph::SubdivMeshNode> mesh = new SceneGraph::SubdivMeshNode(curMaterial);
+      group->add(mesh.cast<SceneGraph::Node>());
 
-	}
-
-	for (size_t i=0;i<vc.size();++i) 
-	  mesh->vertex_creases.push_back(vc[i]);
-	for (size_t i=0;i<vcw.size();++i) 
-	  mesh->vertex_crease_weights.push_back(pos_inf);	  
-	  //mesh->vertex_crease_weights.push_back(vcw[i]);	  
-
-	for (size_t j=0; j < curGroup.size(); j++)
-	  {
-	    /* iterate over all faces */
-	    const std::vector<Vertex>& face = curGroup[j];
-
-            for (size_t i=0;i<face.size();i++)
-            {
-              mesh->position_indices.push_back(face[i].v);
-              if (face[i].vt != -1)
-              {
-                assert( face[i].vt < vt.size() );
-                mesh->texcoord_indices.push_back(face[i].vt);
-              }
-            }
-            if (mesh->texcoord_indices.size())
-            {
-            }
-            mesh->verticesPerFace.push_back(face.size());
-          }
-        
-        mesh->materialID = curMaterial;	
+      for (size_t i=0; i<v.size();  i++) mesh->positions.push_back(v[i]);
+      for (size_t i=0; i<vn.size(); i++) mesh->normals  .push_back(vn[i]);
+      for (size_t i=0; i<vt.size(); i++) mesh->texcoords.push_back(vt[i]);
+      
+      for (size_t i=0; i<ec.size(); ++i) {
+        assert(ec[i].a < v.size() && ec[i].b < v.size());
+        mesh->edge_creases.push_back(Vec2i(ec[i].a, ec[i].b));
+        mesh->edge_crease_weights.push_back(ec[i].w);
       }
+      
+      for (size_t j=0; j<curGroup.size(); j++)
+      {
+        const std::vector<Vertex>& face = curGroup[j];
+        mesh->verticesPerFace.push_back(face.size());
+        for (size_t i=0; i<face.size(); i++)
+          mesh->position_indices.push_back(face[i].v);
+      }
+    }
     else
+    {
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(curMaterial);
+      group->add(mesh.cast<SceneGraph::Node>());
+      
+      // merge three indices into one
+      std::map<Vertex, uint32_t> vertexMap;
+      for (size_t j=0; j<curGroup.size(); j++)
       {
-	OBJScene::Mesh* mesh = new OBJScene::Mesh;
-	model.meshes.push_back(mesh);
-
-	// merge three indices into one
-	std::map<Vertex, uint32_t> vertexMap;
-	for (size_t j=0; j < curGroup.size(); j++)
-	  {
-	    /* iterate over all faces */
-	    const std::vector<Vertex>& face = curGroup[j];
-
-	    /* triangulate the face with a triangle fan */
-	    Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
-	    for (size_t k=2; k < face.size(); k++) {
-	      i1 = i2; i2 = face[k];
-	      uint32_t v0,v1,v2;
-	      v0 = getVertex(vertexMap, mesh, i0);
-	      v1 = getVertex(vertexMap, mesh, i1);
-	      v2 = getVertex(vertexMap, mesh, i2);
-	      assert(v0 < mesh->v.size());
-	      assert(v1 < mesh->v.size());
-	      assert(v2 < mesh->v.size());
-	      mesh->triangles.push_back(OBJScene::Triangle(v0,v1,v2,curMaterial));
-	    }
-	  }
-
-	mesh->meshMaterialID = curMaterial;	
+        /* iterate over all faces */
+        const std::vector<Vertex>& face = curGroup[j];
+        
+        /* triangulate the face with a triangle fan */
+        Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
+        for (size_t k=2; k < face.size(); k++) 
+        {
+          i1 = i2; i2 = face[k];
+          uint32_t v0,v1,v2;
+          v0 = getVertex(vertexMap, mesh, i0);
+          v1 = getVertex(vertexMap, mesh, i1);
+          v2 = getVertex(vertexMap, mesh, i2);
+          assert(v0 < mesh->v.size());
+          assert(v1 < mesh->v.size());
+          assert(v2 < mesh->v.size());
+          mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(v0,v1,v2));
+        }
       }
+    }
     curGroup.clear();
+    ec.clear();
   }
-
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh_o, const bool subdivMode) {
-    OBJLoader loader(fileName,space,mesh_o,subdivMode); 
+  
+  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode) {
+    OBJLoader loader(fileName,space,subdivMode); return loader.group.cast<SceneGraph:Node>();
   }
 }
 
