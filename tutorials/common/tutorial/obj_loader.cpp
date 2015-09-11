@@ -115,9 +115,6 @@ namespace embree
     Ref<SceneGraph::GroupNode> group;
   
   private:
-    void loadMTL(const FileName& fileName);
-
-  private:
 
     /*! file to load */
     FileName path;
@@ -138,7 +135,8 @@ namespace embree
     Ref<SceneGraph::MaterialNode> curMaterial;
     std::map<std::string, Ref<SceneGraph::MaterialNode> > material;
 
-    /*! Internal methods. */
+  private:
+    void loadMTL(const FileName& fileName);
     int fix_v (int index);
     int fix_vt(int index);
     int fix_vn(int index);
@@ -426,7 +424,7 @@ namespace embree
   }
   
   Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode) {
-    OBJLoader loader(fileName,space,subdivMode); return loader.group.cast<SceneGraph:Node>();
+    OBJLoader loader(fileName,space,subdivMode); return loader.group.cast<SceneGraph::Node>();
   }
 }
 

@@ -500,9 +500,12 @@ float noise(float x, float y, float z)
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
-      if (objFilename2.str() != "")
-        loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
+      Ref<SceneGraph::Node> node = loadOBJ(objFilename,AffineSpace3f::translate(-offset),false);
+      g_obj_scene.add(node);
+      if (objFilename2.str() != "") {
+        Ref<SceneGraph::Node> node = loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),false);
+        g_obj_scene2.add(node);
+      }
     }
 
     /* load hair */

@@ -29,6 +29,5 @@
 
 namespace embree
 {
-  /*! read from disk */
-  void loadOBJ(const FileName& fileName, const AffineSpace3f& space, OBJScene& mesh, const bool subdivMode = false);
+  Ref<SceneGraph::Node> loadOBJ(const FileName& fileName, const AffineSpace3f& space, const bool subdivMode);
 }
