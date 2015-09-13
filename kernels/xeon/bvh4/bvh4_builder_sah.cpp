@@ -81,11 +81,11 @@ namespace embree
       const float presplitFactor;
 
       BVH4BuilderSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       BVH4BuilderSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       // FIXME: shrink bvh->alloc in destructor here an in other builders too
@@ -471,7 +471,7 @@ namespace embree
       const size_t maxLeafSize;
 
       BVH4BuilderMblurSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), mesh(nullptr), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
 
       BVH4BuilderMblurSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)) {}
@@ -507,7 +507,7 @@ namespace embree
 
 	//profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
 	    
-	    if (State::instance()->verbosity(1)) t0 = getSeconds();
+	    if (bvh->device->verbosity(1)) t0 = getSeconds();
 	    
 	    bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 	    prims.resize(numPrimitives);

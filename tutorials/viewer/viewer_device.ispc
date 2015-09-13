@@ -21,6 +21,7 @@ extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 
 /* scene data */
+RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 void* uniform* uniform geomID_to_mesh = NULL;
 uniform int* uniform geomID_to_type = NULL;
@@ -141,11 +142,11 @@ Vec3fa renderPixelEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* set start render mode */
   renderPixel = renderPixelStandard;
@@ -169,7 +170,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene((RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcNewScene2(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -406,12 +407,12 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
-  rtcDebug();
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }

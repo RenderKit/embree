@@ -27,10 +27,6 @@
  
 namespace embree
 {
-#if USE_TASK_ARENA
-  tbb::task_arena* arena = nullptr;
-#endif
-
   /* error raising rtcIntersect and rtcOccluded functions */
   void missing_rtcCommit()     { throw_RTCError(RTC_INVALID_OPERATION,"scene got not committed"); }
   void invalid_rtcIntersect1() { throw_RTCError(RTC_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
@@ -42,8 +38,9 @@ namespace embree
 /* number of created scene */
   AtomicCounter Scene::numScenes = 0;
 
-  Scene::Scene (RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
-    : Accel(AccelData::TY_UNKNOWN),
+  Scene::Scene (Device* device, RTCSceneFlags sflags, RTCAlgorithmFlags aflags)
+    : device(device), 
+      Accel(AccelData::TY_UNKNOWN),
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
@@ -61,14 +58,13 @@ namespace embree
 #elif defined(TASKING_TBB_INTERNAL)
     scheduler = nullptr;
 #else
-    //arena = new tbb::task_arena;
     group = new tbb::task_group;
 #endif
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
 
-    if (State::instance()->scene_flags != -1)
-      flags = (RTCSceneFlags) State::instance()->scene_flags;
+    if (device->scene_flags != -1)
+      flags = (RTCSceneFlags) device->scene_flags;
 
     if (aflags & RTC_INTERPOLATE) {
       needTriangleIndices = true;
@@ -88,18 +84,18 @@ namespace embree
     accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
     accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
-    if (State::instance()->verbosity(1))
+    if (device->verbosity(1))
     {
       std::cout << "scene flags: static " << isStatic() << " compact = " << isCompact() << " high quality = " << isHighQuality() << " robust = " << isRobust() << std::endl;
     }
     
-    if (State::instance()->tri_accel == "default" || State::instance()->tri_accel == "bvh4i")   
+    if (device->tri_accel == "default" || device->tri_accel == "bvh4i")   
     {
-      if (State::instance()->tri_builder == "default") 
+      if (device->tri_builder == "default") 
       {
         if (isStatic())
         {
-          if (State::instance()->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
+          if (device->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
           if ( isCompact() )
             accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
           else if ( isHighQuality() )
@@ -109,36 +105,36 @@ namespace embree
         }
         else
         {
-          if (State::instance()->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
+          if (device->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
       }
       else
       {
-        if (State::instance()->tri_builder == "sah" || State::instance()->tri_builder == "bvh4i" || State::instance()->tri_builder == "bvh4i.sah") {
+        if (device->tri_builder == "sah" || device->tri_builder == "bvh4i" || device->tri_builder == "bvh4i.sah") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
         }
-        else if (State::instance()->tri_builder == "fast" || State::instance()->tri_builder == "morton") {
+        else if (device->tri_builder == "fast" || device->tri_builder == "morton") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
-        else if (State::instance()->tri_builder == "fast_enhanced" || State::instance()->tri_builder == "morton.enhanced") {
+        else if (device->tri_builder == "fast_enhanced" || device->tri_builder == "morton.enhanced") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
         }
-        else if (State::instance()->tri_builder == "high_quality" || State::instance()->tri_builder == "presplits") {
+        else if (device->tri_builder == "high_quality" || device->tri_builder == "presplits") {
           accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
         }
-        else if (State::instance()->tri_builder == "compact" ||
-                 State::instance()->tri_builder == "memory_conservative") {
+        else if (device->tri_builder == "compact" ||
+                 device->tri_builder == "memory_conservative") {
           accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
         }
-        else if (State::instance()->tri_builder == "morton64") {
+        else if (device->tri_builder == "morton64") {
           accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
         }
         
-        else THROW_RUNTIME_ERROR("unknown builder "+State::instance()->tri_builder+" for BVH4i<Triangle1>");
+        else THROW_RUNTIME_ERROR("unknown builder "+device->tri_builder+" for BVH4i<Triangle1>");
       }
     }
-    else THROW_RUNTIME_ERROR("unknown accel "+State::instance()->tri_accel);
+    else THROW_RUNTIME_ERROR("unknown accel "+device->tri_accel);
     
 #else
     createTriangleAccel();
@@ -157,7 +153,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
-    if (State::instance()->tri_accel == "default") 
+    if (device->tri_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -213,27 +209,27 @@ namespace embree
         }
       }
     }
-    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
-    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
-    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
-    else if (State::instance()->tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
-    else if (State::instance()->tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
-    else if (State::instance()->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
+    else if (device->tri_accel == "bvh4.triangle4")         accels.add(BVH4::BVH4Triangle4(this));
+    else if (device->tri_accel == "bvh4.triangle4v")        accels.add(BVH4::BVH4Triangle4v(this));
+    else if (device->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (State::instance()->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
-    else if (State::instance()->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
-    else if (State::instance()->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
-    else if (State::instance()->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
-    else if (State::instance()->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
-    else if (State::instance()->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
+    else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
+    else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
+    else if (device->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
+    else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
 
 #endif
-    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+State::instance()->tri_accel);
+    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);
   }
 
   void Scene::createHairAccel()
   {
-    if (State::instance()->hair_accel == "default") 
+    if (device->hair_accel == "default") 
     {
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
@@ -255,26 +251,26 @@ namespace embree
         }
       }   
     }
-    else if (State::instance()->hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
-    else if (State::instance()->hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
-    else if (State::instance()->hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
-    else if (State::instance()->hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
-    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+State::instance()->hair_accel);
+    else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4::BVH4Bezier1v(this));
+    else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4::BVH4Bezier1i(this));
+    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4::BVH4OBBBezier1v(this,false));
+    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4::BVH4OBBBezier1i(this,false));
+    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+device->hair_accel);
   }
 
   void Scene::createSubdivAccel()
   {
-    if (State::instance()->subdiv_accel == "default") 
+    if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
         accels.add(BVH4::BVH4SubdivGridEager(this));
       else
         accels.add(BVH4::BVH4SubdivPatch1Cached(this));
     }
-    else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
-    else if (State::instance()->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
-    else if (State::instance()->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
-    else THROW_RUNTIME_ERROR("unknown subdiv accel "+State::instance()->subdiv_accel);
+    else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4::BVH4SubdivPatch1(this));
+    else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4::BVH4SubdivPatch1Cached(this));
+    else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4::BVH4SubdivGridEager(this));
+    else THROW_RUNTIME_ERROR("unknown subdiv accel "+device->subdiv_accel);
   }
 
 #endif
@@ -285,7 +281,6 @@ namespace embree
       delete geometries[i];
 
 #if TASKING_TBB
-    //delete arena; arena = nullptr;
     delete group; group = nullptr;
 #endif
 
@@ -437,7 +432,7 @@ namespace embree
 
     updateInterface();
 
-    if (State::instance()->verbosity(2)) {
+    if (device->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
       accels.print(2);
       std::cout << "selected scene intersector" << std::endl;
@@ -511,7 +506,7 @@ namespace embree
     updateInterface();
     setModified(false);
 
-    if (State::instance()->verbosity(2)) {
+    if (device->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
       accels.print(2);
       std::cout << "selected scene intersector" << std::endl;
@@ -585,7 +580,7 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked()) {
 #if USE_TASK_ARENA
-      arena->execute([&]{ group->wait(); });
+      device->arena->execute([&]{ group->wait(); });
 #else
       group->wait();
 #endif
@@ -593,7 +588,7 @@ namespace embree
         __pause_cpu();
         yield();
 #if USE_TASK_ARENA
-        arena->execute([&]{ group->wait(); });
+        device->arena->execute([&]{ group->wait(); });
 #else
         group->wait();
 #endif
@@ -629,7 +624,7 @@ namespace embree
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
-      arena->execute([&]{
+      device->arena->execute([&]{
 #endif
           group->run([&]{
               tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { build_task(); }, ctx);

@@ -19,6 +19,7 @@
 #include "../../common/default.h"
 #include "../../common/alloc.h"
 #include "../../common/accel.h"
+#include "../../common/device.h"
 #include "../../common/scene.h"
 #include "../geometry/primitive.h"
 
@@ -222,7 +223,7 @@ namespace embree
   public:
 
     /*! BVH8 default constructor. */
-    BVH8 (const PrimitiveType& primTy, Scene* scene = nullptr);
+    BVH8 (const PrimitiveType& primTy, Scene* scene);
 
     /*! BVH8 destruction */
     ~BVH8 ();
@@ -279,6 +280,7 @@ namespace embree
 
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
+    Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
     NodeRef root;                      //!< Root node
     size_t numPrimitives;

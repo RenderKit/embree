@@ -17,7 +17,7 @@
 #pragma once
 
 #include "default.h"
-
+#include "device.h"
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
@@ -98,7 +98,7 @@ namespace embree
   public:
     
     /*! Scene construction */
-    Scene (RTCSceneFlags flags, RTCAlgorithmFlags aflags);
+    Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
     void createTriangleAccel();
     void createHairAccel();
@@ -237,6 +237,7 @@ namespace embree
     static AtomicCounter numScenes;
     
   public:
+    Device* device;
     AccelN accels;
     unsigned int commitCounter;
     atomic_t commitCounterSubdiv;
@@ -261,7 +262,6 @@ namespace embree
     MutexSys schedulerMutex;
     Ref<TaskSchedulerTBB> scheduler;
 #else
-    //tbb::task_arena* arena;
     tbb::task_group* group;
     BarrierActiveAutoReset group_barrier;
 #endif

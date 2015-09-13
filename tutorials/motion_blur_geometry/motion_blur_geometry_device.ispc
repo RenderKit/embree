@@ -17,6 +17,7 @@
 #include "../common/tutorial/tutorial_device.isph"
 
 /* scene data */
+RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform Vec3f* uniform face_colors = NULL;
 
@@ -185,14 +186,14 @@ export void device_init (uniform int8* uniform cfg)
   g_accu_vz = make_Vec3f(0.0f);
   g_accu_p  = make_Vec3f(0.0f);
 
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* add cube */
   addCube(g_scene);
@@ -342,9 +343,9 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  delete[] g_accu;
   rtcDeleteScene (g_scene);
+  rtcDeleteDevice(g_device);
   delete[] face_colors;
-  rtcExit();
+  delete[] g_accu;
 }
 

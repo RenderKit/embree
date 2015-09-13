@@ -116,7 +116,6 @@ namespace embree
 
 
             /* switch to the next segment */
-
 	    addCurrentIndex();
 	    CACHE_STATS(PRINT("RESET TESS CACHE"));
 
@@ -127,17 +126,7 @@ namespace embree
 	    const size_t region = localTime % NUM_CACHE_SEGMENTS;
 	    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
 	    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
-#if 0
-	    PRINT( region );
-	    PRINT( maxBlocks );
-	    PRINT( NUM_CACHE_SEGMENTS );
-	    PRINT( maxBlocks/NUM_CACHE_SEGMENTS );
-	    PRINT( next_block );
-	    PRINT( switch_block_threshold );
-#endif
-
 	    assert( switch_block_threshold <= maxBlocks );
-
 #endif
 
 	    CACHE_STATS(SharedTessellationCacheStats::cache_flushes++);
@@ -220,8 +209,8 @@ namespace embree
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
-    if (State::instance()->verbose >= 1)
-      std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
+    //if (state->verbose >= 1)
+    //std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
   }
 
 

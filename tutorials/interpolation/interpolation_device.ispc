@@ -25,6 +25,7 @@
 
 
 /* scene data */
+RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 uniform Vec3fa* uniform vertex_colors = NULL;
 uniform unsigned int triCubeID, quadCubeID, quadCubeID2;
@@ -315,14 +316,14 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
+  g_scene = rtcNewScene2(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -478,6 +479,6 @@ export void device_render (uniform int* uniform pixels,
 export void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
-  rtcExit();
+  rtcDeleteDevice(g_device);
 }
 

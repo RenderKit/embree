@@ -19,17 +19,19 @@
 
 namespace embree
 {
-  /* error flag */
-  tls_t State::g_error = nullptr; // FIXME: use thread local
-  std::vector<RTCError*> State::g_errors; // FIXME: use thread local
-  MutexSys State::g_errors_mutex;
-
-  State State::state;
-
   State::State () {
     clear();
   }
-  
+
+  State::~State() 
+  {
+    Lock<MutexSys> lock(errors_mutex);
+    for (size_t i=0; i<thread_errors.size(); i++)
+      delete thread_errors[i];
+    destroyTls(thread_error);
+    thread_errors.clear();
+  }
+
   void State::clear()
   {
     tri_accel = "default";
@@ -45,6 +47,7 @@ namespace embree
     hair_builder = "default";
     hair_traverser = "default";
     hair_builder_replication_factor = 3.0f;
+
     memory_preallocation_factor     = 1.0f; 
 #if defined(__X86_64__)
     tessellation_cache_size = 1024*1024*1024;
@@ -52,7 +55,8 @@ namespace embree
     tessellation_cache_size = 128*1024*1024;
 #endif
     subdiv_accel = "default";
-    
+
+    float_exceptions = false;
     scene_flags = -1;
     verbose = 0;
     benchmark = 0;
@@ -65,19 +69,9 @@ namespace embree
     set_affinity = false;
 #endif
 
-    {
-      Lock<MutexSys> lock(g_errors_mutex);
-      if (g_error == nullptr) 
-        g_error = createTls();
-    }
-    g_error_function = nullptr;
-    g_memory_monitor_function = nullptr;
-
-    //Lock<MutexSys> lock(g_errors_mutex);
-    //  for (size_t i=0; i<g_errors.size(); i++)
-    //    delete g_errors[i];
-    //  destroyTls(g_error);
-    //  g_errors.clear();
+    thread_error = createTls();
+    error_function = nullptr;
+    memory_monitor_function = nullptr;
   }
 
   const char* symbols[3] = { "=", ",", "|" };
@@ -218,12 +212,12 @@ namespace embree
 
   RTCError* State::error() 
   {
-    RTCError* stored_error = (RTCError*) getTls(g_error);
+    RTCError* stored_error = (RTCError*) getTls(thread_error);
     if (stored_error == nullptr) {
-      Lock<MutexSys> lock(g_errors_mutex);
+      Lock<MutexSys> lock(errors_mutex);
       stored_error = new RTCError(RTC_NO_ERROR);
-      g_errors.push_back(stored_error);
-      setTls(g_error,stored_error);
+      thread_errors.push_back(stored_error);
+      setTls(thread_error,stored_error);
     }
     return stored_error;
   }

@@ -32,6 +32,8 @@
 
 namespace embree
 {
+  RTCDevice g_device = nullptr;
+
   struct RayStreamStats
   {
     size_t numTotalRays;
@@ -326,7 +328,7 @@ namespace embree
 
   RTCScene transferGeometryData(char *g)
   {
-    RTCScene scene = rtcNewScene(RTC_SCENE_STATIC,aflags);
+    RTCScene scene = rtcNewScene2(g_device,RTC_SCENE_STATIC,aflags);
 
     int magick = *(size_t*)g; g += sizeof(int);
     if (magick != 0x35238765LL) {
@@ -611,7 +613,7 @@ namespace embree
 
     /* perform tests */
     PRINT(g_rtcore.c_str());
-    rtcInit(g_rtcore.c_str());
+    g_device = rtcNewDevice(g_rtcore.c_str());
 
     PRINT(g_threadCount);
 
@@ -799,7 +801,7 @@ namespace embree
 
 
     /* done */
-    rtcExit();
+    rtcDeleteDevice(g_device);
     return 0;
   }
 }

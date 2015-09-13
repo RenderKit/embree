@@ -26,7 +26,7 @@ namespace embree
   namespace isa
   {
     BVH4BuilderTwoLevel::BVH4BuilderTwoLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel) {}
+      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device) {}
     
     BVH4BuilderTwoLevel::~BVH4BuilderTwoLevel ()
     {

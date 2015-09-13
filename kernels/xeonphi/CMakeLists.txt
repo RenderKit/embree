@@ -32,6 +32,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../../common/tasking/taskscheduler_mic.cpp
   ../../common/tasking/tasksys.cpp
 
+  ../common/device.cpp
   ../common/stat.cpp 
   ../common/globals.cpp 
   ../common/acceln.cpp

@@ -18,6 +18,7 @@
 
 #include "../../common/alloc.h"
 #include "../../common/accel.h"
+#include "../../common/device.h"
 #include "../../common/scene.h"
 #include "../geometry/primitive.h"
 #include "../geometry/triangle1.h"
@@ -434,9 +435,10 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4i (const PrimitiveType& primTy, void* geometry = nullptr)
-      : AccelData(AccelData::TY_UNKNOWN), primTy(primTy), 
-      geometry(geometry), 
+    BVH4i (const PrimitiveType& primTy, Scene* scene)
+      : AccelData(AccelData::TY_UNKNOWN), primTy(primTy),
+      device(scene->device),
+      geometry(scene), 
       root(emptyNode), 
       qbvh(nullptr), 
       accel(nullptr),
@@ -469,7 +471,8 @@ namespace embree
     NodeRef root;                  //!< Root node (can also be a leaf).
 
     const PrimitiveType& primTy;   //!< triangle type stored in BVH
-    void* geometry;                //!< pointer to geometry for intersection
+    Device* device;
+    Scene* geometry;                  //!< pointer to geometry for intersection
 
  /*! Memory allocation */
   public:

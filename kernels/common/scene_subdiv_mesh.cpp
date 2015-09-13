@@ -31,6 +31,9 @@ namespace embree
       numFaces(numFaces), 
       numEdges(numEdges), 
       numHalfEdges(0),
+      faceStartEdge(parent->device),
+      halfEdges(parent->device),
+      invalidFace(parent->device),
       numVertices(numVertices),
       boundary(RTC_BOUNDARY_EDGE_ONLY),
       displFunc(nullptr), 
@@ -38,16 +41,16 @@ namespace embree
       levelUpdate(false)
   {
     for (size_t i=0; i<numTimeSteps; i++)
-       vertices[i].init(numVertices,sizeof(Vec3fa));
+      vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
 
-    vertexIndices.init(numEdges,sizeof(unsigned int));
-    faceVertices.init(numFaces,sizeof(unsigned int));
-    holes.init(numHoles,sizeof(int));
-    edge_creases.init(numEdgeCreases,2*sizeof(unsigned int));
-    edge_crease_weights.init(numEdgeCreases,sizeof(float));
-    vertex_creases.init(numVertexCreases,sizeof(unsigned int));
-    vertex_crease_weights.init(numVertexCreases,sizeof(float));
-    levels.init(numEdges,sizeof(float));
+    vertexIndices.init(parent->device,numEdges,sizeof(unsigned int));
+    faceVertices.init(parent->device,numFaces,sizeof(unsigned int));
+    holes.init(parent->device,numHoles,sizeof(int));
+    edge_creases.init(parent->device,numEdgeCreases,2*sizeof(unsigned int));
+    edge_crease_weights.init(parent->device,numEdgeCreases,sizeof(float));
+    vertex_creases.init(parent->device,numVertexCreases,sizeof(unsigned int));
+    vertex_crease_weights.init(parent->device,numVertexCreases,sizeof(float));
+    levels.init(parent->device,numEdges,sizeof(float));
     enabling();
   }
 
@@ -125,12 +128,12 @@ namespace embree
       break;
 
     case RTC_USER_VERTEX_BUFFER0: 
-      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(numVertices,stride)); 
+      if (userbuffers[0] == nullptr) userbuffers[0].reset(new Buffer(parent->device,numVertices,stride)); 
       userbuffers[0]->set(ptr,offset,stride);  
       userbuffers[0]->checkPadding16();
       break;
     case RTC_USER_VERTEX_BUFFER1: 
-      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(numVertices,stride)); 
+      if (userbuffers[1] == nullptr) userbuffers[1].reset(new Buffer(parent->device,numVertices,stride)); 
       userbuffers[1]->set(ptr,offset,stride);  
       userbuffers[1]->checkPadding16();
       break;
@@ -522,7 +525,7 @@ namespace embree
     double t1 = getSeconds();
 
     /* print statistics in verbose mode */
-    if (State::instance()->verbosity(2)) 
+    if (parent->device->verbosity(2)) 
     {
       size_t numRegularQuadFaces = 0;
       size_t numIrregularQuadFaces = 0;

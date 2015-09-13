@@ -363,7 +363,6 @@ namespace embree
               goto pop;
             }
 #endif
-          
         }
         
         /* return if stack is empty */
@@ -667,13 +666,12 @@ namespace embree
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
           if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
-            {
-              *sptr_node++ = cur;
-              *sptr_near++ = curDist;
-              goto pop;
-            }
+          {
+            *sptr_node++ = cur;
+            *sptr_near++ = curDist;
+            goto pop;
+          }
 #endif
-          
         }
         
         /* return if stack is empty */

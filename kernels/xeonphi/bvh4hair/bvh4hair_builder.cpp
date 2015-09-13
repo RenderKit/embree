@@ -185,7 +185,7 @@ namespace embree
       
     // === allocated memory for primrefs,nodes, and accel ===
     const size_t size_primrefs = numPrims * sizePrimRefInBytes + additional_size;
-    const size_t size_node     = (double)(numNodes * sizeNodeInBytes + additional_size) * State::instance()->memory_preallocation_factor;
+    const size_t size_node     = (double)(numNodes * sizeNodeInBytes + additional_size) * scene->device->memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
     numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
@@ -284,7 +284,7 @@ namespace embree
     DBG(PRINT(totalNumPrimitives));
 
     /* print builder name */
-    if (unlikely(State::instance()->verbosity(2))) 
+    if (unlikely(scene->device->verbosity(2))) 
       printBuilderName();
 
     if (likely(totalNumPrimitives == 0))
@@ -314,7 +314,7 @@ namespace embree
 	build_main(0,1);
       }
 
-    if (State::instance()->verbosity(2)) {
+    if (scene->device->verbosity(2)) {
       double perf = totalNumPrimitives/dt*1E-6;
       std::cout << "[DONE] " << 1000.0f*dt << "ms (" << perf << " Mtris/s), primitives " << numPrimitives << std::endl;
       std::cout << BVH4HairStatistics<BVH4Hair::UnalignedNode>(bvh4hair).str();
@@ -334,7 +334,7 @@ namespace embree
     /* start measurement */
     double t0 = 0.0f;
 #if !defined(PROFILE)
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
 #endif
       t0 = getSeconds();
 
@@ -404,7 +404,7 @@ namespace embree
     bvh4hair->accel            = prims;
 
     /* stop measurement */
-    if (State::instance()->verbosity(2)) 
+    if (scene->device->verbosity(2)) 
       dt = getSeconds()-t0;
   }
 

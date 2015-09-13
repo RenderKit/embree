@@ -19,6 +19,7 @@
 #include "../../common/default.h"
 #include "../../common/alloc.h"
 #include "../../common/accel.h"
+#include "../../common/device.h"
 #include "../../common/scene.h"
 #include "../geometry/primitive.h"
 #include "../../common/ray.h"
@@ -793,6 +794,7 @@ namespace embree
   public:
     NodeRef root;                      //!< Root node
     FastAllocator alloc;               //!< allocator used to allocate nodes
+    Device* device;                    //!< device pointer
     Scene* scene;                      //!< scene pointer
 
     /*! statistics data */

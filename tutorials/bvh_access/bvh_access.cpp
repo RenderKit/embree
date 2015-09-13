@@ -21,9 +21,6 @@
 
 namespace embree
 {
-  /* scene data */
-  RTCScene g_scene = nullptr;
-
   struct Triangle { int v0, v1, v2; };
 
   /* error reporting function */
@@ -222,28 +219,28 @@ namespace embree
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
-    /* initialize ray tracing core and force bvh4.triangle4v hierarchy for triangles */
-    rtcInit("tri_accel=bvh4.triangle4v");
+    /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
+    RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
     
     /* set error handler */
-    rtcSetErrorFunction(error_handler);
+    rtcDeviceSetErrorFunction(device,error_handler);
     
     /* create scene */
-    g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
-    addCube(g_scene,Vec3fa(-1,0,0));
-    addCube(g_scene,Vec3fa(1,0,0));
-    addCube(g_scene,Vec3fa(0,0,-1));
-    addCube(g_scene,Vec3fa(0,0,1));
-    addHair(g_scene);
-    addGroundPlane(g_scene);
-    rtcCommit (g_scene);
+    RTCScene scene = rtcNewScene2(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+    addCube(scene,Vec3fa(-1,0,0));
+    addCube(scene,Vec3fa(1,0,0));
+    addCube(scene,Vec3fa(0,0,-1));
+    addCube(scene,Vec3fa(0,0,1));
+    addHair(scene);
+    addGroundPlane(scene);
+    rtcCommit (scene);
 
     /* print triangle BVH */
-    print_bvh(g_scene);
+    print_bvh(scene);
 
     /* cleanup */
-    rtcDeleteScene (g_scene);
-    rtcExit();
+    rtcDeleteScene (scene);
+    rtcDeleteDevice(device);
     return 0;
   }
 }

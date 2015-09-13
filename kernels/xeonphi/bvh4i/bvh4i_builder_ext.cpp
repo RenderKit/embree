@@ -109,7 +109,7 @@ PRINT(CORRECT_numPrims);
 	numMaxPrimitives = numPrims;
 	numMaxPreSplits  = numPrims - numPrimitives;
 
-	if (State::instance()->verbosity(2))
+	if (scene->device->verbosity(2))
 	  {
 	    PRINT(numPrimitives);
 	    PRINT(numMaxPrimitives);

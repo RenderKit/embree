@@ -34,11 +34,11 @@ namespace embree
     
     /*! default constructor */
     PrimRefBlockT () : num(0) {
-      memoryMonitor(+sizeof(PrimRefBlockT),true);
+      //memoryMonitor(+sizeof(PrimRefBlockT),true); // FIXME: enable
     }
 
     ~PrimRefBlockT () {
-      memoryMonitor(-sizeof(PrimRefBlockT),false);
+      //memoryMonitor(-sizeof(PrimRefBlockT),false); // FIXME: enable
     }
     
     /*! frees the block */

@@ -17,6 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 
 /* scene data */
+RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 Vec3fa* colors = nullptr;
 
@@ -214,14 +215,14 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize ray tracing core */
-  rtcInit(cfg);
+  /* create new Embree device */
+  g_device = rtcNewDevice(cfg);
 
   /* set error handler */
-  rtcSetErrorFunction(error_handler);
+  rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene(RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add cube */
   addCube(g_scene);
@@ -354,7 +355,7 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   rtcDeleteScene (g_scene);
+  rtcDeleteDevice(g_device);
   alignedFree(colors);
-  rtcExit();
 }
 
