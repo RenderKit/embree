@@ -25,8 +25,8 @@
 
 #define DBG(x) 
 
-//#define SWITCH_THRESHOLD 7
-#define SWITCH_THRESHOLD 16
+#define SWITCH_THRESHOLD 7
+//#define SWITCH_THRESHOLD 16
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
