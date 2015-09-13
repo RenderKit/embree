@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+//FIXME: re-enable rtcOccluded call
 
 #if 0
 #undef TILE_SIZE_X
@@ -410,7 +411,9 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.mask = -1;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
-  rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  //rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcIntersect(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+
   return ray.transparency;
 }
 

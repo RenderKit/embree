@@ -605,7 +605,16 @@ namespace embree
       const Vec3<T> F1( select(m_border,f1_p.x,f1_i.x), select(m_border,f1_p.y,f1_i.y), select(m_border,f1_p.z,f1_i.z) );
       const Vec3<T> F2( select(m_border,f2_p.x,f2_i.x), select(m_border,f2_p.y,f2_i.y), select(m_border,f2_p.z,f2_i.z) );
       const Vec3<T> F3( select(m_border,f3_p.x,f3_i.x), select(m_border,f3_p.y,f3_i.y), select(m_border,f3_p.z,f3_i.z) );
-      
+
+      /*
+          void EvalBezCubic(in float u, out float B[4]) {
+      float T = u, S = 1.0 - u;
+      B[0] = S*S*S;
+      B[1] = 3.0*T*S*T;
+      B[2] = 3.0*S*T*S;
+      B[3] = T*T*T;
+    }
+      */
       const T B0_u = one_minus_uu * one_minus_uu * one_minus_uu;
       const T B0_v = one_minus_vv * one_minus_vv * one_minus_vv;
       const T B1_u = 3.0f * (one_minus_uu * uu * one_minus_uu);
@@ -614,13 +623,41 @@ namespace embree
       const T B2_v = 3.0f * (vv * one_minus_vv * vv);
       const T B3_u = uu * uu * uu;
       const T B3_v = vv * vv * vv;
-      
+
+      const T B0_u_00_x = B0_u * matrix[0][0].x;
+      const T B1_u_01_x = B1_u * matrix[0][1].x;
+      const T B2_u_02_x = B2_u * matrix[0][2].x;
+      const T B3_u_03_x = B3_u * matrix[0][3].x;
+
+      const T B0_u_10_x = B0_u * matrix[1][0].x;
+      const T B1_u_11_x = B1_u * F0.x;
+      const T B2_u_12_x = B2_u * F1.x;
+      const T B3_u_13_x = B3_u * matrix[1][3].x;
+
+      const T B0_u_20_x = B0_u * matrix[2][0].x;
+      const T B1_u_21_x = B1_u * F3.x;
+      const T B2_u_22_x = B2_u * F2.x;
+      const T B3_u_23_x = B3_u * matrix[2][3].x;
+
+      const T B0_u_30_x = B0_u * matrix[3][0].x;
+      const T B1_u_31_x = B1_u * matrix[3][1].x;
+      const T B2_u_32_x = B2_u * matrix[3][2].x;
+      const T B3_u_33_x = B3_u * matrix[3][3].x;
+
+#if 0      
       const T x = 
 	(B0_u * matrix[0][0].x + B1_u * matrix[0][1].x + B2_u * matrix[0][2].x + B3_u * matrix[0][3].x) * B0_v + 
 	(B0_u * matrix[1][0].x + B1_u * F0.x           + B2_u * F1.x           + B3_u * matrix[1][3].x) * B1_v + 
 	(B0_u * matrix[2][0].x + B1_u * F3.x           + B2_u * F2.x           + B3_u * matrix[2][3].x) * B2_v + 
 	(B0_u * matrix[3][0].x + B1_u * matrix[3][1].x + B2_u * matrix[3][2].x + B3_u * matrix[3][3].x) * B3_v; 
-      
+#else
+      const T N0_v_x = ((B0_u_00_x + B2_u_02_x) + (B1_u_01_x + B3_u_03_x)) * B0_v;
+      const T N1_v_x = ((B0_u_10_x + B2_u_12_x) + (B1_u_11_x + B3_u_13_x)) * B1_v;
+      const T N2_v_x = ((B0_u_20_x + B2_u_22_x) + (B1_u_21_x + B3_u_23_x)) * B2_v;
+      const T N3_v_x = ((B0_u_30_x + B2_u_32_x) + (B1_u_31_x + B3_u_33_x)) * B3_v;
+      const T x = (N0_v_x + N2_v_x) + (N1_v_x + N3_v_x);
+
+#endif      
       const T y = 
 	(B0_u * matrix[0][0].y + B1_u * matrix[0][1].y + B2_u * matrix[0][2].y + B3_u * matrix[0][3].y) * B0_v + 
 	(B0_u * matrix[1][0].y + B1_u * F0.y           + B2_u * F1.y           + B3_u * matrix[1][3].y) * B1_v + 

@@ -34,6 +34,10 @@ namespace embree
       typedef typename BVH8::NodeRef NodeRef;
       typedef typename BVH8::Node Node;
       static const size_t stackSize = 1+3*BVH8::maxDepth;
+
+      static void intersect_XY(const BVH8* This, Ray& ray);
+      static void intersect_XZ(const BVH8* This, Ray& ray);
+      static void intersect_YZ(const BVH8* This, Ray& ray);
       
     public:
       static void intersect(const BVH8* This, Ray& ray);
