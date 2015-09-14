@@ -26,8 +26,8 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
-#define SWITCH_THRESHOLD 16
-//#define SWITCH_THRESHOLD 5
+//#define SWITCH_THRESHOLD 16
+#define SWITCH_THRESHOLD 5
 #if SWITCH_THRESHOLD >= 8
 #warning "switch threshold too large"
 #endif
