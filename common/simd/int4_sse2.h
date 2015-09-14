@@ -124,7 +124,6 @@ namespace embree
 
 
 
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -376,6 +375,31 @@ namespace embree
     _mm_store_si128((__m128i*)ptr,v);
 #endif
   }
+
+#if defined (__AVX2__)
+
+    __forceinline int4 networkSort(const int4 &v)
+    {
+      const int4 a0 = v;
+      const int4 b0 = shuffle<1,0,3,2>(a0);
+      const int4 c0 = umin(a0,b0);
+      const int4 d0 = umax(a0,b0);
+      const int4 a1 = select(0b0101,c0,d0);
+      const int4 b1 = shuffle<2,3,0,1>(a1);
+      const int4 c1 = umin(a1,b1);
+      //const unsigned int min_dist_index = extract<0>(c1) & 3;
+      // 2 case border?
+      //assert(min_dist_index < 4);
+      const int4 d1 = umax(a1,b1);
+      const int4 a2 = select(0b0011,c1,d1);
+      const int4 b2 = shuffle<0,2,1,3>(a2);
+      const int4 c2 = umin(a2,b2);
+      const int4 d2 = umax(a2,b2);
+      const int4 a3 = select(0b0010,c2,d2);
+      return a3;
+    }
+
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

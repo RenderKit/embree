@@ -31,66 +31,6 @@
 namespace embree
 {
 
-    static int4 compactTable[16] = {
-      /* 0b0000 */ int4(3,3,3,3),
-      /* 0b0001 */ int4(0,3,3,3),
-      /* 0b0010 */ int4(1,3,3,3),
-      /* 0b0011 */ int4(0,1,3,3),
-      /* 0b0100 */ int4(2,3,3,3),
-      /* 0b0101 */ int4(0,2,3,3),
-      /* 0b0110 */ int4(1,2,3,3),
-      /* 0b0111 */ int4(0,1,2,3),
-
-      /* 0b1000 */ int4(3,0,0,0),
-      /* 0b1001 */ int4(0,3,1,1),
-      /* 0b1010 */ int4(1,3,0,0),
-      /* 0b1011 */ int4(0,1,3,2),
-      /* 0b1100 */ int4(2,3,0,0),
-      /* 0b1101 */ int4(0,2,3,1),
-      /* 0b1110 */ int4(1,2,3,0),
-      /* 0b1111 */ int4(0,1,2,3)
-    };
-
-    static int8 compactTable64[16] = {
-      /* 0b0000 */ int8(6,7,6,7,6,7,6,7),
-      /* 0b0001 */ int8(0,1,6,7,6,7,6,7),
-      /* 0b0010 */ int8(2,3,6,7,6,7,6,7),
-      /* 0b0011 */ int8(0,1,2,3,6,7,6,7),
-      /* 0b0100 */ int8(4,5,6,7,6,7,6,7),
-      /* 0b0101 */ int8(0,1,4,5,6,7,6,7),
-      /* 0b0110 */ int8(2,3,4,5,6,7,6,7),
-      /* 0b0111 */ int8(0,1,2,3,4,5,6,7),
-
-      /* 0b1000 */ int8(6,7,0,1,0,1,0,1),
-      /* 0b1001 */ int8(0,1,6,7,2,3,2,3),
-      /* 0b1010 */ int8(2,3,6,7,0,1,0,1),
-      /* 0b1011 */ int8(0,1,2,3,6,7,4,5),
-      /* 0b1100 */ int8(4,5,6,7,0,1,0,1),
-      /* 0b1101 */ int8(0,1,4,5,6,7,2,3),
-      /* 0b1110 */ int8(2,3,4,5,6,7,0,1),
-      /* 0b1111 */ int8(0,1,2,3,4,5,6,7)
-    };
-
-  static int8 comparePerm0(0,0,0,1,1,2,0,0);
-  static int8 comparePerm1(1,2,3,2,3,3,0,0);
-
-  static int8 lowHighExtract(0,2,4,6,1,3,5,7);
-  static int8 lowHighInsert (0,4,1,5,2,6,3,7);
-
-  static int4 reverseCompact[5] = {
-    int4(0,1,2,3),
-    int4(0,1,2,3),
-    int4(1,0,2,3),
-    int4(2,1,0,3),
-    int4(3,2,1,0)
-  };
-
-  static int4 step4( 0,1,2,3 );
-  static int4 allSet4( 0xffffffff,0xffffffff,0xffffffff,0xffffffff );
-  static int4 mask2( 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc );
-
-  static int8 step2x4( 0,1,2,3, 0,1,2,3 );
-  static unsigned int mask1x8 = 0xfffffffc;
  
 #undef DBG_PRINT
 #define DBG_PRINT(x) 
@@ -99,48 +39,93 @@ namespace embree
   namespace isa
   {
 
- #if defined (__AVX2__)
+#if defined(__AVX2__)
     __forceinline int4 permute(const int4 &a, const int4 &index) {
       return _mm_castps_si128(_mm_permutevar_ps(_mm_castsi128_ps(a),index));
     }
-#endif
+
+    static int compactTable[16][4] = {
+      /* 0b0000 */ {3,3,3,3},
+      /* 0b0001 */ {0,3,3,3},
+      /* 0b0010 */ {1,3,3,3},
+      /* 0b0011 */ {0,1,3,3},
+      /* 0b0100 */ {2,3,3,3},
+      /* 0b0101 */ {0,2,3,3},
+      /* 0b0110 */ {1,2,3,3},
+      /* 0b0111 */ {0,1,2,3},
+
+      /* 0b1000 */ {3,0,0,0},
+      /* 0b1001 */ {0,3,1,1},
+      /* 0b1010 */ {1,3,0,0},
+      /* 0b1011 */ {0,1,3,2},
+      /* 0b1100 */ {2,3,0,0},
+      /* 0b1101 */ {0,2,3,1},
+      /* 0b1110 */ {1,2,3,0},
+      /* 0b1111 */ {0,1,2,3}
+    };
+
+    static int compactTable64[16][8] = {
+      /* 0b0000 */ {6,7,6,7,6,7,6,7},
+      /* 0b0001 */ {0,1,6,7,6,7,6,7},
+      /* 0b0010 */ {2,3,6,7,6,7,6,7},
+      /* 0b0011 */ {0,1,2,3,6,7,6,7},
+      /* 0b0100 */ {4,5,6,7,6,7,6,7},
+      /* 0b0101 */ {0,1,4,5,6,7,6,7},
+      /* 0b0110 */ {2,3,4,5,6,7,6,7},
+      /* 0b0111 */ {0,1,2,3,4,5,6,7},
+
+      /* 0b1000 */ {6,7,0,1,0,1,0,1},
+      /* 0b1001 */ {0,1,6,7,2,3,2,3},
+      /* 0b1010 */ {2,3,6,7,0,1,0,1},
+      /* 0b1011 */ {0,1,2,3,6,7,4,5},
+      /* 0b1100 */ {4,5,6,7,0,1,0,1},
+      /* 0b1101 */ {0,1,4,5,6,7,2,3},
+      /* 0b1110 */ {2,3,4,5,6,7,0,1},
+      /* 0b1111 */ {0,1,2,3,4,5,6,7}
+    };
+
+    int comparePerm0[8] = {0,0,0,1,1,2,0,0};
+    int comparePerm1[8] = {1,2,3,2,3,3,0,0};
+
+    int lowHighExtract[8] = {0,2,4,6,1,3,5,7};
+    int lowHighInsert[8] = {0,4,1,5,2,6,3,7};
+
+    static int reverseCompact[5][4] = {
+      {0,1,2,3},
+      {0,1,2,3},
+      {1,0,2,3},
+      {2,1,0,3},
+      {3,2,1,0}
+    };
+
+    int step4[4] = { 0,1,2,3 };
+    int allSet4[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
+    int mask2[4] = { 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc };
+
+    int step2x4[8] = { 0,1,2,3, 0,1,2,3 };
+
+  static unsigned int mask1x8 = 0xfffffffc;
    
-
-    __forceinline int4 merge(const int4 &a, const int4 &b, const int imm)
-    {
-      return select(imm,a,b);
-    }
-
-    __forceinline float8 merge(const float8 &a, const float8 &b, const int imm)
-    {
-      return select(imm,a,b);
-    }
-
-    __forceinline int8 merge(const int8 &a, const int8 &b, const int imm)
-    {
-      return select(imm,a,b);
-    }
 
     __forceinline unsigned int networkSort(const float4 &v, const bool4 &active, int4 &result)
     {
-     // const int4 or_mask = select(active,step4,allSet4); //optimize
-      const int4 vi = (cast(v) & mask2) | step4; 
+      const int4 vi = (cast(v) & load4i(mask2)) | load4i(step4); 
       const int4 a0 = select(active,vi,int4( True ));
       const int4 b0 = shuffle<1,0,3,2>(a0);
       const int4 c0 = umin(a0,b0);
       const int4 d0 = umax(a0,b0);
-      const int4 a1 = merge(c0,d0,0b0101);
+      const int4 a1 = select(0b0101,c0,d0);
       const int4 b1 = shuffle<2,3,0,1>(a1);
       const int4 c1 = umin(a1,b1);
       const unsigned int min_dist_index = extract<0>(c1) & 3;
       // 2 case border?
       const int4 d1 = umax(a1,b1);
-      const int4 a2 = merge(c1,d1,0b0011);
+      const int4 a2 = select(0b0011,c1,d1);
       assert(min_dist_index < 4);
       const int4 b2 = shuffle<0,2,1,3>(a2);
       const int4 c2 = umin(a2,b2);
       const int4 d2 = umax(a2,b2);
-      const int4 a3 = merge(c2,d2,0b0010);
+      const int4 a3 = select(0b0010,c2,d2);
       assert(*(unsigned int*)&a3[0] <= *(unsigned int*)&a3[1]);
       assert(*(unsigned int*)&a3[1] <= *(unsigned int*)&a3[2]);
       assert(*(unsigned int*)&a3[2] <= *(unsigned int*)&a3[3]);
@@ -148,12 +133,7 @@ namespace embree
       return min_dist_index;
     }
 
-    __forceinline float8 merge2x4(const float& a, const float& b)
-    {
-      const float8 va = broadcast(&a);
-      const float8 vb = broadcast(&b);
-      return merge(va,vb,0b00001111);
-    }
+#endif
 
 #if 0 //
 
@@ -1061,7 +1041,7 @@ namespace embree
 
           int8 node4 = *(int8*)node->children;
 
-          int4 perm4i = compactTable[mask];
+          int4 perm4i = load4i(&compactTable[mask][0]);
           const unsigned int min_dist_index = extract<0>(permute(int4(step),perm4i));
             
           cur[i] = node->child(min_dist_index);
@@ -1073,11 +1053,11 @@ namespace embree
           //PRINT(cur[i].isLeaf(types));
           //PRINT(m_intersection);
 
-          perm4i = permute(perm4i,reverseCompact[setbits]);
+          perm4i = permute(perm4i,load4i(&reverseCompact[setbits][0]));
             
-          const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+          const int8 lowHigh32bit0 = permute(node4,load8i(lowHighExtract));
           const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
-          const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+          const int8 node4_perm    = permute(lowHigh32bit1,load8i(lowHighInsert));
 
           store8i(&stackNode[i][sindex[i]],node4_perm);
 
