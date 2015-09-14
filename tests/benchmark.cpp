@@ -1140,6 +1140,7 @@ namespace embree
     benchmarks.push_back(new update_geometry ("update_geometry_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
 
+#endif
 
     benchmarks.push_back(new update_scenes ("refit_scenes_120",      RTC_GEOMETRY_DEFORMABLE,6,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_1k" ,      RTC_GEOMETRY_DEFORMABLE,17,1));
@@ -1153,9 +1154,11 @@ namespace embree
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("refit_scenes_120_10000",RTC_GEOMETRY_DEFORMABLE,6,8334));
 #endif
-#endif
 
 #endif
+
+    
+#if 1
 
     benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
@@ -1169,6 +1172,8 @@ namespace embree
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
+#endif
+
 #endif
   }
 

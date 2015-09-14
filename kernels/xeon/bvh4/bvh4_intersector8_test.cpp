@@ -1030,7 +1030,7 @@ namespace embree
           {
             //PRINT(cur[i]);
             //PRINT(cur[i].isLeaf(types));
-            cur[i].prefetchMem();
+            cur[i].prefetchL2();
             continue;
           }
           sindex[i]++;
@@ -1045,7 +1045,7 @@ namespace embree
           const unsigned int min_dist_index = extract<0>(permute(int4(step),perm4i));
             
           cur[i] = node->child(min_dist_index);
-          cur[i].prefetchMem();
+          cur[i].prefetchL2();
           m_intersection &= ~((size_t)1 << i);
           m_intersection |= cur[i].isLeaf(types) ? ((size_t)1 << i) : 0;
 

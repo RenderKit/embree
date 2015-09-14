@@ -131,9 +131,10 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
+
       const BBox3fa bounds0 = recurse_bottom(node->child(0));
       const BBox3fa bounds1 = recurse_bottom(node->child(1));
-      const BBox3fa bounds2 = recurse_bottom(node->child(2));
+      const BBox3fa bounds2 = recurse_bottom(node->child(2));      
       const BBox3fa bounds3 = recurse_bottom(node->child(3));
       
       /* AOS to SOA transform */
@@ -150,14 +151,22 @@ namespace embree
       node->upper_z = bounds.upper.z;
       
       /* return merged bounds */
+#if 1
+      const Vec3fa lower = min(min(bounds0.lower,bounds1.lower),min(bounds2.lower,bounds3.lower));
+      const Vec3fa upper = max(max(bounds0.upper,bounds1.upper),max(bounds2.upper,bounds3.upper));
+
+      return BBox3fa(lower,upper);
+#else
       const float lower_x = reduce_min(bounds.lower.x);
       const float lower_y = reduce_min(bounds.lower.y);
       const float lower_z = reduce_min(bounds.lower.z);
       const float upper_x = reduce_max(bounds.upper.x);
       const float upper_y = reduce_max(bounds.upper.y);
       const float upper_z = reduce_max(bounds.upper.z);
+
       return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-                    Vec3fa(upper_x,upper_y,upper_z));
+                     Vec3fa(upper_x,upper_y,upper_z));
+#endif
     }
     
     BBox3fa BVH4Refitter::recurse_top(NodeRef& ref)
