@@ -84,31 +84,32 @@ namespace embree
       /* 0b1111 */ {0,1,2,3,4,5,6,7}
     };
 
-  static int8 comparePerm0(0,0,0,1,1,2,0,0);
-  static int8 comparePerm1(1,2,3,2,3,3,0,0);
+    int comparePerm0[8] = {0,0,0,1,1,2,0,0};
+    int comparePerm1[8] = {1,2,3,2,3,3,0,0};
 
-  static int8 lowHighExtract(0,2,4,6,1,3,5,7);
-  static int8 lowHighInsert (0,4,1,5,2,6,3,7);
+    int lowHighExtract[8] = {0,2,4,6,1,3,5,7};
+    int lowHighInsert[8] = {0,4,1,5,2,6,3,7};
 
-  static int reverseCompact[5][4] = {
-    {0,1,2,3},
-    {0,1,2,3},
-    {1,0,2,3},
-    {2,1,0,3},
-    {3,2,1,0}
-  };
+    static int reverseCompact[5][4] = {
+      {0,1,2,3},
+      {0,1,2,3},
+      {1,0,2,3},
+      {2,1,0,3},
+      {3,2,1,0}
+    };
 
-  static int4 step4( 0,1,2,3 );
-  static int4 allSet4( 0xffffffff,0xffffffff,0xffffffff,0xffffffff );
-  static int4 mask2( 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc );
+    int step4[4] = { 0,1,2,3 };
+    int allSet4[4] = { 0xffffffff,0xffffffff,0xffffffff,0xffffffff };
+    int mask2[4] = { 0xfffffffc,0xfffffffc,0xfffffffc,0xfffffffc };
 
-  static int8 step2x4( 0,1,2,3, 0,1,2,3 );
+    int step2x4[8] = { 0,1,2,3, 0,1,2,3 };
+
   static unsigned int mask1x8 = 0xfffffffc;
    
 
     __forceinline unsigned int networkSort(const float4 &v, const bool4 &active, int4 &result)
     {
-      const int4 vi = (cast(v) & mask2) | step4; 
+      const int4 vi = (cast(v) & load4i(mask2)) | load4i(step4); 
       const int4 a0 = select(active,vi,int4( True ));
       const int4 b0 = shuffle<1,0,3,2>(a0);
       const int4 c0 = umin(a0,b0);
@@ -1054,9 +1055,9 @@ namespace embree
 
           perm4i = permute(perm4i,load4i(&reverseCompact[setbits][0]));
             
-          const int8 lowHigh32bit0 = permute(node4,lowHighExtract);
+          const int8 lowHigh32bit0 = permute(node4,load8i(lowHighExtract));
           const int8 lowHigh32bit1 = permute4x32(lowHigh32bit0,int8(perm4i));
-          const int8 node4_perm    = permute(lowHigh32bit1,lowHighInsert);
+          const int8 node4_perm    = permute(lowHigh32bit1,load8i(lowHighInsert));
 
           store8i(&stackNode[i][sindex[i]],node4_perm);
 
