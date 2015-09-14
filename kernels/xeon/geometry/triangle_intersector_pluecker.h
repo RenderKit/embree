@@ -69,7 +69,10 @@ namespace embree
       if (unlikely(none(valid))) return;
 
       /* calculate geometry normal and denominator */
-      const tsimd3f Ng1 = cross(e1,e0);
+      const tsimd3f tri_e0 = tri_v2-tri_v0;
+      const tsimd3f tri_e1 = tri_v0-tri_v1;
+      const tsimd3f tri_e2 = tri_v1-tri_v2;
+      const tsimd3f Ng1 = cross(tri_e1,tri_e0);
       const tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den = dot(tri_Ng,D);
       const tsimdf absDen = abs(den);
@@ -171,9 +174,12 @@ namespace embree
         valid |= maxUVW <= 0.0f;
 #endif
         if (unlikely(none(valid))) return;
-        
+
         /* calculate geometry normal and denominator */
-        const tsimd3f Ng1 = cross(e1,e0);
+        const tsimd3f tri_e0 = tri_v2-tri_v0;
+        const tsimd3f tri_e1 = tri_v0-tri_v1;
+        const tsimd3f tri_e2 = tri_v1-tri_v2;
+        const tsimd3f Ng1 = cross(tri_e1,tri_e0);
         const tsimd3f tri_Ng = Ng1+Ng1;
         const tsimdf den = dot(tri_Ng,D);
         const tsimdf absDen = abs(den);
@@ -267,7 +273,10 @@ namespace embree
       if (unlikely(none(valid))) return false;
 
       /* calculate geometry normal and denominator */
-      const tsimd3f Ng1 = cross(e1,e0);
+      const tsimd3f tri_e0 = tri_v2-tri_v0;
+      const tsimd3f tri_e1 = tri_v0-tri_v1;
+      const tsimd3f tri_e2 = tri_v1-tri_v2;
+      const tsimd3f Ng1 = cross(tri_e1,tri_e0);
       const tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den = dot(tri_Ng,D);
       const tsimdf absDen = abs(den);
@@ -360,7 +369,10 @@ namespace embree
       if (unlikely(none(valid))) return false;
 
       /* calculate geometry normal and denominator */
-      const tsimd3f Ng1 = cross(e1,e0);
+      const tsimd3f tri_e0 = tri_v2-tri_v0;
+      const tsimd3f tri_e1 = tri_v0-tri_v1;
+      const tsimd3f tri_e2 = tri_v1-tri_v2;
+      const tsimd3f Ng1 = cross(tri_e1,tri_e0);
       const tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den = dot(tri_Ng,D);
       const tsimdf absDen = abs(den);
