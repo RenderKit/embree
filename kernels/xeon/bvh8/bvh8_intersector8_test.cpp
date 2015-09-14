@@ -73,7 +73,7 @@ namespace embree
       result |= index << shift;
       shift += 4;
       //bits = __blsr(bits);      
-      bits ^= bits-1;
+      bits &= bits-1;
     }
     return result;
   }
