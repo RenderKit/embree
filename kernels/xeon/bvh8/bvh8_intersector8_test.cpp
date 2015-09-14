@@ -72,7 +72,8 @@ namespace embree
       const unsigned int index = __bsf(bits);
       result |= index << shift;
       shift += 4;
-      bits = __blsr(bits);      
+      //bits = __blsr(bits);      
+      bits ^= bits-1;
     }
     return result;
   }
