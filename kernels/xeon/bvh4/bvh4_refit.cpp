@@ -24,6 +24,8 @@
 
 #include <algorithm>
 
+#define STATIC_SUBTREE_EXTRACTION 0
+
 namespace embree
 {
   namespace isa
@@ -38,16 +40,46 @@ namespace embree
     }
 
     BVH4Refitter::BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds)
-      : bvh(bvh), leafBounds(leafBounds) 
+      : bvh(bvh), leafBounds(leafBounds), numSubTrees(0)
     {
+#if STATIC_SUBTREE_EXTRACTION == 1
+
+#else
       if (bvh->numPrimitives > block_size) {
         annotate_tree_sizes(bvh->root);
         calculate_refit_roots();
       }
+#endif
     }
 
     void BVH4Refitter::refit()
     {
+#if STATIC_SUBTREE_EXTRACTION == 1
+      if (bvh->numPrimitives <= block_size) 
+      {
+        bvh->bounds = recurse_bottom(bvh->root);
+      }
+      else
+      {
+        //PRINT(bvh->numPrimitives);
+        numSubTrees = 0;
+        gather_subtree_refs(bvh->root,numSubTrees,0);
+        //PRINT(numSubTrees);
+        if (numSubTrees)
+          parallel_for(size_t(0), numSubTrees, [&] (const range<size_t>& r) {
+              for (size_t i=r.begin(); i<r.end(); i++) {
+                NodeRef& ref = subTrees[i];
+                recurse_bottom(ref);
+              }
+            });
+        numSubTrees = 0;        
+        bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
+        //PRINT(numSubTrees);
+        //PRINT(bvh->bounds);
+        //if (numSubTrees) exit(0);
+
+      }
+#else
       /* single threaded fallback */
       size_t numRoots = roots.size();
       if (numRoots <= 1) {
@@ -57,6 +89,7 @@ namespace embree
       /* parallel refit */
       else 
       {
+
         parallel_for(size_t(0), roots.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               NodeRef& ref = *roots[i];
@@ -66,7 +99,9 @@ namespace embree
           });
         bvh->bounds = recurse_top(bvh->root);
       }
-    }
+#endif
+    
+  }
 
     size_t BVH4Refitter::annotate_tree_sizes(BVH4::NodeRef& ref)
     {
@@ -89,6 +124,93 @@ namespace embree
         return num;
       }
     }
+
+    void BVH4Refitter::gather_subtree_refs(BVH4::NodeRef& ref, 
+                                           size_t &subtrees,
+                                           const size_t depth)
+    {
+      if (ref.isNode())
+      {
+        if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
+        {
+          assert(subtrees < MAX_NUM_SUB_TREES);
+          subTrees[subtrees++] = ref;
+          return;
+        }
+
+        Node* node = ref.node();
+        for (size_t i=0; i<BVH4::N; i++) {
+          BVH4::NodeRef& child = node->child(i);
+          if (child == BVH4::emptyNode) continue;
+          gather_subtree_refs(child,subtrees,depth+1); 
+        }
+      }
+    }
+
+    BBox3fa BVH4Refitter::refit_toplevel(NodeRef& ref,
+                                         size_t &subtrees,
+                                         const size_t depth)
+    {
+      if (ref.isNode())
+      {
+        Node* node = ref.node();
+        BBox3fa bounds[4];
+
+        if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
+        {
+          assert(subtrees < MAX_NUM_SUB_TREES);
+          assert(subTrees[subtrees++] == ref);
+        }
+
+        for (size_t i=0; i<BVH4::N; i++) 
+        {
+          BVH4::NodeRef& child = node->child(i);
+          bounds[i] = BBox3fa(empty);
+
+          if (unlikely(child == BVH4::emptyNode)) continue;
+
+          if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 
+            bounds[i] = node->bounds();
+          else
+            bounds[i] = refit_toplevel(child,subtrees,depth+1); 
+        }
+        
+        BBox<Vec3f4> dest;
+
+        transpose((float4&)bounds[0].lower,
+                  (float4&)bounds[1].lower,
+                  (float4&)bounds[2].lower,
+                  (float4&)bounds[3].lower,
+                  dest.lower.x,
+                  dest.lower.y,
+                  dest.lower.z);
+        
+        transpose((float4&)bounds[0].upper,
+                  (float4&)bounds[1].upper,
+                  (float4&)bounds[2].upper,
+                  (float4&)bounds[3].upper,
+                  dest.upper.x,
+                  dest.upper.y,
+                  dest.upper.z);
+      
+        /* set new bounds */
+        node->lower_x = dest.lower.x;
+        node->lower_y = dest.lower.y;
+        node->lower_z = dest.lower.z;
+        node->upper_x = dest.upper.x;
+        node->upper_y = dest.upper.y;
+        node->upper_z = dest.upper.z;
+        
+        const Vec3fa lower = min(min(bounds[0].lower,bounds[1].lower),
+                                 min(bounds[2].lower,bounds[3].lower));
+        const Vec3fa upper = max(max(bounds[0].upper,bounds[1].upper),
+                                 max(bounds[2].upper,bounds[3].upper));
+        return BBox3fa(lower,upper);
+      }
+      else
+        return leafBounds.leafBounds(ref);
+    }
+
     
     void BVH4Refitter::calculate_refit_roots ()
     {
@@ -200,7 +322,13 @@ namespace embree
       node->upper_x = bounds.upper.x;
       node->upper_y = bounds.upper.y;
       node->upper_z = bounds.upper.z;
-      
+
+#if 1
+      const Vec3fa lower = min(min(bounds0.lower,bounds1.lower),min(bounds2.lower,bounds3.lower));
+      const Vec3fa upper = max(max(bounds0.upper,bounds1.upper),max(bounds2.upper,bounds3.upper));
+
+      return BBox3fa(lower,upper);
+#else      
       /* return merged bounds */
       const float lower_x = reduce_min(bounds.lower.x);
       const float lower_y = reduce_min(bounds.lower.y);
@@ -210,6 +338,7 @@ namespace embree
       const float upper_z = reduce_max(bounds.upper.z);
       return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
                     Vec3fa(upper_x,upper_y,upper_z));
+#endif
     }
     
     template<typename Primitive>
