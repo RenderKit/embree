@@ -157,7 +157,8 @@ namespace embree
 
     /* generate default material */
     Material objmtl; new (&objmtl) OBJMaterial;
-    curMaterial = new SceneGraph::MaterialNode(objmtl);
+    Ref<SceneGraph::MaterialNode> defaultMaterial = new SceneGraph::MaterialNode(objmtl);
+    curMaterial = defaultMaterial;
 
     char line[10000];
     memset(line, 0, sizeof(line));
@@ -225,7 +226,7 @@ namespace embree
       {
         flushFaceGroup();
         std::string name(parseSep(token += 6));
-        if (material.find(name) == material.end()) curMaterial = 0;
+        if (material.find(name) == material.end()) curMaterial = defaultMaterial;
         else curMaterial = material[name];
         continue;
       }
