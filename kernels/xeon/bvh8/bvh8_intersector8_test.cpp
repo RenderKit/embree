@@ -36,19 +36,8 @@
 namespace embree
 {
 
-  namespace isa
-  { 
-
-#if defined(__AVX2__)
   static int shiftTable[8] = {
-    1 << 0,
-    1 << 1,
-    1 << 2,
-    1 << 3,
-    1 << 4,
-    1 << 5,
-    1 << 6,
-    1 << 7
+    1,2,4,8,16,32,64,128
   };
 
   static int countMaskTable[9] = {
@@ -63,17 +52,23 @@ namespace embree
     0b11111111
   };
 
+  namespace isa
+  { 
+
+#if defined(__AVX2__)
+
+#if 0
   __forceinline unsigned int ct(unsigned int bits)
   {
     unsigned int result = 0;
     unsigned int shift  = 0;
     while(bits)
     {
-      const unsigned int index = __bsf(bits);
+      const unsigned int index = __bscf(bits);
       result |= index << shift;
       shift += 4;
       //bits = __blsr(bits);      
-      bits &= bits-1;
+      //bits &= bits-1;
     }
     return result;
   }
@@ -104,6 +99,7 @@ namespace embree
     ct(14*16+0),ct(14*16+1),ct(14*16+2),ct(14*16+3),ct(14*16+4),ct(14*16+5),ct(14*16+6),ct(14*16+7),ct(14*16+8),ct(14*16+9),ct(14*16+10),ct(14*16+11),ct(14*16+12),ct(14*16+13),ct(14*16+14),ct(14*16+15),
     ct(15*16+0),ct(15*16+1),ct(15*16+2),ct(15*16+3),ct(15*16+4),ct(15*16+5),ct(15*16+6),ct(15*16+7),ct(15*16+8),ct(15*16+9),ct(15*16+10),ct(15*16+11),ct(15*16+12),ct(15*16+13),ct(15*16+14),ct(15*16+15)
   };
+#endif
 #endif  
 
 ///////////////////////////////////////////////////////////////////////////////////////////
