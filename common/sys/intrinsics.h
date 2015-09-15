@@ -805,7 +805,7 @@ namespace embree
 #if defined(__MIC__)
     _mm_prefetch((const char*)ptr,_MM_HINT_ET0); 
 #else
-    _mm_prefetch((const char*)ptr,_MM_HINT_ET0); 
+    _mm_prefetch((const char*)ptr,_MM_HINT_T0); 
 #endif
   }
   
@@ -813,7 +813,7 @@ namespace embree
 #if defined(__MIC__)
     _mm_prefetch((const char*)ptr,_MM_HINT_ET2); 
 #else
-    _mm_prefetch((const char*)ptr,_MM_HINT_ET1); 
+    _mm_prefetch((const char*)ptr,_MM_HINT_T1); 
 #endif
   }
   

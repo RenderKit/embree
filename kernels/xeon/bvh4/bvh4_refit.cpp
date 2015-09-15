@@ -24,8 +24,9 @@
 
 #include <algorithm>
 
-#define STATIC_SUBTREE_EXTRACTION 0
-#define TIMER(x)
+#define STATIC_SUBTREE_EXTRACTION 1
+
+#define TIMER(x) 
 
 namespace embree
 {
@@ -62,7 +63,6 @@ namespace embree
       }
       else
       {
-
         TIMER(const double t0 = getSeconds());
 
         numSubTrees = 0;
@@ -270,8 +270,12 @@ namespace embree
       
       /* recurse if this is an internal node */
       Node* node = ref.node();
-      //ref.prefetchW();
 
+      /* enable exclusive prefetch for >= AVX platforms */
+      
+#if defined(__AVX__)      
+      ref.prefetchW();
+#endif      
       const BBox3fa bounds0 = recurse_bottom(node->child(0));
       const BBox3fa bounds1 = recurse_bottom(node->child(1));
       const BBox3fa bounds2 = recurse_bottom(node->child(2));      
