@@ -250,7 +250,6 @@ namespace embree
 #endif
     intersectors.intersector16_filter   = BVH8Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Triangle4Intersector16HybridMoellerNoFilter;
-
     return intersectors;
   }
 
