@@ -140,26 +140,6 @@ namespace embree
   }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
-  ////////////////////////////////////////////////////////////////////////////////
-
-  template<typename T> __forceinline T       dot      ( const Vec3<T>& a, const Vec3<T>& b ) { return madd(a.x,b.x,madd(a.y,b.y,a.z*b.z)); }
-  template<typename T> __forceinline T       length   ( const Vec3<T>& a )                   { return sqrt(dot(a,a)); }
-  template<typename T> __forceinline Vec3<T> normalize( const Vec3<T>& a )                   { return a*rsqrt(dot(a,a)); }
-  template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
-  template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
-
-  template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }
-
-  template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
-  template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
-  template<typename T> __forceinline Vec3<T> reflect  ( const Vec3<T>& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }
-
-  template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) { 
-    const T d = dot(a,a); return select(d == T( zero ), a ,  a*rsqrt(d) );
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
   /// Select
   ////////////////////////////////////////////////////////////////////////////////
 
@@ -194,6 +174,40 @@ namespace embree
   template<typename T> __forceinline Vec3<bool> le_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x<=b.x,a.y<=b.y,a.z<=b.z); }
   template<typename T> __forceinline Vec3<bool> gt_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x> b.x,a.y> b.y,a.z> b.z); }
   template<typename T> __forceinline Vec3<bool> ge_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x>=b.x,a.y>=b.y,a.z>=b.z); }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Euclidian Space Operators
+  ////////////////////////////////////////////////////////////////////////////////
+
+  template<typename T> __forceinline T       dot      ( const Vec3<T>& a, const Vec3<T>& b ) { return madd(a.x,b.x,madd(a.y,b.y,a.z*b.z)); }
+  template<typename T> __forceinline T       length   ( const Vec3<T>& a )                   { return sqrt(dot(a,a)); }
+  template<typename T> __forceinline Vec3<T> normalize( const Vec3<T>& a )                   { return a*rsqrt(dot(a,a)); }
+  template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
+  template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
+
+  template<typename T> __forceinline Vec3<T> stable_triangle_normal( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c ) 
+  {
+    const T ab_x = a.z*b.y, ab_y = a.x*b.z, ab_z = a.y*b.x;
+    const T bc_x = b.z*c.y, bc_y = b.x*c.z, bc_z = b.y*c.x;
+    const Vec3<T> cross_ab(msub(a.y,b.z,ab_x), msub(a.z,b.x,ab_y), msub(a.x,b.y,ab_z)); 
+    const Vec3<T> cross_bc(msub(b.y,c.z,bc_x), msub(b.z,c.x,bc_y), msub(b.x,c.y,bc_z)); 
+    const auto sx = abs(ab_x) < abs(bc_x);
+    const auto sy = abs(ab_y) < abs(bc_y);
+    const auto sz = abs(ab_z) < abs(bc_z);
+    return Vec3<T>(select(sx,cross_ab.x,cross_bc.x),
+                   select(sx,cross_ab.y,cross_bc.y),
+                   select(sx,cross_ab.z,cross_bc.z));
+  }
+
+  template<typename T> __forceinline T       sum      ( const Vec3<T>& a )                   { return a.x+a.y+a.z; }
+
+  template<typename T> __forceinline      T  halfArea ( const Vec3<T>& d )                  { return d.x*(d.y+d.z)+d.y*d.z; }
+  template<typename T> __forceinline      T  area     ( const Vec3<T>& d )                  { return 2.0f*halfArea(d); }
+  template<typename T> __forceinline Vec3<T> reflect  ( const Vec3<T>& V, const Vec3fa& N ) { return 2.0f*dot(V,N)*N-V; }
+
+  template<typename T> __forceinline Vec3<T> normalize_safe( const Vec3<T>& a ) { 
+    const T d = dot(a,a); return select(d == T( zero ), a ,  a*rsqrt(d) );
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
