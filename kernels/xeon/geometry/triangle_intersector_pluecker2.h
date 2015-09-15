@@ -277,7 +277,8 @@ namespace embree
       const rsimd3f e2 = v1-v2;
       
       /* calculate geometry normal and denominator */
-      const rsimd3f Ng1 = cross(e1,e0);
+      //const rsimd3f Ng1 = cross(e1,e0);
+      const rsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
             rsimd3f Ng = Ng1+Ng1;
       const rsimdf den = reduce_add(rsimd3f(Ng));
       const rsimdf absDen = abs(den);
@@ -381,7 +382,8 @@ namespace embree
       const rsimd3f e2 = v1-v2;
       
       /* calculate geometry normal and denominator */
-      const rsimd3f Ng1 = cross(e1,e0);
+      //const rsimd3f Ng1 = cross(e1,e0);
+      const rsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
             rsimd3f Ng = Ng1+Ng1;
       const rsimdf den = reduce_add(rsimd3f(Ng));
       const rsimdf absDen = abs(den);
@@ -471,7 +473,8 @@ namespace embree
       const tsimd3f e2 = v1-v2;
       
       /* calculate geometry normal and denominator */
-      const tsimd3f Ng1 = cross(e1,e0);
+      //const tsimd3f Ng1 = cross(e1,e0);
+      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
             tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den = reduce_add(tri_Ng);
       const tsimdf absDen = abs(den);
@@ -584,7 +587,8 @@ namespace embree
       const tsimd3f e2 = v1-v2;
       
       /* calculate geometry normal and denominator */
-      const tsimd3f Ng1 = cross(e1,e0);
+      //const tsimd3f Ng1 = cross(e1,e0);
+      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
             tsimd3f tri_Ng = Ng1+Ng1;
       const tsimdf den = reduce_add(tri_Ng);
       const tsimdf absDen = abs(den);
