@@ -24,7 +24,7 @@
 
 #define HAS_INTERSECT4 (defined(RTCORE_RAY_PACKETS) && !defined(__MIC__))
 #define HAS_INTERSECT8 (defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)))
-#define HAS_INTERSECT16 (defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__)))
+#define HAS_INTERSECT16 (defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512F__)))
 
 #define DBG(x) 
 

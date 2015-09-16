@@ -273,7 +273,9 @@ namespace embree
       cpu_set_t cset;
       CPU_ZERO(&cset);
       CPU_SET(threadID, &cset);
-      pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset);
+      int ret = pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset);
+      if (ret)
+        std::cout << "WARNING: setting thread affinity failed" << std::endl;
     }
 #endif
 
