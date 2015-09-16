@@ -22,6 +22,10 @@
 #include <iostream>
 #include <fstream>
 
+#define HAS_INTERSECT4 (defined(RTCORE_RAY_PACKETS) && !defined(__MIC__))
+#define HAS_INTERSECT8 (defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)))
+#define HAS_INTERSECT16 (defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__)))
+
 #define DBG(x) 
 
 #define SSC_MARK(mark_value)     \
@@ -482,7 +486,7 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
               }
-#if !defined(__MIC__)
+#if HAS_INTERSECT4
             else if (SIMD_WIDTH == 4)
               {
                 RayStreamLogger::LogRay4 *raydata        = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata;
@@ -499,6 +503,8 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray_packets<RTCRay4>(raydata[index].m_valid,  raydata[index].ray4, raydata_verify[index].ray4);
               }
+#endif
+#if HAS_INTERSECT8
             else if (SIMD_WIDTH == 8)
               {
                 RayStreamLogger::LogRay8 *raydata        = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata;
@@ -521,11 +527,12 @@ namespace embree
                   diff += check_ray_packets<RTCRay8>(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
               }
 #endif
+#if HAS_INTERSECT16
             else if (SIMD_WIDTH == 16)
               {
                 RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata;
                 RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata_verify;
-#if defined(__MIC__)
+
                 RTCRay16 &ray16 = raydata[index].ray16;
                 int16 valid = select((bool16)raydata[index].m_valid,int16(-1),int16(0));
                 rays += raydata[index].numRays;
@@ -536,10 +543,11 @@ namespace embree
                   rtcIntersect16(&valid,g_retraceTask.scene,ray16);
                 else 
                   rtcOccluded16(&valid,g_retraceTask.scene,ray16);
-#endif
+
                 if (unlikely(g_check))
                   diff += check_ray_packets<RTCRay16>(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
               }
+#endif
 
 
 	  }
