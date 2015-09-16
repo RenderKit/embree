@@ -58,6 +58,7 @@
 #include "state.h"
 
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <functional>
 

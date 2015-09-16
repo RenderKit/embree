@@ -30,7 +30,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
-    return (RTCDevice) new Device(cfg);
+    return (RTCDevice) new Device(cfg,false);
     RTCORE_CATCH_END_NOREPORT;
     return (RTCDevice) nullptr;
   }
@@ -56,7 +56,7 @@ namespace embree
     RTCORE_TRACE(rtcInit);
     Lock<MutexSys> lock(g_mutex);
     if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
-    g_device = new Device(cfg);
+    g_device = new Device(cfg,true);
     RTCORE_CATCH_END(g_device);
   }
   
@@ -74,10 +74,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -87,10 +84,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
 
@@ -98,7 +92,6 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    assert(g_device);
     if (g_device == nullptr) return RTC_UNKNOWN_ERROR;
     RTCError* stored_error = g_device->error();
     RTCError error = *stored_error;

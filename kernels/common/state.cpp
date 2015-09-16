@@ -20,7 +20,7 @@
 namespace embree
 {
   State::State () {
-    clear();
+    clear(false);
   }
 
   State::~State() 
@@ -32,7 +32,7 @@ namespace embree
     thread_errors.clear();
   }
 
-  void State::clear()
+  void State::clear(bool singledevice)
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -49,11 +49,16 @@ namespace embree
     hair_builder_replication_factor = 3.0f;
 
     memory_preallocation_factor     = 1.0f; 
-#if defined(__X86_64__)
-    tessellation_cache_size = 1024*1024*1024;
-#else
+
     tessellation_cache_size = 128*1024*1024;
+
+    /* large default cache size only for old mode single device mode */
+#if defined(__X86_64__)
+      if (singledevice) tessellation_cache_size = 1024*1024*1024;
+#else
+      if (singledevice) tessellation_cache_size = 128*1024*1024;
 #endif
+
     subdiv_accel = "default";
 
     float_exceptions = false;
