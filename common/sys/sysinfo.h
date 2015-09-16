@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #  define isa knc
 #  define ISA KNC
-#elif defined (__AVX512__)
+#elif defined (__AVX512F__)
 #  define isa avx512
 #  define ISA AVX512KNL
 #elif defined (__AVX2__)

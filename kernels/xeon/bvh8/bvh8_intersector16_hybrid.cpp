@@ -185,7 +185,7 @@ namespace embree
     template<bool robust, typename PrimitiveIntersector16>    
     void BVH8Intersector16Hybrid<robust,PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
-#if defined(__AVX512__)      
+#if defined(__AVX512F__)      
       /* load ray */
       bool16 valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -488,7 +488,7 @@ namespace embree
      template<bool robust, typename PrimitiveIntersector16>
      void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
     {
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
       
       /* load ray */
       const bool16 valid = *valid_i == -1;

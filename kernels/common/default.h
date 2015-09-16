@@ -87,7 +87,7 @@ namespace embree
   typedef Vec4<float8> avx4f; // FIXME: rename
 #endif
 
-#if defined (__AVX512__) || defined (__MIC__)
+#if defined (__AVX512F__) || defined (__MIC__)
   typedef Vec2<bool16> Vec2b16;
   typedef Vec3<bool16> Vec3b16;
   typedef Vec2<int16> Vec2i16; 

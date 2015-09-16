@@ -28,7 +28,7 @@
 #include "../../common/ray8.h"
 #endif
 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
 #include "../../common/ray16.h"
 #endif
 
@@ -404,7 +404,7 @@ namespace embree
     
 #endif
 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
     template<typename Intersector>
       struct ArrayIntersector16
       {

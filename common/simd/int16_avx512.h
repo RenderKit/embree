@@ -48,7 +48,7 @@ namespace embree
     }
    
     __forceinline explicit int16(const __m512 f) { 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
       v = _mm512_cvt_roundps_epi32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); // FIXME: round down as default?
 #else
       v = _mm512_cvtfxpnt_round_adjustps_epi32(f,_MM_FROUND_FLOOR,_MM_EXPADJ_NONE);
@@ -72,7 +72,7 @@ namespace embree
 
     static __forceinline int16 loadu(const void* addr) 
     {
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
       return _mm512_loadu_si512(addr);
 #else
       int16 r = _mm512_undefined_epi32();
@@ -90,7 +90,7 @@ namespace embree
     }
 
     static __forceinline void storeu(void* ptr, const int16& f ) { 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
        _mm512_storeu_si512(ptr,f);
 #else
        _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
@@ -99,7 +99,7 @@ namespace embree
     }
 
     static __forceinline void storeu(const bool16& mask, int* ptr, const int16& f ) { 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
       _mm512_mask_storeu_epi32(ptr,mask,f);
 #else
       __m512 r = _mm512_undefined();
@@ -516,7 +516,7 @@ namespace embree
   }
 
   __forceinline int16 convert_uint32_t(const __m512 f) { 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
     return _mm512_cvt_roundps_epu32(f,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); // FIXME: round down as default?
 #else
     return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);

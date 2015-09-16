@@ -155,8 +155,8 @@
     #if !defined(__AVX2__)
       #define __AVX2__
     #endif
-    #if !defined(__AVX512__)
-      #define __AVX512__
+    #if !defined(__AVX512F__)
+      #define __AVX512F__
     #endif
   #endif
 #endif

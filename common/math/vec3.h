@@ -244,7 +244,7 @@ namespace embree
 #include "../simd/avx.h"
 #endif
 
-#if defined (__MIC__) || defined(__AVX512__)
+#if defined (__MIC__) || defined(__AVX512F__)
 #include "../simd/avx512.h"
 #endif
 
@@ -305,7 +305,7 @@ namespace embree
 
 #endif
 
-#if defined (__MIC__) || defined(__AVX512__)
+#if defined (__MIC__) || defined(__AVX512F__)
   template<> __forceinline Vec3<float16>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }

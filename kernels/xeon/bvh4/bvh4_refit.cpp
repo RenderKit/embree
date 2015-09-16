@@ -408,7 +408,7 @@ namespace embree
       }
     }
 
-#if !defined (__AVX512__)
+#if !defined (__AVX512F__)
     
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
