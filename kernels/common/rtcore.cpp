@@ -74,10 +74,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -87,10 +84,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
 

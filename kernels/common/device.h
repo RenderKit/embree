@@ -42,6 +42,12 @@ namespace embree
     /*! invokes the memory monitor callback */
     void memoryMonitor(ssize_t bytes, bool post);
 
+    /*! sets the size of the software cache. */
+    void setCacheSize(size_t bytes);
+    
+    /*! configures some parameter */
+    void setParameter1i(const RTCParameter parm, ssize_t val);
+
   public:
 
 #if USE_TASK_ARENA

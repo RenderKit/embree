@@ -148,7 +148,7 @@ namespace embree
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     
     /*! set tessellation cache size */
-    resizeTessellationCache( State::tessellation_cache_size );
+    setCacheSize( State::tessellation_cache_size );
 
     /*! enable some floating point exceptions to catch bugs */
     if (State::float_exceptions)
@@ -421,5 +421,17 @@ namespace embree
 #endif
       }
     }
+  }
+
+  void Device::setCacheSize(size_t bytes) {
+    resizeTessellationCache(max(size_t(1024*1024),bytes));
+  }
+
+  void Device::setParameter1i(const RTCParameter parm, ssize_t val)
+  {
+    switch (parm) {
+    case RTC_SOFTWARE_CACHE_SIZE: setCacheSize(val); break;
+    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
+    };
   }
 }
