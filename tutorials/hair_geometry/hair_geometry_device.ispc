@@ -16,35 +16,12 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
-//FIXME: re-enable rtcOccluded call
-
-#if 0
-#undef TILE_SIZE_X
-#undef TILE_SIZE_Y
-#define TILE_SIZE_X 4
-#define TILE_SIZE_Y 4
-#endif
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
 #else
 #define renderPixelPathTrace renderPixelStandard
 #endif
-
-//#define FORCE_FIXED_EDGE_TESSELLATION
-#define FIXED_EDGE_TESSELLATION_VALUE 8
-//#define FIXED_EDGE_TESSELLATION_VALUE 32
-
-#define MAX_EDGE_LEVEL 64.0f
-//#define MAX_EDGE_LEVEL 8.0f
-#define MIN_EDGE_LEVEL 4.0f
-#define ENABLE_DISPLACEMENTS 0
-#if ENABLE_DISPLACEMENTS
-#  define LEVEL_FACTOR 256.0f
-#else
-#  define LEVEL_FACTOR 64.0f
-#endif
-
 
 /* accumulation buffer */
 uniform Vec3fa* uniform g_accu = NULL;
@@ -139,55 +116,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
     uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-   
-    if (mesh->numQuads)
-     {
-     g_subdiv_mode = true;
-
-      uniform size_t numPrimitives = mesh->numQuads;
-      uniform size_t numEdges      = mesh->numQuads*4;
-      mesh->edge_level             = uniform new uniform float[numEdges];
-      uniform int *uniform index_buffer = uniform new uniform int[numEdges];
-      
-      for (uniform size_t i=0; i<numEdges; i++) 
-	mesh->edge_level[i] = FIXED_EDGE_TESSELLATION_VALUE;
-      
-      /* create a triangle mesh */
-      uniform unsigned int geomID = rtcNewSubdivisionMesh (scene_out, RTC_GEOMETRY_STATIC, numPrimitives, numEdges, mesh->numVertices, 0, 0, 0);
-      mesh->geomID = geomID;
-
-      uniform unsigned int* faces = (uniform unsigned int*) rtcMapBuffer(scene_out, geomID, RTC_FACE_BUFFER);
-      for (uniform size_t i=0; i<mesh->numQuads    ; i++) faces[i] = 4;
-      
-      rtcUnmapBuffer(scene_out,geomID,RTC_FACE_BUFFER);
-
-      for (uniform size_t i=0; i<mesh->numQuads; i++)
-      	 {
-	   index_buffer[4*i+0] = mesh->quads[i].v0;
-	   index_buffer[4*i+1] = mesh->quads[i].v1;
-	   index_buffer[4*i+2] = mesh->quads[i].v2;
-	   index_buffer[4*i+3] = mesh->quads[i].v3;	   
-	 }
-
-      rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions , 0, sizeof(uniform Vec3fa  ));
-      rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  index_buffer    , 0, sizeof(uniform unsigned int));
-      rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->edge_level, 0, sizeof(uniform float));
-      
-#if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
-#endif
-     } 
-    else if (mesh->numTriangles)
-    {
-     uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
-     rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
-     if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
-     rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
-     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
-    }
-  
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(uniform Vertex));
+    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(uniform Vertex));
+    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(uniform ISPCTriangle));
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&filterDispatch);
   }
-
 
   /* commit changes to scene */
   rtcCommit (scene_out);
@@ -411,8 +345,7 @@ Vec3f occluded(RTCScene scene, RTCRay2& ray)
   ray.mask = -1;
   ray.filter = (RTCFilterFuncVarying) &occlusionFilter;
   ray.transparency = make_Vec3f(1.0f);
-  //rtcOccluded(scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
-  rtcIntersect(scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcOccluded(scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
 
   return ray.transparency;
 }
@@ -473,47 +406,19 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
     {
       int meshID = ray.geomID-g_ispc_scene->numHairSets;
       ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
-      if (g_subdiv_mode == true)
-      	{
-        if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-        
-        /* calculate tangent space */
-        const Vec3f dz = normalize(ray.Ng);
-        const Vec3f dx = normalize(cross(dz,ray.dir));
-        const Vec3f dy = normalize(cross(dz,dx));
-        
-        /* generate isotropic BRDF */
-        AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
-        }
-      else
-        {
+
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
       OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
-      if (material->illum == 1)
-      {
-        /* calculate tangent space */
-        const Vec3f dx = normalize(make_Vec3f(mesh->normals[triangle->v0]));	   
-        const Vec3f dy = normalize(cross(ray.dir,dx));
-        const Vec3f dz = normalize(cross(dy,dx));
-        
-        /* generate anisotropic BRDF */
-        AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
-        brdf.Kr = hair_Kr;
-        tnear_eps = 1.1f*mesh->texcoords[triangle->v0].x;
-      }
-      else
-      {
-        if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
-        
-        /* calculate tangent space */
-        const Vec3f dz = normalize(ray.Ng);
-        const Vec3f dx = normalize(cross(dz,ray.dir));
-        const Vec3f dy = normalize(cross(dz,dx));
-        
-        /* generate isotropic BRDF */
-        AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
-      }
-      }
+
+      if (dot(ray.dir,ray.Ng) > 0) ray.Ng = neg(ray.Ng);
+      
+      /* calculate tangent space */
+      const Vec3f dz = normalize(ray.Ng);
+      const Vec3f dx = normalize(cross(dz,ray.dir));
+      const Vec3f dy = normalize(cross(dz,dx));
+      
+      /* generate isotropic BRDF */
+      AnisotropicBlinn__Constructor(&brdf,make_Vec3f(1.0f),make_Vec3f(0.0f),dx,1.0f,dy,1.0f,dz);
     }
     
     /* sample directional light */
