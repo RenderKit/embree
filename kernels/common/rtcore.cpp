@@ -98,7 +98,6 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    assert(g_device);
     if (g_device == nullptr) return RTC_UNKNOWN_ERROR;
     RTCError* stored_error = g_device->error();
     RTCError error = *stored_error;
