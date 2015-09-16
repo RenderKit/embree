@@ -137,11 +137,14 @@ namespace embree
   } tbb_affinity;
 #endif
 
-  Device::Device (const char* cfg)
+  static MutexSys g_cache_size_mutex;
+  static std::map<Device*,size_t> g_cache_size_map;
+
+  Device::Device (const char* cfg, bool singledevice)
   {
     /* initialize global state */
     init_globals();
-    State::clear();
+    State::clear(singledevice);
     State::parseString(cfg);
     State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
@@ -274,6 +277,8 @@ namespace embree
 
   Device::~Device ()
   {
+    setCacheSize(0);
+   
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::destroy(); // FIXME: prevents creation of two devices
 #endif
@@ -289,7 +294,6 @@ namespace embree
     if (g_tbb_threads_initialized)
       tbb_threads.terminate();
 #endif
-    State::clear();
   }
 
   void Device::print()
@@ -422,9 +426,22 @@ namespace embree
       }
     }
   }
+ 
+  void Device::setCacheSize(size_t bytes) 
+  {
+    Lock<MutexSys> lock(g_cache_size_mutex);
+    if (bytes == 0) g_cache_size_map.erase(this);
+    else            g_cache_size_map[this] = bytes;
+    updateCacheSize();
+  }
 
-  void Device::setCacheSize(size_t bytes) {
-    resizeTessellationCache(max(size_t(1024*1024),bytes));
+  void Device::updateCacheSize()
+  {
+    size_t maxCacheSize = 0;
+    for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
+      maxCacheSize = max(maxCacheSize, (*i).second);
+    
+    resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
   }
 
   void Device::setParameter1i(const RTCParameter parm, ssize_t val)

@@ -28,7 +28,7 @@ namespace embree
   public:
 
     /*! Device construction */
-    Device (const char* cfg);
+    Device (const char* cfg, bool singledevice);
 
     /*! Device destruction */
     ~Device ();
@@ -44,6 +44,9 @@ namespace embree
 
     /*! sets the size of the software cache. */
     void setCacheSize(size_t bytes);
+
+    /*! sets the cache size to the maximum requested by any device */
+    void updateCacheSize();
     
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
@@ -53,5 +56,7 @@ namespace embree
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif
+
+  bool singledevice;
   };
 }

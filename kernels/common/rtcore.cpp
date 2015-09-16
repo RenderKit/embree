@@ -30,7 +30,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
-    return (RTCDevice) new Device(cfg);
+    return (RTCDevice) new Device(cfg,false);
     RTCORE_CATCH_END_NOREPORT;
     return (RTCDevice) nullptr;
   }
@@ -56,7 +56,7 @@ namespace embree
     RTCORE_TRACE(rtcInit);
     Lock<MutexSys> lock(g_mutex);
     if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
-    g_device = new Device(cfg);
+    g_device = new Device(cfg,true);
     RTCORE_CATCH_END(g_device);
   }
   
