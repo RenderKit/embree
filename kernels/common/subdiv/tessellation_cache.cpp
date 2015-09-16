@@ -151,11 +151,8 @@ namespace embree
 
   void SharedLazyTessellationCache::reset()
   {
-
-#if 1
     /* lock the reset_state */
     reset_state.lock();
-
 
     /* lock the linked list of thread states */
     linkedlist_mtx.lock();
@@ -164,7 +161,6 @@ namespace embree
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
       if (lockThread(t) == 1)
         waitForUsersLessEqual(t,1);
-#endif
 
     /* reset to the first segment */
     next_block = 0;
@@ -175,42 +171,58 @@ namespace embree
 #endif
 
     /* reset local time */
-    localTime              = NUM_CACHE_SEGMENTS;
+    localTime = NUM_CACHE_SEGMENTS;
 
-#if 1
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
       unlockThread(t);
 
     /* unlock the linked list of thread states */
-    linkedlist_mtx.unlock();
-	    
+    linkedlist_mtx.unlock();	    
 
     /* unlock the reset_state */
     reset_state.unlock();
-#endif
-
-
   }
 
   void SharedLazyTessellationCache::realloc(const size_t new_size)
   {
-    if (data)
-      os_free(data,size);
-     
+    /* lock the reset_state */
+    reset_state.lock();
+
+    /* lock the linked list of thread states */
+    linkedlist_mtx.lock();
+
+    /* block all threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      if (lockThread(t) == 1)
+        waitForUsersLessEqual(t,1);
+
+    /* reallocate data */
+    if (data) os_free(data,size);
     size      = new_size;
     data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
     maxBlocks = size/64;    
-    //localTime              = NUM_CACHE_SEGMENTS; // FIXME: has this to get set?
-    //next_block             = 0;                  // FIXME: has this to get set?
+
+    /* reset to the first segment */
+    //next_block = 0; 
 #if FORCE_SIMPLE_FLUSH == 1
     switch_block_threshold = maxBlocks;
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
 
-    //if (state->verbose >= 1)
-    //std::cout << "Reallocating tessellation cache to " << size << " bytes, " << maxBlocks << " 64-byte blocks" << std::endl;
+    /* invalidate entire cache */
+    localTime += NUM_CACHE_SEGMENTS; 
+
+    /* release all blocked threads */
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+      unlockThread(t);
+
+    /* unlock the linked list of thread states */
+    linkedlist_mtx.unlock();	    
+
+    /* unlock the reset_state */
+    reset_state.unlock();
   }
 
 
