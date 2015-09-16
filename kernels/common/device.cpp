@@ -72,8 +72,10 @@ namespace embree
 #else
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+#if defined (RTCORE_RAY_PACKETS)
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
     SELECT_SYMBOL_AVX_AVX2(features,InstanceIntersector8);
+#endif
 #endif
   }
 

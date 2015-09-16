@@ -84,6 +84,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8TrianglePairs8Intersector1Moeller);
     //SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8vIntersector1Pluecker);
 
+#if defined (RTCORE_RAY_PACKETS)
+
     /* select intersectors4 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoellerNoFilter);
@@ -112,7 +114,7 @@ namespace embree
     SELECT_SYMBOL_AVX512(features,BVH8Triangle8Intersector16HybridMoellerNoFilter);
     //SELECT_SYMBOL_AVX512(features,BVH8Triangle8vIntersector16HybridPluecker);
     //SELECT_SYMBOL_AVX512(features,BVH8Triangle8vIntersector16HybridPlueckerNoFilter);
-
+#endif
   }
 
   BVH8::BVH8 (const PrimitiveType& primTy, Scene* scene)
