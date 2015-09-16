@@ -799,13 +799,19 @@ namespace embree
   __forceinline void prefetchL2 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T1); }
   __forceinline void prefetchL3 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T2); }
   __forceinline void prefetchNTA(const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_NTA); }
-  __forceinline void prefetchEX (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_ET0); }
+  __forceinline void prefetchEX (const void* ptr) {
+#if defined(__INTEL_COMPILER)
+    _mm_prefetch((const char*)ptr,_MM_HINT_ET0);
+#else
+    _mm_prefetch((const char*)ptr,_MM_HINT_T0);    
+#endif
+  }
 
   __forceinline void prefetchL1EX(const void* ptr) { 
 #if defined(__MIC__)
     _mm_prefetch((const char*)ptr,_MM_HINT_ET0); 
 #else
-    _mm_prefetch((const char*)ptr,_MM_HINT_T0); 
+    prefetchEX(ptr); 
 #endif
   }
   
@@ -813,7 +819,7 @@ namespace embree
 #if defined(__MIC__)
     _mm_prefetch((const char*)ptr,_MM_HINT_ET2); 
 #else
-    _mm_prefetch((const char*)ptr,_MM_HINT_T1); 
+    prefetchEX(ptr); 
 #endif
   }
   
