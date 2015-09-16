@@ -398,7 +398,7 @@ namespace embree
 	const Key mask = BUCKETS-1;
         
 	/* calculate total number of items for each bucket */
-	__aligned(64) size_t total[BUCKETS];
+	__aligned(64) unsigned int total[BUCKETS];
 	for (size_t i=0; i<BUCKETS; i++)
 	  total[i] = 0;
 	
@@ -407,7 +407,7 @@ namespace embree
 	    total[j] += parent->radixCount[i][j];
 	
 	/* calculate start offset of each bucket */
-	__aligned(64) size_t offset[BUCKETS];
+	__aligned(64) unsigned int offset[BUCKETS];
 	offset[0] = 0;
 	for (size_t i=1; i<BUCKETS; i++)    
 	  offset[i] = offset[i-1] + total[i-1];
