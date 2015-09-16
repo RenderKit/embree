@@ -27,6 +27,8 @@
  #include "../../common/simd/avx512.h"
 #endif
 
+#define RADIX_SORT_NUM_THREADS_BLOCK_SIZE 4096
+
 namespace embree
 {
   template<class T>
@@ -203,7 +205,9 @@ namespace embree
 #if defined(__MIC__)
     static const size_t MAX_TASKS = MAX_THREADS;
 #else
-    static const size_t MAX_TASKS = 32; // FIXME: increase
+    static const size_t MAX_TASKS = 64; // FIXME: increase
+    //static const size_t MAX_TASKS = 32; // FIXME: increase
+
 #endif
     static const size_t BITS = 8;
     static const size_t BUCKETS = (1 << BITS);
@@ -476,7 +480,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
       : state(state) {} 
 
     template<typename Ty>
-    void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+    void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
       ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
     }
 
@@ -484,7 +488,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   };
 
   template<typename Ty>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Ty> sort(radix_sort_state);
@@ -492,7 +496,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   }
 
   template<typename Ty, typename Key>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Key> sort(radix_sort_state);
@@ -500,12 +504,12 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   }
 
   template<typename Ty>
-    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
     radix_sort<Ty,uint32_t>(src,tmp,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = 4096) {
+    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
     radix_sort<Ty,uint64_t>(src,tmp,N,blockSize);
   }
 
@@ -553,6 +557,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
 	else 
 	{
 	  const size_t numThreads = min((N+blockSize-1)/blockSize,TaskSchedulerTBB::threadCount(),size_t(MAX_TASKS));
+          //PRINT(numThreads);
           tbbRadixSort(numThreads);
 	}
       }
@@ -664,7 +669,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
       : state(state) {} 
 
     template<typename Ty>
-    void operator() (Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+    void operator() (Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
       ParallelRadixSortCopy::Task<Ty,Key>(&state,src,dst,N,blockSize);
     }
 
@@ -672,7 +677,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   };
 
   template<typename Ty>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Ty> sort(radix_sort_state);
@@ -680,7 +685,7 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   }
 
   template<typename Ty, typename Key>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Key> sort(radix_sort_state);
@@ -688,12 +693,12 @@ LinearBarrierActive barrier; // FIXME: should be able to speficy number of threa
   }
 
   template<typename Ty>
-    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
     radix_sort_copy<Ty,uint32_t>(src,dst,N,blockSize);
   }
 
   template<typename Ty>
-    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = 4096) {
+    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
     radix_sort_copy<Ty,uint64_t>(src,dst,N,blockSize);
   } 
 }

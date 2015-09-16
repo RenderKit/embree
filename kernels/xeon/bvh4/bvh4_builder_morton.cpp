@@ -30,7 +30,7 @@
 #include "../geometry/triangle4i.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
-#define PROFILE 0
+#define PROFILE 1
 #define BLOCK_SIZE 4096
 
 namespace embree 
@@ -430,7 +430,8 @@ namespace embree
             size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
             {
               size_t N = 0;
-              MortonCodeGenerator generator(mapping,&dest[r.begin()]);
+              //MortonCodeGenerator generator(mapping,&dest[r.begin()]);
+              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -448,7 +449,9 @@ namespace embree
               numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
               {
                 size_t N = 0;
-                MortonCodeGenerator generator(mapping,&dest[base]);
+                //MortonCodeGenerator generator(mapping,&dest[base]);
+                MortonCodeGenerator generator(mapping,&morton.data()[base]);
+
                 for (ssize_t j=r.begin(); j<r.end(); j++)
                 {
                   BBox3fa bounds = empty;
@@ -470,7 +473,9 @@ namespace embree
               [&] () { return bvh->alloc.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
-              dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
@@ -586,7 +591,6 @@ namespace embree
             size_t numPrimitivesGen = numPrimitives;
 
 #else 
-
             /* compute scene bounds */
             Scene::Iterator<Mesh,1> iter1(scene);
             const BBox3fa centBounds = parallel_for_for_reduce 
@@ -607,7 +611,9 @@ namespace embree
             {
               size_t N = 0;
               PrimInfo pinfo(empty);
-              MortonCodeGenerator generator(mapping,&dest[k]);
+              //MortonCodeGenerator generator(mapping,&dest[k]);
+              MortonCodeGenerator generator(mapping,&morton.data()[k]);
+
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -626,7 +632,9 @@ namespace embree
               {
                 size_t N = 0;
                 PrimInfo pinfo(empty);
-                MortonCodeGenerator generator(mapping,&dest[base]);
+                //MortonCodeGenerator generator(mapping,&dest[base]);
+                MortonCodeGenerator generator(mapping,&morton.data()[base]);
+
                 for (ssize_t j=r.begin(); j<r.end(); j++)
                 {
                   BBox3fa bounds = empty;
@@ -651,7 +659,9 @@ namespace embree
               [&] () { return bvh->alloc.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
-                dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
