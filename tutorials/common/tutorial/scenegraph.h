@@ -318,6 +318,7 @@ namespace embree
     
     struct TransformNode : public Node
     {
+      ALIGNED_STRUCT;
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
         : xfm(xfm), child(child) {}
       
@@ -347,6 +348,8 @@ namespace embree
     template<typename Light>
       struct LightNode : public Node
     {
+      ALIGNED_STRUCT;
+
     LightNode(const Light& light)
       : light(light) {}
       
@@ -355,6 +358,8 @@ namespace embree
     
     struct MaterialNode : public Node
     {
+      ALIGNED_STRUCT;
+
     MaterialNode(const Material& material)
       : material(material) {}
       
