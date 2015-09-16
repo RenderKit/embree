@@ -328,7 +328,7 @@ namespace embree
 
   RTCScene transferGeometryData(char *g)
   {
-    RTCScene scene = rtcNewScene2(g_device,RTC_SCENE_STATIC,aflags);
+    RTCScene scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,aflags);
 
     int magick = *(size_t*)g; g += sizeof(int);
     if (magick != 0x35238765LL) {

@@ -226,7 +226,7 @@ namespace embree
     rtcDeviceSetErrorFunction(device,error_handler);
     
     /* create scene */
-    RTCScene scene = rtcNewScene2(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+    RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_STATIC,RTC_INTERSECT1);
     addCube(scene,Vec3fa(-1,0,0));
     addCube(scene,Vec3fa(1,0,0));
     addCube(scene,Vec3fa(0,0,-1));

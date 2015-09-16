@@ -29,6 +29,7 @@
 //#define SWITCH_THRESHOLD 16
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
+
 namespace embree
 {
   namespace isa
@@ -54,8 +55,8 @@ namespace embree
       const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const Vec3f8 norg = -org, org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
-     
-/* pop loop */
+
+      /* pop loop */
       while (true) pop:
       {
         /*! pop next node */
@@ -68,10 +69,12 @@ namespace embree
         /*! if popped node is too far, pop next one */
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
-        
+
+
         /* downtraversal loop */
         while (true)
         {
+
           /*! stop if we found a leaf */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
@@ -106,7 +109,7 @@ namespace embree
           const bool8 vmask = tNear <= tFar;
           size_t mask = movemask(vmask);
 #endif
-          
+
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
@@ -708,7 +711,6 @@ namespace embree
 
     //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPluecker, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA true> > >);
     //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPlueckerNoFilter, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA false> > >);
-
   }
 }  
 

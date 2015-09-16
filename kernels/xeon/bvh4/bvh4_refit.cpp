@@ -24,7 +24,9 @@
 
 #include <algorithm>
 
-#define STATIC_SUBTREE_EXTRACTION 0
+#define STATIC_SUBTREE_EXTRACTION 1
+
+#define TIMER(x) 
 
 namespace embree
 {
@@ -61,10 +63,16 @@ namespace embree
       }
       else
       {
-        //PRINT(bvh->numPrimitives);
+        TIMER(const double t0 = getSeconds());
+
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
-        //PRINT(numSubTrees);
+
+        TIMER(const double t1 = getSeconds());
+        TIMER(PRINT(t1-t0));
+
+        TIMER(const double t2 = getSeconds());
+
         if (numSubTrees)
           parallel_for(size_t(0), numSubTrees, [&] (const range<size_t>& r) {
               for (size_t i=r.begin(); i<r.end(); i++) {
@@ -72,8 +80,17 @@ namespace embree
                 recurse_bottom(ref);
               }
             });
+
+        TIMER(const double t3 = getSeconds());
+        TIMER(PRINT(t3-t2));
+        TIMER(const double t4 = getSeconds());
+
         numSubTrees = 0;        
         bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
+
+        TIMER(const double t5 = getSeconds());
+        TIMER(PRINT(t5-t4));
+
         //PRINT(numSubTrees);
         //PRINT(bvh->bounds);
         //if (numSubTrees) exit(0);
@@ -254,6 +271,11 @@ namespace embree
       /* recurse if this is an internal node */
       Node* node = ref.node();
 
+      /* enable exclusive prefetch for >= AVX platforms */
+      
+#if defined(__AVX__)      
+      ref.prefetchW();
+#endif      
       const BBox3fa bounds0 = recurse_bottom(node->child(0));
       const BBox3fa bounds1 = recurse_bottom(node->child(1));
       const BBox3fa bounds2 = recurse_bottom(node->child(2));      

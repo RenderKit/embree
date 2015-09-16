@@ -160,6 +160,15 @@ namespace embree
 	}
       }
 
+      __forceinline void prefetchW(int types=0) const {
+        embree::prefetchEX(((char*)ptr)+0*64);
+	embree::prefetchEX(((char*)ptr)+1*64);
+	if (types > 0x1) {
+	  embree::prefetchEX(((char*)ptr)+2*64);
+	  embree::prefetchEX(((char*)ptr)+3*64);
+	}
+      }
+
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { assert(!isBarrier()); ptr |= barrier_mask; }
       
