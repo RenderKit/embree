@@ -294,6 +294,7 @@ namespace embree
 
     /* set shader mode */
     switch (g_shader) {
+    case SHADER_DEFAULT : break;
     case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
     case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
     case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
