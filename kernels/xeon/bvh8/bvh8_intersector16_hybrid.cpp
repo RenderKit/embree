@@ -21,7 +21,7 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
-#include "../geometry/triangle_intersector_pluecker2.h"
+//#include "../geometry/triangle_intersector_pluecker2.h"
 
 #define DBG(x) 
 
@@ -636,8 +636,8 @@ namespace embree
 
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
+    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
+    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
 
   }
 }  

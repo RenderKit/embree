@@ -186,11 +186,11 @@ namespace embree
           break;
 
           case /*0b01*/ 1: 
-#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
-            if (hasISA(AVX2))
-              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
-            else
-#endif
+//#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
+//            if (hasISA(AVX2))
+//              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
+//            else
+//#endif
               accels.add(BVH4::BVH4Triangle4vObjectSplit(this));
 
             break;
@@ -221,7 +221,7 @@ namespace embree
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
     else if (device->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
-    else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
+    //else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
 
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);
