@@ -135,7 +135,7 @@ namespace embree
           }
 
           /*! use 8-wide sorting network in the AVX2 */
-#if defined(__AVX2__) && 1
+#if defined(__AVX2__) && 0
 
           const bool8 mask8 = !vmask;
           const size_t hits = __popcnt(movemask(mask8));
