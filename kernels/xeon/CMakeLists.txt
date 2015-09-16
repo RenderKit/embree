@@ -52,9 +52,9 @@ IF (TASKING_TBB)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
-
-  embree.rc
+SET(EMBREE_LIBRARY_FILES
+ 
+   embree.rc
 
   ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/tasksys.cpp
@@ -110,37 +110,22 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
 
   bvh4/bvh4_intersector1.cpp
   bvh4/bvh4_intersector4_single.cpp
-  bvh4/bvh4_intersector4_chunk.cpp
-)
-SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
+  bvh4/bvh4_intersector4_chunk.cpp)
 
-IF (TARGET_SSE41)
-  ADD_LIBRARY(embree_sse41 STATIC
+SET(EMBREE_LIBRARY_FILES_SSE41
 
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
 
     bvh4/bvh4_intersector1.cpp
     bvh4/bvh4_intersector4_single.cpp
-    bvh4/bvh4_intersector4_chunk.cpp
-  )
-  SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
-  SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
-ENDIF ()
+    bvh4/bvh4_intersector4_chunk.cpp)
 
-IF (TARGET_SSE42)
-  ADD_LIBRARY(embree_sse42 STATIC
-    bvh4/bvh4_intersector4_hybrid.cpp
-  )
-  SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
-  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
-ENDIF ()
+SET(EMBREE_LIBRARY_FILES_SSE42
+    bvh4/bvh4_intersector4_hybrid.cpp)
 
-IF (TARGET_AVX)
-  ADD_LIBRARY(embree_avx STATIC
-
+SET(EMBREE_LIBRARY_FILES_AVX
+    
     ../common/scene_subdiv_mesh_avx.cpp
 
     geometry/primitive.cpp
@@ -174,16 +159,10 @@ IF (TARGET_AVX)
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp
-  )
+    bvh8/bvh8_intersector8_hybrid.cpp)
 
-  SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
-  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
- ENDIF()
+SET(EMBREE_LIBRARY_FILES_AVX2
 
-IF (TARGET_AVX2)
-  ADD_LIBRARY(embree_avx2 STATIC
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
@@ -201,16 +180,9 @@ IF (TARGET_AVX2)
     bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp
-  )
+    bvh8/bvh8_intersector8_hybrid.cpp)
 
-  SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
-  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
-ENDIF()
-
-IF (TARGET_AVX512)
-  ADD_LIBRARY(embree_avx512 STATIC
+SET(EMBREE_LIBRARY_FILES_AVX512
 
     geometry/instance_intersector1.cpp
     geometry/instance_intersector4.cpp
@@ -239,8 +211,41 @@ IF (TARGET_AVX512)
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
     bvh8/bvh8_intersector16_chunk.cpp
-    bvh8/bvh8_intersector16_hybrid.cpp
-)
+    bvh8/bvh8_intersector16_hybrid.cpp)
+
+ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
+SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
+
+IF (TARGET_SSE41)
+  ADD_LIBRARY(embree_sse41 STATIC ${EMBREE_LIBRARY_FILES_SSE41})
+  SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
+  SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
+ENDIF ()
+
+IF (TARGET_SSE42)
+  ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})
+  SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
+  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
+ENDIF ()
+
+IF (TARGET_AVX)
+  ADD_LIBRARY(embree_avx STATIC ${EMBREE_LIBRARY_FILES_AVX})
+  SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
+  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
+ ENDIF()
+
+IF (TARGET_AVX2)
+  ADD_LIBRARY(embree_avx2 STATIC ${EMBREE_LIBRARY_FILES_AVX2})
+  SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
+  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
+ENDIF()
+
+IF (TARGET_AVX512)
+  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512})
   SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
   SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
