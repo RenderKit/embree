@@ -177,7 +177,7 @@ RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags afl
   return ispcNewScene(flags,aflags);
 }
 
-RTCScene rtcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
+RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags) 
 {  
   if (aflags & RTC_INTERSECT_VARYING) {
     if (sizeof(varying float) == 16)

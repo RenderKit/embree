@@ -569,7 +569,7 @@ namespace embree
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
       double t0 = getSeconds();
-      RTCScene scene = rtcNewScene2(device,sflags,aflags);
+      RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
       
       for (size_t i=0; i<numMeshes; i++) 
       {
@@ -606,7 +606,7 @@ namespace embree
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
-      RTCScene scene = rtcNewScene2(device,RTC_SCENE_DYNAMIC,aflags);
+      RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
       
       for (size_t i=0; i<numMeshes; i++) 
       {
@@ -651,7 +651,7 @@ namespace embree
       
       for (size_t i=0; i<numMeshes; i++) 
       {
-        RTCScene scene = rtcNewScene2(device,RTC_SCENE_DYNAMIC,aflags);
+        RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
 	unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
 	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
 	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
@@ -738,7 +738,7 @@ namespace embree
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
-      scene = rtcNewScene2(device,flags,aflags);
+      scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
       rtcCommit (scene);
 
@@ -814,7 +814,7 @@ namespace embree
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
-      scene = rtcNewScene2(device,flags,aflags);
+      scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
       rtcCommit (scene);
 
@@ -1008,7 +1008,7 @@ namespace embree
   {
     RTCDevice device = rtcNewDevice(g_rtcore.c_str());
 
-    RTCScene scene = rtcNewScene2(device,flags,aflags);
+    RTCScene scene = rtcDeviceNewScene(device,flags,aflags);
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
     rtcCommit (scene);
     

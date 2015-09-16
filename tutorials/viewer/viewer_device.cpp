@@ -170,7 +170,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene2(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {

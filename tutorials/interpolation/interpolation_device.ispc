@@ -323,7 +323,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene2(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING | RTC_INTERPOLATE);
 
   /* add ground plane */
   addGroundPlane(g_scene);

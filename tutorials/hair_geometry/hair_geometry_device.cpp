@@ -122,7 +122,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   //scene_in->numMeshes = 0;
 
   /* create scene */
-  RTCScene scene_out = rtcNewScene2(g_device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
+  RTCScene scene_out = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
   /* add all hair sets to the scene */
   for (int i=0; i<scene_in->numHairSets; i++)

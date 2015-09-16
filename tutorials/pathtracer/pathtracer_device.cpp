@@ -1101,7 +1101,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   scene_aflags |= RTC_INTERPOLATE;
 
-  RTCScene scene_out = rtcNewScene2(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 

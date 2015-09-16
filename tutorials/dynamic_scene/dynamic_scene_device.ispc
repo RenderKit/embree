@@ -146,7 +146,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene2(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* create some triangulated spheres */
   for (uniform int i=0; i<numSpheres; i++)
