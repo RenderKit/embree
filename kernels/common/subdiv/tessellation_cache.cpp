@@ -203,16 +203,19 @@ namespace embree
     data      = (float*)os_malloc(size); // FIXME: do os_reserve under linux
     maxBlocks = size/64;    
 
-    /* reset to the first segment */
-    //next_block = 0; 
-#if FORCE_SIMPLE_FLUSH == 1
-    switch_block_threshold = maxBlocks;
-#else
-    switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
-#endif
-
     /* invalidate entire cache */
     localTime += NUM_CACHE_SEGMENTS; 
+
+    /* reset to the first segment */
+#if FORCE_SIMPLE_FLUSH == 1
+    next_block = 0;
+    switch_block_threshold = maxBlocks;
+#else
+    const size_t region = localTime % NUM_CACHE_SEGMENTS;
+    next_block = region * (maxBlocks/NUM_CACHE_SEGMENTS);
+    switch_block_threshold = next_block + (maxBlocks/NUM_CACHE_SEGMENTS);
+    assert( switch_block_threshold <= maxBlocks );
+#endif
 
     /* release all blocked threads */
     for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
