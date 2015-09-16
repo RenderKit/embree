@@ -30,8 +30,6 @@
 
 #include "../../common/accelinstance.h"
 
-#define ENABLE_TEST_INTERSECTOR 0
-
 namespace embree
 {
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1vIntersector1);
@@ -92,13 +90,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridAOSIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
-
-#if !defined(__WIN32__)
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle4Intersector8TestMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle4Intersector8TestMoellerNoFilter);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle8Intersector8TestMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4Triangle8Intersector8TestMoellerNoFilter);
-#endif
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1vIntersector16Chunk);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Bezier1iIntersector16Chunk);
@@ -279,13 +270,6 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4GridAOSIntersector8);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
-
-#if !defined(__WIN32__)
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle4Intersector8TestMoeller);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle4Intersector8TestMoellerNoFilter);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle8Intersector8TestMoeller);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4Triangle8Intersector8TestMoellerNoFilter);
-#endif
 
     /* select intersectors16 */
     SELECT_SYMBOL_AVX512(features,BVH4Bezier1vIntersector16Chunk);
@@ -529,13 +513,8 @@ namespace embree
     intersectors.intersector1           = BVH4Triangle4Intersector1Moeller;
     intersectors.intersector4_filter    = BVH4Triangle4Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4Triangle4Intersector4HybridMoellerNoFilter;
-#if ENABLE_TEST_INTERSECTOR == 1
-    intersectors.intersector8_filter    = BVH4Triangle4Intersector8TestMoeller;
-    intersectors.intersector8_nofilter  = BVH4Triangle4Intersector8TestMoellerNoFilter;
-#else
     intersectors.intersector8_filter    = BVH4Triangle4Intersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH4Triangle4Intersector8HybridMoellerNoFilter;
-#endif
     intersectors.intersector16_filter   = BVH4Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle4Intersector16HybridMoellerNoFilter;
     return intersectors;
@@ -563,13 +542,8 @@ namespace embree
     intersectors.intersector1           = BVH4Triangle8Intersector1Moeller;
     intersectors.intersector4_filter    = BVH4Triangle8Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4Triangle8Intersector4HybridMoellerNoFilter;
-#if ENABLE_TEST_INTERSECTOR == 1
-    intersectors.intersector8_filter    = BVH4Triangle8Intersector8TestMoeller;
-    intersectors.intersector8_nofilter  = BVH4Triangle8Intersector8TestMoellerNoFilter;
-#else
     intersectors.intersector8_filter    = BVH4Triangle8Intersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH4Triangle8Intersector8HybridMoellerNoFilter;
-#endif
     intersectors.intersector16_filter   = BVH4Triangle8Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle8Intersector16HybridMoellerNoFilter;
     return intersectors;
