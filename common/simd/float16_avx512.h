@@ -822,11 +822,19 @@ namespace embree
   }
   
   __forceinline void store16f_nt(void *__restrict__ ptr, const float16& a) {
+#if defined(__AVX512F__)
+     _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenr_ps(ptr,a);
+#endif
   }
   
   __forceinline void store16f_ngo(void *__restrict__ ptr, const float16& a) {
+#if defined(__AVX512F__)
+     _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenrngo_ps(ptr,a);
+#endif
   }
 
   __forceinline void store1f(void *addr, const float16& reg) {
