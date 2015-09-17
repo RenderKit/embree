@@ -40,6 +40,6 @@ namespace embree
   struct float4;
 }
 
-#include "bool4_sse2.h"
-#include "int4_sse2.h"
-#include "float4_sse2.h"
+#include "vbool4_sse2.h"
+#include "vint4_sse2.h"
+#include "vfloat4_sse2.h"

@@ -35,9 +35,9 @@ namespace embree
   class float16; 
 }
 
-#include "bool16_avx512.h"
-#include "int16_avx512.h"
-#include "float16_avx512.h"
+#include "vbool16_avx512.h"
+#include "vint16_avx512.h"
+#include "vfloat16_avx512.h"
 
 namespace embree
 {
