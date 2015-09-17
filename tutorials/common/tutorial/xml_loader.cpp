@@ -264,7 +264,7 @@ namespace embree
     std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
 
   private:
-    size_t curMaterialID;
+    size_t currentNodeID;
     std::map<size_t, Ref<SceneGraph::Node> > id2node;
     std::map<size_t, Ref<SceneGraph::MaterialNode> > id2material;
 
@@ -935,16 +935,16 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadBGFNode(const Ref<XML>& xml)
   {
-    const size_t id = atoi(xml->parm("id").c_str());
+    //const size_t id = atoi(xml->parm("id").c_str());
+    const size_t id = currentNodeID++;
 
     if      (xml->name == "Mesh"     ) return id2node[id] = loadBGFMesh(xml);
     else if (xml->name == "Group"    ) return id2node[id] = loadBGFGroupNode(xml);
     else if (xml->name == "Transform") return id2node[id] = loadBGFTransformNode(xml);
     else if (xml->name == "Material" ) 
     {
-      const size_t mid = curMaterialID++;
       Ref<SceneGraph::MaterialNode> material = loadBGFMaterial(xml); 
-      id2material[mid] = material;
+      id2material[id] = material;
       return material.cast<SceneGraph::Node>();
     }
     else if (xml->name == "Texture2D") {
@@ -961,7 +961,7 @@ namespace embree
     XMLLoader loader(fileName,space); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), curMaterialID(0)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
