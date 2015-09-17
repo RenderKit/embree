@@ -914,7 +914,11 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBGFTransformNode(const Ref<XML>& xml) 
   {
     const size_t child = atoi(xml->parm("child").c_str()); 
-    const AffineSpace3fa space = load<AffineSpace3fa>(xml);
+    if (xml->body.size() != 12) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong AffineSpace body");
+    const AffineSpace3fa space(LinearSpace3fa(Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float()),
+                                              Vec3fa(xml->body[3].Float(),xml->body[4].Float(),xml->body[5].Float()),
+                                              Vec3fa(xml->body[6].Float(),xml->body[7].Float(),xml->body[8].Float())),
+                               Vec3fa(xml->body[9].Float(),xml->body[10].Float(),xml->body[11].Float()));
     return new SceneGraph::TransformNode(space,id2node.at(child));
   }
 
