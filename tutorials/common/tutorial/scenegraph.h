@@ -320,7 +320,7 @@ namespace embree
     {
       ALIGNED_STRUCT;
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
-        : xfm0(xfm0), xfm1(xfm1), child(child) {}
+        : xfm0(xfm), xfm1(xfm), child(child) {}
       
     public:
       AffineSpace3fa xfm0;
