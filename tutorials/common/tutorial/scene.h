@@ -43,6 +43,9 @@ namespace embree
 
       for (size_t i=0; i<hairsets.size(); i++)
         delete hairsets[i];
+
+      for (size_t i=0; i<instances.size(); i++)
+        delete instances[i];
     }
 
     /*! OBJ Triangle */
@@ -121,6 +124,18 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
     };
 
+    struct Instance
+    {
+      ALIGNED_STRUCT;
+
+      Instance(const AffineSpace3fa& space, int geomID)
+      : space(space), geomID(geomID) {}
+
+    public:
+      AffineSpace3fa space;
+      int geomID;
+    };
+
     bool empty() const {
       return meshes.size() == 0 && hairsets.size() == 0;
     }
@@ -158,6 +173,7 @@ namespace embree
     std::vector<Mesh*> meshes;                         //!< list of meshes
     std::vector<HairSet*> hairsets;                    //!< list of hair sets
     std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
+    std::vector<Instance*> instances;               //!< list of mesh instances
     avector<AmbientLight> ambientLights;           //!< list of ambient lights
     avector<PointLight> pointLights;               //!< list of point lights
     avector<DirectionalLight> directionalLights;   //!< list of directional lights
