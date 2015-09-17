@@ -39,7 +39,6 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
-  OBJScene g_obj_scene2;
   static FileName objFilename = "";
   static FileName objFilename2 = "";
   static FileName hairFilename = "";
@@ -501,31 +500,31 @@ float noise(float x, float y, float z)
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
       Ref<SceneGraph::Node> node = loadOBJ(objFilename,false);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (objFilename2.str() != "") {
         Ref<SceneGraph::Node> node = loadOBJ(objFilename2,false);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node));
+        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
+        SceneGraph::set_motion_blur(node0,node1);
       }
+      g_obj_scene.add(node0);
     }
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       Ref<SceneGraph::Node> node = loadHair(hairFilename);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (hairFilename2.str() != "") {
-        Ref<SceneGraph::Node> node2 = loadHair(hairFilename2);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node2));
+        Ref<SceneGraph::Node> node = loadHair(hairFilename2);
+        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
+        SceneGraph::set_motion_blur(node0,node1);
       }
+      g_obj_scene.add(node0);
     }
 
     /* load cy_hair */
     if (cy_hairFilename.str() != "") {
       Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
       g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
-    }
-
-    if (!g_obj_scene2.empty()) {
-      g_obj_scene.set_motion_blur(g_obj_scene2);
     }
 
     /* if scene is empty, create default scene */
