@@ -383,6 +383,7 @@ namespace embree
     fseek(binFile,long(ofs),SEEK_SET);
 
     size = atol(xml->parm("size").c_str());
+    if (size == 0) size = atol(xml->parm("num").c_str()); // version for BGF format
     char* data = (char*) alignedMalloc(size*eltSize);
 
     if (size != fread(data, eltSize, size, binFile)) 
