@@ -331,7 +331,7 @@ namespace embree
     _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
   }
 
-#if 0 // FIXME: not compiling under VS2013
+
   __forceinline int8 sortNetwork2x4(const int8& v)
   {
     const int8 a0 = v; 
@@ -379,7 +379,6 @@ namespace embree
       const int8 a6 = select(0x55 /* 0b01010101 */,c5,d5);
       return a6;
     }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
