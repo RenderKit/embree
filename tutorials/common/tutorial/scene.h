@@ -75,8 +75,6 @@ namespace embree
     /*! Mesh. */
     struct Mesh 
     {
-      void set_motion_blur(const Mesh* other);
-
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -118,8 +116,6 @@ namespace embree
     /*! Hair Set. */
     struct HairSet
     {
-      void set_motion_blur(const HairSet* other);
-
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
@@ -128,8 +124,6 @@ namespace embree
     bool empty() const {
       return meshes.size() == 0 && hairsets.size() == 0;
     }
-
-    void set_motion_blur(OBJScene& other);
 
     void convert_to_subdiv()
     {

@@ -135,45 +135,4 @@ namespace embree
   void OBJScene::add(Ref<SceneGraph::Node> node) {
     SceneGraph2OBJScene(node,this);
   }
-
-  void OBJScene::Mesh::set_motion_blur(const Mesh* other)
-  {
-    if (v.size() != other->v.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    bool different = false;
-    for (size_t i=0; i<v.size(); i++) 
-      different |= v[i] != other->v[i];
-
-    if (different)
-      v2 = other->v;
-  }
-
-  void OBJScene::HairSet::set_motion_blur(const HairSet* other)
-  {
-    if (v.size() != other->v.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    bool different = false;
-    for (size_t i=0; i<v.size(); i++) 
-      different |= v[i] != other->v[i];
-
-    if (different)
-      v2 = other->v;
-  }
-
-  void OBJScene::set_motion_blur(OBJScene& other)
-  {
-    if (meshes.size() != other.meshes.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-    
-    for (size_t i=0; i<meshes.size(); i++) 
-      meshes[i]->set_motion_blur(other.meshes[i]);
-
-    if (hairsets.size() != other.hairsets.size())
-      THROW_RUNTIME_ERROR("incompatible geometry");
-
-    for (size_t i=0; i<hairsets.size(); i++) 
-      hairsets[i]->set_motion_blur(other.hairsets[i]);
-  }
 };
