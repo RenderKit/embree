@@ -43,6 +43,7 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
+  Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName filename = "";
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -118,11 +119,11 @@ namespace embree
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
 
-       /* ambient light source */
+      /* ambient light source */
       else if (tag == "-ambientlight") 
       {
         const Vec3fa L = cin->getVec3fa();
-        g_obj_scene.ambientLights.push_back(AmbientLight(L));
+        g_scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
       }
 
       /* point light source */
@@ -130,7 +131,7 @@ namespace embree
       {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        g_obj_scene.pointLights.push_back(PointLight(P,I));
+        g_scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
       }
 
       /* directional light source */
@@ -138,7 +139,7 @@ namespace embree
       {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        g_obj_scene.directionalLights.push_back(DirectionalLight(D,E));
+        g_scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
       }
 
       /* distant light source */
@@ -147,7 +148,7 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        g_obj_scene.distantLights.push_back(DistantLight(D,L,halfAngle));
+        g_scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
       }
 
       /* skip unknown command line parameter */
@@ -223,12 +224,10 @@ namespace embree
 
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj")) {
-      Ref<SceneGraph::Node> node = loadOBJ(filename,g_subdiv_mode != "");	
-      g_obj_scene.add(node);
+      g_scene->add(loadOBJ(filename,g_subdiv_mode != ""));
     }
     else if (strlwr(filename.ext()) == std::string("xml")) {
-      Ref<SceneGraph::Node> node = loadXML(filename,one);
-      g_obj_scene.add(node);
+      g_scene->add(loadXML(filename,one));
     }
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
@@ -237,6 +236,8 @@ namespace embree
     init(g_rtcore.c_str());
 
     /* send model */
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>()); 
+    g_scene = nullptr;
     set_scene(&g_obj_scene);
     
     /* benchmark mode */
