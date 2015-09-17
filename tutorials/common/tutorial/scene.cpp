@@ -186,7 +186,7 @@ namespace embree
     }
   };
 
-  void OBJScene::add(Ref<SceneGraph::Node> node) {
-    SceneGraphConverter(node,this,false);
+  void OBJScene::add(Ref<SceneGraph::Node> node, bool instancing) {
+    SceneGraphConverter(node,this,instancing);
   }
 };
