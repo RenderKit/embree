@@ -38,7 +38,7 @@ namespace embree
     void convert(Ref<SceneGraph::Node> node, const AffineSpace3fa& space)
     {
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        convert(xfmNode->child, space*xfmNode->xfm);
+        convert(xfmNode->child, space*xfmNode->xfm0);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (auto child : groupNode->children) convert(child,space);
