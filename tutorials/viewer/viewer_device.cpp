@@ -24,6 +24,7 @@ extern "C" bool g_changed;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 void** geomID_to_mesh = nullptr;
+int* meshID_to_geomID = nullptr;
 int* geomID_to_type = nullptr;
 bool g_subdiv_mode = false;
 
@@ -163,6 +164,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
   typedef void* void_ptr;
   geomID_to_mesh = new void_ptr[numGeometries];
+  meshID_to_geomID = new int[numGeometries];
   geomID_to_type = new int[numGeometries];
 
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -206,10 +208,21 @@ RTCScene convertScene(ISPCScene* scene_in)
 
     geomID_to_mesh[geomID] = mesh;
     geomID_to_type[geomID] = 0;
+    meshID_to_geomID[i] = geomID;
 
     /* share vertex buffer */
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+
+    if (scene_in->numInstances) rtcDisable(scene_out,geomID);
+  }
+
+  /* add all instances to the scene */
+  for (int i=0; i<scene_in->numInstances; i++)
+  {
+    ISPCInstance* instance = scene_in->instances[i];
+    unsigned int geomID = rtcNewGeometryInstance(scene_out, meshID_to_geomID[instance->geomID]);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
   }
 
   /* commit changes to scene */
@@ -232,12 +245,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
-  
+
 #if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
+
+  return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
   
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
