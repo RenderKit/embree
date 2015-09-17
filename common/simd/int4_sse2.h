@@ -376,6 +376,7 @@ namespace embree
 #endif
   }
 
+#if 0 // FIXME: not compiling under VS2013
 #if defined (__AVX2__)
 
     __forceinline int4 networkSort(const int4 &v)
@@ -399,6 +400,7 @@ namespace embree
       return a3;
     }
 
+#endif
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

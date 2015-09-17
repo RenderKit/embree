@@ -108,7 +108,7 @@ namespace embree
     AccelN* This = (AccelN*)ptr;
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded16(valid,ray);
-#if defined(__MIC__) || defined(__AVX512__)
+#if defined(__MIC__) || defined(__AVX512F__)
       bool16 valid0 = ((bool16*)valid)[0];
       bool16 hit0   = ((int16*)ray.geomID)[0] == int16(0);
       if (all(valid0,hit0)) break;

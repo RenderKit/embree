@@ -30,7 +30,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
-    return (RTCDevice) new Device(cfg);
+    return (RTCDevice) new Device(cfg,false);
     RTCORE_CATCH_END_NOREPORT;
     return (RTCDevice) nullptr;
   }
@@ -56,7 +56,7 @@ namespace embree
     RTCORE_TRACE(rtcInit);
     Lock<MutexSys> lock(g_mutex);
     if (g_device) throw_RTCError(RTC_INVALID_OPERATION,"already initialized");
-    g_device = new Device(cfg);
+    g_device = new Device(cfg,true);
     RTCORE_CATCH_END(g_device);
   }
   
@@ -74,10 +74,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
 
@@ -87,10 +84,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
-    switch (parm) {
-    case RTC_SOFTWARE_CACHE_SIZE: resizeTessellationCache(max(ssize_t(1024*1024),val)); break;
-    default: throw_RTCError(RTC_INVALID_ARGUMENT, "unknown parameter"); break;
-    };
+    device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }
 
@@ -98,7 +92,6 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    assert(g_device);
     if (g_device == nullptr) return RTC_UNKNOWN_ERROR;
     RTCError* stored_error = g_device->error();
     RTCError error = *stored_error;
@@ -243,8 +236,7 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
 #if !defined(__MIC__)
     unsigned int mxcsr = _mm_getcsr();
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
 #endif
     
      /* perform scene build */
@@ -281,7 +273,8 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
-  
+
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcIntersect4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -312,7 +305,9 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcIntersect8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -343,7 +338,9 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcIntersect16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -374,6 +371,7 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
   RTCORE_API void rtcOccluded (RTCScene hscene, RTCRay& ray) 
   {
@@ -399,6 +397,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
   
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcOccluded4 (const void* valid, RTCScene hscene, RTCRay4& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -429,7 +428,9 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcOccluded8 (const void* valid, RTCScene hscene, RTCRay8& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -460,7 +461,9 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcOccluded16 (const void* valid, RTCScene hscene, RTCRay16& ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -491,6 +494,7 @@ namespace embree
 #endif
     RTCORE_CATCH_END(scene->device);
   }
+#endif
   
   RTCORE_API void rtcDeleteScene (RTCScene hscene) 
   {
@@ -771,6 +775,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcSetIntersectFunction4 (RTCScene hscene, unsigned geomID, RTCIntersectFunc4 intersect4) 
   {
     Scene* scene = (Scene*) hscene;
@@ -803,6 +808,7 @@ namespace embree
     scene->get_locked(geomID)->setIntersectFunction16(intersect16);
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 
   RTCORE_API void rtcSetOccludedFunction (RTCScene hscene, unsigned geomID, RTCOccludedFunc occluded) 
   {
@@ -815,6 +821,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcSetOccludedFunction4 (RTCScene hscene, unsigned geomID, RTCOccludedFunc4 occluded4) 
   {
     Scene* scene = (Scene*) hscene;
@@ -847,6 +854,7 @@ namespace embree
     scene->get_locked(geomID)->setOccludedFunction16(occluded16);
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 
   RTCORE_API void rtcSetIntersectionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
   {
@@ -859,6 +867,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcSetIntersectionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
   {
     Scene* scene = (Scene*) hscene;
@@ -891,6 +900,7 @@ namespace embree
     scene->get_locked(geomID)->setIntersectionFilterFunction16(filter16);
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 
   RTCORE_API void rtcSetOcclusionFilterFunction (RTCScene hscene, unsigned geomID, RTCFilterFunc intersect) 
   {
@@ -903,6 +913,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcSetOcclusionFilterFunction4 (RTCScene hscene, unsigned geomID, RTCFilterFunc4 filter4) 
   {
     Scene* scene = (Scene*) hscene;
@@ -935,6 +946,7 @@ namespace embree
     scene->get_locked(geomID)->setOcclusionFilterFunction16(filter16);
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 
   RTCORE_API void rtcInterpolate(RTCScene hscene, unsigned geomID, unsigned primID, float u, float v, 
                                  RTCBufferType buffer,
@@ -949,6 +961,7 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
+#if defined (RTCORE_RAY_PACKETS)
   RTCORE_API void rtcInterpolateN(RTCScene hscene, unsigned geomID, 
                                   const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                   RTCBufferType buffer,
@@ -962,4 +975,5 @@ namespace embree
     scene->get(geomID)->interpolateN(valid_i,primIDs,u,v,numUVs,buffer,P,dPdu,dPdv,numFloats); // this call is on purpose not thread safe
     RTCORE_CATCH_END(scene->device);
   }
+#endif
 }

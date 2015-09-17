@@ -22,7 +22,7 @@
   #define PAGE_SIZE 4096
 #endif
 
-#define MAX_THREADS 256
+#define MAX_THREADS 512
 #define MAX_MIC_THREADS MAX_THREADS // FIXME: remove MAX_MIC_THREADS
 #define MAX_MIC_CORES (MAX_MIC_THREADS/4)
 
@@ -32,7 +32,7 @@
 #if defined(__MIC__)
 #  define isa knc
 #  define ISA KNC
-#elif defined (__AVX512__)
+#elif defined (__AVX512F__)
 #  define isa avx512
 #  define ISA AVX512KNL
 #elif defined (__AVX2__)

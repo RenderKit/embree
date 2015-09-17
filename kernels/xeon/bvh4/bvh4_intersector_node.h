@@ -162,7 +162,7 @@ namespace embree
 
 
     /*! intersection with ray packet of size 8 */
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
     template<bool robust>
       __forceinline bool16 intersect16_node(const BVH4::Node* node, size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, float16& dist) 
     {
@@ -298,7 +298,7 @@ namespace embree
 
 
     /*! intersection with ray packet of size 8 */
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
     __forceinline bool16 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, const float16& time, float16& dist) 
     {
       const float16 vlower_x = float16(node->lower_x[i]) + time * float16(node->lower_dx[i]);

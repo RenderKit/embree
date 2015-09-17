@@ -27,6 +27,24 @@
 #define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
 #endif
 
+#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
+#  define HAS_INTERSECT4 1
+#else
+#  define HAS_INTERSECT4 0
+#endif
+
+#if defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
+#  define HAS_INTERSECT8 1
+#else
+#  define HAS_INTERSECT8 0
+#endif
+
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__))
+#  define HAS_INTERSECT16 1
+#else
+#  define HAS_INTERSECT16 0
+#endif
+
 namespace embree
 {
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
@@ -769,6 +787,8 @@ namespace embree
   RTCScene benchmark_rtcore_intersect1_throughput::scene;
 
 
+#if HAS_INTERSECT16
+
   class benchmark_rtcore_intersect16_throughput : public Benchmark
   {
   public:
@@ -843,7 +863,7 @@ namespace embree
   };
 
   RTCScene benchmark_rtcore_intersect16_throughput::scene;
-
+#endif
 
 
   void rtcore_coherent_intersect1(RTCScene scene)
@@ -865,6 +885,7 @@ namespace embree
     fflush(stdout);
   }
 
+#if HAS_INTERSECT4
   void rtcore_coherent_intersect4(RTCScene scene)
   {
     size_t width = 1024;
@@ -889,7 +910,9 @@ namespace embree
     printf("%40s ... %f Mrps\n","coherent_intersect4",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
+#if HAS_INTERSECT8
   void rtcore_coherent_intersect8(RTCScene scene)
   {
     size_t width = 1024;
@@ -914,7 +937,9 @@ namespace embree
     printf("%40s ... %f Mrps\n","coherent_intersect8",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
+#if HAS_INTERSECT16
   void rtcore_coherent_intersect16(RTCScene scene)
   {
     size_t width = 1024;
@@ -939,6 +964,7 @@ namespace embree
     printf("%40s ... %f Mrps\n","coherent_intersect16",1E-6*(double)(width*height)/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
   void rtcore_incoherent_intersect1(RTCScene scene, Vec3f* numbers, size_t N)
   {
@@ -953,6 +979,7 @@ namespace embree
 	fflush(stdout);
   }
 
+#if HAS_INTERSECT4
   void rtcore_incoherent_intersect4(RTCScene scene, Vec3f* numbers, size_t N)
   {
     double t0 = getSeconds();
@@ -969,7 +996,9 @@ namespace embree
     printf("%40s ... %f Mrps\n","incoherent_intersect4",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
+#if HAS_INTERSECT8
   void rtcore_incoherent_intersect8(RTCScene scene, Vec3f* numbers, size_t N)
   {
     double t0 = getSeconds();
@@ -986,7 +1015,9 @@ namespace embree
     printf("%40s ... %f Mrps\n","incoherent_intersect8",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
+#if HAS_INTERSECT16
   void rtcore_incoherent_intersect16(RTCScene scene, Vec3f* numbers, size_t N)
   {
     double t0 = getSeconds();
@@ -1003,6 +1034,7 @@ namespace embree
     printf("%40s ... %f Mrps\n","incoherent_intersect16",1E-6*(double)N/(t1-t0));
 	fflush(stdout);
   }
+#endif
 
   void rtcore_intersect_benchmark(RTCSceneFlags flags, size_t numPhi)
   {
@@ -1013,17 +1045,17 @@ namespace embree
     rtcCommit (scene);
     
     rtcore_coherent_intersect1(scene);
-#if !defined(__MIC__)
+#if HAS_INTERSECT4
     rtcore_coherent_intersect4(scene);
 #endif
 
-#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
+#if HAS_INTERSECT8
     if (hasISA(AVX)) {
       rtcore_coherent_intersect8(scene);
     }
 #endif
 
-#if defined(__MIC__) || defined(__TARGET_AVX512__)
+#if HAS_INTERSECT16
     if (hasISA(AVX512KNL)) {    
       rtcore_coherent_intersect16(scene);
     }
@@ -1039,17 +1071,17 @@ namespace embree
     }
 
     rtcore_incoherent_intersect1(scene,numbers,N);
-#if !defined(__MIC__)
+#if HAS_INTERSECT4
     rtcore_incoherent_intersect4(scene,numbers,N);
 #endif
 
-#if defined(__TARGET_AVX__) || defined(__TARGET_AVX2__)
+#if HAS_INTERSECT8
     if (hasISA(AVX)) {
       rtcore_incoherent_intersect8(scene,numbers,N);
     }
 #endif
 
-#if defined(__MIC__) || defined(__TARGET_AVX512__)
+#if HAS_INTERSECT16
     if (hasISA(AVX512F)) {
       rtcore_incoherent_intersect16(scene,numbers,N);
     }
@@ -1071,7 +1103,7 @@ namespace embree
 #if 1
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
-#if defined(__TARGET_AVX512__) || defined(__MIC__)
+#if HAS_INTERSECT16
     if (hasISA(AVX512F)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
     }
@@ -1174,7 +1206,6 @@ namespace embree
     benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
 #endif
-
 #endif
   }
 

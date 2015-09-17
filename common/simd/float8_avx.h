@@ -490,12 +490,14 @@ namespace embree
     return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));
   }
 
+#if 0 // FIXME: not compiling under VS2013
   __forceinline float8 merge2x4(const float& a, const float& b)
   {
     const float8 va = broadcast(&a);
     const float8 vb = broadcast(&b);
     return select(0b00001111,va,vb);
   }
+#endif
 
 #endif
   

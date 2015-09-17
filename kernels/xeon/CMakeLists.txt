@@ -52,9 +52,9 @@ IF (TASKING_TBB)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} ${TBB_LIBRARIES})
 ENDIF()
 
-ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
-
-  embree.rc
+SET(EMBREE_LIBRARY_FILES
+ 
+   embree.rc
 
   ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/tasksys.cpp
@@ -76,8 +76,6 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   ../common/accelset.cpp
   ../common/state.cpp
   ../common/rtcore.cpp
-  ../common/rtcore_ispc.cpp
-  ../common/rtcore_ispc.ispc
   ../common/buffer.cpp
   ../common/scene.cpp
   ../common/geometry.cpp
@@ -108,45 +106,43 @@ ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE}
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_subdiv.cpp
 
-  bvh4/bvh4_intersector1.cpp
+  bvh4/bvh4_intersector1.cpp)
+
+IF (RTCORE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+
+  ../common/rtcore_ispc.cpp
+  ../common/rtcore_ispc.ispc
+
   bvh4/bvh4_intersector4_single.cpp
-  bvh4/bvh4_intersector4_chunk.cpp
-)
-SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
+  bvh4/bvh4_intersector4_chunk.cpp)
+ENDIF()
 
-IF (TARGET_SSE41)
-  ADD_LIBRARY(embree_sse41 STATIC
-
+SET(EMBREE_LIBRARY_FILES_SSE41
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
+    bvh4/bvh4_intersector1.cpp)
 
-    bvh4/bvh4_intersector1.cpp
+IF (RTCORE_RAY_PACKETS)
+    SET(EMBREE_LIBRARY_FILES_SSE41 ${EMBREE_LIBRARY_FILES_SSE41}
     bvh4/bvh4_intersector4_single.cpp
-    bvh4/bvh4_intersector4_chunk.cpp
-  )
-  SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
-  SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
-ENDIF ()
+    bvh4/bvh4_intersector4_chunk.cpp)
+ENDIF()
 
-IF (TARGET_SSE42)
-  ADD_LIBRARY(embree_sse42 STATIC
-    bvh4/bvh4_intersector4_hybrid.cpp
-  )
-  SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
-  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
-ENDIF ()
+SET(EMBREE_LIBRARY_FILES_SSE42)
 
-IF (TARGET_AVX)
-  ADD_LIBRARY(embree_avx STATIC
+IF (RTCORE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
+   bvh4/bvh4_intersector4_hybrid.cpp)
+ENDIF()
 
+SET(EMBREE_LIBRARY_FILES_AVX
+    
     ../common/scene_subdiv_mesh_avx.cpp
 
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
+    
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     builders/primrefgen.avx.cpp
@@ -158,8 +154,20 @@ IF (TARGET_AVX)
     bvh4/bvh4_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
-
     bvh4/bvh4_intersector1.cpp
+    
+    bvh8/bvh8.cpp
+    bvh8/bvh8_statistics.cpp
+    bvh8/bvh8_builder_sah.avx.cpp
+    bvh8/bvh8_intersector1.cpp
+    )
+
+IF (RTCORE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
+
+    geometry/instance_intersector4.cpp
+    geometry/instance_intersector8.cpp
+
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
@@ -167,33 +175,26 @@ IF (TARGET_AVX)
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
 
-    bvh8/bvh8.cpp
-    bvh8/bvh8_statistics.cpp
-    bvh8/bvh8_builder_sah.avx.cpp
-
-    bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp
+    bvh8/bvh8_intersector8_hybrid.cpp)
+ENDIF()
 
-    bvh4/bvh4_intersector8_test.cpp
-    bvh8/bvh8_intersector8_test.cpp
-  )
+SET(EMBREE_LIBRARY_FILES_AVX2
 
-  SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
-  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
- ENDIF()
-
-IF (TARGET_AVX2)
-  ADD_LIBRARY(embree_avx2 STATIC
     geometry/instance_intersector1.cpp
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
 
     bvh4/bvh4_intersector1.cpp
+    
+    bvh8/bvh8_intersector1.cpp)
+
+IF (RTCORE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
+    geometry/instance_intersector4.cpp
+    geometry/instance_intersector8.cpp
+
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
@@ -201,34 +202,32 @@ IF (TARGET_AVX2)
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
 
-    bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp
-
-    bvh4/bvh4_intersector8_test.cpp
-    bvh8/bvh8_intersector8_test.cpp
-  )
-
-  SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
-  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
+    bvh8/bvh8_intersector8_hybrid.cpp)
 ENDIF()
 
-IF (TARGET_AVX512)
-  ADD_LIBRARY(embree_avx512 STATIC
+SET(EMBREE_LIBRARY_FILES_AVX512
 
     geometry/instance_intersector1.cpp
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
-    geometry/instance_intersector16.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
 
     builders/primrefgen.avx512.cpp
 
     bvh4/bvh4_refit.cpp
+    bvh4/bvh4_builder_subdiv.avx512.cpp
     bvh4/bvh4_intersector1.cpp
+
+    bvh8/bvh8_intersector1.cpp)
+
+IF (RTCORE_RAY_PACKETS)
+  SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
+
+    geometry/instance_intersector4.cpp
+    geometry/instance_intersector8.cpp
+    geometry/instance_intersector16.cpp
+
     bvh4/bvh4_intersector4_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
@@ -238,18 +237,47 @@ IF (TARGET_AVX512)
     bvh4/bvh4_intersector16_single.cpp
     bvh4/bvh4_intersector16_chunk.cpp
     bvh4/bvh4_intersector16_hybrid.cpp
-    bvh4/bvh4_builder_subdiv.avx512.cpp
 
-    bvh8/bvh8_intersector1.cpp
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
     bvh8/bvh8_intersector8_hybrid.cpp
     bvh8/bvh8_intersector16_chunk.cpp
-    bvh8/bvh8_intersector16_hybrid.cpp
+    bvh8/bvh8_intersector16_hybrid.cpp)
+ENDIF()
 
-    bvh4/bvh4_intersector8_test.cpp
-    bvh8/bvh8_intersector8_test.cpp
-)
+ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
+SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
+
+IF (TARGET_SSE41 AND EMBREE_LIBRARY_FILES_SSE41)
+  ADD_LIBRARY(embree_sse41 STATIC ${EMBREE_LIBRARY_FILES_SSE41})
+  SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
+  SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
+ENDIF ()
+
+IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
+  ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})
+  SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
+  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
+ENDIF ()
+
+IF (TARGET_AVX  AND EMBREE_LIBRARY_FILES_AVX)
+  ADD_LIBRARY(embree_avx STATIC ${EMBREE_LIBRARY_FILES_AVX})
+  SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
+  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
+ ENDIF()
+
+IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
+  ADD_LIBRARY(embree_avx2 STATIC ${EMBREE_LIBRARY_FILES_AVX2})
+  SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
+  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
+ENDIF()
+
+IF (TARGET_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
+  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512})
   SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
   SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)

@@ -41,7 +41,7 @@ ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
 
-IF (ENABLE_XEON_PHI_SUPPORT)
+IF (ENABLE_XEON_PHI_SUPPORT AND RTCORE_RAY_PACKETS)
   SET (__XEON__ 0)
   SET (__HOST__ 1)
   ADD_SUBDIRECTORY(triangle_geometry triangle_geometry_host)

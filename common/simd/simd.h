@@ -34,7 +34,7 @@
 #endif
 
 #if defined (__AVX__)
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
 #define AVX_ZERO_UPPER()
 #else
 #define AVX_ZERO_UPPER() _mm256_zeroupper()
@@ -45,7 +45,7 @@
 
 namespace embree
 {
-#if defined (__AVX512__) || defined (__MIC__)
+#if defined (__AVX512F__) || defined (__MIC__)
   typedef bool16 vbool;
   typedef int16 vint;
   typedef float16 vfloat;

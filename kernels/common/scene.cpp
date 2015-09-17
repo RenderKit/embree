@@ -162,35 +162,25 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (hasISA(AVX))
 	  {
-            if (isHighQuality()) {
-#if defined (__TARGET_AVX512__) && 0
-              accels.add(BVH8::BVH8Triangle8SpatialSplit(this)); 
-#else
-              accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
-#endif
-            }
-            else {
-#if defined (__TARGET_AVX512__) && 0
-              accels.add(BVH8::BVH8Triangle8ObjectSplit(this)); 
-#else
-              accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
-#endif
-            }
+            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
+            //if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+            /*else*/               accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
           }
           else 
 #endif
           {
-            if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));
-            else                 accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
+            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
+            //if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));           
+            /*else*/               accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
           }
           break;
 
           case /*0b01*/ 1: 
-#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
-            if (hasISA(AVX2))
-              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
-            else
-#endif
+//#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
+//            if (hasISA(AVX2))
+//              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
+//            else
+//#endif
               accels.add(BVH4::BVH4Triangle4vObjectSplit(this));
 
             break;
@@ -221,7 +211,7 @@ namespace embree
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
     else if (device->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
-    else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
+    //else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
 
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);

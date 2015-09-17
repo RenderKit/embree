@@ -293,7 +293,7 @@ namespace embree
   template<> __forceinline bool Geometry::hasOcclusionFilter   <float8>() const { return occlusionFilter8    != nullptr; }
 #endif
 
-#if defined(__MIC__) || defined(__AVX512__)
+#if defined(__MIC__) || defined(__AVX512F__)
   template<> __forceinline bool Geometry::hasIntersectionFilter<float16>() const { return intersectionFilter16 != nullptr; }
   template<> __forceinline bool Geometry::hasOcclusionFilter   <float16>() const { return occlusionFilter16    != nullptr; }
 #endif
