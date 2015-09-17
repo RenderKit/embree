@@ -89,6 +89,15 @@ struct ISPCHairSet
   int numHairs;
 };
 
+struct ISPCInstance
+{
+  Vec3fa vx;
+  Vec3fa vy;
+  Vec3fa vz;
+  Vec3fa p;
+  int geomID;
+};
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light
@@ -264,9 +273,13 @@ struct ISPCScene {
   uniform ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
 
-  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
+  uniform ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
   int numSubdivMeshes;                       //!< number of subdiv meshes
 
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;
+
+  uniform ISPCInstance** instances;
+  int numInstances;
+
 }; // ISPCScene
