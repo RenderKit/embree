@@ -392,16 +392,34 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float16 vround(const float16& f, 
-                             const _MM_ROUND_MODE_ENUM mode, 
-                             const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE) 
-  { 
-    return _mm512_round_ps(f,mode,exp); 
-  }
+  /* __forceinline float16 vround(const float16& f,  */
+  /*                            const _MM_ROUND_MODE_ENUM mode,  */
+  /*                            const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE)  */
+  /* {  */
+  /*   return _mm512_round_ps(f,mode,exp);  */
+  /* } */
   
-  __forceinline float16 floor(const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); }
-  __forceinline float16 ceil (const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); }
-  __forceinline float16 trunc(const float16& a) { return _mm512_trunc_ps(a); } 
+  __forceinline float16 floor(const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline float16 ceil (const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline float16 trunc(const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO); 
+#else
+    return _mm512_trunc_ps(a); 
+#endif
+} 
   __forceinline float16 frac( const float16& a ) { return a-trunc(a); }
 
   __forceinline const float16 rcp_nr  ( const float16& a ) { 

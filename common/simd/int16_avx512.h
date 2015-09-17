@@ -491,11 +491,19 @@ namespace embree
   }
   
   __forceinline void store16i_nr(void *__restrict__ ptr, const int16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_si512(ptr,a);
+#else
     _mm512_storenr_ps(ptr,_mm512_castsi512_ps(a));
+#endif
   }
   
   __forceinline void store16i_ngo(void *__restrict__ ptr, const int16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_si512(ptr,a);
+#else
     _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
+#endif
   }
   
   __forceinline void store16i(const bool16& mask, void* __restrict__ addr, const int16& v2) {
