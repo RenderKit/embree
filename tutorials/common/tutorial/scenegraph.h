@@ -436,5 +436,7 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
+
+    static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
   };
 }
