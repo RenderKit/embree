@@ -28,16 +28,16 @@ namespace embree
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline bool16 () {};
-    __forceinline bool16 (const bool16 &t) { v = t.v; };
-    __forceinline bool16& operator=(const bool16 &f) { v = f.v; return *this; };
+    __forceinline bool16 () {}
+    __forceinline bool16 (const bool16 &t) { v = t.v; }
+    __forceinline bool16& operator=(const bool16 &f) { v = f.v; return *this; }
 
-    __forceinline bool16 (const __mmask &t) { v = t; };
-    __forceinline operator __mmask () const { return v; };
+    __forceinline bool16 (const __mmask &t) { v = t; }
+    __forceinline operator __mmask () const { return v; }
     
-    __forceinline bool16(bool b) { v = b ? 0xFFFF : 0x0000; };
-    __forceinline bool16(int t ) { v = (__mmask)t; };
-    __forceinline bool16(unsigned int t ) { v = (__mmask)t; };
+    __forceinline bool16(bool b) { v = b ? 0xFFFF : 0x0000; }
+    __forceinline bool16(int t ) { v = (__mmask)t; }
+    __forceinline bool16(unsigned int t ) { v = (__mmask)t; }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -59,9 +59,9 @@ namespace embree
    /// Binary Operators
    ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline bool16 operator&(const bool16 &a, const bool16 &b) { return _mm512_kand(a,b); };
-  __forceinline bool16 operator|(const bool16 &a, const bool16 &b) { return _mm512_kor(a,b); };
-  __forceinline bool16 operator^(const bool16 &a, const bool16 &b) { return _mm512_kxor(a,b); };
+  __forceinline bool16 operator&(const bool16 &a, const bool16 &b) { return _mm512_kand(a,b); }
+  __forceinline bool16 operator|(const bool16 &a, const bool16 &b) { return _mm512_kor(a,b); }
+  __forceinline bool16 operator^(const bool16 &a, const bool16 &b) { return _mm512_kxor(a,b); }
 
     __forceinline bool16 andn(const bool16 &a, const bool16 &b) { return _mm512_kandn(b,a); }
   
@@ -103,8 +103,8 @@ namespace embree
   /// Convertion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt (const bool16 &a) { return _mm512_mask2int(a); };
-  __forceinline bool16        toMask(const int &a)   { return _mm512_int2mask(a); };
+  __forceinline unsigned int toInt (const bool16 &a) { return _mm512_mask2int(a); }
+  __forceinline bool16        toMask(const int &a)   { return _mm512_int2mask(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

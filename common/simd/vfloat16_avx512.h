@@ -36,11 +36,11 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
         
     __forceinline float16() {}
-    __forceinline float16(const float16& t) { v = t; };
-    __forceinline float16& operator=(const float16& f) { v = f.v; return *this; };
+    __forceinline float16(const float16& t) { v = t; }
+    __forceinline float16& operator=(const float16& f) { v = f.v; return *this; }
 
-    __forceinline float16(const __m512& t) { v = t; };
-    __forceinline operator __m512 () const { return v; };
+    __forceinline float16(const __m512& t) { v = t; }
+    __forceinline operator __m512 () const { return v; }
     
     __forceinline float16(const float& f) { 
       v = _mm512_set_1to16_ps(f);
@@ -124,8 +124,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline float&       operator[](const size_t index)       { return f[index]; };
-    __forceinline const float& operator[](const size_t index) const { return f[index]; };
+    __forceinline float&       operator[](const size_t index)       { return f[index]; }
+    __forceinline const float& operator[](const size_t index) const { return f[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////

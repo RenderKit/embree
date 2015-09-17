@@ -32,12 +32,12 @@ namespace embree
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
        
-    __forceinline int16() {};
-    __forceinline int16(const int16& t) { v = t.v; };
-    __forceinline int16& operator=(const int16& f) { v = f.v; return *this; };
+    __forceinline int16() {}
+    __forceinline int16(const int16& t) { v = t.v; }
+    __forceinline int16& operator=(const int16& f) { v = f.v; return *this; }
 
-    __forceinline int16(const __m512i& t) { v = t; };
-    __forceinline operator __m512i () const { return v; };
+    __forceinline int16(const __m512i& t) { v = t; }
+    __forceinline operator __m512i () const { return v; }
 
     __forceinline int16(const int i) { 
       v = _mm512_set_1to16_epi32(i);
@@ -119,11 +119,11 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline int& operator[](const size_t index)       { return i[index]; };
-    __forceinline const int& operator[](const size_t index) const { return i[index]; };
+    __forceinline int& operator[](const size_t index)       { return i[index]; }
+    __forceinline const int& operator[](const size_t index) const { return i[index]; }
 
-    __forceinline unsigned int       uint(const size_t index) const      { assert(index < 16); return ((unsigned int*)i)[index]; };
-    __forceinline size_t&            uint64_t(const size_t index)  const     { assert(index < 8); return ((size_t*)i)[index]; }; 
+    __forceinline unsigned int       uint(const size_t index) const      { assert(index < 16); return ((unsigned int*)i)[index]; }
+    __forceinline size_t&            uint64_t(const size_t index)  const     { assert(index < 8); return ((size_t*)i)[index]; }
 
 
   };
@@ -181,12 +181,12 @@ namespace embree
   __forceinline const int16 max( const int16& a, const int    b ) { return max(a,int16(b)); }
   __forceinline const int16 max( const int    a, const int16& b ) { return max(int16(a),b); }
   
-  __forceinline const int16 mask_add(const bool16& mask, int16& c, const int16& a, const int16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }; 
-  __forceinline const int16 mask_sub(const bool16& mask, int16& c, const int16& a, const int16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }; 
+  __forceinline const int16 mask_add(const bool16& mask, int16& c, const int16& a, const int16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
+  __forceinline const int16 mask_sub(const bool16& mask, int16& c, const int16& a, const int16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
 
-  __forceinline const int16 mask_and(const bool16& m,int16& c, const int16& a, const int16& b) { return _mm512_mask_and_epi32(c,m,a,b); };
-  __forceinline const int16 mask_or (const bool16& m,int16& c, const int16& a, const int16& b) { return _mm512_mask_or_epi32(c,m,a,b); };
- 
+  __forceinline const int16 mask_and(const bool16& m,int16& c, const int16& a, const int16& b) { return _mm512_mask_and_epi32(c,m,a,b); }
+  __forceinline const int16 mask_or (const bool16& m,int16& c, const int16& a, const int16& b) { return _mm512_mask_or_epi32(c,m,a,b); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -238,23 +238,23 @@ namespace embree
   __forceinline const bool16 operator <=( const int16& a, const int    b ) { return a <= int16(b); }
   __forceinline const bool16 operator <=( const int    a, const int16& b ) { return int16(a) <= b; }
 
-  __forceinline bool16 eq(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); };
-  __forceinline bool16 eq(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_EQ);  };
+  __forceinline bool16 eq(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline bool16 eq(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_EQ); }
   
-  __forceinline bool16 ne(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_NE); };
-  __forceinline bool16 ne(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_NE); };
+  __forceinline bool16 ne(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline bool16 ne(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_NE); }
 
-  __forceinline bool16 lt(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LT); };
-  __forceinline bool16 lt(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_LT); };
+  __forceinline bool16 lt(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline bool16 lt(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_LT); }
  
-  __forceinline bool16 ge(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GE); };
-  __forceinline bool16 ge(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_GE); };
+  __forceinline bool16 ge(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline bool16 ge(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_GE); }
   
-  __forceinline bool16 gt(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GT); };
-  __forceinline bool16 gt(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_GT); };
+  __forceinline bool16 gt(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline bool16 gt(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_GT); }
   
-  __forceinline bool16 le(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LE); };
-  __forceinline bool16 le(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_LE); };
+  __forceinline bool16 le(                   const int16& a, const int16& b) { return _mm512_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline bool16 le(const bool16 mask, const int16& a, const int16& b) { return _mm512_mask_cmp_epi32_mask(mask,a,b,_MM_CMPINT_LE); }
     
  
   __forceinline const int16 select( const bool16& m, const int16& t, const int16& f ) { 
