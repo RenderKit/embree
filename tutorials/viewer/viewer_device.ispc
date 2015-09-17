@@ -170,7 +170,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene2(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (uniform size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -233,6 +233,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
+#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return make_Vec3f(0.0f);
@@ -320,6 +321,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
+#else
+  Vec3f color = make_Vec3f(0.0f);
+
+#endif
   return color;
 }
 
@@ -344,7 +349,6 @@ task void renderTile(uniform int* uniform pixels,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    /* calculate pixel color */
     Vec3f color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
@@ -403,6 +407,7 @@ export void device_render (uniform int* uniform pixels,
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTile(pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); sync;
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

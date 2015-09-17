@@ -142,10 +142,10 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene2(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene1 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5);

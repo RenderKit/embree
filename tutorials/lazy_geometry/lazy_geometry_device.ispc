@@ -140,7 +140,7 @@ void lazyCreate(uniform LazyGeometry* uniform instance)
   {
     /* create the geometry */
     print("creating sphere %i\n",instance->userID);
-    instance->object = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+    instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
     /* now switch to the LAZY_COMMIT state */
@@ -239,7 +239,7 @@ export void device_init (uniform int8* uniform cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene2(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
+  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT_UNIFORM | RTC_INTERSECT_VARYING);
 
   /* instantiate geometry */
   createGroundPlane(g_scene);

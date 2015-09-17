@@ -21,15 +21,16 @@ SET(FLAGS_SSE41  "-xsse4.1")
 SET(FLAGS_SSE42  "-xsse4.2")
 SET(FLAGS_AVX    "-xAVX")
 SET(FLAGS_AVX2   "-xCORE-AVX2")
-SET(FLAGS_AVX512 "-xMIC-AVX512 -D__AVX512__")  # FIXME: should not define __AVX512__, __AVX512F__ etc already defined
+SET(FLAGS_AVX512 "-xMIC-AVX512")
 
 SET(CMAKE_CXX_COMPILER "icpc")
 SET(CMAKE_C_COMPILER "icc")
 SET(CMAKE_CXX_FLAGS "-Wall -fPIC -std=c++11 -no-ansi-alias -static-intel -fasm-blocks")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O0")
+## SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict -g -debug inline-debug-info")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -g -O3 -restrict")
-SET(CMAKE_EXE_LINKER_FLAGS "") 
+SET(CMAKE_EXE_LINKER_FLAGS "-g") 
 
 IF (NOT RTCORE_EXPORT_ALL_SYMBOLS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")

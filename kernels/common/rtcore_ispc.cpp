@@ -83,7 +83,7 @@ namespace embree
   extern "C" RTCScene ispcNewScene2 (RTCDevice device, RTCSceneFlags flags, RTCAlgorithmFlags aflags) 
   {
     if (!isCoherent(flags) && !isIncoherent(flags)) flags = RTCSceneFlags(flags | RTC_SCENE_COHERENT);
-    return rtcNewScene2(device,flags,aflags);
+    return rtcDeviceNewScene(device,flags,aflags);
   }
 
   extern "C" void ispcSetProgressMonitorFunction(RTCScene scene, void* func, void* ptr) {

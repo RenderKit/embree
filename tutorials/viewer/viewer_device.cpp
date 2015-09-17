@@ -170,7 +170,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_subdiv_mode) 
     scene_flags = RTC_SCENE_DYNAMIC | RTC_SCENE_INCOHERENT | RTC_SCENE_ROBUST;
 
-  RTCScene scene_out = rtcNewScene2(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
 
   for (size_t i=0; i<scene_in->numSubdivMeshes; i++)
   {
@@ -233,6 +233,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
+#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
@@ -320,6 +321,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   //Vec3fa Ng = normalize(ray.Ng);
   //Vec3fa Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
+#else
+  Vec3fa color = Vec3fa(0.0f);
+
+#endif
   return color;
 }
 
@@ -344,7 +349,6 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-    /* calculate pixel color */
     Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
@@ -403,6 +407,7 @@ extern "C" void device_render (int* pixels,
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch_renderTile(numTilesX*numTilesY,pixels,width,height,time,vx,vy,vz,p,numTilesX,numTilesY); 
+  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

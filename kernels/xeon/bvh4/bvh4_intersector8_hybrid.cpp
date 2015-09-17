@@ -26,7 +26,12 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
+//#define SWITCH_THRESHOLD 16
 #define SWITCH_THRESHOLD 5
+#if SWITCH_THRESHOLD >= 8
+#warning "switch threshold too large"
+#endif
+
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
@@ -114,7 +119,8 @@ namespace embree
 	    /* set cur to invalid */
             cur = BVH4::emptyNode;
             curDist = pos_inf;
-	    
+
+
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
 	    {

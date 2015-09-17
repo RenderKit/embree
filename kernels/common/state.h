@@ -32,7 +32,7 @@ namespace embree
     ~State();
 
     /*! clears the state to its defaults */
-    void clear();
+    void clear(bool singledevice);
 
     /*! parses state from a configuration file */
     bool parseFile(const FileName& fileName);

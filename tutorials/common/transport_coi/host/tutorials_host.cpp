@@ -425,35 +425,35 @@ namespace embree
     COI_ACCESS_FLAGS flags[5] = { COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ, COI_SINK_READ };
 
     /* send materials */
-    size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(OBJScene::Material));
+    size_t materialBytes = max(size_t(16),scene->materials.size()*sizeof(Material));
     void* materialPtr = scene->materials.size() ? &scene->materials.front() : nullptr;
     result = COIBufferCreate(materialBytes,COI_BUFFER_NORMAL,0,materialPtr,1,&process,&buffers[0]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send ambient lights */
     COIBUFFER ambientLightsBuffer;
-    size_t ambientLightsBytes = max(size_t(16),scene->ambientLights.size()*sizeof(OBJScene::AmbientLight));
+    size_t ambientLightsBytes = max(size_t(16),scene->ambientLights.size()*sizeof(AmbientLight));
     void* ambientLightsPtr = scene->ambientLights.size() ? &scene->ambientLights.front() : nullptr;
     result = COIBufferCreate(ambientLightsBytes,COI_BUFFER_NORMAL,0,ambientLightsPtr,1,&process,&buffers[1]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send point lights */
     COIBUFFER pointLightsBuffer;
-    size_t pointLightsBytes = max(size_t(16),scene->pointLights.size()*sizeof(OBJScene::PointLight));
+    size_t pointLightsBytes = max(size_t(16),scene->pointLights.size()*sizeof(PointLight));
     void* pointLightsPtr = scene->pointLights.size() ? &scene->pointLights.front() : nullptr;
     result = COIBufferCreate(pointLightsBytes,COI_BUFFER_NORMAL,0,pointLightsPtr,1,&process,&buffers[2]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send directional lights */
     COIBUFFER directionalLightsBuffer;
-    size_t directionalLightsBytes = max(size_t(16),scene->directionalLights.size()*sizeof(OBJScene::DirectionalLight));
+    size_t directionalLightsBytes = max(size_t(16),scene->directionalLights.size()*sizeof(DirectionalLight));
     void* directionalLightsPtr = scene->directionalLights.size() ? &scene->directionalLights.front() : nullptr;
     result = COIBufferCreate(directionalLightsBytes,COI_BUFFER_NORMAL,0,directionalLightsPtr,1,&process,&buffers[3]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
     /* send distant lights */
     COIBUFFER distantLightsBuffer;
-    size_t distantLightsBytes = max(size_t(16),scene->distantLights.size()*sizeof(OBJScene::DistantLight));
+    size_t distantLightsBytes = max(size_t(16),scene->distantLights.size()*sizeof(DistantLight));
     void* distantLightsPtr = scene->distantLights.size() ? &scene->distantLights.front() : nullptr;
     result = COIBufferCreate(distantLightsBytes,COI_BUFFER_NORMAL,0,distantLightsPtr,1,&process,&buffers[4]);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));

@@ -53,12 +53,12 @@ enum RTCAlgorithmFlags
 typedef uniform struct __RTCScene {}* uniform RTCScene;
 
 /*! Creates a new scene. 
-     WARNING: This function is deprecated, use rtcNewScene2 instead.
+     WARNING: This function is deprecated, use rtcDeviceNewScene instead.
 */
 RTCORE_DEPRECATED RTCScene rtcNewScene (uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
 /*! Creates a new scene. */
-RTCScene rtcNewScene2 (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
+RTCScene rtcDeviceNewScene (RTCDevice device, uniform RTCSceneFlags flags, uniform RTCAlgorithmFlags aflags);
 
 /*! \brief Type of progress callback function. */
 typedef uniform bool (*uniform RTC_PROGRESS_MONITOR_FUNCTION)(void* uniform ptr, const uniform double n);

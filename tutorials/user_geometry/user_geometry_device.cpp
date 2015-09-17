@@ -339,10 +339,10 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcNewScene2(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_DYNAMIC,RTC_INTERSECT1);
 
   /* create scene with 4 analytical spheres */
-  g_scene0 = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene0 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   Sphere* spheres = createAnalyticalSpheres(g_scene0,4);
   spheres[0].p = Vec3fa( 0, 0,+1); spheres[0].r = 0.5f;
   spheres[1].p = Vec3fa(+1, 0, 0); spheres[1].r = 0.5f;
@@ -351,7 +351,7 @@ extern "C" void device_init (char* cfg)
   rtcCommit(g_scene0);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene1 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5);
@@ -359,7 +359,7 @@ extern "C" void device_init (char* cfg)
   rtcCommit(g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
-  g_scene2 = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene2 = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,+1),0.5);
   createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5);
   createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5);

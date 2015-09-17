@@ -21,11 +21,14 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
-#include "../geometry/triangle_intersector_pluecker2.h"
+//#include "../geometry/triangle_intersector_pluecker2.h"
 
 #define DBG(x) 
 
 #define SWITCH_THRESHOLD 7
+//#define SWITCH_THRESHOLD 16
+#define SWITCH_DURING_DOWN_TRAVERSAL 1
+
 
 namespace embree
 {
@@ -52,22 +55,26 @@ namespace embree
       const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
       const Vec3f8 norg = -org, org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
-     
-/* pop loop */
+
+      /* pop loop */
       while (true) pop:
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
+        STAT3(normal.trav_stack_pop,1,1,1);
+
         stackPtr--;
         NodeRef cur = NodeRef(stackPtr->ptr);
         
         /*! if popped node is too far, pop next one */
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
-        
+
+
         /* downtraversal loop */
         while (true)
         {
+
           /*! stop if we found a leaf */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
@@ -102,7 +109,7 @@ namespace embree
           const bool8 vmask = tNear <= tFar;
           size_t mask = movemask(vmask);
 #endif
-          
+
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
@@ -126,7 +133,33 @@ namespace embree
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
             else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
           }
-          
+
+          /*! use 8-wide sorting network in the AVX2 */
+#if defined(__AVX2__) && 0
+
+          const bool8 mask8 = !vmask;
+          const size_t hits = __popcnt(movemask(mask8));
+          const int8 tNear_i = cast(tNear);
+          const int8 dist    = select(mask8,(tNear_i & (~7)) | int8(step),int8( True ));
+          const int8 order   = sortNetwork(dist) & 7;
+          const unsigned int cur_index = extract<0>(extract<0>(order));
+          cur = node->child(cur_index);
+          cur.prefetch();
+
+          for (size_t i=0;i<hits-1;i++) 
+          {
+            r = order[hits-1-i];
+            assert( ((unsigned int)1 << r) & movemask(mask8));
+            const NodeRef c = node->child(r); 
+            assert(c != BVH8::emptyNode);
+            c.prefetch(); 
+            const unsigned int d = *(unsigned int*)&tNear[r]; 
+            stackPtr->ptr = c; 
+            stackPtr->dist = d; 
+            stackPtr++;            
+          }
+#else
+
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
@@ -144,7 +177,7 @@ namespace embree
             cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
             continue;
           }
-          
+        
 	  /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
@@ -159,11 +192,11 @@ namespace embree
 	  {
 	    r = __bscf(mask);
 	    assert(stackPtr < stackEnd);
-	    c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+	    const NodeRef c = node->child(r); c.prefetch(); const unsigned int d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
 	    if (unlikely(mask == 0)) break;
 	  }
-	  
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
 	}
         
         /*! this is a leaf node */
@@ -221,7 +254,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       float8*    __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -238,7 +271,7 @@ namespace embree
         const bool8 active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
-        
+
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
@@ -323,6 +356,16 @@ namespace embree
               }
             }	      
           }
+
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
+          // seems to be the best place for testing utilization
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+            {
+              *sptr_node++ = cur;
+              *sptr_near++ = curDist;
+              goto pop;
+            }
+#endif
         }
         
         /* return if stack is empty */
@@ -376,6 +419,8 @@ namespace embree
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
+        STAT3(shadow.trav_stack_pop,1,1,1);
+
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
         
@@ -519,7 +564,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       float8*    __restrict__ sptr_near = stack_near + 2;
 
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -621,6 +666,15 @@ namespace embree
               }
             }	      
           }
+#if SWITCH_DURING_DOWN_TRAVERSAL == 1
+          // seems to be the best place for testing utilization
+          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+          {
+            *sptr_node++ = cur;
+            *sptr_near++ = curDist;
+            goto pop;
+          }
+#endif
         }
         
         /* return if stack is empty */
@@ -655,9 +709,8 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNIntersectorMMoellerTrumbore<Ray8 COMMA Triangle8 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPluecker, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPlueckerNoFilter, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA false> > >);
-
+    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPluecker, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA true> > >);
+    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector8HybridPlueckerNoFilter, BVH8Intersector8Hybrid<ArrayIntersector8_1<TriangleNvIntersectorMPluecker2<Ray8 COMMA Triangle8v COMMA false> > >);
   }
 }  
 

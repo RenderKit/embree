@@ -198,29 +198,29 @@ struct ISPCSubdivMeshKeyFrame {
         for (size_t i=0; i<numHairSets; i++)
           hairsets[i] = nullptr;
         
-        materials = new OBJScene::Material[numMaterials];
-        memcpy(materials,materials_in,numMaterials*sizeof(OBJScene::Material));
+        materials = new Material[numMaterials];
+        memcpy(materials,materials_in,numMaterials*sizeof(Material));
 
 	/* no texture support for Xeon Phi */
 	for (size_t i=0;i<numMaterials;i++)
-	  if (materials[i].ty == OBJScene::MATERIAL_OBJ)
+	  if (materials[i].ty == MATERIAL_OBJ)
 	  {
-	     OBJScene::OBJMaterial *objm = ( OBJScene::OBJMaterial*)&materials[i];
+	     OBJMaterial *objm = ( OBJMaterial*)&materials[i];
 	     objm->map_Kd    = NULL;
 	     objm->map_Displ = NULL;
 	  }
 	
-        ambientLights = new OBJScene::AmbientLight[numAmbientLights];
-        memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(OBJScene::AmbientLight));
+        ambientLights = new AmbientLight[numAmbientLights];
+        memcpy(ambientLights,ambientLights_in,numAmbientLights*sizeof(AmbientLight));
 
-        pointLights = new OBJScene::PointLight[numPointLights];
-        memcpy(pointLights,pointLights_in,numPointLights*sizeof(OBJScene::PointLight));
+        pointLights = new PointLight[numPointLights];
+        memcpy(pointLights,pointLights_in,numPointLights*sizeof(PointLight));
 
-        directionalLights = new OBJScene::DirectionalLight[numDirectionalLights];
-        memcpy(directionalLights,directionalLights_in,numDirectionalLights*sizeof(OBJScene::DirectionalLight));
+        directionalLights = new DirectionalLight[numDirectionalLights];
+        memcpy(directionalLights,directionalLights_in,numDirectionalLights*sizeof(DirectionalLight));
 
-        distantLights = new OBJScene::DistantLight[numDistantLights];
-        memcpy(distantLights,distantLights_in,numDistantLights*sizeof(OBJScene::DistantLight));
+        distantLights = new DistantLight[numDistantLights];
+        memcpy(distantLights,distantLights_in,numDistantLights*sizeof(DistantLight));
 
         subdiv = new ISPCSubdivMesh*[numSubdivMeshes];
         for (size_t i=0; i<numSubdivMeshes; i++)
@@ -245,23 +245,23 @@ struct ISPCSubdivMeshKeyFrame {
 
   public:
     ISPCMesh** meshes;
-    OBJScene::Material* materials;  //!< material list
+    Material* materials;  //!< material list
     int numMeshes;
     int numMaterials;
 
     ISPCHairSet** hairsets;
     int numHairSets;
 
-    OBJScene::AmbientLight* ambientLights;
+    AmbientLight* ambientLights;
     int numAmbientLights;
 
-    OBJScene::PointLight* pointLights;
+    PointLight* pointLights;
     int numPointLights;
 
-    OBJScene::DirectionalLight* directionalLights;
+    DirectionalLight* directionalLights;
     int numDirectionalLights;
 
-    OBJScene::DistantLight* distantLights;
+    DistantLight* distantLights;
     int numDistantLights;
 
     ISPCSubdivMesh** subdiv;

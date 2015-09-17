@@ -1101,7 +1101,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   scene_aflags |= RTC_INTERPOLATE;
 
-  RTCScene scene_out = rtcNewScene2(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
   convertTriangleMeshes(scene_in,scene_out,numGeometries);
   convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
@@ -1401,7 +1401,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.00001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=

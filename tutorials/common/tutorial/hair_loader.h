@@ -17,8 +17,9 @@
 #pragma once
 
 #include "obj_loader.h"
+#include "scenegraph.h"
 
 namespace embree
 {
-  void loadHair(const FileName& fileName, OBJScene& scene, Vec3fa& offset);
+  Ref<SceneGraph::Node> loadHair(const FileName& fileName);
 }

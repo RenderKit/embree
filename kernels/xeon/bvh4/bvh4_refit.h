@@ -45,7 +45,18 @@ namespace embree
     private:
       size_t annotate_tree_sizes(NodeRef& ref);
       void calculate_refit_roots ();
+
+      /* static subtrees based on BVH4 depth */
+      void gather_subtree_refs(NodeRef& ref, 
+                               size_t &subtrees,
+                               const size_t depth = 0);
+
+      BBox3fa refit_toplevel(NodeRef& ref,
+                             size_t &subtrees,
+                             const size_t depth = 0);
+
       
+      /* dynamic subtrees */
       BBox3fa node_bounds(NodeRef& ref);
       BBox3fa recurse_bottom(NodeRef& ref);
       BBox3fa recurse_top(NodeRef& ref);
@@ -54,6 +65,11 @@ namespace embree
       BVH4* bvh;                             //!< BVH to refit
       const LeafBoundsInterface& leafBounds; //!< calculates bounds of leaves
       std::vector<NodeRef*> roots;           //!< List of equal sized subtrees for bvh refit
+
+      static const size_t MAX_NUM_SUB_TREES = 1024;
+      static const size_t MAX_SUB_TREE_EXTRACTION_DEPTH = 5;
+      size_t numSubTrees;
+      BVH4::NodeRef subTrees[MAX_NUM_SUB_TREES];      
     };
 
     template<typename Primitive>

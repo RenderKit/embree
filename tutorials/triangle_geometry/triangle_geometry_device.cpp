@@ -136,7 +136,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
  
   /* create scene */
-  g_scene = rtcNewScene2(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
+  g_scene = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC,RTC_INTERSECT1);
 
   /* add cube */
   addCube(g_scene);

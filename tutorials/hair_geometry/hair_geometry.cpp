@@ -31,17 +31,11 @@ namespace embree
 
   /* configuration */
   static std::string g_rtcore = "";
-  static std::string g_subdiv_mode = "";
 
-  /* output settings */
   static size_t g_width = 512;
   static size_t g_height = 512;
   static bool g_fullscreen = false;
   static size_t g_numThreads = 0;
-
-  static int tessellate_subdivisions = -1;
-  static int tessellate_strips = -1;
-  extern float g_reduce_hair_segment_error;
 
   /* scene */
   OBJScene g_obj_scene;
@@ -56,175 +50,8 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
 
-  static bool hairy_triangles = false;
-  static float hairy_triangles_length = 1.0f;
-  static float hairy_triangles_thickness = 0.1f;
-  static int hairy_triangles_strands_per_triangle = 1;
-
   Vec3fa offset = zero;
   Vec3fa offset_mb = zero;
-
-  void addHairSegment(OBJScene::Mesh& mesh, int materialID, const Vec3fa& p0, const Vec3fa& p1)
-  {
-    const size_t N = tessellate_strips;
-    if (length(p1-p0) <= 1E-6f) return;
-    const LinearSpace3fa xfm = frame(p1-p0);
-    const int base = mesh.v.size();
-    for (size_t i=0; i<N; i++) {
-      const float a = 2.0f*float(pi)*float(i)/float(N);
-      const float u = sinf(a), v = cosf(a);
-      mesh.v.push_back(p0+u*p0.w*xfm.vx+v*p0.w*xfm.vy);
-      mesh.v.push_back(p1+u*p1.w*xfm.vx+v*p1.w*xfm.vy);
-      mesh.vn.push_back(p1-p0);
-      mesh.vn.push_back(p1-p0);
-      mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
-      mesh.vt.push_back(Vec2f(max(p0.w,p1.w)));
-    }
-    for (size_t i=0; i<N; i++) {
-      const int v0 = base + (2*i+0)%(2*N);
-      const int v1 = base + (2*i+1)%(2*N);
-      const int v2 = base + (2*i+2)%(2*N);
-      const int v3 = base + (2*i+3)%(2*N);
-      mesh.triangles.push_back(OBJScene::Triangle(v0,v1,v2,materialID));
-      mesh.triangles.push_back(OBJScene::Triangle(v1,v3,v2,materialID));
-    }
-  }
-
-  void tessellateHair(OBJScene::Mesh& mesh,
-                      int materialID, 
-                      const Vec3fa& p00,
-                      const Vec3fa& p01,
-                      const Vec3fa& p02,
-                      const Vec3fa& p03,
-                      const int depth)
-  {
-    if (depth > 0) 
-    {
-      const Vec3fa p10 = 0.5f*(p00+p01);
-      const Vec3fa p11 = 0.5f*(p01+p02);
-      const Vec3fa p12 = 0.5f*(p02+p03);
-      const Vec3fa p20 = 0.5f*(p10+p11);
-      const Vec3fa p21 = 0.5f*(p11+p12);
-      const Vec3fa p30 = 0.5f*(p20+p21);
-      tessellateHair(mesh,materialID,p00,p10,p20,p30,depth-1);
-      tessellateHair(mesh,materialID,p30,p21,p12,p03,depth-1);
-    } else {
-      addHairSegment(mesh,materialID,p00,p03);
-    }
-  }
-
-  void tessellateHair(OBJScene::Mesh& mesh, int materialID, const OBJScene::HairSet& hairSet)
-  {
-    for (size_t i=0; i<hairSet.hairs.size(); i++) 
-    {
-      OBJScene::Hair hair = hairSet.hairs[i];
-      const Vec3fa p00 = hairSet.v[hair.vertex+0];
-      const Vec3fa p01 = hairSet.v[hair.vertex+1];
-      const Vec3fa p02 = hairSet.v[hair.vertex+2];
-      const Vec3fa p03 = hairSet.v[hair.vertex+3];
-      tessellateHair(mesh,materialID,p00,p01,p02,p03,tessellate_subdivisions);
-    }
-  }
-
-  void tessellateHair(OBJScene& scene)
-  {
-    OBJScene::OBJMaterial material; material.illum = 1;
-    int materialID = scene.materials.size();
-    scene.materials.push_back(material);
-
-    for (int i=0; i<scene.hairsets.size(); i++) 
-    {
-      OBJScene::Mesh* mesh = new OBJScene::Mesh;
-      OBJScene::HairSet* hairset = scene.hairsets[i];
-      tessellateHair(*mesh,materialID,*hairset);
-      scene.meshes.push_back(mesh);
-      delete hairset;
-    }
-    scene.hairsets.clear();
-  }
-
-  void generateHairOnTriangleMesh(OBJScene& scene, OBJScene::Mesh* mesh, float hair_length, float thickness, size_t strands_per_triangle)
-  {
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
-
-    for (size_t t=0; t<mesh->triangles.size(); t++) 
-    {
-      const size_t i0 = mesh->triangles[t].v0;
-      const size_t i1 = mesh->triangles[t].v1;
-      const size_t i2 = mesh->triangles[t].v2;
-      
-      const Vec3fa& v0 = mesh->v[ i0 ];
-      const Vec3fa& v1 = mesh->v[ i1 ];
-      const Vec3fa& v2 = mesh->v[ i2 ];
-      
-      Vec3fa n0,n1,n2;
-      if (mesh->vn.size() != 0)
-      {
-        n0 = mesh->vn[ i0 ];
-        n1 = mesh->vn[ i1 ];
-        n2 = mesh->vn[ i2 ];
-      }
-      else
-      {
-        const Vec3fa edge0 = v1-v0;
-        const Vec3fa edge1 = v2-v0;
-        Vec3fa normal = cross(edge0,edge1);
-        n0 = n1 = n2 = normal;
-      }
-      
-      //if (length(normal) < 1E-30) continue;
-      
-      //const float thickness = thickness;
-      
-      for (size_t i=0; i<strands_per_triangle; i++)
-      {
-        float ru = drand48();
-        float rv = drand48();
-        float delta = 0.1f*drand48();
-        float delta2 = 0.1f*drand48();
-	
-        const float w0 = 1.0f - sqrtf(ru);
-        const float w1 = sqrtf(ru) * (1.0f - rv);
-        const float w2 = sqrtf(ru) * rv;
-        const Vec3fa position = w0*v0 + w1*v1 + w2*v2;
-        const Vec3fa normal = w0*n0 + w1*n1 + w2*n2;
-        if (length(normal) < 1E-30) continue;
-        
-        const LinearSpace3fa local_frame = frame(normalize(normal));
-        const float length = hair_length;
-        const Vec3fa dx = local_frame.vx * length;
-        const Vec3fa dy = local_frame.vy * length;
-        const Vec3fa dz = local_frame.vz * length;
-	
-        const Vec3fa p0(   0, 0,0);
-        //const Vec3fa p1(0.25, 0,0);
-        //const Vec3fa p2(0.74, 0,0);
-        const Vec3fa p1(0.25, delta, delta2);
-        const Vec3fa p2(0.75,-delta,-delta2);
-        const Vec3fa p3(   1, 0,0);
-	
-        Vec3fa l0 = position + p0.x * dz + p0.y * dx + p0.z * dy; l0.w = thickness;
-        Vec3fa l1 = position + p1.x * dz + p1.y * dx + p1.z * dy; l1.w = thickness;
-        Vec3fa l2 = position + p2.x * dz + p2.y * dx + p2.z * dy; l2.w = thickness;
-        Vec3fa l3 = position + p3.x * dz + p3.y * dx + p3.z * dy; l3.w = thickness;
-        
-        const unsigned int v_index = hairset->v.size();
-        hairset->v.push_back(l0);
-        hairset->v.push_back(l1);
-        hairset->v.push_back(l2);
-        hairset->v.push_back(l3);
-	
-        hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
-      }
-    }
-    scene.hairsets.push_back(hairset);
-  }
-
-  void generateHairOnTriangles(OBJScene& scene)
-  {
-    for (size_t m=0; m<scene.meshes.size(); m++) 
-      generateHairOnTriangleMesh(scene,scene.meshes[m],hairy_triangles_length,hairy_triangles_thickness,hairy_triangles_strands_per_triangle);
-  }
 
   Vec3fa uniformSampleSphere(const float& u, const float& v) 
   {
@@ -394,7 +221,7 @@ float noise(float x, float y, float z)
     const size_t numTheta = 2*numPhi;
     OBJScene::Mesh* mesh = new OBJScene::Mesh;
 
-    OBJScene::Material material;
+    Material material;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
     
@@ -480,7 +307,7 @@ float noise(float x, float y, float z)
   {
     OBJScene::Mesh* mesh = new OBJScene::Mesh;
 
-    OBJScene::Material material;
+    Material material;
     int materialID = scene.materials.size();
     scene.materials.push_back(material);
 
@@ -556,32 +383,6 @@ float noise(float x, float y, float z)
         g_ambient_intensity = cin->getVec3fa();
       }
 
-      /* tessellation flags */
-      else if (tag == "--tessellate-hair") {
-        tessellate_subdivisions = cin->getInt();
-        tessellate_strips = cin->getInt();
-      }
-
-      /* create hairy spheres */
-      else if (tag == "--hairy-sphere") {
-        const Vec3fa p = cin->getVec3fa();
-        const float  r = cin->getFloat();
-        addHairySphere(g_obj_scene,p,r);
-      }
-
-      /* create hair on geometry */
-      else if (tag == "--hairy-triangles") {
-        hairy_triangles_strands_per_triangle = cin->getInt();
-        hairy_triangles_length = cin->getFloat();
-        hairy_triangles_thickness = cin->getFloat();
-        hairy_triangles = true;
-      }
-
-      /* reduce number of hair segments */
-      else if (tag == "--reduce-hair-segment-error") {
-        g_reduce_hair_segment_error = cin->getFloat();
-      }
-
       /* output filename */
       else if (tag == "-o") {
         outFilename = cin->getFileName();
@@ -621,14 +422,6 @@ float noise(float x, float y, float z)
       /* number of threads to use */
       else if (tag == "-threads")
         g_numThreads = cin->getInt();
-
-      /* subdivision mode */
-      else if (tag == "-cache") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.subdivpatch1cached";
-
-      else if (tag == "-pregenerate") 
-	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-
 
       /* skip unknown command line parameter */
       else {
@@ -702,60 +495,48 @@ float noise(float x, float y, float z)
     if (g_numThreads) 
       g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
 
-    /* subdiv mode */
-    g_rtcore += g_subdiv_mode;
-
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      if (g_subdiv_mode != "")
-	{
-	  std::cout << "enabling subdiv mode" << std::endl;
-	  loadOBJ(objFilename,one,g_obj_scene,true);	
-	}
-      else
-	{
-	  loadOBJ(objFilename,AffineSpace3f::translate(-offset),g_obj_scene);
-	  if (objFilename2.str() != "")
-	    loadOBJ(objFilename2,AffineSpace3f::translate(-offset_mb),g_obj_scene2);
-	}
+      Ref<SceneGraph::Node> node = loadOBJ(objFilename,false);
+      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      if (objFilename2.str() != "") {
+        Ref<SceneGraph::Node> node = loadOBJ(objFilename2,false);
+        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node));
+      }
     }
+
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
-      loadHair(hairFilename,g_obj_scene,offset);
-      if (hairFilename2.str() != "")
-        loadHair(hairFilename2,g_obj_scene2,offset_mb);
+      Ref<SceneGraph::Node> node = loadHair(hairFilename);
+      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      if (hairFilename2.str() != "") {
+        Ref<SceneGraph::Node> node2 = loadHair(hairFilename2);
+        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node2));
+      }
+    }
+
+    /* load cy_hair */
+    if (cy_hairFilename.str() != "") {
+      Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
+      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
     }
 
     if (!g_obj_scene2.empty()) {
       g_obj_scene.set_motion_blur(g_obj_scene2);
     }
 
-   /* load cy_hair */
-    if (cy_hairFilename.str() != "") {
-      loadCYHair(cy_hairFilename,g_obj_scene,offset);
-    }
-
-    /* generate hair on triangles */
-    if (hairy_triangles)
-      generateHairOnTriangles(g_obj_scene);
-
-    /* tessellate hair */
-    if (tessellate_strips > 0) 
-      tessellateHair(g_obj_scene);
     /* if scene is empty, create default scene */
-    if (g_subdiv_mode == "")
-      if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) 
-	{
-	  addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
-	  addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
-	}
+    if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) {
+      addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
+      addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
+    }
 
     /* send model */
     set_scene(&g_obj_scene);
-
+    
     /* benchmark mode */
     if (g_numBenchmarkFrames)
       renderBenchmark(outFilename);

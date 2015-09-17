@@ -68,12 +68,9 @@ namespace embree
 	    AtomicCounter trav_leaves;
 	    AtomicCounter trav_prims;
 	    AtomicCounter trav_prim_hits;
-#if defined(__MIC__)
 	    AtomicCounter trav_hit_boxes[16+1];
-	    AtomicCounter trav_stack_nodes;
-
-#endif
-
+	    AtomicCounter trav_stack_pop;
+	    AtomicCounter trav_stack_nodes;            
 	  } normal, shadow;
 	} all, active, code; 
 

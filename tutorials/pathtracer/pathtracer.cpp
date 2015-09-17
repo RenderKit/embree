@@ -138,7 +138,7 @@ namespace embree
       else if (tag == "-ambientlight") 
       {
         const Vec3fa L = cin->getVec3fa();
-        g_obj_scene.ambientLights.push_back(OBJScene::AmbientLight(L));
+        g_obj_scene.ambientLights.push_back(AmbientLight(L));
       }
 
       /* point light source */
@@ -146,7 +146,7 @@ namespace embree
       {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        g_obj_scene.pointLights.push_back(OBJScene::PointLight(P,I));
+        g_obj_scene.pointLights.push_back(PointLight(P,I));
       }
 
       /* directional light source */
@@ -154,7 +154,7 @@ namespace embree
       {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        g_obj_scene.directionalLights.push_back(OBJScene::DirectionalLight(D,E));
+        g_obj_scene.directionalLights.push_back(DirectionalLight(D,E));
       }
 
       /* distant light source */
@@ -163,7 +163,7 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        g_obj_scene.distantLights.push_back(OBJScene::DistantLight(D,L,halfAngle));
+        g_obj_scene.distantLights.push_back(DistantLight(D,L,halfAngle));
       }
 
       /* converts triangle meshes into subdiv meshes */
@@ -231,7 +231,9 @@ namespace embree
       PRINT(fileName[i].str());
       OBJScene *scene = new OBJScene;
       FileName keyframe = fileName[i];
-      loadOBJ(keyframe,one,*scene,true);	
+
+      Ref<SceneGraph::Node> node = loadOBJ(keyframe,true);	
+      scene->add(node);
       if (g_obj_scene.subdiv.size() != scene->subdiv.size())
         FATAL("#subdiv meshes differ");
       for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
@@ -273,15 +275,13 @@ namespace embree
     /* load scene */
     if (strlwr(filename.ext()) == std::string("obj"))
     {
-      if (g_subdiv_mode != "") {
-        std::cout << "enabling subdiv mode" << std::endl;
-        loadOBJ(filename,one,g_obj_scene,true);	
-      }
-      else
-        loadOBJ(filename,one,g_obj_scene);
+      Ref<SceneGraph::Node> node = loadOBJ(filename,g_subdiv_mode != "");	
+      g_obj_scene.add(node);
     }
-    else if (strlwr(filename.ext()) == std::string("xml"))
-      loadXML(filename,one,g_obj_scene);
+    else if (strlwr(filename.ext()) == std::string("xml")) {
+      Ref<SceneGraph::Node> node = loadXML(filename,one);
+      g_obj_scene.add(node);
+    }
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
     
@@ -294,6 +294,7 @@ namespace embree
 
     /* set shader mode */
     switch (g_shader) {
+    case SHADER_DEFAULT : break;
     case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
     case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
     case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;

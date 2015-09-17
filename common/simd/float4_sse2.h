@@ -64,6 +64,7 @@ namespace embree
 
 #if defined(__AVX__)
     static __forceinline float4 broadcast( const void* const a ) { return _mm_broadcast_ss((float*)a); }
+
 #else
     static __forceinline float4 broadcast( const void* const a ) { return _mm_set1_ps(*(float*)a); }
 #endif
@@ -415,6 +416,9 @@ namespace embree
   __forceinline float4 permute(const float4 &a, const __m128i &index) {
     return _mm_permutevar_ps(a,index);
   }
+
+  __forceinline float4 broadcast1f( const void* const a ) { return _mm_broadcast_ss((float*)a); }
+
 #endif
 
 

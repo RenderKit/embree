@@ -28,7 +28,7 @@
 #include "../../common/ray8.h"
 #endif
 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
 #include "../../common/ray16.h"
 #endif
 
@@ -44,7 +44,7 @@ namespace embree
   typedef void (*ISPCFilterFunc8)(void* ptr, RTCRay8& ray, __m256 valid);
 #endif
 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
   typedef void (*ISPCFilterFunc16)(void* ptr, RTCRay16& ray, __mmask16 valid);
 #endif
 
@@ -366,7 +366,7 @@ namespace embree
 #endif
 
 
-#if defined(__AVX512__)
+#if defined(__AVX512F__)
     __forceinline bool16 runIntersectionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
                                              const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
     {

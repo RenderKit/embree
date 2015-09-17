@@ -147,16 +147,30 @@ namespace embree
       __forceinline operator size_t() const { return ptr; }
 
       /*! Prefetches the node this reference points to */
-      __forceinline void prefetch(int types) const {
+      __forceinline void prefetch(int types=0) const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
 	if (types & 0x1110) {
 	  prefetchL1(((char*)ptr)+2*64);
 	  prefetchL1(((char*)ptr)+3*64);
-	  /*prefetchL1(((char*)ptr)+4*64);
-	  prefetchL1(((char*)ptr)+5*64);
-	  prefetchL1(((char*)ptr)+6*64);
-	  prefetchL1(((char*)ptr)+7*64);*/
+	}
+      }
+
+      __forceinline void prefetchL2(int types=0) const {
+        embree::prefetchL2(((char*)ptr)+0*64);
+	embree::prefetchL2(((char*)ptr)+1*64);
+	if (types > 0x1) {
+	  embree::prefetchL2(((char*)ptr)+2*64);
+	  embree::prefetchL2(((char*)ptr)+3*64);
+	}
+      }
+
+      __forceinline void prefetchW(int types=0) const {
+        embree::prefetchEX(((char*)ptr)+0*64);
+	embree::prefetchEX(((char*)ptr)+1*64);
+	if (types > 0x1) {
+	  embree::prefetchEX(((char*)ptr)+2*64);
+	  embree::prefetchEX(((char*)ptr)+3*64);
 	}
       }
 
