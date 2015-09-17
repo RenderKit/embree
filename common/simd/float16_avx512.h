@@ -405,7 +405,7 @@ namespace embree
   __forceinline float16 frac( const float16& a ) { return a-trunc(a); }
 
   __forceinline const float16 rcp_nr  ( const float16& a ) { 
-    const float16 ra = _mm512_rcp23_ps(a); 
+    const float16 ra = rcp(a); 
     return (ra+ra) - (ra * a * ra);
   };
 
@@ -889,7 +889,7 @@ namespace embree
   }
 
 
-  __forceinline float16 rcp_safe( const float16& a ) { return select(a != float16::zero(),_mm512_rcp23_ps(a),float16(1E-10f)); };
+  __forceinline float16 rcp_safe( const float16& a ) { return select(a != float16::zero(),rcp(a),float16(1E-10f)); };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
