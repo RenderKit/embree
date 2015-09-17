@@ -38,7 +38,6 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  static bool g_loop_mode = false;
   static FileName keyframeList = "";
 
   /* scene */
@@ -97,9 +96,6 @@ namespace embree
 
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
-
-      else if (tag == "-loop") 
-	g_loop_mode = true;
 
       else if (tag == "-anim") 
 	g_anim_mode = true;

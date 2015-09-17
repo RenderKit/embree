@@ -39,7 +39,6 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  static bool g_loop_mode = false;
   static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
@@ -103,9 +102,6 @@ namespace embree
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
       
-      else if (tag == "-loop") 
-	g_loop_mode = true;
-
       else if (tag == "-anim") 
 	g_anim_mode = true;
 
@@ -204,15 +200,12 @@ namespace embree
     resize(g_width,g_height);
     if (g_anim_mode) g_camera.anim = true;
 
-    do {
-      double msec = getSeconds();
-      AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
-      msec = getSeconds() - msec;
-      std::cout << "render time " << 1.0/msec << " fps" << std::endl;
-
-    } while(g_loop_mode);
-
+    double msec = getSeconds();
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+    render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+    msec = getSeconds() - msec;
+    std::cout << "render time " << 1.0/msec << " fps" << std::endl;
+    
     void* ptr = map();
     Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);
