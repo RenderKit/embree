@@ -235,6 +235,7 @@ namespace embree
 
   private:
     Ref<SceneGraph::MaterialNode> loadBGFMaterial(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadBGFMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBGFTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBGFGroupNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBGFNode(const Ref<XML>& xml);
@@ -250,6 +251,7 @@ namespace embree
     std::vector<int>   loadIntArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
+    std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
 
   private:
     FileName path;         //!< path to XML file
@@ -260,6 +262,9 @@ namespace embree
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
     std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
     std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+
+  private:
+    size_t currentNodeID;
     std::map<size_t, Ref<SceneGraph::Node> > id2node;
     std::map<size_t, Ref<SceneGraph::MaterialNode> > id2material;
 
@@ -378,6 +383,7 @@ namespace embree
     fseek(binFile,long(ofs),SEEK_SET);
 
     size = atol(xml->parm("size").c_str());
+    if (size == 0) size = atol(xml->parm("num").c_str()); // version for BGF format
     char* data = (char*) alignedMalloc(size*eltSize);
 
     if (size != fread(data, eltSize, size, binFile)) 
@@ -520,6 +526,30 @@ namespace embree
         data[i] = Vec3i(xml->body[3*i+0].Int(),xml->body[3*i+1].Int(),xml->body[3*i+2].Int());
     }
     std::vector<Vec3i> res;
+    for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
+  std::vector<Vec4i> XMLLoader::loadVec4iArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return std::vector<Vec4i>(); }
+    
+    size_t size = 0;
+    Vec4i* data = nullptr;
+    if (xml->parm("ofs") != "") {
+      data = (Vec4i*) loadBinary(xml,4*sizeof(int),size);
+    }
+    else {
+      size_t elts = xml->body.size();
+      if (elts % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<int4> body");
+      size = elts/4;
+      data = (Vec4i*) alignedMalloc(size*sizeof(Vec4i));
+      for (size_t i=0; i<size; i++) 
+        data[i] = Vec4i(xml->body[4*i+0].Int(),xml->body[4*i+1].Int(),xml->body[4*i+2].Int(),xml->body[4*i+3].Int());
+    }
+    std::vector<Vec4i> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
     alignedFree(data);
     return res;
@@ -668,7 +698,7 @@ namespace embree
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
       new (&material) MirrorMaterial(reflectance);
     }
-    else if (type == "OBJ") 
+    else if (type == "OBJ" || type == "OBJMaterial") 
     {
       //map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);
@@ -678,6 +708,19 @@ namespace embree
       const Vec3fa Ks = parms.getVec3fa("Ks", zero);
       //map_Ns = parms.getTexture("map_Ns");  
       const float Ns = parms.getFloat("Ns", 10.0f);
+      //map_Bump = parms.getTexture("map_Bump");
+      new (&material) OBJMaterial(d,Kd,Ks,Ns);
+    }
+    else if (type == "OBJMaterial")  // for BGF file format
+    {
+      //map_d = parms.getTexture("map_d");  
+      const float d = parms.getFloat("d", 1.0f);
+      //map_Kd = parms.getTexture("map_kd");  
+      const Vec3fa Kd = parms.getVec3fa("kd", one);
+      //map_Ks = parms.getTexture("map_ks");  
+      const Vec3fa Ks = parms.getVec3fa("ks", zero);
+      //map_Ns = parms.getTexture("map_ns");  
+      const float Ns = parms.getFloat("ns", 10.0f);
       //map_Bump = parms.getTexture("map_Bump");
       new (&material) OBJMaterial(d,Kd,Ks,Ns);
     }
@@ -851,36 +894,66 @@ namespace embree
     return addMaterial(type,parms);
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadBGFMesh(const Ref<XML>& xml) 
+  {
+    size_t matid = xml->child("materiallist")->body[0].Int();
+    Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
+    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("vertex"));
+    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normal"));
+    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoord"));
+    std::vector<Vec4i> triangles = loadVec4iArray(xml->childOpt("prim"));
+
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
+    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
+    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
+    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadBGFTransformNode(const Ref<XML>& xml) 
   {
-    const size_t child = stoi(xml->parm("child")); 
-    const AffineSpace3fa space = load<AffineSpace3fa>(xml);
-    return new SceneGraph::TransformNode(space,id2node[child]);
+    const size_t child = atoi(xml->parm("child").c_str()); 
+    if (xml->body.size() != 12) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong AffineSpace body");
+    const AffineSpace3fa space(LinearSpace3fa(Vec3fa(xml->body[0].Float(),xml->body[1].Float(),xml->body[2].Float()),
+                                              Vec3fa(xml->body[3].Float(),xml->body[4].Float(),xml->body[5].Float()),
+                                              Vec3fa(xml->body[6].Float(),xml->body[7].Float(),xml->body[8].Float())),
+                               Vec3fa(xml->body[9].Float(),xml->body[10].Float(),xml->body[11].Float()));
+    return new SceneGraph::TransformNode(space,id2node.at(child));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBGFGroupNode(const Ref<XML>& xml) 
   {
-    const size_t N  = stoi(xml->parm("numChildren"));
+    const size_t N  = atoi(xml->parm("numChildren").c_str());
     if (xml->body.size() != N) 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid group node");
 
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode(N);
-    for (size_t i=0; i<xml->children.size(); i++)
-      group->set(i,id2node[xml->body[i].Int()]);
+    for (size_t i=0; i<N; i++) 
+    {
+      const size_t id = xml->body[i].Int();
+      group->set(i,id2node.at(id));
+    }
     return group.cast<SceneGraph::Node>();
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBGFNode(const Ref<XML>& xml)
   {
-    const size_t id = stoi(xml->parm("id"));
-    if      (xml->name == "TriangleMesh") return id2node[id] = loadTriangleMesh(xml);
-    else if (xml->name == "Group"       ) return id2node[id] = loadBGFGroupNode(xml);
-    else if (xml->name == "Transform"   ) return id2node[id] = loadBGFTransformNode(xml);
-    else if (xml->name == "Material"    ) 
+    //const size_t id = atoi(xml->parm("id").c_str());
+    const size_t id = currentNodeID++;
+
+    if      (xml->name == "Mesh"     ) return id2node[id] = loadBGFMesh(xml);
+    else if (xml->name == "Group"    ) return id2node[id] = loadBGFGroupNode(xml);
+    else if (xml->name == "Transform") return id2node[id] = loadBGFTransformNode(xml);
+    else if (xml->name == "Material" ) 
     {
       Ref<SceneGraph::MaterialNode> material = loadBGFMaterial(xml); 
       id2material[id] = material;
       return material.cast<SceneGraph::Node>();
+    }
+    else if (xml->name == "Texture2D") {
+      // textures not implemented yet
+      return new SceneGraph::GroupNode();
     }
     else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
   }
@@ -892,7 +965,7 @@ namespace embree
     XMLLoader loader(fileName,space); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), currentNodeID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");

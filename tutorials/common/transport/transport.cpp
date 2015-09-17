@@ -37,7 +37,7 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCHairSet* convertHair (OBJScene::HairSet* in)
+  ISPCHairSet* convertHair (Ref<OBJScene::HairSet> in)
   {
     ISPCHairSet* out = new ISPCHairSet;
     out->v = in->v.size() ? &in->v[0] : nullptr;
@@ -48,7 +48,7 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertMesh (OBJScene::Mesh* in)
+  ISPCMesh* convertMesh (Ref<OBJScene::Mesh> in)
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
@@ -65,7 +65,7 @@ namespace embree
     return out;
   }
 
-  ISPCSubdivMesh* convertSubdivMesh (OBJScene::SubdivMesh* in)
+  ISPCSubdivMesh* convertSubdivMesh (Ref<OBJScene::SubdivMesh> in)
   {
     ISPCSubdivMesh* out = new ISPCSubdivMesh;
     out->positions = in->positions.size() ? &in->positions[0] : nullptr;
@@ -130,17 +130,8 @@ namespace embree
   {
     ISPCScene* out = new ISPCScene;
 
-    size_t total_triangles = 0;
-    size_t total_quads     = 0;
-    
     out->meshes = new ISPCMesh*[in->meshes.size()];
-    for (size_t i=0; i<in->meshes.size(); i++)
-      {
-        out->meshes[i] = convertMesh(in->meshes[i]);
-        total_triangles += out->meshes[i]->numTriangles;
-        total_quads     += out->meshes[i]->numQuads;        
-      }
-    
+    for (size_t i=0; i<in->meshes.size(); i++) out->meshes[i] = convertMesh(in->meshes[i]);
     out->numMeshes = in->meshes.size();
 
     out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
@@ -150,27 +141,24 @@ namespace embree
     for (size_t i=0; i<in->hairsets.size(); i++) out->hairs[i] = convertHair(in->hairsets[i]);
     out->numHairSets = in->hairsets.size();
 
-    out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? &*in->ambientLights.begin() : nullptr);
+    out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? in->ambientLights.begin() : nullptr);
     out->numAmbientLights = in->ambientLights.size();
 
-    out->pointLights = (ISPCPointLight*) (in->pointLights.size() ? &*in->pointLights.begin() : nullptr);
+    out->pointLights = (ISPCPointLight*) (in->pointLights.size() ? in->pointLights.begin() : nullptr);
     out->numPointLights = in->pointLights.size();
 
-    out->dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? &*in->directionalLights.begin() : nullptr);
+    out->dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? in->directionalLights.begin() : nullptr);
     out->numDirectionalLights = in->directionalLights.size();
 
-    out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? &*in->distantLights.begin() : nullptr);
+    out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? in->distantLights.begin() : nullptr);
     out->numDistantLights = in->distantLights.size();
 
     out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
-
-    size_t coarse_primitives = 0;
-    for (size_t i=0; i<in->subdiv.size(); i++)
-      {
-	out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
-	coarse_primitives += out->subdiv[i]->numFaces;
-      }
+    for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
     out->numSubdivMeshes = in->subdiv.size();
+
+    out->instances = (ISPCInstance**) (in->instances.size() ? &*in->instances.begin() : nullptr);
+    out->numInstances = in->instances.size();
 
     out->subdivMeshKeyFrames = nullptr;
     out->numSubdivMeshKeyFrames = 0;

@@ -34,16 +34,7 @@ namespace embree
   {
     OBJScene () {}
 
-    void add (Ref<SceneGraph::Node> node);
-
-    ~OBJScene () 
-    {
-      for (size_t i=0; i<meshes.size(); i++)
-        delete meshes[i];
-
-      for (size_t i=0; i<hairsets.size(); i++)
-        delete hairsets[i];
-    }
+    void add (Ref<SceneGraph::Node> node, bool instancing = false);
 
     /*! OBJ Triangle */
     struct Triangle 
@@ -73,10 +64,8 @@ namespace embree
     };
 
     /*! Mesh. */
-    struct Mesh 
+    struct Mesh : public RefCount
     {
-      void set_motion_blur(const Mesh* other);
-
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -88,7 +77,7 @@ namespace embree
     };
 
     /*! Subdivision Mesh. */
-    struct SubdivMesh 
+    struct SubdivMesh : public RefCount
     {
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
@@ -105,7 +94,7 @@ namespace embree
       int materialID;
     };
 
-    struct Hair
+    struct Hair 
     {
     public:
       Hair () {}
@@ -116,54 +105,35 @@ namespace embree
     };
 
     /*! Hair Set. */
-    struct HairSet
+    struct HairSet : public RefCount
     {
-      void set_motion_blur(const HairSet* other);
-
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
+    };
+
+    struct Instance : public RefCount
+    {
+      ALIGNED_STRUCT;
+
+      Instance(const AffineSpace3fa& space, int geomID)
+      : space(space), geomID(geomID) {}
+
+    public:
+      AffineSpace3fa space;
+      int geomID;
     };
 
     bool empty() const {
       return meshes.size() == 0 && hairsets.size() == 0;
     }
 
-    void set_motion_blur(OBJScene& other);
-
-    void convert_to_subdiv()
-    {
-      for (size_t i=0; i<meshes.size(); i++)
-      {
-	Mesh* mesh = meshes[i];
-	SubdivMesh* smesh = new SubdivMesh;
-	smesh->positions = mesh->v;
-	smesh->normals = mesh->vn;
-	smesh->texcoords = mesh->vt;
-	const size_t numTriangles = mesh->triangles.size();
-	smesh->verticesPerFace.resize(numTriangles);
-	smesh->position_indices.resize(3*numTriangles);
-	int materialID = 0;
-	for (size_t j=0; j<numTriangles; j++) {
-	  smesh->verticesPerFace[j] = 3;
-	  smesh->position_indices[3*j+0] = mesh->triangles[j].v0;
-	  smesh->position_indices[3*j+1] = mesh->triangles[j].v1;
-	  smesh->position_indices[3*j+2] = mesh->triangles[j].v2;
-	  materialID                     = mesh->triangles[j].materialID;
-	}
-	smesh->materialID = materialID;
-
-	delete mesh;
-	subdiv.push_back(smesh);
-      }
-      meshes.clear();
-    }
-
   public:
     avector<Material> materials;                      //!< material list
-    std::vector<Mesh*> meshes;                         //!< list of meshes
-    std::vector<HairSet*> hairsets;                    //!< list of hair sets
-    std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
+    std::vector<Ref<Mesh> > meshes;                         //!< list of meshes
+    std::vector<Ref<HairSet> > hairsets;                    //!< list of hair sets
+    std::vector<Ref<SubdivMesh> > subdiv;                  //!< list of subdivision meshes
+    std::vector<Ref<Instance> > instances;               //!< list of mesh instances
     avector<AmbientLight> ambientLights;           //!< list of ambient lights
     avector<PointLight> pointLights;               //!< list of point lights
     avector<DirectionalLight> directionalLights;   //!< list of directional lights

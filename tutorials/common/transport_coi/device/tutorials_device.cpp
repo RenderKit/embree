@@ -34,8 +34,14 @@ float g_debug = 0.0f;
 
 namespace embree
 {
+  struct ISPCInstance
+  {
+    AffineSpace3fa space;
+    int geomID;
+  };
+
   /* ISPC compatible mesh */
-  struct ISPCMesh
+  struct ISPCMesh // FIXME: why all these replicated classes!!!!!!!
   {
     ALIGNED_CLASS;
   public:
@@ -188,7 +194,8 @@ struct ISPCSubdivMeshKeyFrame {
         pointLights(nullptr), numPointLights(numPointLights),
         directionalLights(nullptr), numDirectionalLights(numDirectionalLights),
         distantLights(nullptr), numDistantLights(numDistantLights),
-	subdiv(nullptr), numSubdivMeshes(numSubdivMeshes), subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0)
+        subdiv(nullptr), numSubdivMeshes(numSubdivMeshes), subdivMeshKeyFrames(nullptr), numSubdivMeshKeyFrames(0),
+        instances(nullptr), numInstances(0)
       {
         meshes = new ISPCMesh*[numMeshes];
         for (size_t i=0; i<numMeshes; i++)
@@ -269,6 +276,9 @@ struct ISPCSubdivMeshKeyFrame {
 
     ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
     int numSubdivMeshKeyFrames;
+
+    ISPCInstance** instances;
+    int numInstances;
   };
 
   /* scene */
@@ -309,12 +319,6 @@ struct ISPCSubdivMeshKeyFrame {
   {
     size_t meshID = g_meshID++;
 
-#if 0
-    PRINT( in_pMiscData->numTriangles );
-    PRINT( in_pMiscData->numQuads );
-    PRINT( in_pMiscData->numVertices );
-#endif
-
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
@@ -340,7 +344,7 @@ struct ISPCSubdivMeshKeyFrame {
     mesh->sizeTriangles = in_pBufferLengths[3];
     mesh->sizeQuads     = in_pBufferLengths[4];
     
-#if 1
+#if 1 // FIXME: what does this?
     if (mesh->quads[0].v0 == 0,
 	mesh->quads[0].v1 == 0,
 	mesh->quads[0].v2 == 0,
@@ -350,14 +354,6 @@ struct ISPCSubdivMeshKeyFrame {
 	mesh->numQuads = 0;
 	mesh->sizeQuads = 0;
       }
-#endif
-
-#if 0
-    PRINT( mesh->sizePositions );
-    PRINT( mesh->sizeNormals );
-    PRINT( mesh->sizeTexCoords );
-    PRINT( mesh->sizeTriangles );
-    PRINT( mesh->sizeQuads );
 #endif
 
     g_ispc_scene->meshes[meshID] = mesh;
@@ -377,12 +373,6 @@ struct ISPCSubdivMeshKeyFrame {
     const size_t numVertices = in_pMiscData->numPositions;
     const size_t numEdges    = in_pMiscData->numPositionIndices;
     const size_t numFaces    = in_pMiscData->numVerticesPerFace;
-
-#if 0
-    PRINT( numVertices );
-    PRINT( numEdges );
-    PRINT( numFaces );
-#endif
 
     ISPCSubdivMesh* mesh = new ISPCSubdivMesh(numVertices,
 					      numFaces,
@@ -407,16 +397,6 @@ struct ISPCSubdivMeshKeyFrame {
     mesh->subdivlevel      = (float*) os_malloc(in_pBufferLengths[1]);
     mesh->face_offsets     = (int*)   os_malloc(sizeof(int) * in_pMiscData->numVerticesPerFace);
     
-#if 0
-    PRINT("DEVICE");
-    PRINT(mesh->numVertices);
-    PRINT(mesh->numEdges);
-    PRINT(mesh->numFaces);
-    PRINT(in_pMiscData->numEdgeCreases);
-    PRINT(in_pMiscData->numEdgeCreaseWeights);
-    PRINT(in_pMiscData->numVertexCreases);
-#endif
-
     if ( in_pMiscData->numEdgeCreases )
       {
 	assert(in_pBufferLengths[3] == sizeof(Vec2i) * in_pMiscData->numEdgeCreases);

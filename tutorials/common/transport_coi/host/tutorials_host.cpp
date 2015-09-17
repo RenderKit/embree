@@ -122,7 +122,7 @@ namespace embree
       THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
-  void send_hairset (OBJScene::HairSet* hairset)
+  void send_hairset (Ref<OBJScene::HairSet> hairset)
   {
     COIRESULT result;
     struct {
@@ -163,7 +163,7 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
-  void send_mesh (OBJScene::Mesh* mesh)
+  void send_mesh (Ref<OBJScene::Mesh> mesh)
   {
     COIRESULT result;
     struct {
@@ -269,7 +269,7 @@ namespace embree
   }
 
 
-  void send_subdiv_mesh (OBJScene::SubdivMesh* mesh)
+  void send_subdiv_mesh (Ref<OBJScene::SubdivMesh> mesh)
   {
     COIRESULT result;
     struct {

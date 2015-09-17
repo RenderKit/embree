@@ -320,10 +320,11 @@ namespace embree
     {
       ALIGNED_STRUCT;
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
-        : xfm(xfm), child(child) {}
+        : xfm0(xfm), xfm1(xfm), child(child) {}
       
     public:
-      AffineSpace3fa xfm; 
+      AffineSpace3fa xfm0;
+      AffineSpace3fa xfm1;
       Ref<Node> child;
     };
     
@@ -435,5 +436,7 @@ namespace embree
       std::vector<Hair> hairs;  //!< list of hairs
       Ref<MaterialNode> material;
     };
+
+    static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
   };
 }

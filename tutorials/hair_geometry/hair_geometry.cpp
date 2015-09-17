@@ -39,7 +39,7 @@ namespace embree
 
   /* scene */
   OBJScene g_obj_scene;
-  OBJScene g_obj_scene2;
+  Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName objFilename = "";
   static FileName objFilename2 = "";
   static FileName hairFilename = "";
@@ -501,33 +501,37 @@ float noise(float x, float y, float z)
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
       Ref<SceneGraph::Node> node = loadOBJ(objFilename,false);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (objFilename2.str() != "") {
         Ref<SceneGraph::Node> node = loadOBJ(objFilename2,false);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node));
+        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
+        SceneGraph::set_motion_blur(node0,node1);
       }
+      g_scene->add(node0);
     }
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
       Ref<SceneGraph::Node> node = loadHair(hairFilename);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (hairFilename2.str() != "") {
-        Ref<SceneGraph::Node> node2 = loadHair(hairFilename2);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node2));
+        Ref<SceneGraph::Node> node = loadHair(hairFilename2);
+        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
+        SceneGraph::set_motion_blur(node0,node1);
       }
+      g_scene->add(node0);
     }
 
     /* load cy_hair */
     if (cy_hairFilename.str() != "") {
       Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
+      g_scene->add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
     }
-
-    if (!g_obj_scene2.empty()) {
-      g_obj_scene.set_motion_blur(g_obj_scene2);
-    }
-
+    
+    /* convert scene graph to OBJ scene */
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>());
+    g_scene = nullptr;
+    
     /* if scene is empty, create default scene */
     if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) {
       addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
