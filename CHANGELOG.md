@@ -1,6 +1,18 @@
 Version History
 ---------------
 
+### New Features in Embree 2.7.0
+
+-   Added device concept to Embree to allow different components of an
+    application to use Embree without interfering with each other.
+-   Fixed memory leak in twolevel builder used for dynamic scenes.
+-   Fixed bug in tesselation cache that caused crashes for subdivision
+    surfaces.
+-   Fixed bug in internal task scheduler that caused deadlocks when
+    using rtcCommitThread.
+-   Improved hit-distance accuracy for thin triangles in robust mode.
+-   Added support to disable ray packet support in cmake.
+
 ### New Features in Embree 2.6.2
 
 -   Fixed bug triggered by instantiating motion blur geometry.
