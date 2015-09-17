@@ -130,7 +130,7 @@ namespace embree
             if (!instance->isEnabled() || instance->numTimeSteps != 1) 
               continue;
             
-            BVH4*    object  = objects [objectID]; assert(object);
+            BVH4*    object  = objects [instance->geom->id]; assert(object);
             
             /* create build primitive */
             if (!object->bounds.empty()) {
