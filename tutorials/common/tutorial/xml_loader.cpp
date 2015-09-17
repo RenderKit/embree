@@ -262,6 +262,9 @@ namespace embree
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
     std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
     std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+
+  private:
+    size_t curMaterialID;
     std::map<size_t, Ref<SceneGraph::Node> > id2node;
     std::map<size_t, Ref<SceneGraph::MaterialNode> > id2material;
 
@@ -893,7 +896,7 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadBGFMesh(const Ref<XML>& xml) 
   {
     size_t matid = xml->child("materiallist")->body[0].Int();
-    Ref<SceneGraph::MaterialNode> material = id2material[matid];
+    Ref<SceneGraph::MaterialNode> material = id2material.at(matid);
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("vertex"));
     std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normal"));
     std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoord"));
@@ -911,7 +914,7 @@ namespace embree
   {
     const size_t child = atoi(xml->parm("child").c_str()); 
     const AffineSpace3fa space = load<AffineSpace3fa>(xml);
-    return new SceneGraph::TransformNode(space,id2node[child]);
+    return new SceneGraph::TransformNode(space,id2node.at(child));
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadBGFGroupNode(const Ref<XML>& xml) 
@@ -924,7 +927,7 @@ namespace embree
     for (size_t i=0; i<N; i++) 
     {
       const size_t id = xml->body[i].Int();
-      group->set(i,id2node[id]);
+      group->set(i,id2node.at(id));
     }
     return group.cast<SceneGraph::Node>();
   }
@@ -938,8 +941,9 @@ namespace embree
     else if (xml->name == "Transform") return id2node[id] = loadBGFTransformNode(xml);
     else if (xml->name == "Material" ) 
     {
+      const size_t mid = curMaterialID++;
       Ref<SceneGraph::MaterialNode> material = loadBGFMaterial(xml); 
-      id2material[id] = material;
+      id2material[mid] = material;
       return material.cast<SceneGraph::Node>();
     }
     else if (xml->name == "Texture2D") {
@@ -956,7 +960,7 @@ namespace embree
     XMLLoader loader(fileName,space); return loader.root;
   }
 
-  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr)
+  XMLLoader::XMLLoader(const FileName& fileName, const AffineSpace3fa& space) : binFile(nullptr), curMaterialID(0)
   {
     path = fileName.path();
     binFileName = fileName.setExt(".bin");
