@@ -38,7 +38,6 @@ namespace embree
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
-  static bool g_only_subdivs = false;
   static bool g_anim_mode = false;
   static bool g_loop_mode = false;
   static Shader g_shader = SHADER_DEFAULT;
@@ -168,11 +167,6 @@ namespace embree
         g_scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
       }
 
-      /* converts triangle meshes into subdiv meshes */
-      else if (tag == "-subdiv") {
-	g_only_subdivs = true;
-      }
-
       /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
@@ -296,10 +290,6 @@ namespace embree
     case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
     };
     
-    /* convert triangle meshes to subdiv meshes */
-    if (g_only_subdivs)
-      g_obj_scene.convert_to_subdiv();
-
     /* send model */
     set_scene(&g_obj_scene);
     

@@ -37,7 +37,7 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCHairSet* convertHair (OBJScene::HairSet* in)
+  ISPCHairSet* convertHair (Ref<OBJScene::HairSet> in)
   {
     ISPCHairSet* out = new ISPCHairSet;
     out->v = in->v.size() ? &in->v[0] : nullptr;
@@ -48,7 +48,7 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertMesh (OBJScene::Mesh* in)
+  ISPCMesh* convertMesh (Ref<OBJScene::Mesh> in)
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
@@ -65,7 +65,7 @@ namespace embree
     return out;
   }
 
-  ISPCSubdivMesh* convertSubdivMesh (OBJScene::SubdivMesh* in)
+  ISPCSubdivMesh* convertSubdivMesh (Ref<OBJScene::SubdivMesh> in)
   {
     ISPCSubdivMesh* out = new ISPCSubdivMesh;
     out->positions = in->positions.size() ? &in->positions[0] : nullptr;
