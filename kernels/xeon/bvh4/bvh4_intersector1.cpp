@@ -47,6 +47,7 @@ namespace embree
       struct TravRay 
       {
         __forceinline TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
+          : org_xyz(ray_org), dir_xyz(ray_dir) 
         {
           const Vec3fa ray_rdir = rcp_safe(ray_dir);
           const Vec3fa ray_org_rdir = ray_org*ray_rdir;
@@ -61,6 +62,7 @@ namespace embree
           farY  = nearY ^ sizeof(float4);
           farZ  = nearZ ^ sizeof(float4);
         }
+        Vec3fa org_xyz, dir_xyz;
         Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
         size_t nearX, nearY, nearZ;
         size_t farX, farY, farZ;
@@ -189,9 +191,11 @@ namespace embree
         if (unlikely(cur.isTransformNode(types))) 
         {
           const BVH4::TransformNode* node = cur.transformNode();
-          const Vec3fa ray_org = xfmPoint (node->world2local,ray.org);
-          const Vec3fa ray_dir = xfmVector(node->world2local,ray.dir);
+          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
+          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
           new (&vray) TravRay(ray_org,ray_dir);
+          ray.org = ray_org;
+          ray.dir = ray_dir;
           stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
           stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
           goto pop;
@@ -199,7 +203,10 @@ namespace embree
 
         /*! restore toplevel ray */
         if (cur == BVH4::popRay) {
-          vray = (TravRay&) tlray; goto pop;
+          vray = (TravRay&) tlray; 
+          ray.org = ((TravRay&)tlray).org_xyz;
+          ray.dir = ((TravRay&)tlray).dir_xyz;
+          goto pop;
         }
         
         /*! this is a leaf node */

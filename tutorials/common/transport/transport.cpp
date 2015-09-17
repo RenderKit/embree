@@ -157,7 +157,8 @@ namespace embree
     for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
     out->numSubdivMeshes = in->subdiv.size();
 
-    out->instances = (ISPCInstance**) (in->instances.size() ? &*in->instances.begin() : nullptr);
+    out->instances = new ISPCInstance*[in->instances.size()];
+    for (size_t i=0; i<in->instances.size(); i++) out->instances[i] = new ISPCInstance(in->instances[i]->space,in->instances[i]->geomID);
     out->numInstances = in->instances.size();
 
     out->subdivMeshKeyFrames = nullptr;
