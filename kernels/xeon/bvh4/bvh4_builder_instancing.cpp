@@ -250,7 +250,7 @@ namespace embree
       
       //size_t N = 0;
       //size_t N = numInstancedPrimitives/2000;
-      size_t N = numInstancedPrimitives/200;
+      size_t N = numInstancedPrimitives/100;
       //size_t N = numInstancedPrimitives;
       
       refs.reserve(N);
