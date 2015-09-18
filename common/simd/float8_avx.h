@@ -495,7 +495,7 @@ namespace embree
   {
     const float8 va = broadcast(&a);
     const float8 vb = broadcast(&b);
-    return select(0b00001111,va,vb);
+    return select(0xf /* 0b00001111 */,va,vb);
   }
 #endif
 

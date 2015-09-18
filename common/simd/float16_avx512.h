@@ -392,20 +392,38 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float16 vround(const float16& f, 
-                             const _MM_ROUND_MODE_ENUM mode, 
-                             const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE) 
-  { 
-    return _mm512_round_ps(f,mode,exp); 
-  }
+  /* __forceinline float16 vround(const float16& f,  */
+  /*                            const _MM_ROUND_MODE_ENUM mode,  */
+  /*                            const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE)  */
+  /* {  */
+  /*   return _mm512_round_ps(f,mode,exp);  */
+  /* } */
   
-  __forceinline float16 floor(const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); }
-  __forceinline float16 ceil (const float16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); }
-  __forceinline float16 trunc(const float16& a) { return _mm512_trunc_ps(a); } 
+  __forceinline float16 floor(const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline float16 ceil (const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline float16 trunc(const float16& a) { 
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO); 
+#else
+    return _mm512_trunc_ps(a); 
+#endif
+} 
   __forceinline float16 frac( const float16& a ) { return a-trunc(a); }
 
   __forceinline const float16 rcp_nr  ( const float16& a ) { 
-    const float16 ra = _mm512_rcp23_ps(a); 
+    const float16 ra = rcp(a); 
     return (ra+ra) - (ra * a * ra);
   };
 
@@ -822,11 +840,19 @@ namespace embree
   }
   
   __forceinline void store16f_nt(void *__restrict__ ptr, const float16& a) {
+#if defined(__AVX512F__)
+     _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenr_ps(ptr,a);
+#endif
   }
   
   __forceinline void store16f_ngo(void *__restrict__ ptr, const float16& a) {
+#if defined(__AVX512F__)
+     _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenrngo_ps(ptr,a);
+#endif
   }
 
   __forceinline void store1f(void *addr, const float16& reg) {
@@ -889,7 +915,7 @@ namespace embree
   }
 
 
-  __forceinline float16 rcp_safe( const float16& a ) { return select(a != float16::zero(),_mm512_rcp23_ps(a),float16(1E-10f)); };
+  __forceinline float16 rcp_safe( const float16& a ) { return select(a != float16::zero(),rcp(a),float16(1E-10f)); };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators

@@ -138,7 +138,7 @@ namespace embree
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         g_numThreads = cin->get().Int();
       
-      else if (tok == Token::Id("set_affinity"))
+      else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {

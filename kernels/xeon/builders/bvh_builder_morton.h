@@ -405,11 +405,18 @@ namespace embree
       /* build function */
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
-        /* sort morton codes */
+        //double t0 = getSeconds();
+
+        /* using 4 phases radix sort */
+#if 0
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
-        //memcpy(morton,src,numPrimitives*sizeof(MortonID32Bit));
-        //std::sort(&morton[0],&morton[numPrimitives]);
+#else
+        morton = src;
+        radix_sort_u32(src,tmp,numPrimitives);
+#endif
+        //double t1 = getSeconds();
+        //PRINT(t1-t0);
 
         /* build BVH */
         NodeRef root;
@@ -454,9 +461,13 @@ namespace embree
                                                              CreateLeafFunc createLeaf, 
                                                              CalculateBoundsFunc calculateBounds,
                                                              ProgressMonitor progressMonitor,
-                                                             MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
-                                                             const size_t branchingFactor, const size_t maxDepth, 
-                                                             const size_t minLeafSize, const size_t maxLeafSize)
+                                                             MortonID32Bit* src, 
+                                                             MortonID32Bit* tmp, 
+                                                             size_t numPrimitives,
+                                                             const size_t branchingFactor, 
+                                                             const size_t maxDepth, 
+                                                             const size_t minLeafSize, 
+                                                             const size_t maxLeafSize)
     {
       typedef GeneralBVHBuilderMorton<
         NodeRef,
@@ -501,9 +512,13 @@ namespace embree
                                                     CreateLeafFunc createLeaf, 
                                                     CalculateBoundsFunc calculateBounds,
                                                     ProgressMonitor progressMonitor,
-                                                    MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
-                                                    const size_t branchingFactor, const size_t maxDepth, 
-                                                    const size_t minLeafSize, const size_t maxLeafSize)
+                                                    MortonID32Bit* src, 
+                                                    MortonID32Bit* temp, 
+                                                    size_t numPrimitives,
+                                                    const size_t branchingFactor, 
+                                                    const size_t maxDepth, 
+                                                    const size_t minLeafSize, 
+                                                    const size_t maxLeafSize)
     {
       std::pair<NodeRef,BBox3fa> ret;
 
@@ -520,7 +535,9 @@ namespace embree
       MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
       parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
       {
-        MortonCodeGenerator generator(mapping,&temp[r.begin()]);
+        //MortonCodeGenerator generator(mapping,&temp[r.begin()]);
+        MortonCodeGenerator generator(mapping,&src[r.begin()]);
+
         for (size_t i=r.begin(); i<r.end(); i++) {
           generator(calculateBounds(src[i]),src[i].index);
         }
@@ -528,7 +545,9 @@ namespace embree
       
       return bvh_builder_morton_internal<NodeRef>(
         createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
-        temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+        //temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+        src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+
     }
   }
 }
