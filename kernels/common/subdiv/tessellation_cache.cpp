@@ -51,35 +51,34 @@ namespace embree
 #else
     switch_block_threshold = maxBlocks/NUM_CACHE_SEGMENTS;
 #endif
-    threadWorkState     = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState)*NUM_PREALLOC_THREAD_WORK_STATES,64);
-
-    for (size_t i=0;i<NUM_PREALLOC_THREAD_WORK_STATES;i++)
-      threadWorkState[i].reset();
+    threadWorkState     = new ThreadWorkState[NUM_PREALLOC_THREAD_WORK_STATES];
 
     reset_state.reset();
     linkedlist_mtx.reset();
   }
 
+  SharedLazyTessellationCache::~SharedLazyTessellationCache() 
+  {
+    for (ThreadWorkState* t=current_t_state; t!=nullptr; ) 
+    {
+      ThreadWorkState* next = t->next;
+      if (t->allocated) delete t;
+      t = next;
+    }
+
+    delete[] threadWorkState;
+  }
+
   void SharedLazyTessellationCache::getNextRenderThreadWorkState() 
   {
     const size_t id = numRenderThreads.add(1); 
-    if (id >= NUM_PREALLOC_THREAD_WORK_STATES) 
-      { 
-        init_t_state = (ThreadWorkState*)_mm_malloc(sizeof(ThreadWorkState),64);
-        init_t_state->reset();
-      }   
-    else
-    {
-      init_t_state = &threadWorkState[id];
-    }
-
+    if (id >= NUM_PREALLOC_THREAD_WORK_STATES) init_t_state = new ThreadWorkState(true);
+    else                                       init_t_state = &threadWorkState[id];
+    
     /* critical section for updating link list with new thread state */
-
     linkedlist_mtx.lock();
-
-    init_t_state->prev = current_t_state;
+    init_t_state->next = current_t_state;
     current_t_state = init_t_state;
-
     linkedlist_mtx.unlock();
   }
 
@@ -110,7 +109,7 @@ namespace embree
             linkedlist_mtx.lock();
 
             /* block all threads */
-	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
 	      if (lockThread(t) == 1)
 		waitForUsersLessEqual(t,1);
 
@@ -133,7 +132,7 @@ namespace embree
 
             /* release all blocked threads */
 
-	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+	    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
 	      unlockThread(t);
 
             /* unlock the linked list of thread states */
@@ -158,7 +157,7 @@ namespace embree
     linkedlist_mtx.lock();
 
     /* block all threads */
-    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
       if (lockThread(t) == 1)
         waitForUsersLessEqual(t,1);
 
@@ -174,7 +173,7 @@ namespace embree
     localTime = NUM_CACHE_SEGMENTS;
 
     /* release all blocked threads */
-    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
       unlockThread(t);
 
     /* unlock the linked list of thread states */
@@ -193,7 +192,7 @@ namespace embree
     linkedlist_mtx.lock();
 
     /* block all threads */
-    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
       if (lockThread(t) == 1)
         waitForUsersLessEqual(t,1);
 
@@ -218,7 +217,7 @@ namespace embree
 #endif
 
     /* release all blocked threads */
-    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->prev)
+    for (ThreadWorkState *t=current_t_state;t!=nullptr;t=t->next)
       unlockThread(t);
 
     /* unlock the linked list of thread states */
