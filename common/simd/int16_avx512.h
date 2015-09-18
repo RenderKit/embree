@@ -71,6 +71,8 @@ namespace embree
     __forceinline int16( NegInfTy ) : v(_mm512_set_1to16_epi32(neg_inf)) {}
     __forceinline int16( StepTy )   : v(_mm512_set_16to16_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
 
+    __forceinline int16( ReverseStepTy )   : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
+
     __forceinline static int16 zero() { return _mm512_setzero_epi32(); }
     __forceinline static int16 one () { return _mm512_set_1to16_epi32(1); }
     __forceinline static int16 neg_one () { return _mm512_set_1to16_epi32(-1); }
@@ -360,18 +362,6 @@ namespace embree
   __forceinline int16 vreduce_add8(int16 x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
   __forceinline int16 vreduce_add (int16 x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
   
-  __forceinline int16 prefix_sum(const int16& a)
-  {
-    int16 v = a;
-    v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
-    const int16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xf0f0,v,v,shuf_v0);
-    const int16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xff00,v,v,shuf_v1);
-    return v;  
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
@@ -535,6 +525,33 @@ namespace embree
 #else
     return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
 #endif
+  }
+
+  __forceinline int16 permute(int16 v,int16 index)
+  {
+    return _mm512_permutev_epi32(index,v);  
+  }
+
+  __forceinline int16 reverse(const int16 &a) 
+  {
+    return permute(a,int16(reverse_step));
+  }
+
+  __forceinline int16 prefix_sum(const int16& a)
+  {
+    int16 v = a;
+    v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
+    v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
+    const int16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xf0f0,v,v,shuf_v0);
+    const int16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xff00,v,v,shuf_v1);
+    return v;  
+  }
+
+  __forceinline int16 reverse_prefix_sum(const int16& a)
+  {
+    return reverse(prefix_sum(reverse(a)));
   }
   
   ////////////////////////////////////////////////////////////////////////////////

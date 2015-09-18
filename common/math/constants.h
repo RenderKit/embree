@@ -156,6 +156,9 @@ namespace embree
   static struct StepTy {
   } step MAYBE_UNUSED;
 
+  static struct ReverseStepTy {
+  } reverse_step MAYBE_UNUSED;
+
   static struct EmptyTy {
   } empty MAYBE_UNUSED;
 

@@ -482,6 +482,16 @@ namespace embree
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
   }
 
+  __forceinline float16 permute(float16 v,__m512i index)
+  {
+    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
+  __forceinline float16 reverse(const float16 &a) 
+  {
+    return permute(a,_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
+  }
+
   template<int i>
   __forceinline float16 align_shift_right(const float16 &a, const float16 &b)
   {
