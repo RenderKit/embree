@@ -46,6 +46,7 @@ namespace embree
     {
       struct TravRay 
       {
+        __forceinline TravRay () {}
         __forceinline TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
           : org_xyz(ray_org), dir_xyz(ray_dir) 
         {
@@ -95,6 +96,8 @@ namespace embree
       new (tlray) TravRay(vray);
       float4 ray_near(ray.tnear);
       float4 ray_far (ray.tfar);
+
+//      __aligned(32) TravRay
 
       /* pop loop */
       while (true) pop:
@@ -194,6 +197,7 @@ namespace embree
         {
           //STAT3(normal.transform_nodes,1,1,1);
           const BVH4::TransformNode* node = cur.transformNode();
+          //PRINT(node->xfmID);
           const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
           const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
           new (&vray) TravRay(ray_org,ray_dir);

@@ -33,8 +33,8 @@ namespace embree
     public:
       __forceinline BuildRef () {}
       
-      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, int instID) 
-        : local2world(local2world), localBounds(localBounds_in), node(node), instID(instID)
+      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, int instID, int xfmID) 
+        : local2world(local2world), localBounds(localBounds_in), node(node), instID(instID), xfmID(xfmID)
       {
         if (node.isLeaf())
           localBounds.lower.w = 0.0f;
@@ -42,14 +42,6 @@ namespace embree
           const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
           localBounds.lower.w = area(worldBounds);
         }
-        this->local2world.l.vx.w = 0;
-        this->local2world.l.vy.w = 0;
-        this->local2world.l.vz.w = 0;
-        this->local2world.p.w = 0;
-
-        xfmID = 0;
-        for (size_t i=0; i<12; i++)
-          xfmID ^= 0x12F576E1*i*((int*)&this->local2world)[i];
       }
       
       __forceinline BBox3fa worldBounds() const {

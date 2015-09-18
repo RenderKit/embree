@@ -32,6 +32,14 @@ namespace embree
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
     }
+
+    int hash(const AffineSpace3fa& space)
+    {
+      int xfmID = 0;
+      for (size_t i=0; i<12; i++)
+        xfmID ^= 0x12F576E1*i*((int*)&space)[i];
+      return xfmID;
+    }
     
     void BVH4BuilderInstancing::build(size_t threadIndex, size_t threadCount) 
     {
@@ -111,7 +119,7 @@ namespace embree
             
             /* create build primitive */
             if (!object->bounds.empty() && mesh->isEnabled()) {
-              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1);
+              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1,0);
               numInstancedPrimitives += mesh->size();
             }
           }
@@ -134,7 +142,7 @@ namespace embree
             
             /* create build primitive */
             if (!object->bounds.empty()) {
-              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,objectID);
+              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,objectID,hash(instance->local2world));
               numInstancedPrimitives += instance->geom->size();
             }
           }
@@ -148,7 +156,7 @@ namespace embree
       AffineSpace3fa lastXfm = one;
       for (size_t i=0; i<refs.size(); i++) {
         if (refs[i].local2world != lastXfm) {
-          lastXfmID = 0;
+          lastXfmID++;
           lastXfm = refs[i].local2world;
         }
         refs[i].xfmID = lastXfmID;
@@ -277,13 +285,14 @@ namespace embree
         BVH4::NodeRef ref = refs.back().node;
         const AffineSpace3fa local2world = refs.back().local2world;
         const int instID = refs.back().instID;
+        const int xfmID = refs.back().xfmID;
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
         BVH4::Node* node = ref.node();
         for (size_t i=0; i<BVH4::N; i++) {
           if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),instID));
+          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),instID,xfmID));
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
