@@ -192,6 +192,7 @@ namespace embree
         /*! process transformation nodes */
         if (unlikely(cur.isTransformNode(types))) 
         {
+          //STAT3(normal.transform_nodes,1,1,1);
           const BVH4::TransformNode* node = cur.transformNode();
           const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
           const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);

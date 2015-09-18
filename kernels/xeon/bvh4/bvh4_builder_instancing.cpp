@@ -139,6 +139,21 @@ namespace embree
             }
           }
         });
+      refs.resize(nextRef);
+
+      /* compute transform IDs */
+      std::sort(refs.begin(),refs.end(), [] (const BuildRef& ref0, const BuildRef& ref1) { return ref0.xfmHash < ref1.xfmHash; });
+      
+      int lastXfmID = 0;
+      AffineSpace3fa lastXfm = one;
+      for (size_t i=0; i<refs.size(); i++) {
+        if (refs[i].local2world != lastXfm) {
+          lastXfmID = 0;
+          lastXfm = refs[i].local2world;
+        }
+        refs[i].xfmHash = lastXfmID;
+      }
+        
       
       /* fast path for single geometry scenes */
       /*if (nextRef == 1) { 
@@ -147,7 +162,7 @@ namespace embree
         }*/
       
       /* open all large nodes */
-      refs.resize(nextRef);
+      
       open(numPrimitives); 
       
       /* fast path for small geometries */

@@ -42,6 +42,14 @@ namespace embree
           const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
           localBounds.lower.w = area(worldBounds);
         }
+        this->local2world.l.vx.w = 0;
+        this->local2world.l.vy.w = 0;
+        this->local2world.l.vz.w = 0;
+        this->local2world.p.w = 0;
+
+        xfmHash = 0;
+        for (size_t i=0; i<12; i++)
+          xfmHash ^= 0x12F576E1*i*((int*)&this->local2world)[i];
       }
       
       __forceinline BBox3fa worldBounds() const {
@@ -57,6 +65,7 @@ namespace embree
       BBox3fa localBounds;
       BVH4::NodeRef node;
       int instID;
+      int xfmHash;
     };
       
       /*! Constructor. */
