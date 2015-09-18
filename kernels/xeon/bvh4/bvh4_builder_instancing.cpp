@@ -125,7 +125,7 @@ namespace embree
               builder->build(0,0);
             
             /* create build primitive */
-            if (!object->bounds.empty() && mesh->isEnabled()) {
+            if (mesh->isEnabled()) {
               //if (!object->bounds.empty())
                 //refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1,0);
               numInstancedPrimitives += mesh->size();
@@ -275,8 +275,6 @@ namespace embree
       N = max(N,scene->device->instancing_open_min);
       N = min(N,scene->device->instancing_open_max);
       refs.reserve(N);
-      //PRINT(numInstancedPrimitives);
-      //PRINT(N);
       
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+3 <= N)
