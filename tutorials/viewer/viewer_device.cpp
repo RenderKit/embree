@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-#define GEOMETRY_INSTANCING 0
+#define GEOMETRY_INSTANCING 1
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
@@ -279,6 +279,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.instID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
   ray.time = 0;
   
@@ -294,12 +295,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #if 0
   return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 #else
-#if GEOMETRY_INSTANCING
-  const int instID = ray.geomID;
-#else
-  const int instID = ray.instID;
-#endif
-  const Vec3fa Ng = normalize(xfmVector(g_ispc_scene->instances[instID]->space,ray.Ng));
+  const Vec3fa Ng = normalize(xfmVector(g_ispc_scene->instances[ray.instID]->space,ray.Ng));
   return Vec3fa(abs(dot(normalize(ray.dir),Ng)));
 #endif
 
