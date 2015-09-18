@@ -149,6 +149,7 @@ namespace embree
         });
       refs.resize(nextRef);
 
+#if 0
       /* compute transform IDs */
       std::sort(refs.begin(),refs.end(), [] (const BuildRef& ref0, const BuildRef& ref1) { return ref0.xfmID < ref1.xfmID; });
       
@@ -161,7 +162,7 @@ namespace embree
         }
         refs[i].xfmID = lastXfmID;
       }
-        
+#endif   
       
       /* fast path for single geometry scenes */
       /*if (nextRef == 1) { 
@@ -266,17 +267,18 @@ namespace embree
       }
     }
     
-    void BVH4BuilderInstancing::open(size_t numPrimitives)
+    void BVH4BuilderInstancing::open(size_t)
     {
       if (refs.size() == 0)
 	return;
       
-      //size_t N = 0;
-      //size_t N = numInstancedPrimitives/2000;
-      size_t N = numInstancedPrimitives/100;
-      //size_t N = numInstancedPrimitives;
-      
+      /* calculate opening size */
+      size_t N = numInstancedPrimitives/scene->device->instancing_block_size;
+      N = max(N,scene->device->instancing_open_min);
+      N = min(N,scene->device->instancing_open_max);
       refs.reserve(N);
+      //PRINT(numInstancedPrimitives);
+      //PRINT(N);
       
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+3 <= N)
