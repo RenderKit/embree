@@ -297,14 +297,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #if 0
   return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 #else
-//#if GEOMETRY_INSTANCING
-//  const int instID = ray.geomID;
-//#else
-//  const int instID = ray.instID;
-//#endif
-  ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[ray.instID];
-  const Vec3fa Ng = normalize(xfmVector(instance->space,ray.Ng));
-  return Vec3fa(abs(dot(normalize(ray.dir),Ng)));
+  Vec3fa Ng = ray.Ng;
+  if (ray.instID != RTC_INVALID_GEOMETRY_ID) {
+    ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[ray.instID];
+    Ng = xfmVector(instance->space,Ng);
+  }
+  return Vec3fa(abs(dot(normalize(ray.dir),normalize(Ng))));
 #endif
 
   /* shade all rays that hit something */
