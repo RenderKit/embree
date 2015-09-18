@@ -248,25 +248,6 @@ namespace embree
       refs.clear();
     }
     
-    void set_primID(BVH4::NodeRef node, unsigned primID)
-    {
-      if (node.isLeaf())
-      {
-        size_t num;
-        Triangle4* prims = (Triangle4*) node.leaf(num);
-        for (size_t i=0; i<num; i++)
-          for (size_t j=0; j<4; j++)
-            if (prims[i].geomIDs[j] != -1) 
-              prims[i].primIDs[j] = primID;
-      }
-      else 
-      {
-        BVH4::Node* n = node.node();
-        for (size_t c=0; c<BVH4::N; c++)
-          set_primID(n->child(c),primID);
-      }
-    }
-    
     void BVH4BuilderInstancing::open(size_t)
     {
       if (refs.size() == 0)
@@ -298,9 +279,6 @@ namespace embree
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
-      
-      //for (size_t i=0; i<refs.size(); i++)
-      //  set_primID((BVH4::NodeRef) refs[i].node, i);
     }
     
     BVH4::NodeRef BVH4BuilderInstancing::collapse(BVH4::NodeRef& node)
