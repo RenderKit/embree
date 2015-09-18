@@ -66,6 +66,8 @@ namespace embree
         Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
         size_t nearX, nearY, nearZ;
         size_t farX, farY, farZ;
+        int geomID;
+        int instID;
       };
 
       /*! perform per ray precalculations required by the primitive intersector */
@@ -194,8 +196,12 @@ namespace embree
           const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
           const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
           new (&vray) TravRay(ray_org,ray_dir);
+          ((TravRay&)tlray).geomID = ray.geomID;
+          ((TravRay&)tlray).instID = ray.instID;
           ray.org = ray_org;
           ray.dir = ray_dir;
+          ray.geomID = -1;
+          ray.instID = node->instID;
           stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
           stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
           goto pop;
@@ -206,6 +212,10 @@ namespace embree
           vray = (TravRay&) tlray; 
           ray.org = ((TravRay&)tlray).org_xyz;
           ray.dir = ((TravRay&)tlray).dir_xyz;
+          if (ray.geomID == -1) {
+            ray.geomID = ((TravRay&)tlray).geomID;
+            ray.instID = ((TravRay&)tlray).instID;
+          }
           goto pop;
         }
         

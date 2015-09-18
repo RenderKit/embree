@@ -164,7 +164,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   if (g_ispc_scene->numSubdivMeshes) 
     g_subdiv_mode = true;
 
-  size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+  size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes + scene_in->numInstances;
   typedef void* void_ptr;
   geomID_to_mesh = new void_ptr[numGeometries];
   meshID_to_geomID = new int[numGeometries];
@@ -229,6 +229,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     ISPCInstance* instance = scene_in->instances[i];
     unsigned int geomID = rtcNewGeometryInstance(scene_out, meshID_to_geomID[instance->geomID]);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = instance;
   }
 
 #else
@@ -260,6 +261,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     ISPCInstance* instance = scene_in->instances[i];
     unsigned int geomID = rtcNewInstance(scene_out, meshID_to_scene[instance->geomID]);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = instance;
   }
 
 #endif
@@ -295,7 +297,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 #if 0
   return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 #else
-  const Vec3fa Ng = normalize(xfmVector(g_ispc_scene->instances[ray.instID]->space,ray.Ng));
+//#if GEOMETRY_INSTANCING
+//  const int instID = ray.geomID;
+//#else
+//  const int instID = ray.instID;
+//#endif
+  ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[ray.instID];
+  const Vec3fa Ng = normalize(xfmVector(instance->space,ray.Ng));
   return Vec3fa(abs(dot(normalize(ray.dir),Ng)));
 #endif
 

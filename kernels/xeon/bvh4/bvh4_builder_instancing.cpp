@@ -111,7 +111,7 @@ namespace embree
             
             /* create build primitive */
             if (!object->bounds.empty() && mesh->isEnabled()) {
-              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root);
+              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1);
               numInstancedPrimitives += mesh->size();
             }
           }
@@ -134,7 +134,7 @@ namespace embree
             
             /* create build primitive */
             if (!object->bounds.empty()) {
-              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root);
+              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,objectID);
               numInstancedPrimitives += instance->geom->size();
             }
           }
@@ -195,7 +195,7 @@ namespace embree
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
-            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node); // FIXME: rcp should be precalculated somewhere
+            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->instID); // FIXME: rcp should be precalculated somewhere
             *current.parent = BVH4::encodeNode(node);
             //*current.parent = ref->node;
             ((BVH4::NodeRef*)current.parent)->setBarrier();
@@ -261,13 +261,14 @@ namespace embree
         std::pop_heap (refs.begin(),refs.end()); 
         BVH4::NodeRef ref = refs.back().node;
         const AffineSpace3fa local2world = refs.back().local2world;
+        const int instID = refs.back().instID;
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
         BVH4::Node* node = ref.node();
         for (size_t i=0; i<BVH4::N; i++) {
           if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i)));
+          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),instID));
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
@@ -304,6 +305,11 @@ namespace embree
         }
         
         if (child.transformNode()->world2local != first->world2local) {
+          allEqual = false;
+          break;
+        }
+        
+        if (child.transformNode()->instID != first->instID) {
           allEqual = false;
           break;
         }
