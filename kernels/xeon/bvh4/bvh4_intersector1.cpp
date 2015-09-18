@@ -97,7 +97,9 @@ namespace embree
       float4 ray_near(ray.tnear);
       float4 ray_far (ray.tfar);
 
-//      __aligned(32) TravRay
+      unsigned int cacheSlot = 0;
+      __aligned(16) int4 cache_tag = -1;
+      __aligned(32) TravRay cache_entry[4];
 
       /* pop loop */
       while (true) pop:
@@ -197,16 +199,26 @@ namespace embree
         {
           //STAT3(normal.transform_nodes,1,1,1);
           const BVH4::TransformNode* node = cur.transformNode();
-          //PRINT(node->xfmID);
-          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
-          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
-          new (&vray) TravRay(ray_org,ray_dir);
-          ((TravRay&)tlray).geomID = ray.geomID;
-          ((TravRay&)tlray).instID = ray.instID;
-          ray.org = ray_org;
-          ray.dir = ray_dir;
-          ray.geomID = -1;
-          ray.instID = node->instID;
+          bool4 h = cache_tag == int4(node->xfmID);
+          if (likely(any(h))) {
+            const int slot = __bsf(movemask(h));
+            vray = cache_entry[slot];
+            ray.org = vray.org_xyz;
+            ray.dir = vray.dir_xyz;
+          } 
+          else {
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
+            new (&vray) TravRay(ray_org,ray_dir);
+            cache_tag[cacheSlot%4] = node->xfmID;
+            cache_entry[cacheSlot%4] = vray;
+            cacheSlot++;
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+          }
+          ((TravRay&)tlray).geomID = ray.geomID; ray.geomID = -1;
+          ((TravRay&)tlray).instID = ray.instID; ray.instID = node->instID;
+          
           stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
           stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
           goto pop;
