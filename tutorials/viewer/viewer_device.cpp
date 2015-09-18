@@ -17,6 +17,8 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
+#define GEOMETRY_INSTANCING 1
+
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 
@@ -25,6 +27,7 @@ RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 void** geomID_to_mesh = nullptr;
 int* meshID_to_geomID = nullptr;
+RTCScene* meshID_to_scene = nullptr;
 int* geomID_to_type = nullptr;
 bool g_subdiv_mode = false;
 
@@ -165,6 +168,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   typedef void* void_ptr;
   geomID_to_mesh = new void_ptr[numGeometries];
   meshID_to_geomID = new int[numGeometries];
+  meshID_to_scene = new RTCScene[numGeometries];
   geomID_to_type = new int[numGeometries];
 
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -197,6 +201,8 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
   }
 
+#if GEOMETRY_INSTANCING
+
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
   {
@@ -224,6 +230,39 @@ RTCScene convertScene(ISPCScene* scene_in)
     unsigned int geomID = rtcNewGeometryInstance(scene_out, meshID_to_geomID[instance->geomID]);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
   }
+
+#else
+
+  /* add all meshes to the scene */
+  for (int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    ISPCMesh* mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+
+    //geomID_to_mesh[geomID] = mesh;
+    //geomID_to_type[geomID] = 0;
+    meshID_to_scene[i] = scene_out;
+
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+
+    rtcCommit(scene_out);
+  }
+
+  /* add all instances to the scene */
+  for (int i=0; i<scene_in->numInstances; i++)
+  {
+    ISPCInstance* instance = scene_in->instances[i];
+    unsigned int geomID = rtcNewInstance(scene_out, meshID_to_scene[instance->geomID]);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+  }
+
+#endif
 
   /* commit changes to scene */
   return scene_out;
