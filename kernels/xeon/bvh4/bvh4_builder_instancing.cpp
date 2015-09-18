@@ -142,7 +142,7 @@ namespace embree
       refs.resize(nextRef);
 
       /* compute transform IDs */
-      std::sort(refs.begin(),refs.end(), [] (const BuildRef& ref0, const BuildRef& ref1) { return ref0.xfmHash < ref1.xfmHash; });
+      std::sort(refs.begin(),refs.end(), [] (const BuildRef& ref0, const BuildRef& ref1) { return ref0.xfmID < ref1.xfmID; });
       
       int lastXfmID = 0;
       AffineSpace3fa lastXfm = one;
@@ -151,7 +151,7 @@ namespace embree
           lastXfmID = 0;
           lastXfm = refs[i].local2world;
         }
-        refs[i].xfmHash = lastXfmID;
+        refs[i].xfmID = lastXfmID;
       }
         
       
@@ -210,7 +210,7 @@ namespace embree
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
-            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->instID); // FIXME: rcp should be precalculated somewhere
+            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->instID,ref->xfmID); // FIXME: rcp should be precalculated somewhere
             *current.parent = BVH4::encodeNode(node);
             //*current.parent = ref->node;
             ((BVH4::NodeRef*)current.parent)->setBarrier();
