@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-#define GEOMETRY_INSTANCING 1
+#define GEOMETRY_INSTANCING 0
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
@@ -291,8 +291,18 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     return Vec3fa(0.0f);
   }
 
+#if 0
   return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
-  
+#else
+#if GEOMETRY_INSTANCING
+  const int instID = ray.geomID;
+#else
+  const int instID = ray.instID;
+#endif
+  const Vec3fa Ng = normalize(xfmVector(g_ispc_scene->instances[instID]->space,ray.Ng));
+  return Vec3fa(abs(dot(normalize(ray.dir),Ng)));
+#endif
+
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa Ns = ray.Ng;
