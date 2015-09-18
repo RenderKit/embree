@@ -56,6 +56,9 @@ namespace embree
     /*! tests if geomery is used by any instance (including world space instance) */
     __forceinline bool isUsed() const { return used; }
 
+     /*! tests if geomery is used by any non-world space instance */
+    __forceinline bool isInstanced() const { return used-enabled; }
+
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return numPrimitives && modified; }
 

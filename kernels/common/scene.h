@@ -287,6 +287,8 @@ namespace embree
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
     atomic_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
+    atomic_t numInstancedTriangles;             //!< number of total instanced triangles
+
     __forceinline size_t numPrimitives() const {
     return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;
    }

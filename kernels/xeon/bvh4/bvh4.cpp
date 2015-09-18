@@ -303,13 +303,14 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)
     : AccelData(AccelData::TY_BVH4), primTy(primTy), device(scene->device), scene(scene), listMode(listMode),
-      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
+      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0), worldBVH(nullptr) {}
 
   BVH4::~BVH4 () 
   {
+    delete worldBVH;
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
-    
+        
     if (data_mem) {
       os_free( data_mem, size_data_mem );        
       data_mem = nullptr;

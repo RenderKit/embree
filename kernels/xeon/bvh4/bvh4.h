@@ -848,6 +848,7 @@ namespace embree
     
     /*! data arrays for special builders */
   public:
+    BVH4* worldBVH;
     std::vector<BVH4*> objects;
     void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
     size_t size_data_mem;
