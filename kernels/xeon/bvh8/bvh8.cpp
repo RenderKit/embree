@@ -69,10 +69,10 @@ namespace embree
     int features = getCPUFeatures();
 
     /* select builders */
-    SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSAH);
-    SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_AVX_AVX512(features,BVH8Triangle4SceneBuilderSAH);
+    SELECT_SYMBOL_AVX_AVX512(features,BVH8Triangle8SceneBuilderSAH);
     //SELECT_SYMBOL_AVX(features,BVH8Triangle8vSceneBuilderSAH);
-    SELECT_SYMBOL_AVX(features,BVH8TrianglePairs8SceneBuilderSAH);
+    SELECT_SYMBOL_AVX_AVX512(features,BVH8TrianglePairs8SceneBuilderSAH);
     
     SELECT_SYMBOL_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);

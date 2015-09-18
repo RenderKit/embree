@@ -210,6 +210,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     geometry/grid_soa.cpp
 
     builders/primrefgen.avx512.cpp
+    bvh8/bvh8_builder_sah.avx512.cpp
 
     bvh4/bvh4_refit.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp

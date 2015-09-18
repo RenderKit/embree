@@ -46,6 +46,12 @@ namespace embree
     __forceinline int16(const int a, const int b, const int c, const int d) { 
       v = _mm512_set_4to16_epi32(a,b,c,d);      
     }
+
+#if defined(__AVX512F__)
+    __forceinline int16(const int4 i) { 
+      v = _mm512_broadcast_i32x4(i);
+    }
+#endif
    
     __forceinline explicit int16(const __m512 f) { 
 #if defined(__AVX512F__)
