@@ -39,7 +39,7 @@ namespace embree
               const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o = nullptr);
 
       static __forceinline size_t calculate_grid_size(size_t width, size_t height) {
-        return ((width*height+vfloat::size-1)&(-vfloat::size)) / vfloat::size * vfloat::size;
+        return ((width*height+vfloatx::size-1)&(-vfloatx::size)) / vfloatx::size * vfloatx::size;
       }
 
       /*! Subgrid creation */

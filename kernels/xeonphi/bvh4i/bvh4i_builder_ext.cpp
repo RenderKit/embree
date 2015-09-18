@@ -1026,11 +1026,11 @@ PRINT(CORRECT_numPrims);
               const unsigned int patchIndex = base.size()+s.size();
               assert(patchIndex < numPrimitives);
               if (likely(fastUpdateMode)) {
-                 subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                 subdiv_patches[patchIndex].updateEdgeLevels(edge_level,subdiv,mesh,vfloatx::size);
                  subdiv_patches[patchIndex].resetRootRef();
               }
               else {
-                new (&subdiv_patches[patchIndex]) SubdivPatch1(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+                new (&subdiv_patches[patchIndex]) SubdivPatch1(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloatx::size);
               }
               const SubdivPatch1Base& patch = subdiv_patches[patchIndex];
               const BBox3fa bounds = knc::evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);

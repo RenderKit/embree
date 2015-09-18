@@ -46,17 +46,17 @@
 namespace embree
 {
 #if defined (__AVX512F__) || defined (__MIC__)
-  typedef bool16 vbool;
-  typedef int16 vint;
-  typedef float16 vfloat;
+  typedef bool16 vboolx;
+  typedef int16 vintx;
+  typedef float16 vfloatx;
 #elif defined(__AVX__)
-  typedef bool8 vbool;
-  typedef int8 vint;
-  typedef float8 vfloat;
+  typedef bool8 vboolx;
+  typedef int8 vintx;
+  typedef float8 vfloatx;
 #else
-  typedef bool4 vbool;
-  typedef int4 vint;
-  typedef float4 vfloat;
+  typedef bool4 vboolx;
+  typedef int4 vintx;
+  typedef float4 vfloatx;
 #endif
 
   /* foreach unique */
@@ -95,19 +95,19 @@ namespace embree
     int index = 0;
     for (int y=y0; y<y1; y++) {
       const bool lasty = y+1>=y1;
-      const vint vy = y;
-      for (int x=x0; x<x1; ) { //x+=vfloat::size) {
-        const bool lastx = x+vfloat::size >= x1;
-        vint vx = x+vint(step);
-        vint::storeu(&U[index],vx);
-        vint::storeu(&V[index],vy);
-        const int dx = min(x1-x,vfloat::size);
+      const vintx vy = y;
+      for (int x=x0; x<x1; ) { //x+=vfloatx::size) {
+        const bool lastx = x+vfloatx::size >= x1;
+        vintx vx = x+vintx(step);
+        vintx::storeu(&U[index],vx);
+        vintx::storeu(&V[index],vy);
+        const int dx = min(x1-x,vfloatx::size);
         index += dx;
         x += dx;
-        if (index >= vfloat::size || (lastx && lasty)) {
-          const vbool valid = vint(step) < vint(index);
-          closure(valid,vint::load(U),vint::load(V));
-          x-= max(0,index-vfloat::size);
+        if (index >= vfloatx::size || (lastx && lasty)) {
+          const vboolx valid = vintx(step) < vintx(index);
+          closure(valid,vintx::load(U),vintx::load(V));
+          x-= max(0,index-vfloatx::size);
           index = 0;
         }
       }
