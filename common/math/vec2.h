@@ -35,14 +35,14 @@ namespace embree
     /// Construction
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline Vec2     ( )                  { }
-    __forceinline explicit Vec2( const T& a             ) : x(a), y(a) {}
-    __forceinline explicit Vec2( const T& x, const T& y ) : x(x), y(y) {}
+    __forceinline Vec2( ) {}
+    __forceinline Vec2( const T& a             ) : x(a), y(a) {}
+    __forceinline Vec2( const T& x, const T& y ) : x(x), y(y) {}
 
-    __forceinline Vec2     ( const Vec2& other ) { x = other.x; y = other.y; }
+    __forceinline Vec2( const Vec2& other ) { x = other.x; y = other.y; }
     template<typename T1> __forceinline Vec2( const Vec2<T1>& a ) : x(T(a.x)), y(T(a.y)) {}
     template<typename T1> __forceinline Vec2& operator =( const Vec2<T1>& other ) { x = other.x; y = other.y; return *this; }
-    
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ namespace embree
 
   template<typename T> __forceinline Vec2<T> min(const Vec2<T>& a, const Vec2<T>& b) { return Vec2<T>(min(a.x, b.x), min(a.y, b.y)); }
   template<typename T> __forceinline Vec2<T> max(const Vec2<T>& a, const Vec2<T>& b) { return Vec2<T>(max(a.x, b.x), max(a.y, b.y)); }
-  
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
- 
+
   template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return madd(a.x,b.x,a.y*b.y); }
 
   template<typename T> __forceinline T       length   ( const Vec2<T>& a )                   { return sqrt(dot(a,a)); }
@@ -133,7 +133,7 @@ namespace embree
   template<typename T> __forceinline T       distance ( const Vec2<T>& a, const Vec2<T>& b ) { return length(a-b); }
   template<typename T> __forceinline T       det      ( const Vec2<T>& a, const Vec2<T>& b ) { return a.x*b.y - a.y*b.x; }
 
-  template<typename T> __forceinline Vec2<T> normalize_safe( const Vec2<T>& a ) { 
+  template<typename T> __forceinline Vec2<T> normalize_safe( const Vec2<T>& a ) {
     const T d = dot(a,a); return select(d == T( zero ),a, a*rsqrt(d) );
   }
 
@@ -153,9 +153,9 @@ namespace embree
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
   }
 
-  template<typename T> __forceinline int maxDim ( const Vec2<T>& a ) 
-  { 
-    if (a.x > a.y) return 0; 
+  template<typename T> __forceinline int maxDim ( const Vec2<T>& a )
+  {
+    if (a.x > a.y) return 0;
     else return 1;
   }
 

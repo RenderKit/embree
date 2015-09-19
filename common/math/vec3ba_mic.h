@@ -40,8 +40,8 @@ namespace embree
     __forceinline Vec3ba           ( const Vec3ba& a  ) : v(a.v) {}
     __forceinline Vec3ba& operator =(const Vec3ba& a) { v = a.v; return *this; }
 
-    __forceinline explicit Vec3ba ( bool x                 ) : v(x ? 0xF : 0x0) {}
-    __forceinline explicit Vec3ba ( bool x, bool y, bool z ) : v(1*__mmask16(x)+2*__mmask16(y)+4*__mmask16(z)) {}
+    __forceinline Vec3ba ( bool x                 ) : v(x ? 0xF : 0x0) {}
+    __forceinline Vec3ba ( bool x, bool y, bool z ) : v(1*__mmask16(x)+2*__mmask16(y)+4*__mmask16(z)) {}
 
     __forceinline operator const __mmask16&( void ) const { return v; }
     __forceinline operator       __mmask16&( void )       { return v; }
