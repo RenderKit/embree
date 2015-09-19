@@ -38,8 +38,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Vec3( ) {}
-    __forceinline Vec3( const T& a                         ) : x(a), y(a), z(a) {}
-    __forceinline Vec3( const T& x, const T& y, const T& z ) : x(x), y(y), z(z) {}
+    __forceinline explicit Vec3( const T& a                         ) : x(a), y(a), z(a) {}
+    __forceinline          Vec3( const T& x, const T& y, const T& z ) : x(x), y(y), z(z) {}
 
     __forceinline Vec3( const Vec3& other ) { x = other.x; y = other.y; z = other.z; }
     __forceinline Vec3( const Vec3fa& other );

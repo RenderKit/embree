@@ -48,8 +48,8 @@ namespace embree
 
     __forceinline Vec3fa& operator =( const Vec3fa& other ) { m128 = other.m128; return *this; }
 
-    __forceinline Vec3fa( const float a ) : m128(_mm_set1_ps(a)) {}
-    __forceinline Vec3fa( const float x, const float y, const float z) : m128(_mm_set_ps(z, z, y, x)) {}
+    __forceinline explicit Vec3fa( const float a ) : m128(_mm_set1_ps(a)) {}
+    __forceinline          Vec3fa( const float x, const float y, const float z) : m128(_mm_set_ps(z, z, y, x)) {}
 
     __forceinline Vec3fa( const Vec3fa& other, const int      a1) { m128 = other.m128; a = a1; }
     __forceinline Vec3fa( const Vec3fa& other, const unsigned a1) { m128 = other.m128; u = a1; }

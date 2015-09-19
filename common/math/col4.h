@@ -36,8 +36,8 @@ namespace embree
     __forceinline Col4           ( const Col4& other ) { r = other.r; g = other.g; b = other.b; a = other.a; }
     __forceinline Col4& operator=( const Col4& other ) { r = other.r; g = other.g; b = other.b; a = other.a; return *this; }
 
-    __forceinline Col4 (const T& v) : r(v), g(v), b(v), a(v) {}
-    __forceinline Col4 (const T& r, const T& g, const T& b, const T& a) : r(r), g(g), b(b), a(a) {}
+    __forceinline explicit Col4 (const T& v) : r(v), g(v), b(v), a(v) {}
+    __forceinline          Col4 (const T& r, const T& g, const T& b, const T& a) : r(r), g(g), b(b), a(a) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

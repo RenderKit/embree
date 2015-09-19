@@ -40,8 +40,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline Vec3ia ( ) {}
-    __forceinline Vec3ia ( int x               ) : x(x), y(x), z(x), a(0) {}
-    __forceinline Vec3ia ( int x, int y, int z ) : x(x), y(y), z(z), a(0) {}
+    __forceinline explicit Vec3ia ( int x               ) : x(x), y(x), z(x), a(0) {}
+    __forceinline          Vec3ia ( int x, int y, int z ) : x(x), y(y), z(z), a(0) {}
 
     __forceinline Vec3ia           ( const Vec3fa_t& other ); 
     __forceinline Vec3ia           ( const Vec3ia_t& other ); 

@@ -37,10 +37,10 @@ namespace embree
     __forceinline QuaternionT           ( const QuaternionT& other ) { r = other.r; i = other.i; j = other.j; k = other.k; }
     __forceinline QuaternionT& operator=( const QuaternionT& other ) { r = other.r; i = other.i; j = other.j; k = other.k; return *this; }
 
-    __forceinline QuaternionT( const T& r       ) : r(r), i(zero), j(zero), k(zero) {}
-    __forceinline QuaternionT( const Vec3<T>& v ) : r(zero), i(v.x), j(v.y), k(v.z) {}
-    __forceinline QuaternionT( const T& r, const T& i, const T& j, const T& k ) : r(r), i(i), j(j), k(k) {}
-    __forceinline QuaternionT( const T& r, const Vec3<T>& v ) : r(r), i(v.x), j(v.y), k(v.z) {}
+    __forceinline          QuaternionT( const T& r       ) : r(r), i(zero), j(zero), k(zero) {}
+    __forceinline explicit QuaternionT( const Vec3<T>& v ) : r(zero), i(v.x), j(v.y), k(v.z) {}
+    __forceinline          QuaternionT( const T& r, const T& i, const T& j, const T& k ) : r(r), i(i), j(j), k(k) {}
+    __forceinline          QuaternionT( const T& r, const Vec3<T>& v ) : r(r), i(v.x), j(v.y), k(v.z) {}
 
     __inline QuaternionT( const Vec3<T>& vx, const Vec3<T>& vy, const Vec3<T>& vz );
     __inline QuaternionT( const T& yaw, const T& pitch, const T& roll );

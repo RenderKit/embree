@@ -128,7 +128,7 @@ namespace embree
       const Vec3fa b_min = min(min(q0,q1),min(q2,q3));
       const Vec3fa b_max = max(max(q0,q1),max(q2,q3));
 
-      const Vec3fa max_radius = max(max(p[0].w,p[1].w),max(p[2].w,p[3].w));
+      const Vec3fa max_radius(max(max(p[0].w,p[1].w),max(p[2].w,p[3].w)));
       
       const Vec3fa b_min_r = b_min - max_radius;
       const Vec3fa b_max_r = b_max + max_radius;

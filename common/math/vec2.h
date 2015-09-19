@@ -36,8 +36,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline Vec2( ) {}
-    __forceinline Vec2( const T& a             ) : x(a), y(a) {}
-    __forceinline Vec2( const T& x, const T& y ) : x(x), y(y) {}
+    __forceinline explicit Vec2( const T& a             ) : x(a), y(a) {}
+    __forceinline          Vec2( const T& x, const T& y ) : x(x), y(y) {}
 
     __forceinline Vec2( const Vec2& other ) { x = other.x; y = other.y; }
     template<typename T1> __forceinline Vec2( const Vec2<T1>& a ) : x(T(a.x)), y(T(a.y)) {}
