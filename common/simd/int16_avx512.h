@@ -549,9 +549,34 @@ namespace embree
     return v;  
   }
 
+  __forceinline int16 prefix_sum2(const int16& a)
+  {
+    int16 v = a;
+    v = mask_add(0xaaaa,v,v,swizzle<0,0,2,2>(v));
+    v = mask_add(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    const int16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xf0f0,v,v,shuf_v0);
+    const int16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xff00,v,v,shuf_v1);
+    return v;  
+  }
+
+
   __forceinline int16 reverse_prefix_sum(const int16& a)
   {
     return reverse(prefix_sum(reverse(a)));
+  }
+
+  __forceinline int16 reverse_prefix_sum2(const int16& a)
+  {
+    int16 v = a;
+    v = mask_add(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_add(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const int16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_add(0x0f0f,v,v,shuf_v0);
+    const int16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_add(0x00ff,v,v,shuf_v1);
+    return v;  
   }
   
   ////////////////////////////////////////////////////////////////////////////////
