@@ -27,7 +27,6 @@ namespace embree
     PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
-      
       /* first try */
       progressMonitor(0);
       PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo

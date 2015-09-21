@@ -392,30 +392,17 @@ namespace embree
                                            const float16 max_y,
                                            const float16 max_z)
       {
-#if 1
         const float16 r_min_x = reverse_prefix_min(min_x);
         const float16 r_min_y = reverse_prefix_min(min_y);
         const float16 r_min_z = reverse_prefix_min(min_z);
         const float16 r_max_x = reverse_prefix_max(max_x);
         const float16 r_max_y = reverse_prefix_max(max_y);
         const float16 r_max_z = reverse_prefix_max(max_z);
-#else
-        const float16 r_min_x = prefix_min(reverse(min_x));
-        const float16 r_min_y = prefix_min(reverse(min_y));
-        const float16 r_min_z = prefix_min(reverse(min_z));
-        const float16 r_max_x = prefix_max(reverse(max_x));
-        const float16 r_max_y = prefix_max(reverse(max_y));
-        const float16 r_max_z = prefix_max(reverse(max_z));
-#endif
         const float16 dx = r_max_x - r_min_x;
         const float16 dy = r_max_y - r_min_y;
         const float16 dz = r_max_z - r_min_z;
         const float16 area_rl = dx*dy+dx*dz+dy*dz;
-#if 1
         return area_rl;
-#else
-        return reverse(area_rl);
-#endif
       }
 
       __forceinline float16 prefix_area_lr(const float16 min_x,
@@ -561,17 +548,6 @@ namespace embree
         rCount16[1] = reverse_prefix_sum(count1);
         lCount16[2] = prefix_sum(count2);
         rCount16[2] = reverse_prefix_sum(count2);
-
-#if 0
-        for (size_t j=0;j<3;j++)
-          for (size_t i=0;i<16;i++)
-          {
-            std::cout << "j " << j << " i " << i << std::endl;
-            PRINT(counts[i][j]);
-            PRINT(bounds[i][j]);
-          }
-        exit(0);
-#endif
       }
 
 
@@ -649,10 +625,6 @@ namespace embree
             bestDim = dim;
             bestPos = index+1;
             bestSAH = sah[index];
-            /* PRINT(bestSAH); */
-            /* PRINT(bestPos); */
-            /* PRINT(bestSAH); */
-
           }
         }
 	
