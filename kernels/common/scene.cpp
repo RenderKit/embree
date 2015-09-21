@@ -162,16 +162,14 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (hasISA(AVX))
 	  {
-            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
-            //if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
-            /*else*/               accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+            else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
           }
           else 
 #endif
           {
-            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
-            //if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));           
-            /*else*/               accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));           
+            else                 accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
           }
           break;
 
