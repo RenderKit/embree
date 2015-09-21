@@ -88,7 +88,7 @@ namespace embree
     template<typename simdf>
       __forceinline Vec3<simdf> eval(const simdf& uu, const simdf& vv) const
     {
-      typedef typename simdf::Mask simdb;
+      typedef typename simdf::Bool simdb;
       if (likely(type == BEZIER_PATCH))
         return ((BezierPatch3fa*)patch_v)->eval(uu,vv);
       else if (likely(type == BSPLINE_PATCH))
@@ -103,7 +103,7 @@ namespace embree
     template<typename simdf>
       __forceinline Vec3<simdf> normal(const simdf& uu, const simdf& vv) const
     {
-      typedef typename simdf::Mask simdb;
+      typedef typename simdf::Bool simdb;
       if (likely(type == BEZIER_PATCH))
         return ((BezierPatch3fa*)patch_v)->normal(uu,vv);
       else if (likely(type == BSPLINE_PATCH))

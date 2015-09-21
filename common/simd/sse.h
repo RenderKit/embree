@@ -19,6 +19,7 @@
 #include "../sys/platform.h"
 #include "../sys/intrinsics.h"
 #include "../math/constants.h"
+#include "varying.h"
 #include "sse_special.h"
 
 namespace embree 
@@ -34,12 +35,8 @@ namespace embree
 #endif
 
   extern const __m128 _mm_lookupmask_ps[16];
-
-  struct bool4;
-  struct int4;
-  struct float4;
 }
 
-#include "vbool4_sse2.h"
+#include "vboolf4_sse2.h"
 #include "vint4_sse2.h"
 #include "vfloat4_sse2.h"

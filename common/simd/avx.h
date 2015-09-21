@@ -18,14 +18,7 @@
 
 #include "sse.h"
 
-namespace embree 
-{
-  struct bool8;
-  struct int8;
-  struct float8;
-}
-
-#include "vbool8_avx.h"
+#include "vboolf8_avx.h"
 #if defined (__AVX2__)
 #include "vint8_avx2.h"
 #else

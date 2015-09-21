@@ -19,6 +19,6 @@ IF (__XEON__)
   SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
 ELSE ()
   INCLUDE(icc_xeonphi)
-  ADD_LIBRARY(simd_xeonphi STATIC vbool16_avx512.cpp)
+  ADD_LIBRARY(simd_xeonphi STATIC vboolf16_avx512.cpp)
 ENDIF ()
 

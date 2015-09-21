@@ -450,7 +450,7 @@ namespace embree
     {
       /* type shortcuts */
       typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Mask tsimdb;
+      typedef typename tsimdf::Bool tsimdb;
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate denominator */
@@ -553,7 +553,7 @@ namespace embree
     {
       /* type shortcuts */
       typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Mask tsimdb;
+      typedef typename tsimdf::Bool tsimdb;
       typedef Vec3<tsimdf> tsimd3f;
       
       /* calculate denominator */

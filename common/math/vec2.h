@@ -149,7 +149,7 @@ namespace embree
     return Vec2<T>(select(s.x,t.x,f.x),select(s.y,t.y,f.y));
   }
 
-  template<typename T> __forceinline Vec2<T> select ( const typename T::Mask& s, const Vec2<T>& t, const Vec2<T>& f ) {
+  template<typename T> __forceinline Vec2<T> select ( const typename T::Bool& s, const Vec2<T>& t, const Vec2<T>& f ) {
     return Vec2<T>(select(s,t.x,f.x),select(s,t.y,f.y));
   }
 

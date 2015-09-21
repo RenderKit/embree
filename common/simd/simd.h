@@ -45,23 +45,9 @@
 
 namespace embree
 {
-#if defined (__AVX512F__) || defined (__MIC__)
-  typedef bool16 vboolx;
-  typedef int16 vintx;
-  typedef float16 vfloatx;
-#elif defined(__AVX__)
-  typedef bool8 vboolx;
-  typedef int8 vintx;
-  typedef float8 vfloatx;
-#else
-  typedef bool4 vboolx;
-  typedef int4 vintx;
-  typedef float4 vfloatx;
-#endif
-
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
-    __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure) 
+    __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure)
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
@@ -75,7 +61,7 @@ namespace embree
 
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
-    __forceinline void foreach_unique_index(const vbool& valid0, const vint& vi, const Closure& closure) 
+    __forceinline void foreach_unique_index(const vbool& valid0, const vint& vi, const Closure& closure)
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
@@ -96,18 +82,18 @@ namespace embree
     for (int y=y0; y<y1; y++) {
       const bool lasty = y+1>=y1;
       const vintx vy = y;
-      for (int x=x0; x<x1; ) { //x+=vfloatx::size) {
-        const bool lastx = x+vfloatx::size >= x1;
+      for (int x=x0; x<x1; ) { //x+=VSIZEX) {
+        const bool lastx = x+VSIZEX >= x1;
         vintx vx = x+vintx(step);
         vintx::storeu(&U[index],vx);
         vintx::storeu(&V[index],vy);
-        const int dx = min(x1-x,vfloatx::size);
+        const int dx = min(x1-x,VSIZEX);
         index += dx;
         x += dx;
-        if (index >= vfloatx::size || (lastx && lasty)) {
+        if (index >= VSIZEX || (lastx && lasty)) {
           const vboolx valid = vintx(step) < vintx(index);
           closure(valid,vintx::load(U),vintx::load(V));
-          x-= max(0,index-vfloatx::size);
+          x-= max(0,index-VSIZEX);
           index = 0;
         }
       }
