@@ -46,6 +46,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
   ../common/scene_instance.cpp
+  ../common/scene_geometry_instance.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp

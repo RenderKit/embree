@@ -91,6 +91,17 @@ uniform unsigned int rtcNewInstance (RTCScene target,           //!< the scene t
                                      RTCScene source            //!< the geometry to instantiate
   );
 
+/*! \brief Creates a new geometry instance. 
+
+  A geometry instance contains a reference to some geometry to
+  instantiate and the transformation to instantiate that geometry
+  with. An implementation will typically transform the ray with the
+  inverse of the provided transformation and continue traversing the
+  ray through the provided scene. If any geometry is hit, the geometry
+  ID (geomID) member of the ray will get set to the geometry ID of the
+  instance. */
+uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID);
+
 /*! \brief Sets transformation of the instance */
 void rtcSetTransform (RTCScene scene,                                  //!< scene handle
                       uniform unsigned int geomID,                     //!< ID of geometry

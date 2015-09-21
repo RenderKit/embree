@@ -94,6 +94,9 @@ struct ISPCSubdivMesh
 
 struct ISPCInstance
 {
+  ISPCInstance (const AffineSpace3fa& space, int geomID)
+  : space(space), geomID(geomID) {}
+
   AffineSpace3fa space;
   int geomID;
 };

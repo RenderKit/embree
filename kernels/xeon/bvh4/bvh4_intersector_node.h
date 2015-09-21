@@ -70,6 +70,57 @@ namespace embree
       dist = tNear;
       return mask;
     }
+
+    /*! intersection with single rays */
+    template<bool robust>
+      __forceinline size_t intersect_node(const BVH4::Node* node, 
+                                          size_t nearX, size_t nearY, size_t nearZ, 
+                                          size_t farX, size_t farY, size_t farZ,
+                                          const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, 
+                                          float4& dist) 
+    {
+      //const size_t farX  = nearX ^ sizeof(float4), farY  = nearY ^ sizeof(float4), farZ  = nearZ ^ sizeof(float4);
+#if defined (__AVX2__)
+      const float4 tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
+      const float4 tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
+      const float4 tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
+      const float4 tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
+      const float4 tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
+      const float4 tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
+#else
+      const float4 tNearX = (load4f((const char*)&node->lower_x+nearX) - org.x) * rdir.x;
+      const float4 tNearY = (load4f((const char*)&node->lower_x+nearY) - org.y) * rdir.y;
+      const float4 tNearZ = (load4f((const char*)&node->lower_x+nearZ) - org.z) * rdir.z;
+      const float4 tFarX  = (load4f((const char*)&node->lower_x+farX ) - org.x) * rdir.x;
+      const float4 tFarY  = (load4f((const char*)&node->lower_x+farY ) - org.y) * rdir.y;
+      const float4 tFarZ  = (load4f((const char*)&node->lower_x+farZ ) - org.z) * rdir.z;
+#endif
+      
+      if (robust) {
+        const float round_down = 1.0f-2.0f*float(ulp);
+        const float round_up   = 1.0f+2.0f*float(ulp);
+        const float4 tNear = max(tNearX,tNearY,tNearZ,tnear);
+        const float4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+        const bool4 vmask = (round_down*tNear <= round_up*tFar);
+        const size_t mask = movemask(vmask);
+        dist = tNear;
+        return mask;
+      }
+      
+#if defined(__SSE4_1__)
+      const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+      const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const bool4 vmask = cast(tNear) > cast(tFar);
+      const size_t mask = movemask(vmask)^0xf;
+#else
+      const float4 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const float4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const bool4 vmask = tNear <= tFar;
+      const size_t mask = movemask(vmask);
+#endif
+      dist = tNear;
+      return mask;
+    }
     
     /*! intersection with ray packet of size 4 */
     template<bool robust>

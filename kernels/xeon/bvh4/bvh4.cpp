@@ -38,6 +38,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4vIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4iIntersector1Pluecker);
@@ -114,6 +115,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
 
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
+  DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
@@ -163,6 +165,7 @@ namespace embree
 
     /* select builders */
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderInstancingSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
@@ -213,6 +216,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
@@ -301,13 +305,14 @@ namespace embree
 
   BVH4::BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode)
     : AccelData(AccelData::TY_BVH4), primTy(primTy), device(scene->device), scene(scene), listMode(listMode),
-      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
+      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0), worldBVH(nullptr) {}
 
   BVH4::~BVH4 () 
   {
+    delete worldBVH;
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
-    
+        
     if (data_mem) {
       os_free( data_mem, size_data_mem );        
       data_mem = nullptr;
@@ -521,6 +526,14 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH4Triangle4Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH4Triangle4Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Triangle4Intersector16HybridMoellerNoFilter;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH4XfmTriangle4Intersector1Moeller;
     return intersectors;
   }
 
@@ -781,7 +794,15 @@ namespace embree
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,LeafMode); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
-  } 
+  }
+
+  Accel* BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4::type,scene,LeafMode);
+    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
+    Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
+    return new AccelInstance(accel,builder,intersectors);
+  }
 
   Accel* BVH4::BVH4BVH4Triangle4ObjectSplit(Scene* scene)
   {

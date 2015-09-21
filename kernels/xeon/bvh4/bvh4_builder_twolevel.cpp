@@ -179,7 +179,7 @@ namespace embree
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
