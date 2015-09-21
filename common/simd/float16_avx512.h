@@ -437,10 +437,22 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float16 swizzle(const float16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_ps(x,perm32); }
+  __forceinline float16 swizzle(const float16& x,_MM_SWIZZLE_ENUM perm32 ) { 
+#if 0 
+    return _mm512_permute_ps(x,perm32); // WARNING: permute has a different intermediate encoding!!!
+#else
+    return _mm512_swizzle_ps(x,perm32); 
+#endif
+  }
   __forceinline float16 permute(const float16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
   
-  template<int D, int C, int B, int A> __forceinline float16 swizzle   (const float16& v) { return _mm512_shuffle_ps(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int D, int C, int B, int A> __forceinline float16 swizzle   (const float16& v) { 
+#if defined(__AVX512F__)
+    return _mm512_permute_ps(v,_MM_SHUF_PERM(D,C,B,A)); 
+#else
+    return cast(_mm512_shuffle_epi32(cast(v),_MM_SHUF_PERM(D,C,B,A)));
+#endif
+  }
   template<int A>                      __forceinline float16 swizzle   (const float16& x) { return swizzle<A,A,A,A>(v); }
   template<>                           __forceinline float16 swizzle<0>(const float16& x) { return swizzle(x,_MM_SWIZ_REG_AAAA); }
   template<>                           __forceinline float16 swizzle<1>(const float16& x) { return swizzle(x,_MM_SWIZ_REG_BBBB); }
@@ -559,41 +571,103 @@ namespace embree
 
   __forceinline size_t select_min(const bool16& valid, const float16& v) { const float16 a = select(valid,v,float16(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
   
+
   __forceinline float16 prefix_sum(const float16& a)
   {
     float16 v = a;
-    v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
-    const float16 shuf_v0 = shuffle(v,_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_add(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_add(0xf0f0,v,v,shuf_v0);
-    const float16 shuf_v1 = shuffle(v,_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
+    const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_add(0xff00,v,v,shuf_v1);
     return v;  
   }
 
+  /* __forceinline float16 prefix_sum(const float16& a) */
+  /* { */
+  /*   float16 v = a; */
+  /*   v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const float16 shuf_v0 = shuffle(v,_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xf0f0,v,v,shuf_v0); */
+  /*   const float16 shuf_v1 = shuffle(v,_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xff00,v,v,shuf_v1); */
+  /*   return v;   */
+  /* } */
+
+  /* __forceinline float16 prefix_min(const float16& a) */
+  /* { */
+  /*   float16 v = a; */
+  /*   v = mask_min(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_min(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_min(0xf0f0,v,v,shuf_v0); */
+  /*   const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_min(0xff00,v,v,shuf_v1); */
+  /*   return v; */
+  /* } */
+  
+  /* __forceinline float16 prefix_max(const float16& a) */
+  /* { */
+  /*   float16 v = a; */
+  /*   v = mask_max(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_max(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_max(0xf0f0,v,v,shuf_v0); */
+  /*   const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_max(0xff00,v,v,shuf_v1); */
+  /*   return v; */
+  /* } */
+
   __forceinline float16 prefix_min(const float16& a)
   {
     float16 v = a;
-    v = mask_min(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_min(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
+    v = mask_min(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_min(0xcccc,v,v,swizzle<1,1,1,1>(v));
     const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_min(0xf0f0,v,v,shuf_v0);
     const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_min(0xff00,v,v,shuf_v1);
     return v;  
   }
-  
+
   __forceinline float16 prefix_max(const float16& a)
   {
     float16 v = a;
-    v = mask_max(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_max(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
+    v = mask_max(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_max(0xcccc,v,v,swizzle<1,1,1,1>(v));
     const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_max(0xf0f0,v,v,shuf_v0);
     const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_max(0xff00,v,v,shuf_v1);
     return v;  
   }
+
+  __forceinline float16 reverse_prefix_min(const float16& a)
+  {
+    float16 v = a;
+    v = mask_min(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_min(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_min(0x0f0f,v,v,shuf_v0);
+    const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_min(0x00ff,v,v,shuf_v1);
+    return v;  
+  }
+
+  __forceinline float16 reverse_prefix_max(const float16& a)
+  {
+    float16 v = a;
+    v = mask_max(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_max(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const float16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_max(0x0f0f,v,v,shuf_v0);
+    const float16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_max(0x00ff,v,v,shuf_v1);
+    return v;  
+  }
+
 
   __forceinline float16 set_min4(float16 x) {
     x = min(x,swizzle(x,_MM_SWIZ_REG_BADC));
