@@ -110,23 +110,23 @@ namespace embree
       : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
 #if defined(__SSE__)
-    __forceinline sse4f eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline Vec4vf4 eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
-      const sse4f p00 = sse4f(v0);
-      const sse4f p01 = sse4f(v1);
-      const sse4f p02 = sse4f(v2);
-      const sse4f p03 = sse4f(v3);
+      const Vec4vf4 p00 = Vec4vf4(v0);
+      const Vec4vf4 p01 = Vec4vf4(v1);
+      const Vec4vf4 p02 = Vec4vf4(v2);
+      const Vec4vf4 p03 = Vec4vf4(v3);
       return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
     }
 #endif
 
 #if defined(__AVX__)
-    __forceinline avx4f eval8(const float8& c0, const float8& c1, const float8& c2, const float8& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline Vec4vf8 eval8(const float8& c0, const float8& c1, const float8& c2, const float8& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
-      const avx4f p00 = avx4f(v0);
-      const avx4f p01 = avx4f(v1);
-      const avx4f p02 = avx4f(v2);
-      const avx4f p03 = avx4f(v3);
+      const Vec4vf8 p00 = Vec4vf8(v0);
+      const Vec4vf8 p01 = Vec4vf8(v1);
+      const Vec4vf8 p02 = Vec4vf8(v2);
+      const Vec4vf8 p03 = Vec4vf8(v3);
       return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
     }
 #endif

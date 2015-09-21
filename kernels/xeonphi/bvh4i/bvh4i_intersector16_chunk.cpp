@@ -32,9 +32,9 @@ namespace embree
 
       /* load ray */
       const bool16 valid0   = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir     = rcp_safe(ray.dir);
+      const Vec3vf16 rdir     = rcp_safe(ray.dir);
  
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear      = select(valid0,ray.tnear,pos_inf);
       float16 ray_tfar       = select(valid0,ray.tfar ,neg_inf);
       const float16 inf      = float16(pos_inf);
@@ -50,8 +50,8 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
-      const Vec3f16 org = ray.org;
-      const Vec3f16 dir = ray.dir;
+      const Vec3vf16 org = ray.org;
+      const Vec3vf16 dir = ray.dir;
 
       while (1)
       {
@@ -104,8 +104,8 @@ namespace embree
       /* load ray */
       const bool16 valid = *(int16*)valid_i != int16(0);
       bool16 m_terminated = !valid;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid,ray.tnear,pos_inf);
       float16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);
@@ -121,8 +121,8 @@ namespace embree
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
 
-      const Vec3f16 org = ray.org;
-      const Vec3f16 dir = ray.dir;
+      const Vec3vf16 org = ray.org;
+      const Vec3vf16 dir = ray.dir;
 
       while (1)
       {

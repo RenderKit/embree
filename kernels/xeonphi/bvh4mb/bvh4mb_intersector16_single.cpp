@@ -34,7 +34,7 @@ namespace embree
 
       /* setup */
       const bool16 m_valid    = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
       const float16 inf        = float16(pos_inf);
       const float16 zero       = float16::zero();
       store16f(stack_dist,inf);
@@ -111,7 +111,7 @@ namespace embree
 
       /* setup */
       const bool16 m_valid     = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16      = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16      = rcp_safe(ray16.dir);
       bool16 m_terminated      = !m_valid;
       const float16 inf         = float16(pos_inf);
       const float16 zero        = float16::zero();

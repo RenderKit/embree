@@ -34,7 +34,7 @@ namespace embree
   {    
 
     template<bool robust, typename PrimitiveIntersector16>
-    __forceinline void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    __forceinline void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -49,9 +49,9 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
 
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
 /* pop loop */
@@ -194,17 +194,17 @@ namespace embree
       assert(all(valid0,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
-      const Vec3f16 ray_org = ray.org;
-      const Vec3f16 ray_dir = ray.dir;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 ray_org = ray.org;
+      const Vec3vf16 ray_dir = ray.dir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
       float16 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);
       Precalculations pre(valid0,ray);
       
       /* compute near/far per ray */
-      Vec3i16 nearXYZ;
+      Vec3vi16 nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,int16(0*(int)sizeof(float8)),int16(1*(int)sizeof(float8)));
       nearXYZ.y = select(rdir.y >= 0.0f,int16(2*(int)sizeof(float8)),int16(3*(int)sizeof(float8)));
       nearXYZ.z = select(rdir.z >= 0.0f,int16(4*(int)sizeof(float8)),int16(5*(int)sizeof(float8)));
@@ -354,7 +354,7 @@ namespace embree
 
 
     template<bool robust, typename PrimitiveIntersector16>
-    __forceinline bool BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    __forceinline bool BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -368,9 +368,9 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
       
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
       const float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
       /* pop loop */
@@ -499,8 +499,8 @@ namespace embree
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       bool16 terminated = !valid;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid,ray.tnear,pos_inf);
       float16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);

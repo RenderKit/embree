@@ -188,46 +188,15 @@ namespace embree
   /// Other shortcuts
   ////////////////////////////////////////////////////////////////////////////////
 
-  typedef LinearSpace3<Vec3vf4> LinearSpace3vf4;
+  typedef LinearSpace3<Vec3vf4>  LinearSpace3vf4;
+  typedef LinearSpace3<Vec3vf8>  LinearSpace3vf8;
+  typedef LinearSpace3<Vec3vf16> LinearSpace3vf16;
 
-  typedef AffineSpaceT<LinearSpace3<Vec3vf4>> AffineSpace3vf4;
+  typedef AffineSpaceT<LinearSpace3<Vec3vf4>>  AffineSpace3vf4;
+  typedef AffineSpaceT<LinearSpace3<Vec3vf8>>  AffineSpace3vf8;
+  typedef AffineSpaceT<LinearSpace3<Vec3vf16>> AffineSpace3vf16;
 
-  typedef BBox<Vec3vf4> BBox3vf4;
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// FIXME: Legacy shortcuts
-  ////////////////////////////////////////////////////////////////////////////////
-
-#if defined (__SSE__)
-  typedef Vec2<bool4> Vec2b4;
-  typedef Vec3<bool4> Vec3b4;
-  typedef Vec2<int4> Vec2i4;
-  typedef Vec3<int4> Vec3i4;
-  typedef Vec2<float4> Vec2f4;
-  typedef Vec3<float4> Vec3f4;
-  typedef Vec4<float4> sse4f; // FIXME: rename
-  typedef LinearSpace3<Vec3f4> LinearSpaceSSE3f;
-  typedef AffineSpaceT<LinearSpace3<Vec3f4 > > AffineSpaceSSE3f;
-  typedef BBox<Vec3f4 > BBoxSSE3f;
-#endif
-
-#if defined (__AVX__)
-  typedef Vec2<bool8> Vec2b8;
-  typedef Vec3<bool8> Vec3b8;
-  typedef Vec2<int8> Vec2i8; 
-  typedef Vec3<int8> Vec3i8;
-  typedef Vec2<float8> Vec2f8;
-  typedef Vec3<float8> Vec3f8;
-  typedef Vec4<float8> avx4f; // FIXME: rename
-#endif
-
-#if defined (__AVX512F__) || defined (__MIC__)
-  typedef Vec2<bool16> Vec2b16;
-  typedef Vec3<bool16> Vec3b16;
-  typedef Vec2<int16> Vec2i16; 
-  typedef Vec3<int16> Vec3i16;
-  typedef Vec2<float16> Vec2f16;
-  typedef Vec3<float16> Vec3f16;
-  typedef Vec4<float16> Vec4f16;
-#endif  
+  typedef BBox<Vec3vf4>  BBox3vf4;
+  typedef BBox<Vec3vf8>  BBox3vf8;
+  typedef BBox<Vec3vf16> BBox3vf16;
 }

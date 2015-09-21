@@ -400,7 +400,7 @@ namespace embree
 
 #endif
 
-		const Vec3f16 v = mesh->getTriangleVertices(tri);
+		const Vec3vf16 v = mesh->getTriangleVertices(tri);
 
 		const float16 bmin  = min(min(v[0],v[1]),v[2]);
 		const float16 bmax  = max(max(v[0],v[1]),v[2]);
@@ -462,7 +462,7 @@ namespace embree
     const int16 pID(primID);
     const int16 gID(geomID);
 
-    const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L1>(tri);
+    const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
 #if DEBUG
     for (size_t k=0;k<3;k++)
@@ -662,7 +662,7 @@ namespace embree
 								     current.size(),
 								     mid_parallel,
 								     [&] (const PrimRef &ref) { 
-								       const Vec2f16 b = ref.getBounds();
+								       const Vec2vf16 b = ref.getBounds();
 								       return any(mapping.lt_split(b.x,b.y));
 								     }
 								     ));
@@ -756,7 +756,7 @@ namespace embree
 								     sd.rec.size(),
 								     mid_parallel,
 								     [&] (const PrimRef &ref) { 
-								       const Vec2f16 b = ref.getBounds();
+								       const Vec2vf16 b = ref.getBounds();
 								       return any(mapping.lt_split(b.x,b.y));
 								     }
 								     )

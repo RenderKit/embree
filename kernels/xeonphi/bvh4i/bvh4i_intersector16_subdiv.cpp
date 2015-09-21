@@ -396,7 +396,7 @@ namespace embree
 
       /* setup */
       const bool16 m_valid    = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
       const float16 inf        = float16(pos_inf);
       const float16 zero       = float16::zero();
 
@@ -546,7 +546,7 @@ namespace embree
 
       /* setup */
       const bool16 m_valid = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16  = rcp_safe(ray16.dir);
       bool16 terminated    = !m_valid;
       const float16 inf     = float16(pos_inf);
       const float16 zero    = float16::zero();
@@ -686,7 +686,7 @@ namespace embree
       STAT3(normal.travs,1,1,1);
 
       /* setup */
-      const Vec3f16 rdir16     = rcp_safe(Vec3f16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
+      const Vec3vf16 rdir16     = rcp_safe(Vec3vf16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
       const float16 inf        = float16(pos_inf);
       const float16 zero       = float16::zero();
 
@@ -813,7 +813,7 @@ namespace embree
       STAT3(shadow.travs,1,1,1);
 
       /* setup */
-      const Vec3f16 rdir16      = rcp_safe(Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z));
+      const Vec3vf16 rdir16      = rcp_safe(Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z));
       const float16 inf         = float16(pos_inf);
       const float16 zero        = float16::zero();
 

@@ -105,7 +105,7 @@ namespace embree
     }
 
     __forceinline bool4 runIntersectionFilter(const bool4& valid, const Geometry* const geometry, Ray4& ray, 
-                                             const float4& u, const float4& v, const float4& t, const Vec3f4& Ng, const int geomID, const int primID)
+                                             const float4& u, const float4& v, const float4& t, const Vec3vf4& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float4 ray_u = ray.u;           store4f(valid,&ray.u,u);
@@ -141,7 +141,7 @@ namespace embree
     }
     
     __forceinline bool4 runOcclusionFilter(const bool4& valid, const Geometry* const geometry, Ray4& ray, 
-                                          const float4& u, const float4& v, const float4& t, const Vec3f4& Ng, const int geomID, const int primID)
+                                          const float4& u, const float4& v, const float4& t, const Vec3vf4& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float4 ray_tfar = ray.tfar; 
@@ -237,7 +237,7 @@ namespace embree
     
 #if defined(__AVX__)
     __forceinline bool8 runIntersectionFilter(const bool8& valid, const Geometry* const geometry, Ray8& ray, 
-                                             const float8& u, const float8& v, const float8& t, const Vec3f8& Ng, const int geomID, const int primID)
+                                             const float8& u, const float8& v, const float8& t, const Vec3vf8& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float8 ray_u = ray.u;           store8f(valid,&ray.u,u);
@@ -272,7 +272,7 @@ namespace embree
     }
     
     __forceinline bool8 runOcclusionFilter(const bool8& valid, const Geometry* const geometry, Ray8& ray, 
-                                          const float8& u, const float8& v, const float8& t, const Vec3f8& Ng, const int geomID, const int primID)
+                                          const float8& u, const float8& v, const float8& t, const Vec3vf8& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float8 ray_tfar = ray.tfar; 
@@ -368,7 +368,7 @@ namespace embree
 
 #if defined(__AVX512F__)
     __forceinline bool16 runIntersectionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                             const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+                                             const float16& u, const float16& v, const float16& t, const Vec3vf16& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float16 ray_u = ray.u;           store16f(valid,&ray.u,u);
@@ -403,7 +403,7 @@ namespace embree
     }
     
     __forceinline bool16 runOcclusionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                          const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+                                          const float16& u, const float16& v, const float16& t, const Vec3vf16& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
       const float16 ray_tfar = ray.tfar; 

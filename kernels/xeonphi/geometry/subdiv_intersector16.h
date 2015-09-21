@@ -42,7 +42,7 @@ namespace embree
     const static int tri_permute_v1[16];
     const static int tri_permute_v2[16];
 
-    Vec3f16 vtx;
+    Vec3vf16 vtx;
     float16 uv;
 
     __forceinline void prefetchData() const
@@ -97,21 +97,21 @@ namespace embree
       const int16 perm_v1 = load16i(tri_permute_v1);
       const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const Vec3f16 vtx_org = vtx - ray_org;
+      const Vec3vf16 vtx_org = vtx - ray_org;
       
-      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3vf16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3vf16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3vf16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
   
-      const Vec3f16 e0 = v2 - v0;
-      const Vec3f16 e1 = v0 - v1;	     
-      const Vec3f16 e2 = v1 - v2;	     
+      const Vec3vf16 e0 = v2 - v0;
+      const Vec3vf16 e1 = v0 - v1;	     
+      const Vec3vf16 e2 = v1 - v2;	     
 
-      const Vec3f16 Ng1     = cross(e1,e0);
-      const Vec3f16 Ng      = Ng1+Ng1;
+      const Vec3vf16 Ng1     = cross(e1,e0);
+      const Vec3vf16 Ng      = Ng1+Ng1;
       const float16 den     = dot(Ng,ray_dir);	      
       const float16 rcp_den = rcp(den);
 
@@ -203,21 +203,21 @@ namespace embree
       const int16 perm_v1 = load16i(tri_permute_v1);
       const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const Vec3f16 vtx_org = vtx - ray_org;
+      const Vec3vf16 vtx_org = vtx - ray_org;
       
-      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3vf16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3vf16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3vf16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
    
-      const Vec3f16 e0 = v2 - v0;
-      const Vec3f16 e1 = v0 - v1;	     
-      const Vec3f16 e2 = v1 - v2;	     
+      const Vec3vf16 e0 = v2 - v0;
+      const Vec3vf16 e1 = v0 - v1;	     
+      const Vec3vf16 e2 = v1 - v2;	     
 
-      const Vec3f16 Ng1     = cross(e1,e0);
-      const Vec3f16 Ng      = Ng1+Ng1;
+      const Vec3vf16 Ng1     = cross(e1,e0);
+      const Vec3vf16 Ng      = Ng1+Ng1;
       const float16 den     = dot(Ng,ray_dir);	      
       const float16 rcp_den = rcp(den);
 
@@ -261,20 +261,20 @@ namespace embree
       const int16 perm_v1 = load16i(tri_permute_v1);
       const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const Vec3f16 vtx_org = vtx - ray_org;
+      const Vec3vf16 vtx_org = vtx - ray_org;
       
-      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3vf16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3vf16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3vf16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
   
-      const Vec3f16 e0 = v2 - v0;
-      const Vec3f16 e1 = v0 - v1;	     
-      const Vec3f16 e2 = v1 - v2;	     
-      const Vec3f16 Ng1     = cross(e1,e0);
-      const Vec3f16 Ng      = Ng1+Ng1;
+      const Vec3vf16 e0 = v2 - v0;
+      const Vec3vf16 e1 = v0 - v1;	     
+      const Vec3vf16 e2 = v1 - v2;	     
+      const Vec3vf16 Ng1     = cross(e1,e0);
+      const Vec3vf16 Ng      = Ng1+Ng1;
       const float16 den     = dot(Ng,ray_dir);	      
       const float16 rcp_den = rcp(den);
 
@@ -358,20 +358,20 @@ namespace embree
       const int16 perm_v1 = load16i(tri_permute_v1);
       const int16 perm_v2 = load16i(tri_permute_v2);
 
-      const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
-      const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+      const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+      const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-      const Vec3f16 vtx_org = vtx - ray_org;
+      const Vec3vf16 vtx_org = vtx - ray_org;
       
-      const Vec3f16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
-      const Vec3f16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
-      const Vec3f16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
+      const Vec3vf16 v0( permute16f(perm_v0,vtx_org.x), permute16f(perm_v0,vtx_org.y), permute16f(perm_v0,vtx_org.z) );
+      const Vec3vf16 v1( permute16f(perm_v1,vtx_org.x), permute16f(perm_v1,vtx_org.y), permute16f(perm_v1,vtx_org.z) );
+      const Vec3vf16 v2( permute16f(perm_v2,vtx_org.x), permute16f(perm_v2,vtx_org.y), permute16f(perm_v2,vtx_org.z) );
    
-      const Vec3f16 e0 = v2 - v0;
-      const Vec3f16 e1 = v0 - v1;	     
-      const Vec3f16 e2 = v1 - v2;	     
-      const Vec3f16 Ng1     = cross(e1,e0);
-      const Vec3f16 Ng      = Ng1+Ng1;
+      const Vec3vf16 e0 = v2 - v0;
+      const Vec3vf16 e1 = v0 - v1;	     
+      const Vec3vf16 e2 = v1 - v2;	     
+      const Vec3vf16 Ng1     = cross(e1,e0);
+      const Vec3vf16 Ng      = Ng1+Ng1;
       const float16 den     = dot(Ng,ray_dir);	      
       const float16 rcp_den = rcp(den);
 
@@ -411,9 +411,9 @@ namespace embree
 					     const float16 &dir_xyz,
 					     const float16 &org_xyz,
 					     Ray16& ray16,
-					     const Vec3f16 &v0,
-					     const Vec3f16 &v1,
-					     const Vec3f16 &v2,
+					     const Vec3vf16 &v0,
+					     const Vec3vf16 &v1,
+					     const Vec3vf16 &v2,
 					     const float16 &u_grid,
 					     const float16 &v_grid,
 					     const unsigned int offset_v0,
@@ -422,14 +422,14 @@ namespace embree
 					     const bool16 &m_active,
 					     const unsigned int subdiv_patch_index)
   {
-    const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
-    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
 
-    const Vec3f16 e1      = v1 - v0;
-    const Vec3f16 e2      = v0 - v2;	     
-    const Vec3f16 normal  = cross(e1,e2);
-    const Vec3f16 org     = v0 - ray_org;
-    const Vec3f16 od      = cross(org,ray_dir); 
+    const Vec3vf16 e1      = v1 - v0;
+    const Vec3vf16 e2      = v0 - v2;	     
+    const Vec3vf16 normal  = cross(e1,e2);
+    const Vec3vf16 org     = v0 - ray_org;
+    const Vec3vf16 od      = cross(org,ray_dir); 
     const float16 den     = dot(normal,ray_dir);	      
     const float16 rcp_den = rcp(den);
     const float16 uu      = dot(e2,od); 
@@ -514,9 +514,9 @@ namespace embree
 						     const float16 &dir_xyz,
 						     const float16 &org_xyz,
 						     Ray16& ray16,
-						     const Vec3f16 &v0_org,
-						     const Vec3f16 &v1_org,
-						     const Vec3f16 &v2_org,
+						     const Vec3vf16 &v0_org,
+						     const Vec3vf16 &v1_org,
+						     const Vec3vf16 &v2_org,
 						     const float16 &u_grid,
 						     const float16 &v_grid,
 						     const unsigned int offset_v0,
@@ -525,18 +525,18 @@ namespace embree
 						     const bool16 &m_active,
 						     const unsigned int subdiv_patch_index)
   {
-    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const Vec3f16 v0 = v0_org; // - ray_org;
-    const Vec3f16 v1 = v1_org; // - ray_org;
-    const Vec3f16 v2 = v2_org; // - ray_org;
+    const Vec3vf16 v0 = v0_org; // - ray_org;
+    const Vec3vf16 v1 = v1_org; // - ray_org;
+    const Vec3vf16 v2 = v2_org; // - ray_org;
    
-    const Vec3f16 e0 = v2 - v0;
-    const Vec3f16 e1 = v0 - v1;	     
-    const Vec3f16 e2 = v1 - v2;	     
+    const Vec3vf16 e0 = v2 - v0;
+    const Vec3vf16 e1 = v0 - v1;	     
+    const Vec3vf16 e2 = v1 - v2;	     
 
-    const Vec3f16 Ng1     = cross(e1,e0);
-    const Vec3f16 Ng      = Ng1+Ng1;
+    const Vec3vf16 Ng1     = cross(e1,e0);
+    const Vec3vf16 Ng      = Ng1+Ng1;
     const float16 den     = dot(Ng,ray_dir);	      
     const float16 rcp_den = rcp(den);
 
@@ -620,9 +620,9 @@ namespace embree
 						    const float16 &dir_xyz,
 						    const float16 &org_xyz,
 						    Ray16& ray16,
-						    const Vec3f16 &v0_org,
-						    const Vec3f16 &v1_org,
-						    const Vec3f16 &v2_org,
+						    const Vec3vf16 &v0_org,
+						    const Vec3vf16 &v1_org,
+						    const Vec3vf16 &v2_org,
 						    const float16 &u_grid,
 						    const float16 &v_grid,
 						    const unsigned int offset_v0,
@@ -631,18 +631,18 @@ namespace embree
 						    const bool16 &m_active,
 						    const unsigned int subdiv_patch_index)
   {
-    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const Vec3f16 v0 = v0_org; // - ray_org;
-    const Vec3f16 v1 = v1_org; // - ray_org;
-    const Vec3f16 v2 = v2_org; // - ray_org;
+    const Vec3vf16 v0 = v0_org; // - ray_org;
+    const Vec3vf16 v1 = v1_org; // - ray_org;
+    const Vec3vf16 v2 = v2_org; // - ray_org;
    
-    const Vec3f16 e0 = v2 - v0;
-    const Vec3f16 e1 = v0 - v1;	     
-    const Vec3f16 e2 = v1 - v2;	     
+    const Vec3vf16 e0 = v2 - v0;
+    const Vec3vf16 e1 = v0 - v1;	     
+    const Vec3vf16 e2 = v1 - v2;	     
 
-    const Vec3f16 Ng1     = cross(e1,e0);
-    const Vec3f16 Ng      = Ng1+Ng1;
+    const Vec3vf16 Ng1     = cross(e1,e0);
+    const Vec3vf16 Ng      = Ng1+Ng1;
     const float16 den     = dot(Ng,ray_dir);	      
     const float16 rcp_den = rcp(den);
 

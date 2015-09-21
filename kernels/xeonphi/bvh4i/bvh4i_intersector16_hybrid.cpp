@@ -35,8 +35,8 @@ namespace embree
 
       /* load ray */
       const bool16 valid0     = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
-      const Vec3f16 org_rdir16 = ray16.org * rdir16;
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3vf16 org_rdir16 = ray16.org * rdir16;
       float16 ray_tnear        = select(valid0,ray16.tnear,pos_inf);
       float16 ray_tfar         = select(valid0,ray16.tfar ,neg_inf);
       const float16 inf        = float16(pos_inf);
@@ -142,8 +142,8 @@ namespace embree
 
 	const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
-	const Vec3f16 org = ray16.org;
-	const Vec3f16 dir = ray16.dir;
+	const Vec3vf16 org = ray16.org;
+	const Vec3vf16 dir = ray16.dir;
 
         while (1)
         {
@@ -272,8 +272,8 @@ namespace embree
       /* load ray */
       const bool16 m_valid     = *(int16*)valid_i != int16(0);
       bool16 m_terminated      = !m_valid;
-      const Vec3f16 rdir16      = rcp_safe(ray16.dir);
-      const Vec3f16 org_rdir16  = ray16.org * rdir16;
+      const Vec3vf16 rdir16      = rcp_safe(ray16.dir);
+      const Vec3vf16 org_rdir16  = ray16.org * rdir16;
       float16 ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
       float16 ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
       const float16 inf         = float16(pos_inf);
@@ -495,8 +495,8 @@ namespace embree
         bool16 m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(m_valid_leaf),16);
 
-	const Vec3f16 org = ray16.org;
-	const Vec3f16 dir = ray16.dir;
+	const Vec3vf16 org = ray16.org;
+	const Vec3vf16 dir = ray16.dir;
 ;
 	LeafIntersector::occluded16(curNode,m_valid_leaf,dir,org,ray16,m_terminated,accel,(Scene*)bvh->geometry);
 

@@ -544,8 +544,8 @@ namespace embree
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
 					    const bool16 m_valid_leaf, 
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -580,23 +580,23 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
 	    /* load vertices and calculate edges */
-	    const Vec3f16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const Vec3f16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const Vec3f16 v0 = v0_t0 * one_time + time * v0_t1;
-	    const Vec3f16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const Vec3f16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const Vec3f16 v1 = v1_t0 * one_time + time * v1_t1;
-	    const Vec3f16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const Vec3f16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const Vec3f16 v2 = v2_t0 * one_time + time * v2_t1;
+	    const Vec3vf16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const Vec3vf16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3vf16 v0 = v0_t0 * one_time + time * v0_t1;
+	    const Vec3vf16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const Vec3vf16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3vf16 v1 = v1_t0 * one_time + time * v1_t1;
+	    const Vec3vf16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const Vec3vf16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3vf16 v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const Vec3f16 e1 = v0-v1;
-	    const Vec3f16 e2 = v2-v0;
+	    const Vec3vf16 e1 = v0-v1;
+	    const Vec3vf16 e2 = v2-v0;
 
-	    const Vec3f16 Ng = cross(e1,e2);
+	    const Vec3vf16 Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const Vec3f16 C =  v0 - org;
+	    const Vec3vf16 C =  v0 - org;
 	    
 	    const float16 den = dot(Ng,dir);
 
@@ -609,7 +609,7 @@ namespace embree
 
 	    /* perform edge tests */
 	    const float16 rcp_den = rcp(den);
-	    const Vec3f16 R = cross(dir,C);
+	    const Vec3vf16 R = cross(dir,C);
 	    const float16 u = dot(R,e2)*rcp_den;
 	    const float16 v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);
@@ -654,8 +654,8 @@ namespace embree
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
 					   const bool16 m_valid_leaf_active, 
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
@@ -691,23 +691,23 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf_active),16);
         
 	    /* load vertices and calculate edges */
-	    const Vec3f16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const Vec3f16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
-	    const Vec3f16 v0 = v0_t0 * one_time + time * v0_t1;
-	    const Vec3f16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const Vec3f16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
-	    const Vec3f16 v1 = v1_t0 * one_time + time * v1_t1;
-	    const Vec3f16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const Vec3f16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
-	    const Vec3f16 v2 = v2_t0 * one_time + time * v2_t1;
+	    const Vec3vf16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
+	    const Vec3vf16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3vf16 v0 = v0_t0 * one_time + time * v0_t1;
+	    const Vec3vf16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
+	    const Vec3vf16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3vf16 v1 = v1_t0 * one_time + time * v1_t1;
+	    const Vec3vf16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
+	    const Vec3vf16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3vf16 v2 = v2_t0 * one_time + time * v2_t1;
 
-	    const Vec3f16 e1 = v0-v1;
-	    const Vec3f16 e2 = v2-v0;
+	    const Vec3vf16 e1 = v0-v1;
+	    const Vec3vf16 e2 = v2-v0;
 
-	    const Vec3f16 Ng = cross(e1,e2);
+	    const Vec3vf16 Ng = cross(e1,e2);
 
 	    /* calculate denominator */
-	    const Vec3f16 C =  v0 - org;
+	    const Vec3vf16 C =  v0 - org;
 	    
 	    const float16 den = dot(Ng,dir);
 
@@ -720,7 +720,7 @@ namespace embree
 
 	    /* perform edge tests */
 	    const float16 rcp_den = rcp(den);
-	    const Vec3f16 R = cross(dir,C);
+	    const Vec3vf16 R = cross(dir,C);
 	    const float16 u = dot(R,e2)*rcp_den;
 	    const float16 v = dot(R,e1)*rcp_den;
 	    valid = ge(valid,u,zero);

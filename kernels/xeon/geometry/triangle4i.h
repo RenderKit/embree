@@ -159,7 +159,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       int4 vgeomID = -1, vprimID = -1;
-      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4; i++)
       {

@@ -40,7 +40,7 @@
 namespace embree
 {
 #if defined(__MIC__)
-  __forceinline BBox3fa getBBox3fa(const Vec3f16 &v, const bool16 m_valid = 0xffff)
+  __forceinline BBox3fa getBBox3fa(const Vec3vf16 &v, const bool16 m_valid = 0xffff)
   {
     const float16 x_min = select(m_valid,v.x,float16::inf());
     const float16 y_min = select(m_valid,v.y,float16::inf());
@@ -330,7 +330,7 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 		  float16 bmin = min(min(v[0],v[1]),v[2]);
 		  float16 bmax = max(max(v[0],v[1]),v[2]);
@@ -407,7 +407,7 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 		  float16 bmin = min(min(v[0],v[1]),v[2]);
 		  float16 bmax = max(max(v[0],v[1]),v[2]);
@@ -487,7 +487,7 @@ PRINT(CORRECT_numPrims);
 		  prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 		  prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-		  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 		  float16 bmin = min(min(v[0],v[1]),v[2]);
 		  float16 bmax = max(max(v[0],v[1]),v[2]);
@@ -563,7 +563,7 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  prefetch<PFHINT_L1EX>(prims);
 
@@ -605,7 +605,7 @@ PRINT(CORRECT_numPrims);
 	  const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	  const TriangleMesh::Triangle & tri = mesh->triangle(primID);
 
-	  const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  
 	  float16 bmin = min(min(v[0],v[1]),v[2]);

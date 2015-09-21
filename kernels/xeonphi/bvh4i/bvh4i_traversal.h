@@ -494,8 +494,8 @@ namespace embree
   template<bool DECOMPRESS_NODE>
   __forceinline void traverse_chunk_intersect(BVH4i::NodeRef &curNode,
 					      float16 &curDist,
-					      const Vec3f16 &rdir,
-					      const Vec3f16 &org_rdir,
+					      const Vec3vf16 &rdir,
+					      const Vec3vf16 &org_rdir,
 					      const float16 &ray_tnear,
 					      const float16 &ray_tfar,
 					      BVH4i::NodeRef *__restrict__ &sptr_node,
@@ -599,8 +599,8 @@ namespace embree
   template<bool DECOMPRESS_NODE>
   __forceinline void traverse_chunk_occluded(BVH4i::NodeRef &curNode,
 					     float16 &curDist,
-					     const Vec3f16 &rdir,
-					     const Vec3f16 &org_rdir,
+					     const Vec3vf16 &rdir,
+					     const Vec3vf16 &org_rdir,
 					     const float16 &ray_tnear,
 					     const float16 &ray_tfar,
 					     const bool16 &m_active,

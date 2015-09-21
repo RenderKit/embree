@@ -31,10 +31,10 @@ namespace embree
       {
         const Vec3fa ray_rdir = rcp_safe(ray_dir);
         const Vec3fa ray_org_rdir = ray_org*ray_rdir;
-        org = Vec3f4(ray_org.x,ray_org.y,ray_org.z);
-        dir = Vec3f4(ray_dir.x,ray_dir.y,ray_dir.z);
-        rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-        org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+        org = Vec3vf4(ray_org.x,ray_org.y,ray_org.z);
+        dir = Vec3vf4(ray_dir.x,ray_dir.y,ray_dir.z);
+        rdir = Vec3vf4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+        org_rdir = Vec3vf4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
         nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
         nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
         nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
@@ -43,7 +43,7 @@ namespace embree
         farZ  = nearZ ^ sizeof(float4);
       }
       Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
-      Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
+      Vec3vf4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
     };
@@ -51,7 +51,7 @@ namespace embree
     /*! intersection with single rays */
     template<bool robust>
       __forceinline size_t intersect_node(const BVH4::Node* node, size_t nearX, size_t nearY, size_t nearZ,
-                                          const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, 
+                                          const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar, 
                                           float4& dist) 
     {
       const size_t farX  = nearX ^ sizeof(float4), farY  = nearY ^ sizeof(float4), farZ  = nearZ ^ sizeof(float4);
@@ -145,7 +145,7 @@ namespace embree
     
     /*! intersection with ray packet of size 4 */
     template<bool robust>
-      __forceinline bool4 intersect_node(const BVH4::Node* node, size_t i, const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, float4& dist)
+      __forceinline bool4 intersect_node(const BVH4::Node* node, size_t i, const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar, float4& dist)
     {
 #if defined(__AVX2__)
       const float4 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -190,7 +190,7 @@ namespace embree
     /*! intersection with ray packet of size 8 */
 #if defined(__AVX__)
     template<bool robust>
-      __forceinline bool8 intersect8_node(const BVH4::Node* node, size_t i, const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar, float8& dist) 
+      __forceinline bool8 intersect8_node(const BVH4::Node* node, size_t i, const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar, float8& dist) 
     {
 #if defined(__AVX2__)
       const float8 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -236,7 +236,7 @@ namespace embree
     /*! intersection with ray packet of size 8 */
 #if defined(__AVX512F__)
     template<bool robust>
-      __forceinline bool16 intersect16_node(const BVH4::Node* node, size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, float16& dist) 
+      __forceinline bool16 intersect16_node(const BVH4::Node* node, size_t i, const Vec3vf16& org, const Vec3vf16& rdir, const Vec3vf16& org_rdir, const float16& tnear, const float16& tfar, float16& dist) 
     {
       const float16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
       const float16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
@@ -267,7 +267,7 @@ namespace embree
     
     /*! intersection with single rays */
     __forceinline size_t intersect_node(const BVH4::NodeMB* node, size_t nearX, size_t nearY, size_t nearZ,
-                                        const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, const float time,
+                                        const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar, const float time,
                                         float4& dist) 
     {
       const size_t farX  = nearX ^ sizeof(float4), farY  = nearY ^ sizeof(float4), farZ  = nearZ ^ sizeof(float4);
@@ -291,7 +291,7 @@ namespace embree
     }
     
     /*! intersection with ray packet of size 4 */
-    __forceinline bool4 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, 
+    __forceinline bool4 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar, 
                                       const float4& time, float4& dist) 
     {
       const float4 vlower_x = float4(node->lower_x[i]) + time * float4(node->lower_dx[i]);
@@ -333,7 +333,7 @@ namespace embree
     
     /*! intersection with ray packet of size 8 */
 #if defined(__AVX__)
-    __forceinline bool8 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar, const float8& time, float8& dist) 
+    __forceinline bool8 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar, const float8& time, float8& dist) 
     {
       const float8 vlower_x = float8(node->lower_x[i]) + time * float8(node->lower_dx[i]);
       const float8 vlower_y = float8(node->lower_y[i]) + time * float8(node->lower_dy[i]);
@@ -371,7 +371,7 @@ namespace embree
 
     /*! intersection with ray packet of size 8 */
 #if defined(__AVX512F__)
-    __forceinline bool16 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3f16& org, const Vec3f16& rdir, const Vec3f16& org_rdir, const float16& tnear, const float16& tfar, const float16& time, float16& dist) 
+    __forceinline bool16 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3vf16& org, const Vec3vf16& rdir, const Vec3vf16& org_rdir, const float16& tnear, const float16& tfar, const float16& time, float16& dist) 
     {
       const float16 vlower_x = float16(node->lower_x[i]) + time * float16(node->lower_dx[i]);
       const float16 vlower_y = float16(node->lower_y[i]) + time * float16(node->lower_dy[i]);
@@ -396,15 +396,15 @@ namespace embree
 
 
     /*! intersect 4 OBBs with single ray */
-    __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const Vec3f4& ray_org, const Vec3f4& ray_dir, 
+    __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const Vec3vf4& ray_org, const Vec3vf4& ray_dir, 
                                         const float4& tnear, const float4& tfar, float4& dist)
     {
-      const Vec3f4 dir = xfmVector(node->naabb,ray_dir);
-      //const Vec3f4 nrdir = Vec3f4(float4(-1.0f))/dir;
-      const Vec3f4 nrdir = Vec3f4(float4(-1.0f))*rcp_safe(dir);
-      const Vec3f4 org = xfmPoint(node->naabb,ray_org);
-      const Vec3f4 tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
-      const Vec3f4 tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
+      const Vec3vf4 dir = xfmVector(node->naabb,ray_dir);
+      //const Vec3vf4 nrdir = Vec3vf4(float4(-1.0f))/dir;
+      const Vec3vf4 nrdir = Vec3vf4(float4(-1.0f))*rcp_safe(dir);
+      const Vec3vf4 org = xfmPoint(node->naabb,ray_org);
+      const Vec3vf4 tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
+      const Vec3vf4 tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
       
 #if defined(__SSE4_1__)
       const float4 tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
@@ -436,24 +436,24 @@ namespace embree
     
     /*! intersect 4 OBBs with single ray */
     __forceinline size_t intersect_node(const BVH4::UnalignedNodeMB* node,
-                                        const Vec3f4& ray_org, const Vec3f4& ray_dir, 
+                                        const Vec3vf4& ray_org, const Vec3vf4& ray_dir, 
                                         const float4& tnear, const float4& tfar, const float time, float4& dist)
       {
 	const float4 t0 = float4(1.0f)-time, t1 = time;
 
-	const AffineSpaceSSE3f xfm = node->space0;
-	const Vec3f4 b0_lower = zero;
-	const Vec3f4 b0_upper = one;
-	const Vec3f4 lower = t0*b0_lower + t1*node->b1.lower;
-	const Vec3f4 upper = t0*b0_upper + t1*node->b1.upper;
+	const AffineSpace3vf4 xfm = node->space0;
+	const Vec3vf4 b0_lower = zero;
+	const Vec3vf4 b0_upper = one;
+	const Vec3vf4 lower = t0*b0_lower + t1*node->b1.lower;
+	const Vec3vf4 upper = t0*b0_upper + t1*node->b1.upper;
 	
-	const BBoxSSE3f bounds(lower,upper);
-	const Vec3f4 dir = xfmVector(xfm,ray_dir);
-	const Vec3f4 rdir = rcp_safe(dir); 
-	const Vec3f4 org = xfmPoint(xfm,ray_org);
+	const BBox3vf4 bounds(lower,upper);
+	const Vec3vf4 dir = xfmVector(xfm,ray_dir);
+	const Vec3vf4 rdir = rcp_safe(dir); 
+	const Vec3vf4 org = xfmPoint(xfm,ray_org);
 	
-	const Vec3f4 tLowerXYZ = (bounds.lower - org) * rdir;
-	const Vec3f4 tUpperXYZ = (bounds.upper - org) * rdir;
+	const Vec3vf4 tLowerXYZ = (bounds.lower - org) * rdir;
+	const Vec3vf4 tUpperXYZ = (bounds.upper - org) * rdir;
 	
 #if defined(__SSE4_1__)
 	const float4 tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);

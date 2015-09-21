@@ -50,18 +50,18 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
       
       /* load ray */
-      Vec3f8 ray_org = ray.org;
-      Vec3f8 ray_dir = ray.dir;
+      Vec3vf8 ray_org = ray.org;
+      Vec3vf8 ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f8 rdir = rcp_safe(ray_dir);
-      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf8 rdir = rcp_safe(ray_dir);
+      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,float8(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
-      Vec3i8 nearXYZ;
+      Vec3vi8 nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
       nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
       nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));
@@ -267,17 +267,17 @@ namespace embree
 
       /* load ray */
       bool8 terminated = !valid;
-      Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
+      Vec3vf8 ray_org = ray.org, ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f8 rdir = rcp_safe(ray_dir);
-      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf8 rdir = rcp_safe(ray_dir);
+      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,float8(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
-      Vec3i8 nearXYZ;
+      Vec3vi8 nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float4)),int8(1*(int)sizeof(float4)));
       nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float4)),int8(3*(int)sizeof(float4)));
       nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float4)),int8(5*(int)sizeof(float4)));

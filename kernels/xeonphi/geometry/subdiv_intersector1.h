@@ -27,9 +27,9 @@ namespace embree
 						     const float16 &org_xyz,
 						     Ray& ray,
 
-						     const Vec3f16 &v0_org,
-						     const Vec3f16 &v1_org,
-						     const Vec3f16 &v2_org,
+						     const Vec3vf16 &v0_org,
+						     const Vec3vf16 &v1_org,
+						     const Vec3vf16 &v2_org,
 						     const float16 &u_grid,
 						     const float16 &v_grid,
 						     const unsigned int offset_v0,
@@ -38,18 +38,18 @@ namespace embree
 						     const bool16 &m_active,
 						     const unsigned int subdiv_patch_index)
   {
-    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const Vec3f16 v0 = v0_org; // - ray_org;
-    const Vec3f16 v1 = v1_org; // - ray_org;
-    const Vec3f16 v2 = v2_org; // - ray_org;
+    const Vec3vf16 v0 = v0_org; // - ray_org;
+    const Vec3vf16 v1 = v1_org; // - ray_org;
+    const Vec3vf16 v2 = v2_org; // - ray_org;
    
-    const Vec3f16 e0 = v2 - v0;
-    const Vec3f16 e1 = v0 - v1;	     
-    const Vec3f16 e2 = v1 - v2;	     
+    const Vec3vf16 e0 = v2 - v0;
+    const Vec3vf16 e1 = v0 - v1;	     
+    const Vec3vf16 e2 = v1 - v2;	     
 
-    const Vec3f16 Ng1     = cross(e1,e0);
-    const Vec3f16 Ng      = Ng1+Ng1;
+    const Vec3vf16 Ng1     = cross(e1,e0);
+    const Vec3vf16 Ng      = Ng1+Ng1;
     const float16 den     = dot(Ng,ray_dir);	      
     const float16 rcp_den = rcp(den);
 
@@ -122,9 +122,9 @@ namespace embree
   static __forceinline bool occluded1_tri16_precise( const float16 &dir_xyz,
 						     const float16 &org_xyz,
 						     Ray& ray,
-						     const Vec3f16 &v0_org,
-						     const Vec3f16 &v1_org,
-						     const Vec3f16 &v2_org,
+						     const Vec3vf16 &v0_org,
+						     const Vec3vf16 &v1_org,
+						     const Vec3vf16 &v2_org,
 						     const float16 &u_grid,
 						     const float16 &v_grid,
 						     const unsigned int offset_v0,
@@ -133,18 +133,18 @@ namespace embree
 						     const bool16 &m_active,
 						     const unsigned int subdiv_patch_index)
   {
-    const Vec3f16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
+    const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
     
-    const Vec3f16 v0 = v0_org; // - ray_org;
-    const Vec3f16 v1 = v1_org; // - ray_org;
-    const Vec3f16 v2 = v2_org; // - ray_org;
+    const Vec3vf16 v0 = v0_org; // - ray_org;
+    const Vec3vf16 v1 = v1_org; // - ray_org;
+    const Vec3vf16 v2 = v2_org; // - ray_org;
    
-    const Vec3f16 e0 = v2 - v0;
-    const Vec3f16 e1 = v0 - v1;	     
-    const Vec3f16 e2 = v1 - v2;	     
+    const Vec3vf16 e0 = v2 - v0;
+    const Vec3vf16 e1 = v0 - v1;	     
+    const Vec3vf16 e2 = v1 - v2;	     
 
-    const Vec3f16 Ng1     = cross(e1,e0);
-    const Vec3f16 Ng      = Ng1+Ng1;
+    const Vec3vf16 Ng1     = cross(e1,e0);
+    const Vec3vf16 Ng      = Ng1+Ng1;
     const float16 den     = dot(Ng,ray_dir);	      
     const float16 rcp_den = rcp(den);
 
@@ -180,7 +180,7 @@ namespace embree
   static __forceinline void intersect1_quad16(const float16 &dir_xyz,
 					      const float16 &org_xyz,
 					      Ray& ray,
-					      const Vec3f16 &vtx,
+					      const Vec3vf16 &vtx,
 					      const float16 &u,
 					      const float16 &v,
 					      const unsigned int grid_res,
@@ -193,14 +193,14 @@ namespace embree
     const unsigned int offset_v3 = grid_res+0;
 
 
-    const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-    Vec3f16 vtx_org = vtx - ray_org;
+    Vec3vf16 vtx_org = vtx - ray_org;
 
-    const Vec3f16 &v0 = vtx_org;
-    const Vec3f16  v1( uload16f_low(&vtx_org.x[offset_v1]), uload16f_low(&vtx_org.y[offset_v1]), uload16f_low(&vtx_org.z[offset_v1]));
-    const Vec3f16  v2( uload16f_low(&vtx_org.x[offset_v2]), uload16f_low(&vtx_org.y[offset_v2]), uload16f_low(&vtx_org.z[offset_v2]));
-    const Vec3f16  v3( uload16f_low(&vtx_org.x[offset_v3]), uload16f_low(&vtx_org.y[offset_v3]), uload16f_low(&vtx_org.z[offset_v3]));
+    const Vec3vf16 &v0 = vtx_org;
+    const Vec3vf16  v1( uload16f_low(&vtx_org.x[offset_v1]), uload16f_low(&vtx_org.y[offset_v1]), uload16f_low(&vtx_org.z[offset_v1]));
+    const Vec3vf16  v2( uload16f_low(&vtx_org.x[offset_v2]), uload16f_low(&vtx_org.y[offset_v2]), uload16f_low(&vtx_org.z[offset_v2]));
+    const Vec3vf16  v3( uload16f_low(&vtx_org.x[offset_v3]), uload16f_low(&vtx_org.y[offset_v3]), uload16f_low(&vtx_org.z[offset_v3]));
 
     intersect1_tri16_precise(dir_xyz,org_xyz,ray,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index);
     intersect1_tri16_precise(dir_xyz,org_xyz,ray,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index);
@@ -210,7 +210,7 @@ namespace embree
   static __forceinline bool occluded1_quad16(const float16 &dir_xyz,
 					     const float16 &org_xyz,
 					     Ray& ray,
-					     const Vec3f16 &vtx,
+					     const Vec3vf16 &vtx,
 					     const float16 &u,
 					     const float16 &v,
 					     const unsigned int grid_res,
@@ -222,14 +222,14 @@ namespace embree
     const unsigned int offset_v2 = grid_res+1;
     const unsigned int offset_v3 = grid_res+0;
 
-    const Vec3f16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
+    const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
     
-    Vec3f16 vtx_org = vtx - ray_org;
+    Vec3vf16 vtx_org = vtx - ray_org;
 
-    const Vec3f16 &v0 = vtx_org;
-    const Vec3f16  v1( uload16f_low(&vtx_org.x[offset_v1]), uload16f_low(&vtx_org.y[offset_v1]), uload16f_low(&vtx_org.z[offset_v1]));
-    const Vec3f16  v2( uload16f_low(&vtx_org.x[offset_v2]), uload16f_low(&vtx_org.y[offset_v2]), uload16f_low(&vtx_org.z[offset_v2]));
-    const Vec3f16  v3( uload16f_low(&vtx_org.x[offset_v3]), uload16f_low(&vtx_org.y[offset_v3]), uload16f_low(&vtx_org.z[offset_v3]));
+    const Vec3vf16 &v0 = vtx_org;
+    const Vec3vf16  v1( uload16f_low(&vtx_org.x[offset_v1]), uload16f_low(&vtx_org.y[offset_v1]), uload16f_low(&vtx_org.z[offset_v1]));
+    const Vec3vf16  v2( uload16f_low(&vtx_org.x[offset_v2]), uload16f_low(&vtx_org.y[offset_v2]), uload16f_low(&vtx_org.z[offset_v2]));
+    const Vec3vf16  v3( uload16f_low(&vtx_org.x[offset_v3]), uload16f_low(&vtx_org.y[offset_v3]), uload16f_low(&vtx_org.z[offset_v3]));
 
     if (occluded1_tri16_precise(dir_xyz,org_xyz,ray,v0,v1,v3,u,v,offset_v0,offset_v1,offset_v3,m_active,subdiv_patch_index)) return true;
     if (occluded1_tri16_precise(dir_xyz,org_xyz,ray,v3,v1,v2,u,v,offset_v3,offset_v1,offset_v2,m_active,subdiv_patch_index)) return true;

@@ -717,10 +717,10 @@ namespace embree
       BBox3fa bounds[16][3]; //!< geometry bounds for each bin in each dimension
       int4    counts[16];    //!< counts number of primitives that map into the bins
 #endif
-      Vec3f16 rArea16;
-      Vec3i16 rCount16;
-      Vec3f16 lArea16;
-      Vec3i16 lCount16;
+      Vec3vf16 rArea16;
+      Vec3vi16 rCount16;
+      Vec3vf16 lArea16;
+      Vec3vi16 lCount16;
     };
 
 #endif

@@ -38,9 +38,9 @@ namespace embree
 
     public:
       static void intersect1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
+			     const Vec3vf4& ray_org, const Vec3vf4& ray_dir, const Vec3vf4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
       static bool occluded1 (const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-			     const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
+			     const Vec3vf4& ray_org, const Vec3vf4& ray_dir, const Vec3vf4& ray_rdir, const float4& ray_tnear, const float4& ray_tfar);
 
       static void intersect(bool4* valid, BVH8* bvh, Ray4& ray);
       static void occluded (bool4* valid, BVH8* bvh, Ray4& ray);

@@ -292,7 +292,7 @@ namespace embree
 
     if (unlikely(start % 2 != 0))
       {
-	const Vec2f16 bounds = aabb[start].getBounds();
+	const Vec2vf16 bounds = aabb[start].getBounds();
 	const float16 b_min = bounds.x;
 	const float16 b_max = bounds.y;
 
@@ -341,7 +341,7 @@ namespace embree
 
     if (unlikely(end % 2 != 0))
       {
-	const Vec2f16 bounds = aabb[end-1].getBounds();
+	const Vec2vf16 bounds = aabb[end-1].getBounds();
 	const float16 b_min = bounds.x;
 	const float16 b_max = bounds.y;
 
@@ -405,7 +405,7 @@ namespace embree
 	for (size_t i=0;i<2;i++)
 	  {
 
-	    const Vec2f16 bounds = aptr[i].getBounds();
+	    const Vec2vf16 bounds = aptr[i].getBounds();
 	    const float16 b_min  = bounds.x;
 	    const float16 b_max  = bounds.y;
 
@@ -477,7 +477,7 @@ namespace embree
 
   template<class Primitive>
   __forceinline void fastbin_xfm(const Primitive * __restrict__ const aabb,
-				 const Vec3f16 &cmat,
+				 const Vec3vf16 &cmat,
 				 const unsigned int thread_start,
 				 const unsigned int thread_end,
 				 const BinMapping &mapping,
@@ -542,7 +542,7 @@ namespace embree
 	prefetch<PFHINT_L1>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 	
-	const Vec2f16 bounds = aptr->getBounds(c0,c1,c2);
+	const Vec2vf16 bounds = aptr->getBounds(c0,c1,c2);
 
 	const float16 b_min  = bounds.x;
 	const float16 b_max  = bounds.y;
@@ -613,7 +613,7 @@ namespace embree
 
   template<unsigned int DISTANCE, class Primitive>
     __forceinline unsigned int partitionPrimitives_xfm(Primitive *__restrict__ aabb,
-						       const Vec3f16 &cmat,
+						       const Vec3vf16 &cmat,
 						       const unsigned int begin,
 						       const unsigned int end,
 						       const BinPartitionMapping &mapping,
@@ -639,7 +639,7 @@ namespace embree
 	  while (likely(l <= r)) 
 	    {
 	      
-	      const Vec2f16 bounds = l->getBounds(c0,c1,c2);
+	      const Vec2vf16 bounds = l->getBounds(c0,c1,c2);
 	      const float16 b_min  = bounds.x;
 	      const float16 b_max  = bounds.y;
 
@@ -652,7 +652,7 @@ namespace embree
 	    }
 	  while (likely(l <= r)) 
 	    {
-	      const Vec2f16 bounds = r->getBounds(c0,c1,c2);
+	      const Vec2vf16 bounds = r->getBounds(c0,c1,c2);
 	      const float16 b_min  = bounds.x;
 	      const float16 b_max  = bounds.y;
 
@@ -920,7 +920,7 @@ namespace embree
 	prefetch<PFHINT_NT>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 
-	const Vec2f16 bounds = aptr->getBounds();
+	const Vec2vf16 bounds = aptr->getBounds();
 	const float16 b_min  = bounds.x;
 	const float16 b_max  = bounds.y;
 
@@ -1017,7 +1017,7 @@ namespace embree
 	  /* *l < pivot */
 	  while (likely(l <= r)) 
 	    {
-	      const Vec2f16 bounds = l->getBounds();
+	      const Vec2vf16 bounds = l->getBounds();
 	      const float16 b_min  = bounds.x;
 	      const float16 b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
@@ -1032,7 +1032,7 @@ namespace embree
 	  /* *r >= pivot) */
 	  while (likely(l <= r))
 	    {
-	      const Vec2f16 bounds = r->getBounds();
+	      const Vec2vf16 bounds = r->getBounds();
 	      const float16 b_min  = bounds.x;
 	      const float16 b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  

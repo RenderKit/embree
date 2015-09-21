@@ -28,9 +28,9 @@ namespace embree
     return broadcast4to16f(&v);
   }
 
-  __forceinline Vec3f16 vec3fa_to_Vec3f16(const Vec3fa &v) 
+  __forceinline Vec3vf16 vec3fa_to_Vec3f16(const Vec3fa &v) 
   {
-    return Vec3f16(float16(v.x),float16(v.y),float16(v.z));
+    return Vec3vf16(float16(v.x),float16(v.y),float16(v.z));
   }
 
   class BicubicBezierPatch
@@ -111,34 +111,34 @@ namespace embree
       return u10;
     }
 
-    __forceinline Vec3f16 evalU_4x3(const float16 u,
+    __forceinline Vec3vf16 evalU_4x3(const float16 u,
 				  const float16 v) const
     {
       const float16 one = float16::one();
       const float16 one_minus_u = one - u;
       const float16 one_minus_v = one - v;
 
-      const Vec3f16 u00 = one_minus_u * vec3fa_to_Vec3f16(cp[0][0]) + u * vec3fa_to_Vec3f16(cp[0][1]);
-      const Vec3f16 u01 = one_minus_u * vec3fa_to_Vec3f16(cp[0][1]) + u * vec3fa_to_Vec3f16(cp[0][2]);
-      const Vec3f16 u0  = one_minus_u * u00+ u * u01;
-      const Vec3f16 u10 = one_minus_u * vec3fa_to_Vec3f16(cp[1][0]) + u * vec3fa_to_Vec3f16(cp[1][1]);
-      const Vec3f16 u11 = one_minus_u * vec3fa_to_Vec3f16(cp[1][1]) + u * vec3fa_to_Vec3f16(cp[1][2]);
-      const Vec3f16 u1  = one_minus_u * u10+ u * u11;
-      const Vec3f16 u20 = one_minus_u * vec3fa_to_Vec3f16(cp[2][0]) + u * vec3fa_to_Vec3f16(cp[2][1]);
-      const Vec3f16 u21 = one_minus_u * vec3fa_to_Vec3f16(cp[2][1]) + u * vec3fa_to_Vec3f16(cp[2][2]);
-      const Vec3f16 u2  = one_minus_u * u20+ u * u21;
+      const Vec3vf16 u00 = one_minus_u * vec3fa_to_Vec3f16(cp[0][0]) + u * vec3fa_to_Vec3f16(cp[0][1]);
+      const Vec3vf16 u01 = one_minus_u * vec3fa_to_Vec3f16(cp[0][1]) + u * vec3fa_to_Vec3f16(cp[0][2]);
+      const Vec3vf16 u0  = one_minus_u * u00+ u * u01;
+      const Vec3vf16 u10 = one_minus_u * vec3fa_to_Vec3f16(cp[1][0]) + u * vec3fa_to_Vec3f16(cp[1][1]);
+      const Vec3vf16 u11 = one_minus_u * vec3fa_to_Vec3f16(cp[1][1]) + u * vec3fa_to_Vec3f16(cp[1][2]);
+      const Vec3vf16 u1  = one_minus_u * u10+ u * u11;
+      const Vec3vf16 u20 = one_minus_u * vec3fa_to_Vec3f16(cp[2][0]) + u * vec3fa_to_Vec3f16(cp[2][1]);
+      const Vec3vf16 u21 = one_minus_u * vec3fa_to_Vec3f16(cp[2][1]) + u * vec3fa_to_Vec3f16(cp[2][2]);
+      const Vec3vf16 u2  = one_minus_u * u20+ u * u21;
 
-      const Vec3f16 u30 = one_minus_u * vec3fa_to_Vec3f16(cp[3][0]) + u * vec3fa_to_Vec3f16(cp[3][1]);
-      const Vec3f16 u31 = one_minus_u * vec3fa_to_Vec3f16(cp[3][1]) + u * vec3fa_to_Vec3f16(cp[3][2]);
-      const Vec3f16 u3  = one_minus_u * u30 + u * u31;
+      const Vec3vf16 u30 = one_minus_u * vec3fa_to_Vec3f16(cp[3][0]) + u * vec3fa_to_Vec3f16(cp[3][1]);
+      const Vec3vf16 u31 = one_minus_u * vec3fa_to_Vec3f16(cp[3][1]) + u * vec3fa_to_Vec3f16(cp[3][2]);
+      const Vec3vf16 u3  = one_minus_u * u30 + u * u31;
 
-      const Vec3f16 v00 = one_minus_v * u0 + v * u1;
-      const Vec3f16 v01 = one_minus_v * u1 + v * u2;
-      const Vec3f16 v02 = one_minus_v * u2 + v * u3;
+      const Vec3vf16 v00 = one_minus_v * u0 + v * u1;
+      const Vec3vf16 v01 = one_minus_v * u1 + v * u2;
+      const Vec3vf16 v02 = one_minus_v * u2 + v * u3;
 
-      const Vec3f16 v10 = one_minus_v * v00 + v * v01;
-      const Vec3f16 v11 = one_minus_v * v01 + v * v02;
-      const Vec3f16 v20 = one_minus_v * v10 + v * v11;
+      const Vec3vf16 v10 = one_minus_v * v00 + v * v01;
+      const Vec3vf16 v11 = one_minus_v * v01 + v * v02;
+      const Vec3vf16 v20 = one_minus_v * v10 + v * v11;
       return v20;
     }
 
@@ -168,32 +168,32 @@ namespace embree
       return u20;
     }
 
-    __forceinline Vec3f16 evalV_3x4(const float16 u,
+    __forceinline Vec3vf16 evalV_3x4(const float16 u,
 				  const float16 v) const
     {
       const float16 one = float16::one();
       const float16 one_minus_u = one - u;
       const float16 one_minus_v = one - v;      
-      const Vec3f16 v00 = one_minus_v * vec3fa_to_Vec3f16(cp[0][0]) + v * vec3fa_to_Vec3f16(cp[1][0]);
-      const Vec3f16 v01 = one_minus_v * vec3fa_to_Vec3f16(cp[1][0]) + v * vec3fa_to_Vec3f16(cp[2][0]);
-      const Vec3f16 v0  = one_minus_v * v00 + v * v01;
-      const Vec3f16 v10 = one_minus_v * vec3fa_to_Vec3f16(cp[0][1]) + v * vec3fa_to_Vec3f16(cp[1][1]);
-      const Vec3f16 v11 = one_minus_v * vec3fa_to_Vec3f16(cp[1][1]) + v * vec3fa_to_Vec3f16(cp[2][1]);
-      const Vec3f16 v1  = one_minus_v * v10 + v * v11;
-      const Vec3f16 v20 = one_minus_v * vec3fa_to_Vec3f16(cp[0][2]) + v * vec3fa_to_Vec3f16(cp[1][2]);
-      const Vec3f16 v21 = one_minus_v * vec3fa_to_Vec3f16(cp[1][2]) + v * vec3fa_to_Vec3f16(cp[2][2]);
-      const Vec3f16 v2  = one_minus_v * v20 + v * v21;
-      const Vec3f16 v30 = one_minus_v * vec3fa_to_Vec3f16(cp[0][3]) + v * vec3fa_to_Vec3f16(cp[1][3]);
-      const Vec3f16 v31 = one_minus_v * vec3fa_to_Vec3f16(cp[1][3]) + v * vec3fa_to_Vec3f16(cp[2][3]);
-      const Vec3f16 v3  = one_minus_v * v30 + v * v31;
+      const Vec3vf16 v00 = one_minus_v * vec3fa_to_Vec3f16(cp[0][0]) + v * vec3fa_to_Vec3f16(cp[1][0]);
+      const Vec3vf16 v01 = one_minus_v * vec3fa_to_Vec3f16(cp[1][0]) + v * vec3fa_to_Vec3f16(cp[2][0]);
+      const Vec3vf16 v0  = one_minus_v * v00 + v * v01;
+      const Vec3vf16 v10 = one_minus_v * vec3fa_to_Vec3f16(cp[0][1]) + v * vec3fa_to_Vec3f16(cp[1][1]);
+      const Vec3vf16 v11 = one_minus_v * vec3fa_to_Vec3f16(cp[1][1]) + v * vec3fa_to_Vec3f16(cp[2][1]);
+      const Vec3vf16 v1  = one_minus_v * v10 + v * v11;
+      const Vec3vf16 v20 = one_minus_v * vec3fa_to_Vec3f16(cp[0][2]) + v * vec3fa_to_Vec3f16(cp[1][2]);
+      const Vec3vf16 v21 = one_minus_v * vec3fa_to_Vec3f16(cp[1][2]) + v * vec3fa_to_Vec3f16(cp[2][2]);
+      const Vec3vf16 v2  = one_minus_v * v20 + v * v21;
+      const Vec3vf16 v30 = one_minus_v * vec3fa_to_Vec3f16(cp[0][3]) + v * vec3fa_to_Vec3f16(cp[1][3]);
+      const Vec3vf16 v31 = one_minus_v * vec3fa_to_Vec3f16(cp[1][3]) + v * vec3fa_to_Vec3f16(cp[2][3]);
+      const Vec3vf16 v3  = one_minus_v * v30 + v * v31;
 
-      const Vec3f16 u00 = one_minus_u * v0 + u * v1;
-      const Vec3f16 u10 = one_minus_u * v1 + u * v2;
-      const Vec3f16 u20 = one_minus_u * v2 + u * v3;
+      const Vec3vf16 u00 = one_minus_u * v0 + u * v1;
+      const Vec3vf16 u10 = one_minus_u * v1 + u * v2;
+      const Vec3vf16 u20 = one_minus_u * v2 + u * v3;
 
-      const Vec3f16 u01 = one_minus_u * u00 + u * u10;
-      const Vec3f16 u11 = one_minus_u * u10 + u * u20;
-      const Vec3f16 u02 = one_minus_u * u01 + u * u11;
+      const Vec3vf16 u01 = one_minus_u * u00 + u * u10;
+      const Vec3vf16 u11 = one_minus_u * u10 + u * u20;
+      const Vec3vf16 u02 = one_minus_u * u01 + u * u11;
       return u02;
     }
 
@@ -238,7 +238,7 @@ namespace embree
     // ===========================================
 
 
-    __forceinline Vec3f16 eval(const float16 u,
+    __forceinline Vec3vf16 eval(const float16 u,
 			     const float16 v) const
     {
       const float16 one = float16::one();
@@ -271,7 +271,7 @@ namespace embree
 	(B0_u * cp[1][0].z + B1_u * cp[1][1].z + B2_u * cp[1][2].z + B3_u * cp[1][3].z) * B2_v + 
 	(B0_u * cp[2][0].z + B1_u * cp[2][1].z + B2_u * cp[2][2].z + B3_u * cp[2][3].z) * B1_v + 
 	(B0_u * cp[3][0].z + B1_u * cp[3][1].z + B2_u * cp[3][2].z + B3_u * cp[3][3].z) * B0_v; 
-      return Vec3f16(x,y,z);
+      return Vec3vf16(x,y,z);
     }
 
 
@@ -359,16 +359,16 @@ namespace embree
     return lcross_xyz(tU,tV);
   }
 
-  __forceinline Vec3f16 getNormalFromTangentPatches(const BicubicBezierPatch &tangentU, 
+  __forceinline Vec3vf16 getNormalFromTangentPatches(const BicubicBezierPatch &tangentU, 
 						  const BicubicBezierPatch &tangentV,
 						  const float16 u,
 						  const float16 v,
 						  const float16 one_minus_u,
 						  const float16 one_minus_v) 
   {
-    const Vec3f16 tV = tangentV.evalV_3x4(u,v);
-    const Vec3f16 tU = tangentU.evalU_4x3(u,v);
-    const Vec3f16 normal = cross(tU,tV); 
+    const Vec3vf16 tV = tangentV.evalV_3x4(u,v);
+    const Vec3vf16 tU = tangentU.evalU_4x3(u,v);
+    const Vec3vf16 normal = cross(tU,tV); 
     return normal;
   }
 

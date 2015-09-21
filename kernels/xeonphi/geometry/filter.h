@@ -87,7 +87,7 @@ namespace embree
   }
 
   __forceinline bool16 runIntersectionFilter16(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                              const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int16& geomID, const int16& primID)
+                                              const float16& u, const float16& v, const float16& t, const Vec3vf16& Ng, const int16& geomID, const int16& primID)
   {
     /* temporarily update hit information */
     const float16 ray_u = ray.u;           store16f(valid,&ray.u,u);
@@ -123,7 +123,7 @@ namespace embree
   }
 
   __forceinline bool16 runOcclusionFilter16(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                           const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int16& geomID, const int16& primID)
+                                           const float16& u, const float16& v, const float16& t, const Vec3vf16& Ng, const int16& geomID, const int16& primID)
   {
     /* temporarily update hit information */
     const float16 ray_tfar = ray.tfar; 

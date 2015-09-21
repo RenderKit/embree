@@ -135,7 +135,7 @@ namespace embree
 
 
     template<unsigned int HINT=0>
-      __forceinline Vec3f16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
+      __forceinline Vec3vf16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
 	assert( tri.v[0] < numVertices() );
 	assert( tri.v[1] < numVertices() );
@@ -150,7 +150,7 @@ namespace embree
 	const float16 v0 = broadcast4to16f(vptr0); 
 	const float16 v1 = broadcast4to16f(vptr1); 
 	const float16 v2 = broadcast4to16f(vptr2); 
-	return Vec3f16(v0,v1,v2);
+	return Vec3vf16(v0,v1,v2);
 #else
 	const int16 stride = vertices[dim].getBufferStride();
 
@@ -183,7 +183,7 @@ namespace embree
 	const float16 v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
 	 //FIXME: there should be no need to zero the last component
 
-	return Vec3f16(select(0x7777,v0,float16::zero()),select(0x7777,v1,float16::zero()),select(0x7777,v2,float16::zero()));
+	return Vec3vf16(select(0x7777,v0,float16::zero()),select(0x7777,v1,float16::zero()),select(0x7777,v2,float16::zero()));
 #endif	
       }
     

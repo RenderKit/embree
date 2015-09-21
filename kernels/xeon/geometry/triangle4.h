@@ -51,7 +51,7 @@ namespace embree
     __forceinline Triangle4 () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle4 (const Vec3f4& v0, const Vec3f4& v1, const Vec3f4& v2, const int4& geomIDs, const int4& primIDs)
+    __forceinline Triangle4 (const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const int4& geomIDs, const int4& primIDs)
       : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /*! Returns a mask that tells which triangles are valid. */
@@ -74,11 +74,11 @@ namespace embree
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3f4 p0 = v0;
-      Vec3f4 p1 = v0-e1;
-      Vec3f4 p2 = v0+e2;
-      Vec3f4 lower = min(p0,p1,p2);
-      Vec3f4 upper = max(p0,p1,p2);
+      Vec3vf4 p0 = v0;
+      Vec3vf4 p1 = v0-e1;
+      Vec3vf4 p2 = v0+e2;
+      Vec3vf4 lower = min(p0,p1,p2);
+      Vec3vf4 upper = max(p0,p1,p2);
       bool4 mask = valid();
       lower.x = select(mask,lower.x,float4(pos_inf));
       lower.y = select(mask,lower.y,float4(pos_inf));
@@ -113,7 +113,7 @@ namespace embree
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       int4 vgeomID = -1, vprimID = -1;
-      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && prims; i++, prims++)
       {
@@ -138,7 +138,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       int4 vgeomID = -1, vprimID = -1;
-      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<4 && begin<end; i++, begin++)
       {
@@ -164,7 +164,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       int4 vgeomID = -1, vprimID = -1;
-      Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<4; i++)
       {
@@ -187,10 +187,10 @@ namespace embree
     }
 
   public:
-    Vec3f4 v0;      //!< Base vertex of the triangles
-    Vec3f4 e1;      //!< 1st edge of the triangles (v0-v1)
-    Vec3f4 e2;      //!< 2nd edge of the triangles (v2-v0)
-    Vec3f4 Ng;      //!< Geometry normal of the triangles (cross(e1,e2))
+    Vec3vf4 v0;      //!< Base vertex of the triangles
+    Vec3vf4 e1;      //!< 1st edge of the triangles (v0-v1)
+    Vec3vf4 e2;      //!< 2nd edge of the triangles (v2-v0)
+    Vec3vf4 Ng;      //!< Geometry normal of the triangles (cross(e1,e2))
     int4 geomIDs;  //!< geometry IDs
     int4 primIDs;  //!< primitive IDs
   };

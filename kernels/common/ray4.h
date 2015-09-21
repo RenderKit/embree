@@ -32,7 +32,7 @@ namespace embree
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray4(const Vec3f4& org, const Vec3f4& dir, 
+    __forceinline Ray4(const Vec3vf4& org, const Vec3vf4& dir, 
                        const float4& tnear = zero, const float4& tfar = inf, 
                        const float4& time = zero, const int4& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
@@ -82,15 +82,15 @@ namespace embree
     }
 
   public:
-    Vec3f4 org;      //!< Ray origin
-    Vec3f4 dir;      //!< Ray direction
+    Vec3vf4 org;      //!< Ray origin
+    Vec3vf4 dir;      //!< Ray direction
     float4 tnear;     //!< Start of ray segment 
     float4 tfar;      //!< End of ray segment   
     float4 time;      //!< Time of this ray for motion blur.
     int4 mask;      //!< used to mask out objects during traversal
 
   public:
-    Vec3f4 Ng;       //!< Geometry normal
+    Vec3vf4 Ng;       //!< Geometry normal
     float4 u;         //!< Barycentric u coordinate of hit
     float4 v;         //!< Barycentric v coordinate of hit
     int4 geomID;    //!< geometry ID

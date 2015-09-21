@@ -41,7 +41,7 @@ namespace embree
 
 
     __forceinline void extend(const PrimRef& b) {
-      const Vec2f16 b2 = b.getBounds();
+      const Vec2vf16 b2 = b.getBounds();
       const float16 b_min = b2.x;
       const float16 b_max = b2.y;
       const float16 b_centroid2 = b_min + b_max;
@@ -60,7 +60,7 @@ namespace embree
       geometry_upper  = max(geometry_upper,b_max);
     }
 
-    __forceinline void extend(const Vec2f16 &b) {
+    __forceinline void extend(const Vec2vf16 &b) {
       const float16 &b_min = b.x;
       const float16 &b_max = b.y;
       const float16 b_centroid2 = b_min + b_max;

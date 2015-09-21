@@ -389,8 +389,8 @@ namespace embree
 
       __forceinline static void intersect16(const bool16 valid_leaf, 
 					    const unsigned int items,
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const Scene     *__restrict__ const scene,
 					    const Triangle1 * __restrict__ tptr)
@@ -421,14 +421,14 @@ namespace embree
 	    const float16 e2 = v2-v0;
 
 	    /* calculate denominator */
-	    const Vec3f16 _v0 = Vec3f16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const Vec3f16 C =  _v0 - org;
+	    const Vec3vf16 _v0 = Vec3vf16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const Vec3vf16 C =  _v0 - org;
 	    
 #ifndef COMPUTE_NORMAL
-	    const Vec3f16 Ng = Vec3f16(tri.Ng);
+	    const Vec3vf16 Ng = Vec3vf16(tri.Ng);
 #else
 	    const float16 _Ng = lcross_zxy(e1,e2);
-	    const Vec3f16 Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+	    const Vec3vf16 Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
 #endif
 	    const float16 den = dot(ray16.dir,Ng);
 
@@ -442,10 +442,10 @@ namespace embree
 #endif
 
 	    /* perform edge tests */
-	    const Vec3f16 R = -cross(C,ray16.dir);
-	    const Vec3f16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const Vec3vf16 R = -cross(C,ray16.dir);
+	    const Vec3vf16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
 	    const float16 u = dot(R,_e2)*rcp_den;
-	    const Vec3f16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const Vec3vf16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
 	    const float16 v = dot(R,_e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
@@ -490,8 +490,8 @@ namespace embree
 
       __forceinline static void occluded16(const bool16 m_valid_leaf, 
 					   const unsigned int items,
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,
 					   const Scene     *__restrict__ const scene,
@@ -520,14 +520,14 @@ namespace embree
 	    const float16 e2 = v2-v0;
 
 	    /* calculate denominator */
-	    const Vec3f16 _v0 = Vec3f16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
-	    const Vec3f16 C =  _v0 - org;
+	    const Vec3vf16 _v0 = Vec3vf16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const Vec3vf16 C =  _v0 - org;
 	    
 #ifndef COMPUTE_NORMAL
-	    const Vec3f16 Ng = Vec3f16(tri.Ng);
+	    const Vec3vf16 Ng = Vec3vf16(tri.Ng);
 #else
 	    const float16 _Ng = lcross_zxy(e1,e2);
-	    const Vec3f16 Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
+	    const Vec3vf16 Ng(swBBBB(_Ng),swCCCC(_Ng),swAAAA(_Ng));
 #endif
 
 	    const float16 den = dot(dir,Ng);
@@ -541,10 +541,10 @@ namespace embree
 
 	    /* perform edge tests */
 	    const float16 rcp_den = rcp(den);
-	    const Vec3f16 R = cross(dir,C);
-	    const Vec3f16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const Vec3vf16 R = cross(dir,C);
+	    const Vec3vf16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
 	    const float16 u = dot(R,_e2)*rcp_den;
-	    const Vec3f16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const Vec3vf16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
 	    const float16 v = dot(R,_e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
@@ -1050,8 +1050,8 @@ namespace embree
 
       __forceinline static void intersect16(const bool16 valid_leaf, 
 					    const unsigned int items,
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const Scene     *__restrict__ const scene,
 					    const Triangle1 * __restrict__ tptr)
@@ -1078,8 +1078,8 @@ namespace embree
 	    const float16 v2 = broadcast4to16f(&tri.v2) - org.z;
 	    
 
-	    const Vec3f16 Ng1     = cross(e1,e0);
-	    const Vec3f16 Ng      = Ng1+Ng1;
+	    const Vec3vf16 Ng1     = cross(e1,e0);
+	    const Vec3vf16 Ng      = Ng1+Ng1;
 	    const float16 den     = dot(Ng,ray_dir);	      
 	    const float16 rcp_den = rcp(den);
 
@@ -1138,8 +1138,8 @@ namespace embree
 
       __forceinline static void occluded16(const bool16 m_valid_leaf, 
 					   const unsigned int items,
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,
 					   const Scene     *__restrict__ const scene,
@@ -1166,8 +1166,8 @@ namespace embree
 	    const float16 v2 = broadcast4to16f(&tri.v2) - org.z;
 	    
 
-	    const Vec3f16 Ng1     = cross(e1,e0);
-	    const Vec3f16 Ng      = Ng1+Ng1;
+	    const Vec3vf16 Ng1     = cross(e1,e0);
+	    const Vec3vf16 Ng      = Ng1+Ng1;
 	    const float16 den     = dot(Ng,ray_dir);	      
 	    const float16 rcp_den = rcp(den);
 

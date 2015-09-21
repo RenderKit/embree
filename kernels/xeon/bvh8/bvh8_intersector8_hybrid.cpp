@@ -36,7 +36,7 @@ namespace embree
   { 
 
     template<typename PrimitiveIntersector8>
-    __forceinline void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ)
+    __forceinline void BVH8Intersector8Hybrid<PrimitiveIntersector8>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3vi8& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -51,9 +51,9 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
 
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
 
       /* pop loop */
@@ -226,19 +226,19 @@ namespace embree
       valid0 &= ray.valid();
 #endif
       assert(all(valid0,ray.tnear > -FLT_MIN));
-      Vec3f8 ray_org = ray.org;
-      Vec3f8 ray_dir = ray.dir;
+      Vec3vf8 ray_org = ray.org;
+      Vec3vf8 ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
 
-      const Vec3f8 rdir = rcp_safe(ray_dir);
-      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf8 rdir = rcp_safe(ray_dir);
+      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,float8(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
-      Vec3i8 nearXYZ;
+      Vec3vi8 nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float8)),int8(1*(int)sizeof(float8)));
       nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float8)),int8(3*(int)sizeof(float8)));
       nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float8)),int8(5*(int)sizeof(float8)));
@@ -395,7 +395,7 @@ namespace embree
 
 
     template<typename PrimitiveIntersector8>
-    __forceinline bool BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const Vec3f8 &ray_org, const Vec3f8 &ray_dir, const Vec3f8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3i8& nearXYZ)
+    __forceinline bool BVH8Intersector8Hybrid<PrimitiveIntersector8>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray,const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3vi8& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -409,9 +409,9 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
       
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
       const float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
       /* pop loop */
@@ -538,17 +538,17 @@ namespace embree
 #endif
       assert(all(valid,ray.tnear > -FLT_MIN));
       bool8 terminated = !valid;
-      Vec3f8 ray_org = ray.org, ray_dir = ray.dir;
+      Vec3vf8 ray_org = ray.org, ray_dir = ray.dir;
       float8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f8 rdir = rcp_safe(ray_dir);
-      const Vec3f8 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf8 rdir = rcp_safe(ray_dir);
+      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,float8(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,float8(neg_inf));
       const float8 inf = float8(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
-      Vec3i8 nearXYZ;
+      Vec3vi8 nearXYZ;
       nearXYZ.x = select(rdir.x >= 0.0f,int8(0*(int)sizeof(float8)),int8(1*(int)sizeof(float8)));
       nearXYZ.y = select(rdir.y >= 0.0f,int8(2*(int)sizeof(float8)),int8(3*(int)sizeof(float8)));
       nearXYZ.z = select(rdir.z >= 0.0f,int8(4*(int)sizeof(float8)),int8(5*(int)sizeof(float8)));

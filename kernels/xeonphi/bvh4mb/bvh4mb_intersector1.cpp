@@ -34,7 +34,7 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const Vec3f16 rdir16     = rcp_safe(Vec3f16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
+      const Vec3vf16 rdir16     = rcp_safe(Vec3vf16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
       const float16 inf        = float16(pos_inf);
       const float16 zero       = float16::zero();
 
@@ -112,7 +112,7 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const Vec3f16 rdir16      = rcp_safe(Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z));
+      const Vec3vf16 rdir16      = rcp_safe(Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z));
       const float16 inf         = float16(pos_inf);
       const float16 zero        = float16::zero();
 

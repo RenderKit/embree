@@ -31,7 +31,7 @@ namespace embree
   {
     template<typename PrimitiveIntersector4>
     __forceinline void BVH8Intersector4Hybrid<PrimitiveIntersector4>::intersect1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-                                                                                 const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, 
+                                                                                 const Vec3vf4& ray_org, const Vec3vf4& ray_dir, const Vec3vf4& ray_rdir, 
                                                                                  const float4& ray_tnear, const float4& ray_tfar)
     {
       /*! stack state */
@@ -42,9 +42,9 @@ namespace embree
       stack[0].dist = neg_inf;
             
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 org_rdir(org*rdir);
       float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
 
       /*! offsets to select the side that becomes the lower or upper bound */
@@ -191,10 +191,10 @@ namespace embree
       valid0 &= ray.valid();
 #endif
       assert(all(valid0,ray.tnear > -FLT_MIN));
-      Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
+      Vec3vf4 ray_org = ray.org, ray_dir = ray.dir;
       float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f4 rdir = rcp_safe(ray_dir);
-      const Vec3f4 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf4 rdir = rcp_safe(ray_dir);
+      const Vec3vf4 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,float4(pos_inf));
       ray_tfar  = select(valid0,ray_tfar ,float4(neg_inf));
       const float4 inf = float4(pos_inf);
@@ -346,7 +346,7 @@ namespace embree
 
     template<typename PrimitiveIntersector4>
     __forceinline bool BVH8Intersector4Hybrid<PrimitiveIntersector4>::occluded1(const BVH8* bvh, NodeRef root, size_t k, Precalculations& pre, Ray4& ray, 
-                                                                                const Vec3f4& ray_org, const Vec3f4& ray_dir, const Vec3f4& ray_rdir, 
+                                                                                const Vec3vf4& ray_org, const Vec3vf4& ray_dir, const Vec3vf4& ray_rdir, 
                                                                                 const float4& ray_tnear, const float4& ray_tfar)
     {
       /*! stack state */
@@ -356,9 +356,9 @@ namespace embree
       stack[0]  = root;
             
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
       const float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
       /*! offsets to select the side that becomes the lower or upper bound */
@@ -483,10 +483,10 @@ namespace embree
 #endif
       assert(all(valid,ray.tnear > -FLT_MIN));
       bool4 terminated = !valid;
-      Vec3f4 ray_org = ray.org, ray_dir = ray.dir;
+      Vec3vf4 ray_org = ray.org, ray_dir = ray.dir;
       float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3f4 rdir = rcp_safe(ray_dir);
-      const Vec3f4 org(ray_org), org_rdir = org * rdir;
+      const Vec3vf4 rdir = rcp_safe(ray_dir);
+      const Vec3vf4 org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,float4(pos_inf));
       ray_tfar  = select(valid,ray_tfar ,float4(neg_inf));
       const float4 inf = float4(pos_inf);

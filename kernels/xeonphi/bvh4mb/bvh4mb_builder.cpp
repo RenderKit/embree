@@ -96,7 +96,7 @@ namespace embree
 	prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 	prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 
-	const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	float16 bmin = min(min(v[0],v[1]),v[2]);
 	float16 bmax = max(max(v[0],v[1]),v[2]);
@@ -178,7 +178,7 @@ namespace embree
     const int16 pID(primID);
     const int16 gID(geomID);
 
-    const Vec3f16 v_t0 = mesh->getTriangleVertices<PFHINT_L1>(tri);
+    const Vec3vf16 v_t0 = mesh->getTriangleVertices<PFHINT_L1>(tri);
 
     const float16 tri_accel_t0 = initTriangle1(v_t0[0],v_t0[1],v_t0[2],gID,pID,int16(mesh->mask));
 
@@ -192,7 +192,7 @@ namespace embree
       {
 	assert( (int)mesh->numTimeSteps == 2 );
 
-	const Vec3f16 v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
+	const Vec3vf16 v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
 	const float16 tri_accel_t1 = initTriangle1(v_t1[0],v_t1[1],v_t1[2],gID,pID,int16(mesh->mask));
 
 	store16f_ngo(&acc->t1,tri_accel_t1);

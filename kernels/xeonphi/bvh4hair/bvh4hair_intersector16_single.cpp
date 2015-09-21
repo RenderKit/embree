@@ -176,12 +176,12 @@ namespace embree
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
       const float16 inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
-      const Vec3f16 ray16_normalized = ray16.dir * inv_ray_length;
-      LinearSpace_Vec3f16 ray16_space = frame(ray16_normalized).transposed();
+      const Vec3vf16 ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace3vf16 ray16_space = frame(ray16_normalized).transposed();
 
       /* setup */
       const bool16 m_valid    = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
       const float16 inf        = float16(pos_inf);
       const float16 zero       = float16::zero();
 
@@ -275,11 +275,11 @@ namespace embree
 
       /* setup */
       const float16 inv_ray_length = rsqrt(dot(ray16.dir,ray16.dir));
-      const Vec3f16 ray16_normalized = ray16.dir * inv_ray_length;
-      LinearSpace_Vec3f16 ray16_space = frame(ray16_normalized).transposed();
+      const Vec3vf16 ray16_normalized = ray16.dir * inv_ray_length;
+      LinearSpace3vf16 ray16_space = frame(ray16_normalized).transposed();
 
       const bool16 m_valid = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
+      const Vec3vf16 rdir16  = rcp_safe(ray16.dir);
       bool16 terminated    = !m_valid;
       const float16 inf     = float16(pos_inf);
       const float16 zero    = float16::zero();
@@ -371,10 +371,10 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
-      const Vec3f16 ray16_dir            = Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z);
+      const Vec3vf16 ray16_dir            = Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z);
       const float16 inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
-      const Vec3f16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
-      LinearSpace_Vec3f16 ray16_space    = frame(ray16_dir_normalized).transposed();
+      const Vec3vf16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace3vf16 ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
       const float16 inf        = float16(pos_inf);
@@ -464,10 +464,10 @@ namespace embree
       __aligned(64) float   stack_dist[3*BVH4Hair::maxDepth+1];
       __aligned(64) BVH4Hair::NodeRef stack_node[3*BVH4Hair::maxDepth+1];
 
-      const Vec3f16 ray16_dir            = Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z);
+      const Vec3vf16 ray16_dir            = Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z);
       const float16 inv_ray16_length     = rsqrt(dot(ray16_dir,ray16_dir));
-      const Vec3f16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
-      LinearSpace_Vec3f16 ray16_space    = frame(ray16_dir_normalized).transposed();
+      const Vec3vf16 ray16_dir_normalized = ray16_dir * inv_ray16_length;
+      LinearSpace3vf16 ray16_space    = frame(ray16_dir_normalized).transposed();
 
       /* setup */
       const float16 inf        = float16(pos_inf);

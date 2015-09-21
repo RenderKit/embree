@@ -40,8 +40,8 @@ namespace embree
       assert(all(valid0,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
       float16 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);
@@ -171,8 +171,8 @@ namespace embree
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       bool16 terminated = !valid;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
       float16 ray_tnear = select(valid,ray.tnear,pos_inf);
       float16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);

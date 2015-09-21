@@ -36,8 +36,8 @@ namespace embree
 
       /* load ray */
       const bool16 valid0     = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
-      const Vec3f16 org_rdir16 = ray16.org * rdir16;
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
+      const Vec3vf16 org_rdir16 = ray16.org * rdir16;
       float16 ray_tnear        = select(valid0,ray16.tnear,pos_inf);
       float16 ray_tfar         = select(valid0,ray16.tfar ,neg_inf);
       const float16 inf        = float16(pos_inf);
@@ -261,8 +261,8 @@ namespace embree
       /* load ray */
       const bool16 m_valid     = *(int16*)valid_i != int16(0);
       bool16 m_terminated      = !m_valid;
-      const Vec3f16 rdir16      = rcp_safe(ray16.dir);
-      const Vec3f16 org_rdir16  = ray16.org * rdir16;
+      const Vec3vf16 rdir16      = rcp_safe(ray16.dir);
+      const Vec3vf16 org_rdir16  = ray16.org * rdir16;
       float16 ray_tnear         = select(m_valid,ray16.tnear,pos_inf);
       float16 ray_tfar          = select(m_valid,ray16.tfar ,neg_inf);
       const float16 inf = float16(pos_inf);

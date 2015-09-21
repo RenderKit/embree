@@ -72,8 +72,8 @@ namespace embree
     }
 
 #if defined(__MIC__)
-    __forceinline Vec2f16 getBounds() const { 
-      return Vec2f16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
+    __forceinline Vec2vf16 getBounds() const { 
+      return Vec2vf16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
     }
 #endif
 

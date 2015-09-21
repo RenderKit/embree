@@ -150,8 +150,8 @@ namespace embree
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
 					    const bool16 m_valid_leaf, 
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -163,8 +163,8 @@ namespace embree
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
 					   const bool16 m_valid_leaf, 
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
@@ -304,8 +304,8 @@ namespace embree
       // ========================
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
 					    const bool16 m_valid_leaf, 
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -318,8 +318,8 @@ namespace embree
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
 					   const bool16 m_valid_leaf, 
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
@@ -386,8 +386,8 @@ namespace embree
       // ========================
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
 					    const bool16 m_valid_leaf, 
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -400,8 +400,8 @@ namespace embree
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
 					   const bool16 m_valid_leaf, 
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,
@@ -538,8 +538,8 @@ namespace embree
 
       __forceinline static void intersect16(BVH4i::NodeRef curNode,
 					    const bool16 m_valid_leaf, 
-					    const Vec3f16 &dir,
-					    const Vec3f16 &org,
+					    const Vec3vf16 &dir,
+					    const Vec3vf16 &org,
 					    Ray16& ray16, 
 					    const void *__restrict__ const accel,
 					    const Scene     *__restrict__ const geometry)
@@ -551,8 +551,8 @@ namespace embree
 
       __forceinline static void occluded16(BVH4i::NodeRef curNode,
 					   const bool16 m_valid_leaf, 
-					   const Vec3f16 &dir,
-					   const Vec3f16 &org,
+					   const Vec3vf16 &dir,
+					   const Vec3vf16 &org,
 					   Ray16& ray16, 
 					   bool16 &m_terminated,					    
 					   const void *__restrict__ const accel,

@@ -105,7 +105,7 @@ namespace embree
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
         int4 vgeomID = -1, vprimID = -1;
-        Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+        Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
         {
@@ -163,7 +163,7 @@ namespace embree
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
         int8 vgeomID = -1, vprimID = -1;
-        Vec3f8 v0 = zero, v1 = zero, v2 = zero;
+        Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
         {
@@ -220,7 +220,7 @@ namespace embree
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
         int4 vgeomID = -1, vprimID = -1;
-        Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+        Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
 
         for (size_t i=0; i<items; i++)
         {

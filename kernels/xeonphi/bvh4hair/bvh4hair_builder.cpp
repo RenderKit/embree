@@ -140,7 +140,7 @@ namespace embree
         size_t N = geom->size();
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
         { 			    
-	  const Vec2f16 b2 = geom->bounds_Vec2f16(i);
+	  const Vec2vf16 b2 = geom->bounds_Vec2f16(i);
 	  const float16 bmin = b2.x;
 	  const float16 bmax = b2.y;
 	  bounds_cs.extend(bmin,bmax);	
@@ -967,7 +967,7 @@ namespace embree
     int16 leftNum[3];
 
 
-    const Vec3f16 cmat = convert(current.xfm);
+    const Vec3vf16 cmat = convert(current.xfm);
     
     fastbin_xfm<Bezier1i>(prims,cmat,current.begin,current.end,mapping,leftArea,rightArea,leftNum);
 
@@ -1055,14 +1055,14 @@ namespace embree
     const float16 p_inf( pos_inf );
     const float16 n_inf( neg_inf );
 
-    Vec2f16 centroid2(p_inf, n_inf);
-    Vec2f16 geometry(p_inf, n_inf);
+    Vec2vf16 centroid2(p_inf, n_inf);
+    Vec2vf16 geometry(p_inf, n_inf);
 
     for (size_t i=current.begin;i<current.end;i++)
       {
 	prefetch<PFHINT_NT>(&prims[i+4]);
 	prefetch<PFHINT_L2>(&prims[i+16]);
-	const Vec2f16 b = prims[i].getBounds(c0,c1,c2);
+	const Vec2vf16 b = prims[i].getBounds(c0,c1,c2);
 	const float16 b_min = b.x;
 	const float16 b_max = b.y;
 	const float16 c2    = b_min + b_max;

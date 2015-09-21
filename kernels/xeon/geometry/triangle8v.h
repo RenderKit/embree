@@ -55,7 +55,7 @@ public:
     __forceinline Triangle8v () {}
 
     /*! Construction from vertices and IDs. */
-    __forceinline Triangle8v (const Vec3f8& v0, const Vec3f8& v1, const Vec3f8& v2, const int8& geomIDs, const int8& primIDs)
+    __forceinline Triangle8v (const Vec3vf8& v0, const Vec3vf8& v1, const Vec3vf8& v2, const int8& geomIDs, const int8& primIDs)
       : v0(v0), v1(v1), v2(v2),  geomIDs(geomIDs), primIDs(primIDs) {}
 
     /*! Returns a mask that tells which triangles are valid. */
@@ -78,11 +78,11 @@ public:
     /*! calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3f8 p0 = v0;
-      Vec3f8 p1 = v1;
-      Vec3f8 p2 = v2;
-      Vec3f8 lower = min(p0,p1,p2);
-      Vec3f8 upper = max(p0,p1,p2);
+      Vec3vf8 p0 = v0;
+      Vec3vf8 p1 = v1;
+      Vec3vf8 p2 = v2;
+      Vec3vf8 lower = min(p0,p1,p2);
+      Vec3vf8 upper = max(p0,p1,p2);
       bool8 mask = valid();
       lower.x = select(mask,lower.x,float8(pos_inf));
       lower.y = select(mask,lower.y,float8(pos_inf));
@@ -114,7 +114,7 @@ public:
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       int8 vgeomID = -1, vprimID = -1;
-      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && prims; i++, prims++)
       {
@@ -139,7 +139,7 @@ public:
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       int8 vgeomID = -1, vprimID = -1;
-      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8 && begin<end; i++, begin++)
       {
@@ -165,7 +165,7 @@ public:
     {
       BBox3fa bounds = empty;
       int8 vgeomID = -1, vprimID = -1;
-      Vec3f8 v0 = zero, v1 = zero, v2 = zero;
+      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<8; i++)
       {
@@ -188,9 +188,9 @@ public:
     }
 
   public:
-    Vec3f8 v0;       //!< Base vertex of the triangles
-    Vec3f8 v1;       //!< 1st edge of the triangles (v0-v1)
-    Vec3f8 v2;       //!< 2nd edge of the triangles (v2-v0)
+    Vec3vf8 v0;       //!< Base vertex of the triangles
+    Vec3vf8 v1;       //!< 1st edge of the triangles (v0-v1)
+    Vec3vf8 v2;       //!< 2nd edge of the triangles (v2-v0)
     int8 geomIDs;   //!< geometry ID
     int8 primIDs;   //!< primitive ID
 #endif

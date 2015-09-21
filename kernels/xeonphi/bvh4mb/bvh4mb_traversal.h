@@ -256,8 +256,8 @@ namespace embree
 
   __forceinline void traverse_chunk_intersect(BVH4i::NodeRef &curNode,
 					      float16 &curDist,
-					      const Vec3f16 &rdir,
-					      const Vec3f16 &org_rdir,
+					      const Vec3vf16 &rdir,
+					      const Vec3vf16 &org_rdir,
 					      const float16 &ray_tnear,
 					      const float16 &ray_tfar,
 					      const float16 &time,
@@ -345,8 +345,8 @@ namespace embree
 
   __forceinline void traverse_chunk_occluded(BVH4i::NodeRef &curNode,
 					     float16 &curDist,
-					     const Vec3f16 &rdir,
-					     const Vec3f16 &org_rdir,
+					     const Vec3vf16 &rdir,
+					     const Vec3vf16 &org_rdir,
 					     const float16 &ray_tnear,
 					     const float16 &ray_tfar,
 					     const bool16 &m_active,

@@ -51,11 +51,11 @@ namespace embree
       //assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
-      const Vec3f8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
+      const Vec3vf8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const Vec3f8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3vf8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const Vec3f8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const Vec3vf8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const float8  ray_near(ray.tnear);
       float8 ray_far(ray.tfar);
 
@@ -219,11 +219,11 @@ namespace embree
       //assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
-      const Vec3f8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
+      const Vec3vf8 norg(-ray.org.x,-ray.org.y,-ray.org.z);
       const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const Vec3f8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+      const Vec3vf8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const Vec3f8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+      const Vec3vf8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
       const float8  ray_near(ray.tnear);
       float8 ray_far(ray.tfar);
       

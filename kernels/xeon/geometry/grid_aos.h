@@ -70,7 +70,7 @@ namespace embree
         /*! intersection with single rays */
         template<bool robust>
         __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
-                                       const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar) const
+                                       const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar) const
         {
           const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
           const size_t farX  = nearX ^ (4*sizeof(float4)), farY  = nearY ^ (4*sizeof(float4)), farZ  = nearZ ^ (4*sizeof(float4));
@@ -116,7 +116,7 @@ namespace embree
         
         template<bool robust>
         __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar) const
+                                       const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar) const
         {
           const size_t mask0 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
           const size_t mask1 = intersect<robust>(1, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
@@ -130,7 +130,7 @@ namespace embree
         /*! intersection with single rays */
         template<bool robust>
         __forceinline size_t intersect(size_t i, size_t _nearX, size_t _nearY, size_t _nearZ,
-                                       const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar) const
+                                       const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar) const
         {
           const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
           const size_t farX  = nearX ^ (4*sizeof(float4)), farY  = nearY ^ (4*sizeof(float4)), farZ  = nearZ ^ (4*sizeof(float4));
@@ -176,7 +176,7 @@ namespace embree
         
         template<bool robust>
         __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar) const
+                                       const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar) const
         {
           const size_t mask01 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
           const size_t mask23 = intersect<robust>(2, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
@@ -229,11 +229,11 @@ namespace embree
         /*! intersection with single rays */
         template<bool robust>
         __forceinline size_t intersect(size_t i, size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar) const
+                                       const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar) const
         {
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
           
-          const Vec3f4 vscale(scale), voffset(offset);
+          const Vec3vf4 vscale(scale), voffset(offset);
           const float4 near_x = madd(float4::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
           const float4 near_y = madd(float4::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
           const float4 near_z = madd(float4::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
@@ -283,7 +283,7 @@ namespace embree
         
         template<bool robust>
         __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar) const
+                                       const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const float4& tnear, const float4& tfar) const
         {
           const size_t mask0 = intersect<robust>( 0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
           const size_t mask1 = intersect<robust>( 4, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
@@ -297,11 +297,11 @@ namespace embree
         /*! intersection with single rays */
         template<bool robust>
         __forceinline size_t intersect(size_t i, size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar) const
+                                       const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar) const
         {
           const size_t farX  = nearX ^ 16, farY  = nearY ^ 16, farZ  = nearZ ^ 16;
           
-          const Vec3f8 vscale(scale), voffset(offset);
+          const Vec3vf8 vscale(scale), voffset(offset);
           const float8 near_x = madd(float8::load(&this->lower_x[i]+nearX),vscale.x,voffset.x);
           const float8 near_y = madd(float8::load(&this->lower_x[i]+nearY),vscale.y,voffset.y);
           const float8 near_z = madd(float8::load(&this->lower_x[i]+nearZ),vscale.z,voffset.z);
@@ -353,7 +353,7 @@ namespace embree
         
         template<bool robust>
         __forceinline size_t intersect(size_t nearX, size_t nearY, size_t nearZ,
-                                       const Vec3f8& org, const Vec3f8& rdir, const Vec3f8& org_rdir, const float8& tnear, const float8& tfar) const
+                                       const Vec3vf8& org, const Vec3vf8& rdir, const Vec3vf8& org_rdir, const float8& tnear, const float8& tfar) const
         {
           const size_t mask01 = intersect<robust>(0, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);
           const size_t mask23 = intersect<robust>(8, nearX, nearY, nearZ, org, rdir, org_rdir, tnear, tfar);

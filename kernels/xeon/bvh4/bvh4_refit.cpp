@@ -192,7 +192,7 @@ namespace embree
             bounds[i] = refit_toplevel(child,subtrees,depth+1); 
         }
         
-        BBox<Vec3f4> dest;
+        BBox<Vec3vf4> dest;
 
         transpose((float4&)bounds[0].lower,
                   (float4&)bounds[1].lower,
@@ -282,7 +282,7 @@ namespace embree
       const BBox3fa bounds3 = recurse_bottom(node->child(3));
       
       /* AOS to SOA transform */
-      BBox<Vec3f4> bounds;
+      BBox<Vec3vf4> bounds;
       transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
       transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       
@@ -333,7 +333,7 @@ namespace embree
       const BBox3fa bounds3 = recurse_top(node->child(3));
       
       /* AOS to SOA transform */
-      BBox<Vec3f4> bounds;
+      BBox<Vec3vf4> bounds;
       transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
       transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       

@@ -144,7 +144,7 @@ namespace embree
     }
     
     /*! calculates bounding box of i'th bezier curve */
-    __forceinline Vec2f16 bounds_Vec2f16(size_t i) const 
+    __forceinline Vec2vf16 bounds_Vec2f16(size_t i) const 
     {
       const int index = curve(i);
       const float* cp0 = (float*) vertices[0].getPtr(index+0);
@@ -164,7 +164,7 @@ namespace embree
       const float16 b_min_r = b_min - swDDDD(b_max);
       const float16 b_max_r = b_max + swDDDD(b_max);
       
-      return Vec2f16(b_min_r,b_max_r);
+      return Vec2vf16(b_min_r,b_max_r);
     }
     
 #endif

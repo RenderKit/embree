@@ -347,7 +347,7 @@ namespace embree
 	const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
 	const TriangleMesh::Triangle& tri = mesh->triangle(primID);
 
-	const Vec3f16 v = mesh->getTriangleVertices(tri);
+	const Vec3vf16 v = mesh->getTriangleVertices(tri);
 	const float16 v0 = v[0];
 	const float16 v1 = v[1];
 	const float16 v2 = v[2];
@@ -900,7 +900,7 @@ namespace embree
 	      prefetch<PFHINT_L1>(&tri + L1_PREFETCH_ITEMS);
 	      prefetch<PFHINT_L2>(&tri + L2_PREFETCH_ITEMS);
 
-	      const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 	      const float16 bmin  = min(min(v[0],v[1]),v[2]);
 	      const float16 bmax  = max(max(v[0],v[1]),v[2]);
 
@@ -967,7 +967,7 @@ namespace embree
 
 	      prefetch<PFHINT_NT>(&tri + 16);
 
-	      const Vec3f16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
+	      const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 	      const float16 bmin  = min(min(v[0],v[1]),v[2]);
 	      const float16 bmax  = max(max(v[0],v[1]),v[2]);
 

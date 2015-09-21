@@ -46,8 +46,8 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
-      const Vec3f4 rdir = rcp_safe(ray.dir);
-      const Vec3f4 org(ray.org), org_rdir = org * rdir;
+      const Vec3vf4 rdir = rcp_safe(ray.dir);
+      const Vec3vf4 org(ray.org), org_rdir = org * rdir;
       float4 ray_tnear = select(valid0,ray.tnear,float4(pos_inf));
       float4 ray_tfar  = select(valid0,ray.tfar ,float4(neg_inf));
       const float4 inf = float4(pos_inf);
@@ -221,8 +221,8 @@ namespace embree
 
       /* load ray */
       bool4 terminated = !valid;
-      const Vec3f4 rdir = rcp_safe(ray.dir);
-      const Vec3f4 org(ray.org), org_rdir = org * rdir;
+      const Vec3vf4 rdir = rcp_safe(ray.dir);
+      const Vec3vf4 org(ray.org), org_rdir = org * rdir;
       float4 ray_tnear = select(valid,ray.tnear,float4(pos_inf));
       float4 ray_tfar  = select(valid,ray.tfar ,float4(neg_inf));
       const float4 inf = float4(pos_inf);

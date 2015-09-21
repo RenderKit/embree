@@ -50,17 +50,17 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
-        //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        //const Vec4vf8 p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
         const float8 d0 = w.x*v.x + w.y*v.y;
         const float8 d1 = v.x*v.x + v.y*v.y;
         const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
+        const Vec4vf8 p = p0 + u*v;
         const float8 t = p.z*pre.depth_scale;
         const float8 d2 = p.x*p.x + p.y*p.y; 
         const float8 r = p.w;
@@ -71,17 +71,17 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
-        //const sse4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        //const Vec4vf4 p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
         const float4 d0 = w.x*v.x + w.y*v.y;
         const float4 d1 = v.x*v.x + v.y*v.y;
         const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
+        const Vec4vf4 p = p0 + u*v;
         const float4 t = p.z*pre.depth_scale;
         const float4 d2 = p.x*p.x + p.y*p.y; 
         const float4 r = p.w;
@@ -153,16 +153,16 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
         const float8 d0 = w.x*v.x + w.y*v.y;
         const float8 d1 = v.x*v.x + v.y*v.y;
         const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
+        const Vec4vf8 p = p0 + u*v;
         const float8 t = p.z*pre.depth_scale;
         const float8 d2 = p.x*p.x + p.y*p.y; 
         const float8 r = p.w;
@@ -173,16 +173,16 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
         const float4 d0 = w.x*v.x + w.y*v.y;
         const float4 d1 = v.x*v.x + v.y*v.y;
         const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
+        const Vec4vf4 p = p0 + u*v;
         const float4 t = p.z*pre.depth_scale;
         const float4 d2 = p.x*p.x + p.y*p.y; 
         const float4 r = p.w;
@@ -283,16 +283,16 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
         const float8 d0 = w.x*v.x + w.y*v.y;
         const float8 d1 = v.x*v.x + v.y*v.y;
         const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
+        const Vec4vf8 p = p0 + u*v;
         const float8 t = p.z*pre.depth_scale[k];
         const float8 d2 = p.x*p.x + p.y*p.y; 
         const float8 r = p.w;
@@ -303,16 +303,16 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
         const float4 d0 = w.x*v.x + w.y*v.y;
         const float4 d1 = v.x*v.x + v.y*v.y;
         const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
+        const Vec4vf4 p = p0 + u*v;
         const float4 t = p.z*pre.depth_scale[k];
         const float4 d2 = p.x*p.x + p.y*p.y; 
         const float4 r = p.w;
@@ -394,16 +394,16 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
         const float8 d0 = w.x*v.x + w.y*v.y;
         const float8 d1 = v.x*v.x + v.y*v.y;
         const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
+        const Vec4vf8 p = p0 + u*v;
         const float8 t = p.z*pre.depth_scale[k];
         const float8 d2 = p.x*p.x + p.y*p.y; 
         const float8 r = p.w;
@@ -414,16 +414,16 @@ namespace embree
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
         const float4 d0 = w.x*v.x + w.y*v.y;
         const float4 d1 = v.x*v.x + v.y*v.y;
         const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
+        const Vec4vf4 p = p0 + u*v;
         const float4 t = p.z*pre.depth_scale[k];
         const float4 d2 = p.x*p.x + p.y*p.y; 
         const float4 r = p.w;

@@ -571,7 +571,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      AffineSpaceSSE3f naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
+      AffineSpace3vf4 naabb;   //!< non-axis aligned bounding boxes (bounds are [0,1] in specified space)
     };
 
     struct UnalignedNodeMB : public BaseNode
@@ -633,9 +633,9 @@ namespace embree
       }
 
     public:
-      AffineSpaceSSE3f space0;   
-      //BBoxSSE3f b0;
-      BBoxSSE3f b1;
+      AffineSpace3vf4 space0;   
+      //BBox3vf4 b0;
+      BBox3vf4 b1;
     };
 
     struct TransformNode

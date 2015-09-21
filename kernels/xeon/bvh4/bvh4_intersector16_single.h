@@ -50,8 +50,8 @@ namespace embree
     public:
 
       static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					   Ray16& ray, const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, 
-					   const Vec3i16& nearXYZ)
+					   Ray16& ray, const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, 
+					   const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -61,10 +61,10 @@ namespace embree
       stack[0].dist = neg_inf;
       
       /*! load the ray into SIMD registers */
-      const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-      const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-      const Vec3f4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-      const Vec3f4 org_rdir(org*rdir);
+      const Vec3vf4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+      const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+      const Vec3vf4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+      const Vec3vf4 org_rdir(org*rdir);
       float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
       
       /*! offsets to select the side that becomes the lower or upper bound */
@@ -180,8 +180,8 @@ namespace embree
     }
     
       static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					  Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, 
-					  const Vec3i16& nearXYZ)
+					  Ray16& ray,const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, 
+					  const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -195,10 +195,10 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
       
       /*! load the ray into SIMD registers */
-      const Vec3f4 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-      const Vec3f4 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f4 norg = -org, org_rdir(org*rdir);
+      const Vec3vf4 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+      const Vec3vf4 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf4 norg = -org, org_rdir(org*rdir);
       const float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]); 
       
       /* pop loop */
