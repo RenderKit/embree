@@ -274,8 +274,8 @@ namespace embree
 
   __forceinline void xchg(MortonID64Bit &a, MortonID64Bit &b)
   {
-    const float16 ai = broadcast4to16f((float*)&a);
-    const float16 bi = broadcast4to16f((float*)&b);
+    const vfloat16 ai = broadcast4to16f((float*)&a);
+    const vfloat16 bi = broadcast4to16f((float*)&b);
     store4f((float*)&a,bi);
     store4f((float*)&b,ai);
   }

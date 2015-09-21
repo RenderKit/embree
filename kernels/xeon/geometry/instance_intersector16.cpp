@@ -20,12 +20,12 @@ namespace embree
 {
   namespace isa
   { 
-    void FastInstanceIntersector16::intersect(bool16* valid, const Instance* instance, Ray16& ray, size_t item)
+    void FastInstanceIntersector16::intersect(vbool16* valid, const Instance* instance, Ray16& ray, size_t item)
     {
       const Vec3vf16 ray_org = ray.org;
       const Vec3vf16 ray_dir = ray.dir;
-      const int16 ray_geomID = ray.geomID;
-      const int16 ray_instID = ray.instID;
+      const vint16 ray_geomID = ray.geomID;
+      const vint16 ray_instID = ray.instID;
       const AffineSpace3vf16 world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);
@@ -34,16 +34,16 @@ namespace embree
       instance->object->intersect16(valid,(RTCRay16&)ray);
       ray.org = ray_org;
       ray.dir = ray_dir;
-      bool16 nohit = ray.geomID == int16(-1);
+      vbool16 nohit = ray.geomID == vint16(-1);
       ray.geomID = select(nohit,ray_geomID,ray.geomID);
       ray.instID = select(nohit,ray_instID,ray.instID);
     }
     
-    void FastInstanceIntersector16::occluded (bool16* valid, const Instance* instance, Ray16& ray, size_t item)
+    void FastInstanceIntersector16::occluded (vbool16* valid, const Instance* instance, Ray16& ray, size_t item)
     {
       const Vec3vf16 ray_org = ray.org;
       const Vec3vf16 ray_dir = ray.dir;
-      const int16 ray_geomID = ray.geomID;
+      const vint16 ray_geomID = ray.geomID;
       const AffineSpace3vf16 world2local(instance->world2local);
       ray.org = xfmPoint (world2local,ray_org);
       ray.dir = xfmVector(world2local,ray_dir);

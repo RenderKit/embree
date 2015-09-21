@@ -110,15 +110,15 @@ namespace embree
 
       struct Gather2x3
       {
-        typedef bool4 vbool;
-        typedef int4 vint;
-        typedef float4 vfloat;
+        typedef vbool4 vbool;
+        typedef vint4 vint;
+        typedef vfloat4 vfloat;
         
-        static __forceinline const Vec3<float4> gather(const float* const grid, const size_t line_offset)
+        static __forceinline const Vec3<vfloat4> gather(const float* const grid, const size_t line_offset)
         {
-          const float4 r0 = loadu4f(grid + 0*line_offset); 
-          const float4 r1 = loadu4f(grid + 1*line_offset); // FIXME: this accesses 1 element too much
-          return Vec3<float4>(unpacklo(r0,r1),       // r00, r10, r01, r11  
+          const vfloat4 r0 = loadu4f(grid + 0*line_offset);
+          const vfloat4 r1 = loadu4f(grid + 1*line_offset); // FIXME: this accesses 1 element too much
+          return Vec3<vfloat4>(unpacklo(r0,r1),       // r00, r10, r01, r11
                               shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
                               shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
         }
@@ -127,18 +127,18 @@ namespace embree
 #if defined (__AVX__)
       struct Gather3x3
       {
-        typedef bool8 vbool;
-        typedef int8 vint;
-        typedef float8 vfloat;
+        typedef vbool8 vbool;
+        typedef vint8 vint;
+        typedef vfloat8 vfloat;
         
-        static __forceinline const Vec3<float8> gather(const float* const grid, const size_t line_offset)
+        static __forceinline const Vec3<vfloat8> gather(const float* const grid, const size_t line_offset)
         {
-          const float4 ra = loadu4f(grid + 0*line_offset);
-          const float4 rb = loadu4f(grid + 1*line_offset);
-          const float4 rc = loadu4f(grid + 2*line_offset); // FIXME: this accesses 1 element too much
-          const float8 r0 = float8(ra,rb);
-          const float8 r1 = float8(rb,rc);
-          return Vec3<float8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21   
+          const vfloat4 ra = loadu4f(grid + 0*line_offset);
+          const vfloat4 rb = loadu4f(grid + 1*line_offset);
+          const vfloat4 rc = loadu4f(grid + 2*line_offset); // FIXME: this accesses 1 element too much
+          const vfloat8 r0 = vfloat8(ra,rb);
+          const vfloat8 r1 = vfloat8(rb,rc);
+          return Vec3<vfloat8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21
                               shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
                               shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
         }

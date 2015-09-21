@@ -33,8 +33,8 @@ namespace embree
       
 
     public:
-      static void intersect(int16* valid, BVH4i* bvh, Ray16& ray);
-      static void occluded (int16* valid, BVH4i* bvh, Ray16& ray);
+      static void intersect(vint16* valid, BVH4i* bvh, Ray16& ray);
+      static void occluded (vint16* valid, BVH4i* bvh, Ray16& ray);
     };
 
     /*! BVH4i single ray traverser */

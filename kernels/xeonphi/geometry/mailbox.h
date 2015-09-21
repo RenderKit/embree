@@ -22,8 +22,8 @@ namespace embree
 {
   struct Mailbox 
   {
-    int16 geomIDs;      
-    int16 primIDs;
+    vint16 geomIDs;      
+    vint16 primIDs;
     unsigned int index;
     
     __forceinline Mailbox() {
@@ -34,8 +34,8 @@ namespace embree
     
     __forceinline bool hit(const unsigned int geomID, const unsigned int primID) const
       {
-	const bool16 m_geomMask = geomIDs == geomID;
-	const bool16 m_primMask = primIDs == primID;
+	const vbool16 m_geomMask = geomIDs == geomID;
+	const vbool16 m_primMask = primIDs == primID;
 	return any(m_geomMask & m_primMask);
       }
     

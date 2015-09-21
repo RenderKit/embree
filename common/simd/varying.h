@@ -91,15 +91,4 @@ namespace embree
   typedef vbool<VSIZEX>   vboolx;
   typedef vboolf<VSIZEX>  vboolfx;
   typedef vboold<VSIZEX>  vbooldx;
-
-  /* FIXME: Legacy shortcuts */
-  typedef vfloat<4>  float4;
-  typedef vint<4>    int4;
-  typedef vboolf<4>  bool4;
-  typedef vfloat<8>  float8;
-  typedef vint<8>    int8;
-  typedef vboolf<8>  bool8;
-  typedef vfloat<16> float16;
-  typedef vint<16>   int16;
-  typedef vboolf<16> bool16;
 }

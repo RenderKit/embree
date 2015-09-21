@@ -38,12 +38,12 @@ class BVH8Intersector8Hybrid
       static const size_t stackSizeSingle = 1+3*BVH8::maxDepth;
       static const size_t stackSizeChunk = 4*BVH8::maxDepth+1;
 
-      static void intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3vi8& nearXYZ);
-      static bool occluded1 (const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const float8 &ray_tnear, const float8 &ray_tfar, const Vec3vi8& nearXYZ);
+      static void intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const vfloat8 &ray_tnear, const vfloat8 &ray_tfar, const Vec3vi8& nearXYZ);
+      static bool occluded1 (const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const vfloat8 &ray_tnear, const vfloat8 &ray_tfar, const Vec3vi8& nearXYZ);
 
     public:
-      static void intersect(bool8* valid, BVH8* bvh, Ray8& ray);
-      static void occluded (bool8* valid, BVH8* bvh, Ray8& ray);
+      static void intersect(vbool8* valid, BVH8* bvh, Ray8& ray);
+      static void occluded (vbool8* valid, BVH8* bvh, Ray8& ray);
     };
   }
 }

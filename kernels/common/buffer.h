@@ -167,7 +167,7 @@ namespace embree
 #if defined(__MIC__)
       return *(Vec3fa*)(ptr_ofs + i*stride);
 #else
-      return Vec3fa(float4::loadu((float*)(ptr_ofs + i*stride)));
+      return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
 #endif
 #else
       return *(Vec3fa*)(ptr_ofs + i*sizeof(Vec3fa));

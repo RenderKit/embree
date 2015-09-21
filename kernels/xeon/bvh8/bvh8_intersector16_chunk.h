@@ -37,8 +37,8 @@ class BVH8Intersector16Chunk
       typedef typename BVH8::Node Node;
 
     public:
-      static void intersect(int16* valid, BVH8* bvh, Ray16& ray);
-      static void occluded (int16* valid, BVH8* bvh, Ray16& ray);
+      static void intersect(vint16* valid, BVH8* bvh, Ray16& ray);
+      static void occluded (vint16* valid, BVH8* bvh, Ray16& ray);
     };
   }
 }

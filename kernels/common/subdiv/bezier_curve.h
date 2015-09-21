@@ -110,7 +110,7 @@ namespace embree
       : BezierCurveT<Vec3fa>(v0,v1,v2,v3,t0,t1,depth) {}
 
 #if defined(__SSE__)
-    __forceinline Vec4vf4 eval4(const float4& c0, const float4& c1, const float4& c2, const float4& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline Vec4vf4 eval4(const vfloat4& c0, const vfloat4& c1, const vfloat4& c2, const vfloat4& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
       const Vec4vf4 p00 = Vec4vf4(v0);
       const Vec4vf4 p01 = Vec4vf4(v1);
@@ -121,7 +121,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-    __forceinline Vec4vf8 eval8(const float8& c0, const float8& c1, const float8& c2, const float8& c3) const // FIXME: c0,1,2,3 should not get passed in
+    __forceinline Vec4vf8 eval8(const vfloat8& c0, const vfloat8& c1, const vfloat8& c2, const vfloat8& c3) const // FIXME: c0,1,2,3 should not get passed in
     {
       const Vec4vf8 p00 = Vec4vf8(v0);
       const Vec4vf8 p01 = Vec4vf8(v1);

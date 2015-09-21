@@ -57,15 +57,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf8 v = p1-p0;
         const Vec4vf8 w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
         const Vec4vf8 p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale;
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray.tnear) < t & t < float8(ray.tfar);
+        const vfloat8 t = p.z*pre.depth_scale;
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray.tnear) < t & t < vfloat8(ray.tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
@@ -78,15 +78,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf4 v = p1-p0;
         const Vec4vf4 w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
         const Vec4vf4 p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale;
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray.tnear) < t & t < float4(ray.tfar);
+        const vfloat4 t = p.z*pre.depth_scale;
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray.tnear) < t & t < vfloat4(ray.tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -159,15 +159,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf8 v = p1-p0;
         const Vec4vf8 w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
         const Vec4vf8 p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale;
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray.tnear) < t & t < float8(ray.tfar);
+        const vfloat8 t = p.z*pre.depth_scale;
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray.tnear) < t & t < vfloat8(ray.tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
@@ -179,15 +179,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf4 v = p1-p0;
         const Vec4vf4 w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
         const Vec4vf4 p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale;
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray.tnear) < t & t < float4(ray.tfar);
+        const vfloat4 t = p.z*pre.depth_scale;
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray.tnear) < t & t < vfloat4(ray.tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -289,15 +289,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf8 v = p1-p0;
         const Vec4vf8 w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
         const Vec4vf8 p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale[k];
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray_tnear) < t & t < float8(ray_tfar);
+        const vfloat8 t = p.z*pre.depth_scale[k];
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
@@ -309,15 +309,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf4 v = p1-p0;
         const Vec4vf4 w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
         const Vec4vf4 p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale[k];
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray_tnear) < t & t < float4(ray_tfar);
+        const vfloat4 t = p.z*pre.depth_scale[k];
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -400,15 +400,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf8 v = p1-p0;
         const Vec4vf8 w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
         const Vec4vf8 p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale[k];
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray_tnear) < t & t < float8(ray_tfar);
+        const vfloat8 t = p.z*pre.depth_scale[k];
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
@@ -420,15 +420,15 @@ namespace embree
         /* approximative intersection with cone */
         const Vec4vf4 v = p1-p0;
         const Vec4vf4 w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
         const Vec4vf4 p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale[k];
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray_tnear) < t & t < float4(ray_tfar);
+        const vfloat4 t = p.z*pre.depth_scale[k];
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif

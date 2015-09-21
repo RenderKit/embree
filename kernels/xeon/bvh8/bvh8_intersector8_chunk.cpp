@@ -28,32 +28,32 @@ namespace embree
   {    
     
     template<typename PrimitiveIntersector8>    
-    void BVH8Intersector8Chunk<PrimitiveIntersector8>::intersect(bool8* valid_i, BVH8* bvh, Ray8& ray)
+    void BVH8Intersector8Chunk<PrimitiveIntersector8>::intersect(vbool8* valid_i, BVH8* bvh, Ray8& ray)
     {
 #if defined(__AVX__)
       
       /* load ray */
-      bool8 valid0 = *valid_i;
+      vbool8 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
       assert(all(valid0,ray.tnear > -FLT_MIN));
       const Vec3vf8 rdir = rcp_safe(ray.dir);
       const Vec3vf8 org_rdir = ray.org * rdir;
-      float8 ray_tnear = select(valid0,ray.tnear,pos_inf);
-      float8 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
-      const float8 inf = float8(pos_inf);
+      vfloat8 ray_tnear = select(valid0,ray.tnear,pos_inf);
+      vfloat8 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
+      const vfloat8 inf = vfloat8(pos_inf);
       Precalculations pre(valid0,ray);
       
       /* allocate stack and push root node */
-      float8    stack_near[3*BVH8::maxDepth+1];
+      vfloat8    stack_near[3*BVH8::maxDepth+1];
       NodeRef stack_node[3*BVH8::maxDepth+1];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float8*    __restrict__ sptr_near = stack_near + 2;
+      vfloat8*    __restrict__ sptr_near = stack_near + 2;
       
       while (1)
       {
@@ -65,7 +65,7 @@ namespace embree
           break;
         
         /* cull node if behind closest hit point */
-        float8 curDist = *sptr_near;
+        vfloat8 curDist = *sptr_near;
         if (unlikely(none(ray_tfar > curDist))) 
           continue;
         
@@ -75,7 +75,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const bool8 valid_node = ray_tfar > curDist;
+          const vbool8 valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
           const Node* __restrict__ const node = (BVH8::Node*)cur.node();
           
@@ -91,32 +91,32 @@ namespace embree
             if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
-            const float8 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const float8 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const float8 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const float8 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const float8 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const float8 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const float8 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const float8 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const bool8 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+            const vfloat8 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const vfloat8 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const vfloat8 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const vfloat8 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const vfloat8 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const vfloat8 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const vfloat8 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const vfloat8 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const vbool8 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const float8 lclipMinX = node->lower_x[i] * rdir.x - org_rdir.x;
-            const float8 lclipMinY = node->lower_y[i] * rdir.y - org_rdir.y;
-            const float8 lclipMinZ = node->lower_z[i] * rdir.z - org_rdir.z;
-            const float8 lclipMaxX = node->upper_x[i] * rdir.x - org_rdir.x;
-            const float8 lclipMaxY = node->upper_y[i] * rdir.y - org_rdir.y;
-            const float8 lclipMaxZ = node->upper_z[i] * rdir.z - org_rdir.z;
-            const float8 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const float8 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const bool8 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const vfloat8 lclipMinX = node->lower_x[i] * rdir.x - org_rdir.x;
+            const vfloat8 lclipMinY = node->lower_y[i] * rdir.y - org_rdir.y;
+            const vfloat8 lclipMinZ = node->lower_z[i] * rdir.z - org_rdir.z;
+            const vfloat8 lclipMaxX = node->upper_x[i] * rdir.x - org_rdir.x;
+            const vfloat8 lclipMaxY = node->upper_y[i] * rdir.y - org_rdir.y;
+            const vfloat8 lclipMaxZ = node->upper_z[i] * rdir.z - org_rdir.z;
+            const vfloat8 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const vfloat8 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const vbool8 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
             {
-              const float8 childDist = select(lhit,lnearP,inf);
+              const vfloat8 childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               
               /* push cur node onto stack and continue with hit child */
@@ -150,7 +150,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const bool8 valid_leaf = ray_tfar > curDist;
+        const vbool8 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
 
@@ -168,33 +168,33 @@ namespace embree
     }
     
      template<typename PrimitiveIntersector8>
-    void BVH8Intersector8Chunk<PrimitiveIntersector8>::occluded(bool8* valid_i, BVH8* bvh, Ray8& ray)
+    void BVH8Intersector8Chunk<PrimitiveIntersector8>::occluded(vbool8* valid_i, BVH8* bvh, Ray8& ray)
     {
 #if defined(__AVX__)
       
       /* load ray */
-      bool8 valid = *valid_i;
+      vbool8 valid = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
       assert(all(valid,ray.tnear > -FLT_MIN));
-      bool8 terminated = !valid;
+      vbool8 terminated = !valid;
       const Vec3vf8 rdir = rcp_safe(ray.dir);
       const Vec3vf8 org_rdir = ray.org * rdir;
-      float8 ray_tnear = select(valid,ray.tnear,pos_inf);
-      float8 ray_tfar  = select(valid,ray.tfar ,neg_inf);
-      const float8 inf = float8(pos_inf);
+      vfloat8 ray_tnear = select(valid,ray.tnear,pos_inf);
+      vfloat8 ray_tfar  = select(valid,ray.tfar ,neg_inf);
+      const vfloat8 inf = vfloat8(pos_inf);
       Precalculations pre(valid,ray);
 
       /* allocate stack and push root node */
-      float8    stack_near[3*BVH8::maxDepth+1];
+      vfloat8    stack_near[3*BVH8::maxDepth+1];
       NodeRef stack_node[3*BVH8::maxDepth+1];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float8*    __restrict__ sptr_near = stack_near + 2;
+      vfloat8*    __restrict__ sptr_near = stack_near + 2;
       
       while (1)
       {
@@ -206,7 +206,7 @@ namespace embree
           break;
         
         /* cull node if behind closest hit point */
-        float8 curDist = *sptr_near;
+        vfloat8 curDist = *sptr_near;
         if (unlikely(none(ray_tfar > curDist))) 
           continue;
         
@@ -216,7 +216,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const bool8 valid_node = ray_tfar > curDist;
+          const vbool8 valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),8);
           const Node* __restrict__ const node = (Node*)cur.node();
           
@@ -232,32 +232,32 @@ namespace embree
             if (unlikely(child == BVH8::emptyNode)) break;
             
 #if defined(__AVX2__)
-            const float8 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const float8 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const float8 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const float8 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const float8 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const float8 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const float8 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-            const float8 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
-            const bool8 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
+            const vfloat8 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const vfloat8 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const vfloat8 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const vfloat8 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const vfloat8 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const vfloat8 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const vfloat8 lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+            const vfloat8 lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+            const vbool8 lhit   = maxi(lnearP,ray_tnear) <= mini(lfarP,ray_tfar);      
 #else
-            const float8 lclipMinX = node->lower_x[i] * rdir.x - org_rdir.x;
-            const float8 lclipMinY = node->lower_y[i] * rdir.y - org_rdir.y;
-            const float8 lclipMinZ = node->lower_z[i] * rdir.z - org_rdir.z;
-            const float8 lclipMaxX = node->upper_x[i] * rdir.x - org_rdir.x;
-            const float8 lclipMaxY = node->upper_y[i] * rdir.y - org_rdir.y;
-            const float8 lclipMaxZ = node->upper_z[i] * rdir.z - org_rdir.z;
-            const float8 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const float8 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            const bool8 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const vfloat8 lclipMinX = node->lower_x[i] * rdir.x - org_rdir.x;
+            const vfloat8 lclipMinY = node->lower_y[i] * rdir.y - org_rdir.y;
+            const vfloat8 lclipMinZ = node->lower_z[i] * rdir.z - org_rdir.z;
+            const vfloat8 lclipMaxX = node->upper_x[i] * rdir.x - org_rdir.x;
+            const vfloat8 lclipMaxY = node->upper_y[i] * rdir.y - org_rdir.y;
+            const vfloat8 lclipMaxZ = node->upper_z[i] * rdir.z - org_rdir.z;
+            const vfloat8 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const vfloat8 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const vbool8 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 #endif
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
             {
-              const float8 childDist = select(lhit,lnearP,inf);
+              const vfloat8 childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
               
@@ -286,7 +286,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const bool8 valid_leaf = ray_tfar > curDist;
+        const vbool8 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         

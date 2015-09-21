@@ -81,8 +81,8 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded4(valid,ray);
 #if defined(__SSE2__)
-      bool4 valid0 = ((bool4*)valid)[0];
-      bool4 hit0   = ((int4*)ray.geomID)[0] == int4(0);
+      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
       if (all(valid0,hit0)) break;
 #endif
     }
@@ -94,10 +94,10 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded8(valid,ray);
 #if defined(__SSE2__)
-      bool4 valid0 = ((bool4*)valid)[0];
-      bool4 hit0   = ((int4*)ray.geomID)[0] == int4(0);
-      bool4 valid1 = ((bool4*)valid)[1];
-      bool4 hit1   = ((int4*)ray.geomID)[1] == int4(0);
+      vbool4 valid0 = ((vbool4*)valid)[0];
+      vbool4 hit0   = ((vint4*)ray.geomID)[0] == vint4(0);
+      vbool4 valid1 = ((vbool4*)valid)[1];
+      vbool4 hit1   = ((vint4*)ray.geomID)[1] == vint4(0);
       if (all(valid0,hit0) && all(valid1,hit1)) break;
 #endif
     }
@@ -109,8 +109,8 @@ namespace embree
     for (size_t i=0; i<This->validAccels.size(); i++) {
       This->validAccels[i]->occluded16(valid,ray);
 #if defined(__MIC__) || defined(__AVX512F__)
-      bool16 valid0 = ((bool16*)valid)[0];
-      bool16 hit0   = ((int16*)ray.geomID)[0] == int16(0);
+      vbool16 valid0 = ((vbool16*)valid)[0];
+      vbool16 hit0   = ((vint16*)ray.geomID)[0] == vint16(0);
       if (all(valid0,hit0)) break;
 #endif
     }

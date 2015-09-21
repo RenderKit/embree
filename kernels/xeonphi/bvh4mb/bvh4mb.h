@@ -114,7 +114,7 @@ namespace embree
       return o;
     } 
 
-  __forceinline int16 getTriMasks(const BVH4mb::Triangle01 * __restrict__ const tptr)
+  __forceinline vint16 getTriMasks(const BVH4mb::Triangle01 * __restrict__ const tptr)
   {
     return swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
   }

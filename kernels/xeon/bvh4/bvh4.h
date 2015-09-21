@@ -356,9 +356,9 @@ namespace embree
       }
 
       /*! Returns bounds of all children */
-      __forceinline void bounds(BBox<float4>& bounds0, BBox<float4>& bounds1, BBox<float4>& bounds2, BBox<float4>& bounds3) const {
-        transpose(lower_x,lower_y,lower_z,float4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
-        transpose(upper_x,upper_y,upper_z,float4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
+      __forceinline void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+        transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
+        transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
       }
 
       /*! swap two children of the node */
@@ -379,12 +379,12 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
       
     public:
-      float4 lower_x;           //!< X dimension of lower bounds of all 4 children.
-      float4 upper_x;           //!< X dimension of upper bounds of all 4 children.
-      float4 lower_y;           //!< Y dimension of lower bounds of all 4 children.
-      float4 upper_y;           //!< Y dimension of upper bounds of all 4 children.
-      float4 lower_z;           //!< Z dimension of lower bounds of all 4 children.
-      float4 upper_z;           //!< Z dimension of upper bounds of all 4 children.
+      vfloat4 lower_x;           //!< X dimension of lower bounds of all 4 children.
+      vfloat4 upper_x;           //!< X dimension of upper bounds of all 4 children.
+      vfloat4 lower_y;           //!< Y dimension of lower bounds of all 4 children.
+      vfloat4 upper_y;           //!< Y dimension of upper bounds of all 4 children.
+      vfloat4 lower_z;           //!< Z dimension of lower bounds of all 4 children.
+      vfloat4 upper_z;           //!< Z dimension of upper bounds of all 4 children.
     };
 
     /*! Motion Blur Node */
@@ -392,10 +392,10 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear()  {
-        lower_x = lower_y = lower_z = float4(nan);
-        upper_x = upper_y = upper_z = float4(nan);
-        lower_dx = lower_dy = lower_dz = float4(nan); // initialize with NAN and update during refit
-        upper_dx = upper_dy = upper_dz = float4(nan);
+        lower_x = lower_y = lower_z = vfloat4(nan);
+        upper_x = upper_y = upper_z = vfloat4(nan);
+        lower_dx = lower_dy = lower_dz = vfloat4(nan); // initialize with NAN and update during refit
+        upper_dx = upper_dy = upper_dz = vfloat4(nan);
 	BaseNode::clear();
       }
 
@@ -495,19 +495,19 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
     public:
-      float4 lower_x;        //!< X dimension of lower bounds of all 4 children.
-      float4 upper_x;        //!< X dimension of upper bounds of all 4 children.
-      float4 lower_y;        //!< Y dimension of lower bounds of all 4 children.
-      float4 upper_y;        //!< Y dimension of upper bounds of all 4 children.
-      float4 lower_z;        //!< Z dimension of lower bounds of all 4 children.
-      float4 upper_z;        //!< Z dimension of upper bounds of all 4 children.
+      vfloat4 lower_x;        //!< X dimension of lower bounds of all 4 children.
+      vfloat4 upper_x;        //!< X dimension of upper bounds of all 4 children.
+      vfloat4 lower_y;        //!< Y dimension of lower bounds of all 4 children.
+      vfloat4 upper_y;        //!< Y dimension of upper bounds of all 4 children.
+      vfloat4 lower_z;        //!< Z dimension of lower bounds of all 4 children.
+      vfloat4 upper_z;        //!< Z dimension of upper bounds of all 4 children.
 
-      float4 lower_dx;        //!< X dimension of lower bounds of all 4 children.
-      float4 upper_dx;        //!< X dimension of upper bounds of all 4 children.
-      float4 lower_dy;        //!< Y dimension of lower bounds of all 4 children.
-      float4 upper_dy;        //!< Y dimension of upper bounds of all 4 children.
-      float4 lower_dz;        //!< Z dimension of lower bounds of all 4 children.
-      float4 upper_dz;        //!< Z dimension of upper bounds of all 4 children.
+      vfloat4 lower_dx;        //!< X dimension of lower bounds of all 4 children.
+      vfloat4 upper_dx;        //!< X dimension of upper bounds of all 4 children.
+      vfloat4 lower_dy;        //!< Y dimension of lower bounds of all 4 children.
+      vfloat4 upper_dy;        //!< Y dimension of upper bounds of all 4 children.
+      vfloat4 lower_dz;        //!< Z dimension of lower bounds of all 4 children.
+      vfloat4 upper_dz;        //!< Z dimension of upper bounds of all 4 children.
     };
 
     /*! Node with unaligned bounds */

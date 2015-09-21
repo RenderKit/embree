@@ -81,13 +81,13 @@ namespace embree
         return false;
       }
       
-      static __forceinline void intersect(const bool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         if (likely(ty == 0)) GridSOAIntersectorN<Ray4>::intersect(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,prim,scene,lazy_node);
       }
       
-      static __forceinline bool4 occluded(const bool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline vbool4 occluded(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAIntersectorN<Ray4>::occluded(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,prim,scene,lazy_node);
@@ -126,13 +126,13 @@ namespace embree
         return false;
       }
       
-      static __forceinline void intersect(const bool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         if (likely(ty == 0)) GridSOAIntersectorN<Ray8>::intersect(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,prim,scene,lazy_node);
       }
       
-      static __forceinline bool8 occluded(const bool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline vbool8 occluded(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAIntersectorN<Ray8>::occluded(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,prim,scene,lazy_node);

@@ -106,7 +106,7 @@ namespace embree
   /*! compute transposed matrix */
 #if !defined(__MIC__)
   template<> __forceinline const LinearSpace3<Vec3fa> LinearSpace3<Vec3fa>::transposed() const { 
-    float4 rx,ry,rz; transpose((float4&)vx,(float4&)vy,(float4&)vz,float4(zero),rx,ry,rz);
+    vfloat4 rx,ry,rz; transpose((vfloat4&)vx,(vfloat4&)vy,(vfloat4&)vz,vfloat4(zero),rx,ry,rz);
     return LinearSpace3<Vec3fa>(Vec3fa(rx),Vec3fa(ry),Vec3fa(rz)); 
   }
 #endif

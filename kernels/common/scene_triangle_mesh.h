@@ -147,16 +147,16 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*) vertices[dim].getPtr(tri.v[2]);
 
-	const float16 v0 = broadcast4to16f(vptr0); 
-	const float16 v1 = broadcast4to16f(vptr1); 
-	const float16 v2 = broadcast4to16f(vptr2); 
+	const vfloat16 v0 = broadcast4to16f(vptr0); 
+	const vfloat16 v1 = broadcast4to16f(vptr1); 
+	const vfloat16 v2 = broadcast4to16f(vptr2); 
 	return Vec3vf16(v0,v1,v2);
 #else
-	const int16 stride = vertices[dim].getBufferStride();
+	const vint16 stride = vertices[dim].getBufferStride();
 
-	const int16 offset0_64 = mul_uint64_t(stride,int16(tri.v[0]));
-	const int16 offset1_64 = mul_uint64_t(stride,int16(tri.v[1]));
-	const int16 offset2_64 = mul_uint64_t(stride,int16(tri.v[2]));
+	const vint16 offset0_64 = mul_uint64_t(stride,vint16(tri.v[0]));
+	const vint16 offset1_64 = mul_uint64_t(stride,vint16(tri.v[1]));
+	const vint16 offset2_64 = mul_uint64_t(stride,vint16(tri.v[2]));
 
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
 	const size_t off0 = offset0_64.uint64_t(0);
@@ -177,13 +177,13 @@ namespace embree
 	assert( vptr1_64 == (float*)vertexPtr(tri.v[1],dim) );
 	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
 	
-	const bool16 m_3f = 0x7;
-	const float16 v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
-	const float16 v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
-	const float16 v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
+	const vbool16 m_3f = 0x7;
+	const vfloat16 v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
+	const vfloat16 v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
+	const vfloat16 v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
 	 //FIXME: there should be no need to zero the last component
 
-	return Vec3vf16(select(0x7777,v0,float16::zero()),select(0x7777,v1,float16::zero()),select(0x7777,v2,float16::zero()));
+	return Vec3vf16(select(0x7777,v0,vfloat16::zero()),select(0x7777,v1,vfloat16::zero()),select(0x7777,v2,vfloat16::zero()));
 #endif	
       }
     

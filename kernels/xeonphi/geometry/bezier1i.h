@@ -39,31 +39,31 @@ namespace embree
 		 broadcast4to16f((float*)&mat.vz));
   }
 
-  __forceinline float16 xfmPoint4f(const Vec3fa &p, 
-				 const float16 &c0,
-				 const float16 &c1,
-				 const float16 &c2)
+  __forceinline vfloat16 xfmPoint4f(const Vec3fa &p, 
+				 const vfloat16 &c0,
+				 const vfloat16 &c1,
+				 const vfloat16 &c2)
   {
-    const float16 xyz  = c0 * float16(p.x) + c1 * float16(p.y) + c2 * float16(p.z);
-    const float16 xyzw = select(0x7777,xyz,float16(p.w));
+    const vfloat16 xyz  = c0 * vfloat16(p.x) + c1 * vfloat16(p.y) + c2 * vfloat16(p.z);
+    const vfloat16 xyzw = select(0x7777,xyz,vfloat16(p.w));
     return xyzw;
   }
 
 
-    static __forceinline Vec4vf16 eval16(const float16 &p0,
-				      const float16 &p1,
-				      const float16 &p2,
-				      const float16 &p3)
+    static __forceinline Vec4vf16 eval16(const vfloat16 &p0,
+				      const vfloat16 &p1,
+				      const vfloat16 &p2,
+				      const vfloat16 &p3)
     {
-      const float16 c0 = coeff01.x;
-      const float16 c1 = coeff01.y;
-      const float16 c2 = coeff01.z;
-      const float16 c3 = coeff01.w;
+      const vfloat16 c0 = coeff01.x;
+      const vfloat16 c1 = coeff01.y;
+      const vfloat16 c2 = coeff01.z;
+      const vfloat16 c3 = coeff01.w;
 
-      const float16 x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
-      const float16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
-      const float16 z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
-      const float16 w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
+      const vfloat16 x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
+      const vfloat16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
+      const vfloat16 z = c0 * swCCCC(p0) + c1 * swCCCC(p1) + c2 * swCCCC(p2) + c3 * swCCCC(p3);
+      const vfloat16 w = c0 * swDDDD(p0) + c1 * swDDDD(p1) + c2 * swDDDD(p2) + c3 * swDDDD(p3);
       return Vec4vf16(x,y,z,w);
     }
 
@@ -87,32 +87,32 @@ namespace embree
 
     __forceinline Vec2vf16 getBounds() const 
     {
-      const float16 v0 = broadcast4to16f((float*)&p[0]);
-      const float16 v1 = broadcast4to16f((float*)&p[1]);
-      const float16 v2 = broadcast4to16f((float*)&p[2]);
-      const float16 v3 = broadcast4to16f((float*)&p[3]);
+      const vfloat16 v0 = broadcast4to16f((float*)&p[0]);
+      const vfloat16 v1 = broadcast4to16f((float*)&p[1]);
+      const vfloat16 v2 = broadcast4to16f((float*)&p[2]);
+      const vfloat16 v3 = broadcast4to16f((float*)&p[3]);
       
 #if EVAL_BOUNDS==1
       const Vec4vf16 v = eval16(v0,v1,v2,v3);
-      const float16 min_x = min(vreduce_min(v.x),v3[0]);
-      const float16 max_x = max(vreduce_max(v.x),v3[0]);
-      const float16 min_y = min(vreduce_min(v.y),v3[1]);
-      const float16 max_y = max(vreduce_max(v.y),v3[1]);
-      const float16 min_z = min(vreduce_min(v.z),v3[2]);
-      const float16 max_z = max(vreduce_max(v.z),v3[2]);
-      const float16 b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
-      const float16 b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
+      const vfloat16 min_x = min(vreduce_min(v.x),v3[0]);
+      const vfloat16 max_x = max(vreduce_max(v.x),v3[0]);
+      const vfloat16 min_y = min(vreduce_min(v.y),v3[1]);
+      const vfloat16 max_y = max(vreduce_max(v.y),v3[1]);
+      const vfloat16 min_z = min(vreduce_min(v.z),v3[2]);
+      const vfloat16 max_z = max(vreduce_max(v.z),v3[2]);
+      const vfloat16 b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
+      const vfloat16 b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
 
-      const float16 r_max = max(max(v0,v1),max(v2,v3));
-      const float16 b_min_r = b_min - swDDDD(r_max);
-      const float16 b_max_r = b_max + swDDDD(r_max);
+      const vfloat16 r_max = max(max(v0,v1),max(v2,v3));
+      const vfloat16 b_min_r = b_min - swDDDD(r_max);
+      const vfloat16 b_max_r = b_max + swDDDD(r_max);
 
 #else
-      const float16 b_min = min(min(v0,v1),min(v2,v3));
-      const float16 b_max = max(max(v0,v1),max(v2,v3));
+      const vfloat16 b_min = min(min(v0,v1),min(v2,v3));
+      const vfloat16 b_max = max(max(v0,v1),max(v2,v3));
       
-      const float16 b_min_r = b_min - swDDDD(b_max);
-      const float16 b_max_r = b_max + swDDDD(b_max);
+      const vfloat16 b_min_r = b_min - swDDDD(b_max);
+      const vfloat16 b_max_r = b_max + swDDDD(b_max);
 #endif      
       return Vec2vf16(b_min_r,b_max_r);
     }
@@ -133,39 +133,39 @@ namespace embree
       const Vec3fa b_min_r = b_min - max_radius;
       const Vec3fa b_max_r = b_max + max_radius;
 
-      const float16 b_lower = broadcast4to16f((float*)&b_min_r);
-      const float16 b_upper = broadcast4to16f((float*)&b_max_r);
+      const vfloat16 b_lower = broadcast4to16f((float*)&b_min_r);
+      const vfloat16 b_upper = broadcast4to16f((float*)&b_max_r);
       
       return Vec2vf16(b_lower,b_upper);
     }
 
-    __forceinline Vec2vf16 getBounds(const float16 &c0,const float16 &c1,const float16 &c2) const 
+    __forceinline Vec2vf16 getBounds(const vfloat16 &c0,const vfloat16 &c1,const vfloat16 &c2) const 
     {
-      const float16 v0 = xfmPoint4f(p[0],c0,c1,c2);
-      const float16 v1 = xfmPoint4f(p[1],c0,c1,c2);
-      const float16 v2 = xfmPoint4f(p[2],c0,c1,c2);
-      const float16 v3 = xfmPoint4f(p[3],c0,c1,c2);
+      const vfloat16 v0 = xfmPoint4f(p[0],c0,c1,c2);
+      const vfloat16 v1 = xfmPoint4f(p[1],c0,c1,c2);
+      const vfloat16 v2 = xfmPoint4f(p[2],c0,c1,c2);
+      const vfloat16 v3 = xfmPoint4f(p[3],c0,c1,c2);
 
 #if EVAL_BOUNDS==1
       const Vec4vf16 v = eval16(v0,v1,v2,v3);
-      const float16 min_x = min(vreduce_min(v.x),v3[0]);
-      const float16 max_x = max(vreduce_max(v.x),v3[0]);
-      const float16 min_y = min(vreduce_min(v.y),v3[1]);
-      const float16 max_y = max(vreduce_max(v.y),v3[1]);
-      const float16 min_z = min(vreduce_min(v.z),v3[2]);
-      const float16 max_z = max(vreduce_max(v.z),v3[2]);
-      const float16 b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
-      const float16 b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
+      const vfloat16 min_x = min(vreduce_min(v.x),v3[0]);
+      const vfloat16 max_x = max(vreduce_max(v.x),v3[0]);
+      const vfloat16 min_y = min(vreduce_min(v.y),v3[1]);
+      const vfloat16 max_y = max(vreduce_max(v.y),v3[1]);
+      const vfloat16 min_z = min(vreduce_min(v.z),v3[2]);
+      const vfloat16 max_z = max(vreduce_max(v.z),v3[2]);
+      const vfloat16 b_min = select(0x4444,min_z,select(0x2222,min_y,min_x));
+      const vfloat16 b_max = select(0x4444,max_z,select(0x2222,max_y,max_x));
 
-      const float16 r_max = max(max(v0,v1),max(v2,v3));
-      const float16 b_min_r = b_min - swDDDD(r_max);
-      const float16 b_max_r = b_max + swDDDD(r_max);
+      const vfloat16 r_max = max(max(v0,v1),max(v2,v3));
+      const vfloat16 b_min_r = b_min - swDDDD(r_max);
+      const vfloat16 b_max_r = b_max + swDDDD(r_max);
 
 #else
-      const float16 b_min = min(min(v0,v1),min(v2,v3));
-      const float16 b_max = max(max(v0,v1),max(v2,v3));
-      const float16 b_min_r = b_min - swDDDD(b_max);
-      const float16 b_max_r = b_max + swDDDD(b_max);
+      const vfloat16 b_min = min(min(v0,v1),min(v2,v3));
+      const vfloat16 b_max = max(max(v0,v1),max(v2,v3));
+      const vfloat16 b_min_r = b_min - swDDDD(b_max);
+      const vfloat16 b_max_r = b_max + swDDDD(b_max);
 #endif      
       
       return Vec2vf16(b_min_r,b_max_r);

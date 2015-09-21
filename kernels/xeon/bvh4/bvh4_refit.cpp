@@ -194,18 +194,18 @@ namespace embree
         
         BBox<Vec3vf4> dest;
 
-        transpose((float4&)bounds[0].lower,
-                  (float4&)bounds[1].lower,
-                  (float4&)bounds[2].lower,
-                  (float4&)bounds[3].lower,
+        transpose((vfloat4&)bounds[0].lower,
+                  (vfloat4&)bounds[1].lower,
+                  (vfloat4&)bounds[2].lower,
+                  (vfloat4&)bounds[3].lower,
                   dest.lower.x,
                   dest.lower.y,
                   dest.lower.z);
         
-        transpose((float4&)bounds[0].upper,
-                  (float4&)bounds[1].upper,
-                  (float4&)bounds[2].upper,
-                  (float4&)bounds[3].upper,
+        transpose((vfloat4&)bounds[0].upper,
+                  (vfloat4&)bounds[1].upper,
+                  (vfloat4&)bounds[2].upper,
+                  (vfloat4&)bounds[3].upper,
                   dest.upper.x,
                   dest.upper.y,
                   dest.upper.z);
@@ -283,8 +283,8 @@ namespace embree
       
       /* AOS to SOA transform */
       BBox<Vec3vf4> bounds;
-      transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-      transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+      transpose((vfloat4&)bounds0.lower,(vfloat4&)bounds1.lower,(vfloat4&)bounds2.lower,(vfloat4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+      transpose((vfloat4&)bounds0.upper,(vfloat4&)bounds1.upper,(vfloat4&)bounds2.upper,(vfloat4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       
       /* set new bounds */
       node->lower_x = bounds.lower.x;
@@ -334,8 +334,8 @@ namespace embree
       
       /* AOS to SOA transform */
       BBox<Vec3vf4> bounds;
-      transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-      transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+      transpose((vfloat4&)bounds0.lower,(vfloat4&)bounds1.lower,(vfloat4&)bounds2.lower,(vfloat4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+      transpose((vfloat4&)bounds0.upper,(vfloat4&)bounds1.upper,(vfloat4&)bounds2.upper,(vfloat4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       
       /* set new bounds */
       node->lower_x = bounds.lower.x;

@@ -29,8 +29,8 @@ namespace embree
     class BVH4HairIntersector16
     {
     public:
-      static void intersect(int16* valid, BVH4Hair* bvh, Ray16& ray);
-      static void occluded (int16* valid, BVH4Hair* bvh, Ray16& ray);
+      static void intersect(vint16* valid, BVH4Hair* bvh, Ray16& ray);
+      static void occluded (vint16* valid, BVH4Hair* bvh, Ray16& ray);
     };
 
     template<typename LeafIntersector>

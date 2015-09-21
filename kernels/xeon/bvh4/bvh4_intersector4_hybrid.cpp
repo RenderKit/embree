@@ -39,10 +39,10 @@ namespace embree
 #endif
 
     template<int types, bool robust, typename PrimitiveIntersector4>
-    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::intersect(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      bool4 valid0 = *valid_i;
+      vbool4 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -52,22 +52,22 @@ namespace embree
       /* load ray */
       Vec3vf4 ray_org = ray.org;
       Vec3vf4 ray_dir = ray.dir;
-      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
       const Vec3vf4 rdir = rcp_safe(ray_dir);
       const Vec3vf4 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,float4(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,float4(neg_inf));
-      const float4 inf = float4(pos_inf);
+      ray_tnear = select(valid0,ray_tnear,vfloat4(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,vfloat4(neg_inf));
+      const vfloat4 inf = vfloat4(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
       Vec3vi4 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int4(0*(int)sizeof(float4)),int4(1*(int)sizeof(float4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int4(2*(int)sizeof(float4)),int4(3*(int)sizeof(float4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int4(4*(int)sizeof(float4)),int4(5*(int)sizeof(float4)));
+      nearXYZ.x = select(rdir.x >= 0.0f,vint4(0*(int)sizeof(vfloat4)),vint4(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint4(2*(int)sizeof(vfloat4)),vint4(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint4(4*(int)sizeof(vfloat4)),vint4(5*(int)sizeof(vfloat4)));
 
       /* allocate stack and push root node */
-      float4    stack_near[stackSizeChunk];
+      vfloat4    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH4::invalidNode;
       stack_near[0] = inf;
@@ -75,7 +75,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float4*    __restrict__ sptr_near = stack_near + 2;
+      vfloat4*    __restrict__ sptr_near = stack_near + 2;
       
       while (1) pop:
       {
@@ -90,8 +90,8 @@ namespace embree
         }
         
         /* cull node if behind closest hit point */
-        float4 curDist = *sptr_near;
-        const bool4 active = curDist < ray_tfar;
+        vfloat4 curDist = *sptr_near;
+        const vbool4 active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
         
@@ -112,7 +112,7 @@ namespace embree
 	  /* process normal nodes */
           if (likely((types & 0x1) && cur.isNode()))
           {
-	    const bool4 valid_node = ray_tfar > curDist;
+	    const vbool4 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
 	    const Node* __restrict__ const node = cur.node();
 	    
@@ -128,7 +128,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      float4 lnearP; const bool4 lhit = intersect_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      vfloat4 lnearP; const vbool4 lhit = intersect_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -136,7 +136,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const float4 childDist = select(lhit,lnearP,inf);
+		const vfloat4 childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
 		
@@ -170,7 +170,7 @@ namespace embree
 	  /* process motion blur nodes */
           else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
-	    const bool4 valid_node = ray_tfar > curDist;
+	    const vbool4 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
@@ -186,7 +186,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      float4 lnearP; const bool4 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      vfloat4 lnearP; const vbool4 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -194,7 +194,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const float4 childDist = select(lhit,lnearP,inf);
+		const vfloat4 childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
 		
@@ -236,7 +236,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH4::emptyNode);
-        const bool4 valid_leaf = ray_tfar > curDist;
+        const vbool4 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
@@ -254,34 +254,34 @@ namespace embree
 
     
     template<int types, bool robust, typename PrimitiveIntersector4>
-    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4Hybrid<types,robust,PrimitiveIntersector4>::occluded(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      bool4 valid = *valid_i;
+      vbool4 valid = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
       assert(all(valid,ray.tnear > -FLT_MIN));
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
       /* load ray */
-      bool4 terminated = !valid;
+      vbool4 terminated = !valid;
       Vec3vf4 ray_org = ray.org, ray_dir = ray.dir;
-      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
       const Vec3vf4 rdir = rcp_safe(ray_dir);
       const Vec3vf4 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,float4(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,float4(neg_inf));
-      const float4 inf = float4(pos_inf);
+      ray_tnear = select(valid,ray_tnear,vfloat4(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat4(neg_inf));
+      const vfloat4 inf = vfloat4(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
       Vec3vi4 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int4(0*(int)sizeof(float4)),int4(1*(int)sizeof(float4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int4(2*(int)sizeof(float4)),int4(3*(int)sizeof(float4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int4(4*(int)sizeof(float4)),int4(5*(int)sizeof(float4)));
+      nearXYZ.x = select(rdir.x >= 0.0f,vint4(0*(int)sizeof(vfloat4)),vint4(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint4(2*(int)sizeof(vfloat4)),vint4(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint4(4*(int)sizeof(vfloat4)),vint4(5*(int)sizeof(vfloat4)));
 
       /* allocate stack and push root node */
-      float4    stack_near[stackSizeChunk];
+      vfloat4    stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH4::invalidNode;
       stack_near[0] = inf;
@@ -289,7 +289,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float4*    __restrict__ sptr_near = stack_near + 2;
+      vfloat4*    __restrict__ sptr_near = stack_near + 2;
       
       while (1) pop:
       {
@@ -304,8 +304,8 @@ namespace embree
         }
 
         /* cull node if behind closest hit point */
-        float4 curDist = *sptr_near;
-        const bool4 active = curDist < ray_tfar;
+        vfloat4 curDist = *sptr_near;
+        const vbool4 active = curDist < ray_tfar;
         if (unlikely(none(active))) 
           continue;
         
@@ -318,7 +318,7 @@ namespace embree
               terminated[i] = -1;
           }
           if (all(terminated)) break;
-          ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
+          ray_tfar = select(terminated,vfloat4(neg_inf),ray_tfar);
           continue;
         }
 #endif
@@ -328,7 +328,7 @@ namespace embree
 	  /* process normal nodes */
           if (likely((types & 0x1) && cur.isNode()))
           {
-	    const bool4 valid_node = ray_tfar > curDist;
+	    const vbool4 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
 	    const Node* __restrict__ const node = cur.node();
 	    
@@ -344,7 +344,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      float4 lnearP; const bool4 lhit = intersect_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      vfloat4 lnearP; const vbool4 lhit = intersect_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -352,7 +352,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const float4 childDist = select(lhit,lnearP,inf);
+		const vfloat4 childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
 		
@@ -386,7 +386,7 @@ namespace embree
 	  /* process motion blur nodes */
           else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
-	    const bool4 valid_node = ray_tfar > curDist;
+	    const vbool4 valid_node = ray_tfar > curDist;
 	    STAT3(normal.trav_nodes,1,popcnt(valid_node),4);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
@@ -402,7 +402,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      float4 lnearP; const bool4 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      vfloat4 lnearP; const vbool4 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -410,7 +410,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const float4 childDist = select(lhit,lnearP,inf);
+		const vfloat4 childDist = select(lhit,lnearP,inf);
 		sptr_node++;
 		sptr_near++;
 		
@@ -453,14 +453,14 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH4::emptyNode);
-        const bool4 valid_leaf = ray_tfar > curDist;
+        const vbool4 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),4);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
         terminated |= PrimitiveIntersector4::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
-        ray_tfar = select(terminated,float4(neg_inf),ray_tfar);
+        ray_tfar = select(terminated,vfloat4(neg_inf),ray_tfar);
 
         if (unlikely(lazy_node)) {
           *sptr_node = lazy_node; sptr_node++;

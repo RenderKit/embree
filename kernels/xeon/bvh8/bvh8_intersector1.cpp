@@ -56,13 +56,13 @@ namespace embree
       const Vec3vf8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const Vec3vf8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const float8  ray_near(ray.tnear);
-      float8 ray_far(ray.tfar);
+      const vfloat8  ray_near(ray.tnear);
+      vfloat8 ray_far(ray.tfar);
 
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float8) : 1*sizeof(float8);
-      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float8) : 3*sizeof(float8);
-      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float8) : 5*sizeof(float8);
+      const size_t nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat8) : 1*sizeof(vfloat8);
+      const size_t nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat8) : 3*sizeof(vfloat8);
+      const size_t nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat8) : 5*sizeof(vfloat8);
       
       /* pop loop */
       while (true) pop:
@@ -85,35 +85,35 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
+          const size_t farX  = nearX ^ sizeof(vfloat8), farY  = nearY ^ sizeof(vfloat8), farZ  = nearZ ^ sizeof(vfloat8);
 #if defined (__AVX2__)
-          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
 #else
-          const float8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
-          const float8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
-          const float8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
-          const float8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
-          const float8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
-          const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
+          const vfloat8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
+          const vfloat8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
+          const vfloat8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
+          const vfloat8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
+          const vfloat8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
+          const vfloat8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
 
         const float round_down = 1.0f-2.0f*float(ulp);
         const float round_up   = 1.0f+2.0f*float(ulp);
 
 #if defined(__AVX2__)
-          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-          const bool8 vmask = robust ?  (round_down*tNear > round_up*tFar) : cast(tNear) > cast(tFar);
+          const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
+          const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
+          const vbool8 vmask = robust ?  (round_down*tNear > round_up*tFar) : cast(tNear) > cast(tFar);
           size_t mask = movemask(vmask)^0xff;
 #else
-          const float8 tNear = max(tNearX,tNearY,tNearZ,ray_near);
-          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-          const bool8 vmask = robust ?  (round_down*tNear > round_up*tFar) : tNear <= tFar;
+          const vfloat8 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+          const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
+          const vbool8 vmask = robust ?  (round_down*tNear > round_up*tFar) : tNear <= tFar;
           size_t mask = movemask(vmask);
 #endif
           
@@ -224,13 +224,13 @@ namespace embree
       const Vec3vf8 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
       const Vec3fa ray_org_rdir = ray.org*ray_rdir;
       const Vec3vf8 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const float8  ray_near(ray.tnear);
-      float8 ray_far(ray.tfar);
+      const vfloat8  ray_near(ray.tnear);
+      vfloat8 ray_far(ray.tfar);
       
       /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(float8) : 1*sizeof(float8);
-      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(float8) : 3*sizeof(float8);
-      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(float8) : 5*sizeof(float8);
+      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(vfloat8) : 1*sizeof(vfloat8);
+      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(vfloat8) : 3*sizeof(vfloat8);
+      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(vfloat8) : 5*sizeof(vfloat8);
 
       /* pop loop */
       while (true) pop:
@@ -249,32 +249,32 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
+          const size_t farX  = nearX ^ sizeof(vfloat8), farY  = nearY ^ sizeof(vfloat8), farZ  = nearZ ^ sizeof(vfloat8);
 #if defined (__AVX2__)
-          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
 #else
-          const float8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
-          const float8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
-          const float8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
-          const float8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
-          const float8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
-          const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
+          const vfloat8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
+          const vfloat8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
+          const vfloat8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
+          const vfloat8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
+          const vfloat8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
+          const vfloat8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
 #endif
           
 #if defined(__AVX2__)
-          const float8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
-          const float8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
-          const bool8 vmask = cast(tNear) > cast(tFar);
+          const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,ray_near));
+          const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,ray_far ));
+          const vbool8 vmask = cast(tNear) > cast(tFar);
           size_t mask = movemask(vmask)^0xff;
 #else
-          const float8 tNear = max(tNearX,tNearY,tNearZ,ray_near);
-          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-          const bool8 vmask = tNear <= tFar;
+          const vfloat8 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+          const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
+          const vbool8 vmask = tNear <= tFar;
           size_t mask = movemask(vmask);
 #endif
           

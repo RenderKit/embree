@@ -28,17 +28,17 @@ namespace embree
       typedef Object Primitive;
       
       struct Precalculations {
-        __forceinline Precalculations (const bool4& valid, const Ray4& ray) {}
+        __forceinline Precalculations (const vbool4& valid, const Ray4& ray) {}
       };
       
-      static __forceinline void intersect(const bool4& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
+      static __forceinline void intersect(const vbool4& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         // FIXME: add ray mask test
         prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
       }
       
-      static __forceinline bool4 occluded(const bool4& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
+      static __forceinline vbool4 occluded(const vbool4& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
       {
         AVX_ZERO_UPPER();
         // FIXME: add ray mask test

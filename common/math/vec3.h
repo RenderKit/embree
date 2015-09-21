@@ -258,54 +258,54 @@ namespace embree
   template<> __forceinline Vec3<float>::Vec3( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; }
 
 #if defined (__SSE__)
-  template<> __forceinline Vec3<float4>::Vec3( const Vec3fa& a ) {
-    const float4 v = float4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v);
+  template<> __forceinline Vec3<vfloat4>::Vec3( const Vec3fa& a ) {
+    const vfloat4 v = vfloat4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v);
   }
-  __forceinline Vec3<float4> broadcast4f( const Vec3<float4>& a, const size_t k ) {
-    return Vec3<float4>(float4::broadcast(&a.x[k]), float4::broadcast(&a.y[k]), float4::broadcast(&a.z[k]));
+  __forceinline Vec3<vfloat4> broadcast4f( const Vec3<vfloat4>& a, const size_t k ) {
+    return Vec3<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]));
   }
 
   template<>
-    __forceinline Vec3<float4> broadcast<float4,float4>( const Vec3<float4>& a, const size_t k ) {
-    return Vec3<float4>(float4::broadcast(&a.x[k]), float4::broadcast(&a.y[k]), float4::broadcast(&a.z[k]));
+    __forceinline Vec3<vfloat4> broadcast<vfloat4,vfloat4>( const Vec3<vfloat4>& a, const size_t k ) {
+    return Vec3<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<float4> shuffle( const Vec3<float4>& b ) {
-    return Vec3<float4>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
+  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<vfloat4> shuffle( const Vec3<vfloat4>& b ) {
+    return Vec3<vfloat4>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
   }
 
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline Vec3<float8>::Vec3( const Vec3fa& a ) {
+  template<> __forceinline Vec3<vfloat8>::Vec3( const Vec3fa& a ) {
     x = a.x; y = a.y; z = a.z;
   }
-  __forceinline Vec3<float4> broadcast4f( const Vec3<float8>& a, const size_t k ) {
-    return Vec3<float4>(float4::broadcast(&a.x[k]), float4::broadcast(&a.y[k]), float4::broadcast(&a.z[k]));
+  __forceinline Vec3<vfloat4> broadcast4f( const Vec3<vfloat8>& a, const size_t k ) {
+    return Vec3<vfloat4>(vfloat4::broadcast(&a.x[k]), vfloat4::broadcast(&a.y[k]), vfloat4::broadcast(&a.z[k]));
   }
-  __forceinline Vec3<float8> broadcast8f( const Vec3<float4>& a, const size_t k ) {
-    return Vec3<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]));
+  __forceinline Vec3<vfloat8> broadcast8f( const Vec3<vfloat4>& a, const size_t k ) {
+    return Vec3<vfloat8>(vfloat8::broadcast(&a.x[k]), vfloat8::broadcast(&a.y[k]), vfloat8::broadcast(&a.z[k]));
   }
-  __forceinline Vec3<float8> broadcast8f( const Vec3<float8>& a, const size_t k ) {
-    return Vec3<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]));
+  __forceinline Vec3<vfloat8> broadcast8f( const Vec3<vfloat8>& a, const size_t k ) {
+    return Vec3<vfloat8>(vfloat8::broadcast(&a.x[k]), vfloat8::broadcast(&a.y[k]), vfloat8::broadcast(&a.z[k]));
   }
 
   template<>
-    __forceinline Vec3<float8> broadcast<float8,float4>( const Vec3<float4>& a, const size_t k ) {
-    return Vec3<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]));
+    __forceinline Vec3<vfloat8> broadcast<vfloat8,vfloat4>( const Vec3<vfloat4>& a, const size_t k ) {
+    return Vec3<vfloat8>(vfloat8::broadcast(&a.x[k]), vfloat8::broadcast(&a.y[k]), vfloat8::broadcast(&a.z[k]));
   }
   template<>
-    __forceinline Vec3<float8> broadcast<float8,float8>( const Vec3<float8>& a, const size_t k ) {
-    return Vec3<float8>(float8::broadcast(&a.x[k]), float8::broadcast(&a.y[k]), float8::broadcast(&a.z[k]));
+    __forceinline Vec3<vfloat8> broadcast<vfloat8,vfloat8>( const Vec3<vfloat8>& a, const size_t k ) {
+    return Vec3<vfloat8>(vfloat8::broadcast(&a.x[k]), vfloat8::broadcast(&a.y[k]), vfloat8::broadcast(&a.z[k]));
   }
 
-  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<float8> shuffle( const Vec3<float8>& b ) {
-    return Vec3<float8>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
+  template<size_t i0, size_t i1, size_t i2, size_t i3> __forceinline const Vec3<vfloat8> shuffle( const Vec3<vfloat8>& b ) {
+    return Vec3<vfloat8>(shuffle<i0,i1,i2,i3>(b.x),shuffle<i0,i1,i2,i3>(b.y),shuffle<i0,i1,i2,i3>(b.z));
   }
 
 #endif
 
 #if defined (__MIC__) || defined(__AVX512F__)
-  template<> __forceinline Vec3<float16>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
+  template<> __forceinline Vec3<vfloat16>::Vec3( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z) {}
 #endif
 }

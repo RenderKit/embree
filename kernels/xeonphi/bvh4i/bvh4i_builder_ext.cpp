@@ -40,15 +40,15 @@
 namespace embree
 {
 #if defined(__MIC__)
-  __forceinline BBox3fa getBBox3fa(const Vec3vf16 &v, const bool16 m_valid = 0xffff)
+  __forceinline BBox3fa getBBox3fa(const Vec3vf16 &v, const vbool16 m_valid = 0xffff)
   {
-    const float16 x_min = select(m_valid,v.x,float16::inf());
-    const float16 y_min = select(m_valid,v.y,float16::inf());
-    const float16 z_min = select(m_valid,v.z,float16::inf());
+    const vfloat16 x_min = select(m_valid,v.x,vfloat16::inf());
+    const vfloat16 y_min = select(m_valid,v.y,vfloat16::inf());
+    const vfloat16 z_min = select(m_valid,v.z,vfloat16::inf());
 
-    const float16 x_max = select(m_valid,v.x,float16::minus_inf());
-    const float16 y_max = select(m_valid,v.y,float16::minus_inf());
-    const float16 z_max = select(m_valid,v.z,float16::minus_inf());
+    const vfloat16 x_max = select(m_valid,v.x,vfloat16::minus_inf());
+    const vfloat16 y_max = select(m_valid,v.y,vfloat16::minus_inf());
+    const vfloat16 z_max = select(m_valid,v.z,vfloat16::minus_inf());
     
     const Vec3fa b_min( reduce_min(x_min), reduce_min(y_min), reduce_min(z_min) );
     const Vec3fa b_max( reduce_max(x_max), reduce_max(y_max), reduce_max(z_max) );
@@ -158,28 +158,28 @@ PRINT(CORRECT_numPrims);
     right_o = PrimRef(cright,prim.geomID(), prim.primID());
   }
 
-  __forceinline float16 box_sah( const float16 &b_min,
-			       const float16 &b_max) 
+  __forceinline vfloat16 box_sah( const vfloat16 &b_min,
+			       const vfloat16 &b_max) 
   { 
-    const float16 d = b_max - b_min;
-    const float16 d_x = swAAAA(d);
-    const float16 d_y = swBBBB(d);
-    const float16 d_z = swCCCC(d);
+    const vfloat16 d = b_max - b_min;
+    const vfloat16 d_x = swAAAA(d);
+    const vfloat16 d_y = swBBBB(d);
+    const vfloat16 d_z = swCCCC(d);
     return (d_x*(d_y+d_z)+d_y*d_z)*2.0f; 
   }
 
-  __forceinline float16 box_sah( const PrimRef &r) 
+  __forceinline vfloat16 box_sah( const PrimRef &r) 
   { 
-    const float16 bmin = broadcast4to16f(&r.lower);
-    const float16 bmax = broadcast4to16f(&r.upper);
+    const vfloat16 bmin = broadcast4to16f(&r.lower);
+    const vfloat16 bmax = broadcast4to16f(&r.upper);
     return box_sah(bmin,bmax);
   }
 
-  __forceinline float16 tri_sah( const float16 &v0,
-			       const float16 &v1,
-			       const float16 &v2) 
+  __forceinline vfloat16 tri_sah( const vfloat16 &v0,
+			       const vfloat16 &v1,
+			       const vfloat16 &v2) 
   {
-    const float16 n = lcross_xyz(v1-v0,v2-v0);
+    const vfloat16 n = lcross_xyz(v1-v0,v2-v0);
     return sqrt(ldot3_xyz(n,n)) * 0.5f;
   }
   
@@ -332,12 +332,12 @@ PRINT(CORRECT_numPrims);
 
 		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  float16 bmin = min(min(v[0],v[1]),v[2]);
-		  float16 bmax = max(max(v[0],v[1]),v[2]);
+		  vfloat16 bmin = min(min(v[0],v[1]),v[2]);
+		  vfloat16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
-		  const float16 area_box = box_sah(bmin,bmax);
-		  const float16 factor = area_box * rcp(area_tri);
+		  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const vfloat16 area_box = box_sah(bmin,bmax);
+		  const vfloat16 factor = area_box * rcp(area_tri);
 		  
 		  sahBox += area_box[0];
 		  sahTri += area_tri[0];
@@ -375,10 +375,10 @@ PRINT(CORRECT_numPrims);
     }
 
     // === start with first group containing startID ===
-    float16 bounds_scene_min((float)pos_inf);
-    float16 bounds_scene_max((float)neg_inf);
-    float16 bounds_centroid_min((float)pos_inf);
-    float16 bounds_centroid_max((float)neg_inf);
+    vfloat16 bounds_scene_min((float)pos_inf);
+    vfloat16 bounds_scene_max((float)neg_inf);
+    vfloat16 bounds_centroid_min((float)pos_inf);
+    vfloat16 bounds_centroid_max((float)neg_inf);
 
     unsigned int numTrisNoPreSplit = 0;
     unsigned int numTrisPreSplit = 0;
@@ -409,12 +409,12 @@ PRINT(CORRECT_numPrims);
 
 		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  float16 bmin = min(min(v[0],v[1]),v[2]);
-		  float16 bmax = max(max(v[0],v[1]),v[2]);
+		  vfloat16 bmin = min(min(v[0],v[1]),v[2]);
+		  vfloat16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
-		  const float16 area_box = box_sah(bmin,bmax);
-		  const float16 factor = area_box * rcp(area_tri);
+		  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const vfloat16 area_box = box_sah(bmin,bmax);
+		  const vfloat16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -422,8 +422,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const vbool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const vbool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    numTrisPreSplit++;
@@ -432,7 +432,7 @@ PRINT(CORRECT_numPrims);
 
 		  bounds_scene_min = min(bounds_scene_min,bmin);
 		  bounds_scene_max = max(bounds_scene_max,bmax);
-		  const float16 centroid2 = bmin+bmax;
+		  const vfloat16 centroid2 = bmin+bmax;
 		  bounds_centroid_min = min(bounds_centroid_min,centroid2);
 		  bounds_centroid_max = max(bounds_centroid_max,centroid2);
 		}
@@ -489,12 +489,12 @@ PRINT(CORRECT_numPrims);
 
 		  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
-		  float16 bmin = min(min(v[0],v[1]),v[2]);
-		  float16 bmax = max(max(v[0],v[1]),v[2]);
+		  vfloat16 bmin = min(min(v[0],v[1]),v[2]);
+		  vfloat16 bmax = max(max(v[0],v[1]),v[2]);
 
-		  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
-		  const float16 area_box = box_sah(bmin,bmax);
-		  const float16 factor = area_box * rcp(area_tri);
+		  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
+		  const vfloat16 area_box = box_sah(bmin,bmax);
+		  const vfloat16 factor = area_box * rcp(area_tri);
 
 		  DBG(
 		      PRINT(area_tri);
@@ -502,8 +502,8 @@ PRINT(CORRECT_numPrims);
 		      PRINT(factor);
 		      );
 
-		  const bool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
-		  const bool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
+		  const vbool16 m_factor = factor > PRESPLIT_AREA_THRESHOLD;
+		  const vbool16 m_sah_zero = area_box > PRESPLIT_MIN_AREA;
 
 		  if (any(m_factor & m_sah_zero)) 
 		    {
@@ -567,8 +567,8 @@ PRINT(CORRECT_numPrims);
 
 	  prefetch<PFHINT_L1EX>(prims);
 
-	  float16 bmin = min(min(v[0],v[1]),v[2]);
-	  float16 bmax = max(max(v[0],v[1]),v[2]);
+	  vfloat16 bmin = min(min(v[0],v[1]),v[2]);
+	  vfloat16 bmax = max(max(v[0],v[1]),v[2]);
 
 	  prefetch<PFHINT_L2EX>(prims + L2_PREFETCH_ITEMS);
 
@@ -608,11 +608,11 @@ PRINT(CORRECT_numPrims);
 	  const Vec3vf16 v = mesh->getTriangleVertices<PFHINT_L2>(tri);
 
 	  
-	  float16 bmin = min(min(v[0],v[1]),v[2]);
-	  float16 bmax = max(max(v[0],v[1]),v[2]);
+	  vfloat16 bmin = min(min(v[0],v[1]),v[2]);
+	  vfloat16 bmax = max(max(v[0],v[1]),v[2]);
 
-	  const float16 area_tri = tri_sah(v[0],v[1],v[2]);
-	  const float16 area_box = box_sah(bmin,bmax);
+	  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
+	  const vfloat16 area_box = box_sah(bmin,bmax);
 
 	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
@@ -694,10 +694,10 @@ PRINT(CORRECT_numPrims);
     }
 
     /* start with first group containing startID */
-    float16 bounds_scene_min((float)pos_inf);
-    float16 bounds_scene_max((float)neg_inf);
-    float16 bounds_centroid_min((float)pos_inf);
-    float16 bounds_centroid_max((float)neg_inf);
+    vfloat16 bounds_scene_min((float)pos_inf);
+    vfloat16 bounds_scene_max((float)neg_inf);
+    vfloat16 bounds_centroid_min((float)pos_inf);
+    vfloat16 bounds_centroid_max((float)neg_inf);
 
     unsigned int num = 0;
     unsigned int currentID = startID;
@@ -715,12 +715,12 @@ PRINT(CORRECT_numPrims);
         for (unsigned int i=offset; i<N && currentID < endID; i++, currentID++)	 
 	  { 			    
 	    const BBox3fa bounds = virtual_geometry->bounds(i);
-	    const float16 bmin = broadcast4to16f(&bounds.lower); 
-	    const float16 bmax = broadcast4to16f(&bounds.upper);
+	    const vfloat16 bmin = broadcast4to16f(&bounds.lower); 
+	    const vfloat16 bmax = broadcast4to16f(&bounds.upper);
           
 	    bounds_scene_min = min(bounds_scene_min,bmin);
 	    bounds_scene_max = max(bounds_scene_max,bmax);
-	    const float16 centroid2 = bmin+bmax;
+	    const vfloat16 centroid2 = bmin+bmax;
 	    bounds_centroid_min = min(bounds_centroid_min,centroid2);
 	    bounds_centroid_max = max(bounds_centroid_max,centroid2);
 

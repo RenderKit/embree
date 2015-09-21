@@ -121,9 +121,9 @@ namespace embree
   __forceinline const Vec3fa rcp  ( const Vec3fa& a ) {
     const Vec3fa r = _mm_rcp_ps(a.m128);
 #if defined(__AVX2__)
-    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, float4(2.0f)));     
+    const Vec3fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));     
 #else
-    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(float4(2.0f), _mm_mul_ps(r, a)));     
+    const Vec3fa res = _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));     
     //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
 #endif
     return res;
@@ -166,18 +166,18 @@ namespace embree
 
 #if defined(__SSE4_1__)
     __forceinline Vec3fa mini(const Vec3fa& a, const Vec3fa& b) {
-      const int4 ai = _mm_castps_si128(a);
-      const int4 bi = _mm_castps_si128(b);
-      const int4 ci = _mm_min_epi32(ai,bi);
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_min_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
 #endif
     
 #if defined(__SSE4_1__)
     __forceinline Vec3fa maxi(const Vec3fa& a, const Vec3fa& b) {
-      const int4 ai = _mm_castps_si128(a);
-      const int4 bi = _mm_castps_si128(b);
-      const int4 ci = _mm_max_epi32(ai,bi);
+      const vint4 ai = _mm_castps_si128(a);
+      const vint4 bi = _mm_castps_si128(b);
+      const vint4 ci = _mm_max_epi32(ai,bi);
       return _mm_castsi128_ps(ci);
     }
 #endif
@@ -260,10 +260,10 @@ namespace embree
 
   __forceinline Vec3fa cross ( const Vec3fa& a, const Vec3fa& b ) 
   {
-    float4 a0 = float4(a);
-    float4 b0 = shuffle<1,2,0,3>(float4(b));
-    float4 a1 = shuffle<1,2,0,3>(float4(a));
-    float4 b1 = float4(b);
+    vfloat4 a0 = vfloat4(a);
+    vfloat4 b0 = shuffle<1,2,0,3>(vfloat4(b));
+    vfloat4 a1 = shuffle<1,2,0,3>(vfloat4(a));
+    vfloat4 b1 = vfloat4(b);
     return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 

@@ -32,17 +32,17 @@ namespace embree
     // ============================================================================================
 
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::intersect(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::intersect(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const bool16 m_valid    = *(int16*)valid_i != int16(0);
+      const vbool16 m_valid    = *(vint16*)valid_i != vint16(0);
       const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       store16f(stack_dist,inf);
 
@@ -55,12 +55,12 @@ namespace embree
         {
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
@@ -114,17 +114,17 @@ namespace embree
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>    
-    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Single<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const bool16 m_valid = *(int16*)valid_i != int16(0);
+      const vbool16 m_valid = *(vint16*)valid_i != vint16(0);
       const Vec3vf16 rdir16  = rcp_safe(ray16.dir);
-      bool16 terminated    = !m_valid;
-      const float16 inf     = float16(pos_inf);
-      const float16 zero    = float16::zero();
+      vbool16 terminated    = !m_valid;
+      const vfloat16 inf     = vfloat16(pos_inf);
+      const vfloat16 zero    = vfloat16::zero();
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -137,13 +137,13 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const int16 v_invalidNode(BVH4i::invalidNode);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vint16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
 	  const Precalculations precalculations(org_xyz,rdir_xyz);

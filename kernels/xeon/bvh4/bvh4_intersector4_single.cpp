@@ -28,10 +28,10 @@ namespace embree
   namespace isa
   {
     template<int types, bool robust, typename PrimitiveIntersector4>
-    void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      bool4 valid0 = *valid_i;
+      vbool4 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -40,19 +40,19 @@ namespace embree
       /* load ray */
       Vec3vf4 ray_org = ray.org;
       Vec3vf4 ray_dir = ray.dir;
-      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
       const Vec3vf4 rdir = rcp_safe(ray_dir);
       const Vec3vf4 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,float4(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,float4(neg_inf));
-      const float4 inf = float4(pos_inf);
+      ray_tnear = select(valid0,ray_tnear,vfloat4(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,vfloat4(neg_inf));
+      const vfloat4 inf = vfloat4(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
       Vec3vi4 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int4(0*(int)sizeof(float4)),int4(1*(int)sizeof(float4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int4(2*(int)sizeof(float4)),int4(3*(int)sizeof(float4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int4(4*(int)sizeof(float4)),int4(5*(int)sizeof(float4)));
+      nearXYZ.x = select(rdir.x >= 0.0f,vint4(0*(int)sizeof(vfloat4)),vint4(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint4(2*(int)sizeof(vfloat4)),vint4(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint4(4*(int)sizeof(vfloat4)),vint4(5*(int)sizeof(vfloat4)));
 
       /* we have no packet implementation for OBB nodes yet */
       size_t bits = movemask(valid0);
@@ -64,32 +64,32 @@ namespace embree
 
     
     template<int types, bool robust, typename PrimitiveIntersector4>
-    void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       /* verify correct input */
-      bool4 valid0 = *valid_i;
+      vbool4 valid0 = *valid_i;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
       assert(all(valid0,ray.tnear > -FLT_MIN));
 
       /* load ray */
-      const bool4 valid = *valid_i;
-      bool4 terminated = !valid;
+      const vbool4 valid = *valid_i;
+      vbool4 terminated = !valid;
       Vec3vf4 ray_org = ray.org, ray_dir = ray.dir;
-      float4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat4 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
       const Vec3vf4 rdir = rcp_safe(ray_dir);
       const Vec3vf4 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,float4(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,float4(neg_inf));
-      const float4 inf = float4(pos_inf);
+      ray_tnear = select(valid,ray_tnear,vfloat4(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat4(neg_inf));
+      const vfloat4 inf = vfloat4(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
       Vec3vi4 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int4(0*(int)sizeof(float4)),int4(1*(int)sizeof(float4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int4(2*(int)sizeof(float4)),int4(3*(int)sizeof(float4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int4(4*(int)sizeof(float4)),int4(5*(int)sizeof(float4)));
+      nearXYZ.x = select(rdir.x >= 0.0f,vint4(0*(int)sizeof(vfloat4)),vint4(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint4(2*(int)sizeof(vfloat4)),vint4(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint4(4*(int)sizeof(vfloat4)),vint4(5*(int)sizeof(vfloat4)));
 
       /* we have no packet implementation for OBB nodes yet */
       size_t bits = movemask(valid);
@@ -102,7 +102,7 @@ namespace embree
     }
 
     template<typename Intersector1>
-    void BVH4Intersector4FromIntersector1<Intersector1>::intersect(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4FromIntersector1<Intersector1>::intersect(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       Ray rays[4];
       ray.get(rays);
@@ -115,7 +115,7 @@ namespace embree
     }
     
     template<typename Intersector1>
-    void BVH4Intersector4FromIntersector1<Intersector1>::occluded(bool4* valid_i, BVH4* bvh, Ray4& ray)
+    void BVH4Intersector4FromIntersector1<Intersector1>::occluded(vbool4* valid_i, BVH4* bvh, Ray4& ray)
     {
       Ray rays[4];
       ray.get(rays);

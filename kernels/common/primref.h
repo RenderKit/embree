@@ -120,13 +120,13 @@ namespace embree
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
 #if defined(__AVX__)
-    const float8 aa = load8f((float*)&a);
-    const float8 bb = load8f((float*)&b);
+    const vfloat8 aa = load8f((float*)&a);
+    const vfloat8 bb = load8f((float*)&b);
     store8f((float*)&a,bb);
     store8f((float*)&b,aa);
 #elif defined(__MIC__)
-    const float16 aa = uload16f_low((float*)&a.lower);
-    const float16 bb = uload16f_low((float*)&b.lower);
+    const vfloat16 aa = uload16f_low((float*)&a.lower);
+    const vfloat16 bb = uload16f_low((float*)&b.lower);
     compactustore16f_low(0xff,(float*)&b.lower,aa);
     compactustore16f_low(0xff,(float*)&a.lower,bb);
 #else

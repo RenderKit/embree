@@ -24,9 +24,9 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray8
   {
-    typedef bool8 simdb;
-    typedef float8 simdf;
-    typedef int8 simdi;
+    typedef vbool8 simdb;
+    typedef vfloat8 simdf;
+    typedef vint8 simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray8() {}
@@ -34,23 +34,23 @@ namespace embree
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
     __forceinline Ray8(const Vec3vf8& org, const Vec3vf8& dir, 
-                       const float8& tnear = zero, const float8& tfar = inf, 
-                       const float8& time = zero, const int8& mask = -1)
+                       const vfloat8& tnear = zero, const vfloat8& tfar = inf, 
+                       const vfloat8& time = zero, const vint8& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time)  {}
 
     /*! returns the size of the ray */
     static __forceinline size_t size() { return 8; }
     
     /*! Tests if we hit something. */
-    __forceinline operator bool8() const { return geomID != int8(-1); }
+    __forceinline operator vbool8() const { return geomID != vint8(-1); }
 
     /*! calculates if this is a valid ray that does not cause issues during traversal */
-    __forceinline bool8 valid() const {
-      const bool8 vx = abs(org.x) <= float8(FLT_LARGE) & abs(dir.x) <= float8(FLT_LARGE);
-      const bool8 vy = abs(org.y) <= float8(FLT_LARGE) & abs(dir.y) <= float8(FLT_LARGE);
-      const bool8 vz = abs(org.z) <= float8(FLT_LARGE) & abs(dir.z) <= float8(FLT_LARGE);
-      const bool8 vn = abs(tnear) <= float8(inf);
-      const bool8 vf = abs(tfar) <= float8(inf);
+    __forceinline vbool8 valid() const {
+      const vbool8 vx = abs(org.x) <= vfloat8(FLT_LARGE) & abs(dir.x) <= vfloat8(FLT_LARGE);
+      const vbool8 vy = abs(org.y) <= vfloat8(FLT_LARGE) & abs(dir.y) <= vfloat8(FLT_LARGE);
+      const vbool8 vz = abs(org.z) <= vfloat8(FLT_LARGE) & abs(dir.z) <= vfloat8(FLT_LARGE);
+      const vbool8 vn = abs(tnear) <= vfloat8(inf);
+      const vbool8 vf = abs(tfar) <= vfloat8(inf);
       return vx & vy & vz & vn & vf;
     }
 
@@ -85,18 +85,18 @@ namespace embree
   public:
     Vec3vf8 org;      //!< Ray origin
     Vec3vf8 dir;      //!< Ray direction
-    float8 tnear;     //!< Start of ray segment 
-    float8 tfar;      //!< End of ray segment   
-    float8 time;      //!< Time of this ray for motion blur.
-    int8 mask;      //!< used to mask out objects during traversal
+    vfloat8 tnear;     //!< Start of ray segment 
+    vfloat8 tfar;      //!< End of ray segment   
+    vfloat8 time;      //!< Time of this ray for motion blur.
+    vint8 mask;      //!< used to mask out objects during traversal
 
   public:
     Vec3vf8 Ng;       //!< Geometry normal
-    float8 u;         //!< Barycentric u coordinate of hit
-    float8 v;         //!< Barycentric v coordinate of hit
-    int8 geomID;    //!< geometry ID
-    int8 primID;    //!< primitive ID
-    int8 instID;    //!< instance ID
+    vfloat8 u;         //!< Barycentric u coordinate of hit
+    vfloat8 v;         //!< Barycentric v coordinate of hit
+    vint8 geomID;    //!< geometry ID
+    vint8 primID;    //!< primitive ID
+    vint8 instID;    //!< instance ID
   };
 
   /*! Outputs ray to stream. */
