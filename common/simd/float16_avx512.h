@@ -48,6 +48,12 @@ namespace embree
     __forceinline float16(const float& a, const float& b, const float& c, const float& d) { 
       v = _mm512_set_4to16_ps(a,b,c,d);  
     }
+
+#if defined(__AVX512F__)
+    __forceinline float16(const float4 i) { 
+      v = _mm512_broadcast_f32x4(i);
+    }
+#endif
     
     __forceinline explicit float16(const __m512i& a) { 
 #if defined(__AVX512F__)
@@ -474,6 +480,16 @@ namespace embree
   __forceinline float16 permute16f(__m512i index, float16 v)
   {
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
+  __forceinline float16 permute(float16 v,__m512i index)
+  {
+    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
+  __forceinline float16 reverse(const float16 &a) 
+  {
+    return permute(a,_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
   }
 
   template<int i>
