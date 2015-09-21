@@ -134,7 +134,7 @@ namespace embree
     size_t getSubTreeSize64bBlocks(const unsigned int leafBlocks = 2);
 
     __forceinline size_t getGridBytes() const {
-      const size_t grid_size_xyzuv = (grid_size_simd_blocks * vfloatx::size) * 4;
+      const size_t grid_size_xyzuv = (grid_size_simd_blocks * VSIZEX) * 4;
       return 64*((grid_size_xyzuv+15) / 16);
     }
 
@@ -214,8 +214,8 @@ namespace embree
     {
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
-      const size_t M = dwidth*dheight+vfloatx::size;
-      const size_t grid_size_simd_blocks = (M-1)/vfloatx::size;
+      const size_t M = dwidth*dheight+VSIZEX;
+      const size_t grid_size_simd_blocks = (M-1)/VSIZEX;
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
@@ -253,12 +253,12 @@ namespace embree
         const Vec2f uv3 = patch.getUV(3);
         for (size_t i=0; i<grid_size_simd_blocks; i++)
         {
-          const vfloatx u = vfloatx::load(&grid_u[i*vfloatx::size]);
-          const vfloatx v = vfloatx::load(&grid_v[i*vfloatx::size]);
+          const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
+          const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
           const vfloatx patch_u = lerp2(uv0.x,uv1.x,uv3.x,uv2.x,u,v);
           const vfloatx patch_v = lerp2(uv0.y,uv1.y,uv3.y,uv2.y,u,v);
-          vfloatx::store(&grid_u[i*vfloatx::size],patch_u);
-          vfloatx::store(&grid_v[i*vfloatx::size],patch_v);
+          vfloatx::store(&grid_u[i*VSIZEX],patch_u);
+          vfloatx::store(&grid_v[i*VSIZEX],patch_v);
         }
 
         /* call displacement shader */
@@ -271,7 +271,7 @@ namespace embree
         const float last_x = grid_x[dwidth*dheight-1];
         const float last_y = grid_y[dwidth*dheight-1];
         const float last_z = grid_z[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloatx::size;i++)
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
         {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
@@ -288,7 +288,7 @@ namespace embree
         /* set last elements in u,v array to last valid point */
         const float last_u = grid_u[dwidth*dheight-1];
         const float last_v = grid_v[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloatx::size;i++) {
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
         }
@@ -300,8 +300,8 @@ namespace embree
         /* iterates over all grid points */
         for (size_t i=0; i<grid_size_simd_blocks; i++)
         {
-          const vfloatx u = vfloatx::load(&grid_u[i*vfloatx::size]);
-          const vfloatx v = vfloatx::load(&grid_v[i*vfloatx::size]);
+          const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
+          const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
           Vec3<vfloatx> vtx = patch.eval(u,v);
         
           /* evaluate displacement function */
@@ -310,12 +310,12 @@ namespace embree
             const Vec3<vfloatx> normal = normalize_safe(patch.normal(u, v));
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                            &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloatx::size);
+                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
           }
-          vfloatx::store(&grid_x[i*vfloatx::size],vtx.x);
-          vfloatx::store(&grid_y[i*vfloatx::size],vtx.y);
-          vfloatx::store(&grid_z[i*vfloatx::size],vtx.z);
+          vfloatx::store(&grid_x[i*VSIZEX],vtx.x);
+          vfloatx::store(&grid_y[i*VSIZEX],vtx.y);
+          vfloatx::store(&grid_z[i*VSIZEX],vtx.z);
         }
       }
     }
@@ -331,8 +331,8 @@ namespace embree
       BBox3fa b(empty);
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
-      const size_t M = dwidth*dheight+vfloatx::size;
-      const size_t grid_size_simd_blocks = (M-1)/vfloatx::size;
+      const size_t M = dwidth*dheight+VSIZEX;
+      const size_t grid_size_simd_blocks = (M-1)/VSIZEX;
       dynamic_large_stack_array(float,grid_u,M,64*64);
       dynamic_large_stack_array(float,grid_v,M,64*64);
 
@@ -377,7 +377,7 @@ namespace embree
         const float last_x = grid_x[dwidth*dheight-1];
         const float last_y = grid_y[dwidth*dheight-1];
         const float last_z = grid_z[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloatx::size;i++)
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++)
         {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
@@ -394,9 +394,9 @@ namespace embree
         vfloatx bounds_max_z = neg_inf;
         for (size_t i = 0; i<grid_size_simd_blocks; i++)
         {
-          vfloatx x = vfloatx::loadu(&grid_x[i * vfloatx::size]);
-          vfloatx y = vfloatx::loadu(&grid_y[i * vfloatx::size]);
-          vfloatx z = vfloatx::loadu(&grid_z[i * vfloatx::size]);
+          vfloatx x = vfloatx::loadu(&grid_x[i * VSIZEX]);
+          vfloatx y = vfloatx::loadu(&grid_y[i * VSIZEX]);
+          vfloatx z = vfloatx::loadu(&grid_z[i * VSIZEX]);
 
 	  bounds_min_x = min(bounds_min_x,x);
 	  bounds_min_y = min(bounds_min_y,y);
@@ -424,7 +424,7 @@ namespace embree
         /* set last elements in u,v array to last valid point */
         const float last_u = grid_u[dwidth*dheight-1];
         const float last_v = grid_v[dwidth*dheight-1];
-        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*vfloatx::size;i++) {
+        for (size_t i=dwidth*dheight;i<grid_size_simd_blocks*VSIZEX;i++) {
           grid_u[i] = last_u;
           grid_v[i] = last_v;
         }
@@ -446,8 +446,8 @@ namespace embree
 
         for (size_t i=0; i<grid_size_simd_blocks; i++)
         {
-          const vfloatx u = vfloatx::load(&grid_u[i*vfloatx::size]);
-          const vfloatx v = vfloatx::load(&grid_v[i*vfloatx::size]);
+          const vfloatx u = vfloatx::load(&grid_u[i*VSIZEX]);
+          const vfloatx v = vfloatx::load(&grid_v[i*VSIZEX]);
           Vec3<vfloatx> vtx = patch.eval(u,v);
         
           /* evaluate displacement function */
@@ -456,7 +456,7 @@ namespace embree
             const Vec3<vfloatx> normal = normalize_safe(patch.normal(u,v));
             geom->displFunc(geom->userPtr,patch.geom,patch.prim,
                             &u[0],&v[0],&normal.x[0],&normal.y[0],&normal.z[0],
-                            &vtx.x[0],&vtx.y[0],&vtx.z[0],vfloatx::size);
+                            &vtx.x[0],&vtx.y[0],&vtx.z[0],VSIZEX);
           
           }
           bounds_min[0] = min(bounds_min[0],vtx.x);
