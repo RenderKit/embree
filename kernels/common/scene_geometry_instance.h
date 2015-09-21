@@ -25,10 +25,11 @@ namespace embree
   {
   public:
     GeometryInstance (Scene* parent, Geometry* geom); 
-    virtual void setTransform(const AffineSpace3fa& local2world);
     virtual void build(size_t threadIndex, size_t threadCount) {}
     virtual void enabling ();
     virtual void disabling();
+    virtual void setMask (unsigned mask);
+    virtual void setTransform(const AffineSpace3fa& local2world);
     
   public:
     AffineSpace3fa local2world; //!< transforms from local space to world space

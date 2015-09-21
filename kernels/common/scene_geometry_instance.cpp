@@ -35,6 +35,15 @@ namespace embree
      atomic_add(&parent->numInstancedTriangles,-ssize_t(geom->size())); // FIXME: currently only triangle meshes are supported
   }
   
+  void GeometryInstance::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  } 
+
   void GeometryInstance::setTransform(const AffineSpace3fa& xfm)
   {
     if (parent->isStatic() && parent->isBuild())
