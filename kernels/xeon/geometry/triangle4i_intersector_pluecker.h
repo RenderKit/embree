@@ -36,7 +36,7 @@ namespace embree
           __forceinline Precalculations (const Ray& ray, const void* ptr) {}
         };
         
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           /* gather vertices */
           STAT3(normal.trav_prims,1,1,1);
@@ -50,10 +50,10 @@ namespace embree
           Vec3f4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3f4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3f4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          triangle_intersect_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          triangle_intersect_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
         }
         
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           /* gather vertices */
           STAT3(shadow.trav_prims,1,1,1);
@@ -67,7 +67,7 @@ namespace embree
           Vec3f4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3f4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3f4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          return triangle_occluded_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene);
+          return triangle_occluded_pluecker<enableIntersectionFilter,bool4,float4,int4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
         }
       };
 

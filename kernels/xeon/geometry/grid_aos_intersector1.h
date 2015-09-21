@@ -296,7 +296,7 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         intersect(pre,ray,prim[0],scene,lazy_node);
       }    
       
@@ -508,7 +508,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         return occluded(pre,ray,prim[0],scene,lazy_node);
       }
     };

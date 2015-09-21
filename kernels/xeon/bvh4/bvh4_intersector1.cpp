@@ -67,8 +67,6 @@ namespace embree
         Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
         size_t nearX, nearY, nearZ;
         size_t farX, farY, farZ;
-        int geomID;
-        int instID;
       };
 
       /*! perform per ray precalculations required by the primitive intersector */
@@ -91,6 +89,7 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
+      const unsigned int* geomID_to_instID = nullptr;
       TravRay vray(ray.org,ray.dir);
       __aligned(32) char tlray[sizeof(TravRay)];
       new (tlray) TravRay(vray);
@@ -200,12 +199,10 @@ namespace embree
             const BVH4::TransformNode* node = cur.transformNode();
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
+            geomID_to_instID = &node->instID;
             new (&vray) TravRay(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
-            ((TravRay&)tlray).geomID = ray.geomID; ray.geomID = -1;
-            ((TravRay&)tlray).instID = ray.instID; ray.instID = node->instID;
-            
             stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
             stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
             goto pop;
@@ -213,13 +210,10 @@ namespace embree
           
           /*! restore toplevel ray */
           if (cur == BVH4::popRay) {
+            geomID_to_instID = nullptr;
             vray = (TravRay&) tlray; 
             ray.org = ((TravRay&)tlray).org_xyz;
             ray.dir = ((TravRay&)tlray).dir_xyz;
-            if (ray.geomID == -1) {
-              ray.geomID = ((TravRay&)tlray).geomID;
-              ray.instID = ((TravRay&)tlray).instID;
-            }
             goto pop;
           }
         }
@@ -229,7 +223,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene,lazy_node);
+        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene,geomID_to_instID,lazy_node);
         ray_far = ray.tfar;
 
         if (unlikely(lazy_node)) {
@@ -358,7 +352,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->scene,lazy_node)) {
+        if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->scene,nullptr,lazy_node)) {
           ray.geomID = 0;
           break;
         }

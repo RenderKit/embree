@@ -311,6 +311,18 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return make_Vec3f(0.0f);
   }
+
+#if INSTANCING
+  Vec3fa Ng = ray.Ng;
+#if INSTANCING == 1
+  unsigned instID = ray.geomID;
+#else
+  unsigned instID = ray.instID;
+#endif
+  uniform ISPCInstance* instance = (uniform ISPCInstance*) geomID_to_mesh[instID];
+  Ng = xfmVector(instance->space,Ng);
+  return Vec3fa(abs(dot(normalize(ray.dir),normalize(Ng))));
+#endif
   
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);

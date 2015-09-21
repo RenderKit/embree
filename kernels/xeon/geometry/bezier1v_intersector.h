@@ -29,12 +29,12 @@ namespace embree
       typedef Bezier1v Primitive;
       typedef Bezier1Intersector1::Precalculations Precalculations;
       
-      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-        Bezier1Intersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene, const unsigned* geomID_to_instID) {
+        Bezier1Intersector1::intersect(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene,geomID_to_instID);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene) {
-        return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene, const unsigned* geomID_to_instID) {
+        return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene,geomID_to_instID);
       }
     };
 
