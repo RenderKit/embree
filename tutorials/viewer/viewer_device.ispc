@@ -233,7 +233,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
   
-#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return make_Vec3f(0.0f);
@@ -321,10 +320,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
-#else
-  Vec3f color = make_Vec3f(0.0f);
-
-#endif
   return color;
 }
 

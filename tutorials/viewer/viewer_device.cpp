@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-#define GEOMETRY_INSTANCING 1
+#define INSTANCING 0  // 0=no instancing, 1=geometry instancing, 2=scene instancing
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
@@ -201,7 +201,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
   }
 
-#if GEOMETRY_INSTANCING
+#if INSTANCING == 1
 
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
@@ -232,7 +232,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     geomID_to_mesh[geomID] = instance;
   }
 
-#else
+#elif INSTANCING == 2
 
   /* add all meshes to the scene */
   for (int i=0; i<scene_in->numMeshes; i++)
@@ -264,6 +264,25 @@ RTCScene convertScene(ISPCScene* scene_in)
     geomID_to_mesh[geomID] = instance;
   }
 
+#else
+
+  /* add all meshes to the scene */
+  for (int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    ISPCMesh* mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+
+    geomID_to_mesh[geomID] = mesh;
+    geomID_to_type[geomID] = 0;
+
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
+  }
+
 #endif
 
   /* commit changes to scene */
@@ -288,15 +307,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
 
-#if 1
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     return Vec3fa(0.0f);
   }
 
-#if 0
-  return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
-#else
+#if INSTANCING
   Vec3fa Ng = ray.Ng;
   if (ray.instID != RTC_INVALID_GEOMETRY_ID) {
     ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[ray.instID];
@@ -387,10 +403,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   //Vec3fa Ng = normalize(ray.Ng);
   //Vec3fa Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
   color = color*dot(ray.dir,Nf);   // FIXME: *=
-#else
-  Vec3fa color = Vec3fa(0.0f);
-
-#endif
   return color;
 }
 
