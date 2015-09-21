@@ -95,7 +95,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.farX,vray.farY,vray.farZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),vray,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
@@ -259,7 +259,7 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),vray,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))

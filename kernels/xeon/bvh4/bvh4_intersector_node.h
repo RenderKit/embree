@@ -99,27 +99,22 @@ namespace embree
 
     /*! intersection with single rays */
     template<bool robust>
-      __forceinline size_t intersect_node(const BVH4::Node* node, 
-                                          size_t nearX, size_t nearY, size_t nearZ, 
-                                          size_t farX, size_t farY, size_t farZ,
-                                          const Vec3f4& org, const Vec3f4& rdir, const Vec3f4& org_rdir, const float4& tnear, const float4& tfar, 
-                                          float4& dist) 
+      __forceinline size_t intersect_node(const BVH4::Node* node, const BVH4TravRay& ray, const float4& tnear, const float4& tfar, float4& dist) 
     {
-      //const size_t farX  = nearX ^ sizeof(float4), farY  = nearY ^ sizeof(float4), farZ  = nearZ ^ sizeof(float4);
 #if defined (__AVX2__)
-      const float4 tNearX = msub(load4f((const char*)&node->lower_x+nearX), rdir.x, org_rdir.x);
-      const float4 tNearY = msub(load4f((const char*)&node->lower_x+nearY), rdir.y, org_rdir.y);
-      const float4 tNearZ = msub(load4f((const char*)&node->lower_x+nearZ), rdir.z, org_rdir.z);
-      const float4 tFarX  = msub(load4f((const char*)&node->lower_x+farX ), rdir.x, org_rdir.x);
-      const float4 tFarY  = msub(load4f((const char*)&node->lower_x+farY ), rdir.y, org_rdir.y);
-      const float4 tFarZ  = msub(load4f((const char*)&node->lower_x+farZ ), rdir.z, org_rdir.z);
+      const float4 tNearX = msub(load4f((const char*)&node->lower_x+ray.nearX), ray.rdir.x, ray.org_rdir.x);
+      const float4 tNearY = msub(load4f((const char*)&node->lower_x+ray.nearY), ray.rdir.y, ray.org_rdir.y);
+      const float4 tNearZ = msub(load4f((const char*)&node->lower_x+ray.nearZ), ray.rdir.z, ray.org_rdir.z);
+      const float4 tFarX  = msub(load4f((const char*)&node->lower_x+ray.farX ), ray.rdir.x, ray.org_rdir.x);
+      const float4 tFarY  = msub(load4f((const char*)&node->lower_x+ray.farY ), ray.rdir.y, ray.org_rdir.y);
+      const float4 tFarZ  = msub(load4f((const char*)&node->lower_x+ray.farZ ), ray.rdir.z, ray.org_rdir.z);
 #else
-      const float4 tNearX = (load4f((const char*)&node->lower_x+nearX) - org.x) * rdir.x;
-      const float4 tNearY = (load4f((const char*)&node->lower_x+nearY) - org.y) * rdir.y;
-      const float4 tNearZ = (load4f((const char*)&node->lower_x+nearZ) - org.z) * rdir.z;
-      const float4 tFarX  = (load4f((const char*)&node->lower_x+farX ) - org.x) * rdir.x;
-      const float4 tFarY  = (load4f((const char*)&node->lower_x+farY ) - org.y) * rdir.y;
-      const float4 tFarZ  = (load4f((const char*)&node->lower_x+farZ ) - org.z) * rdir.z;
+      const float4 tNearX = (load4f((const char*)&node->lower_x+ray.nearX) - ray.org.x) * ray.rdir.x;
+      const float4 tNearY = (load4f((const char*)&node->lower_x+ray.nearY) - ray.org.y) * ray.rdir.y;
+      const float4 tNearZ = (load4f((const char*)&node->lower_x+ray.nearZ) - ray.org.z) * ray.rdir.z;
+      const float4 tFarX  = (load4f((const char*)&node->lower_x+ray.farX ) - ray.org.x) * ray.rdir.x;
+      const float4 tFarY  = (load4f((const char*)&node->lower_x+ray.farY ) - ray.org.y) * ray.rdir.y;
+      const float4 tFarZ  = (load4f((const char*)&node->lower_x+ray.farZ ) - ray.org.z) * ray.rdir.z;
 #endif
       
       if (robust) {
