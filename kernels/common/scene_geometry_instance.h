@@ -14,41 +14,25 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "catmullclark_coefficients.h"
+#pragma once
 
+#include "geometry.h"
 
 namespace embree
 {
-  CatmullClarkPrecomputedCoefficients CatmullClarkPrecomputedCoefficients::table;
-
-  CatmullClarkPrecomputedCoefficients::CatmullClarkPrecomputedCoefficients()
+  /*! Instanced geometry */
+  struct GeometryInstance : public Geometry
   {
-    /* precompute cosf(2.0f*M_PI/n) */
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-      table_cos_2PI_div_n[n] = set_cos_2PI_div_n(n);
-
-    /* precompute limit tangents coefficients */
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-    {
-      table_limittangent_a[n] = new float[n];
-      table_limittangent_b[n] = new float[n];
-
-      for (size_t i=0; i<n; i++) {
-        table_limittangent_a[n][i] = set_limittangent_a(i,n);
-        table_limittangent_b[n][i] = set_limittangent_b(i,n);
-      }      
-    }
-
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-      table_limittangent_c[n] = set_limittangent_c(n);
-  }
-
-  CatmullClarkPrecomputedCoefficients::~CatmullClarkPrecomputedCoefficients()
-  {
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-    {
-      delete [] table_limittangent_a[n];
-      delete [] table_limittangent_b[n];
-    }
-  }
+  public:
+    GeometryInstance (Scene* parent, Geometry* geom); 
+    virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void build(size_t threadIndex, size_t threadCount) {}
+    virtual void enabling ();
+    virtual void disabling();
+    
+  public:
+    AffineSpace3fa local2world; //!< transforms from local space to world space
+    AffineSpace3fa world2local; //!< transforms from world space to local space
+    Geometry* geom;             //!< pointer to instanced acceleration structure
+  };
 }

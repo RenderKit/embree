@@ -49,6 +49,7 @@ namespace embree
       numBezierCurves(0), numBezierCurves2(0), 
       numSubdivPatches(0), numSubdivPatches2(0), 
       numUserGeometries1(0), numSubdivEnableDisableEvents(0),
+      numInstancedTriangles(0),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), commitCounterSubdiv(0), 
       progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
@@ -162,16 +163,14 @@ namespace embree
 #if defined (__TARGET_AVX__)
           if (hasISA(AVX))
 	  {
-            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
-            //if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
-            /*else*/               accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+            else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
           }
           else 
 #endif
           {
-            // FIXME: there appears to be a bug in the spatial split builder, performance and SAH is lower than for standard builder
-            //if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));           
-            /*else*/               accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
+            if (isHighQuality()) accels.add(BVH4::BVH4Triangle4SpatialSplit(this));           
+            else                 accels.add(BVH4::BVH4Triangle4ObjectSplit(this)); 
           }
           break;
 
@@ -199,6 +198,7 @@ namespace embree
         }
       }
     }
+    else if (device->tri_accel == "bvh4.instanced_bvh4.triangle4")    accels.add(BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
@@ -290,6 +290,11 @@ namespace embree
   unsigned Scene::newInstance (Scene* scene) {
     Geometry* geom = new Instance(this,scene);
     return geom->id;
+  }
+  
+  unsigned Scene::newGeometryInstance (Geometry* geom) {
+    Geometry* instance = new GeometryInstance(this,geom);
+    return instance->id;
   }
 
   unsigned Scene::newTriangleMesh (RTCGeometryFlags gflags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) 

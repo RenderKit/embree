@@ -14,41 +14,33 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "catmullclark_coefficients.h"
-
+#include "scene_geometry_instance.h"
+#include "scene.h"
 
 namespace embree
 {
-  CatmullClarkPrecomputedCoefficients CatmullClarkPrecomputedCoefficients::table;
-
-  CatmullClarkPrecomputedCoefficients::CatmullClarkPrecomputedCoefficients()
+  GeometryInstance::GeometryInstance (Scene* parent, Geometry* geom) 
+    : Geometry(parent,Type(geom->type | INSTANCE), 1, geom->numTimeSteps, geom->flags), local2world(one), world2local(one), geom(geom) 
   {
-    /* precompute cosf(2.0f*M_PI/n) */
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-      table_cos_2PI_div_n[n] = set_cos_2PI_div_n(n);
-
-    /* precompute limit tangents coefficients */
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-    {
-      table_limittangent_a[n] = new float[n];
-      table_limittangent_b[n] = new float[n];
-
-      for (size_t i=0; i<n; i++) {
-        table_limittangent_a[n][i] = set_limittangent_a(i,n);
-        table_limittangent_b[n][i] = set_limittangent_b(i,n);
-      }      
-    }
-
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-      table_limittangent_c[n] = set_limittangent_c(n);
+    enabling();
   }
 
-  CatmullClarkPrecomputedCoefficients::~CatmullClarkPrecomputedCoefficients()
+  void GeometryInstance::enabling () {
+    atomic_add(&geom->used,+1);
+    atomic_add(&parent->numInstancedTriangles,+ssize_t(geom->size())); // FIXME: currently only triangle meshes are supported
+  }
+
+  void GeometryInstance::disabling() {
+     atomic_add(&geom->used,-1);
+     atomic_add(&parent->numInstancedTriangles,-ssize_t(geom->size())); // FIXME: currently only triangle meshes are supported
+  }
+  
+  void GeometryInstance::setTransform(const AffineSpace3fa& xfm)
   {
-    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
-    {
-      delete [] table_limittangent_a[n];
-      delete [] table_limittangent_b[n];
-    }
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    local2world = xfm;
+    world2local = rcp(xfm);
   }
 }

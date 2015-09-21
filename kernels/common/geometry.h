@@ -29,7 +29,7 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 };
+    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8, INSTANCE = 16 };
 
   public:
     
@@ -52,6 +52,12 @@ namespace embree
 
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
+
+    /*! tests if geomery is used by any instance (including world space instance) */
+    __forceinline bool isUsed() const { return used; }
+
+     /*! tests if geomery is used by any non-world space instance */
+    __forceinline bool isInstanced() const { return used-enabled; }
 
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return numPrimitives && modified; }
@@ -259,6 +265,7 @@ namespace embree
     bool erasing;              //!< true if geometry is tagged for deletion
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
+    atomic_t used;             //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;

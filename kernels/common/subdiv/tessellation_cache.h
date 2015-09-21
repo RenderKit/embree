@@ -82,12 +82,19 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
 
- struct __aligned(64) ThreadWorkState {
-   AtomicCounter counter;
-   ThreadWorkState *prev;
+ struct __aligned(64) ThreadWorkState 
+ {
+   ALIGNED_STRUCT;
 
-   __forceinline void reset() { counter = 0; prev = NULL; }   
-   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); reset(); }
+   AtomicCounter counter;
+   ThreadWorkState* next;
+   bool allocated;
+
+   __forceinline ThreadWorkState(bool allocated = false) 
+     : counter(0), next(nullptr), allocated(allocated) 
+   {
+     assert( ((size_t)this % 64) == 0 ); 
+   }   
  };
 
 
@@ -178,6 +185,7 @@ namespace embree
 
       
    SharedLazyTessellationCache();
+   ~SharedLazyTessellationCache();
 
    void getNextRenderThreadWorkState();
 

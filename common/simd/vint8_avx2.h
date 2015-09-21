@@ -335,22 +335,22 @@ namespace embree
     _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
   }
 
-#if 0 // FIXME: not compiling under VS2013
+
   __forceinline vint8 sortNetwork2x4(const vint8& v)
   {
     const vint8 a0 = v;
     const vint8 b0 = shuffle<1,0,3,2>(a0);
     const vint8 c0 = umin(a0,b0);
     const vint8 d0 = umax(a0,b0);
-    const vint8 a1 = (0b01010101,c0,d0);
+    const vint8 a1 = (0x55 /* 0b01010101 */,c0,d0);
     const vint8 b1 = shuffle<2,3,0,1>(a1);
     const vint8 c1 = umin(a1,b1);
     const vint8 d1 = umax(a1,b1);
-    const vint8 a2 = (0b00110011,c1,d1);
+    const vint8 a2 = (0x33 /* 0b00110011 */,c1,d1);
     const vint8 b2 = shuffle<0,2,1,3>(a2);
     const vint8 c2 = umin(a2,b2);
     const vint8 d2 = umax(a2,b2);
-    const vint8 a3 = select(0b00100010,c2,d2);
+    const vint8 a3 = select(0x22 /* 0b00100010 */,c2,d2);
     return a3;
   }
 
@@ -360,30 +360,29 @@ namespace embree
       const vint8 b0 = shuffle<1,0,3,2>(a0);
       const vint8 c0 = umin(a0,b0);
       const vint8 d0 = umax(a0,b0);
-      const vint8 a1 = select(0b10011001,c0,d0);
+      const vint8 a1 = select(0x99 /* 0b10011001 */,c0,d0);
       const vint8 b1 = shuffle<2,3,0,1>(a1);
       const vint8 c1 = umin(a1,b1);
       const vint8 d1 = umax(a1,b1);
-      const vint8 a2 = select(0b11000011,c1,d1);
+      const vint8 a2 = select(0xc3 /* 0b11000011 */,c1,d1);
       const vint8 b2 = shuffle<1,0,3,2>(a2);
       const vint8 c2 = umin(a2,b2);
       const vint8 d2 = umax(a2,b2);
-      const vint8 a3 = select(0b10100101,c2,d2);
+      const vint8 a3 = select(0xa5 /* 0b10100101 */,c2,d2);
       const vint8 b3 = shuffle<1,0>(a3);
       const vint8 c3 = umin(a3,b3);
       const vint8 d3 = umax(a3,b3);
-      const vint8 a4 = select(0b00001111,c3,d3);
+      const vint8 a4 = select(0xf /* 0b00001111 */,c3,d3);
       const vint8 b4 = shuffle<2,3,0,1>(a4);
       const vint8 c4 = umin(a4,b4);
       const vint8 d4 = umax(a4,b4);
-      const vint8 a5 = select(0b00110011,c4,d4);
+      const vint8 a5 = select(0x33 /* 0b00110011 */,c4,d4);
       const vint8 b5 = shuffle<1,0,3,2>(a5);
       const vint8 c5 = umin(a5,b5);
       const vint8 d5 = umax(a5,b5);
-      const vint8 a6 = select(0b01010101,c5,d5);
+      const vint8 a6 = select(0x55 /* 0b01010101 */,c5,d5);
       return a6;
     }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

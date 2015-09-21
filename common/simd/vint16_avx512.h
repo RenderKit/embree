@@ -50,6 +50,12 @@ namespace embree
     __forceinline vint(const int a, const int b, const int c, const int d) {
       v = _mm512_set_4to16_epi32(a,b,c,d);      
     }
+
+#if defined(__AVX512F__)
+    __forceinline vint(const vint4 i) {
+      v = _mm512_broadcast_i32x4(i);
+    }
+#endif
    
     __forceinline explicit vint(const __m512 f) {
 #if defined(__AVX512F__)
@@ -69,10 +75,11 @@ namespace embree
     __forceinline vint( NegInfTy ) : v(_mm512_set_1to16_epi32(neg_inf)) {}
     __forceinline vint( StepTy   ) : v(_mm512_set_16to16_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
 
+    __forceinline vint( ReverseStepTy )   : v(_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)) {}
+
     __forceinline static vint16 zero() { return _mm512_setzero_epi32(); }
     __forceinline static vint16 one () { return _mm512_set_1to16_epi32(1); }
     __forceinline static vint16 neg_one () { return _mm512_set_1to16_epi32(-1); }
-
 
     static __forceinline vint16 loadu(const void* addr)
     {
@@ -357,18 +364,6 @@ namespace embree
   __forceinline vint16 vreduce_add4(vint16 x) { x = vreduce_add2(x); return x + swizzle(x,_MM_SWIZ_REG_CDAB); }
   __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
   __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
-  
-  __forceinline vint16 prefix_sum(const vint16& a)
-  {
-    vint16 v = a;
-    v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
-    const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xf0f0,v,v,shuf_v0);
-    const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
-    v = mask_add(0xff00,v,v,shuf_v1);
-    return v;  
-  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
@@ -495,11 +490,19 @@ namespace embree
   }
   
   __forceinline void store16i_nr(void *__restrict__ ptr, const vint16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_si512(ptr,a);
+#else
     _mm512_storenr_ps(ptr,_mm512_castsi512_ps(a));
+#endif
   }
   
   __forceinline void store16i_ngo(void *__restrict__ ptr, const vint16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_si512(ptr,a);
+#else
     _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
+#endif
   }
   
   __forceinline void store16i(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
@@ -526,6 +529,60 @@ namespace embree
     return _mm512_cvtfxpnt_round_adjustps_epu32(f,_MM_FROUND_TO_ZERO,_MM_EXPADJ_NONE);
 #endif
   }
+
+  __forceinline vint16 permute(vint16 v,vint16 index)
+  {
+    return _mm512_permutev_epi32(index,v);  
+  }
+
+  __forceinline vint16 reverse(const vint16 &a)
+  {
+    return permute(a,vint16(reverse_step));
+  }
+
+  /* __forceinline vint16 prefix_sum2(const vint16& a) */
+  /* { */
+  /*   vint16 v = a; */
+  /*   v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xf0f0,v,v,shuf_v0); */
+  /*   const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xff00,v,v,shuf_v1); */
+  /*   return v;   */
+  /* } */
+
+  __forceinline vint16 prefix_sum(const vint16& a)
+  {
+    vint16 v = a;
+    v = mask_add(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_add(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xf0f0,v,v,shuf_v0);
+    const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xff00,v,v,shuf_v1);
+    return v;  
+  }
+
+
+  /* __forceinline vint16 reverse_prefix_sum2(const vint16& a) */
+  /* { */
+  /*   return reverse(prefix_sum(reverse(a))); */
+  /* } */
+
+  __forceinline vint16 reverse_prefix_sum(const vint16& a)
+  {
+    vint16 v = a;
+    v = mask_add(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_add(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_add(0x0f0f,v,v,shuf_v0);
+    const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_add(0x00ff,v,v,shuf_v1);
+
+    return v;  
+  }
+
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

@@ -23,13 +23,15 @@ namespace embree
   {
     numAlignedNodes = numUnalignedNodes = 0;
     numAlignedNodesMB = numUnalignedNodesMB = 0;
+    numTransformNodes = 0;
     numLeaves = numPrims = numPrimBlocks = depth = 0;
     childrenAlignedNodes = childrenUnalignedNodes = 0;
     childrenAlignedNodesMB = childrenUnalignedNodesMB = 0;
-    bvhSAH = 0.0f;
+    bvhSAH = 0.0f; leafSAH = 0.0f;
     float A = max(0.0f,halfArea(bvh->bounds));
     statistics(bvh->root,A,depth);
     bvhSAH /= halfArea(bvh->bounds);
+    leafSAH /= halfArea(bvh->bounds);
     assert(depth <= BVH4::maxDepth);
   }
   
@@ -39,10 +41,11 @@ namespace embree
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(BVH4::NodeMB);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(BVH4::UnalignedNodeMB);
+    size_t bytesTransformNodes = numTransformNodes*sizeof(BVH4::TransformNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesPrims+bytesVertices;
+    return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesPrims+bytesVertices;
   }
   
   std::string BVH4Statistics::str()  
@@ -52,15 +55,16 @@ namespace embree
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
     size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(BVH4::NodeMB);
     size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(BVH4::UnalignedNodeMB);
+    size_t bytesTransformNodes = numTransformNodes*sizeof(BVH4::TransformNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
-    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesPrims+bytesVertices;
+    size_t bytesTotal = bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesPrims+bytesVertices;
     //size_t bytesTotalAllocated = bvh->alloc.bytes();
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << std::endl;
     stream.precision(4);
-    stream << "  sah = " << bvhSAH;
+    stream << "  sah = " << bvhSAH+leafSAH << " (" << bvhSAH << " + " << leafSAH << ")";
     stream.setf(std::ios::fixed, std::ios::floatfield);
     stream.precision(1);
     stream << ", depth = " << depth << std::endl;
@@ -92,6 +96,12 @@ namespace embree
 	     << "(" << 100.0*double(childrenUnalignedNodesMB)/double(BVH4::N*numUnalignedNodesMB) << "% filled) " 
 	     << "(" << bytesUnalignedNodesMB/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesUnalignedNodesMB)/double(bytesTotal) << "% of total)"
+	     << std::endl;
+    }
+    if (numTransformNodes) {
+      stream << "  transformNodes = "  << numTransformNodes << " "
+	     << "(" << bytesTransformNodes/1E6  << " MB) " 
+	     << "(" << 100.0*double(bytesTransformNodes)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     stream << "  leaves = " << numLeaves << " "
@@ -172,6 +182,18 @@ namespace embree
       }
       depth++;
     }
+    else if (node.isTransformNode())
+    {
+      numTransformNodes++;
+      BVH4::TransformNode* n = node.transformNode();
+      bvhSAH += A*BVH4::travCostTransform;
+
+      depth = 0;
+      const BBox3fa worldBounds = xfmBounds(n->local2world,n->localBounds);
+      const float Ai = max(0.0f,halfArea(worldBounds));
+      size_t cdepth; statistics(n->child,Ai,cdepth); 
+      depth=max(depth,cdepth)+1;
+    }
     else
     {
       depth = 0;
@@ -184,7 +206,7 @@ namespace embree
         numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       
       float sah = A * BVH4::intCost * num;
-      bvhSAH += sah;
+      leafSAH += sah;
     }
   } 
 }

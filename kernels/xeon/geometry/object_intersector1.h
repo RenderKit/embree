@@ -31,14 +31,14 @@ namespace embree
         __forceinline Precalculations (const Ray& ray, const void *ptr) {}
       };
       
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         // FIXME: add ray mask test
         prim.accel->intersect((RTCRay&)ray,prim.item);
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene) 
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID) 
       {
         AVX_ZERO_UPPER();
         // FIXME: add ray mask test

@@ -34,7 +34,7 @@ namespace embree
   {
     OBJScene () {}
 
-    void add (Ref<SceneGraph::Node> node);
+    void add (Ref<SceneGraph::Node> node, bool instancing = false);
 
     /*! OBJ Triangle */
     struct Triangle 

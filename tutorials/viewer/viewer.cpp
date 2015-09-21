@@ -38,7 +38,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  static bool g_loop_mode = false;
+  static bool g_instancing_mode = false;
   static FileName keyframeList = "";
 
   /* scene */
@@ -98,11 +98,11 @@ namespace embree
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
 
-      else if (tag == "-loop") 
-	g_loop_mode = true;
-
       else if (tag == "-anim") 
 	g_anim_mode = true;
+
+      else if (tag == "-instancing") 
+	g_instancing_mode = true;
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
@@ -236,7 +236,7 @@ namespace embree
     init(g_rtcore.c_str());
 
     /* send model */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>()); 
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),g_instancing_mode); 
     g_scene = nullptr;
     set_scene(&g_obj_scene);
     

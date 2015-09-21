@@ -37,7 +37,7 @@ namespace embree
       
       static __forceinline void intersect(Ray& ray, const Precalculations& pre, 
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                          Scene* scene)
+                                          Scene* scene, const unsigned* geomID_to_instID)
       {
         /* transform control points into ray space */
         STAT3(normal.trav_prims,1,1,1);
@@ -90,7 +90,7 @@ namespace embree
         const float one_over_width = 1.0f/4.0f;
         
 #endif
-        
+        int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
       retry:
         if (unlikely(none(valid))) return;
         STAT3(normal.trav_prim_hits,1,1,1);
@@ -117,7 +117,7 @@ namespace embree
           ray.v = 0.0f;
           ray.tfar = t[i];
           ray.Ng = T;
-          ray.geomID = geomID;
+          ray.geomID = instID;
           ray.primID = primID;
 #if defined(RTCORE_INTERSECTION_FILTER)
           return;
@@ -129,7 +129,7 @@ namespace embree
           const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
-            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID)) return;
+            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,instID,primID)) return;
           valid[i] = 0;
           if (none(valid)) return;
           i = select_min(valid,t);
@@ -140,7 +140,7 @@ namespace embree
       
       static __forceinline bool occluded(Ray& ray, const Precalculations& pre,
                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                         Scene* scene) 
+                                         Scene* scene, const unsigned* geomID_to_instID) 
       {
         /* transform control points into ray space */
         STAT3(shadow.trav_prims,1,1,1);
@@ -208,6 +208,7 @@ namespace embree
         Geometry* geometry = scene->get(geomID);
         if (likely(!geometry->hasOcclusionFilter1())) return true;
         
+        const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
         while (true) 
         {
           /* calculate hit information */

@@ -41,7 +41,8 @@ namespace embree
 						     const Vec3<tsimdf>& tri_v2,  
                                                      const tsimdi& tri_geomIDs, 
 						     const tsimdi& tri_primIDs, 
-                                                     Scene* scene)
+                                                     Scene* scene,
+                                                     const unsigned* geomID_to_instID)
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
@@ -92,6 +93,7 @@ namespace embree
 
       size_t i = select_min(valid,t);
       int geomID = tri_geomIDs[i];
+      int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
       
       /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
@@ -101,6 +103,7 @@ namespace embree
         if (none(valid)) return;
         i = select_min(valid,t);
         geomID = tri_geomIDs[i];
+        instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
       entry:
         Geometry* geometry = scene->get(geomID);
         
@@ -117,7 +120,7 @@ namespace embree
         if (enableIntersectionFilter) {
           if (unlikely(geometry->hasIntersectionFilter1())) {
             Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
+            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,instID,tri_primIDs[i])) return;
             valid[i] = 0;
             continue;
           }
@@ -134,7 +137,7 @@ namespace embree
       ray.Ng.x = tri_Ng.x[i];
       ray.Ng.y = tri_Ng.y[i];
       ray.Ng.z = tri_Ng.z[i];
-      ray.geomID = geomID;
+      ray.geomID = instID;
       ray.primID = tri_primIDs[i];              
     }
 
@@ -146,7 +149,7 @@ namespace embree
                                                      const unsigned int& geomID, 
 						     const unsigned int& primID, 
                                                      Scene* scene,
-                                                     const UVMapper& mapUV)
+                                                     const UVMapper& mapUV) // FIXME: add const unsigned* geomID_to_instID
       {
         /* calculate vertices relative to ray origin */
         typedef Vec3<tsimdf> tsimd3f;
@@ -242,7 +245,8 @@ namespace embree
                                                     const Vec3<tsimdf>& tri_v2, 
                                                     const tsimdi& tri_geomIDs, 
                                                     const tsimdi& tri_primIDs,  
-                                                    Scene* scene)
+                                                    Scene* scene,
+                                                    const unsigned* geomID_to_instID)
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
@@ -295,6 +299,7 @@ namespace embree
       entry:
         size_t i=__bsf(m);
         const int geomID = tri_geomIDs[i];
+        const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
         Geometry* geometry = scene->get(geomID);
         
 #if defined(RTCORE_RAY_MASK)
@@ -316,7 +321,7 @@ namespace embree
             const tsimdf v = V * rcpDen;
             const tsimdf t = T * rcpDen;
             const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,instID,tri_primIDs[i])) return true;
             m=__btc(m,i);
             continue;
           }
@@ -336,7 +341,7 @@ namespace embree
                                                     const unsigned int& geomID, 
                                                     const unsigned int& primID,
                                                     Scene* scene,
-                                                    const UVMapper& mapUV)
+                                                    const UVMapper& mapUV) // FIXME: add const unsigned* geomID_to_instID
     {
       /* calculate vertices relative to ray origin */
       typedef Vec3<tsimdf> tsimd3f;
@@ -1220,17 +1225,17 @@ namespace embree
         };
         
         /*! Intersect a ray with the 4 triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          triangle_intersect_pluecker<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          triangle_intersect_pluecker<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene)
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return triangle_occluded_pluecker<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          return triangle_occluded_pluecker<enableIntersectionFilter,tsimdb,tsimdf,tsimdi>(ray,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
         }
       };
     

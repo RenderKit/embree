@@ -102,6 +102,10 @@ namespace embree
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
+#define SELECT_SYMBOL_AVX_AVX512(features,intersector) \
+  SELECT_SYMBOL_AVX(features,intersector);                         \
+  SELECT_SYMBOL_AVX512(features,intersector);
+
 #define SELECT_SYMBOL_AVX_AVX2(features,intersector) \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);

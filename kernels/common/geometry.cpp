@@ -21,7 +21,7 @@ namespace embree
 {
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
-      enabled(true), modified(true), erasing(false), mask(-1),
+      enabled(true), modified(true), erasing(false), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
       intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
       intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
@@ -62,6 +62,7 @@ namespace embree
 
     updateIntersectionFilters(true);
     parent->setModified();
+    atomic_add(&used,+1);
     enabled = true;
     enabling();
   }
@@ -85,6 +86,7 @@ namespace embree
 
     updateIntersectionFilters(false);
     parent->setModified();
+    atomic_add(&used,-1);
     enabled = false;
     disabling();
   }
@@ -104,6 +106,7 @@ namespace embree
       return;
     
     updateIntersectionFilters(false);
+    atomic_add(&used,-1);
     enabled = false;
     disabling();
   }

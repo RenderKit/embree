@@ -21,6 +21,7 @@
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
+#include "scene_geometry_instance.h"
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
@@ -115,6 +116,9 @@ namespace embree
 
     /*! Creates a new scene instance. */
     unsigned int newInstance (Scene* scene);
+
+    /*! Creates a new geometry instance. */
+    unsigned int newGeometryInstance (Geometry* geom);
 
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
@@ -282,6 +286,8 @@ namespace embree
     atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
     atomic_t numUserGeometries1;       //!< number of enabled user geometries
     atomic_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
+
+    atomic_t numInstancedTriangles;             //!< number of total instanced triangles
 
     __forceinline size_t numPrimitives() const {
     return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;

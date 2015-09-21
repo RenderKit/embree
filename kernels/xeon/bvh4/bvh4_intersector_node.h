@@ -22,6 +22,32 @@ namespace embree
 {
   namespace isa
   {
+    struct BVH4TravRay 
+    {
+      __forceinline BVH4TravRay () {}
+
+      __forceinline BVH4TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
+        : org_xyz(ray_org), dir_xyz(ray_dir) 
+      {
+        const Vec3fa ray_rdir = rcp_safe(ray_dir);
+        const Vec3fa ray_org_rdir = ray_org*ray_rdir;
+        org = Vec3f4(ray_org.x,ray_org.y,ray_org.z);
+        dir = Vec3f4(ray_dir.x,ray_dir.y,ray_dir.z);
+        rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+        org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+        nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
+        nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
+        nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+        farX  = nearX ^ sizeof(float4);
+        farY  = nearY ^ sizeof(float4);
+        farZ  = nearZ ^ sizeof(float4);
+      }
+      Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
+      Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
+      size_t nearX, nearY, nearZ;
+      size_t farX, farY, farZ;
+    };
+
     /*! intersection with single rays */
     template<bool robust>
       __forceinline size_t intersect_node(const BVH4::Node* node, size_t nearX, size_t nearY, size_t nearZ,
@@ -43,6 +69,52 @@ namespace embree
       const float4 tFarX  = (load4f((const char*)&node->lower_x+farX ) - org.x) * rdir.x;
       const float4 tFarY  = (load4f((const char*)&node->lower_x+farY ) - org.y) * rdir.y;
       const float4 tFarZ  = (load4f((const char*)&node->lower_x+farZ ) - org.z) * rdir.z;
+#endif
+      
+      if (robust) {
+        const float round_down = 1.0f-2.0f*float(ulp);
+        const float round_up   = 1.0f+2.0f*float(ulp);
+        const float4 tNear = max(tNearX,tNearY,tNearZ,tnear);
+        const float4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+        const bool4 vmask = (round_down*tNear <= round_up*tFar);
+        const size_t mask = movemask(vmask);
+        dist = tNear;
+        return mask;
+      }
+      
+#if defined(__SSE4_1__)
+      const float4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+      const float4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const bool4 vmask = cast(tNear) > cast(tFar);
+      const size_t mask = movemask(vmask)^0xf;
+#else
+      const float4 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const float4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const bool4 vmask = tNear <= tFar;
+      const size_t mask = movemask(vmask);
+#endif
+      dist = tNear;
+      return mask;
+    }
+
+    /*! intersection with single rays */
+    template<bool robust>
+      __forceinline size_t intersect_node(const BVH4::Node* node, const BVH4TravRay& ray, const float4& tnear, const float4& tfar, float4& dist) 
+    {
+#if defined (__AVX2__)
+      const float4 tNearX = msub(load4f((const char*)&node->lower_x+ray.nearX), ray.rdir.x, ray.org_rdir.x);
+      const float4 tNearY = msub(load4f((const char*)&node->lower_x+ray.nearY), ray.rdir.y, ray.org_rdir.y);
+      const float4 tNearZ = msub(load4f((const char*)&node->lower_x+ray.nearZ), ray.rdir.z, ray.org_rdir.z);
+      const float4 tFarX  = msub(load4f((const char*)&node->lower_x+ray.farX ), ray.rdir.x, ray.org_rdir.x);
+      const float4 tFarY  = msub(load4f((const char*)&node->lower_x+ray.farY ), ray.rdir.y, ray.org_rdir.y);
+      const float4 tFarZ  = msub(load4f((const char*)&node->lower_x+ray.farZ ), ray.rdir.z, ray.org_rdir.z);
+#else
+      const float4 tNearX = (load4f((const char*)&node->lower_x+ray.nearX) - ray.org.x) * ray.rdir.x;
+      const float4 tNearY = (load4f((const char*)&node->lower_x+ray.nearY) - ray.org.y) * ray.rdir.y;
+      const float4 tNearZ = (load4f((const char*)&node->lower_x+ray.nearZ) - ray.org.z) * ray.rdir.z;
+      const float4 tFarX  = (load4f((const char*)&node->lower_x+ray.farX ) - ray.org.x) * ray.rdir.x;
+      const float4 tFarY  = (load4f((const char*)&node->lower_x+ray.farY ) - ray.org.y) * ray.rdir.y;
+      const float4 tFarZ  = (load4f((const char*)&node->lower_x+ray.farZ ) - ray.org.z) * ray.rdir.z;
 #endif
       
       if (robust) {

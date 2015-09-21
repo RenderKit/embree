@@ -23,7 +23,11 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
+#if defined(__AVX512F__)
+    template<typename PrimRef, size_t BINS = 16>
+#else
     template<typename PrimRef, size_t BINS = 32>
+#endif
       struct HeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;
@@ -74,9 +78,15 @@ namespace embree
         /*! finds the best split */
         const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+#if defined(__AVX512F__)
+          const BinMapping<16> mapping(pinfo);
+          Bin16Info<PrimRef> binner;          
+#else
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
+#endif
           binner.bin(prims,set.begin(),set.end(),mapping);
+
           return binner.best(mapping,logBlockSize);
         }
         

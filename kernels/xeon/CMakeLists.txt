@@ -61,6 +61,7 @@ SET(EMBREE_LIBRARY_FILES
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
   ../common/scene_instance.cpp
+  ../common/scene_geometry_instance.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
@@ -84,6 +85,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
+  bvh4/bvh4_builder_instancing.cpp
   bvh4/bvh4_builder_subdiv.cpp
 
   bvh4/bvh4_intersector1.cpp)
@@ -141,6 +143,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh4/bvh4_builder_morton.avx.cpp
     bvh4/bvh4_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
+    bvh4/bvh4_builder_instancing.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
     bvh4/bvh4_intersector1.cpp
     
@@ -210,6 +213,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     geometry/grid_soa.cpp
 
     builders/primrefgen.avx512.cpp
+    bvh8/bvh8_builder_sah.avx512.cpp
 
     bvh4/bvh4_refit.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp

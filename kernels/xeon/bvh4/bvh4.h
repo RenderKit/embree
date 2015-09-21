@@ -39,6 +39,7 @@ namespace embree
     struct NodeMB;
     struct UnalignedNode;
     struct UnalignedNodeMB;
+    struct TransformNode;
 
     /*! branching width of the tree */
     static const size_t N = 4;
@@ -60,13 +61,15 @@ namespace embree
     static const size_t tyNodeMB = 1;
     static const size_t tyUnalignedNode = 2;
     static const size_t tyUnalignedNodeMB = 3;
+    static const size_t tyTransformNode = 4;
     static const size_t tyLeaf = 8;
 
     /*! Empty node */
     static const size_t emptyNode = tyLeaf;
 
     /*! Invalid node, used as marker in traversal */
-    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | tyLeaf;
+    static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | (tyLeaf+0);
+    static const size_t popRay      = (((size_t)-1) & (~items_mask)) | (tyLeaf+1);
       
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
@@ -80,15 +83,17 @@ namespace embree
     static const int travCost = 1;
     static const int travCostAligned = 1;
     static const int travCostUnaligned = 3; // FIXME: find best cost
+    static const int travCostTransform = 1;
     static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
     /*! flags used to enable specific node types in intersectors */
     enum NodeFlags {  // FIXME: use these flags also in intersector implementations, currently hardcoded constants are used
-      FLAG_ALIGNED_NODE = 0x0001,
-      FLAG_ALIGNED_NODE_MB = 0x0010,
-      FLAG_UNALIGNED_NODE = 0x0100,
-      FLAG_UNALIGNED_NODE_MB = 0x1000,
-      FLAG_NODE_MB = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB
+      FLAG_ALIGNED_NODE = 0x00001,
+      FLAG_ALIGNED_NODE_MB = 0x00010,
+      FLAG_UNALIGNED_NODE = 0x00100,
+      FLAG_UNALIGNED_NODE_MB = 0x01000,
+      FLAG_NODE_MB = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB,
+      FLAG_TRANSFORM_NODE = 0x10000,
     };
 
     /*! Builder interface to create allocator */
@@ -145,7 +150,7 @@ namespace embree
       __forceinline void prefetch(int types=0) const {
 	prefetchL1(((char*)ptr)+0*64);
 	prefetchL1(((char*)ptr)+1*64);
-	if (types > 0x1) {
+	if (types & 0x1110) {
 	  prefetchL1(((char*)ptr)+2*64);
 	  prefetchL1(((char*)ptr)+3*64);
 	}
@@ -184,6 +189,7 @@ namespace embree
       /*! checks if this is a leaf */
       __forceinline int isLeaf(int types) const { 
 	if      (types == 0x0001) return !isNode();
+        else if (types == 0x10001) return !isNode();
 	/*else if (types == 0x0010) return !isNodeMB();
 	else if (types == 0x0100) return !isUnalignedNode();
 	else if (types == 0x1000) return !isUnalignedNodeMB();*/
@@ -192,7 +198,7 @@ namespace embree
       
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
-      __forceinline int isNode(int types) const { return (types == 0x1) || ((types & 0x1) && isNode()); }
+      __forceinline int isNode(int types) const { return ((types & ~0x10000) == 0x1) || ((types & 0x1) && isNode()); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
@@ -206,11 +212,15 @@ namespace embree
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
       __forceinline int isUnalignedNodeMB(int types) const { return (types == 0x1000) || ((types & 0x1000) && isUnalignedNodeMB()); }
 
+      /*! checks if this is a transformation node */
+      __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
+      __forceinline int isTransformNode(int types) const { return (types == 0x10000) || ((types & 0x10000) && isTransformNode()); }
+
       /*! returns base node pointer */
       __forceinline BaseNode* baseNode(int types) 
       { 
 	assert(!isLeaf()); 
-	if (types == 0x1) { 
+	if (types == 0x1 || types == 0x10001) { 
           assert((ptr & (size_t)align_mask) == 0); 
           return (BaseNode*)ptr; 
         }
@@ -220,7 +230,7 @@ namespace embree
       __forceinline const BaseNode* baseNode(int types) const 
       { 
 	assert(!isLeaf()); 
-	if (types == 0x1) { 
+	if (types == 0x1 || types == 0x10001) { 
           assert((ptr & (size_t)align_mask) == 0); 
           return (const BaseNode*)ptr; 
         }
@@ -243,7 +253,11 @@ namespace embree
       /*! returns unaligned motion blur node pointer */
       __forceinline       UnalignedNodeMB* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
       __forceinline const UnalignedNodeMB* unalignedNodeMB() const { assert(isUnalignedNodeMB()); return (const UnalignedNodeMB*)(ptr & ~(size_t)align_mask); }
-            
+      
+      /*! returns transformation pointer */
+      __forceinline       TransformNode* transformNode()       { assert(isTransformNode()); return (      TransformNode*)(ptr & ~(size_t)align_mask); }
+      __forceinline const TransformNode* transformNode() const { assert(isTransformNode()); return (const TransformNode*)(ptr & ~(size_t)align_mask); }
+
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
@@ -624,6 +638,21 @@ namespace embree
       BBoxSSE3f b1;
     };
 
+    struct TransformNode
+    {
+      __forceinline TransformNode () {}
+
+      __forceinline TransformNode(const AffineSpace3fa& local2world, const BBox3fa& localBounds, NodeRef child, unsigned int instID, unsigned int xfmID) 
+        : local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), child(child), instID(instID), xfmID(xfmID) {}
+
+      AffineSpace3fa local2world; //!< transforms from local space to world space
+      AffineSpace3fa world2local; //!< transforms from world space to local space
+      BBox3fa localBounds;
+      NodeRef child;
+      unsigned int instID;
+      unsigned int xfmID;
+    };
+
     /*! swap the children of two nodes */
     __forceinline static void swap(Node* a, size_t i, Node* b, size_t j)
     {
@@ -703,7 +732,8 @@ namespace embree
     static Accel* BVH4SubdivPatch1Cached(Scene* scene);
     static Accel* BVH4SubdivGridEager(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);
-    
+    static Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
+
     static Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
@@ -780,6 +810,11 @@ namespace embree
     static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { 
       return NodeRef((size_t) node | tyUnalignedNodeMB);
     }
+
+    /*! Encodes a transformation node */
+    static __forceinline NodeRef encodeNode(TransformNode* node) { 
+      return NodeRef((size_t) node | tyTransformNode);
+    }
     
     /*! Encodes a leaf */
     static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
@@ -813,6 +848,7 @@ namespace embree
     
     /*! data arrays for special builders */
   public:
+    BVH4* worldBVH;
     std::vector<BVH4*> objects;
     void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
     size_t size_data_mem;

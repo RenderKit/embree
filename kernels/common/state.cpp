@@ -61,6 +61,10 @@ namespace embree
 
     subdiv_accel = "default";
 
+    instancing_open_min = 0;
+    instancing_block_size = 100;
+    instancing_open_max = 0x10000000; // will require at most 4GB of memory for building opened tree
+
     float_exceptions = false;
     scene_flags = -1;
     verbose = 0;
@@ -138,7 +142,7 @@ namespace embree
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         g_numThreads = cin->get().Int();
       
-      else if (tok == Token::Id("set_affinity"))
+      else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
@@ -178,7 +182,14 @@ namespace embree
         hair_traverser = cin->get().Identifier();
       else if (tok == Token::Id("hair_builder_replication_factor") && cin->trySymbol("="))
         hair_builder_replication_factor = cin->get().Int();
-      
+
+      else if (tok == Token::Id("instancing_open_min") && cin->trySymbol("="))
+        instancing_open_min = cin->get().Int();
+      else if (tok == Token::Id("instancing_block_size") && cin->trySymbol("="))
+        instancing_block_size = cin->get().Int();
+      else if (tok == Token::Id("instancing_open_max") && cin->trySymbol("="))
+        instancing_open_max = cin->get().Int();
+
       else if (tok == Token::Id("subdiv_accel") && cin->trySymbol("="))
         subdiv_accel = cin->get().Identifier();
       

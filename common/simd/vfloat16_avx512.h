@@ -49,6 +49,12 @@ namespace embree
     __forceinline vfloat(const float& a, const float& b, const float& c, const float& d) {
       v = _mm512_set_4to16_ps(a,b,c,d);  
     }
+
+#if defined(__AVX512F__)
+    __forceinline vfloat(const vfloat4 i) {
+      v = _mm512_broadcast_f32x4(i);
+    }
+#endif
     
     __forceinline explicit vfloat(const __m512i& a) {
 #if defined(__AVX512F__)
@@ -393,20 +399,38 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 vround(const vfloat16& f,
-                             const _MM_ROUND_MODE_ENUM mode, 
-                             const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE) 
-  { 
-    return _mm512_round_ps(f,mode,exp); 
-  }
+  /* __forceinline vfloat16 vround(const vfloat16& f,  */
+  /*                            const _MM_ROUND_MODE_ENUM mode,  */
+  /*                            const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE)  */
+  /* {  */
+  /*   return _mm512_round_ps(f,mode,exp);  */
+  /* } */
   
-  __forceinline vfloat16 floor(const vfloat16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); }
-  __forceinline vfloat16 ceil (const vfloat16& a) { return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); }
-  __forceinline vfloat16 trunc(const vfloat16& a) { return _mm512_trunc_ps(a); }
-  __forceinline vfloat16 frac( const vfloat16& a) { return a-trunc(a); }
+  __forceinline vfloat16 floor(const vfloat16& a) {
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline vfloat16 ceil (const vfloat16& a) {
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF); 
+#else
+    return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); 
+#endif
+  }
+  __forceinline vfloat16 trunc(const vfloat16& a) {
+#if defined(__AVX512F__)
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO); 
+#else
+    return _mm512_trunc_ps(a); 
+#endif
+} 
+  __forceinline vfloat16 frac( const vfloat16& a ) { return a-trunc(a); }
 
   __forceinline const vfloat16 rcp_nr  ( const vfloat16& a ) {
-    const vfloat16 ra = _mm512_rcp23_ps(a);
+    const vfloat16 ra = rcp(a);
     return (ra+ra) - (ra * a * ra);
   };
 
@@ -414,10 +438,22 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 swizzle(const vfloat16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_ps(x,perm32); }
+  __forceinline vfloat16 swizzle(const vfloat16& x,_MM_SWIZZLE_ENUM perm32 ) {
+#if 0 
+    return _mm512_permute_ps(x,perm32); // WARNING: permute has a different intermediate encoding!!!
+#else
+    return _mm512_swizzle_ps(x,perm32); 
+#endif
+  }
   __forceinline vfloat16 permute(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
   
-  template<int D, int C, int B, int A> __forceinline vfloat16 swizzle   (const vfloat16& v) { return _mm512_shuffle_ps(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int D, int C, int B, int A> __forceinline vfloat16 swizzle   (const vfloat16& v) {
+#if defined(__AVX512F__)
+    return _mm512_permute_ps(v,_MM_SHUF_PERM(D,C,B,A)); 
+#else
+    return cast(_mm512_shuffle_epi32(cast(v),_MM_SHUF_PERM(D,C,B,A)));
+#endif
+  }
   template<int A>                      __forceinline vfloat16 swizzle   (const vfloat16& x) { return swizzle<A,A,A,A>(v); }
   template<>                           __forceinline vfloat16 swizzle<0>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_AAAA); }
   template<>                           __forceinline vfloat16 swizzle<1>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_BBBB); }
@@ -457,6 +493,16 @@ namespace embree
   __forceinline vfloat16 permute16f(__m512i index, vfloat16 v)
   {
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
+  __forceinline vfloat16 permute(vfloat16 v,__m512i index)
+  {
+    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+  }
+
+  __forceinline vfloat16 reverse(const vfloat16 &a)
+  {
+    return permute(a,_mm512_setr_epi32(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
   }
 
   template<int i>
@@ -529,20 +575,56 @@ namespace embree
   __forceinline vfloat16 prefix_sum(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
-    const vfloat16 shuf_v0 = shuffle(v,_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
+    v = mask_add(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_add(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_add(0xf0f0,v,v,shuf_v0);
-    const vfloat16 shuf_v1 = shuffle(v,_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
+    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_add(0xff00,v,v,shuf_v1);
     return v;  
   }
 
+  /* __forceinline vfloat16 prefix_sum(const vfloat16& a) */
+  /* { */
+  /*   vfloat16 v = a; */
+  /*   v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const vfloat16 shuf_v0 = shuffle(v,_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xf0f0,v,v,shuf_v0); */
+  /*   const vfloat16 shuf_v1 = shuffle(v,_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_add(0xff00,v,v,shuf_v1); */
+  /*   return v;   */
+  /* } */
+
+  /* __forceinline vfloat16 prefix_min(const vfloat16& a) */
+  /* { */
+  /*   vfloat16 v = a; */
+  /*   v = mask_min(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_min(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_min(0xf0f0,v,v,shuf_v0); */
+  /*   const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_min(0xff00,v,v,shuf_v1); */
+  /*   return v; */
+  /* } */
+  
+  /* __forceinline vfloat16 prefix_max(const vfloat16& a) */
+  /* { */
+  /*   vfloat16 v = a; */
+  /*   v = mask_max(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
+  /*   v = mask_max(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
+  /*   const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_max(0xf0f0,v,v,shuf_v0); */
+  /*   const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
+  /*   v = mask_max(0xff00,v,v,shuf_v1); */
+  /*   return v; */
+  /* } */
+
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_min(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_min(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
+    v = mask_min(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_min(0xcccc,v,v,swizzle<1,1,1,1>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_min(0xf0f0,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
@@ -553,14 +635,39 @@ namespace embree
   __forceinline vfloat16 prefix_max(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_max(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB));
-    v = mask_max(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB));
+    v = mask_max(0xaaaa,v,v,swizzle<2,2,0,0>(v));
+    v = mask_max(0xcccc,v,v,swizzle<1,1,1,1>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_max(0xf0f0,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_max(0xff00,v,v,shuf_v1);
     return v;  
   }
+
+  __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
+  {
+    vfloat16 v = a;
+    v = mask_min(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_min(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_min(0x0f0f,v,v,shuf_v0);
+    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_min(0x00ff,v,v,shuf_v1);
+    return v;  
+  }
+
+  __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
+  {
+    vfloat16 v = a;
+    v = mask_max(0x5555,v,v,swizzle<3,3,1,1>(v));
+    v = mask_max(0x3333,v,v,swizzle<2,2,2,2>(v));
+    const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
+    v = mask_max(0x0f0f,v,v,shuf_v0);
+    const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
+    v = mask_max(0x00ff,v,v,shuf_v1);
+    return v;  
+  }
+
 
   __forceinline vfloat16 set_min4(vfloat16 x) {
     x = min(x,swizzle(x,_MM_SWIZ_REG_BADC));
@@ -823,11 +930,19 @@ namespace embree
   }
   
   __forceinline void store16f_nt(void *__restrict__ ptr, const vfloat16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenr_ps(ptr,a);
+#endif
   }
   
   __forceinline void store16f_ngo(void *__restrict__ ptr, const vfloat16& a) {
+#if defined(__AVX512F__)
+    _mm512_stream_ps(ptr,a);
+#else
     _mm512_storenrngo_ps(ptr,a);
+#endif
   }
 
   __forceinline void store1f(void *addr, const vfloat16& reg) {

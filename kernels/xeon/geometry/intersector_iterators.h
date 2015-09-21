@@ -42,19 +42,19 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           while (true) {
-            Intersector::intersect(pre,ray,*prim,scene);
+            Intersector::intersect(pre,ray,*prim,scene,geomID_to_instID);
             if (prim->last()) break;
             prim++;
           }
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
           while (true) {
-            if (Intersector::occluded(pre,ray,*prim,scene))
+            if (Intersector::occluded(pre,ray,*prim,scene,geomID_to_instID))
               return true;
             if (prim->last()) break;
             prim++;
@@ -69,16 +69,16 @@ namespace embree
         typedef typename Intersector::Primitive Primitive;
         typedef typename Intersector::Precalculations Precalculations;
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
           for (size_t i=0; i<num; i++)
-            Intersector::intersect(pre,ray,prim[i],scene);
+            Intersector::intersect(pre,ray,prim[i],scene,geomID_to_instID);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
           for (size_t i=0; i<num; i++) {
-            if (Intersector::occluded(pre,ray,prim[i],scene))
+            if (Intersector::occluded(pre,ray,prim[i],scene,geomID_to_instID))
               return true;
           }
           return false;
@@ -101,16 +101,16 @@ namespace embree
           typename Intersector2::Precalculations pre2;
         };
         
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
         {
-          if (ty == 0) Intersector1::intersect(pre.pre1,ray,*(Primitive1*)prim,scene,lazy_node);
-          else         Intersector2::intersect(pre.pre2,ray,*(Primitive2*)prim,scene,lazy_node);
+          if (ty == 0) Intersector1::intersect(pre.pre1,ray,*(Primitive1*)prim,scene,geomID_to_instID,lazy_node);
+          else         Intersector2::intersect(pre.pre2,ray,*(Primitive2*)prim,scene,geomID_to_instID,lazy_node);
         }
         
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
         {
-          if (ty == 0) return Intersector1::occluded(pre.pre1,ray,*(Primitive1*)prim,scene,lazy_node);
-          else         return Intersector2::occluded(pre.pre2,ray,*(Primitive2*)prim,scene,lazy_node);
+          if (ty == 0) return Intersector1::occluded(pre.pre1,ray,*(Primitive1*)prim,scene,geomID_to_instID,lazy_node);
+          else         return Intersector2::occluded(pre.pre2,ray,*(Primitive2*)prim,scene,geomID_to_instID,lazy_node);
         }
       };
     

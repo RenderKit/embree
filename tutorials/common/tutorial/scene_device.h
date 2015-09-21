@@ -92,6 +92,15 @@ struct ISPCSubdivMesh
   Vec3fa* colors; // FIXME: remove
 };
 
+struct ISPCInstance
+{
+  ISPCInstance (const AffineSpace3fa& space, int geomID)
+  : space(space), geomID(geomID) {}
+
+  AffineSpace3fa space;
+  int geomID;
+};
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light
@@ -167,6 +176,10 @@ struct ISPCScene {
 
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;
+
+  ISPCInstance** instances;
+  int numInstances;
+
 }; // ISPCScene
 
 
