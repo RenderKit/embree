@@ -91,10 +91,14 @@ struct ISPCHairSet
 
 struct ISPCInstance
 {
-  Vec3fa vx;
-  Vec3fa vy;
-  Vec3fa vz;
-  Vec3fa p;
+  struct {
+    struct {
+      Vec3fa vx;
+      Vec3fa vy;
+      Vec3fa vz;
+    } l;
+    Vec3fa p;
+  } space;
   int geomID;
 };
 
@@ -279,7 +283,7 @@ struct ISPCScene {
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;
 
-  uniform ISPCInstance** instances;
+  uniform ISPCInstance** uniform instances;
   int numInstances;
 
 }; // ISPCScene

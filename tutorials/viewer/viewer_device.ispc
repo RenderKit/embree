@@ -17,6 +17,8 @@
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
 
+#define INSTANCING 0  // 0=no instancing, 1=geometry instancing, 2=scene instancing
+
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
 
@@ -24,6 +26,8 @@ extern uniform bool g_changed;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
 void* uniform* uniform geomID_to_mesh = NULL;
+int* uniform meshID_to_geomID = NULL;
+RTCScene* uniform meshID_to_scene = NULL;
 uniform int* uniform geomID_to_type = NULL;
 uniform bool g_subdiv_mode = false;
 
@@ -160,9 +164,11 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   if (g_ispc_scene->numSubdivMeshes) 
     g_subdiv_mode = true;
 
-  uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+  uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes + scene_in->numInstances;
   typedef void* uniform void_ptr;
   geomID_to_mesh = uniform new void_ptr[numGeometries];
+  meshID_to_geomID = uniform new uniform int[numGeometries];
+  meshID_to_scene = uniform new RTCScene[numGeometries];
   geomID_to_type = uniform new uniform int[numGeometries];
 
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -195,6 +201,72 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
   }
 
+#if INSTANCING == 1
+
+  /* add all meshes to the scene */
+  for (uniform int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+
+    geomID_to_mesh[geomID] = mesh;
+    geomID_to_type[geomID] = 0;
+    meshID_to_geomID[i] = geomID;
+
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
+
+    if (scene_in->numInstances) rtcDisable(scene_out,geomID);
+  }
+
+  /* add all instances to the scene */
+  for (uniform int i=0; i<scene_in->numInstances; i++)
+  {
+    uniform ISPCInstance* uniform instance = scene_in->instances[i];
+    uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, meshID_to_geomID[instance->geomID]);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = instance;
+  }
+
+#elif INSTANCING == 2
+
+  /* add all meshes to the scene */
+  for (uniform int i=0; i<scene_in->numMeshes; i++)
+  {
+    /* get ith mesh */
+    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
+
+    /* create a triangle mesh */
+    RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+
+    //geomID_to_mesh[geomID] = mesh;
+    //geomID_to_type[geomID] = 0;
+    meshID_to_scene[i] = scene_out;
+
+    /* share vertex buffer */
+    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
+    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
+
+    rtcCommit(scene_out);
+  }
+
+  /* add all instances to the scene */
+  for (uniform int i=0; i<scene_in->numInstances; i++)
+  {
+    uniform ISPCInstance* uniform instance = scene_in->instances[i];
+    RTCScene scene_inst = meshID_to_scene[instance->geomID];
+    uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = instance;
+  }
+
+#else
+
   /* add all meshes to the scene */
   for (uniform int i=0; i<scene_in->numMeshes; i++)
   {
@@ -211,6 +283,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
     rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
   }
+
+#endif
 
   /* commit changes to scene */
   return scene_out;
