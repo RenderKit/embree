@@ -38,6 +38,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4vIntersector1Pluecker);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Triangle4iIntersector1Pluecker);
@@ -215,6 +216,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
@@ -527,6 +529,14 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1 = BVH4XfmTriangle4Intersector1Moeller;
+    return intersectors;
+  }
+
   Accel::Intersectors BVH4Triangle8IntersectorsChunk(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
@@ -789,7 +799,7 @@ namespace embree
   Accel* BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4::type,scene,LeafMode);
-    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
     Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
   }
