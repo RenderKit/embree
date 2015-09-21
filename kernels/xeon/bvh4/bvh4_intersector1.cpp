@@ -189,35 +189,39 @@ namespace embree
           sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
           cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
-
-        /*! process transformation nodes */
-        if (unlikely(cur.isTransformNode(types))) 
+        
+        /* ray transformation support */
+        if (types & 0x10000)
         {
-          //STAT3(normal.transform_nodes,1,1,1);
-          const BVH4::TransformNode* node = cur.transformNode();
-          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
-          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
-          new (&vray) TravRay(ray_org,ray_dir);
-          ray.org = ray_org;
-          ray.dir = ray_dir;
-          ((TravRay&)tlray).geomID = ray.geomID; ray.geomID = -1;
-          ((TravRay&)tlray).instID = ray.instID; ray.instID = node->instID;
-          
-          stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
-          stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
-          goto pop;
-        }
-
-        /*! restore toplevel ray */
-        if (cur == BVH4::popRay) {
-          vray = (TravRay&) tlray; 
-          ray.org = ((TravRay&)tlray).org_xyz;
-          ray.dir = ((TravRay&)tlray).dir_xyz;
-          if (ray.geomID == -1) {
-            ray.geomID = ((TravRay&)tlray).geomID;
-            ray.instID = ((TravRay&)tlray).instID;
+          /*! process transformation nodes */
+          if (unlikely(cur.isTransformNode(types))) 
+          {
+            //STAT3(normal.transform_nodes,1,1,1);
+            const BVH4::TransformNode* node = cur.transformNode();
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
+            new (&vray) TravRay(ray_org,ray_dir);
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+            ((TravRay&)tlray).geomID = ray.geomID; ray.geomID = -1;
+            ((TravRay&)tlray).instID = ray.instID; ray.instID = node->instID;
+            
+            stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
+            stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
+            goto pop;
           }
-          goto pop;
+          
+          /*! restore toplevel ray */
+          if (cur == BVH4::popRay) {
+            vray = (TravRay&) tlray; 
+            ray.org = ((TravRay&)tlray).org_xyz;
+            ray.dir = ((TravRay&)tlray).dir_xyz;
+            if (ray.geomID == -1) {
+              ray.geomID = ((TravRay&)tlray).geomID;
+              ray.instID = ((TravRay&)tlray).instID;
+            }
+            goto pop;
+          }
         }
         
         /*! this is a leaf node */
