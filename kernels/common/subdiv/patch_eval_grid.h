@@ -92,39 +92,39 @@ namespace embree
           }
         }
 #else
-        foreach2(lx0,lx1,ly0,ly1,[&](const vbool& valid, const vint& ix, const vint& iy) {
-            const vfloat lu = select(ix == swidth -1, vfloat(1.0f), (vfloat(ix)-srange.lower.x)*scale_x);
-            const vfloat lv = select(iy == sheight-1, vfloat(1.0f), (vfloat(iy)-srange.lower.y)*scale_y);
-            const Vec3<vfloat> p = patch->patch.eval(lu,lv);
-            Vec3<vfloat> n = zero;
+        foreach2(lx0,lx1,ly0,ly1,[&](const vboolx& valid, const vintx& ix, const vintx& iy) {
+            const vfloatx lu = select(ix == swidth -1, vfloatx(1.0f), (vfloatx(ix)-srange.lower.x)*scale_x);
+            const vfloatx lv = select(iy == sheight-1, vfloatx(1.0f), (vfloatx(iy)-srange.lower.y)*scale_y);
+            const Vec3<vfloatx> p = patch->patch.eval(lu,lv);
+            Vec3<vfloatx> n = zero;
             if (unlikely(Nx != nullptr)) n = normalize_safe(patch->patch.normal(lu,lv));
-            const vfloat u = vfloat(ix)*rcp_swidth;
-            const vfloat v = vfloat(iy)*rcp_sheight;
-            const vint ofs = (iy-y0)*dwidth+(ix-x0);
+            const vfloatx u = vfloatx(ix)*rcp_swidth;
+            const vfloatx v = vfloatx(iy)*rcp_sheight;
+            const vintx ofs = (iy-y0)*dwidth+(ix-x0);
             if (likely(all(valid)) && all(iy==iy[0])) {
               const size_t ofs2 = ofs[0];
-              vfloat::storeu(Px+ofs2,p.x);
-              vfloat::storeu(Py+ofs2,p.y);
-              vfloat::storeu(Pz+ofs2,p.z);
-              vfloat::storeu(U+ofs2,u);
-              vfloat::storeu(V+ofs2,v);
+              vfloatx::storeu(Px+ofs2,p.x);
+              vfloatx::storeu(Py+ofs2,p.y);
+              vfloatx::storeu(Pz+ofs2,p.z);
+              vfloatx::storeu(U+ofs2,u);
+              vfloatx::storeu(V+ofs2,v);
               if (unlikely(Nx != nullptr)) {
-                vfloat::storeu(Nx+ofs2,n.x);
-                vfloat::storeu(Ny+ofs2,n.y);
-                vfloat::storeu(Nz+ofs2,n.z);
+                vfloatx::storeu(Nx+ofs2,n.x);
+                vfloatx::storeu(Ny+ofs2,n.y);
+                vfloatx::storeu(Nz+ofs2,n.z);
               }
             } else {
-              foreach_unique_index(valid,iy,[&](const vbool& valid, const int iy0, const int j) {
+              foreach_unique_index(valid,iy,[&](const vboolx& valid, const int iy0, const int j) {
                   const size_t ofs2 = ofs[j]-j;
-                  vfloat::storeu(valid,Px+ofs2,p.x);
-                  vfloat::storeu(valid,Py+ofs2,p.y);
-                  vfloat::storeu(valid,Pz+ofs2,p.z);
-                  vfloat::storeu(valid,U+ofs2,u);
-                  vfloat::storeu(valid,V+ofs2,v);
+                  vfloatx::storeu(valid,Px+ofs2,p.x);
+                  vfloatx::storeu(valid,Py+ofs2,p.y);
+                  vfloatx::storeu(valid,Pz+ofs2,p.z);
+                  vfloatx::storeu(valid,U+ofs2,u);
+                  vfloatx::storeu(valid,V+ofs2,v);
                   if (unlikely(Nx != nullptr)) {
-                    vfloat::storeu(valid,Nx+ofs2,n.x);
-                    vfloat::storeu(valid,Ny+ofs2,n.y);
-                    vfloat::storeu(valid,Nz+ofs2,n.z);
+                    vfloatx::storeu(valid,Nx+ofs2,n.x);
+                    vfloatx::storeu(valid,Ny+ofs2,n.y);
+                    vfloatx::storeu(valid,Nz+ofs2,n.z);
                   }
                 });
             }

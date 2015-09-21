@@ -219,7 +219,7 @@ namespace embree
      template<class T>
      __forceinline Vec3<T> eval(const T &uu, const T &vv) const
     {
-      typedef typename T::Mask M;
+      typedef typename T::Bool M;
       const T ww = T(1.0f) - uu - vv;
       const M m_border = (uu == 0.0f) | (uu == 1.0f) | (vv == 0.0f) | (vv == 1.0f) | (ww == 0.0f) | (ww == 1.0f);
       

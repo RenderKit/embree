@@ -47,7 +47,7 @@ namespace embree
       __forceinline AffineSpaceT( const VectorT& vx, const VectorT& vy, const VectorT& vz, const VectorT& p ) : l(vx,vy,vz), p(p) {}
       __forceinline AffineSpaceT( const L& l, const VectorT& p ) : l(l), p(p) {}
 
-      template<typename L1> __forceinline explicit AffineSpaceT( const AffineSpaceT<L1>& s ) : l(s.l), p(s.p) {}
+      template<typename L1> __forceinline AffineSpaceT( const AffineSpaceT<L1>& s ) : l(s.l), p(s.p) {}
 
       ////////////////////////////////////////////////////////////////////////////////
       // Constants

@@ -35,7 +35,7 @@ namespace embree
     __forceinline LinearSpace3           ( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; }
     __forceinline LinearSpace3& operator=( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; return *this; }
 
-    template<typename L1> __forceinline explicit LinearSpace3( const LinearSpace3<L1>& s ) : vx(s.vx), vy(s.vy), vz(s.vz) {}
+    template<typename L1> __forceinline LinearSpace3( const LinearSpace3<L1>& s ) : vx(s.vx), vy(s.vy), vz(s.vz) {}
 
     /*! matrix construction from column vectors */
     __forceinline LinearSpace3(const Vector& vx, const Vector& vy, const Vector& vz)

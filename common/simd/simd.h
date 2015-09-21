@@ -45,23 +45,9 @@
 
 namespace embree
 {
-#if defined (__AVX512F__) || defined (__MIC__)
-  typedef bool16 vbool;
-  typedef int16 vint;
-  typedef float16 vfloat;
-#elif defined(__AVX__)
-  typedef bool8 vbool;
-  typedef int8 vint;
-  typedef float8 vfloat;
-#else
-  typedef bool4 vbool;
-  typedef int4 vint;
-  typedef float4 vfloat;
-#endif
-
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
-    __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure) 
+    __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure)
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
@@ -75,7 +61,7 @@ namespace embree
 
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
-    __forceinline void foreach_unique_index(const vbool& valid0, const vint& vi, const Closure& closure) 
+    __forceinline void foreach_unique_index(const vbool& valid0, const vint& vi, const Closure& closure)
   {
     vbool valid1 = valid0;
     while (any(valid1)) {
@@ -95,19 +81,19 @@ namespace embree
     int index = 0;
     for (int y=y0; y<y1; y++) {
       const bool lasty = y+1>=y1;
-      const vint vy = y;
-      for (int x=x0; x<x1; ) { //x+=vfloat::size) {
-        const bool lastx = x+vfloat::size >= x1;
-        vint vx = x+vint(step);
-        vint::storeu(&U[index],vx);
-        vint::storeu(&V[index],vy);
-        const int dx = min(x1-x,vfloat::size);
+      const vintx vy = y;
+      for (int x=x0; x<x1; ) { //x+=VSIZEX) {
+        const bool lastx = x+VSIZEX >= x1;
+        vintx vx = x+vintx(step);
+        vintx::storeu(&U[index],vx);
+        vintx::storeu(&V[index],vy);
+        const int dx = min(x1-x,VSIZEX);
         index += dx;
         x += dx;
-        if (index >= vfloat::size || (lastx && lasty)) {
-          const vbool valid = vint(step) < vint(index);
-          closure(valid,vint::load(U),vint::load(V));
-          x-= max(0,index-vfloat::size);
+        if (index >= VSIZEX || (lastx && lasty)) {
+          const vboolx valid = vintx(step) < vintx(index);
+          closure(valid,vintx::load(U),vintx::load(V));
+          x-= max(0,index-VSIZEX);
           index = 0;
         }
       }
