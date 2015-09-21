@@ -22,6 +22,32 @@ namespace embree
 {
   namespace isa
   {
+    struct BVH4TravRay 
+    {
+      __forceinline BVH4TravRay () {}
+
+      __forceinline BVH4TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
+        : org_xyz(ray_org), dir_xyz(ray_dir) 
+      {
+        const Vec3fa ray_rdir = rcp_safe(ray_dir);
+        const Vec3fa ray_org_rdir = ray_org*ray_rdir;
+        org = Vec3f4(ray_org.x,ray_org.y,ray_org.z);
+        dir = Vec3f4(ray_dir.x,ray_dir.y,ray_dir.z);
+        rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+        org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+        nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
+        nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
+        nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+        farX  = nearX ^ sizeof(float4);
+        farY  = nearY ^ sizeof(float4);
+        farZ  = nearZ ^ sizeof(float4);
+      }
+      Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
+      Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
+      size_t nearX, nearY, nearZ;
+      size_t farX, farY, farZ;
+    };
+
     /*! intersection with single rays */
     template<bool robust>
       __forceinline size_t intersect_node(const BVH4::Node* node, size_t nearX, size_t nearY, size_t nearZ,

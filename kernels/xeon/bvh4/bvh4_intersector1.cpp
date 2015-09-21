@@ -44,31 +44,6 @@ namespace embree
     template<int types, bool robust, typename PrimitiveIntersector>
     void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
     {
-      struct TravRay 
-      {
-        __forceinline TravRay () {}
-        __forceinline TravRay(const Vec3fa& ray_org, const Vec3fa& ray_dir) 
-          : org_xyz(ray_org), dir_xyz(ray_dir) 
-        {
-          const Vec3fa ray_rdir = rcp_safe(ray_dir);
-          const Vec3fa ray_org_rdir = ray_org*ray_rdir;
-          org = Vec3f4(ray_org.x,ray_org.y,ray_org.z);
-          dir = Vec3f4(ray_dir.x,ray_dir.y,ray_dir.z);
-          rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-          org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
-          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
-          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
-          farX  = nearX ^ sizeof(float4);
-          farY  = nearY ^ sizeof(float4);
-          farZ  = nearZ ^ sizeof(float4);
-        }
-        Vec3fa org_xyz, dir_xyz;
-        Vec3f4 org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
-        size_t nearX, nearY, nearZ;
-        size_t farX, farY, farZ;
-      };
-
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
 
@@ -90,9 +65,9 @@ namespace embree
 
       /*! load the ray into SIMD registers */
       const unsigned int* geomID_to_instID = nullptr;
-      TravRay vray(ray.org,ray.dir);
-      __aligned(32) char tlray[sizeof(TravRay)];
-      new (tlray) TravRay(vray);
+      BVH4TravRay vray(ray.org,ray.dir);
+      __aligned(32) char tlray[sizeof(BVH4TravRay)];
+      new (tlray) BVH4TravRay(vray);
       float4 ray_near(ray.tnear);
       float4 ray_far (ray.tfar);
 
@@ -197,10 +172,10 @@ namespace embree
           {
             //STAT3(normal.transform_nodes,1,1,1);
             const BVH4::TransformNode* node = cur.transformNode();
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay&)tlray).dir_xyz);
+            const Vec3fa ray_org = xfmPoint (node->world2local,((BVH4TravRay&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((BVH4TravRay&)tlray).dir_xyz);
             geomID_to_instID = &node->instID;
-            new (&vray) TravRay(ray_org,ray_dir);
+            new (&vray) BVH4TravRay(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
             stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
@@ -211,9 +186,9 @@ namespace embree
           /*! restore toplevel ray */
           if (cur == BVH4::popRay) {
             geomID_to_instID = nullptr;
-            vray = (TravRay&) tlray; 
-            ray.org = ((TravRay&)tlray).org_xyz;
-            ray.dir = ((TravRay&)tlray).dir_xyz;
+            vray = (BVH4TravRay&) tlray; 
+            ray.org = ((BVH4TravRay&)tlray).org_xyz;
+            ray.dir = ((BVH4TravRay&)tlray).dir_xyz;
             goto pop;
           }
         }
@@ -257,19 +232,12 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
-      const Vec3fa ray_rdir = rcp_safe(ray.dir);
-      const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-      const Vec3f4 org(ray.org.x,ray.org.y,ray.org.z);
-      const Vec3f4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-      const Vec3f4 rdir(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-      const Vec3f4 org_rdir(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-      const float4  ray_near(ray.tnear);
-      float4 ray_far(ray.tfar);
-
-      /*! offsets to select the side that becomes the lower or upper bound */
-      const size_t nearX = ray_rdir.x >= 0 ? 0*sizeof(float4) : 1*sizeof(float4);
-      const size_t nearY = ray_rdir.y >= 0 ? 2*sizeof(float4) : 3*sizeof(float4);
-      const size_t nearZ = ray_rdir.z >= 0 ? 4*sizeof(float4) : 5*sizeof(float4);      
+      const unsigned int* geomID_to_instID = nullptr;
+      BVH4TravRay vray(ray.org,ray.dir);
+      __aligned(32) char tlray[sizeof(BVH4TravRay)];
+      new (tlray) BVH4TravRay(vray);
+      const float4 ray_near(ray.tnear);
+      float4 ray_far (ray.tfar);
       
       /* pop loop */
       while (true) pop:
@@ -291,19 +259,19 @@ namespace embree
 
 	  /* process standard nodes */
           if (likely(cur.isNode(types)))
-	    mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	    mask = intersect_node<robust>(cur.node(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,tNear); 
 
 	  /* process motion blur nodes */
 	  else if (likely(cur.isNodeMB(types)))
-	    mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time,tNear); 
+	    mask = intersect_node(cur.nodeMB(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,ray.time,tNear); 
 
 	  /*! process nodes with unaligned bounds */
           else if (unlikely(cur.isUnalignedNode(types)))
-            mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+            mask = intersect_node(cur.unalignedNode(),vray.org,vray.dir,ray_near,ray_far,tNear);
 
           /*! process nodes with unaligned bounds and motion blur */
           else if (unlikely(cur.isUnalignedNodeMB(types)))
-            mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time,tNear);
+            mask = intersect_node(cur.unalignedNodeMB(),vray.org,vray.dir,ray_near,ray_far,ray.time,tNear);
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
@@ -346,7 +314,35 @@ namespace embree
           cur = node->child(3); cur.prefetch(types);
           assert(cur != BVH4::emptyNode);
         }
-        
+
+        /* ray transformation support */
+        if (types & 0x10000)
+        {
+          /*! process transformation nodes */
+          if (unlikely(cur.isTransformNode(types))) 
+          {
+            //STAT3(normal.transform_nodes,1,1,1);
+            const BVH4::TransformNode* node = cur.transformNode();
+            const Vec3fa ray_org = xfmPoint (node->world2local,((BVH4TravRay&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((BVH4TravRay&)tlray).dir_xyz);
+            geomID_to_instID = &node->instID;
+            new (&vray) BVH4TravRay(ray_org,ray_dir);
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+            *stackPtr = BVH4::popRay; stackPtr++; // FIXME: requires larger stack!
+            *stackPtr = node->child;  stackPtr++;
+            goto pop;
+          }
+          
+          /*! restore toplevel ray */
+          if (cur == BVH4::popRay) {
+            geomID_to_instID = nullptr;
+            vray = (BVH4TravRay&) tlray; 
+            ray.org = ((BVH4TravRay&)tlray).org_xyz;
+            ray.dir = ((BVH4TravRay&)tlray).dir_xyz;
+            goto pop;
+          }
+        }
         /*! this is a leaf node */
 	assert(cur != BVH4::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);
