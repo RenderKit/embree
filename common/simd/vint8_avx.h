@@ -273,23 +273,6 @@ namespace embree
   __forceinline size_t select_max(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// New stuff
-  ////////////////////////////////////////////////////////////////////////////////
-
-  /* __forceinline void store8i(void* ptr, const vint8& i) { */
-  /*   _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(i)); */
-  /* } */
-
-  __forceinline void store8i( const vboolf8 &mask, void *ptr, const vint8& i ) {
-    _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(i));
-  }
-
-  __forceinline void store8i_nt(void* ptr, const vint8& v) {
-    store4i_nt((int*)ptr+0,v.l);
-    store4i_nt((int*)ptr+4,v.h);
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 

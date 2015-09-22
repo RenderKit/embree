@@ -108,14 +108,14 @@ namespace embree
                                              const vfloat4& u, const vfloat4& v, const vfloat4& t, const Vec3vf4& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const vfloat4 ray_u = ray.u;           store4f(valid,&ray.u,u);
-      const vfloat4 ray_v = ray.v;           store4f(valid,&ray.v,v);
-      const vfloat4 ray_tfar = ray.tfar;     store4f(valid,&ray.tfar,t);
-      const vint4 ray_geomID = ray.geomID; store4i(valid,&ray.geomID,geomID);
-      const vint4 ray_primID = ray.primID; store4i(valid,&ray.primID,primID);
-      const vfloat4 ray_Ng_x = ray.Ng.x;     store4f(valid,&ray.Ng.x,Ng.x);
-      const vfloat4 ray_Ng_y = ray.Ng.y;     store4f(valid,&ray.Ng.y,Ng.y);
-      const vfloat4 ray_Ng_z = ray.Ng.z;     store4f(valid,&ray.Ng.z,Ng.z);
+      const vfloat4 ray_u = ray.u;           vfloat4::store(valid,&ray.u,u);
+      const vfloat4 ray_v = ray.v;           vfloat4::store(valid,&ray.v,v);
+      const vfloat4 ray_tfar = ray.tfar;     vfloat4::store(valid,&ray.tfar,t);
+      const vint4 ray_geomID = ray.geomID;   vint4::store(valid,&ray.geomID,geomID);
+      const vint4 ray_primID = ray.primID;   vint4::store(valid,&ray.primID,primID);
+      const vfloat4 ray_Ng_x = ray.Ng.x;     vfloat4::store(valid,&ray.Ng.x,Ng.x);
+      const vfloat4 ray_Ng_y = ray.Ng.y;     vfloat4::store(valid,&ray.Ng.y,Ng.y);
+      const vfloat4 ray_Ng_z = ray.Ng.z;     vfloat4::store(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
@@ -128,14 +128,14 @@ namespace embree
       /* restore hit if filter not passed */
       if (unlikely(any(valid_failed))) 
       {
-        store4f(valid_failed,&ray.u,ray_u);
-        store4f(valid_failed,&ray.v,ray_v);
-        store4f(valid_failed,&ray.tfar,ray_tfar);
-        store4i(valid_failed,&ray.geomID,ray_geomID);
-        store4i(valid_failed,&ray.primID,ray_primID);
-        store4f(valid_failed,&ray.Ng.x,ray_Ng_x);
-        store4f(valid_failed,&ray.Ng.y,ray_Ng_y);
-        store4f(valid_failed,&ray.Ng.z,ray_Ng_z);
+        vfloat4::store(valid_failed,&ray.u,ray_u);
+        vfloat4::store(valid_failed,&ray.v,ray_v);
+        vfloat4::store(valid_failed,&ray.tfar,ray_tfar);
+        vint4::store(valid_failed,&ray.geomID,ray_geomID);
+        vint4::store(valid_failed,&ray.primID,ray_primID);
+        vfloat4::store(valid_failed,&ray.Ng.x,ray_Ng_x);
+        vfloat4::store(valid_failed,&ray.Ng.y,ray_Ng_y);
+        vfloat4::store(valid_failed,&ray.Ng.z,ray_Ng_z);
       }
       return valid_passed;
     }
@@ -146,14 +146,14 @@ namespace embree
       /* temporarily update hit information */
       const vfloat4 ray_tfar = ray.tfar; 
       const vint4 ray_geomID = ray.geomID;
-      store4f(valid,&ray.u,u);
-      store4f(valid,&ray.v,v);
-      store4f(valid,&ray.tfar,t);
-      store4i(valid,&ray.geomID,geomID);
-      store4i(valid,&ray.primID,primID);
-      store4f(valid,&ray.Ng.x,Ng.x);
-      store4f(valid,&ray.Ng.y,Ng.y);
-      store4f(valid,&ray.Ng.z,Ng.z);
+      vfloat4::store(valid,&ray.u,u);
+      vfloat4::store(valid,&ray.v,v);
+      vfloat4::store(valid,&ray.tfar,t);
+      vint4::store(valid,&ray.geomID,geomID);
+      vint4::store(valid,&ray.primID,primID);
+      vfloat4::store(valid,&ray.Ng.x,Ng.x);
+      vfloat4::store(valid,&ray.Ng.y,Ng.y);
+      vfloat4::store(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc4 filter4 = geometry->occlusionFilter4;
@@ -164,8 +164,8 @@ namespace embree
       const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
       
       /* restore hit if filter not passed */
-      store4f(valid_failed,&ray.tfar,ray_tfar);
-      store4i(valid_failed,&ray.geomID,ray_geomID);
+      vfloat4::store(valid_failed,&ray.tfar,ray_tfar);
+      vint4::store(valid_failed,&ray.geomID,ray_geomID);
       return valid_passed;
     }
     
@@ -176,8 +176,8 @@ namespace embree
       const vfloat4 ray_u = ray.u;           ray.u[k] = u;
       const vfloat4 ray_v = ray.v;           ray.v[k] = v;
       const vfloat4 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const vint4 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const vint4 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vint4 ray_geomID = ray.geomID;   ray.geomID[k] = geomID;
+      const vint4 ray_primID = ray.primID;   ray.primID[k] = primID;
       const vfloat4 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
       const vfloat4 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
       const vfloat4 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
@@ -192,14 +192,14 @@ namespace embree
       
       /* restore hit if filter not passed */
       if (unlikely(!passed)) {
-        store4f(&ray.u,ray_u);
-        store4f(&ray.v,ray_v);
-        store4f(&ray.tfar,ray_tfar);
-        store4i(&ray.geomID,ray_geomID);
-        store4i(&ray.primID,ray_primID);
-        store4f(&ray.Ng.x,ray_Ng_x);
-        store4f(&ray.Ng.y,ray_Ng_y);
-        store4f(&ray.Ng.z,ray_Ng_z);
+        vfloat4::store(&ray.u,ray_u);
+        vfloat4::store(&ray.v,ray_v);
+        vfloat4::store(&ray.tfar,ray_tfar);
+        vint4::store(&ray.geomID,ray_geomID);
+        vint4::store(&ray.primID,ray_primID);
+        vfloat4::store(&ray.Ng.x,ray_Ng_x);
+        vfloat4::store(&ray.Ng.y,ray_Ng_y);
+        vfloat4::store(&ray.Ng.z,ray_Ng_z);
       }
       return passed;
     }
@@ -229,8 +229,8 @@ namespace embree
       
       /* restore hit if filter not passed */
       if (unlikely(!passed)) {
-        store4f(&ray.tfar,ray_tfar);
-        store4i(&ray.geomID,ray_geomID);
+        vfloat4::store(&ray.tfar,ray_tfar);
+        vint4::store(&ray.geomID,ray_geomID);
       }
       return passed;
     }
@@ -243,8 +243,8 @@ namespace embree
       const vfloat8 ray_u = ray.u;           vfloat8::store(valid,&ray.u,u);
       const vfloat8 ray_v = ray.v;           vfloat8::store(valid,&ray.v,v);
       const vfloat8 ray_tfar = ray.tfar;     vfloat8::store(valid,&ray.tfar,t);
-      const vint8 ray_geomID = ray.geomID; vint8::store(valid,&ray.geomID,geomID);
-      const vint8 ray_primID = ray.primID; vint8::store(valid,&ray.primID,primID);
+      const vint8 ray_geomID = ray.geomID;   vint8::store(valid,&ray.geomID,geomID);
+      const vint8 ray_primID = ray.primID;   vint8::store(valid,&ray.primID,primID);
       const vfloat8 ray_Ng_x = ray.Ng.x;     vfloat8::store(valid,&ray.Ng.x,Ng.x);
       const vfloat8 ray_Ng_y = ray.Ng.y;     vfloat8::store(valid,&ray.Ng.y,Ng.y);
       const vfloat8 ray_Ng_z = ray.Ng.z;     vfloat8::store(valid,&ray.Ng.z,Ng.z);
@@ -306,8 +306,8 @@ namespace embree
       const vfloat8 ray_u = ray.u;           ray.u[k] = u;
       const vfloat8 ray_v = ray.v;           ray.v[k] = v;
       const vfloat8 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const vint8 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const vint8 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vint8 ray_geomID = ray.geomID;   ray.geomID[k] = geomID;
+      const vint8 ray_primID = ray.primID;   ray.primID[k] = primID;
       const vfloat8 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
       const vfloat8 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
       const vfloat8 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
@@ -374,8 +374,8 @@ namespace embree
       const vfloat16 ray_u = ray.u;           store16f(valid,&ray.u,u);
       const vfloat16 ray_v = ray.v;           store16f(valid,&ray.v,v);
       const vfloat16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
-      const vint16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
-      const vint16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+      const vint16 ray_geomID = ray.geomID;   store16i(valid,&ray.geomID,geomID);
+      const vint16 ray_primID = ray.primID;   store16i(valid,&ray.primID,primID);
       const vfloat16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
       const vfloat16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
       const vfloat16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
@@ -437,8 +437,8 @@ namespace embree
       const vfloat16 ray_u = ray.u;           ray.u[k] = u;
       const vfloat16 ray_v = ray.v;           ray.v[k] = v;
       const vfloat16 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const vint16 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const vint16 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vint16 ray_geomID = ray.geomID;   ray.geomID[k] = geomID;
+      const vint16 ray_primID = ray.primID;   ray.primID[k] = primID;
       const vfloat16 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
       const vfloat16 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
       const vfloat16 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;

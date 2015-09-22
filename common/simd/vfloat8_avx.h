@@ -469,40 +469,6 @@ namespace embree
   __forceinline size_t select_max(const vboolf8& valid, const vfloat8& v) { const vfloat8 a = select(valid,v,vfloat8(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Memory load and store operations
-  ////////////////////////////////////////////////////////////////////////////////
-
-  /* __forceinline vfloat8 load8f( const void* const a) { */
-  /*   return _mm256_load_ps((const float*)a);  */
-  /* } */
-
-  /* __forceinline void store8f(void *ptr, const vfloat8& f ) { */
-  /*   return _mm256_store_ps((float*)ptr,f); */
-  /* } */
-
-  /* __forceinline void storeu8f(void *ptr, const vfloat8& f ) { */
-  /*   return _mm256_storeu_ps((float*)ptr,f); */
-  /* } */
-
-  /* __forceinline void store8f( const vboolf8& mask, void *ptr, const vfloat8& f ) { */
-  /*   return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f); */
-  /* } */
-
-#if defined (__AVX2__)
-  __forceinline vfloat8 load8f_nt(void* ptr) {
-    return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));
-  }
-#endif
-  
-  /* __forceinline void store8f_nt(void* ptr, const vfloat8& v) { */
-  /*   _mm256_stream_ps((float*)ptr,v); */
-  /* } */
- 
-  __forceinline const vfloat8 broadcast4f(const void* ptr) {
-    return _mm256_broadcast_ps((__m128*)ptr); 
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 

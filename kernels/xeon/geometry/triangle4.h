@@ -93,20 +93,20 @@ namespace embree
     /*! non temporal store */
     __forceinline static void store_nt(Triangle4* dst, const Triangle4& src)
     {
-      store4f_nt(&dst->v0.x,src.v0.x);
-      store4f_nt(&dst->v0.y,src.v0.y);
-      store4f_nt(&dst->v0.z,src.v0.z);
-      store4f_nt(&dst->e1.x,src.e1.x);
-      store4f_nt(&dst->e1.y,src.e1.y);
-      store4f_nt(&dst->e1.z,src.e1.z);
-      store4f_nt(&dst->e2.x,src.e2.x);
-      store4f_nt(&dst->e2.y,src.e2.y);
-      store4f_nt(&dst->e2.z,src.e2.z);
-      store4f_nt(&dst->Ng.x,src.Ng.x);
-      store4f_nt(&dst->Ng.y,src.Ng.y);
-      store4f_nt(&dst->Ng.z,src.Ng.z);
-      store4i_nt(&dst->geomIDs,src.geomIDs);
-      store4i_nt(&dst->primIDs,src.primIDs);
+      vfloat4::store_nt(&dst->v0.x,src.v0.x);
+      vfloat4::store_nt(&dst->v0.y,src.v0.y);
+      vfloat4::store_nt(&dst->v0.z,src.v0.z);
+      vfloat4::store_nt(&dst->e1.x,src.e1.x);
+      vfloat4::store_nt(&dst->e1.y,src.e1.y);
+      vfloat4::store_nt(&dst->e1.z,src.e1.z);
+      vfloat4::store_nt(&dst->e2.x,src.e2.x);
+      vfloat4::store_nt(&dst->e2.y,src.e2.y);
+      vfloat4::store_nt(&dst->e2.z,src.e2.z);
+      vfloat4::store_nt(&dst->Ng.x,src.Ng.x);
+      vfloat4::store_nt(&dst->Ng.y,src.Ng.y);
+      vfloat4::store_nt(&dst->Ng.z,src.Ng.z);
+      vint4::store_nt(&dst->geomIDs,src.geomIDs);
+      vint4::store_nt(&dst->primIDs,src.primIDs);
     }
 
     /*! fill triangle from triangle list */

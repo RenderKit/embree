@@ -124,8 +124,8 @@ namespace embree
         if (slots == 4)
         {
           const vint4 code = bitInterleave(ax,ay,az);
-          storeu4i(&dest[currentID-4],unpacklo(code,ai));
-          storeu4i(&dest[currentID-2],unpackhi(code,ai));
+          vint4::storeu(&dest[currentID-4],unpacklo(code,ai));
+          vint4::storeu(&dest[currentID-2],unpackhi(code,ai));
           slots = 0;
         }
       }

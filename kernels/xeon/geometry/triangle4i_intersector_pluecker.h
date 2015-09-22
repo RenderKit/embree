@@ -44,9 +44,9 @@ namespace embree
           const int* base1 = (const int*) tri.v0[1];
           const int* base2 = (const int*) tri.v0[2];
           const int* base3 = (const int*) tri.v0[3];
-          const vfloat4 a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
-          const vfloat4 b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
-          const vfloat4 c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+          const vfloat4 a0 = vfloat4::loadu(base0          ), a1 = vfloat4::loadu(base1          ), a2 = vfloat4::loadu(base2          ), a3 = vfloat4::loadu(base3          );
+          const vfloat4 b0 = vfloat4::loadu(base0+tri.v1[0]), b1 = vfloat4::loadu(base1+tri.v1[1]), b2 = vfloat4::loadu(base2+tri.v1[2]), b3 = vfloat4::loadu(base3+tri.v1[3]);
+          const vfloat4 c0 = vfloat4::loadu(base0+tri.v2[0]), c1 = vfloat4::loadu(base1+tri.v2[1]), c2 = vfloat4::loadu(base2+tri.v2[2]), c3 = vfloat4::loadu(base3+tri.v2[3]);
           Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
@@ -61,9 +61,9 @@ namespace embree
           const int* base1 = (const int*) tri.v0[1];
           const int* base2 = (const int*) tri.v0[2];
           const int* base3 = (const int*) tri.v0[3];
-          const vfloat4 a0 = loadu4f(base0          ), a1 = loadu4f(base1          ), a2 = loadu4f(base2          ), a3 = loadu4f(base3          );
-          const vfloat4 b0 = loadu4f(base0+tri.v1[0]), b1 = loadu4f(base1+tri.v1[1]), b2 = loadu4f(base2+tri.v1[2]), b3 = loadu4f(base3+tri.v1[3]);
-          const vfloat4 c0 = loadu4f(base0+tri.v2[0]), c1 = loadu4f(base1+tri.v2[1]), c2 = loadu4f(base2+tri.v2[2]), c3 = loadu4f(base3+tri.v2[3]);
+          const vfloat4 a0 = vfloat4::loadu(base0          ), a1 = vfloat4::loadu(base1          ), a2 = vfloat4::loadu(base2          ), a3 = vfloat4::loadu(base3          );
+          const vfloat4 b0 = vfloat4::loadu(base0+tri.v1[0]), b1 = vfloat4::loadu(base1+tri.v1[1]), b2 = vfloat4::loadu(base2+tri.v1[2]), b3 = vfloat4::loadu(base3+tri.v1[3]);
+          const vfloat4 c0 = vfloat4::loadu(base0+tri.v2[0]), c1 = vfloat4::loadu(base1+tri.v2[1]), c2 = vfloat4::loadu(base2+tri.v2[2]), c3 = vfloat4::loadu(base3+tri.v2[3]);
           Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);

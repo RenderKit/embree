@@ -467,50 +467,6 @@ namespace embree
 
   __forceinline size_t select_min(const vboolf4& valid, const vfloat4& v) { const vfloat4 a = select(valid,v,vfloat4(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
   __forceinline size_t select_max(const vboolf4& valid, const vfloat4& v) { const vfloat4 a = select(valid,v,vfloat4(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// Memory load and store operations
-  ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline vfloat4 load4f( const void* const a ) {
-    return _mm_load_ps((float*)a); 
-  }
-
-  __forceinline void store4f ( void* ptr, const vfloat4& v ) {
-    _mm_store_ps((float*)ptr,v);
-  }
-
-  __forceinline vfloat4 loadu4f( const void* const a ) {
-    return _mm_loadu_ps((float*)a); 
-  }
-
-  __forceinline void storeu4f ( void* ptr, const vfloat4& v ) {
-    _mm_storeu_ps((float*)ptr,v);
-  }
-
-  __forceinline void store4f ( const vboolf4& mask, void* ptr, const vfloat4& f ) {
-#if defined (__AVX__)
-    _mm_maskstore_ps((float*)ptr,(__m128i)mask,f);
-#else
-    *(vfloat4*)ptr = select(mask,f,*(vfloat4*)ptr);
-#endif
-  }
-
-  __forceinline vfloat4 load4f_nt (void* ptr) {
-#if defined (__SSE4_1__)
-    return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));
-#else
-    return _mm_load_ps((float*)ptr); 
-#endif
-  }
-
-  __forceinline void store4f_nt (void* ptr, const vfloat4& v) {
-#if defined (__SSE4_1__)
-    _mm_stream_ps((float*)ptr,v);
-#else
-    _mm_store_ps((float*)ptr,v);
-#endif
-  }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators

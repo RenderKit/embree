@@ -380,7 +380,7 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
-      store8i(valid & terminated,&ray.geomID,0);
+      vint8::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
 

@@ -116,8 +116,8 @@ namespace embree
         
         static __forceinline const Vec3<vfloat4> gather(const float* const grid, const size_t line_offset)
         {
-          const vfloat4 r0 = loadu4f(grid + 0*line_offset);
-          const vfloat4 r1 = loadu4f(grid + 1*line_offset); // FIXME: this accesses 1 element too much
+          const vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
+          const vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // FIXME: this accesses 1 element too much
           return Vec3<vfloat4>(unpacklo(r0,r1),       // r00, r10, r01, r11
                               shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
                               shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
@@ -133,9 +133,9 @@ namespace embree
         
         static __forceinline const Vec3<vfloat8> gather(const float* const grid, const size_t line_offset)
         {
-          const vfloat4 ra = loadu4f(grid + 0*line_offset);
-          const vfloat4 rb = loadu4f(grid + 1*line_offset);
-          const vfloat4 rc = loadu4f(grid + 2*line_offset); // FIXME: this accesses 1 element too much
+          const vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
+          const vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
+          const vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); // FIXME: this accesses 1 element too much
           const vfloat8 r0 = vfloat8(ra,rb);
           const vfloat8 r1 = vfloat8(rb,rc);
           return Vec3<vfloat8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21

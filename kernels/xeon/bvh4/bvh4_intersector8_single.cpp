@@ -95,7 +95,7 @@ namespace embree
 	if (occluded1(bvh,bvh->root,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
 	  terminated[i] = -1;
       }
-      store8i(valid & terminated,&ray.geomID,0);
+      vint8::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
 

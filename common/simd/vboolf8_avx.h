@@ -124,11 +124,11 @@ namespace embree
     return _mm256_permute_ps(a, _MM_SHUFFLE(i, i, i, i));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle( const vboolf8& a ) {
+  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle128( const vboolf8& a ) {
     return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle( const vboolf8& a,  const vboolf8& b) {
+  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle128( const vboolf8& a,  const vboolf8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 

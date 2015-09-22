@@ -30,10 +30,10 @@ namespace embree
     /*! use SSE instructions to swap stack items */
     __forceinline static void xchg(StackItemT& a, StackItemT& b) 
     { 
-      const vfloat4 sse_a = load4f(&a); 
-      const vfloat4 sse_b = load4f(&b);
-      store4f(&a,sse_b);
-      store4f(&b,sse_a);
+      const vfloat4 sse_a = vfloat4::load((float*)&a); 
+      const vfloat4 sse_b = vfloat4::load((float*)&b);
+      vfloat4::store(&a,sse_b);
+      vfloat4::store(&b,sse_a);
     }
 
     /*! Sort 2 stack items. */

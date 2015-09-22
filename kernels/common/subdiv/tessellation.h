@@ -194,8 +194,8 @@ namespace embree
         const vbool4 m_u = u_i < grid_u_segments;
 	const vfloat4 u = select(m_u, vfloat4(x0+u_i) * inv_grid_u_segments, 1.0f);
 	const vfloat4 v = select(m_v, vfloat4(y0+v_i) * inv_grid_v_segments, 1.0f);
-	storeu4f(&u_array[index + x],u);
-	storeu4f(&v_array[index + x],v);	   
+        vfloat4::storeu(&u_array[index + x],u);
+	vfloat4::storeu(&v_array[index + x],v);	   
       }
     }       
  #endif

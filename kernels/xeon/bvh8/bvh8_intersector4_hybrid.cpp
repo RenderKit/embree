@@ -637,7 +637,7 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
-      store4i(valid & terminated,&ray.geomID,0);
+      vint4::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
     
