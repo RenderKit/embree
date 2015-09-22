@@ -23,33 +23,33 @@ namespace embree
   /*! Ray structure for 4 rays. */
   struct Ray4
   {
-    typedef bool4 simdb;
-    typedef float4 simdf;
-    typedef int4 simdi;
+    typedef vbool4 simdb;
+    typedef vfloat4 simdf;
+    typedef vint4 simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray4() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray4(const Vec3f4& org, const Vec3f4& dir, 
-                       const float4& tnear = zero, const float4& tfar = inf, 
-                       const float4& time = zero, const int4& mask = -1)
+    __forceinline Ray4(const Vec3vf4& org, const Vec3vf4& dir, 
+                       const vfloat4& tnear = zero, const vfloat4& tfar = inf, 
+                       const vfloat4& time = zero, const vint4& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), instID(-1), mask(mask), time(time) {}
 
     /*! returns the size of the ray */
     static __forceinline size_t size() { return 4; }
 
     /*! Tests if we hit something. */
-    __forceinline operator bool4() const { return geomID != int4(-1); }
+    __forceinline operator vbool4() const { return geomID != vint4(-1); }
 
     /*! calculates if this is a valid ray that does not cause issues during traversal */
-    __forceinline bool4 valid() const {
-      const bool4 vx = abs(org.x) <= float4(FLT_LARGE) & abs(dir.x) <= float4(FLT_LARGE);
-      const bool4 vy = abs(org.y) <= float4(FLT_LARGE) & abs(dir.y) <= float4(FLT_LARGE);
-      const bool4 vz = abs(org.z) <= float4(FLT_LARGE) & abs(dir.z) <= float4(FLT_LARGE);
-      const bool4 vn = abs(tnear) <= float4(inf);
-      const bool4 vf = abs(tfar) <= float4(inf);
+    __forceinline vbool4 valid() const {
+      const vbool4 vx = abs(org.x) <= vfloat4(FLT_LARGE) & abs(dir.x) <= vfloat4(FLT_LARGE);
+      const vbool4 vy = abs(org.y) <= vfloat4(FLT_LARGE) & abs(dir.y) <= vfloat4(FLT_LARGE);
+      const vbool4 vz = abs(org.z) <= vfloat4(FLT_LARGE) & abs(dir.z) <= vfloat4(FLT_LARGE);
+      const vbool4 vn = abs(tnear) <= vfloat4(inf);
+      const vbool4 vf = abs(tfar) <= vfloat4(inf);
       return vx & vy & vz & vn & vf;
     }
 
@@ -82,20 +82,20 @@ namespace embree
     }
 
   public:
-    Vec3f4 org;      //!< Ray origin
-    Vec3f4 dir;      //!< Ray direction
-    float4 tnear;     //!< Start of ray segment 
-    float4 tfar;      //!< End of ray segment   
-    float4 time;      //!< Time of this ray for motion blur.
-    int4 mask;      //!< used to mask out objects during traversal
+    Vec3vf4 org;      //!< Ray origin
+    Vec3vf4 dir;      //!< Ray direction
+    vfloat4 tnear;     //!< Start of ray segment 
+    vfloat4 tfar;      //!< End of ray segment   
+    vfloat4 time;      //!< Time of this ray for motion blur.
+    vint4 mask;      //!< used to mask out objects during traversal
 
   public:
-    Vec3f4 Ng;       //!< Geometry normal
-    float4 u;         //!< Barycentric u coordinate of hit
-    float4 v;         //!< Barycentric v coordinate of hit
-    int4 geomID;    //!< geometry ID
-    int4 primID;    //!< primitive ID
-    int4 instID;    //!< instance ID
+    Vec3vf4 Ng;       //!< Geometry normal
+    vfloat4 u;         //!< Barycentric u coordinate of hit
+    vfloat4 v;         //!< Barycentric v coordinate of hit
+    vint4 geomID;    //!< geometry ID
+    vint4 primID;    //!< primitive ID
+    vint4 instID;    //!< instance ID
   };
 
   /*! Outputs ray to stream. */

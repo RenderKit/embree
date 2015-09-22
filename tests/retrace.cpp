@@ -507,7 +507,7 @@ namespace embree
                 RayStreamLogger::LogRay4 *raydata_verify = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata_verify;
 
                 RTCRay4 &ray4 = raydata[index].ray4;
-                bool4 valid((int)raydata[index].m_valid);
+                vbool4 valid((int)raydata[index].m_valid);
                 rays += raydata[index].numRays;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
                   rtcIntersect4(&valid,g_retraceTask.scene,ray4);
@@ -525,10 +525,10 @@ namespace embree
                 RayStreamLogger::LogRay8 *raydata_verify = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata_verify;
 
                 RTCRay8 &ray8 = raydata[index].ray8;
-                __aligned(64) bool4 valid[2];
+                __aligned(64) vbool4 valid[2];
 
-                valid[0] = bool4((int)(raydata[index].m_valid & 0xf));
-                valid[1] = bool4((int)(raydata[index].m_valid>>4));
+                valid[0] = vbool4((int)(raydata[index].m_valid & 0xf));
+                valid[1] = vbool4((int)(raydata[index].m_valid>>4));
 
                 rays += raydata[index].numRays;
 
@@ -548,7 +548,7 @@ namespace embree
                 RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata_verify;
 
                 RTCRay16 &ray16 = raydata[index].ray16;
-                int16 valid = select((bool16)raydata[index].m_valid,int16(-1),int16(0));
+                vint16 valid = select((vbool16)raydata[index].m_valid,vint16(-1),vint16(0));
                 rays += raydata[index].numRays;
 
                 //raydata[index+1].prefetchL2();

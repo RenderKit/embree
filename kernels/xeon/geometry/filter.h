@@ -54,7 +54,7 @@ namespace embree
       /* temporarily update hit information */
       const float  ray_tfar = ray.tfar;
       const Vec3fa ray_Ng   = ray.Ng;
-      const float4   ray_uv_ids = *(float4*)&ray.u;
+      const vfloat4   ray_uv_ids = *(vfloat4*)&ray.u;
       ray.u = u;
       ray.v = v;
       ray.tfar = t;
@@ -71,7 +71,7 @@ namespace embree
       {
         ray.tfar = ray_tfar;
         ray.Ng = ray_Ng;
-        *(float4*)&ray.u = ray_uv_ids;
+        *(vfloat4*)&ray.u = ray_uv_ids;
         return false;
       }
       return true;
@@ -104,26 +104,26 @@ namespace embree
       return true;
     }
 
-    __forceinline bool4 runIntersectionFilter(const bool4& valid, const Geometry* const geometry, Ray4& ray, 
-                                             const float4& u, const float4& v, const float4& t, const Vec3f4& Ng, const int geomID, const int primID)
+    __forceinline vbool4 runIntersectionFilter(const vbool4& valid, const Geometry* const geometry, Ray4& ray, 
+                                             const vfloat4& u, const vfloat4& v, const vfloat4& t, const Vec3vf4& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float4 ray_u = ray.u;           store4f(valid,&ray.u,u);
-      const float4 ray_v = ray.v;           store4f(valid,&ray.v,v);
-      const float4 ray_tfar = ray.tfar;     store4f(valid,&ray.tfar,t);
-      const int4 ray_geomID = ray.geomID; store4i(valid,&ray.geomID,geomID);
-      const int4 ray_primID = ray.primID; store4i(valid,&ray.primID,primID);
-      const float4 ray_Ng_x = ray.Ng.x;     store4f(valid,&ray.Ng.x,Ng.x);
-      const float4 ray_Ng_y = ray.Ng.y;     store4f(valid,&ray.Ng.y,Ng.y);
-      const float4 ray_Ng_z = ray.Ng.z;     store4f(valid,&ray.Ng.z,Ng.z);
+      const vfloat4 ray_u = ray.u;           store4f(valid,&ray.u,u);
+      const vfloat4 ray_v = ray.v;           store4f(valid,&ray.v,v);
+      const vfloat4 ray_tfar = ray.tfar;     store4f(valid,&ray.tfar,t);
+      const vint4 ray_geomID = ray.geomID; store4i(valid,&ray.geomID,geomID);
+      const vint4 ray_primID = ray.primID; store4i(valid,&ray.primID,primID);
+      const vfloat4 ray_Ng_x = ray.Ng.x;     store4f(valid,&ray.Ng.x,Ng.x);
+      const vfloat4 ray_Ng_y = ray.Ng.y;     store4f(valid,&ray.Ng.y,Ng.y);
+      const vfloat4 ray_Ng_z = ray.Ng.z;     store4f(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const bool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
-      const bool4 valid_failed = valid & (ray.geomID == int4(-1));
-      const bool4 valid_passed = valid & (ray.geomID != int4(-1));
+      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
+      const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
       
       /* restore hit if filter not passed */
       if (unlikely(any(valid_failed))) 
@@ -140,12 +140,12 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline bool4 runOcclusionFilter(const bool4& valid, const Geometry* const geometry, Ray4& ray, 
-                                          const float4& u, const float4& v, const float4& t, const Vec3f4& Ng, const int geomID, const int primID)
+    __forceinline vbool4 runOcclusionFilter(const vbool4& valid, const Geometry* const geometry, Ray4& ray, 
+                                          const vfloat4& u, const vfloat4& v, const vfloat4& t, const Vec3vf4& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float4 ray_tfar = ray.tfar; 
-      const int4 ray_geomID = ray.geomID;
+      const vfloat4 ray_tfar = ray.tfar; 
+      const vint4 ray_geomID = ray.geomID;
       store4f(valid,&ray.u,u);
       store4f(valid,&ray.v,v);
       store4f(valid,&ray.tfar,t);
@@ -159,9 +159,9 @@ namespace embree
       RTCFilterFunc4 filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const bool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
-      const bool4 valid_failed = valid & (ray.geomID == int4(-1));
-      const bool4 valid_passed = valid & (ray.geomID != int4(-1));
+      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      const vbool4 valid_failed = valid & (ray.geomID == vint4(-1));
+      const vbool4 valid_passed = valid & (ray.geomID != vint4(-1));
       
       /* restore hit if filter not passed */
       store4f(valid_failed,&ray.tfar,ray_tfar);
@@ -173,21 +173,21 @@ namespace embree
                                              const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float4 ray_u = ray.u;           ray.u[k] = u;
-      const float4 ray_v = ray.v;           ray.v[k] = v;
-      const float4 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const int4 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const int4 ray_primID = ray.primID; ray.primID[k] = primID;
-      const float4 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
-      const float4 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
-      const float4 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+      const vfloat4 ray_u = ray.u;           ray.u[k] = u;
+      const vfloat4 ray_v = ray.v;           ray.v[k] = v;
+      const vfloat4 ray_tfar = ray.tfar;     ray.tfar[k] = t;
+      const vint4 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+      const vint4 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vfloat4 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+      const vfloat4 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+      const vfloat4 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool4 valid(1 << k);
+      const vbool4 valid(1 << k);
       RTCFilterFunc4  filter4 = geometry->intersectionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcIntersectionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const bool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
       const bool passed = ray.geomID[k] != -1;
       
       /* restore hit if filter not passed */
@@ -208,8 +208,8 @@ namespace embree
                                           const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float4 ray_tfar = ray.tfar; 
-      const int4 ray_geomID = ray.geomID;
+      const vfloat4 ray_tfar = ray.tfar; 
+      const vint4 ray_geomID = ray.geomID;
       ray.u[k] = u;
       ray.v[k] = v;
       ray.tfar[k] = t;
@@ -220,11 +220,11 @@ namespace embree
       ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool4 valid(1 << k);
+      const vbool4 valid(1 << k);
       RTCFilterFunc4  filter4 = geometry->occlusionFilter4;
       AVX_ZERO_UPPER();
       if (geometry->ispcOcclusionFilter4) ((ISPCFilterFunc4)filter4)(geometry->userPtr,(RTCRay4&)ray,valid);
-      else { const bool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
+      else { const vbool4 valid_temp = valid; filter4(&valid_temp,geometry->userPtr,(RTCRay4&)ray); }
       const bool passed = ray.geomID[k] != -1;
       
       /* restore hit if filter not passed */
@@ -236,25 +236,25 @@ namespace embree
     }
     
 #if defined(__AVX__)
-    __forceinline bool8 runIntersectionFilter(const bool8& valid, const Geometry* const geometry, Ray8& ray, 
-                                             const float8& u, const float8& v, const float8& t, const Vec3f8& Ng, const int geomID, const int primID)
+    __forceinline vbool8 runIntersectionFilter(const vbool8& valid, const Geometry* const geometry, Ray8& ray, 
+                                             const vfloat8& u, const vfloat8& v, const vfloat8& t, const Vec3vf8& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float8 ray_u = ray.u;           store8f(valid,&ray.u,u);
-      const float8 ray_v = ray.v;           store8f(valid,&ray.v,v);
-      const float8 ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,t);
-      const int8 ray_geomID = ray.geomID; store8i(valid,&ray.geomID,geomID);
-      const int8 ray_primID = ray.primID; store8i(valid,&ray.primID,primID);
-      const float8 ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
-      const float8 ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
-      const float8 ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
+      const vfloat8 ray_u = ray.u;           store8f(valid,&ray.u,u);
+      const vfloat8 ray_v = ray.v;           store8f(valid,&ray.v,v);
+      const vfloat8 ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,t);
+      const vint8 ray_geomID = ray.geomID; store8i(valid,&ray.geomID,geomID);
+      const vint8 ray_primID = ray.primID; store8i(valid,&ray.primID,primID);
+      const vfloat8 ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
+      const vfloat8 ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
+      const vfloat8 ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
       if (geometry->ispcIntersectionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
-      else { const bool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
-      const bool8 valid_failed = valid & (ray.geomID == int8(-1));
-      const bool8 valid_passed = valid & (ray.geomID != int8(-1));
+      else { const vbool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
+      const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
+      const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
       
       /* restore hit if filter not passed */
       if (unlikely(any(valid_failed))) 
@@ -271,12 +271,12 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline bool8 runOcclusionFilter(const bool8& valid, const Geometry* const geometry, Ray8& ray, 
-                                          const float8& u, const float8& v, const float8& t, const Vec3f8& Ng, const int geomID, const int primID)
+    __forceinline vbool8 runOcclusionFilter(const vbool8& valid, const Geometry* const geometry, Ray8& ray, 
+                                          const vfloat8& u, const vfloat8& v, const vfloat8& t, const Vec3vf8& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float8 ray_tfar = ray.tfar; 
-      const int8 ray_geomID = ray.geomID;
+      const vfloat8 ray_tfar = ray.tfar; 
+      const vint8 ray_geomID = ray.geomID;
       store8f(valid,&ray.u,u);
       store8f(valid,&ray.v,v);
       store8f(valid,&ray.tfar,t);
@@ -289,9 +289,9 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
       if (geometry->ispcOcclusionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
-      else { const bool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
-      const bool8 valid_failed = valid & (ray.geomID == int8(-1));
-      const bool8 valid_passed = valid & (ray.geomID != int8(-1));
+      else { const vbool8 valid_temp = valid; filter8(&valid_temp,geometry->userPtr,(RTCRay8&)ray); }
+      const vbool8 valid_failed = valid & (ray.geomID == vint8(-1));
+      const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
       
       /* restore hit if filter not passed */
       store8f(valid_failed,&ray.tfar,ray_tfar);
@@ -303,17 +303,17 @@ namespace embree
                                              const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float8 ray_u = ray.u;           ray.u[k] = u;
-      const float8 ray_v = ray.v;           ray.v[k] = v;
-      const float8 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const int8 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const int8 ray_primID = ray.primID; ray.primID[k] = primID;
-      const float8 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
-      const float8 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
-      const float8 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+      const vfloat8 ray_u = ray.u;           ray.u[k] = u;
+      const vfloat8 ray_v = ray.v;           ray.v[k] = v;
+      const vfloat8 ray_tfar = ray.tfar;     ray.tfar[k] = t;
+      const vint8 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+      const vint8 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vfloat8 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+      const vfloat8 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+      const vfloat8 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool8 valid(1 << k);
+      const vbool8 valid(1 << k);
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
       if (geometry->ispcIntersectionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
       else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
@@ -337,8 +337,8 @@ namespace embree
                                           const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float8 ray_tfar = ray.tfar; 
-      const int8 ray_geomID = ray.geomID;
+      const vfloat8 ray_tfar = ray.tfar; 
+      const vint8 ray_geomID = ray.geomID;
       ray.u[k] = u;
       ray.v[k] = v;
       ray.tfar[k] = t;
@@ -349,7 +349,7 @@ namespace embree
       ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool8 valid(1 << k);
+      const vbool8 valid(1 << k);
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
       if (geometry->ispcOcclusionFilter8) ((ISPCFilterFunc8)filter8)(geometry->userPtr,(RTCRay8&)ray,valid);
       else filter8(&valid,geometry->userPtr,(RTCRay8&)ray);
@@ -367,25 +367,25 @@ namespace embree
 
 
 #if defined(__AVX512F__)
-    __forceinline bool16 runIntersectionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                             const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+    __forceinline vbool16 runIntersectionFilter(const vbool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                             const vfloat16& u, const vfloat16& v, const vfloat16& t, const Vec3vf16& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float16 ray_u = ray.u;           store16f(valid,&ray.u,u);
-      const float16 ray_v = ray.v;           store16f(valid,&ray.v,v);
-      const float16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
-      const int16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
-      const int16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
-      const float16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
-      const float16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
-      const float16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
+      const vfloat16 ray_u = ray.u;           store16f(valid,&ray.u,u);
+      const vfloat16 ray_v = ray.v;           store16f(valid,&ray.v,v);
+      const vfloat16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
+      const vint16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
+      const vint16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+      const vfloat16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
+      const vfloat16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
+      const vfloat16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
       if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
-      else { const bool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
-      const bool16 valid_failed = valid & (ray.geomID == int16(-1));
-      const bool16 valid_passed = valid & (ray.geomID != int16(-1));
+      else { const vbool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
+      const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
+      const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
       
       /* restore hit if filter not passed */
       if (unlikely(any(valid_failed))) 
@@ -402,12 +402,12 @@ namespace embree
       return valid_passed;
     }
     
-    __forceinline bool16 runOcclusionFilter(const bool16& valid, const Geometry* const geometry, Ray16& ray, 
-                                          const float16& u, const float16& v, const float16& t, const Vec3f16& Ng, const int geomID, const int primID)
+    __forceinline vbool16 runOcclusionFilter(const vbool16& valid, const Geometry* const geometry, Ray16& ray, 
+                                          const vfloat16& u, const vfloat16& v, const vfloat16& t, const Vec3vf16& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float16 ray_tfar = ray.tfar; 
-      const int16 ray_geomID = ray.geomID;
+      const vfloat16 ray_tfar = ray.tfar; 
+      const vint16 ray_geomID = ray.geomID;
       store16f(valid,&ray.u,u);
       store16f(valid,&ray.v,v);
       store16f(valid,&ray.tfar,t);
@@ -420,9 +420,9 @@ namespace embree
       /* invoke filter function */
       RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
       if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
-      else { const bool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
-      const bool16 valid_failed = valid & (ray.geomID == int16(-1));
-      const bool16 valid_passed = valid & (ray.geomID != int16(-1));
+      else { const vbool16 valid_temp = valid; filter16(&valid_temp,geometry->userPtr,(RTCRay16&)ray); }
+      const vbool16 valid_failed = valid & (ray.geomID == vint16(-1));
+      const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
       
       /* restore hit if filter not passed */
       store16f(valid_failed,&ray.tfar,ray_tfar);
@@ -434,17 +434,17 @@ namespace embree
                                              const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float16 ray_u = ray.u;           ray.u[k] = u;
-      const float16 ray_v = ray.v;           ray.v[k] = v;
-      const float16 ray_tfar = ray.tfar;     ray.tfar[k] = t;
-      const int16 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
-      const int16 ray_primID = ray.primID; ray.primID[k] = primID;
-      const float16 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
-      const float16 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
-      const float16 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
+      const vfloat16 ray_u = ray.u;           ray.u[k] = u;
+      const vfloat16 ray_v = ray.v;           ray.v[k] = v;
+      const vfloat16 ray_tfar = ray.tfar;     ray.tfar[k] = t;
+      const vint16 ray_geomID = ray.geomID; ray.geomID[k] = geomID;
+      const vint16 ray_primID = ray.primID; ray.primID[k] = primID;
+      const vfloat16 ray_Ng_x = ray.Ng.x;     ray.Ng.x[k] = Ng.x;
+      const vfloat16 ray_Ng_y = ray.Ng.y;     ray.Ng.y[k] = Ng.y;
+      const vfloat16 ray_Ng_z = ray.Ng.z;     ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool16 valid(1 << k);
+      const vbool16 valid(1 << k);
       RTCFilterFunc16  filter16 = geometry->intersectionFilter16;
       if (geometry->ispcIntersectionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
       else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);
@@ -468,8 +468,8 @@ namespace embree
                                           const float& u, const float& v, const float& t, const Vec3fa& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const float16 ray_tfar = ray.tfar; 
-      const int16 ray_geomID = ray.geomID;
+      const vfloat16 ray_tfar = ray.tfar; 
+      const vint16 ray_geomID = ray.geomID;
       ray.u[k] = u;
       ray.v[k] = v;
       ray.tfar[k] = t;
@@ -480,7 +480,7 @@ namespace embree
       ray.Ng.z[k] = Ng.z;
       
       /* invoke filter function */
-      const bool16 valid(1 << k);
+      const vbool16 valid(1 << k);
       RTCFilterFunc16 filter16 = geometry->occlusionFilter16;
       if (geometry->ispcOcclusionFilter16) ((ISPCFilterFunc16)filter16)(geometry->userPtr,(RTCRay16&)ray,valid);
       else filter16(&valid,geometry->userPtr,(RTCRay16&)ray);

@@ -24,50 +24,50 @@ namespace embree
    *  precomputed reciprocal direction. */
   struct Ray16
   {
-    typedef bool16 simdb;
-    typedef float16 simdf;
-    typedef int16 simdi;
+    typedef vbool16 simdb;
+    typedef vfloat16 simdf;
+    typedef vint16 simdi;
 
     /*! Default construction does nothing. */
     __forceinline Ray16() {}
 
     /*! Constructs a ray from origin, direction, and ray segment. Near
      *  has to be smaller than far. */
-    __forceinline Ray16(const Vec3f16& org, const Vec3f16& dir, 
-                        const float16& tnear = zero, const float16& tfar = inf, 
-                        const float16& time = zero, const int16& mask = -1)
+    __forceinline Ray16(const Vec3vf16& org, const Vec3vf16& dir, 
+                        const vfloat16& tnear = zero, const vfloat16& tfar = inf, 
+                        const vfloat16& time = zero, const vint16& mask = -1)
       : org(org), dir(dir), tnear(tnear), tfar(tfar), geomID(-1), primID(-1), mask(mask), time(time) {}
 
     /*! returns the size of the ray */
     static __forceinline size_t size() { return 16; }
 
     /*! Tests if we hit something. */
-    __forceinline operator bool16() const { return geomID != int16(-1); }
+    __forceinline operator vbool16() const { return geomID != vint16(-1); }
 
     /*! calculates if this is a valid ray that does not cause issues during traversal */
-    __forceinline bool16 valid() const {
-      const bool16 vx = abs(org.x) <= float16(FLT_LARGE) & abs(dir.x) <= float16(FLT_LARGE);
-      const bool16 vy = abs(org.y) <= float16(FLT_LARGE) & abs(dir.y) <= float16(FLT_LARGE);
-      const bool16 vz = abs(org.z) <= float16(FLT_LARGE) & abs(dir.z) <= float16(FLT_LARGE);
-      const bool16 vn = abs(tnear) <= float16(inf);
-      const bool16 vf = abs(tfar) <= float16(inf);
+    __forceinline vbool16 valid() const {
+      const vbool16 vx = abs(org.x) <= vfloat16(FLT_LARGE) & abs(dir.x) <= vfloat16(FLT_LARGE);
+      const vbool16 vy = abs(org.y) <= vfloat16(FLT_LARGE) & abs(dir.y) <= vfloat16(FLT_LARGE);
+      const vbool16 vz = abs(org.z) <= vfloat16(FLT_LARGE) & abs(dir.z) <= vfloat16(FLT_LARGE);
+      const vbool16 vn = abs(tnear) <= vfloat16(inf);
+      const vbool16 vf = abs(tfar) <= vfloat16(inf);
       return vx & vy & vz & vn & vf;
     }
 
   public:
-    Vec3f16 org;      //!< Ray origin
-    Vec3f16 dir;      //!< Ray direction
-    float16 tnear;    //!< Start of ray segment 
-    float16 tfar;     //!< End of ray segment   
-    float16 time;     //!< Time of this ray for motion blur.
-    int16 mask;     //!< used to mask out objects during traversal
+    Vec3vf16 org;      //!< Ray origin
+    Vec3vf16 dir;      //!< Ray direction
+    vfloat16 tnear;    //!< Start of ray segment 
+    vfloat16 tfar;     //!< End of ray segment   
+    vfloat16 time;     //!< Time of this ray for motion blur.
+    vint16 mask;     //!< used to mask out objects during traversal
 
-    Vec3f16 Ng;       //!< Geometry normal
-    float16 u;        //!< Barycentric u coordinate of hit
-    float16 v;        //!< Barycentric v coordinate of hit
-    int16 geomID;   //!< geometry ID
-    int16 primID;   //!< primitive ID
-    int16 instID;   //!< instance ID
+    Vec3vf16 Ng;       //!< Geometry normal
+    vfloat16 u;        //!< Barycentric u coordinate of hit
+    vfloat16 v;        //!< Barycentric v coordinate of hit
+    vint16 geomID;   //!< geometry ID
+    vint16 primID;   //!< primitive ID
+    vint16 instID;   //!< instance ID
 
     template<int PFHINT>
     __forceinline void prefetchHitData() const
@@ -82,14 +82,14 @@ namespace embree
       prefetch<PFHINT>(&Ng.z);
     }
 
-    __forceinline void update(const bool16 &m_mask,
+    __forceinline void update(const vbool16 &m_mask,
 			      const size_t rayIndex,
-			      const float16 &new_t,
-			      const float16 &new_u,
-			      const float16 &new_v,
-			      const float16 &new_gnormalx,
-			      const float16 &new_gnormaly,
-			      const float16 &new_gnormalz,
+			      const vfloat16 &new_t,
+			      const vfloat16 &new_u,
+			      const vfloat16 &new_v,
+			      const vfloat16 &new_gnormalx,
+			      const vfloat16 &new_gnormaly,
+			      const vfloat16 &new_gnormalz,
 			      const int new_geomID,
 			      const int new_primID)
     {
@@ -105,15 +105,15 @@ namespace embree
 
     }
 
-    __forceinline void update(const bool16 &m_mask,
-			      const float16 &new_t,
-			      const float16 &new_u,
-			      const float16 &new_v,
-			      const float16 &new_gnormalx,
-			      const float16 &new_gnormaly,
-			      const float16 &new_gnormalz,
-			      const int16 &new_geomID,
-			      const int16 &new_primID)
+    __forceinline void update(const vbool16 &m_mask,
+			      const vfloat16 &new_t,
+			      const vfloat16 &new_u,
+			      const vfloat16 &new_v,
+			      const vfloat16 &new_gnormalx,
+			      const vfloat16 &new_gnormaly,
+			      const vfloat16 &new_gnormalz,
+			      const vint16 &new_geomID,
+			      const vint16 &new_primID)
     {
       store16f(m_mask,(float*)&tfar,new_t);
       store16f(m_mask,(float*)&u,new_u);

@@ -19,7 +19,7 @@
 namespace embree
 {
 
-  __aligned(64) unsigned int bool16::shift1[32] = {
+  __aligned(64) unsigned int vboolf16::shift1[32] = {
     ((unsigned int)1 << 0),
     ((unsigned int)1 << 1),
     ((unsigned int)1 << 2),
@@ -54,4 +54,4 @@ namespace embree
     ((unsigned int)1 << 31)
   };
 
-};
+}

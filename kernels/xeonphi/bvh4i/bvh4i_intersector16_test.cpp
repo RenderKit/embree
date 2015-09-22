@@ -25,31 +25,31 @@ namespace embree
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
     static unsigned int M_LANE_7777 = 0x7777;               // needed due to compiler efficiency bug
 
-    __forceinline void convertSOA4ftoAOS4f(const float16 &x,
-					   const float16 &y,
-					   const float16 &z,
-					   const float16 &w,
+    __forceinline void convertSOA4ftoAOS4f(const vfloat16 &x,
+					   const vfloat16 &y,
+					   const vfloat16 &z,
+					   const vfloat16 &w,
 					   Vec3fa *__restrict__ const dest)
     {
-      float16 r0 = float16::undefined();
+      vfloat16 r0 = vfloat16::undefined();
       r0 = uload16f_low(0x1111,&x[0],r0);
       r0 = uload16f_low(0x2222,&y[0],r0);
       r0 = uload16f_low(0x4444,&z[0],r0);
       r0 = uload16f_low(0x8888,&w[0],r0);
 
-      float16 r1 = float16::undefined();
+      vfloat16 r1 = vfloat16::undefined();
       r1 = uload16f_low(0x1111,&x[4],r1);
       r1 = uload16f_low(0x2222,&y[4],r1);
       r1 = uload16f_low(0x4444,&z[4],r1);
       r1 = uload16f_low(0x8888,&w[4],r1);
 
-      float16 r2 = float16::undefined();
+      vfloat16 r2 = vfloat16::undefined();
       r2 = uload16f_low(0x1111,&x[8],r2);
       r2 = uload16f_low(0x2222,&y[8],r2);
       r2 = uload16f_low(0x4444,&z[8],r2);
       r2 = uload16f_low(0x8888,&w[8],r2);
 
-      float16 r3 = float16::undefined();
+      vfloat16 r3 = vfloat16::undefined();
       r3 = uload16f_low(0x1111,&x[12],r3);
       r3 = uload16f_low(0x2222,&y[12],r3);
       r3 = uload16f_low(0x4444,&z[12],r3);
@@ -66,7 +66,7 @@ namespace embree
     // ============================================================================================
 
     template<typename LeafIntersector, bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>
-    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES, ROBUST>::intersect(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES, ROBUST>::intersect(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[3*BVH4i::maxDepth+1];
@@ -74,10 +74,10 @@ namespace embree
 
 
       /* setup */
-      const bool16 m_valid    = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const vbool16 m_valid    = *(vint16*)valid_i != vint16(0);
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       store16f(stack_dist,inf);
 
@@ -91,12 +91,12 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -149,17 +149,17 @@ namespace embree
     }
 
     template<typename LeafIntersector,bool ENABLE_COMPRESSED_BVH4I_NODES, bool ROBUST>    
-    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Test<LeafIntersector,ENABLE_COMPRESSED_BVH4I_NODES,ROBUST>::occluded(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const bool16 m_valid = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
-      bool16 terminated    = !m_valid;
-      const float16 inf     = float16(pos_inf);
-      const float16 zero    = float16::zero();
+      const vbool16 m_valid = *(vint16*)valid_i != vint16(0);
+      const Vec3vf16 rdir16  = rcp_safe(ray16.dir);
+      vbool16 terminated    = !m_valid;
+      const vfloat16 inf     = vfloat16(pos_inf);
+      const vfloat16 zero    = vfloat16::zero();
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -172,15 +172,15 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const int16 v_invalidNode(BVH4i::invalidNode);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vint16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-	  const int16 i_leaf_mask(BVH4I_LEAF_MASK);
+	  const vint16 i_leaf_mask(BVH4I_LEAF_MASK);
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
 	  while (1)
@@ -188,9 +188,9 @@ namespace embree
 	      NodeRef curNode = stack_node[sindex-1];
 	      sindex--;
 
-	      const bool16 m7777 = 0x7777; 
-	      const bool16 m_rdir0 = lt(m7777,rdir_xyz,float16::zero());
-	      const bool16 m_rdir1 = ge(m7777,rdir_xyz,float16::zero());
+	      const vbool16 m7777 = 0x7777; 
+	      const vbool16 m_rdir0 = lt(m7777,rdir_xyz,vfloat16::zero());
+	      const vbool16 m_rdir1 = ge(m7777,rdir_xyz,vfloat16::zero());
 
 	      while (1) 
 		{
@@ -200,9 +200,9 @@ namespace embree
 
 		  const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
 
-		  float16 tLowerXYZ = select(m7777,precalculations.rdir_xyz,min_dist_xyz); 
-		  float16 tUpperXYZ = select(m7777,precalculations.rdir_xyz,max_dist_xyz);
-		  bool16 hitm = ~m7777; 
+		  vfloat16 tLowerXYZ = select(m7777,precalculations.rdir_xyz,min_dist_xyz); 
+		  vfloat16 tUpperXYZ = select(m7777,precalculations.rdir_xyz,max_dist_xyz);
+		  vbool16 hitm = ~m7777; 
 
 		  const float* __restrict const plower = (float*)node->lower;
 		  const float* __restrict const pupper = (float*)node->upper;
@@ -218,15 +218,15 @@ namespace embree
 		  tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),precalculations.org_rdir_xyz);
 		  tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),precalculations.org_rdir_xyz);
 
-		  const float16 tLower = tLowerXYZ;
-		  const float16 tUpper = tUpperXYZ;
+		  const vfloat16 tLower = tLowerXYZ;
+		  const vfloat16 tUpper = tUpperXYZ;
 
 
 		  sindex--;
 		  curNode = stack_node[sindex]; // early pop of next node
 
-		  const float16 tNear = vreduce_max4(tLower);
-		  const float16 tFar  = vreduce_min4(tUpper);  
+		  const vfloat16 tNear = vreduce_max4(tLower);
+		  const vfloat16 tFar  = vreduce_min4(tUpper);  
 		  hitm = le(hitm,tNear,tFar);
 		  
 
@@ -236,7 +236,7 @@ namespace embree
 
 
 		  /* if no child is hit, continue with early popped child */
-		  const int16 plower_node = load16i((int*)node);
+		  const vint16 plower_node = load16i((int*)node);
 
 		  if (unlikely(none(hitm))) continue;
 		  sindex++;
@@ -276,7 +276,7 @@ namespace embree
 		    }
 
 		  /* continue with closest child and push all others */
-		  // const bool16 m_leaf = test(hitm,plower_node,i_leaf_mask);
+		  // const vbool16 m_leaf = test(hitm,plower_node,i_leaf_mask);
 		  // hitm ^= m_leaf;
 		  // const unsigned int num_nodes  = countbits(hitm);
 		  // const unsigned int num_leaves = countbits(m_leaf);
@@ -288,16 +288,16 @@ namespace embree
 		  // sindex -= 1;
 		  // curNode = stack_node[sindex];
 
-		  const float16 tNear_pos = select(hitm,tNear,inf);
-		  const float16 min_dist = set_min_lanes(tNear_pos);
+		  const vfloat16 tNear_pos = select(hitm,tNear,inf);
+		  const vfloat16 min_dist = set_min_lanes(tNear_pos);
 		  const unsigned int old_sindex = sindex;
 		  sindex += countbits(hiti) - 1;
 
 		  assert(sindex < 3*BVH4i::maxDepth+1);
         
-		  const bool16 closest_child = eq(hitm,min_dist,tNear);
+		  const vbool16 closest_child = eq(hitm,min_dist,tNear);
 		  const unsigned long closest_child_pos = bitscan64(closest_child);
-		  const bool16 m_pos = andn(hitm,andn(closest_child,(bool16)((unsigned int)closest_child - 1)));
+		  const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 		  curNode = ((unsigned int*)node)[closest_child_pos];
 		  compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
 		}
@@ -355,10 +355,10 @@ namespace embree
 
 /*
 
-      __aligned(64) float16   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) vfloat16   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
-      const bool16 m_valid = *(int16*)valid_i != int16(0);
+      const vbool16 m_valid = *(vint16*)valid_i != vint16(0);
       const unsigned int numValidRays = countbits(m_valid);
       __aligned(64) Vec3fa dir[16];
       __aligned(64) Vec3fa org[16];
@@ -366,8 +366,8 @@ namespace embree
       convertSOA4ftoAOS4f(ray16.org.x,ray16.org.y,ray16.org.z,ray16.tnear,org);
       convertSOA4ftoAOS4f(ray16.dir.x,ray16.dir.y,ray16.dir.z,ray16.tfar,dir);
 
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       store16f(stack_dist,inf);
 
@@ -379,12 +379,12 @@ namespace embree
         {
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
-	  const float16 dir4_xyz  = load16f(&dir[rayIndex4]);
-	  const float16 org4_xyz  = load16f(&org[rayIndex4]);
-	  const float16 rdir4_xyz = rcp_safe(dir4_xyz);
-	  const float16 min_dist4 = swDDDD(org4_xyz);
-	  float16       max_dist4 = swDDDD(dir4_xyz);
-	  const float16 org4_rdir4_xyz = org4_xyz * rdir4_xyz;
+	  const vfloat16 dir4_xyz  = load16f(&dir[rayIndex4]);
+	  const vfloat16 org4_xyz  = load16f(&org[rayIndex4]);
+	  const vfloat16 rdir4_xyz = rcp_safe(dir4_xyz);
+	  const vfloat16 min_dist4 = swDDDD(org4_xyz);
+	  vfloat16       max_dist4 = swDDDD(dir4_xyz);
+	  const vfloat16 org4_rdir4_xyz = org4_xyz * rdir4_xyz;
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -392,17 +392,17 @@ namespace embree
 	    {
 
 	      NodeRef curNode = stack_node[sindex-1];
-	      float16 curDist   = stack_dist[sindex-1];
+	      vfloat16 curDist   = stack_dist[sindex-1];
 	      sindex--;
-	      const bool16 m_stackDist = max_dist4 > curDist;
+	      const vbool16 m_stackDist = max_dist4 > curDist;
 	      if (unlikely(curNode == BVH4i::invalidNode))  break;
         
 	      if (unlikely(none(m_stackDist))) {continue;}
 
-	      const bool16 m7777 = 0x7777; 
+	      const vbool16 m7777 = 0x7777; 
 
-	      const float16 org_tLowerXYZ = select(m7777,rdir4_xyz,min_dist4); 
-	      const float16 org_tUpperXYZ = select(m7777,rdir4_xyz,max_dist4);
+	      const vfloat16 org_tLowerXYZ = select(m7777,rdir4_xyz,min_dist4); 
+	      const vfloat16 org_tUpperXYZ = select(m7777,rdir4_xyz,max_dist4);
     
 	      while (1)
 		{
@@ -412,8 +412,8 @@ namespace embree
 		  const BVH4i::Node* __restrict__ const node = curNode.node(nodes);
 
 
-		  prefetch<PFHINT_L1>((float16*)node + 0);           
-		  prefetch<PFHINT_L1>((float16*)node + 1); 
+		  prefetch<PFHINT_L1>((vfloat16*)node + 0);           
+		  prefetch<PFHINT_L1>((vfloat16*)node + 1); 
 
 		  sindex--;
 
@@ -425,28 +425,28 @@ namespace embree
 		    {
 		      BVH4i::NodeRef child = node->lower[i].child;
 		      
-		      const float16 lower = broadcast4to16f(&node->lower[i]);
-		      const float16 upper = broadcast4to16f(&node->upper[i]);
+		      const vfloat16 lower = broadcast4to16f(&node->lower[i]);
+		      const vfloat16 upper = broadcast4to16f(&node->upper[i]);
 
-		      float16 tLowerXYZ = org_tLowerXYZ;		      
-		      float16 tUpperXYZ = org_tUpperXYZ;
+		      vfloat16 tLowerXYZ = org_tLowerXYZ;		      
+		      vfloat16 tUpperXYZ = org_tUpperXYZ;
 
 		      tLowerXYZ = mask_msub(m7777,tLowerXYZ,lower,org4_rdir4_xyz);
 		      tUpperXYZ = mask_msub(m7777,tUpperXYZ,upper,org4_rdir4_xyz);
 
 		      if (unlikely(i >=2 && child == BVH4i::invalidNode)) break;
 	    
-		      const float16 tLower = min(tLowerXYZ,tUpperXYZ);
-		      const float16 tUpper = max(tLowerXYZ,tUpperXYZ);
+		      const vfloat16 tLower = min(tLowerXYZ,tUpperXYZ);
+		      const vfloat16 tUpper = max(tLowerXYZ,tUpperXYZ);
 
-		      const float16 tNear = vreduce_max4(tLower);
-		      const float16 tFar  = vreduce_min4(tUpper);  
+		      const vfloat16 tNear = vreduce_max4(tLower);
+		      const vfloat16 tFar  = vreduce_min4(tUpper);  
 
-		      const bool16 hitm = le(0x8888,tNear,tFar);
+		      const vbool16 hitm = le(0x8888,tNear,tFar);
 
 
-		      const float16 childDist = select(hitm,tNear,inf);
-		      const bool16 m_child_dist = lt(childDist,curDist);
+		      const vfloat16 childDist = select(hitm,tNear,inf);
+		      const vbool16 m_child_dist = lt(childDist,curDist);
 
 		      if (likely(any(hitm)))
 			{
@@ -477,7 +477,7 @@ namespace embree
 
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
-	      const bool16 m_valid_leaf = 0xffff;
+	      const vbool16 m_valid_leaf = 0xffff;
 	      STAT3(normal.trav_leaves,1,popcnt(m_valid_leaf),16);
  
 	      LeafIntersector::intersect16(curNode,m_valid_leaf,ray16.dir,ray16.org,ray16,accel,(Scene*)bvh->geometry);

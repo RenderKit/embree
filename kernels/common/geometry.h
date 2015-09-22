@@ -291,17 +291,17 @@ namespace embree
   };
 
 #if defined(__SSE__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float4>() const { return intersectionFilter4 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float4>() const { return occlusionFilter4    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat4>() const { return intersectionFilter4 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat4>() const { return occlusionFilter4    != nullptr; }
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float8>() const { return intersectionFilter8 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float8>() const { return occlusionFilter8    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat8>() const { return intersectionFilter8 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat8>() const { return occlusionFilter8    != nullptr; }
 #endif
 
 #if defined(__MIC__) || defined(__AVX512F__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float16>() const { return intersectionFilter16 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float16>() const { return occlusionFilter16    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return intersectionFilter16 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return occlusionFilter16    != nullptr; }
 #endif
 }

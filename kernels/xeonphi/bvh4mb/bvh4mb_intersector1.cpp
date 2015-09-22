@@ -34,9 +34,9 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const Vec3f16 rdir16     = rcp_safe(Vec3f16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const Vec3vf16 rdir16     = rcp_safe(Vec3vf16(vfloat16(ray.dir.x),vfloat16(ray.dir.y),vfloat16(ray.dir.z)));
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       store16f(stack_dist,inf);
 
@@ -48,18 +48,18 @@ namespace embree
 
       size_t sindex = 2;
 
-      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      float16       max_dist_xyz = broadcast1to16f(&ray.tfar);
-      const float16 time         = broadcast1to16f(&ray.time);
+      const vfloat16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      vfloat16       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 time         = broadcast1to16f(&ray.time);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-      const bool16 m7777 = 0x7777; 
-      const bool16 m_rdir0 = lt(m7777,rdir_xyz,float16::zero());
-      const bool16 m_rdir1 = ge(m7777,rdir_xyz,float16::zero());
+      const vbool16 m7777 = 0x7777; 
+      const vbool16 m_rdir0 = lt(m7777,rdir_xyz,vfloat16::zero());
+      const vbool16 m_rdir1 = ge(m7777,rdir_xyz,vfloat16::zero());
 	  
       while (1)
 	{
@@ -112,9 +112,9 @@ namespace embree
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* setup */
-      const Vec3f16 rdir16      = rcp_safe(Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z));
-      const float16 inf         = float16(pos_inf);
-      const float16 zero        = float16::zero();
+      const Vec3vf16 rdir16      = rcp_safe(Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z));
+      const vfloat16 inf         = vfloat16(pos_inf);
+      const vfloat16 zero        = vfloat16::zero();
 
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
@@ -123,18 +123,18 @@ namespace embree
       stack_node[1] = bvh->root;
       size_t sindex = 2;
 
-      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      const float16 max_dist_xyz = broadcast1to16f(&ray.tfar);
-      const float16 time         = broadcast1to16f(&ray.time);
+      const vfloat16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      const vfloat16 max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 time         = broadcast1to16f(&ray.time);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
-      const bool16 m7777 = 0x7777; 
-      const bool16 m_rdir0 = lt(m7777,rdir_xyz,float16::zero());
-      const bool16 m_rdir1 = ge(m7777,rdir_xyz,float16::zero());
+      const vbool16 m7777 = 0x7777; 
+      const vbool16 m_rdir0 = lt(m7777,rdir_xyz,vfloat16::zero());
+      const vbool16 m_rdir1 = ge(m7777,rdir_xyz,vfloat16::zero());
 	  
       while (1)
 	{

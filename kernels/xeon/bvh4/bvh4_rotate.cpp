@@ -21,9 +21,9 @@ namespace embree
   namespace isa 
   {
     /*! Computes half surface area of box. */
-    __forceinline float halfArea3f(const BBox<float4>& box) {
-      const float4 d = box.size();
-      const float4 a = d*shuffle<1,2,0,3>(d);
+    __forceinline float halfArea3f(const BBox<vfloat4>& box) {
+      const vfloat4 d = box.size();
+      const vfloat4 a = d*shuffle<1,2,0,3>(d);
       return a[0]+a[1]+a[2];
     }
     
@@ -35,18 +35,18 @@ namespace embree
       Node* parent = parentRef.node();
       
       /*! rotate all children first */
-      int4 cdepth;
+      vint4 cdepth;
       for (size_t c=0; c<BVH4::N; c++)
 	cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1);
       
       /* compute current areas of all children */
-      float4 sizeX = parent->upper_x-parent->lower_x;
-      float4 sizeY = parent->upper_y-parent->lower_y;
-      float4 sizeZ = parent->upper_z-parent->lower_z;
-      float4 childArea = sizeX*(sizeY + sizeZ) + sizeY*sizeZ;
+      vfloat4 sizeX = parent->upper_x-parent->lower_x;
+      vfloat4 sizeY = parent->upper_y-parent->lower_y;
+      vfloat4 sizeZ = parent->upper_z-parent->lower_z;
+      vfloat4 childArea = sizeX*(sizeY + sizeZ) + sizeY*sizeZ;
       
       /*! get node bounds */
-      BBox<float4> child1_0,child1_1,child1_2,child1_3;
+      BBox<vfloat4> child1_0,child1_1,child1_2,child1_3;
       parent->bounds(child1_0,child1_1,child1_2,child1_3);
       
       /*! Find best rotation. We pick a first child (child1) and a sub-child 
@@ -62,7 +62,7 @@ namespace embree
 	Node* child2 = parent->child(c2).node();
 	
 	/*! transpose child bounds */
-	BBox<float4> child2c0,child2c1,child2c2,child2c3;
+	BBox<vfloat4> child2c0,child2c1,child2c2,child2c3;
 	child2->bounds(child2c0,child2c1,child2c2,child2c3);
 	
 	/*! put child1_0 at each child2 position */
@@ -70,8 +70,8 @@ namespace embree
 	float cost01 = halfArea3f(merge(child2c0,child1_0,child2c2,child2c3));
 	float cost02 = halfArea3f(merge(child2c0,child2c1,child1_0,child2c3));
 	float cost03 = halfArea3f(merge(child2c0,child2c1,child2c2,child1_0));
-	float4 cost0 = float4(cost00,cost01,cost02,cost03);
-	float4 min0 = vreduce_min(cost0);
+	vfloat4 cost0 = vfloat4(cost00,cost01,cost02,cost03);
+	vfloat4 min0 = vreduce_min(cost0);
 	int pos0 = (int)__bsf(movemask(min0 == cost0));
 	
 	/*! put child1_1 at each child2 position */
@@ -79,8 +79,8 @@ namespace embree
 	float cost11 = halfArea3f(merge(child2c0,child1_1,child2c2,child2c3));
 	float cost12 = halfArea3f(merge(child2c0,child2c1,child1_1,child2c3));
 	float cost13 = halfArea3f(merge(child2c0,child2c1,child2c2,child1_1));
-	float4 cost1 = float4(cost10,cost11,cost12,cost13);
-	float4 min1 = vreduce_min(cost1);
+	vfloat4 cost1 = vfloat4(cost10,cost11,cost12,cost13);
+	vfloat4 min1 = vreduce_min(cost1);
 	int pos1 = (int)__bsf(movemask(min1 == cost1));
 	
 	/*! put child1_2 at each child2 position */
@@ -88,8 +88,8 @@ namespace embree
 	float cost21 = halfArea3f(merge(child2c0,child1_2,child2c2,child2c3));
 	float cost22 = halfArea3f(merge(child2c0,child2c1,child1_2,child2c3));
 	float cost23 = halfArea3f(merge(child2c0,child2c1,child2c2,child1_2));
-	float4 cost2 = float4(cost20,cost21,cost22,cost23);
-	float4 min2 = vreduce_min(cost2);
+	vfloat4 cost2 = vfloat4(cost20,cost21,cost22,cost23);
+	vfloat4 min2 = vreduce_min(cost2);
 	int pos2 = (int)__bsf(movemask(min2 == cost2));
 	
 	/*! put child1_3 at each child2 position */
@@ -97,15 +97,15 @@ namespace embree
 	float cost31 = halfArea3f(merge(child2c0,child1_3,child2c2,child2c3));
 	float cost32 = halfArea3f(merge(child2c0,child2c1,child1_3,child2c3));
 	float cost33 = halfArea3f(merge(child2c0,child2c1,child2c2,child1_3));
-	float4 cost3 = float4(cost30,cost31,cost32,cost33);
-	float4 min3 = vreduce_min(cost3);
+	vfloat4 cost3 = vfloat4(cost30,cost31,cost32,cost33);
+	vfloat4 min3 = vreduce_min(cost3);
 	int pos3 = (int)__bsf(movemask(min3 == cost3));
 	
 	/*! find best other child */
-	float4 area0123 = float4(extract<0>(min0),extract<0>(min1),extract<0>(min2),extract<0>(min3)) - float4(childArea[c2]);
+	vfloat4 area0123 = vfloat4(extract<0>(min0),extract<0>(min1),extract<0>(min2),extract<0>(min3)) - vfloat4(childArea[c2]);
 	int pos[4] = { pos0,pos1,pos2,pos3 };
-	bool4 valid = int4(int(depth+1))+cdepth <= int4(BVH4::maxBuildDepth); // only select swaps that fulfill depth constraints
-	valid &= int4(c2) != int4(step);
+	vbool4 valid = vint4(int(depth+1))+cdepth <= vint4(BVH4::maxBuildDepth); // only select swaps that fulfill depth constraints
+	valid &= vint4(c2) != vint4(step);
 	if (none(valid)) continue;
 	size_t c1 = select_min(valid,area0123);
 	float area = area0123[c1]; 

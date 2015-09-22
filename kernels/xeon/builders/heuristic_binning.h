@@ -42,10 +42,10 @@ namespace embree
 #else
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
 #endif
-          const float4 diag = (float4) pinfo.centBounds.size();
-          //scale = select(diag > float4(1E-19f),rcp(diag) * float4(0.99f*num),float4(0.0f));
-          scale = select(diag > float4(1E-34f),float4(0.99f*num)/diag,float4(0.0f));
-          ofs  = (float4) pinfo.centBounds.lower;
+          const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
+          //scale = select(diag > vfloat4(1E-19f),rcp(diag) * vfloat4(0.99f*num),vfloat4(0.0f));
+          scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
+          ofs  = (vfloat4) pinfo.centBounds.lower;
         }
         
         /*! returns number of bins */
@@ -54,29 +54,29 @@ namespace embree
         /*! slower but safe binning */
         __forceinline Vec3ia bin(const Vec3fa& p) const 
         {
-          const int4 i = floori((float4(p)-ofs)*scale);
+          const vint4 i = floori((vfloat4(p)-ofs)*scale);
 #if 1
           assert(i[0] >=0 && i[0] < num); 
           assert(i[1] >=0 && i[1] < num);
           assert(i[2] >=0 && i[2] < num);
           return Vec3ia(i);
 #else
-          return Vec3ia(clamp(i,int4(0),int4(num-1)));
+          return Vec3ia(clamp(i,vint4(0),vint4(num-1)));
 #endif
         }
 
 #if defined(__AVX512F__)
-        __forceinline int16 bin16(const Vec3fa& p) const 
+        __forceinline vint16 bin16(const Vec3fa& p) const 
         {
-          const int4 i = floori((float4(p)-ofs)*scale);
-          int16 i16(i);
+          const vint4 i = floori((vfloat4(p)-ofs)*scale);
+          vint16 i16(i);
           return i16;
         }
 #endif
         
         /*! faster but unsafe binning */
         __forceinline Vec3ia bin_unsafe(const Vec3fa& p) const {
-          return Vec3ia(floori((float4(p)-ofs)*scale));
+          return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
         
         /*! returns true if the mapping is invalid in some dimension */
@@ -91,7 +91,7 @@ namespace embree
         
       public:
         size_t num;
-        float4 ofs,scale;        //!< linear function that maps to bin ID
+        vfloat4 ofs,scale;        //!< linear function that maps to bin ID
       };
     
     /*! stores all information to perform some split */
@@ -282,9 +282,9 @@ namespace embree
       __forceinline Split best(const BinMapping<BINS>& mapping, const size_t blocks_shift) const
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
-	float4 rAreas[BINS];
-	int4 rCounts[BINS];
-	int4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+	vfloat4 rAreas[BINS];
+	vint4 rCounts[BINS];
+	vint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts[i];
@@ -296,8 +296,8 @@ namespace embree
         }
 	
 	/* sweep from left to right and compute SAH */
-	int4 blocks_add = (1 << blocks_shift)-1;
-	int4 ii = 1; float4 vbestSAH = pos_inf; int4 vbestPos = 0; 
+	vint4 blocks_add = (1 << blocks_shift)-1;
+	vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
@@ -305,11 +305,11 @@ namespace embree
           bx.extend(bounds[i-1][0]); float Ax = halfArea(bx);
           by.extend(bounds[i-1][1]); float Ay = halfArea(by);
           bz.extend(bounds[i-1][2]); float Az = halfArea(bz);
-          const float4 lArea = float4(Ax,Ay,Az,Az);
-          const float4 rArea = rAreas[i];
-          const int4 lCount = (count     +blocks_add) >> blocks_shift;
-          const int4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
-          const float4 sah = lArea*float4(lCount) + rArea*float4(rCount);
+          const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
+          const vfloat4 rArea = rAreas[i];
+          const vint4 lCount = (count     +blocks_add) >> blocks_shift;
+          const vint4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
         }
@@ -361,7 +361,7 @@ namespace embree
       
     private:
       BBox3fa bounds[BINS][3]; //!< geometry bounds for each bin in each dimension
-      int4    counts[BINS];    //!< counts number of primitives that map into the bins
+      vint4    counts[BINS];    //!< counts number of primitives that map into the bins
     };
 
 #if defined(__AVX512F__)
@@ -385,56 +385,43 @@ namespace embree
       }
 
 
-      __forceinline float16 prefix_area_rl(const float16 min_x,
-                                           const float16 min_y,
-                                           const float16 min_z,
-                                           const float16 max_x,
-                                           const float16 max_y,
-                                           const float16 max_z)
+      __forceinline vfloat16 prefix_area_rl(const vfloat16 min_x,
+                                           const vfloat16 min_y,
+                                           const vfloat16 min_z,
+                                           const vfloat16 max_x,
+                                           const vfloat16 max_y,
+                                           const vfloat16 max_z)
       {
-#if 1
-        const float16 r_min_x = reverse_prefix_min(min_x);
-        const float16 r_min_y = reverse_prefix_min(min_y);
-        const float16 r_min_z = reverse_prefix_min(min_z);
-        const float16 r_max_x = reverse_prefix_max(max_x);
-        const float16 r_max_y = reverse_prefix_max(max_y);
-        const float16 r_max_z = reverse_prefix_max(max_z);
-#else
-        const float16 r_min_x = prefix_min(reverse(min_x));
-        const float16 r_min_y = prefix_min(reverse(min_y));
-        const float16 r_min_z = prefix_min(reverse(min_z));
-        const float16 r_max_x = prefix_max(reverse(max_x));
-        const float16 r_max_y = prefix_max(reverse(max_y));
-        const float16 r_max_z = prefix_max(reverse(max_z));
-#endif
-        const float16 dx = r_max_x - r_min_x;
-        const float16 dy = r_max_y - r_min_y;
-        const float16 dz = r_max_z - r_min_z;
-        const float16 area_rl = dx*dy+dx*dz+dy*dz;
-#if 1
+        const vfloat16 r_min_x = reverse_prefix_min(min_x);
+        const vfloat16 r_min_y = reverse_prefix_min(min_y);
+        const vfloat16 r_min_z = reverse_prefix_min(min_z);
+        const vfloat16 r_max_x = reverse_prefix_max(max_x);
+        const vfloat16 r_max_y = reverse_prefix_max(max_y);
+        const vfloat16 r_max_z = reverse_prefix_max(max_z);
+        const vfloat16 dx = r_max_x - r_min_x;
+        const vfloat16 dy = r_max_y - r_min_y;
+        const vfloat16 dz = r_max_z - r_min_z;
+        const vfloat16 area_rl = dx*dy+dx*dz+dy*dz;
         return area_rl;
-#else
-        return reverse(area_rl);
-#endif
       }
 
-      __forceinline float16 prefix_area_lr(const float16 min_x,
-                                           const float16 min_y,
-                                           const float16 min_z,
-                                           const float16 max_x,
-                                           const float16 max_y,
-                                           const float16 max_z)
+      __forceinline vfloat16 prefix_area_lr(const vfloat16 min_x,
+                                           const vfloat16 min_y,
+                                           const vfloat16 min_z,
+                                           const vfloat16 max_x,
+                                           const vfloat16 max_y,
+                                           const vfloat16 max_z)
       {
-        const float16 r_min_x = prefix_min(min_x);
-        const float16 r_min_y = prefix_min(min_y);
-        const float16 r_min_z = prefix_min(min_z);
-        const float16 r_max_x = prefix_max(max_x);
-        const float16 r_max_y = prefix_max(max_y);
-        const float16 r_max_z = prefix_max(max_z);
-        const float16 dx = r_max_x - r_min_x;
-        const float16 dy = r_max_y - r_min_y;
-        const float16 dz = r_max_z - r_min_z;
-        const float16 area_lr = dx*dy+dx*dz+dy*dz;
+        const vfloat16 r_min_x = prefix_min(min_x);
+        const vfloat16 r_min_y = prefix_min(min_y);
+        const vfloat16 r_min_z = prefix_min(min_z);
+        const vfloat16 r_max_x = prefix_max(max_x);
+        const vfloat16 r_max_y = prefix_max(max_y);
+        const vfloat16 r_max_z = prefix_max(max_z);
+        const vfloat16 dx = r_max_x - r_min_x;
+        const vfloat16 dy = r_max_y - r_min_y;
+        const vfloat16 dz = r_max_z - r_min_z;
+        const vfloat16 area_lr = dx*dy+dx*dz+dy*dz;
         return area_lr;
       }
 
@@ -444,16 +431,16 @@ namespace embree
       __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping)
       {
 
-        const float16 init_min(pos_inf);
-        const float16 init_max(neg_inf);
+        const vfloat16 init_min(pos_inf);
+        const vfloat16 init_max(neg_inf);
 
-        float16 min_x0,min_x1,min_x2;
-        float16 min_y0,min_y1,min_y2;
-        float16 min_z0,min_z1,min_z2;
-        float16 max_x0,max_x1,max_x2;
-        float16 max_y0,max_y1,max_y2;
-        float16 max_z0,max_z1,max_z2;
-        int16 count0,count1,count2;
+        vfloat16 min_x0,min_x1,min_x2;
+        vfloat16 min_y0,min_y1,min_y2;
+        vfloat16 min_z0,min_z1,min_z2;
+        vfloat16 max_x0,max_x1,max_x2;
+        vfloat16 max_y0,max_y1,max_y2;
+        vfloat16 max_z0,max_z1,max_z2;
+        vint16 count0,count1,count2;
 
         min_x0 = init_min;
         min_x1 = init_min;
@@ -475,33 +462,33 @@ namespace embree
         max_z1 = init_max;
         max_z2 = init_max;
 
-        count0 = int16::zero();
-        count1 = int16::zero();
-        count2 = int16::zero();
+        count0 = vint16::zero();
+        count1 = vint16::zero();
+        count2 = vint16::zero();
 
-        const int16 step16(step);
+        const vint16 step16(step);
 
 	for (size_t i=0; i<N; i++)
         {
           /*! map even and odd primitive to bin */
           const BBox3fa prim0 = prims[i].bounds(); 
           const Vec3fa center0 = Vec3fa(center2(prim0)); 
-          const int16 bin = mapping.bin16(center0);
+          const vint16 bin = mapping.bin16(center0);
  
-          const float16 b_min_x = prims[i].lower.x;
-          const float16 b_min_y = prims[i].lower.y;
-          const float16 b_min_z = prims[i].lower.z;
-          const float16 b_max_x = prims[i].upper.x;
-          const float16 b_max_y = prims[i].upper.y;
-          const float16 b_max_z = prims[i].upper.z;
+          const vfloat16 b_min_x = prims[i].lower.x;
+          const vfloat16 b_min_y = prims[i].lower.y;
+          const vfloat16 b_min_z = prims[i].lower.z;
+          const vfloat16 b_max_x = prims[i].upper.x;
+          const vfloat16 b_max_y = prims[i].upper.y;
+          const vfloat16 b_max_z = prims[i].upper.z;
 
-          const int16 bin0 = swizzle<0>(bin);
-          const int16 bin1 = swizzle<1>(bin);
-          const int16 bin2 = swizzle<2>(bin);
+          const vint16 bin0 = swizzle<0>(bin);
+          const vint16 bin1 = swizzle<1>(bin);
+          const vint16 bin2 = swizzle<2>(bin);
 
-          const bool16 m_update_x = step16 == bin0;
-          const bool16 m_update_y = step16 == bin1;
-          const bool16 m_update_z = step16 == bin2;
+          const vbool16 m_update_x = step16 == bin0;
+          const vbool16 m_update_y = step16 == bin1;
+          const vbool16 m_update_z = step16 == bin2;
 
           assert(__popcnt(m_update_x) == 1);
           assert(__popcnt(m_update_y) == 1);
@@ -531,9 +518,9 @@ namespace embree
           max_y2 = mask_max(m_update_z,max_y2,max_y2,b_max_y);
           max_z2 = mask_max(m_update_z,max_z2,max_z2,b_max_z);
           // ------------------------------------------------------------------------
-          count0 = mask_add(m_update_x,count0,count0,int16(1));
-          count1 = mask_add(m_update_y,count1,count1,int16(1));
-          count2 = mask_add(m_update_z,count2,count2,int16(1));      
+          count0 = mask_add(m_update_x,count0,count0,vint16(1));
+          count1 = mask_add(m_update_y,count1,count1,vint16(1));
+          count2 = mask_add(m_update_z,count2,count2,vint16(1));      
         }
 
 #if NEW_BINNER == 0
@@ -561,17 +548,6 @@ namespace embree
         rCount16[1] = reverse_prefix_sum(count1);
         lCount16[2] = prefix_sum(count2);
         rCount16[2] = reverse_prefix_sum(count2);
-
-#if 0
-        for (size_t j=0;j<3;j++)
-          for (size_t i=0;i<16;i++)
-          {
-            std::cout << "j " << j << " i " << i << std::endl;
-            PRINT(counts[i][j]);
-            PRINT(bounds[i][j]);
-          }
-        exit(0);
-#endif
       }
 
 
@@ -602,15 +578,15 @@ namespace embree
         FATAL("not yet implemented");
       }
 
-      __forceinline float16 shift_right1_zero_extend(const float16 &a) const
+      __forceinline vfloat16 shift_right1_zero_extend(const vfloat16 &a) const
       {
-        float16 z = float16::zero();
+        vfloat16 z = vfloat16::zero();
         return align_shift_right<1>(z,a);
       }  
 
-      __forceinline int16 shift_right1_zero_extend(const int16 &a) const
+      __forceinline vint16 shift_right1_zero_extend(const vint16 &a) const
       {
-        int16 z = int16::zero();
+        vint16 z = vint16::zero();
         return align_shift_right<1>(z,a);
       }  
 
@@ -624,7 +600,7 @@ namespace embree
 	int   bestDim = -1;
 	int   bestPos = 0;
 	int   bestLeft = 0;
-	const int16 blocks_add = (1 << blocks_shift)-1;
+	const vint16 blocks_add = (1 << blocks_shift)-1;
 
 	for (size_t dim=0; dim<3; dim++) 
         {
@@ -633,15 +609,15 @@ namespace embree
             continue;
 
           /* compute best split in this dimension */
-          const float16 leftArea  = lArea16[dim];
-          const float16 rightArea = shift_right1_zero_extend(rArea16[dim]);
-          const int16 lC = lCount16[dim];
-          const int16 rC = shift_right1_zero_extend(rCount16[dim]);
-          const int16 leftCount  = ( lC + blocks_add) >> blocks_shift;
-          const int16 rightCount = ( rC + blocks_add) >> blocks_shift;
-          const float16 sah = select(0x7fff,leftArea*float16(leftCount) + rightArea*float16(rightCount),float16(pos_inf));
+          const vfloat16 leftArea  = lArea16[dim];
+          const vfloat16 rightArea = shift_right1_zero_extend(rArea16[dim]);
+          const vint16 lC = lCount16[dim];
+          const vint16 rC = shift_right1_zero_extend(rCount16[dim]);
+          const vint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
+          const vint16 rightCount = ( rC + blocks_add) >> blocks_shift;
+          const vfloat16 sah = select(0x7fff,leftArea*vfloat16(leftCount) + rightArea*vfloat16(rightCount),vfloat16(pos_inf));
           /* test if this is a better dimension */
-          if (any(sah < float16(bestSAH))) 
+          if (any(sah < vfloat16(bestSAH))) 
           {
             const size_t index = select_min(sah);            
             assert(index != 15);
@@ -649,10 +625,6 @@ namespace embree
             bestDim = dim;
             bestPos = index+1;
             bestSAH = sah[index];
-            /* PRINT(bestSAH); */
-            /* PRINT(bestPos); */
-            /* PRINT(bestSAH); */
-
           }
         }
 	
@@ -665,9 +637,9 @@ namespace embree
       __forceinline Split best(const BinMapping<16>& mapping, const size_t blocks_shift) const
       {
 	/* sweep from right to left and compute parallel prefix of merged bounds */
-	float4 rAreas[16];
-	int4 rCounts[16];
-	int4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
+	vfloat4 rAreas[16];
+	vint4 rCounts[16];
+	vint4 count = 0; BBox3fa bx = empty; BBox3fa by = empty; BBox3fa bz = empty;
 	for (size_t i=mapping.size()-1; i>0; i--)
         {
           count += counts[i];
@@ -684,8 +656,8 @@ namespace embree
         }
 	
 	/* sweep from left to right and compute SAH */
-	int4 blocks_add = (1 << blocks_shift)-1;
-	int4 ii = 1; float4 vbestSAH = pos_inf; int4 vbestPos = 0; 
+	vint4 blocks_add = (1 << blocks_shift)-1;
+	vint4 ii = 1; vfloat4 vbestSAH = pos_inf; vint4 vbestPos = 0; 
 	count = 0; bx = empty; by = empty; bz = empty;
 	for (size_t i=1; i<mapping.size(); i++, ii+=1)
         {
@@ -699,15 +671,15 @@ namespace embree
           assert(count[2] == lCount16[2][i-1] );
 
 #if 0
-          const float4 lArea = float4(lArea16[0][i-1],lArea16[1][i-1],lArea16[2][i-1],lArea16[2][i-1]);
-          const float4 rArea = float4(rArea16[0][i],rArea16[1][i],rArea16[2][i],rArea16[2][i]);
+          const vfloat4 lArea = vfloat4(lArea16[0][i-1],lArea16[1][i-1],lArea16[2][i-1],lArea16[2][i-1]);
+          const vfloat4 rArea = vfloat4(rArea16[0][i],rArea16[1][i],rArea16[2][i],rArea16[2][i]);
 #else
-          const float4 lArea = float4(Ax,Ay,Az,Az);
-          const float4 rArea = rAreas[i];
+          const vfloat4 lArea = vfloat4(Ax,Ay,Az,Az);
+          const vfloat4 rArea = rAreas[i];
 #endif
-          const int4 lCount = (count     +blocks_add) >> blocks_shift;
-          const int4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
-          const float4 sah = lArea*float4(lCount) + rArea*float4(rCount);
+          const vint4 lCount = (count     +blocks_add) >> blocks_shift;
+          const vint4 rCount = (rCounts[i]+blocks_add) >> blocks_shift;
+          const vfloat4 sah = lArea*vfloat4(lCount) + rArea*vfloat4(rCount);
           vbestPos = select(sah < vbestSAH,ii ,vbestPos);
           vbestSAH = select(sah < vbestSAH,sah,vbestSAH);
         }
@@ -743,12 +715,12 @@ namespace embree
 #if NEW_BINNER == 0
 
       BBox3fa bounds[16][3]; //!< geometry bounds for each bin in each dimension
-      int4    counts[16];    //!< counts number of primitives that map into the bins
+      vint4    counts[16];    //!< counts number of primitives that map into the bins
 #endif
-      Vec3f16 rArea16;
-      Vec3i16 rCount16;
-      Vec3f16 lArea16;
-      Vec3i16 lCount16;
+      Vec3vf16 rArea16;
+      Vec3vi16 rCount16;
+      Vec3vf16 lArea16;
+      Vec3vi16 lCount16;
     };
 
 #endif

@@ -32,12 +32,12 @@ namespace embree
   static const unsigned int U_BLOCK_SIZE = 5;
   static const unsigned int V_BLOCK_SIZE = 3;
 
-  __forceinline float16 load4x4f_unalign(const void *__restrict__ const ptr0,
+  __forceinline vfloat16 load4x4f_unalign(const void *__restrict__ const ptr0,
 				       const void *__restrict__ const ptr1,
 				       const void *__restrict__ const ptr2,
 				       const void *__restrict__ const ptr3) 
   {
-    float16 v = uload16f((float*)ptr0);
+    vfloat16 v = uload16f((float*)ptr0);
     v = uload16f(v,0xf0,(float*)ptr1);
     v = uload16f(v,0xf00,(float*)ptr2);
     v = uload16f(v,0xf000,(float*)ptr3);
@@ -86,7 +86,7 @@ namespace embree
 
 
     BBox3fa createSubTreeCompact(BVH4i::NodeRef &curNode,
-				 float16 *const lazymem,
+				 vfloat16 *const lazymem,
 				 const SubdivPatch1 &patch,
 				 const float *const grid_array,
 				 const size_t grid_array_elements,				 
@@ -125,14 +125,14 @@ namespace embree
 
 	  //const unsigned int u_size = range.u_end-range.u_start+1;
 	  //const unsigned int v_size = range.v_end-range.v_start+1;
-	  const bool16 m_mask = ((unsigned int)1 << u_size)-1;
+	  const vbool16 m_mask = ((unsigned int)1 << u_size)-1;
 
-	  float16 min_x = pos_inf;
-	  float16 min_y = pos_inf;
-	  float16 min_z = pos_inf;
-	  float16 max_x = neg_inf;
-	  float16 max_y = neg_inf;
-	  float16 max_z = neg_inf;
+	  vfloat16 min_x = pos_inf;
+	  vfloat16 min_y = pos_inf;
+	  vfloat16 min_z = pos_inf;
+	  vfloat16 max_x = neg_inf;
+	  vfloat16 max_y = neg_inf;
+	  vfloat16 max_z = neg_inf;
 
 #if 0
 	  for (size_t v = 0; v<v_size; v++)
@@ -141,9 +141,9 @@ namespace embree
 	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
 	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
 
-	      const float16 x = uload16f(&grid_x_array[ offset ]);
-	      const float16 y = uload16f(&grid_y_array[ offset ]);
-	      const float16 z = uload16f(&grid_z_array[ offset ]);
+	      const vfloat16 x = uload16f(&grid_x_array[ offset ]);
+	      const vfloat16 y = uload16f(&grid_y_array[ offset ]);
+	      const vfloat16 z = uload16f(&grid_z_array[ offset ]);
 	      min_x = min(min_x,x);
 	      max_x = max(max_x,x);
 	      min_y = min(min_y,y);
@@ -285,7 +285,7 @@ namespace embree
       /* allocate memory */
       size_t block_index = SharedLazyTessellationCache::sharedLazyTessellationCache.allocIndexLoop(t_state,patch.grid_subtree_size_64b_blocks);
 
-      float16* lazymem   = (float16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
+      vfloat16* lazymem   = (vfloat16*)SharedLazyTessellationCache::sharedLazyTessellationCache.getBlockPtr(block_index);
       
       // ================================================================================================
 
@@ -304,11 +304,11 @@ namespace embree
       for (size_t i=0;i<array_elements;i+=16)
 	{
 	  prefetch<PFHINT_L1EX>(&grid_uv[i]);
-	  const float16 u = load16f(&local_grid_u[i]);
-	  const float16 v = load16f(&local_grid_v[i]);
-	  const int16 u_i = int16(u * 65535.0f/2.0f);
-	  const int16 v_i = int16(v * 65535.0f/2.0f);
-	  const int16 uv_i = (v_i << 16) | u_i;
+	  const vfloat16 u = load16f(&local_grid_u[i]);
+	  const vfloat16 v = load16f(&local_grid_v[i]);
+	  const vint16 u_i = vint16(u * 65535.0f/2.0f);
+	  const vint16 v_i = vint16(v * 65535.0f/2.0f);
+	  const vint16 uv_i = (v_i << 16) | u_i;
 	  store16i(&grid_uv[i],uv_i);
 	}
 
@@ -388,24 +388,24 @@ namespace embree
     // ============================================================================================
 
 
-    void BVH4iIntersector16Subdiv::intersect(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::intersect(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) float   stack_dist[4*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
       /* setup */
-      const bool16 m_valid    = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16     = rcp_safe(ray16.dir);
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const vbool16 m_valid    = *(vint16*)valid_i != vint16(0);
+      const Vec3vf16 rdir16     = rcp_safe(ray16.dir);
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       store16f(stack_dist,inf);
 
-      const int16 old_primID = ray16.primID;
-      const int16 old_geomID = ray16.geomID;
+      const vint16 old_primID = ray16.primID;
+      const vint16 old_geomID = ray16.geomID;
 
-      ray16.primID = select(m_valid,int16(-1),ray16.primID);
+      ray16.primID = select(m_valid,vint16(-1),ray16.primID);
 
       Scene *const scene                         = (Scene*)bvh->geometry;
       const Node      * __restrict__ const nodes = (Node     *)bvh->nodePtr();
@@ -424,12 +424,12 @@ namespace embree
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
 
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  float16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -463,7 +463,7 @@ namespace embree
 	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
-              bool16 m_quad3x5 = 0xffff; 
+              vbool16 m_quad3x5 = 0xffff; 
               if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
@@ -516,7 +516,7 @@ namespace embree
 	      // -------------------------------------
 	      // -------------------------------------
 
-	      compactStack(stack_node,stack_dist,sindex,float16(ray16.tfar[rayIndex]));
+	      compactStack(stack_node,stack_dist,sindex,vfloat16(ray16.tfar[rayIndex]));
 
 	      // ------------------------
 	    }
@@ -524,11 +524,11 @@ namespace embree
 
 
       /* update primID/geomID and compute normals, primID was reset to -1, update only changed slots */
-      const int16 new_primID = ray16.primID;
+      const vint16 new_primID = ray16.primID;
       ray16.geomID     = old_geomID;
       ray16.primID     = old_primID;
 
-      bool16 m_hit = (new_primID != -1) & m_valid; 
+      vbool16 m_hit = (new_primID != -1) & m_valid; 
       rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_hit))) != BITSCAN_NO_BIT_SET_64)	    
         {
@@ -539,17 +539,17 @@ namespace embree
 
     }
 
-    void BVH4iIntersector16Subdiv::occluded(int16* valid_i, BVH4i* bvh, Ray16& ray16)
+    void BVH4iIntersector16Subdiv::occluded(vint16* valid_i, BVH4i* bvh, Ray16& ray16)
     {
       /* near and node stack */
       __aligned(64) NodeRef stack_node[4*BVH4i::maxDepth+1];
 
       /* setup */
-      const bool16 m_valid = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir16  = rcp_safe(ray16.dir);
-      bool16 terminated    = !m_valid;
-      const float16 inf     = float16(pos_inf);
-      const float16 zero    = float16::zero();
+      const vbool16 m_valid = *(vint16*)valid_i != vint16(0);
+      const Vec3vf16 rdir16  = rcp_safe(ray16.dir);
+      vbool16 terminated    = !m_valid;
+      const vfloat16 inf     = vfloat16(pos_inf);
+      const vfloat16 zero    = vfloat16::zero();
 
       Scene *const scene                   = (Scene*)bvh->geometry;
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
@@ -559,7 +559,7 @@ namespace embree
       ThreadWorkState *const t_state = SharedLazyTessellationCache::threadState();
 
       stack_node[0] = BVH4i::invalidNode;
-      //ray16.primID = select(m_valid,int16(-1),ray16.primID);
+      //ray16.primID = select(m_valid,vint16(-1),ray16.primID);
 
       long rayIndex = -1;
       while((rayIndex = bitscan64(rayIndex,toInt(m_valid))) != BITSCAN_NO_BIT_SET_64)	    
@@ -569,13 +569,13 @@ namespace embree
 
 	  STAT3(shadow.travs,1,1,1);
 
-	  const float16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
-	  const float16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const float16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
-	  //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const float16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const float16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-	  const int16 v_invalidNode(BVH4i::invalidNode);
+	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
+	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
+	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
+	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vint16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
 
@@ -606,7 +606,7 @@ namespace embree
 	      const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	      const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	      float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
-              bool16 m_quad3x5 = 0xffff; 
+              vbool16 m_quad3x5 = 0xffff; 
               if (unlikely(patch.grid_u_res < 5))
               {
                 const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
@@ -655,7 +655,7 @@ namespace embree
 								 precalculations,
                                                                  m_quad3x5)))
 		      {
-			terminated |= (bool16)((unsigned int)1 << rayIndex);
+			terminated |= (vbool16)((unsigned int)1 << rayIndex);
 			break;
 		      }		  
 		  }
@@ -663,7 +663,7 @@ namespace embree
 		SharedLazyTessellationCache::sharedLazyTessellationCache.unlockThread(t_state);
 	      }
 
-	      if (unlikely(terminated & (bool16)((unsigned int)1 << rayIndex))) break;
+	      if (unlikely(terminated & (vbool16)((unsigned int)1 << rayIndex))) break;
 	      //////////////////////////////////////////////////////////////////////////////////////////////////
 
 	    }
@@ -686,9 +686,9 @@ namespace embree
       STAT3(normal.travs,1,1,1);
 
       /* setup */
-      const Vec3f16 rdir16     = rcp_safe(Vec3f16(float16(ray.dir.x),float16(ray.dir.y),float16(ray.dir.z)));
-      const float16 inf        = float16(pos_inf);
-      const float16 zero       = float16::zero();
+      const Vec3vf16 rdir16     = rcp_safe(Vec3vf16(vfloat16(ray.dir.x),vfloat16(ray.dir.y),vfloat16(ray.dir.z)));
+      const vfloat16 inf        = vfloat16(pos_inf);
+      const vfloat16 zero       = vfloat16::zero();
 
       const unsigned int oldID = ray.primID;
 
@@ -706,12 +706,12 @@ namespace embree
 
       size_t sindex = 2;
 
-      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      float16       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      vfloat16       max_dist_xyz = broadcast1to16f(&ray.tfar);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -744,7 +744,7 @@ namespace embree
 	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
-          bool16 m_quad3x5 = 0xffff; 
+          vbool16 m_quad3x5 = 0xffff; 
           if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;
@@ -813,9 +813,9 @@ namespace embree
       STAT3(shadow.travs,1,1,1);
 
       /* setup */
-      const Vec3f16 rdir16      = rcp_safe(Vec3f16(ray.dir.x,ray.dir.y,ray.dir.z));
-      const float16 inf         = float16(pos_inf);
-      const float16 zero        = float16::zero();
+      const Vec3vf16 rdir16      = rcp_safe(Vec3vf16(ray.dir.x,ray.dir.y,ray.dir.z));
+      const vfloat16 inf         = vfloat16(pos_inf);
+      const vfloat16 zero        = vfloat16::zero();
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -828,12 +828,12 @@ namespace embree
       stack_node[1] = bvh->root;
       size_t sindex = 2;
 
-      const float16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
-      const float16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const float16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
-      //const float16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const float16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      const float16 max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
+      const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
+      const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
+      //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
+      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
+      const vfloat16 max_dist_xyz = broadcast1to16f(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -867,7 +867,7 @@ namespace embree
 	  const size_t cached_64bit_root = lazyBuildPatch(patchIndex,commitCounter,(SubdivPatch1*)accel,scene,t_state,bvh);
 	  const BVH4i::NodeRef subtree_root = extractBVH4iNodeRef(cached_64bit_root); 
 	  float *const lazyCachePtr = (float*)((size_t)SharedLazyTessellationCache::sharedLazyTessellationCache.getDataPtr() + (size_t)extractBVH4iOffset(cached_64bit_root));
-          bool16 m_quad3x5 = 0xffff; 
+          vbool16 m_quad3x5 = 0xffff; 
           if (unlikely(patch.grid_u_res < 5))
           {
             const unsigned int m_row = ((unsigned int)1 << (2*(patch.grid_u_res-1)))-1;

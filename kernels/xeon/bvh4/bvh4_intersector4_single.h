@@ -31,8 +31,8 @@ namespace embree
     class BVH4Intersector4FromIntersector1
     {
     public:
-      static void intersect(bool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (bool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
     };
 
     /*! Single ray traversal for packets. */
@@ -50,8 +50,8 @@ namespace embree
     public:
 
       static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					   Ray4& ray, const Vec3f4 &ray_org, const Vec3f4 &ray_dir, const Vec3f4 &ray_rdir, const float4 &ray_tnear, const float4 &ray_tfar, 
-					   const Vec3i4& nearXYZ)
+					   Ray4& ray, const Vec3vf4 &ray_org, const Vec3vf4 &ray_dir, const Vec3vf4 &ray_rdir, const vfloat4 &ray_tnear, const vfloat4 &ray_tfar, 
+					   const Vec3vi4& nearXYZ)
       {
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -61,11 +61,11 @@ namespace embree
 	stack[0].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
-	const Vec3f4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-	const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-	const Vec3f4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-	const Vec3f4 org_rdir(org*rdir);
-	float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+	const Vec3vf4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+	const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+	const Vec3vf4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+	const Vec3vf4 org_rdir(org*rdir);
+	vfloat4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/*! offsets to select the side that becomes the lower or upper bound */
 	const size_t nearX = nearXYZ.x[k];
@@ -88,7 +88,7 @@ namespace embree
 	  while (true)
 	  {
 	    size_t mask; 
-	    float4 tNear;
+	    vfloat4 tNear;
 	    
 	    /*! stop if we found a leaf node */
 	    if (unlikely(cur.isLeaf(types))) break;
@@ -180,8 +180,8 @@ namespace embree
       }
       
       static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					  Ray4& ray,const Vec3f4 &ray_org, const Vec3f4 &ray_dir, const Vec3f4 &ray_rdir, const float4 &ray_tnear, const float4 &ray_tfar, 
-					  const Vec3i4& nearXYZ)
+					  Ray4& ray,const Vec3vf4 &ray_org, const Vec3vf4 &ray_dir, const Vec3vf4 &ray_rdir, const vfloat4 &ray_tnear, const vfloat4 &ray_tfar, 
+					  const Vec3vi4& nearXYZ)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -195,11 +195,11 @@ namespace embree
 	const size_t nearZ = nearXYZ.z[k];
 	
 	/*! load the ray into SIMD registers */
-	const Vec3f4 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-	const Vec3f4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-	const Vec3f4 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-	const Vec3f4 norg = -org, org_rdir(org*rdir);
-	const float4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]); 
+	const Vec3vf4 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+	const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+	const Vec3vf4 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+	const Vec3vf4 norg = -org, org_rdir(org*rdir);
+	const vfloat4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]); 
 	
 	/* pop loop */
 	while (true) pop:
@@ -213,7 +213,7 @@ namespace embree
 	  while (true)
 	  {
 	    size_t mask; 
-	    float4 tNear;
+	    vfloat4 tNear;
 	    
 	    /*! stop if we found a leaf node */
 	    if (unlikely(cur.isLeaf(types))) break;
@@ -296,8 +296,8 @@ namespace embree
 	return false;
       }
       
-      static void intersect(bool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (bool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
     };
   }
 }

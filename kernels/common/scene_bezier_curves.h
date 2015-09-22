@@ -144,7 +144,7 @@ namespace embree
     }
     
     /*! calculates bounding box of i'th bezier curve */
-    __forceinline Vec2f16 bounds_Vec2f16(size_t i) const 
+    __forceinline Vec2vf16 bounds_Vec2f16(size_t i) const 
     {
       const int index = curve(i);
       const float* cp0 = (float*) vertices[0].getPtr(index+0);
@@ -152,19 +152,19 @@ namespace embree
       const float* cp2 = (float*) vertices[0].getPtr(index+2);
       const float* cp3 = (float*) vertices[0].getPtr(index+3);
       
-      const bool16 m_4f = 0xf;
-      const float16 v0 = permute<0,0,0,0>(uload16f(m_4f,cp0));
-      const float16 v1 = permute<0,0,0,0>(uload16f(m_4f,cp1));
-      const float16 v2 = permute<0,0,0,0>(uload16f(m_4f,cp2));
-      const float16 v3 = permute<0,0,0,0>(uload16f(m_4f,cp3));
+      const vbool16 m_4f = 0xf;
+      const vfloat16 v0 = permute<0,0,0,0>(uload16f(m_4f,cp0));
+      const vfloat16 v1 = permute<0,0,0,0>(uload16f(m_4f,cp1));
+      const vfloat16 v2 = permute<0,0,0,0>(uload16f(m_4f,cp2));
+      const vfloat16 v3 = permute<0,0,0,0>(uload16f(m_4f,cp3));
       
-      const float16 b_min = min(min(v0,v1),min(v2,v3));
-      const float16 b_max = max(max(v0,v1),max(v2,v3));
+      const vfloat16 b_min = min(min(v0,v1),min(v2,v3));
+      const vfloat16 b_max = max(max(v0,v1),max(v2,v3));
       
-      const float16 b_min_r = b_min - swDDDD(b_max);
-      const float16 b_max_r = b_max + swDDDD(b_max);
+      const vfloat16 b_min_r = b_min - swDDDD(b_max);
+      const vfloat16 b_max_r = b_max + swDDDD(b_max);
       
-      return Vec2f16(b_min_r,b_max_r);
+      return Vec2vf16(b_min_r,b_max_r);
     }
     
 #endif

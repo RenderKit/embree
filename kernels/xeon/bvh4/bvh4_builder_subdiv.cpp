@@ -197,7 +197,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
               size_t N = GridAOS::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
               assert(N == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<N; i++)
@@ -376,7 +376,7 @@ namespace embree
               BBox3fa bound = empty;
               
               if (likely(fastUpdateMode)) {
-                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
                 //grid_changed = true;
                 //if (grid_changed) atomic_add(&numChanged,1); else atomic_add(&numUnchanged,1);
                 if (grid_changed) {
@@ -388,7 +388,7 @@ namespace embree
                 }
               }
               else {
-                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }

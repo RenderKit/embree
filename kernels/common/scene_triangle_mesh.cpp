@@ -175,13 +175,13 @@ namespace embree
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs]);
-      const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs]);
-      const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs]);
-      const bool4 valid = int4(i)+int4(step) < int4(numFloats);
-      if (P   ) float4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) float4::storeu(valid,dPdu+i,p1-p0);
-      if (dPdv) float4::storeu(valid,dPdv+i,p2-p0);
+      const vfloat4 p0 = vfloat4::loadu((float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu((float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
+      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
+      if (P   ) vfloat4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) vfloat4::storeu(valid,dPdu+i,p1-p0);
+      if (dPdv) vfloat4::storeu(valid,dPdv+i,p2-p0);
     }
 
 #else
@@ -189,12 +189,12 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=16) 
     {
       size_t ofs = i*sizeof(float);
-      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const float16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
-      const float16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
-      const float16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
       if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
       if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
       if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);

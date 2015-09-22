@@ -27,7 +27,6 @@ namespace embree
     PrimInfo createPrimRefArray(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
-      
       /* first try */
       progressMonitor(0);
       PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), mesh->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo
@@ -165,7 +164,7 @@ namespace embree
 	    p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
 	    p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
 	  }
-          if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
+          if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
 
 	  const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);
@@ -200,7 +199,7 @@ namespace embree
               p2 = 0.5f*(p2+mesh->vertex(ofs+2,1));
               p3 = 0.5f*(p3+mesh->vertex(ofs+3,1));
             }
-            if (!isvalid((float4)p0) || !isvalid((float4)p1) || !isvalid((float4)p2) || !isvalid((float4)p3))
+            if (!isvalid((vfloat4)p0) || !isvalid((vfloat4)p1) || !isvalid((vfloat4)p2) || !isvalid((vfloat4)p3))
               continue;
             
             const BezierPrim bezier(p0,p1,p2,p3,0,1,mesh->id,j,false);

@@ -104,7 +104,7 @@ namespace embree
             {
               const PrimRef& prim = block->at(i); 
               const Vec3fa center = center2(prim.bounds());
-              const int4 bin = int4(split.mapping.bin_unsafe(center));
+              const vint4 bin = vint4(split.mapping.bin_unsafe(center));
               
               if (bin[split.dim] < split.pos) 
               {
@@ -156,7 +156,7 @@ namespace embree
               {
                 const PrimRef& prim = block->at(i); 
                 const Vec3fa center = center2(prim.bounds());
-                const int4 bin = int4(split.mapping.bin_unsafe(center));
+                const vint4 bin = vint4(split.mapping.bin_unsafe(center));
                 
                 if (bin[split.dim] < split.pos) 
                 {

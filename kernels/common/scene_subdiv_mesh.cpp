@@ -604,16 +604,16 @@ namespace embree
       baseEntry = &vertex_buffer_tags[bufID];
     }
 #if defined (__MIC__)
-#define float4 Vec3fa
-#define float4_t Vec3fa_t
+#define vfloat4 Vec3fa
+#define vfloat4_t Vec3fa_t
 #else
-#define float4_t float4
+#define vfloat4_t vfloat4
 #endif
 
     for (size_t i=0; i<numFloats; i+=4)
     {
-      float4 Pt, dPdut, dPdvt; 
-      isa::PatchEval<float4,float4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
+      vfloat4 Pt, dPdut, dPdvt;
+      isa::PatchEval<vfloat4,vfloat4_t>(baseEntry->at(interpolationSlot(primID,i/4,stride)),parent->commitCounterSubdiv,
                                       getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
       if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
@@ -652,20 +652,20 @@ namespace embree
 #if defined (__MIC__)
     for (size_t i=0; i<numUVs; i+=16) 
     {
-      bool16 valid1 = int16(i)+int16(step) < int16(numUVs);
-      if (valid) valid1 &= int16::loadu(&valid[i]) == int16(-1);
+      vbool16 valid1 = vint16(i)+vint16(step) < vint16(numUVs);
+      if (valid) valid1 &= vint16::loadu(&valid[i]) == vint16(-1);
       if (none(valid1)) continue;
       
-      const int16 primID = int16::loadu(&primIDs[i]);
-      const float16 uu = float16::loadu(&u[i]);
-      const float16 vv = float16::loadu(&v[i]);
+      const vint16 primID = vint16::loadu(&primIDs[i]);
+      const vfloat16 uu = vfloat16::loadu(&u[i]);
+      const vfloat16 vv = vfloat16::loadu(&v[i]);
 
-      foreach_unique(valid1,primID,[&](const bool16& valid1, const int primID) 
+      foreach_unique(valid1,primID,[&](const vbool16& valid1, const int primID)
       {
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool16,int16,float16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool16,vint16,vfloat16,Vec3fa,Vec3fa_t>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
                                                                    getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                                    P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }
@@ -674,20 +674,20 @@ namespace embree
 #else
     for (size_t i=0; i<numUVs; i+=4) 
     {
-      bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
-      if (valid) valid1 &= int4::loadu(&valid[i]) == int4(-1);
+      vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+      if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
       if (none(valid1)) continue;
       
-      const int4 primID = int4::loadu(&primIDs[i]);
-      const float4 uu = float4::loadu(&u[i]);
-      const float4 vv = float4::loadu(&v[i]);
+      const vint4 primID = vint4::loadu(&primIDs[i]);
+      const vfloat4 uu = vfloat4::loadu(&u[i]);
+      const vfloat4 vv = vfloat4::loadu(&v[i]);
 
-      foreach_unique(valid1,primID,[&](const bool4& valid1, const int primID) 
+      foreach_unique(valid1,primID,[&](const vbool4& valid1, const int primID)
       {
         for (size_t j=0; j<numFloats; j+=4) 
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<bool4,int4,float4,float4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),parent->commitCounterSubdiv,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs+i : nullptr,dPdu ? dPdu+j*numUVs+i : nullptr,dPdv ? dPdv+j*numUVs+i : nullptr,numUVs,M);
         }

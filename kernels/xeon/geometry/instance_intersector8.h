@@ -25,8 +25,8 @@ namespace embree
   {
     struct FastInstanceIntersector8
     {
-      static void intersect(bool8* valid, const Instance* instance, Ray8& ray, size_t item);
-      static void occluded (bool8* valid, const Instance* instance, Ray8& ray, size_t item);
+      static void intersect(vbool8* valid, const Instance* instance, Ray8& ray, size_t item);
+      static void occluded (vbool8* valid, const Instance* instance, Ray8& ray, size_t item);
     };
   }
 }

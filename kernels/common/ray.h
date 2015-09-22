@@ -56,13 +56,13 @@ namespace embree
     int instID;        //!< instance ID
 
 #if defined(__MIC__)    
-    __forceinline void update(const bool16 &m_mask,
-			      const float16 &new_t,
-			      const float16 &new_u,
-			      const float16 &new_v,
-			      const float16 &new_gnormalx,
-			      const float16 &new_gnormaly,
-			      const float16 &new_gnormalz,
+    __forceinline void update(const vbool16 &m_mask,
+			      const vfloat16 &new_t,
+			      const vfloat16 &new_u,
+			      const vfloat16 &new_v,
+			      const vfloat16 &new_gnormalx,
+			      const vfloat16 &new_gnormaly,
+			      const vfloat16 &new_gnormalz,
 			      const int new_geomID,
 			      const int new_primID)
     {

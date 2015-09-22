@@ -39,7 +39,7 @@
 #  define isa avx2
 #  define ISA AVX2
 #elif defined(__AVXI__)
-#  define isa int8
+#  define isa avxi
 #  define ISA AVXI
 #elif defined(__AVX__)
 #  define isa avx

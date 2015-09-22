@@ -68,8 +68,8 @@ namespace embree
       BVH4TravRay vray(ray.org,ray.dir);
       __aligned(32) char tlray[sizeof(BVH4TravRay)];
       new (tlray) BVH4TravRay(vray);
-      float4 ray_near(ray.tnear);
-      float4 ray_far (ray.tfar);
+      vfloat4 ray_near(ray.tnear);
+      vfloat4 ray_far (ray.tfar);
 
       /* pop loop */
       while (true) pop:
@@ -87,7 +87,7 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  float4 tNear;
+	  vfloat4 tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;
@@ -237,8 +237,8 @@ namespace embree
       BVH4TravRay vray(ray.org,ray.dir);
       __aligned(32) char tlray[sizeof(BVH4TravRay)];
       new (tlray) BVH4TravRay(vray);
-      const float4 ray_near(ray.tnear);
-      float4 ray_far (ray.tfar);
+      const vfloat4 ray_near(ray.tnear);
+      vfloat4 ray_far (ray.tfar);
       
       /* pop loop */
       while (true) pop:
@@ -252,7 +252,7 @@ namespace embree
         while (true)
         {
 	  size_t mask; 
-	  float4 tNear;
+	  vfloat4 tNear;
 
 	  /*! stop if we found a leaf node */
 	  if (unlikely(cur.isLeaf(types))) break;

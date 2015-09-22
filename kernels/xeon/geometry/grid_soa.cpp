@@ -27,11 +27,11 @@ namespace embree
     {      
       dim_offset = calculate_grid_size(width,height);
 
-      dynamic_large_stack_array(float,local_grid_u,dim_offset+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_v,dim_offset+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_x,dim_offset+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_y,dim_offset+vfloat::size,64*64);
-      dynamic_large_stack_array(float,local_grid_z,dim_offset+vfloat::size,64*64);
+      dynamic_large_stack_array(float,local_grid_u,dim_offset+VSIZEX,64*64);
+      dynamic_large_stack_array(float,local_grid_v,dim_offset+VSIZEX,64*64);
+      dynamic_large_stack_array(float,local_grid_x,dim_offset+VSIZEX,64*64);
+      dynamic_large_stack_array(float,local_grid_y,dim_offset+VSIZEX,64*64);
+      dynamic_large_stack_array(float,local_grid_z,dim_offset+VSIZEX,64*64);
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
@@ -49,10 +49,10 @@ namespace embree
       memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
       
       /* encode UVs */
-      for (size_t i=0; i<dim_offset; i+=vfloat::size) {
-        const vint iu = (vint) clamp(vfloat::load(&local_grid_u[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
-        const vint iv = (vint) clamp(vfloat::load(&local_grid_v[i])*0xFFFF, vfloat(0.0f), vfloat(0xFFFF));
-        vint::storeu(&grid_uv[i], (iv << 16) | iu); 
+      for (size_t i=0; i<dim_offset; i+=VSIZEX) {
+        const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
+        const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
+        vintx::storeu(&grid_uv[i], (iv << 16) | iu);
       }
 
       /* create BVH */

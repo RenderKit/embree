@@ -35,8 +35,8 @@ namespace embree
       static const size_t stackSize = 4*BVH4::maxDepth+1;
       
     public:
-      static void intersect(bool8* valid, BVH4* bvh, Ray8& ray);
-      static void occluded (bool8* valid, BVH4* bvh, Ray8& ray);
+      static void intersect(vbool8* valid, BVH4* bvh, Ray8& ray);
+      static void occluded (vbool8* valid, BVH4* bvh, Ray8& ray);
     };
   }
 }
