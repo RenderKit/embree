@@ -170,8 +170,8 @@ namespace embree
         const vbool8 m_u = u_i < grid_u_segments;
 	const vfloat8 u = select(m_u, vfloat8(x0+u_i) * inv_grid_u_segments, 1.0f);
 	const vfloat8 v = select(m_v, vfloat8(y0+v_i) * inv_grid_v_segments, 1.0f);
-	storeu8f(&u_array[index + x],u);
-	storeu8f(&v_array[index + x],v);	   
+	vfloat8::storeu(&u_array[index + x],u);
+	vfloat8::storeu(&v_array[index + x],v);	   
       }
     }       
  #else   

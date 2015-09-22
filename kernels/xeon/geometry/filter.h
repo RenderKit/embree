@@ -240,14 +240,14 @@ namespace embree
                                              const vfloat8& u, const vfloat8& v, const vfloat8& t, const Vec3vf8& Ng, const int geomID, const int primID)
     {
       /* temporarily update hit information */
-      const vfloat8 ray_u = ray.u;           store8f(valid,&ray.u,u);
-      const vfloat8 ray_v = ray.v;           store8f(valid,&ray.v,v);
-      const vfloat8 ray_tfar = ray.tfar;     store8f(valid,&ray.tfar,t);
-      const vint8 ray_geomID = ray.geomID; store8i(valid,&ray.geomID,geomID);
-      const vint8 ray_primID = ray.primID; store8i(valid,&ray.primID,primID);
-      const vfloat8 ray_Ng_x = ray.Ng.x;     store8f(valid,&ray.Ng.x,Ng.x);
-      const vfloat8 ray_Ng_y = ray.Ng.y;     store8f(valid,&ray.Ng.y,Ng.y);
-      const vfloat8 ray_Ng_z = ray.Ng.z;     store8f(valid,&ray.Ng.z,Ng.z);
+      const vfloat8 ray_u = ray.u;           vfloat8::store(valid,&ray.u,u);
+      const vfloat8 ray_v = ray.v;           vfloat8::store(valid,&ray.v,v);
+      const vfloat8 ray_tfar = ray.tfar;     vfloat8::store(valid,&ray.tfar,t);
+      const vint8 ray_geomID = ray.geomID; vint8::store(valid,&ray.geomID,geomID);
+      const vint8 ray_primID = ray.primID; vint8::store(valid,&ray.primID,primID);
+      const vfloat8 ray_Ng_x = ray.Ng.x;     vfloat8::store(valid,&ray.Ng.x,Ng.x);
+      const vfloat8 ray_Ng_y = ray.Ng.y;     vfloat8::store(valid,&ray.Ng.y,Ng.y);
+      const vfloat8 ray_Ng_z = ray.Ng.z;     vfloat8::store(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc8  filter8 = geometry->intersectionFilter8;
@@ -259,14 +259,14 @@ namespace embree
       /* restore hit if filter not passed */
       if (unlikely(any(valid_failed))) 
       {
-        store8f(valid_failed,&ray.u,ray_u);
-        store8f(valid_failed,&ray.v,ray_v);
-        store8f(valid_failed,&ray.tfar,ray_tfar);
-        store8i(valid_failed,&ray.geomID,ray_geomID);
-        store8i(valid_failed,&ray.primID,ray_primID);
-        store8f(valid_failed,&ray.Ng.x,ray_Ng_x);
-        store8f(valid_failed,&ray.Ng.y,ray_Ng_y);
-        store8f(valid_failed,&ray.Ng.z,ray_Ng_z);
+        vfloat8::store(valid_failed,&ray.u,ray_u);
+        vfloat8::store(valid_failed,&ray.v,ray_v);
+        vfloat8::store(valid_failed,&ray.tfar,ray_tfar);
+        vint8::store(valid_failed,&ray.geomID,ray_geomID);
+        vint8::store(valid_failed,&ray.primID,ray_primID);
+        vfloat8::store(valid_failed,&ray.Ng.x,ray_Ng_x);
+        vfloat8::store(valid_failed,&ray.Ng.y,ray_Ng_y);
+        vfloat8::store(valid_failed,&ray.Ng.z,ray_Ng_z);
       }
       return valid_passed;
     }
@@ -277,14 +277,14 @@ namespace embree
       /* temporarily update hit information */
       const vfloat8 ray_tfar = ray.tfar; 
       const vint8 ray_geomID = ray.geomID;
-      store8f(valid,&ray.u,u);
-      store8f(valid,&ray.v,v);
-      store8f(valid,&ray.tfar,t);
-      store8i(valid,&ray.geomID,geomID);
-      store8i(valid,&ray.primID,primID);
-      store8f(valid,&ray.Ng.x,Ng.x);
-      store8f(valid,&ray.Ng.y,Ng.y);
-      store8f(valid,&ray.Ng.z,Ng.z);
+      vfloat8::store(valid,&ray.u,u);
+      vfloat8::store(valid,&ray.v,v);
+      vfloat8::store(valid,&ray.tfar,t);
+      vint8::store(valid,&ray.geomID,geomID);
+      vint8::store(valid,&ray.primID,primID);
+      vfloat8::store(valid,&ray.Ng.x,Ng.x);
+      vfloat8::store(valid,&ray.Ng.y,Ng.y);
+      vfloat8::store(valid,&ray.Ng.z,Ng.z);
       
       /* invoke filter function */
       RTCFilterFunc8 filter8 = geometry->occlusionFilter8;
@@ -294,8 +294,8 @@ namespace embree
       const vbool8 valid_passed = valid & (ray.geomID != vint8(-1));
       
       /* restore hit if filter not passed */
-      store8f(valid_failed,&ray.tfar,ray_tfar);
-      store8i(valid_failed,&ray.geomID,ray_geomID);
+      vfloat8::store(valid_failed,&ray.tfar,ray_tfar);
+      vint8::store(valid_failed,&ray.geomID,ray_geomID);
       return valid_passed;
     }
     
@@ -321,14 +321,14 @@ namespace embree
       
       /* restore hit if filter not passed */
       if (unlikely(!passed)) {
-        store8f(&ray.u,ray_u);
-        store8f(&ray.v,ray_v);
-        store8f(&ray.tfar,ray_tfar);
-        store8i(&ray.geomID,ray_geomID);
-        store8i(&ray.primID,ray_primID);
-        store8f(&ray.Ng.x,ray_Ng_x);
-        store8f(&ray.Ng.y,ray_Ng_y);
-        store8f(&ray.Ng.z,ray_Ng_z);
+        vfloat8::store(&ray.u,ray_u);
+        vfloat8::store(&ray.v,ray_v);
+        vfloat8::store(&ray.tfar,ray_tfar);
+        vint8::store(&ray.geomID,ray_geomID);
+        vint8::store(&ray.primID,ray_primID);
+        vfloat8::store(&ray.Ng.x,ray_Ng_x);
+        vfloat8::store(&ray.Ng.y,ray_Ng_y);
+        vfloat8::store(&ray.Ng.z,ray_Ng_z);
       }
       return passed;
     }
@@ -357,8 +357,8 @@ namespace embree
       
       /* restore hit if filter not passed */
       if (unlikely(!passed)) {
-        store8f(&ray.tfar,ray_tfar);
-        store8i(&ray.geomID,ray_geomID);
+        vfloat8::store(&ray.tfar,ray_tfar);
+        vint8::store(&ray.geomID,ray_geomID);
       }
       return passed;
     }

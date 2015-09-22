@@ -135,19 +135,19 @@ namespace embree
           const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
           const size_t farX  = nearX ^ (4*sizeof(vfloat4)), farY  = nearY ^ (4*sizeof(vfloat4)), farZ  = nearZ ^ (4*sizeof(vfloat4));
 #if defined (__AVX2__)
-          const vfloat8 tNearX = msub(load8f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
-          const vfloat8 tNearY = msub(load8f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
-          const vfloat8 tNearZ = msub(load8f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
-          const vfloat8 tFarX  = msub(load8f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
-          const vfloat8 tFarY  = msub(load8f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
-          const vfloat8 tFarZ  = msub(load8f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(float8::load((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(float8::load((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(float8::load((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(float8::load((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(float8::load((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(float8::load((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
 #else
-          const vfloat8 tNearX = (load8f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
-          const vfloat8 tNearY = (load8f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
-          const vfloat8 tNearZ = (load8f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
-          const vfloat8 tFarX  = (load8f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
-          const vfloat8 tFarY  = (load8f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
-          const vfloat8 tFarZ  = (load8f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
+          const vfloat8 tNearX = (float8::load((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
+          const vfloat8 tNearY = (float8::load((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
+          const vfloat8 tNearZ = (float8::load((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
+          const vfloat8 tFarX  = (float8::load((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
+          const vfloat8 tFarY  = (float8::load((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
+          const vfloat8 tFarZ  = (float8::load((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
 #endif
           
           if (robust) {

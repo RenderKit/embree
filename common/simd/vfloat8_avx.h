@@ -81,7 +81,7 @@ namespace embree
 #if defined(__AVX2__)
       return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
 #else
-      return vfloat8(vfloat4::load(ptr),vfloat4::load(ptr+4));
+      return vfloat8(vfloat4::loadu(ptr),vfloat4::loadu(ptr+4));
 #endif
     }
       
@@ -472,21 +472,21 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat8 load8f( const void* const a) {
-    return _mm256_load_ps((const float*)a); 
-  }
+  /* __forceinline vfloat8 load8f( const void* const a) { */
+  /*   return _mm256_load_ps((const float*)a);  */
+  /* } */
 
-  __forceinline void store8f(void *ptr, const vfloat8& f ) {
-    return _mm256_store_ps((float*)ptr,f);
-  }
+  /* __forceinline void store8f(void *ptr, const vfloat8& f ) { */
+  /*   return _mm256_store_ps((float*)ptr,f); */
+  /* } */
 
-  __forceinline void storeu8f(void *ptr, const vfloat8& f ) {
-    return _mm256_storeu_ps((float*)ptr,f);
-  }
+  /* __forceinline void storeu8f(void *ptr, const vfloat8& f ) { */
+  /*   return _mm256_storeu_ps((float*)ptr,f); */
+  /* } */
 
-  __forceinline void store8f( const vboolf8& mask, void *ptr, const vfloat8& f ) {
-    return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f);
-  }
+  /* __forceinline void store8f( const vboolf8& mask, void *ptr, const vfloat8& f ) { */
+  /*   return _mm256_maskstore_ps((float*)ptr,(__m256i)mask,f); */
+  /* } */
 
 #if defined (__AVX2__)
   __forceinline vfloat8 load8f_nt(void* ptr) {

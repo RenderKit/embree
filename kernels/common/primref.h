@@ -27,17 +27,17 @@ namespace embree
 
 #if defined(__AVX__)
     __forceinline PrimRef(const PrimRef& v) { 
-      store8f((float*)this,load8f((float*)&v));
+      vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
     __forceinline void operator=(const PrimRef& v) { 
-      store8f((float*)this,load8f((float*)&v));
+      vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
 #endif
 
 #if defined(__MIC__)
-      __forceinline PrimRef(const PrimRef& v) { 
-        compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
-      }
+    __forceinline PrimRef(const PrimRef& v) { 
+      compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
+    }
     
     __forceinline void operator=(const PrimRef& v) { 
       compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
@@ -120,10 +120,10 @@ namespace embree
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
 #if defined(__AVX__)
-    const vfloat8 aa = load8f((float*)&a);
-    const vfloat8 bb = load8f((float*)&b);
-    store8f((float*)&a,bb);
-    store8f((float*)&b,aa);
+    const vfloat8 aa = vfloat8::load((float*)&a);
+    const vfloat8 bb = vfloat8::load((float*)&b);
+    vfloat8::store((float*)&a,bb);
+    vfloat8::store((float*)&b,aa);
 #elif defined(__MIC__)
     const vfloat16 aa = uload16f_low((float*)&a.lower);
     const vfloat16 bb = uload16f_low((float*)&b.lower);
