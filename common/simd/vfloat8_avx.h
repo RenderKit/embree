@@ -494,9 +494,9 @@ namespace embree
   }
 #endif
   
-  __forceinline void store8f_nt(void* ptr, const vfloat8& v) {
-    _mm256_stream_ps((float*)ptr,v);
-  }
+  /* __forceinline void store8f_nt(void* ptr, const vfloat8& v) { */
+  /*   _mm256_stream_ps((float*)ptr,v); */
+  /* } */
  
   __forceinline const vfloat8 broadcast4f(const void* ptr) {
     return _mm256_broadcast_ps((__m128*)ptr); 

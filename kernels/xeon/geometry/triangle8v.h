@@ -97,17 +97,17 @@ public:
     /*! non temporal store */
     __forceinline static void store_nt(Triangle8v* dst, const Triangle8v& src)
     {
-      store8f_nt(&dst->v0.x,src.v0.x);
-      store8f_nt(&dst->v0.y,src.v0.y);
-      store8f_nt(&dst->v0.z,src.v0.z);
-      store8f_nt(&dst->v1.x,src.v1.x);
-      store8f_nt(&dst->v1.y,src.v1.y);
-      store8f_nt(&dst->v1.z,src.v1.z);
-      store8f_nt(&dst->v2.x,src.v2.x);
-      store8f_nt(&dst->v2.y,src.v2.y);
-      store8f_nt(&dst->v2.z,src.v2.z);
-      store8i_nt(&dst->geomIDs,src.geomIDs);
-      store8i_nt(&dst->primIDs,src.primIDs);
+      vfloat8::store_nt((float*)&dst->v0.x,src.v0.x);
+      vfloat8::store_nt((float*)&dst->v0.y,src.v0.y);
+      vfloat8::store_nt((float*)&dst->v0.z,src.v0.z);
+      vfloat8::store_nt((float*)&dst->v1.x,src.v1.x);
+      vfloat8::store_nt((float*)&dst->v1.y,src.v1.y);
+      vfloat8::store_nt((float*)&dst->v1.z,src.v1.z);
+      vfloat8::store_nt((float*)&dst->v2.x,src.v2.x);
+      vfloat8::store_nt((float*)&dst->v2.y,src.v2.y);
+      vfloat8::store_nt((float*)&dst->v2.z,src.v2.z);
+      vint8::store_nt((int*)&dst->geomIDs,src.geomIDs);
+      vint8::store_nt((int*)&dst->primIDs,src.primIDs);
     }
 
     /*! fill triangle from triangle list */

@@ -90,6 +90,11 @@ namespace embree
     static __forceinline void store( const vboolf8& mask, void* ptr, const vint8& f ) {
       _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(f));
     }
+
+    static __forceinline void store_nt(void* ptr, const vint8& v) {
+      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
+    }
+
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
@@ -271,9 +276,9 @@ namespace embree
   /// New stuff
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline void store8i(void* ptr, const vint8& i) {
-    _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(i));
-  }
+  /* __forceinline void store8i(void* ptr, const vint8& i) { */
+  /*   _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(i)); */
+  /* } */
 
   __forceinline void store8i( const vboolf8 &mask, void *ptr, const vint8& i ) {
     _mm256_maskstore_ps((float*)ptr,(__m256i)mask,_mm256_castsi256_ps(i));
