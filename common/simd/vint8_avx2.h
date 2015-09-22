@@ -244,11 +244,11 @@ namespace embree
     return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(a), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle( const vint8& a ) {
+  template<size_t i0, size_t i1> __forceinline const vint8 shuffle128( const vint8& a ) {
     return _mm256_permute2f128_si256(a, a, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle( const vint8& a,  const vint8& b) {
+  template<size_t i0, size_t i1> __forceinline const vint8 shuffle128( const vint8& a,  const vint8& b) {
     return _mm256_permute2f128_si256(a, b, (i1 << 4) | (i0 << 0));
   }
 
@@ -266,13 +266,13 @@ namespace embree
 
   __forceinline const vint8 broadcast(const int* ptr) { return _mm256_castps_si256(_mm256_broadcast_ss((const float*)ptr)); }
   template<size_t i> __forceinline const vint8 insert (const vint8& a, const vint4& b) { return _mm256_insertf128_si256 (a,b,i); }
-  template<size_t i> __forceinline const vint4 extract(const vint8& a               ) { return _mm256_extractf128_si256(a  ,i); }
+  template<size_t i> __forceinline const vint4 extract(const vint8& a                ) { return _mm256_extractf128_si256(a  ,i); }
 
   __forceinline vint8 permute(const vint8& a, const __m256i& index) {
     return _mm256_permutevar8x32_epi32(a,index);
   }
 
-  __forceinline vint8 permute4x32(const vint8& a, const __m256i& index) {
+  __forceinline vint8 shuffle(const vint8& a, const __m256i& index) {
     return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(a),index));
   }
 
@@ -282,15 +282,15 @@ namespace embree
 
   __forceinline const vint8 vreduce_min2(const vint8& v) { return min(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vint8 vreduce_min4(const vint8& v) { vint8 v1 = vreduce_min2(v); return min(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vint8 vreduce_min (const vint8& v) { vint8 v1 = vreduce_min4(v); return min(v1,shuffle<1,0>(v1)); }
+  __forceinline const vint8 vreduce_min (const vint8& v) { vint8 v1 = vreduce_min4(v); return min(v1,shuffle128<1,0>(v1)); }
 
   __forceinline const vint8 vreduce_max2(const vint8& v) { return max(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vint8 vreduce_max4(const vint8& v) { vint8 v1 = vreduce_max2(v); return max(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vint8 vreduce_max (const vint8& v) { vint8 v1 = vreduce_max4(v); return max(v1,shuffle<1,0>(v1)); }
+  __forceinline const vint8 vreduce_max (const vint8& v) { vint8 v1 = vreduce_max4(v); return max(v1,shuffle128<1,0>(v1)); }
 
   __forceinline const vint8 vreduce_add2(const vint8& v) { return v + shuffle<1,0,3,2>(v); }
   __forceinline const vint8 vreduce_add4(const vint8& v) { vint8 v1 = vreduce_add2(v); return v1 + shuffle<2,3,0,1>(v1); }
-  __forceinline const vint8 vreduce_add (const vint8& v) { vint8 v1 = vreduce_add4(v); return v1 + shuffle<1,0>(v1); }
+  __forceinline const vint8 vreduce_add (const vint8& v) { vint8 v1 = vreduce_add4(v); return v1 + shuffle128<1,0>(v1); }
 
   __forceinline int reduce_min(const vint8& v) { return extract<0>(extract<0>(vreduce_min(v))); }
   __forceinline int reduce_max(const vint8& v) { return extract<0>(extract<0>(vreduce_max(v))); }
@@ -369,7 +369,7 @@ namespace embree
       const vint8 c2 = umin(a2,b2);
       const vint8 d2 = umax(a2,b2);
       const vint8 a3 = select(0xa5 /* 0b10100101 */,c2,d2);
-      const vint8 b3 = shuffle<1,0>(a3);
+      const vint8 b3 = shuffle128<1,0>(a3);
       const vint8 c3 = umin(a3,b3);
       const vint8 d3 = umax(a3,b3);
       const vint8 a4 = select(0xf /* 0b00001111 */,c3,d3);

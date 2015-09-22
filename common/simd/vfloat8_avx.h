@@ -341,11 +341,11 @@ namespace embree
     return _mm256_permute_ps(a, _MM_SHUFFLE(i, i, i, i));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle( const vfloat8& a ) {
+  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle128( const vfloat8& a ) {
     return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle( const vfloat8& a,  const vfloat8& b) {
+  template<size_t i0, size_t i1> __forceinline const vfloat8 shuffle128( const vfloat8& a,  const vfloat8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 
@@ -363,8 +363,8 @@ namespace embree
 
   __forceinline const vfloat8 broadcast(const float* ptr) { return _mm256_broadcast_ss(ptr); }
   template<size_t i> __forceinline const vfloat8 insert (const vfloat8& a, const vfloat4& b) { return _mm256_insertf128_ps (a,b,i); }
-  template<size_t i> __forceinline const vfloat4 extract   (const vfloat8& a            ) { return _mm256_extractf128_ps(a  ,i); }
-  template<>         __forceinline const vfloat4 extract<0>(const vfloat8& a            ) { return _mm256_castps256_ps128(a); }
+  template<size_t i> __forceinline const vfloat4 extract   (const vfloat8& a               ) { return _mm256_extractf128_ps(a  ,i); }
+  template<>         __forceinline const vfloat4 extract<0>(const vfloat8& a               ) { return _mm256_castps256_ps128(a); }
 
   template<size_t i> __forceinline float fextract   (const vfloat8& a            ) { return _mm_cvtss_f32(_mm256_extractf128_ps(a  ,i)); }
 
@@ -432,14 +432,14 @@ namespace embree
   {
     vfloat8 h0,h1,h2,h3; transpose(r0,r1,r2,r3,h0,h1,h2,h3);
     vfloat8 h4,h5,h6,h7; transpose(r4,r5,r6,r7,h4,h5,h6,h7);
-    c0 = shuffle<0,2>(h0,h4);
-    c1 = shuffle<0,2>(h1,h5);
-    c2 = shuffle<0,2>(h2,h6);
-    c3 = shuffle<0,2>(h3,h7);
-    c4 = shuffle<1,3>(h0,h4);
-    c5 = shuffle<1,3>(h1,h5);
-    c6 = shuffle<1,3>(h2,h6);
-    c7 = shuffle<1,3>(h3,h7);
+    c0 = shuffle128<0,2>(h0,h4);
+    c1 = shuffle128<0,2>(h1,h5);
+    c2 = shuffle128<0,2>(h2,h6);
+    c3 = shuffle128<0,2>(h3,h7);
+    c4 = shuffle128<1,3>(h0,h4);
+    c5 = shuffle128<1,3>(h1,h5);
+    c6 = shuffle128<1,3>(h2,h6);
+    c7 = shuffle128<1,3>(h3,h7);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -448,15 +448,15 @@ namespace embree
 
   __forceinline const vfloat8 vreduce_min2(const vfloat8& v) { return min(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vfloat8 vreduce_min4(const vfloat8& v) { vfloat8 v1 = vreduce_min2(v); return min(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vfloat8 vreduce_min (const vfloat8& v) { vfloat8 v1 = vreduce_min4(v); return min(v1,shuffle<1,0>(v1)); }
+  __forceinline const vfloat8 vreduce_min (const vfloat8& v) { vfloat8 v1 = vreduce_min4(v); return min(v1,shuffle128<1,0>(v1)); }
 
   __forceinline const vfloat8 vreduce_max2(const vfloat8& v) { return max(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vfloat8 vreduce_max4(const vfloat8& v) { vfloat8 v1 = vreduce_max2(v); return max(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vfloat8 vreduce_max (const vfloat8& v) { vfloat8 v1 = vreduce_max4(v); return max(v1,shuffle<1,0>(v1)); }
+  __forceinline const vfloat8 vreduce_max (const vfloat8& v) { vfloat8 v1 = vreduce_max4(v); return max(v1,shuffle128<1,0>(v1)); }
 
   __forceinline const vfloat8 vreduce_add2(const vfloat8& v) { return v + shuffle<1,0,3,2>(v); }
   __forceinline const vfloat8 vreduce_add4(const vfloat8& v) { vfloat8 v1 = vreduce_add2(v); return v1 + shuffle<2,3,0,1>(v1); }
-  __forceinline const vfloat8 vreduce_add (const vfloat8& v) { vfloat8 v1 = vreduce_add4(v); return v1 + shuffle<1,0>(v1); }
+  __forceinline const vfloat8 vreduce_add (const vfloat8& v) { vfloat8 v1 = vreduce_add4(v); return v1 + shuffle128<1,0>(v1); }
 
   __forceinline float reduce_min(const vfloat8& v) { return _mm_cvtss_f32(extract<0>(vreduce_min(v))); }
   __forceinline float reduce_max(const vfloat8& v) { return _mm_cvtss_f32(extract<0>(vreduce_max(v))); }
@@ -492,16 +492,6 @@ namespace embree
   __forceinline vfloat8 load8f_nt(void* ptr) {
     return _mm256_castsi256_ps(_mm256_stream_load_si256((__m256i*)ptr));
   }
-
-#if 0 // FIXME: not compiling under VS2013
-  __forceinline vfloat8 merge2x4(const float& a, const float& b)
-  {
-    const vfloat8 va = broadcast(&a);
-    const vfloat8 vb = broadcast(&b);
-    return select(0xf /* 0b00001111 */,va,vb);
-  }
-#endif
-
 #endif
   
   __forceinline void store8f_nt(void* ptr, const vfloat8& v) {
