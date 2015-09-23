@@ -93,6 +93,7 @@ namespace embree
 #endif
     }
 
+/* only available on KNC */
 #if defined(__MIC__)  
     static __forceinline void store_ngo(void *__restrict__ ptr, const vint16& a) {
       _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
@@ -311,7 +312,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint16 swizzle(const vint16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_epi32(x,perm32); }
-  __forceinline vint16 permute(const vint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
+  __forceinline vint16 permute128(const vint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
   
   template<int D, int C, int B, int A> __forceinline vint16 swizzle   (const vint16& v) { return _mm512_shuffle_epi32(v,_MM_SHUF_PERM(D,C,B,A)); }
   template<int A>                      __forceinline vint16 swizzle   (const vint16& x) { return swizzle<A,A,A,A>(v); }
@@ -320,10 +321,10 @@ namespace embree
   template<>                           __forceinline vint16 swizzle<2>(const vint16& x) { return swizzle(x,_MM_SWIZ_REG_CCCC); }
   template<>                           __forceinline vint16 swizzle<3>(const vint16& x) { return swizzle(x,_MM_SWIZ_REG_DDDD); }
 
-  template<int D, int C, int B, int A> __forceinline vint16 permute(const vint16& v) { return permute(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vint16 permute(const vint16& x) { return permute<A,A,A,A>(x); }
+  template<int D, int C, int B, int A> __forceinline vint16 permute128(const vint16& v) { return permute128(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int A>                      __forceinline vint16 permute128(const vint16& x) { return permute128<A,A,A,A>(x); }
 
-  __forceinline vint16 shuffle(const vint16& x,_MM_PERM_ENUM    perm128, _MM_SWIZZLE_ENUM perm32) { return swizzle(permute(x,perm128),perm32); }
+  __forceinline vint16 shuffle(const vint16& x,_MM_PERM_ENUM    perm128, _MM_SWIZZLE_ENUM perm32) { return swizzle(permute128(x,perm128),perm32); }
   
   __forceinline vint16 shuffle(const vboolf16& mask, vint16& v, const vint16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
     return _mm512_mask_swizzle_epi32(_mm512_mask_permute4f128_epi32(v,mask,x,perm128),mask,x,perm32);  
@@ -364,74 +365,75 @@ namespace embree
   
   __forceinline vint16 vreduce_min2(vint16 x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vint16 vreduce_min4(vint16 x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vint16 vreduce_min8(vint16 x) { x = vreduce_min4(x); return min(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vint16 vreduce_min (vint16 x) { x = vreduce_min8(x); return min(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vint16 vreduce_min8(vint16 x) { x = vreduce_min4(x); return min(x,permute128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vint16 vreduce_min (vint16 x) { x = vreduce_min8(x); return min(x,permute128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vint16 vreduce_max2(vint16 x) {                      return max(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vint16 vreduce_max4(vint16 x) { x = vreduce_max2(x); return max(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vint16 vreduce_max8(vint16 x) { x = vreduce_max4(x); return max(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vint16 vreduce_max (vint16 x) { x = vreduce_max8(x); return max(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vint16 vreduce_max8(vint16 x) { x = vreduce_max4(x); return max(x,permute128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vint16 vreduce_max (vint16 x) { x = vreduce_max8(x); return max(x,permute128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vint16 vreduce_and2(vint16 x) {                      return x & swizzle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_and4(vint16 x) { x = vreduce_and2(x); return x & swizzle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_and8(vint16 x) { x = vreduce_and4(x); return x & permute(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_and (vint16 x) { x = vreduce_and8(x); return x & permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_and8(vint16 x) { x = vreduce_and4(x); return x & permute128(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_and (vint16 x) { x = vreduce_and8(x); return x & permute128(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline vint16 vreduce_or2(vint16 x) {                     return x | swizzle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_or4(vint16 x) { x = vreduce_or2(x); return x | swizzle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_or8(vint16 x) { x = vreduce_or4(x); return x | permute(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_or (vint16 x) { x = vreduce_or8(x); return x | permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_or8(vint16 x) { x = vreduce_or4(x); return x | permute128(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_or (vint16 x) { x = vreduce_or8(x); return x | permute128(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline vint16 vreduce_add2(vint16 x) {                      return x + swizzle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_add4(vint16 x) { x = vreduce_add2(x); return x + swizzle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + permute128(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + permute128(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  /* __forceinline vint16 load1i(const int *const ptr) { */
-  /*   return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE); */
-  /* } */
 
-  /* __forceinline vint16 load16i(const int *const ptr) { */
-  /*   return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE); */
-  /* } */
-  
+/* only available on KNC */
+#if defined(__MIC__)  
   __forceinline vint16 load1i_uint8(const unsigned char *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST_1X16,_MM_HINT_NONE);
   }
 
   __forceinline vint16 load16i_uint8(const unsigned char *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST32_NONE,_MM_HINT_NONE);
-  }
-  
-  __forceinline vint16 broadcast4to16i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);
-  }
+  }  
 
   __forceinline vint16 broadcast1to16i(const int *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
   }  
-  
-  __forceinline vint16 uload16i(const int *const addr) {
-    vint16 r = _mm512_undefined_epi32();
-    r =_mm512_extloadunpacklo_epi32(r, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-    return _mm512_extloadunpackhi_epi32(r, addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
-  }
-  
+    
   __forceinline vint16 uload16i_low(const vboolf16& mask, const void* addr) {
     vint16 v = _mm512_undefined_epi32();
     return _mm512_mask_extloadunpacklo_epi32(v, mask, addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
   }
 
-  __forceinline vint16 uload16i(const vboolf16& mask,const int *const addr) {
-    vint16 r = _mm512_undefined_epi32();
-    r =_mm512_mask_extloadunpacklo_epi32(r, mask,addr, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-    return _mm512_mask_extloadunpackhi_epi32(r, mask,addr+16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);  
+  __forceinline void store1i(void *addr, const vint16& reg) {
+    _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,(vboolf16)1, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
   
+  __forceinline void ustore16i_low(void *addr, const vint16& reg) {
+    _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+  }
+  
+  __forceinline void compactustore16i_high(const vboolf16 mask, int *addr, const vint16& reg) {
+    _mm512_mask_extpackstorehi_epi32((int*)addr+16  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+  }
+
+  __forceinline void store16i_uint8(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
+    _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
+  }
+
+#endif
+  
+
+  __forceinline vint16 broadcast4to16i(const int *const ptr) {
+    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_4X16,_MM_HINT_NONE);
+  }
 
   __forceinline vint16 gather16i_4i(const int *__restrict__ const ptr0,
                                     const int *__restrict__ const ptr1,
@@ -482,12 +484,7 @@ namespace embree
   __forceinline void scatter16i(const vboolf16& mask,int *const ptr, const vint16& index,const vint16& v, const _MM_INDEX_SCALE_ENUM scale) {
     _mm512_mask_i32extscatter_epi32((int*)ptr,mask,index,v,_MM_DOWNCONV_EPI32_NONE,scale,0);
   }
-  
-  /* __forceinline void ustore16i(void *addr, const vint16& reg) { */
-  /*   _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE); */
-  /*   _mm512_extpackstorehi_epi32((int*)addr+16 ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE); */
-  /* } */
-  
+    
   /* pass by value to avoid compiler generating inefficient code */
   __forceinline void compactustore16i(const vboolf16 mask,void * addr, const vint16 reg) {
     _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
@@ -498,36 +495,7 @@ namespace embree
   __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vint16& reg) {
     _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
-
-  __forceinline void store1i(void *addr, const vint16& reg) {
-    _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,(vboolf16)1, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
   
-  __forceinline void ustore16i_low(void *addr, const vint16& reg) {
-    _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-  
-  __forceinline void compactustore16i_high(const vboolf16 mask, int *addr, const vint16& reg) {
-    _mm512_mask_extpackstorehi_epi32((int*)addr+16  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-  
-  
-  /* __forceinline void store16i(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) { */
-  /*   _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE); */
-  /* } */
-
-
-  /* __forceinline void store16i_nt(void* __restrict__ addr, const vint16& v2) { */
-  /*   _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NT); */
-  /* } */
-  
-  /* __forceinline void store16i(void* __restrict__ addr, const vint16& v2) { */
-  /*   _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE); */
-  /* } */
-  
-  __forceinline void store16i_uint8(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
-    _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
-  }
 
   __forceinline vint16 convert_uint32_t(const __m512 f) {
 #if defined(__AVX512F__)
