@@ -168,6 +168,17 @@ namespace embree
 #endif
     }
 
+  /* pass by value to avoid compiler generating inefficient code */
+    static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
+#if defined(__AVX512F__)
+      _mm512_mask_compressstoreu_ps(addr,mask,reg);
+#else
+    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+    _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+  }
+
+
 /* only available on KNC */
 #if defined(__MIC__)  
     static __forceinline void store_ngo(void *__restrict__ ptr, const vfloat16& a) {
@@ -815,7 +826,11 @@ namespace embree
   }
 
   __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {
+#if defined(__AVX512F__)
+    _mm512_mask_compressstoreu_ps(addr,mask,reg);
+#else
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+#endif
   }
 
 /* only available on KNC */
@@ -850,13 +865,7 @@ namespace embree
     vfloat16 v1 = vfloat16::undefined();
     return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
   }
-    
-  /* pass by value to avoid compiler generating inefficient code */
-  __forceinline void compactustore16f(const vboolf16& mask, float *addr, const vfloat16 reg) {
-    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
-    _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
-  }
-  
+      
   __forceinline void compactustore16f_low_uint8(const vboolf16& mask, void * addr, const vfloat16 &reg) {
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_UINT8 , 0);
   }

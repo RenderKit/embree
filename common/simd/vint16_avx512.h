@@ -149,6 +149,16 @@ namespace embree
       _mm512_mask_store_epi32(addr,mask,v2);
     }
 
+  /* pass by value to avoid compiler generating inefficient code */
+    static __forceinline void storeu_compact(const vboolf16 mask,void * addr, const vint16 reg) {
+#if defined(__AVX512F__)
+      _mm512_mask_compressstoreu_epi32(addr,mask,reg);
+#else
+      _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+      _mm512_mask_extpackstorehi_epi32((int*)addr+16 ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+#endif
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -485,15 +495,13 @@ namespace embree
     _mm512_mask_i32extscatter_epi32((int*)ptr,mask,index,v,_MM_DOWNCONV_EPI32_NONE,scale,0);
   }
     
-  /* pass by value to avoid compiler generating inefficient code */
-  __forceinline void compactustore16i(const vboolf16 mask,void * addr, const vint16 reg) {
-    _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-    _mm512_mask_extpackstorehi_epi32((int*)addr+16 ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
-
 
   __forceinline void compactustore16i_low(const vboolf16 mask, void *addr, const vint16& reg) {
+#if defined(__AVX512F__)
+    _mm512_mask_compressstoreu_epi32(addr,mask,reg);
+#else
     _mm512_mask_extpackstorelo_epi32((int*)addr+0  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
+#endif
   }
   
 
