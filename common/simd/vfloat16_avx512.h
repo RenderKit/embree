@@ -505,7 +505,7 @@ namespace embree
     return _mm512_swizzle_ps(x,perm32); 
 #endif
   }
-  __forceinline vfloat16 permute(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
+  __forceinline vfloat16 shuffle128(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
   
   template<int D, int C, int B, int A> __forceinline vfloat16 swizzle   (const vfloat16& v) {
 #if defined(__AVX512F__)
@@ -520,10 +520,10 @@ namespace embree
   template<>                           __forceinline vfloat16 swizzle<2>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_CCCC); }
   template<>                           __forceinline vfloat16 swizzle<3>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_DDDD); }
 
-  template<int D, int C, int B, int A> __forceinline vfloat16 permute(const vfloat16& v) { return permute(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vfloat16 permute(const vfloat16& x) { return permute<A,A,A,A>(x); }
+  template<int D, int C, int B, int A> __forceinline vfloat16 shuffle128(const vfloat16& v) { return shuffle128(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int A>                      __forceinline vfloat16 shuffle128(const vfloat16& x) { return shuffle128<A,A,A,A>(x); }
 
-  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return swizzle(permute(x,perm128),perm32); }
+  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return swizzle(shuffle128(x,perm128),perm32); }
   
   __forceinline vfloat16 shuffle(const vboolf16& mask, vfloat16& v, const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
     return _mm512_mask_swizzle_ps(_mm512_mask_permute4f128_ps(v,mask,x,perm128),mask,x,perm32);  
@@ -608,18 +608,18 @@ namespace embree
 
   __forceinline vfloat16 vreduce_min2(vfloat16 x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vfloat16 vreduce_min4(vfloat16 x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vfloat16 vreduce_max2(vfloat16 x) {                      return max(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vfloat16 vreduce_max4(vfloat16 x) { x = vreduce_max2(x); return max(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vfloat16 vreduce_add2(vfloat16 x) {                      return x + swizzle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vfloat16 vreduce_add4(vfloat16 x) { x = vreduce_add2(x); return x + swizzle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline size_t select_min(const vfloat16& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vfloat16& v) { return __bsf(movemask(v == vreduce_max(v))); }
@@ -952,10 +952,10 @@ namespace embree
                                               const void *__restrict__ const ptr2,
                                               const void *__restrict__ const ptr3)
   {
-    vfloat16 v = permute<0>(vfloat16::loadu((float*)ptr3));
-    v = align_shift_right<12>(v,permute<0>(vfloat16::loadu((float*)ptr2)));
-    v = align_shift_right<12>(v,permute<0>(vfloat16::loadu((float*)ptr1)));
-    v = align_shift_right<12>(v,permute<0>(vfloat16::loadu((float*)ptr0)));
+    vfloat16 v = shuffle128<0>(vfloat16::loadu((float*)ptr3));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr2)));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr1)));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr0)));
     return v;
   }
 
