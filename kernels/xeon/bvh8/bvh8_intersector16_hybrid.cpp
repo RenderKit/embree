@@ -393,19 +393,19 @@ namespace embree
           const Node* node = cur.node();
           const size_t farX  = nearX ^ sizeof(vfloat8), farY  = nearY ^ sizeof(vfloat8), farZ  = nearZ ^ sizeof(vfloat8);
 #if defined (__AVX2__)
-          const vfloat8 tNearX = msub(vfloat8::load((const char*)node+nearX), rdir.x, org_rdir.x);
-          const vfloat8 tNearY = msub(vfloat8::load((const char*)node+nearY), rdir.y, org_rdir.y);
-          const vfloat8 tNearZ = msub(vfloat8::load((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const vfloat8 tFarX  = msub(vfloat8::load((const char*)node+farX ), rdir.x, org_rdir.x);
-          const vfloat8 tFarY  = msub(vfloat8::load((const char*)node+farY ), rdir.y, org_rdir.y);
-          const vfloat8 tFarZ  = msub(vfloat8::load((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(vfloat8::load( (const float*)((const char*)node+nearX)), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(vfloat8::load( (const float*)((const char*)node+nearY)), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(vfloat8::load( (const float*)((const char*)node+nearZ)), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(vfloat8::load( (const float*)((const char*)node+farX )), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(vfloat8::load( (const float*)((const char*)node+farY )), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(vfloat8::load( (const float*)((const char*)node+farZ )), rdir.z, org_rdir.z);
 #else
-          const vfloat8 tNearX = (norg.x + vfloat8::load((const char*)node+nearX)) * rdir.x;
-          const vfloat8 tNearY = (norg.y + vfloat8::load((const char*)node+nearY)) * rdir.y;
-          const vfloat8 tNearZ = (norg.z + vfloat8::load((const char*)node+nearZ)) * rdir.z;
-          const vfloat8 tFarX  = (norg.x + vfloat8::load((const char*)node+farX )) * rdir.x;
-          const vfloat8 tFarY  = (norg.y + vfloat8::load((const char*)node+farY )) * rdir.y;
-          const vfloat8 tFarZ  = (norg.z + vfloat8::load((const char*)node+farZ )) * rdir.z;
+          const vfloat8 tNearX = (norg.x + vfloat8::load((const float*)((const char*)node+nearX))) * rdir.x;
+          const vfloat8 tNearY = (norg.y + vfloat8::load((const float*)((const char*)node+nearY))) * rdir.y;
+          const vfloat8 tNearZ = (norg.z + vfloat8::load((const float*)((const char*)node+nearZ))) * rdir.z;
+          const vfloat8 tFarX  = (norg.x + vfloat8::load((const float*)((const char*)node+farX ))) * rdir.x;
+          const vfloat8 tFarY  = (norg.y + vfloat8::load((const float*)((const char*)node+farY ))) * rdir.y;
+          const vfloat8 tFarZ  = (norg.z + vfloat8::load((const float*)((const char*)node+farZ ))) * rdir.z;
 #endif
           
           const vfloat8 tNear = max(tNearX,tNearY,tNearZ,rayNear);

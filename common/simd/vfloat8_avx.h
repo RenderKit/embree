@@ -81,7 +81,7 @@ namespace embree
 #if defined(__AVX2__)
       return _mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
 #else
-      return vfloat8(vfloat4::loadu(ptr),vfloat4::loadu(ptr+4));
+      return vfloat8(vfloat4::load(ptr),vfloat4::load(ptr+4));
 #endif
     }
       
