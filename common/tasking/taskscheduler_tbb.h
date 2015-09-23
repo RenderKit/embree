@@ -45,7 +45,8 @@ namespace embree
 #else
 #  define SPAWN_BEGIN 
 #  define SPAWN(closure) TaskSchedulerTBB::spawn(closure)
-#  define SPAWN_END TaskSchedulerTBB::wait();
+#  define SPAWN_END if (!TaskSchedulerTBB::wait())      \
+      throw std::runtime_error("task cancelled");
 #endif
 
   struct TaskSchedulerTBB : public RefCount
