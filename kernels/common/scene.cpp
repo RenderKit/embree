@@ -682,7 +682,7 @@ namespace embree
     if (progress_monitor_function) {
       size_t n = atomic_t(dn) + atomic_add(&progress_monitor_counter, atomic_t(dn));
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
-#if defined(TASKING_TBB)
+#if !defined(TASKING_LOCKSTEP)
         throw_RTCError(RTC_CANCELLED,"progress monitor forced termination");
 #endif
       }
