@@ -309,7 +309,7 @@ namespace embree
 	  const vint16 u_i = vint16(u * 65535.0f/2.0f);
 	  const vint16 v_i = vint16(v * 65535.0f/2.0f);
 	  const vint16 uv_i = (v_i << 16) | u_i;
-	  store16i(&grid_uv[i],uv_i);
+          vint16::store(&grid_uv[i],uv_i);
 	}
 
 
@@ -672,7 +672,7 @@ namespace embree
 	}
 
 
-      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+      vint16::store(m_valid & toMask(terminated),&ray16.geomID,0);
 
     }
 

@@ -121,8 +121,8 @@ namespace embree
       vfloat16::store(m_mask,(float*)&Ng.x,new_gnormalx);
       vfloat16::store(m_mask,(float*)&Ng.y,new_gnormaly);
       vfloat16::store(m_mask,(float*)&Ng.z,new_gnormalz);
-      store16i(m_mask,(int*)&geomID,new_geomID);
-      store16i(m_mask,(int*)&primID,new_primID);     
+      vint16::store(m_mask,(int*)&geomID,new_geomID);
+      vint16::store(m_mask,(int*)&primID,new_primID);     
     }
 
     /* converts ray packet to single rays */

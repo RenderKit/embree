@@ -179,7 +179,7 @@ namespace embree
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
-      store16i(valid & m_terminated,&ray.geomID,0);
+      vint16::store(valid & m_terminated,&ray.geomID,0);
     }
 
     DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16ChunkMoeller, BVH4mbIntersector16Chunk<Triangle1mbLeafIntersector>);

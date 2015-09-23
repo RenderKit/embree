@@ -366,7 +366,7 @@ namespace embree
 
 		if (unlikely(all(m_terminated))) 
 		  {
-		    store16i(m_valid,&ray16.geomID,vint16::zero());
+		    vint16::store(m_valid,&ray16.geomID,vint16::zero());
 		    return;
 		  }      
 	      }
@@ -503,7 +503,7 @@ namespace embree
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
         if (unlikely(all(m_terminated))) break;
       }
-      store16i(m_valid & m_terminated,&ray16.geomID,vint16::zero());
+      vint16::store(m_valid & m_terminated,&ray16.geomID,vint16::zero());
     }
     
 

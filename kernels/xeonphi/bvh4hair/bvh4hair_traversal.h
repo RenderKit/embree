@@ -110,7 +110,7 @@ namespace embree
 	    const vfloat16 tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
 	    ref = u_node->nodeRefPtr();
 
-	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
+	    hitm = ne(0x8888,invalidNode,vint16::load((const int*)ref));
 
 	    /* early pop of next node */
 	    sindex--;
@@ -136,7 +136,7 @@ namespace embree
         
 	    /* intersect single ray with 4 bounding boxes */
 	    ref = node->nodeRefPtr();
-	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
+	    hitm = ne(0x8888,invalidNode,vint16::load((const int*)ref));
 
 
 	    const vfloat16 tLowerXYZ = vfloat16::load(plower) * rdir_xyz - org_rdir_xyz;
@@ -214,7 +214,7 @@ namespace embree
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 	assert(sindex < 3*BVH4Hair::maxDepth+1);
-	const vint16 children = load16i((const int*)ref); 
+	const vint16 children = vint16::load((const int*)ref); 
         
 	const vbool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
@@ -297,7 +297,7 @@ namespace embree
 	    tFar  = vreduce_min4(tUpper);  
 	    ref = u_node->nodeRefPtr();
 
-	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
+	    hitm = ne(0x8888,invalidNode,vint16::load((const int*)ref));
 
 	  }
 	else
@@ -315,7 +315,7 @@ namespace embree
         
 	    /* intersect single ray with 4 bounding boxes */
 	    ref = node->nodeRefPtr();
-	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
+	    hitm = ne(0x8888,invalidNode,vint16::load((const int*)ref));
 
 
 	    const vfloat16 tLowerXYZ = vfloat16::load(plower) * rdir_xyz - org_rdir_xyz;
@@ -391,7 +391,7 @@ namespace embree
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 	assert(sindex < 3*BVH4Hair::maxDepth+1);
-	const vint16 children = load16i((const int*)ref); 
+	const vint16 children = vint16::load((const int*)ref); 
         
 	const vbool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
@@ -428,7 +428,7 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	    const unsigned int m_num_stack = vbool16::shift1[sindex] - 1;
 	    const vbool16 m_num_stack_low  = toMask(m_num_stack);
 	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
-	    const vint16 snode_low  = load16i((int*)stack_node + 0);
+	    const vint16 snode_low  = vint16::load((int*)stack_node + 0);
 	    const vbool16 m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (vbool16)1;
 	    compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
 	    compactustore16i_low(m_stack_compact_low,(int*)stack_node + 0,snode_low);
@@ -440,8 +440,8 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	    const vbool16 m_num_stack_high = toMask(vbool16::shift1[sindex-16] - 1); 
 	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
 	    const vfloat16 snear_high = vfloat16::load(stack_dist + 16);
-	    const vint16 snode_low  = load16i((int*)stack_node + 0);
-	    const vint16 snode_high = load16i((int*)stack_node + 16);
+	    const vint16 snode_low  = vint16::load((int*)stack_node + 0);
+	    const vint16 snode_high = vint16::load((int*)stack_node + 16);
 	    const vbool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (vbool16)1;
 	    const vbool16 m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
 	    compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
@@ -460,9 +460,9 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	    const vfloat16 snear_0  = vfloat16::load(stack_dist + 0);
 	    const vfloat16 snear_16 = vfloat16::load(stack_dist + 16);
 	    const vfloat16 snear_32 = vfloat16::load(stack_dist + 32);
-	    const vint16 snode_0  = load16i((int*)stack_node + 0);
-	    const vint16 snode_16 = load16i((int*)stack_node + 16);
-	    const vint16 snode_32 = load16i((int*)stack_node + 32);
+	    const vint16 snode_0  = vint16::load((int*)stack_node + 0);
+	    const vint16 snode_16 = vint16::load((int*)stack_node + 16);
+	    const vint16 snode_32 = vint16::load((int*)stack_node + 32);
 	    const vbool16 m_stack_compact_0  = le(               snear_0 ,max_dist_xyz) | (vbool16)1;
 	    const vbool16 m_stack_compact_16 = le(               snear_16,max_dist_xyz);
 	    const vbool16 m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);

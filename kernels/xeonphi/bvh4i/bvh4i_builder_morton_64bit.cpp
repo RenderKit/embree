@@ -45,7 +45,7 @@ namespace embree
     
 #pragma unroll(16)
     for (size_t i=0; i<16; i++)
-      store16i(&radixCount[i*16],vint16::zero());
+      vint16::store(&radixCount[i*16],vint16::zero());
 
     for (size_t i=0; i<size; i++) 
       radixCount[morton[i].getByte(byteIndex)]++;
@@ -990,9 +990,9 @@ namespace embree
 
 	      if (unlikely(slot == NUM_MORTON_IDS_PER_BLOCK))
 		{
-		  vint16 m64 = load16i((int*)local);
+		  vint16 m64 = vint16::load((int*)local);
 		  assert((size_t)dest % 64 == 0);
-		  store16i_ngo(dest,m64);	    
+		  vint16::store_ngo(dest,m64);	    
 		  slot = 0;
 		  dest += NUM_MORTON_IDS_PER_BLOCK;
 		}
@@ -1010,9 +1010,9 @@ namespace embree
 
     if (unlikely(slot != 0))
       {
-	vint16 m64 = load16i((int*)local);
+	vint16 m64 = vint16::load((int*)local);
 	assert((size_t)dest % 64 == 0);
-	store16i_ngo(dest,m64);	    
+	vint16::store_ngo(dest,m64);	    
       }
 
     //PRINT(__bsr(global_code));
@@ -1045,7 +1045,7 @@ namespace embree
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&radixCount[threadID][i*16],vint16::zero());
+	vint16::store(&radixCount[threadID][i*16],vint16::zero());
 
 
       for (size_t i=startID; i<endID; i+=NUM_MORTON_IDS_PER_BLOCK) {
@@ -1075,28 +1075,28 @@ namespace embree
       for (size_t i=0; i<threadID; i++)
 #pragma unroll(16)
 	for (size_t j=0; j<16; j++)
-	  count[j] += load16i((int*)&radixCount[i][j*16]);
+	  count[j] += vint16::load((int*)&radixCount[i][j*16]);
       
       __aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&inner_offset[i*16],count[i]);
+	vint16::store(&inner_offset[i*16],count[i]);
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	count[i] = load16i((int*)&inner_offset[i*16]);
+	count[i] = vint16::load((int*)&inner_offset[i*16]);
 
       for (size_t i=threadID; i<numThreads; i++)
 #pragma unroll(16)
 	for (size_t j=0; j<16; j++)
-	  count[j] += load16i((int*)&radixCount[i][j*16]);	  
+	  count[j] += vint16::load((int*)&radixCount[i][j*16]);	  
 
      __aligned(64) unsigned int total[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&total[i*16],count[i]);
+	vint16::store(&total[i*16],count[i]);
 
       __aligned(64) unsigned int offset[RADIX_BUCKETS];
 

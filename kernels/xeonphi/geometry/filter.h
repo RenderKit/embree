@@ -93,8 +93,8 @@ namespace embree
     const vfloat16 ray_u = ray.u;           vfloat16::store(valid,&ray.u,u);
     const vfloat16 ray_v = ray.v;           vfloat16::store(valid,&ray.v,v);
     const vfloat16 ray_tfar = ray.tfar;     vfloat16::store(valid,&ray.tfar,t);
-    const vint16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
-    const vint16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
+    const vint16 ray_geomID = ray.geomID; vint16::store(valid,&ray.geomID,geomID);
+    const vint16 ray_primID = ray.primID; vint16::store(valid,&ray.primID,primID);
     const vfloat16 ray_Ng_x = ray.Ng.x;     vfloat16::store(valid,&ray.Ng.x,Ng.x);
     const vfloat16 ray_Ng_y = ray.Ng.y;     vfloat16::store(valid,&ray.Ng.y,Ng.y);
     const vfloat16 ray_Ng_z = ray.Ng.z;     vfloat16::store(valid,&ray.Ng.z,Ng.z);
@@ -113,8 +113,8 @@ namespace embree
       vfloat16::store(valid_failed,&ray.u,ray_u);
       vfloat16::store(valid_failed,&ray.v,ray_v);
       vfloat16::store(valid_failed,&ray.tfar,ray_tfar);
-      store16i(valid_failed,&ray.geomID,ray_geomID);
-      store16i(valid_failed,&ray.primID,ray_primID);
+      vint16::store(valid_failed,&ray.geomID,ray_geomID);
+      vint16::store(valid_failed,&ray.primID,ray_primID);
       vfloat16::store(valid_failed,&ray.Ng.x,ray_Ng_x);
       vfloat16::store(valid_failed,&ray.Ng.y,ray_Ng_y);
       vfloat16::store(valid_failed,&ray.Ng.z,ray_Ng_z);
@@ -131,8 +131,8 @@ namespace embree
     vfloat16::store(valid,&ray.u,u);
     vfloat16::store(valid,&ray.v,v);
     vfloat16::store(valid,&ray.tfar,t);
-    store16i(valid,&ray.geomID,geomID);
-    store16i(valid,&ray.primID,primID);
+    vint16::store(valid,&ray.geomID,geomID);
+    vint16::store(valid,&ray.primID,primID);
     vfloat16::store(valid,&ray.Ng.x,Ng.x);
     vfloat16::store(valid,&ray.Ng.y,Ng.y);
     vfloat16::store(valid,&ray.Ng.z,Ng.z);
@@ -147,7 +147,7 @@ namespace embree
 
     /* restore hit if filter not passed */
     vfloat16::store(valid_failed,&ray.tfar,ray_tfar);
-    store16i(valid_failed,&ray.geomID,ray_geomID);
+    vint16::store(valid_failed,&ray.geomID,ray_geomID);
     return valid_passed;
   }
 
@@ -178,8 +178,8 @@ namespace embree
       vfloat16::store(&ray.u,ray_u);
       vfloat16::store(&ray.v,ray_v);
       vfloat16::store(&ray.tfar,ray_tfar);
-      store16i(&ray.geomID,ray_geomID);
-      store16i(&ray.primID,ray_primID);
+      vint16::store(&ray.geomID,ray_geomID);
+      vint16::store(&ray.primID,ray_primID);
       vfloat16::store(&ray.Ng.x,ray_Ng_x);
       vfloat16::store(&ray.Ng.y,ray_Ng_y);
       vfloat16::store(&ray.Ng.z,ray_Ng_z);
@@ -214,7 +214,7 @@ namespace embree
     /* restore hit if filter not passed */
     if (unlikely(!passed)) {
       vfloat16::store(&ray.tfar,ray_tfar);
-      store16i(&ray.geomID,ray_geomID);
+      vint16::store(&ray.geomID,ray_geomID);
     }
     return passed;
   }

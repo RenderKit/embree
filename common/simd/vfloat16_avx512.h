@@ -215,6 +215,7 @@ namespace embree
     return _mm512_gmaxabs_ps(a,a); 
 #endif
   }
+  
   __forceinline const vfloat16 signmsk   ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline const vfloat16 rcp  ( const vfloat16& a ) {

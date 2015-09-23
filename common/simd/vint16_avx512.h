@@ -20,7 +20,7 @@ namespace embree
 { 
   /* 16-wide AVX-512 integer type */
   template<>
-  struct vint<16>
+    struct vint<16>
   {
     typedef vboolf16 Bool;
     typedef vint16   Int;
@@ -81,6 +81,24 @@ namespace embree
     __forceinline static vint16 one () { return _mm512_set_1to16_epi32(1); }
     __forceinline static vint16 neg_one () { return _mm512_set_1to16_epi32(-1); }
 
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Loads and Stores
+    ////////////////////////////////////////////////////////////////////////////////
+
+    static __forceinline void store_nt(void *__restrict__ ptr, const vint16& a) {
+#if defined(__AVX512F__)
+      _mm512_stream_si512(ptr,a);
+#else
+      _mm512_storenr_ps(ptr,_mm512_castsi512_ps(a));
+#endif
+    }
+
+#if defined(__MIC__)  
+    static __forceinline void store_ngo(void *__restrict__ ptr, const vint16& a) {
+      _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
+    }
+#endif
+
     static __forceinline vint16 loadu(const void* addr)
     {
 #if defined(__AVX512F__)
@@ -92,7 +110,11 @@ namespace embree
 #endif
     }
 
-    static __forceinline vint16 load(const void* addr) {
+    static __forceinline vint16 load(const vint16* addr) {
+      return _mm512_load_si512(addr);
+    }
+
+    static __forceinline vint16 load(const int* addr) {
       return _mm512_load_si512(addr);
     }
 
@@ -102,10 +124,10 @@ namespace embree
 
     static __forceinline void storeu(void* ptr, const vint16& f ) {
 #if defined(__AVX512F__)
-       _mm512_storeu_si512(ptr,f);
+      _mm512_storeu_si512(ptr,f);
 #else
-       _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
-       _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
 #endif
     }
 
@@ -324,7 +346,7 @@ namespace embree
   }
 
   template<int i>
-  __forceinline vint16 align_shift_right(const vint16& a, const vint16& b)
+    __forceinline vint16 align_shift_right(const vint16& a, const vint16& b)
   {
     return _mm512_alignr_epi32(a,b,i); 
   };
@@ -369,13 +391,13 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vint16 load1i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
-  }
+  /* __forceinline vint16 load1i(const int *const ptr) { */
+  /*   return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE); */
+  /* } */
 
-  __forceinline vint16 load16i(const int *const ptr) {
-    return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);
-  }
+  /* __forceinline vint16 load16i(const int *const ptr) { */
+  /*   return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE); */
+  /* } */
   
   __forceinline vint16 load1i_uint8(const unsigned char *const ptr) {
     return _mm512_extload_epi32(ptr,_MM_UPCONV_EPI32_UINT8,_MM_BROADCAST_1X16,_MM_HINT_NONE);
@@ -461,10 +483,10 @@ namespace embree
     _mm512_mask_i32extscatter_epi32((int*)ptr,mask,index,v,_MM_DOWNCONV_EPI32_NONE,scale,0);
   }
   
-  __forceinline void ustore16i(void *addr, const vint16& reg) {
-    _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-    _mm512_extpackstorehi_epi32((int*)addr+16 ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
-  }
+  /* __forceinline void ustore16i(void *addr, const vint16& reg) { */
+  /*   _mm512_extpackstorelo_epi32((int*)addr+0  ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE); */
+  /*   _mm512_extpackstorehi_epi32((int*)addr+16 ,reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE); */
+  /* } */
   
   /* pass by value to avoid compiler generating inefficient code */
   __forceinline void compactustore16i(const vboolf16 mask,void * addr, const vint16 reg) {
@@ -489,34 +511,19 @@ namespace embree
     _mm512_mask_extpackstorehi_epi32((int*)addr+16  ,mask, reg, _MM_DOWNCONV_EPI32_NONE, _MM_HINT_NONE);
   }
   
-  __forceinline void store16i_nr(void *__restrict__ ptr, const vint16& a) {
-#if defined(__AVX512F__)
-    _mm512_stream_si512(ptr,a);
-#else
-    _mm512_storenr_ps(ptr,_mm512_castsi512_ps(a));
-#endif
-  }
   
-  __forceinline void store16i_ngo(void *__restrict__ ptr, const vint16& a) {
-#if defined(__AVX512F__)
-    _mm512_stream_si512(ptr,a);
-#else
-    _mm512_storenrngo_ps(ptr,_mm512_castsi512_ps(a));
-#endif
-  }
-  
-  __forceinline void store16i(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
-    _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
-  }
+  /* __forceinline void store16i(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) { */
+  /*   _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE); */
+  /* } */
 
 
-  __forceinline void store16i_nt(void* __restrict__ addr, const vint16& v2) {
-    _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NT);
-  }
+  /* __forceinline void store16i_nt(void* __restrict__ addr, const vint16& v2) { */
+  /*   _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NT); */
+  /* } */
   
-  __forceinline void store16i(void* __restrict__ addr, const vint16& v2) {
-    _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE);
-  }
+  /* __forceinline void store16i(void* __restrict__ addr, const vint16& v2) { */
+  /*   _mm512_extstore_epi32(addr,v2,_MM_DOWNCONV_EPI32_NONE,_MM_HINT_NONE); */
+  /* } */
   
   __forceinline void store16i_uint8(const vboolf16& mask, void* __restrict__ addr, const vint16& v2) {
     _mm512_mask_extstore_epi32(addr,mask,v2,_MM_DOWNCONV_EPI32_UINT8,_MM_HINT_NONE);
@@ -540,18 +547,6 @@ namespace embree
     return permute(a,vint16(reverse_step));
   }
 
-  /* __forceinline vint16 prefix_sum2(const vint16& a) */
-  /* { */
-  /*   vint16 v = a; */
-  /*   v = mask_add(0xaaaa,v,v,swizzle(v,_MM_SWIZ_REG_CDAB)); */
-  /*   v = mask_add(0xcccc,v,v,swizzle(v,_MM_SWIZ_REG_BBBB)); */
-  /*   const vint16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD); */
-  /*   v = mask_add(0xf0f0,v,v,shuf_v0); */
-  /*   const vint16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD); */
-  /*   v = mask_add(0xff00,v,v,shuf_v1); */
-  /*   return v;   */
-  /* } */
-
   __forceinline vint16 prefix_sum(const vint16& a)
   {
     vint16 v = a;
@@ -563,12 +558,6 @@ namespace embree
     v = mask_add(0xff00,v,v,shuf_v1);
     return v;  
   }
-
-
-  /* __forceinline vint16 reverse_prefix_sum2(const vint16& a) */
-  /* { */
-  /*   return reverse(prefix_sum(reverse(a))); */
-  /* } */
 
   __forceinline vint16 reverse_prefix_sum(const vint16& a)
   {

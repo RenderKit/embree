@@ -168,7 +168,7 @@ namespace embree
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
-      store16i(valid & m_terminated,&ray.geomID,0);
+      vint16::store(valid & m_terminated,&ray.geomID,0);
     }
 
     typedef BVH4iIntersector16Chunk< Triangle1LeafIntersector  < true  >, false > Triangle1Intersector16ChunkMoellerFilter;

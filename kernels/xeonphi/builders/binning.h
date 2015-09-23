@@ -135,7 +135,7 @@ namespace embree
 
   /* __forceinline vfloat16 reverse(const vfloat16 &a)  */
   /* { */
-  /*   return _mm512_permutev_ps(load16i(reverse_identity),a); */
+  /*   return _mm512_permutev_ps(vint16::load(reverse_identity),a); */
   /* } */
   
   __forceinline vfloat16 prefix_area_rl(const vfloat16 min_x,
@@ -303,7 +303,7 @@ namespace embree
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 	// ------------------------------------------------------------------------      
-	const vint16 id = load16i(identity);
+	const vint16 id = vint16::load(identity);
 	const vbool16 m_update_x = eq(id,swAAAA(binID));
 	const vbool16 m_update_y = eq(id,swBBBB(binID));
 	const vbool16 m_update_z = eq(id,swCCCC(binID));
@@ -352,7 +352,7 @@ namespace embree
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 	// ------------------------------------------------------------------------      
-	const vint16 id = load16i(identity);
+	const vint16 id = vint16::load(identity);
 	const vbool16 m_update_x = eq(id,swAAAA(binID));
 	const vbool16 m_update_y = eq(id,swBBBB(binID));
 	const vbool16 m_update_z = eq(id,swCCCC(binID));
@@ -416,7 +416,7 @@ namespace embree
 	    assert(0 <= binID[1] && binID[1] < 16);
 	    assert(0 <= binID[2] && binID[2] < 16);
 
-	    const vint16 id = load16i(identity);
+	    const vint16 id = vint16::load(identity);
 	    const vbool16 m_update_x = eq(id,swAAAA(binID));
 	    const vbool16 m_update_y = eq(id,swBBBB(binID));
 	    const vbool16 m_update_z = eq(id,swCCCC(binID));
@@ -554,7 +554,7 @@ namespace embree
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 
-	const vint16 id = load16i(identity);
+	const vint16 id = vint16::load(identity);
 	const vbool16 m_update_x = eq(id,swAAAA(binID));
 	const vbool16 m_update_y = eq(id,swBBBB(binID));
 	const vbool16 m_update_z = eq(id,swCCCC(binID));
@@ -931,7 +931,7 @@ namespace embree
 	assert(0 <= binID[1] && binID[1] < 16); 
 	assert(0 <= binID[2] && binID[2] < 16); 
 
-	const vint16 id = load16i(identity);
+	const vint16 id = vint16::load(identity);
 	const vbool16 m_update_x = eq(id,swAAAA(binID));
 	const vbool16 m_update_y = eq(id,swBBBB(binID));
 	const vbool16 m_update_z = eq(id,swCCCC(binID));

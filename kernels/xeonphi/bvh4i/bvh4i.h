@@ -155,7 +155,7 @@ namespace embree
       }
 
       __forceinline size_t numChildren() const {
-	vint16 c = load16i((int*)lower);
+	vint16 c = vint16::load((int*)lower);
 	const size_t children = countbits(ne(0x8888,c,vint16(BVH4i::invalidNode))); 
 	assert(children >=2 && children <= 4);
 	return children;

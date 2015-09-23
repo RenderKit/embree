@@ -271,7 +271,7 @@ namespace embree
 	  {
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&parent->radixCount[threadIndex][i*16],vint16::zero());
+	      vint16::store(&parent->radixCount[threadIndex][i*16],vint16::zero());
 	    
 	    __assume_aligned(&parent->radixCount[threadIndex][0],64);
 
@@ -293,28 +293,28 @@ namespace embree
 	    for (size_t i=0; i<threadIndex; i++)
 #pragma unroll(16)
 	      for (size_t j=0; j<16; j++)
-		count[j] += load16i((int*)&parent->radixCount[i][j*16]);
+		count[j] += vint16::load((int*)&parent->radixCount[i][j*16]);
       
 	    __aligned(64) unsigned int inner_offset[BUCKETS];
 
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&inner_offset[i*16],count[i]);
+	      vint16::store(&inner_offset[i*16],count[i]);
 
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      count[i] = load16i((int*)&inner_offset[i*16]);
+	      count[i] = vint16::load((int*)&inner_offset[i*16]);
 
 	    for (size_t i=threadIndex; i<threadCount; i++)
 #pragma unroll(16)
 	      for (size_t j=0; j<16; j++)
-		count[j] += load16i((int*)&parent->radixCount[i][j*16]);	  
+		count[j] += vint16::load((int*)&parent->radixCount[i][j*16]);	  
 
 	    __aligned(64) unsigned int total[BUCKETS];
 
 #pragma unroll(16)
 	    for (size_t i=0; i<16; i++)
-	      store16i(&total[i*16],count[i]);
+	      vint16::store(&total[i*16],count[i]);
 
 	    __aligned(64) unsigned int offset[BUCKETS];
 

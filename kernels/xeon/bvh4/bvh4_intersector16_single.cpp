@@ -96,7 +96,7 @@ namespace embree
           terminated |= 1 << i;
 	  //terminated[i] = -1;
       }
-      store16i(valid & terminated,&ray.geomID,0);
+      vint16::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
 

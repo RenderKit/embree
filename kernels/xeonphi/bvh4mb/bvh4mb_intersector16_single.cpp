@@ -179,7 +179,7 @@ namespace embree
 	}
 
 
-      store16i(m_valid & m_terminated,&ray16.geomID,0);
+      vint16::store(m_valid & m_terminated,&ray16.geomID,0);
     }
     
     DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16SingleMoeller, BVH4mbIntersector16Single<Triangle1mbLeafIntersector>);

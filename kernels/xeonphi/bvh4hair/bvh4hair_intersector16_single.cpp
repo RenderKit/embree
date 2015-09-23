@@ -356,7 +356,7 @@ namespace embree
 	}
 
 
-      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+      vint16::store(m_valid & toMask(terminated),&ray16.geomID,0);
     }
     
 

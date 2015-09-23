@@ -439,7 +439,7 @@ namespace embree
 		  const vint16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
 		  const vint16 final = select(0x5555,code,mID);      
 		  assert((size_t)dest % 64 == 0);
-		  store16i_ngo(dest,final);	    
+                  vint16::store_ngo(dest,final);	    
 		  slot = 0;
 		  dest += 8;
 		}
@@ -455,7 +455,7 @@ namespace embree
 	const vint16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
 	const vint16 final = select(0x5555,code,mID);      
 	assert((size_t)dest % 64 == 0);
-	store16i_ngo(dest,final);	    
+	vint16::store_ngo(dest,final);	    
       }
   }
   
@@ -548,10 +548,10 @@ namespace embree
 	    compactustore16i_low(0x4,&binID3_z[2*j+0],binID);	    
 	  }
 
-	const vint16 mID = uload16i((int*)m);
+	const vint16 mID = vint16::loadu((int*)m);
 	const vint16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
 	const vint16 final = select(0x5555,code,mID);      
-	ustore16i(m,final);	
+        vint16::storeu(m,final);	
       }
     if (rest)
       {
@@ -575,7 +575,7 @@ namespace embree
 	    compactustore16i_low(0x4,&binID3_z[2*j+0],binID);	    
 	  }
 	const vbool16 mask = ((unsigned int)1 << (2*rest))-1;
-	const vint16 mID = uload16i((int*)m);
+	const vint16 mID = vint16::loadu((int*)m);
 	const vint16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
 	const vint16 final = select(0x5555,code,mID);      
 	compactustore16i(mask,(int*)m,final);		
@@ -617,7 +617,7 @@ namespace embree
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&radixCount[threadID][i*16],vint16::zero());
+	vint16::store(&radixCount[threadID][i*16],vint16::zero());
 
 
       for (size_t i=startID; i<endID; i+=NUM_MORTON_IDS_PER_BLOCK) {
@@ -647,28 +647,28 @@ namespace embree
       for (size_t i=0; i<threadID; i++)
 #pragma unroll(16)
 	for (size_t j=0; j<16; j++)
-	  count[j] += load16i((int*)&radixCount[i][j*16]);
+	  count[j] += vint16::load((int*)&radixCount[i][j*16]);
       
       __aligned(64) unsigned int inner_offset[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&inner_offset[i*16],count[i]);
+	vint16::store(&inner_offset[i*16],count[i]);
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	count[i] = load16i((int*)&inner_offset[i*16]);
+	count[i] = vint16::load((int*)&inner_offset[i*16]);
 
       for (size_t i=threadID; i<numThreads; i++)
 #pragma unroll(16)
 	for (size_t j=0; j<16; j++)
-	  count[j] += load16i((int*)&radixCount[i][j*16]);	  
+	  count[j] += vint16::load((int*)&radixCount[i][j*16]);	  
 
      __aligned(64) unsigned int total[RADIX_BUCKETS];
 
 #pragma unroll(16)
       for (size_t i=0; i<16; i++)
-	store16i(&total[i*16],count[i]);
+	vint16::store(&total[i*16],count[i]);
 
       __aligned(64) unsigned int offset[RADIX_BUCKETS];
 
