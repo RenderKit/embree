@@ -267,7 +267,7 @@ namespace embree
     void wait_for_threads(size_t threadCount);
 
     /*! thread loop for all worker threads */
-    void thread_loop(size_t threadIndex);
+    std::exception_ptr thread_loop(size_t threadIndex);
 
     /*! steals a task from a different thread */
     bool steal_from_other_threads(Thread& thread);
@@ -311,19 +311,18 @@ namespace embree
       threadLocal[threadIndex] = nullptr;
       swapThread(oldThread);
 
+      /* remember exception to throw */
+      std::exception_ptr except = nullptr;
+      if (cancellingException) except = cancellingException;
+
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
-      while (threadCounter > 0) {
-        yield();
-      }
+      while (threadCounter > 0) yield();
+      cancellingException = nullptr;
 
-      /* reset cancelled state */
-      if (cancellingException) {
-        std::exception_ptr except = cancellingException;
-        cancellingException = nullptr;
-        //std::rethrow_exception(except);
-        throw std::runtime_error("task cancelled");
-      }
+      /* re-throw proper exception */
+      if (except) 
+        std::rethrow_exception(except);
     }
 
     /* spawn a new task at the top of the threads task stack */

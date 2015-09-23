@@ -275,7 +275,8 @@ namespace embree
     size_t threadIndex = allocThreadIndex();
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
-    thread_loop(threadIndex);
+    std::exception_ptr except = thread_loop(threadIndex);
+    if (except) std::rethrow_exception(except);
   }
 
   void TaskSchedulerTBB::reset() {
@@ -307,7 +308,7 @@ namespace embree
     return !thread->scheduler->cancellingException;
   }
 
-  void TaskSchedulerTBB::thread_loop(size_t threadIndex)
+  std::exception_ptr TaskSchedulerTBB::thread_loop(size_t threadIndex)
   {
     /* allocate thread structure */
     Thread thread(threadIndex,this);
@@ -336,10 +337,14 @@ namespace embree
     threadLocal[threadIndex] = nullptr;
     swapThread(oldThread);
 
+    /* remember exception to throw */
+    std::exception_ptr except = nullptr;
+    if (cancellingException) except = cancellingException;
+
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);
-    while (threadCounter > 0)
-      yield();
+    while (threadCounter > 0) yield();
+    return except;
   }
 
   bool TaskSchedulerTBB::steal_from_other_threads(Thread& thread)
