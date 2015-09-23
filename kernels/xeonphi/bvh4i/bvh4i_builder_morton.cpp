@@ -809,7 +809,7 @@ namespace embree
 
 	bounds_min = min(bounds_min,min(v0,min(v1,v2)));
 	bounds_max = max(bounds_max,max(v0,max(v1,v2)));
-	store16f_ngo(&accel[start+i],tri_accel);
+	vfloat16::store_ngo(&accel[start+i],tri_accel);
       }
 
     store3f(&node[current.parentNodeID].lower[current.parentLocalID],bounds_min);
@@ -852,8 +852,8 @@ namespace embree
     vfloat16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
     vfloat16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
-    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
-    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
+    vfloat16::store_ngo((float*)&node[currentIndex].lower,init_lower);
+    vfloat16::store_ngo((float*)&node[currentIndex].upper,init_upper);
 
 
     __aligned(64) BBox3fa bounds; 
@@ -990,8 +990,8 @@ namespace embree
     vfloat16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
     vfloat16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
-    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
-    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
+    vfloat16::store_ngo((float*)&node[currentIndex].lower,init_lower);
+    vfloat16::store_ngo((float*)&node[currentIndex].upper,init_upper);
 
     /* recurse into each child */
     for (size_t i=0; i<numChildren; i++) 
@@ -1070,8 +1070,8 @@ namespace embree
     vfloat16 init_lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
     vfloat16 init_upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
 
-    store16f_ngo((float*)&node[currentIndex].lower,init_lower);
-    store16f_ngo((float*)&node[currentIndex].upper,init_upper);
+    vfloat16::store_ngo((float*)&node[currentIndex].lower,init_lower);
+    vfloat16::store_ngo((float*)&node[currentIndex].upper,init_upper);
 
     /* recurse into each child */
     __aligned(64) BBox3fa bounds;
