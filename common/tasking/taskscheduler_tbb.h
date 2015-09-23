@@ -299,8 +299,11 @@ namespace embree
 
       try {
         while (thread.tasks.execute_local(thread,nullptr));
-      } catch (...) {
-        isCancelled = true;
+      } 
+      catch (...) 
+      {
+        if (!cancellingException)
+          cancellingException = std::current_exception();
       }
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
@@ -315,9 +318,11 @@ namespace embree
       }
 
       /* reset cancelled state */
-      if (isCancelled) {
-        isCancelled = false;
-        throw std::runtime_error("task cancelled"); // FIXME: rethrow original exception
+      if (cancellingException) {
+        std::exception_ptr except = cancellingException;
+        cancellingException = nullptr;
+        //std::rethrow_exception(except);
+        throw std::runtime_error("task cancelled");
       }
     }
 
@@ -386,7 +391,7 @@ namespace embree
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;
-    volatile bool isCancelled;       //!< set by workers when exception is catched
+    std::exception_ptr cancellingException;
     MutexSys mutex;
     ConditionSys condition;
 
