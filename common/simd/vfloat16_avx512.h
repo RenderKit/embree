@@ -152,21 +152,6 @@ namespace embree
     __forceinline static vfloat16 inf () { return _mm512_set_1to16_ps((float)pos_inf); }
     __forceinline static vfloat16 minus_inf () { return _mm512_set_1to16_ps((float)neg_inf); }
 
-    static __forceinline vfloat16 loadu(const void* addr)
-    {
-#if defined(__AVX512F__)
-      return _mm512_loadu_ps(addr);  
-#else
-      vfloat16 r = vfloat16::undefined();
-      r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-      return _mm512_extloadunpackhi_ps(r, (float*)addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
-#endif
-    }
-
-    static __forceinline vfloat16 load(const void *f) {
-      return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
@@ -438,13 +423,6 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
-
-  /* __forceinline vfloat16 vround(const vfloat16& f,  */
-  /*                            const _MM_ROUND_MODE_ENUM mode,  */
-  /*                            const _MM_EXP_ADJ_ENUM exp = _MM_EXPADJ_NONE)  */
-  /* {  */
-  /*   return _mm512_round_ps(f,mode,exp);  */
-  /* } */
   
   __forceinline vfloat16 floor(const vfloat16& a) {
 #if defined(__AVX512F__)
@@ -701,13 +679,13 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 load1f(const void *f) {
-    return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);  
-  }
+  /* __forceinline vfloat16 load1f(const void *f) { */
+  /*   return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);   */
+  /* } */
   
-  __forceinline vfloat16 load16f(const void *f) {
-    return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
-  }
+  /* __forceinline vfloat16 load16f(const void *f) { */
+  /*   return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);   */
+  /* } */
 
   __forceinline vfloat16 load16f(const vfloat16 d, const vboolf16 valid, const void *f) {
     return _mm512_mask_extload_ps(d,valid,f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  

@@ -53,8 +53,8 @@ namespace embree
 	prefetch<PFHINT_L1>((char*)node + 3*64);
 
 	const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-	const vfloat16 lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
-	const vfloat16 upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
+	const vfloat16 lower = one_time  * vfloat16::load((float*)nodeMB->lower) + time * vfloat16::load((float*)nodeMB->lower_t1);
+	const vfloat16 upper = one_time  * vfloat16::load((float*)nodeMB->upper) + time * vfloat16::load((float*)nodeMB->upper_t1);
 		  
         
 	/* intersect single ray with 4 bounding boxes */
@@ -172,8 +172,8 @@ namespace embree
 	prefetch<PFHINT_L1>((char*)node + 3*64);
 
 	const BVH4mb::Node* __restrict__ const nodeMB = (BVH4mb::Node*)node;
-	const vfloat16 lower = one_time  * load16f((float*)nodeMB->lower) + time * load16f((float*)nodeMB->lower_t1);
-	const vfloat16 upper = one_time  * load16f((float*)nodeMB->upper) + time * load16f((float*)nodeMB->upper_t1);
+	const vfloat16 lower = one_time  * vfloat16::load((float*)nodeMB->lower) + time * vfloat16::load((float*)nodeMB->lower_t1);
+	const vfloat16 upper = one_time  * vfloat16::load((float*)nodeMB->upper) + time * vfloat16::load((float*)nodeMB->upper_t1);
         
 	/* intersect single ray with 4 bounding boxes */
 	vfloat16 tLowerXYZ = select(m7777,rdir_xyz,min_dist_xyz);

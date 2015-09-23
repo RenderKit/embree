@@ -171,8 +171,8 @@ namespace embree
       }
 
       __forceinline vfloat16 halfAreaBounds() const {
-	const vfloat16 l = load16f(lower);
-	const vfloat16 u = load16f(upper);
+	const vfloat16 l = vfloat16::load((float*)lower);
+	const vfloat16 u = vfloat16::load((float*)upper);
 	const vfloat16 diag = u-l;
 	const vfloat16 dx = swAAAA(diag);
 	const vfloat16 dy = swBBBB(diag);
@@ -211,7 +211,7 @@ namespace embree
 
       __forceinline bool isPoint(size_t i) const {
 	vbool16 m_lane = ((unsigned int)0x7) << (4*i);
-	vbool16 m_box  = eq(m_lane,load16f(lower),load16f(upper));
+	vbool16 m_box  = eq(m_lane,vfloat16::load((float*)lower),vfloat16::load((float*)upper));
 	return (unsigned int)m_box == (unsigned int)m_lane;
       }
 
@@ -380,8 +380,8 @@ namespace embree
 	const vfloat16 maxXYZ = select(0x7777,max(max(u0,u1),max(u2,u3)),vfloat16::one());
 	const vfloat16 diffXYZ = maxXYZ - minXYZ;
 
-	const vfloat16 nlower = load16f(node.lower);
-	const vfloat16 nupper = load16f(node.upper);
+	const vfloat16 nlower = vfloat16::load((float*)node.lower);
+	const vfloat16 nupper = vfloat16::load((float*)node.upper);
 	const vbool16 isInvalid = eq(0x7777,nlower,pos_inf);
 
 	const vfloat16 node_lowerXYZ = select(vbool16(0x7777) ^ isInvalid,nlower,minXYZ); 

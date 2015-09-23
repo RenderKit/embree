@@ -105,10 +105,10 @@ namespace embree
     {
       STAT3(normal.trav_prims,1,1,1);
 
-      const vfloat16 c0 = load16f(&coeff01[0]);
-      const vfloat16 c1 = load16f(&coeff01[1]);
-      const vfloat16 c2 = load16f(&coeff01[2]);
-      const vfloat16 c3 = load16f(&coeff01[3]);
+      const vfloat16 c0 = vfloat16::load((float*)&coeff01[0]);
+      const vfloat16 c1 = vfloat16::load((float*)&coeff01[1]);
+      const vfloat16 c2 = vfloat16::load((float*)&coeff01[2]);
+      const vfloat16 c3 = vfloat16::load((float*)&coeff01[3]);
 
       const vfloat16 zero = vfloat16::zero();
       const vfloat16 one  = vfloat16::one();
@@ -221,10 +221,10 @@ namespace embree
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
 
 
-      const vfloat16 c0 = load16f(&coeff01[0]);
-      const vfloat16 c1 = load16f(&coeff01[1]);
-      const vfloat16 c2 = load16f(&coeff01[2]);
-      const vfloat16 c3 = load16f(&coeff01[3]);
+      const vfloat16 c0 = vfloat16::load((float*)&coeff01[0]);
+      const vfloat16 c1 = vfloat16::load((float*)&coeff01[1]);
+      const vfloat16 c2 = vfloat16::load((float*)&coeff01[2]);
+      const vfloat16 c3 = vfloat16::load((float*)&coeff01[3]);
 
       const Vec4vf16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
@@ -322,10 +322,10 @@ namespace embree
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
 
 
-      const vfloat16 c0 = load16f(&coeff01[0]);
-      const vfloat16 c1 = load16f(&coeff01[1]);
-      const vfloat16 c2 = load16f(&coeff01[2]);
-      const vfloat16 c3 = load16f(&coeff01[3]);
+      const vfloat16 c0 = vfloat16::load((float*)&coeff01[0]);
+      const vfloat16 c1 = vfloat16::load((float*)&coeff01[1]);
+      const vfloat16 c2 = vfloat16::load((float*)&coeff01[2]);
+      const vfloat16 c3 = vfloat16::load((float*)&coeff01[3]);
 
       const Vec4vf16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 
@@ -422,10 +422,10 @@ namespace embree
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
 
 
-      const vfloat16 c0 = load16f(&coeff01[0]);
-      const vfloat16 c1 = load16f(&coeff01[1]);
-      const vfloat16 c2 = load16f(&coeff01[2]);
-      const vfloat16 c3 = load16f(&coeff01[3]);
+      const vfloat16 c0 = vfloat16::load((float*)&coeff01[0]);
+      const vfloat16 c1 = vfloat16::load((float*)&coeff01[1]);
+      const vfloat16 c2 = vfloat16::load((float*)&coeff01[2]);
+      const vfloat16 c3 = vfloat16::load((float*)&coeff01[3]);
 
       const Vec4vf16 p0 = eval16(p0123_2D,c0,c1,c2,c3);
 

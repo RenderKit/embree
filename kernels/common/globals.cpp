@@ -84,7 +84,7 @@ namespace embree
 
     {
       __aligned(64) float STEP[16] = {0/16.0f,1/16.0f,2/16.0f,3/16.0f,4/16.0f,5/16.0f,6/16.0f,7/16.0f,8/16.0f,9/16.0f,10/16.0f,11/16.0f,12/16.0f,13/16.0f,14/16.0f,15/16.0f};
-      vfloat16 step16 = load16f(STEP);
+      vfloat16 step16 = vfloat16::load(STEP);
       const vfloat16 t1 = step16;
       const vfloat16 t0 = 1.0f-t1;
       coeff01[0] = t0 * t0 * t0;

@@ -212,11 +212,11 @@ namespace embree
 	    
 		  /* intersect single ray with 4 bounding boxes */
 
-		  tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),precalculations.org_rdir_xyz);
-		  tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),precalculations.org_rdir_xyz);
+		  tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,vfloat16::load(plower),precalculations.org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,vfloat16::load(plower),precalculations.org_rdir_xyz);
 
-		  tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),precalculations.org_rdir_xyz);
-		  tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),precalculations.org_rdir_xyz);
+		  tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,vfloat16::load(pupper),precalculations.org_rdir_xyz);
+		  tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,vfloat16::load(pupper),precalculations.org_rdir_xyz);
 
 		  const vfloat16 tLower = tLowerXYZ;
 		  const vfloat16 tUpper = tUpperXYZ;
@@ -379,8 +379,8 @@ namespace embree
         {
 	  stack_node[1] = bvh->root;
 	  size_t sindex = 2;
-	  const vfloat16 dir4_xyz  = load16f(&dir[rayIndex4]);
-	  const vfloat16 org4_xyz  = load16f(&org[rayIndex4]);
+	  const vfloat16 dir4_xyz  = vfloat16::load(&dir[rayIndex4]);
+	  const vfloat16 org4_xyz  = vfloat16::load(&org[rayIndex4]);
 	  const vfloat16 rdir4_xyz = rcp_safe(dir4_xyz);
 	  const vfloat16 min_dist4 = swDDDD(org4_xyz);
 	  vfloat16       max_dist4 = swDDDD(dir4_xyz);
