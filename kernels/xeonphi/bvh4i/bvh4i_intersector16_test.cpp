@@ -55,10 +55,10 @@ namespace embree
       r3 = uload16f_low(0x4444,&z[12],r3);
       r3 = uload16f_low(0x8888,&w[12],r3);
 
-      vfloat16::store(&dest[ 0],r0);
-      vfloat16::store(&dest[ 4],r1);
-      vfloat16::store(&dest[ 8],r2);
-      vfloat16::store(&dest[12],r3);
+      vfloat16::store((float*)&dest[ 0],r0);
+      vfloat16::store((float*)&dest[ 4],r1);
+      vfloat16::store((float*)&dest[ 8],r2);
+      vfloat16::store((float*)&dest[12],r3);
     }
 
     // ============================================================================================

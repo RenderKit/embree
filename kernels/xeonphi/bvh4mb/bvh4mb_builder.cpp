@@ -125,7 +125,7 @@ namespace embree
 	    if (numLocalPrims == 2)
 	      {
 		numLocalPrims = 0;
-		store16f_ngo(dest,twoAABBs);
+		vfloat16::store_ngo(dest,twoAABBs);
 		dest+=2;
 	      }
 	  }	
@@ -182,11 +182,11 @@ namespace embree
 
     const vfloat16 tri_accel_t0 = initTriangle1(v_t0[0],v_t0[1],v_t0[2],gID,pID,vint16(mesh->mask));
 
-    store16f_ngo(&acc->t0,tri_accel_t0);
+    vfloat16::store_ngo(&acc->t0,tri_accel_t0);
 
     if ((int)mesh->numTimeSteps == 1)
       {
-	store16f_ngo(&acc->t1,tri_accel_t0);
+	vfloat16::store_ngo(&acc->t1,tri_accel_t0);
       }
     else
       {
@@ -195,7 +195,7 @@ namespace embree
 	const Vec3vf16 v_t1 = mesh->getTriangleVertices<PFHINT_L1>(tri,1);
 	const vfloat16 tri_accel_t1 = initTriangle1(v_t1[0],v_t1[1],v_t1[2],gID,pID,vint16(mesh->mask));
 
-	store16f_ngo(&acc->t1,tri_accel_t1);
+	vfloat16::store_ngo(&acc->t1,tri_accel_t1);
       }
   }
 
@@ -259,8 +259,8 @@ namespace embree
 	m_lane = (unsigned int)m_lane << 4;
 	parentBounds.extend( bounds );
       }
-    store16f_ngo((vfloat16*)n->lower_t1,node_lower_t1);
-    store16f_ngo((vfloat16*)n->upper_t1,node_upper_t1);            
+    vfloat16::store_ngo((vfloat16*)n->lower_t1,node_lower_t1);
+    vfloat16::store_ngo((vfloat16*)n->upper_t1,node_upper_t1);            
 
     return parentBounds;
   }    
@@ -365,8 +365,8 @@ namespace embree
 	m_lane = (unsigned int)m_lane << 4;
 	parentBounds.extend( bounds );
       }
-    store16f_ngo((vfloat16*)n->lower_t1,node_lower_t1);
-    store16f_ngo((vfloat16*)n->upper_t1,node_upper_t1);            
+    vfloat16::store_ngo((vfloat16*)n->lower_t1,node_lower_t1);
+    vfloat16::store_ngo((vfloat16*)n->upper_t1,node_upper_t1);            
 
     return parentBounds;
 

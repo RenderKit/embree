@@ -38,7 +38,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();

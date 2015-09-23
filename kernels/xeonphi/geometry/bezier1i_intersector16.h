@@ -117,7 +117,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
 
       const vfloat16 p0123_org = p0123 - org_xyz;
 
@@ -215,7 +215,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
@@ -316,7 +316,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
@@ -416,7 +416,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);

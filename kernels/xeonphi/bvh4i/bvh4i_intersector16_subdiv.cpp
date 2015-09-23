@@ -37,10 +37,10 @@ namespace embree
 				       const void *__restrict__ const ptr2,
 				       const void *__restrict__ const ptr3) 
   {
-    vfloat16 v = uload16f((float*)ptr0);
-    v = uload16f(v,0xf0,(float*)ptr1);
-    v = uload16f(v,0xf00,(float*)ptr2);
-    v = uload16f(v,0xf000,(float*)ptr3);
+    vfloat16 v = vfloat16::loadu((float*)ptr0);
+    v = vfloat16::loadu(v,0xf0,(float*)ptr1);
+    v = vfloat16::loadu(v,0xf00,(float*)ptr2);
+    v = vfloat16::loadu(v,0xf000,(float*)ptr3);
     return v;
   }
 
@@ -141,9 +141,9 @@ namespace embree
 	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
 	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
 
-	      const vfloat16 x = uload16f(&grid_x_array[ offset ]);
-	      const vfloat16 y = uload16f(&grid_y_array[ offset ]);
-	      const vfloat16 z = uload16f(&grid_z_array[ offset ]);
+	      const vfloat16 x = vfloat16::loadu(&grid_x_array[ offset ]);
+	      const vfloat16 y = vfloat16::loadu(&grid_y_array[ offset ]);
+	      const vfloat16 z = vfloat16::loadu(&grid_z_array[ offset ]);
 	      min_x = min(min_x,x);
 	      max_x = max(max_x,x);
 	      min_y = min(min_y,y);

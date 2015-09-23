@@ -185,7 +185,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
@@ -380,7 +380,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();
@@ -473,7 +473,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const void * __restrict__ accel = (void*)bvh->primitivesPtr();
       const void * __restrict__ nodes = (void*)bvh->nodePtr();

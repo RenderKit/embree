@@ -76,7 +76,7 @@ namespace embree
         if (unlikely(countbits(m_stackDist) <= BVH4i::hybridSIMDUtilSwitchThreshold)) 
 	  {
 	    float   *__restrict__ stack_dist_single = (float*)sptr_dist;
-	    store16f(stack_dist_single,inf);
+	    vfloat16::store(stack_dist_single,inf);
 
 	    /* traverse single ray */	  	  
 	    long rayIndex = -1;
