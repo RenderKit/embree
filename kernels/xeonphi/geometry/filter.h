@@ -18,7 +18,6 @@
 
 #include "../../common/geometry.h"
 #include "../../common/ray.h"
-#include "../../common/ray16.h"
 
 namespace embree
 {

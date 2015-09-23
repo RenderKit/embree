@@ -17,20 +17,7 @@
 #pragma once
 
 #include "../../common/geometry.h"
-
 #include "../../common/ray.h"
-
-#if defined(__SSE__)
-#include "../../common/ray4.h"
-#endif
-
-#if defined(__AVX__)
-#include "../../common/ray8.h"
-#endif
-
-#if defined(__AVX512F__)
-#include "../../common/ray16.h"
-#endif
 
 namespace embree
 {

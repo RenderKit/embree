@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh8.h"
-#include "../../common/ray4.h"
+#include "../../common/ray.h"
 #include "../../common/stack_item.h"
 
 namespace embree

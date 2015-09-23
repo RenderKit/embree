@@ -17,7 +17,7 @@
 #pragma once
 
 #include "object.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 
 namespace embree
 {

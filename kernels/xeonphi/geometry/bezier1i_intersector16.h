@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bezier1i.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 #include "filter.h"
 
 namespace embree
