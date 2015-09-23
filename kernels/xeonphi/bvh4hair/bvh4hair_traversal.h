@@ -221,8 +221,8 @@ namespace embree
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 	curNode = ref[closest_child_pos];
 
-	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
-	compactustore16i(m_pos,&stack_node[old_sindex],children);
+	vfloat16::storeu_compact(m_pos,&stack_dist[old_sindex],tNear);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],children);
 
 	if (unlikely(((unsigned int*)stack_dist)[sindex-3] < ((unsigned int*)stack_dist)[sindex-2]))
 	  {
@@ -398,7 +398,7 @@ namespace embree
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 	curNode = ref[closest_child_pos];
 
-	compactustore16i(m_pos,&stack_node[old_sindex],children);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],children);
       }
   }
 
@@ -444,10 +444,10 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	    const vint16 snode_high = vint16::load((int*)stack_node + 16);
 	    const vbool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (vbool16)1;
 	    const vbool16 m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
-	    compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
-	    compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
-	    compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
-	    compactustore16i(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
+	    vfloat16::storeu_compact(m_stack_compact_low,      stack_dist + 0,snear_low);
+	    vint16::storeu_compact(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+	    vfloat16::storeu_compact(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
+	    vint16::storeu_compact(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
 	    assert ((unsigned int )m_num_stack_high == ((vbool16::shift1[sindex] - 1) >> 16));
 
 	    sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
@@ -468,14 +468,14 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	    const vbool16 m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
 
 	    sindex = 0;
-	    compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
-	    compactustore16i(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
+	    vfloat16::storeu_compact(m_stack_compact_0,      stack_dist + sindex,snear_0);
+	    vint16::storeu_compact(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
 	    sindex += countbits(m_stack_compact_0);
-	    compactustore16f(m_stack_compact_16,      stack_dist + sindex,snear_16);
-	    compactustore16i(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
+	    vfloat16::storeu_compact(m_stack_compact_16,      stack_dist + sindex,snear_16);
+	    vint16::storeu_compact(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
 	    sindex += countbits(m_stack_compact_16);
-	    compactustore16f(m_stack_compact_32,      stack_dist + sindex,snear_32);
-	    compactustore16i(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
+	    vfloat16::storeu_compact(m_stack_compact_32,      stack_dist + sindex,snear_32);
+	    vint16::storeu_compact(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
 	    sindex += countbits(m_stack_compact_32);
 
 	    assert(sindex < 48);		  
@@ -487,32 +487,3 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
   
 };
 
-/* const vfloat16 xfm_dir_xyz = xfm_row_vector(row0,row1,row2,dir_xyz); */
-/* const vfloat16 xfm_org_xyz = xfm_row_point (row0,row1,row2,org_xyz1); // only use xfm_row_vector */
-
-/* const vfloat16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz ); */
-
-/* const vfloat16 tLowerXYZ = -(xfm_org_xyz * rcp_xfm_dir_xyz); */
-/* const vfloat16 tUpperXYZ = (vfloat16::one()  - xfm_org_xyz) * rcp_xfm_dir_xyz; */
-
-/* const vfloat16 min_dist = set_min_lanes(tNear_pos); */
-/* assert(sindex < 3*BVH4Hair::maxDepth+1); */
-        
-/* const vbool16 closest_child = eq(hitm,min_dist,tNear); */
-/* const unsigned long closest_child_pos = bitscan64(closest_child); */
-/* const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1))); */
-
-
-/* curNode = u_node->child_ref(closest_child_pos); */
-
-
-/* assert(curNode  != BVH4Hair::invalidNode); */
-
-/* long i = -1; */
-/* while((i = bitscan64(i,m_pos)) != BITSCAN_NO_BIT_SET_64)	     */
-/*   { */
-/* 	((unsigned int*)stack_dist)[sindex] = ((unsigned int*)&tNear)[i];		       */
-/* 	stack_node[sindex] = u_node->child_ref(i); */
-/* 	assert(stack_node[sindex]  != BVH4Hair::invalidNode); */
-/* 	sindex++; */
-/*   } */

@@ -226,8 +226,8 @@ namespace embree
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 	curNode = ((unsigned int*)node)[closest_child_pos];
-	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
-	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	vfloat16::storeu_compact(m_pos,&stack_dist[old_sindex],tNear);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],plower_node);
 
 	if (unlikely(((unsigned int*)stack_dist)[sindex-2] < ((unsigned int*)stack_dist)[sindex-1]))
 	  {
@@ -419,7 +419,7 @@ namespace embree
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 	curNode = ((unsigned int*)node)[closest_child_pos];
-	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],plower_node);
       }
 
   }
@@ -452,10 +452,10 @@ namespace embree
 	    const vint16 snode_high = vint16::load((int*)stack_node + 16);
 	    const vbool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (vbool16)1;
 	    const vbool16 m_stack_compact_high = le(m_num_stack_high,snear_high,max_dist_xyz);
-	    compactustore16f(m_stack_compact_low,      stack_dist + 0,snear_low);
-	    compactustore16i(m_stack_compact_low,(int*)stack_node + 0,snode_low);
-	    compactustore16f(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
-	    compactustore16i(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
+	    vfloat16::storeu_compact(m_stack_compact_low,      stack_dist + 0,snear_low);
+	    vint16::storeu_compact(m_stack_compact_low,(int*)stack_node + 0,snode_low);
+	    vfloat16::storeu_compact(m_stack_compact_high,      stack_dist + countbits(m_stack_compact_low),snear_high);
+	    vint16::storeu_compact(m_stack_compact_high,(int*)stack_node + countbits(m_stack_compact_low),snode_high);
 	    assert ((unsigned int )m_num_stack_high == ((vbool16::shift1[sindex] - 1) >> 16));
 
 	    sindex = countbits(m_stack_compact_low) + countbits(m_stack_compact_high);
@@ -476,14 +476,14 @@ namespace embree
 	    const vbool16 m_stack_compact_32 = le(m_num_stack_32,snear_32,max_dist_xyz);
 
 	    sindex = 0;
-	    compactustore16f(m_stack_compact_0,      stack_dist + sindex,snear_0);
-	    compactustore16i(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
+	    vfloat16::storeu_compact(m_stack_compact_0,      stack_dist + sindex,snear_0);
+	    vint16::storeu_compact(m_stack_compact_0,(int*)stack_node + sindex,snode_0);
 	    sindex += countbits(m_stack_compact_0);
-	    compactustore16f(m_stack_compact_16,      stack_dist + sindex,snear_16);
-	    compactustore16i(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
+	    vfloat16::storeu_compact(m_stack_compact_16,      stack_dist + sindex,snear_16);
+	    vint16::storeu_compact(m_stack_compact_16,(int*)stack_node + sindex,snode_16);
 	    sindex += countbits(m_stack_compact_16);
-	    compactustore16f(m_stack_compact_32,      stack_dist + sindex,snear_32);
-	    compactustore16i(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
+	    vfloat16::storeu_compact(m_stack_compact_32,      stack_dist + sindex,snear_32);
+	    vint16::storeu_compact(m_stack_compact_32,(int*)stack_node + sindex,snode_32);
 	    sindex += countbits(m_stack_compact_32);
 
 	    assert(sindex < 48);		  

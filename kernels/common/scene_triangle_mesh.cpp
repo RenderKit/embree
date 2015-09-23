@@ -195,9 +195,9 @@ namespace embree
       const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
       const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
       const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
-      if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
-      if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);
+      if (P   ) vfloat16::storeu_compact(mask,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,p1-p0);
+      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,p2-p0);
     }
 
 #endif

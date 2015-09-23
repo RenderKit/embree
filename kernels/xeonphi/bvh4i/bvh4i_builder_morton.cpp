@@ -578,7 +578,7 @@ namespace embree
 	const vint16 mID = vint16::loadu((int*)m);
 	const vint16 code  = bitInterleave(binID3_x,binID3_y,binID3_z);
 	const vint16 final = select(0x5555,code,mID);      
-	compactustore16i(mask,(int*)m,final);		
+        vint16::storeu_compact(mask,(int*)m,final);		
       }       
 
     quicksort_insertionsort_ascending<MortonID32Bit,32>(morton,current.begin,current.end-1); 

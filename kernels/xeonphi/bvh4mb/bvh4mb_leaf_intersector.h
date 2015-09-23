@@ -95,7 +95,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -235,7 +235,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -344,7 +344,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -498,7 +498,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
