@@ -304,8 +304,8 @@ namespace embree
       for (size_t i=0;i<array_elements;i+=16)
 	{
 	  prefetch<PFHINT_L1EX>(&grid_uv[i]);
-	  const vfloat16 u = load16f(&local_grid_u[i]);
-	  const vfloat16 v = load16f(&local_grid_v[i]);
+	  const vfloat16 u = vfloat16::load(&local_grid_u[i]);
+	  const vfloat16 v = vfloat16::load(&local_grid_v[i]);
 	  const vint16 u_i = vint16(u * 65535.0f/2.0f);
 	  const vint16 v_i = vint16(v * 65535.0f/2.0f);
 	  const vint16 uv_i = (v_i << 16) | u_i;

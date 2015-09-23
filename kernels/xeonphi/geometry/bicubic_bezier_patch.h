@@ -65,9 +65,9 @@ namespace embree
       const vfloat16 one = vfloat16::one();
       const vfloat16 one_minus_u = one - u;
       const vfloat16 one_minus_v = one - v;
-      const vfloat16 v00 = one_minus_v * load16f((float*)&cp[0][0]) + v * load16f((float*)&cp[1][0]);
-      const vfloat16 v01 = one_minus_v * load16f((float*)&cp[1][0]) + v * load16f((float*)&cp[2][0]);
-      const vfloat16 v02 = one_minus_v * load16f((float*)&cp[2][0]) + v * load16f((float*)&cp[3][0]);
+      const vfloat16 v00 = one_minus_v * vfloat16::load((float*)&cp[0][0]) + v * vfloat16::load((float*)&cp[1][0]);
+      const vfloat16 v01 = one_minus_v * vfloat16::load((float*)&cp[1][0]) + v * vfloat16::load((float*)&cp[2][0]);
+      const vfloat16 v02 = one_minus_v * vfloat16::load((float*)&cp[2][0]) + v * vfloat16::load((float*)&cp[3][0]);
       const vfloat16 v10 = one_minus_v * v00 + v * v01;
       const vfloat16 v11 = one_minus_v * v01 + v * v02;
       const vfloat16 v20 = one_minus_v * v10 + v * v11;
@@ -96,9 +96,9 @@ namespace embree
       const vfloat16 one_minus_u = one - u;
       const vfloat16 one_minus_v = one - v;
 
-      const vfloat16 v00 = one_minus_v * load16f((float*)&cp[0][0]) + v * load16f((float*)&cp[1][0]);
-      const vfloat16 v01 = one_minus_v * load16f((float*)&cp[1][0]) + v * load16f((float*)&cp[2][0]);
-      const vfloat16 v02 = one_minus_v * load16f((float*)&cp[2][0]) + v * load16f((float*)&cp[3][0]);
+      const vfloat16 v00 = one_minus_v * vfloat16::load((float*)&cp[0][0]) + v * vfloat16::load((float*)&cp[1][0]);
+      const vfloat16 v01 = one_minus_v * vfloat16::load((float*)&cp[1][0]) + v * vfloat16::load((float*)&cp[2][0]);
+      const vfloat16 v02 = one_minus_v * vfloat16::load((float*)&cp[2][0]) + v * vfloat16::load((float*)&cp[3][0]);
       const vfloat16 v10 = one_minus_v * v00 + v * v01;
       const vfloat16 v11 = one_minus_v * v01 + v * v02;
       const vfloat16 v20 = one_minus_v * v10 + v * v11;
@@ -154,8 +154,8 @@ namespace embree
       const vfloat16 one = vfloat16::one();
       const vfloat16 one_minus_u = one - u;
       const vfloat16 one_minus_v = one - v;
-      const vfloat16 v00 = one_minus_v * load16f((float*)&cp[0][0]) + v * load16f((float*)&cp[1][0]);
-      const vfloat16 v01 = one_minus_v * load16f((float*)&cp[1][0]) + v * load16f((float*)&cp[2][0]);
+      const vfloat16 v00 = one_minus_v * vfloat16::load((float*)&cp[0][0]) + v * vfloat16::load((float*)&cp[1][0]);
+      const vfloat16 v01 = one_minus_v * vfloat16::load((float*)&cp[1][0]) + v * vfloat16::load((float*)&cp[2][0]);
       const vfloat16 v10 = one_minus_v * v00 + v * v01;
 
       const Vec3fa *const u_ptr = (Vec3fa*)&v10;

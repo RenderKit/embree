@@ -257,8 +257,8 @@ namespace embree
 #if defined(__MIC__)
     __forceinline void operator=(const BuildRecord& v) { 
       assert(sizeof(BuildRecord) == 128);
-      const vfloat16 b0 = load16f((float*)&v);
-      const vfloat16 b1 = load16f((float*)&v + 16);
+      const vfloat16 b0 = vfloat16::load((float*)&v);
+      const vfloat16 b1 = vfloat16::load((float*)&v + 16);
       store16f((float*)this +  0, b0);
       store16f((float*)this + 16, b1);
     };

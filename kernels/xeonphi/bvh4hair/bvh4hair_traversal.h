@@ -103,8 +103,8 @@ namespace embree
 	    const vfloat16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		
 	    const vfloat16 xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
-	    const vfloat16 tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
-	    const vfloat16 tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+	    const vfloat16 tLowerXYZ = msub(rcp_xfm_dir_xyz,vfloat16::load((float*)u_node->lower),xfm_org_rdir_xyz);
+	    const vfloat16 tUpperXYZ = msub(rcp_xfm_dir_xyz,vfloat16::load((float*)u_node->upper),xfm_org_rdir_xyz);
 		   
 	    const vfloat16 tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	    const vfloat16 tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
@@ -139,8 +139,8 @@ namespace embree
 	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 
-	    const vfloat16 tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	    const vfloat16 tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const vfloat16 tLowerXYZ = vfloat16::load(plower) * rdir_xyz - org_rdir_xyz;
+	    const vfloat16 tUpperXYZ = vfloat16::load(pupper) * rdir_xyz - org_rdir_xyz;
 	    const vfloat16 tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 	    const vfloat16 tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -283,8 +283,8 @@ namespace embree
 	    const vfloat16 rcp_xfm_dir_xyz = rcp_safe( xfm_dir_xyz );
 		
 	    const vfloat16 xfm_org_rdir_xyz = xfm_org_xyz * rcp_xfm_dir_xyz;
-	    const vfloat16 tLowerXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->lower),xfm_org_rdir_xyz);
-	    const vfloat16 tUpperXYZ = msub(rcp_xfm_dir_xyz,load16f(u_node->upper),xfm_org_rdir_xyz);
+	    const vfloat16 tLowerXYZ = msub(rcp_xfm_dir_xyz,vfloat16::load((float*)u_node->lower),xfm_org_rdir_xyz);
+	    const vfloat16 tUpperXYZ = msub(rcp_xfm_dir_xyz,vfloat16::load((float*)u_node->upper),xfm_org_rdir_xyz);
 		   
 	    const vfloat16 tLower = select(m7777,min(tLowerXYZ,tUpperXYZ),min_dist_xyz);
 	    const vfloat16 tUpper = select(m7777,max(tLowerXYZ,tUpperXYZ),max_dist_xyz);
@@ -318,8 +318,8 @@ namespace embree
 	    hitm = ne(0x8888,invalidNode,load16i((const int*)ref));
 
 
-	    const vfloat16 tLowerXYZ = load16f(plower) * rdir_xyz - org_rdir_xyz;
-	    const vfloat16 tUpperXYZ = load16f(pupper) * rdir_xyz - org_rdir_xyz;
+	    const vfloat16 tLowerXYZ = vfloat16::load(plower) * rdir_xyz - org_rdir_xyz;
+	    const vfloat16 tUpperXYZ = vfloat16::load(pupper) * rdir_xyz - org_rdir_xyz;
 	    const vfloat16 tLower = mask_min(0x7777,min_dist_xyz,tLowerXYZ,tUpperXYZ);
 	    const vfloat16 tUpper = mask_max(0x7777,max_dist_xyz,tLowerXYZ,tUpperXYZ);
 
@@ -427,7 +427,7 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	  {
 	    const unsigned int m_num_stack = vbool16::shift1[sindex] - 1;
 	    const vbool16 m_num_stack_low  = toMask(m_num_stack);
-	    const vfloat16 snear_low  = load16f(stack_dist + 0);
+	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
 	    const vint16 snode_low  = load16i((int*)stack_node + 0);
 	    const vbool16 m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (vbool16)1;
 	    compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
@@ -438,8 +438,8 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	else if (likely(sindex < 32))
 	  {
 	    const vbool16 m_num_stack_high = toMask(vbool16::shift1[sindex-16] - 1); 
-	    const vfloat16 snear_low  = load16f(stack_dist + 0);
-	    const vfloat16 snear_high = load16f(stack_dist + 16);
+	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
+	    const vfloat16 snear_high = vfloat16::load(stack_dist + 16);
 	    const vint16 snode_low  = load16i((int*)stack_node + 0);
 	    const vint16 snode_high = load16i((int*)stack_node + 16);
 	    const vbool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (vbool16)1;
@@ -457,9 +457,9 @@ __forceinline void compactStack(BVH4Hair::NodeRef *__restrict__ const stack_node
 	  {
 	    const vbool16 m_num_stack_32 = toMask(vbool16::shift1[sindex-32] - 1); 
 
-	    const vfloat16 snear_0  = load16f(stack_dist + 0);
-	    const vfloat16 snear_16 = load16f(stack_dist + 16);
-	    const vfloat16 snear_32 = load16f(stack_dist + 32);
+	    const vfloat16 snear_0  = vfloat16::load(stack_dist + 0);
+	    const vfloat16 snear_16 = vfloat16::load(stack_dist + 16);
+	    const vfloat16 snear_32 = vfloat16::load(stack_dist + 32);
 	    const vint16 snode_0  = load16i((int*)stack_node + 0);
 	    const vint16 snode_16 = load16i((int*)stack_node + 16);
 	    const vint16 snode_32 = load16i((int*)stack_node + 32);

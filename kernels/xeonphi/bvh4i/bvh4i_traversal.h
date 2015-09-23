@@ -74,27 +74,27 @@ namespace embree
 	    if (ROBUST)
 	      {
 #if 0
-		const vfloat16 lower_org = load16f(plower) - calc.org_xyz;
-		const vfloat16 upper_org = load16f(pupper) - calc.org_xyz;
+		const vfloat16 lower_org = vfloat16::load(plower) - calc.org_xyz;
+		const vfloat16 upper_org = vfloat16::load(pupper) - calc.org_xyz;
 
 		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
 #else
-		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
-		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
 #endif
 	      }
 	    else
 	      {
 
-		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
-		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
 	      }
 	  }
 	else
@@ -277,26 +277,26 @@ namespace embree
 	    if (ROBUST)
 	      {
 #if 0
-		const vfloat16 lower_org = load16f(plower) - calc.org_xyz;
-		const vfloat16 upper_org = load16f(pupper) - calc.org_xyz;
+		const vfloat16 lower_org = vfloat16::load(plower) - calc.org_xyz;
+		const vfloat16 upper_org = vfloat16::load(pupper) - calc.org_xyz;
 
 		tLowerXYZ = mask_mul_round_down(m_rdir1,tLowerXYZ,lower_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir0,tUpperXYZ,lower_org,calc.rdir_xyz);
 		tLowerXYZ = mask_mul_round_down(m_rdir0,tLowerXYZ,upper_org,calc.rdir_xyz);
 		tUpperXYZ = mask_mul_round_up(  m_rdir1,tUpperXYZ,upper_org,calc.rdir_xyz);
 #else
-		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
-		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir1,tLowerXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir0,tUpperXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub_round_down(m_rdir0,tLowerXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub_round_up  (m_rdir1,tUpperXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
 #endif
 	      }
 	    else
 	      {
-		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,load16f(plower),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,load16f(plower),calc.org_rdir_xyz);
-		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,load16f(pupper),calc.org_rdir_xyz);
-		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,load16f(pupper),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir1,tLowerXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir0,tUpperXYZ,vfloat16::load(plower),calc.org_rdir_xyz);
+		tLowerXYZ = mask_msub(m_rdir0,tLowerXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
+		tUpperXYZ = mask_msub(m_rdir1,tUpperXYZ,vfloat16::load(pupper),calc.org_rdir_xyz);
 	      }
 
 	  }
@@ -435,7 +435,7 @@ namespace embree
 	  {
 	    const unsigned int m_num_stack = vbool16::shift1[sindex] - 1;
 	    const vbool16 m_num_stack_low  = toMask(m_num_stack);
-	    const vfloat16 snear_low  = load16f(stack_dist + 0);
+	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
 	    const vint16 snode_low  = load16i((int*)stack_node + 0);
 	    const vbool16 m_stack_compact_low  = le(m_num_stack_low,snear_low,max_dist_xyz) | (vbool16)1;
 	    compactustore16f_low(m_stack_compact_low,stack_dist + 0,snear_low);
@@ -446,8 +446,8 @@ namespace embree
 	else if (likely(sindex < 32))
 	  {
 	    const vbool16 m_num_stack_high = toMask(vbool16::shift1[sindex-16] - 1); 
-	    const vfloat16 snear_low  = load16f(stack_dist + 0);
-	    const vfloat16 snear_high = load16f(stack_dist + 16);
+	    const vfloat16 snear_low  = vfloat16::load(stack_dist + 0);
+	    const vfloat16 snear_high = vfloat16::load(stack_dist + 16);
 	    const vint16 snode_low  = load16i((int*)stack_node + 0);
 	    const vint16 snode_high = load16i((int*)stack_node + 16);
 	    const vbool16 m_stack_compact_low  = le(snear_low,max_dist_xyz) | (vbool16)1;
@@ -465,9 +465,9 @@ namespace embree
 	  {
 	    const vbool16 m_num_stack_32 = toMask(vbool16::shift1[sindex-32] - 1); 
 
-	    const vfloat16 snear_0  = load16f(stack_dist + 0);
-	    const vfloat16 snear_16 = load16f(stack_dist + 16);
-	    const vfloat16 snear_32 = load16f(stack_dist + 32);
+	    const vfloat16 snear_0  = vfloat16::load(stack_dist + 0);
+	    const vfloat16 snear_16 = vfloat16::load(stack_dist + 16);
+	    const vfloat16 snear_32 = vfloat16::load(stack_dist + 32);
 	    const vint16 snode_0  = load16i((int*)stack_node + 0);
 	    const vint16 snode_16 = load16i((int*)stack_node + 16);
 	    const vint16 snode_32 = load16i((int*)stack_node + 32);

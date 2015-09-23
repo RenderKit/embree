@@ -421,7 +421,7 @@ namespace embree
 		  }
 		else
 		  {
-		    const vfloat16 twoAABBs = load16f(local_prims);
+		    const vfloat16 twoAABBs = vfloat16::load((float*)local_prims);
 		    if (numLocalPrims == 2)
 		      {
 			numLocalPrims = 0;
