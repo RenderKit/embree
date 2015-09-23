@@ -66,7 +66,8 @@ namespace embree
           assert(r.size() == 1);
           func(r.begin());
         });
-      TaskSchedulerTBB::wait();
+      if (!TaskSchedulerTBB::wait())
+        throw std::runtime_error("task cancelled");
     }
 
 #else 
@@ -74,7 +75,7 @@ namespace embree
 	func(i);
       });
     if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task group cancelled");
+      throw std::runtime_error("task cancelled");
 #endif
   }
 
@@ -111,14 +112,14 @@ namespace embree
 
 #elif defined(TASKING_TBB_INTERNAL)
     TaskSchedulerTBB::spawn(first,last,minStepSize,func);
-    TaskSchedulerTBB::wait();
-
+    if (!TaskSchedulerTBB::wait())
+        throw std::runtime_error("task cancelled");
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
     });
     if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task group cancelled");
+      throw std::runtime_error("task cancelled");
 #endif
   }
 

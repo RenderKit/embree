@@ -276,7 +276,8 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
+    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
+    // important: has to be noinline as it allocates large thread structure on stack
     {
       if (useThreadPool) startThreads();
       
@@ -295,7 +296,11 @@ namespace embree
       
       if (useThreadPool) addScheduler(this);
 
-      while (thread.tasks.execute_local(thread,nullptr));
+      try {
+        while (thread.tasks.execute_local(thread,nullptr));
+      } catch (...) {
+        isCancelled = true;
+      }
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
       
@@ -308,8 +313,11 @@ namespace embree
         yield();
       }
 
-      //assert(anyTasksRunning == -1);
-      //anyTasksRunning = 0;
+      /* reset cancelled state */
+      if (isCancelled) {
+        isCancelled = false;
+        throw std::runtime_error("task cancelled"); // FIXME: rethrow original exception
+      }
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -344,7 +352,7 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-    __dllexport static void wait();
+    __dllexport static bool wait();
 
     /* returns the index of the current thread */
     __dllexport static size_t threadIndex();
@@ -373,10 +381,11 @@ namespace embree
     __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
 
   private:
-    Thread* threadLocal[MAX_THREADS]; // FIXME: thread should be no maximal number of threads
+    Thread* threadLocal[MAX_THREADS]; // FIXME: there should be no maximal number of threads
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;
+    volatile bool isCancelled;       //!< set by workers when exception is catched
     MutexSys mutex;
     ConditionSys condition;
 

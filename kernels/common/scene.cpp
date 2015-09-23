@@ -551,7 +551,14 @@ namespace embree
     }
 
     /* initiate build */
-    scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
+    try {
+      scheduler->spawn_root([&]() { build_task(); this->scheduler = nullptr; }, 1, threadCount == 0);
+    }
+    catch (...) {
+      accels.clear();
+      updateInterface();
+      throw;
+    }
   }
 
 #endif

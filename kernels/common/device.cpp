@@ -420,7 +420,7 @@ namespace embree
   {
     if (State::memory_monitor_function && bytes != 0) {
       if (!State::memory_monitor_function(bytes,post)) {
-#if !defined(TASKING_LOCKSTEP) && !defined(TASKING_TBB_INTERNAL)
+#if !defined(TASKING_LOCKSTEP)
         if (bytes > 0) { // only throw exception when we allocate memory to never throw inside a destructor
           throw_RTCError(RTC_OUT_OF_MEMORY,"memory monitor forced termination");
         }

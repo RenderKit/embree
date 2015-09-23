@@ -3558,13 +3558,6 @@ namespace embree
     const Vec3fa delta = hit_tri - hit_tfar;
     const float distance = embree::length(delta);
 
-#if 0
-    PRINT(ray_org);
-    PRINT(ray_dir);
-    PRINT(hit_tri);
-    PRINT(distance);
-    exit(0);
-#endif
     return distance < 0.0002f;
   }
 
@@ -3737,7 +3730,7 @@ namespace embree
     POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
 #endif
 
-#if defined(TASKING_TBB)
+#if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
 #endif
