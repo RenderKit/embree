@@ -204,8 +204,8 @@ namespace embree
 
 	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  const vfloat16 org_rdir_xyz = rdir_xyz * org_xyz;
@@ -299,8 +299,8 @@ namespace embree
 
 	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  const vfloat16 org_rdir_xyz = rdir_xyz * org_xyz;
 
@@ -394,8 +394,8 @@ namespace embree
 
       const vfloat16 org_xyz      = loadAOS4to16f(ray.org.x,ray.org.y,ray.org.z);
       const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
-      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      vfloat16       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray.tnear);
+      vfloat16       max_dist_xyz = vfloat16::broadcast(&ray.tfar);
 
       const vfloat16 org_xyz1     = select(0x7777,org_xyz,vfloat16::one());
       const vfloat16 rdir_xyz     = rcp_safe(dir_xyz);
@@ -490,8 +490,8 @@ namespace embree
       const vfloat16 rdir_xyz     = rcp_safe(dir_xyz);
       const vfloat16 org_rdir_xyz = rdir_xyz * org_xyz;
 
-      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      vfloat16       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray.tnear);
+      vfloat16       max_dist_xyz = vfloat16::broadcast(&ray.tfar);
 
       const vfloat16 org_xyz1     = select(0x7777,org_xyz,vfloat16::one());
 

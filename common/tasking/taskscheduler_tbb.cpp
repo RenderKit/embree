@@ -68,7 +68,7 @@ namespace embree
     
     /* steal until all dependencies have completed */
     steal_loop(thread,
-               [&] () { return !thread.scheduler->cancellingException && dependencies>0; },
+               [&] () { return thread.scheduler->cancellingException == 0 && dependencies>0; },
                [&] () { while (thread.tasks.execute_local(thread,this)); });
    
     /* now signal our parent task that we are finished */
@@ -79,7 +79,7 @@ namespace embree
   __dllexport bool TaskSchedulerTBB::TaskQueue::execute_local(Thread& thread, Task* parent)
   {
     /* stop if task should get cancelled */
-    if (thread.scheduler->cancellingException)
+    if (thread.scheduler->cancellingException != 0)
       return false;
 
     /* stop if we run out of local tasks or reach the waiting task */
@@ -200,7 +200,7 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB()
-    : threadCounter(0), anyTasksRunning(0), hasRootTask(false), cancellingException(nullptr)
+    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) /* , cancellingException(nullptr) */
   {
     for (size_t i=0; i<MAX_THREADS; i++)
       threadLocal[i] = nullptr;
@@ -276,7 +276,7 @@ namespace embree
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
     std::exception_ptr except = thread_loop(threadIndex);
-    if (except) std::rethrow_exception(except);
+    if (except != 0) std::rethrow_exception(except);
   }
 
   void TaskSchedulerTBB::reset() {
@@ -305,7 +305,7 @@ namespace embree
     Thread* thread = TaskSchedulerTBB::thread();
     if (thread == nullptr) return true;
     while (thread->tasks.execute_local(*thread,thread->task)) {};
-    return !thread->scheduler->cancellingException;
+    return thread->scheduler->cancellingException == 0;
   }
 
   std::exception_ptr TaskSchedulerTBB::thread_loop(size_t threadIndex)
@@ -318,10 +318,10 @@ namespace embree
     /* main thread loop */
     try 
     {
-      while (anyTasksRunning > 0 && !cancellingException)
+      while (anyTasksRunning > 0 && cancellingException == 0)
       {
         steal_loop(thread,
-                   [&] () { return !cancellingException && anyTasksRunning > 0; },
+                   [&] () { return cancellingException == 0 && anyTasksRunning > 0; },
                    [&] () { 
                      atomic_add(&anyTasksRunning,+1);
                      while (thread.tasks.execute_local(thread,nullptr));
@@ -339,7 +339,7 @@ namespace embree
 
     /* remember exception to throw */
     std::exception_ptr except = nullptr;
-    if (cancellingException) except = cancellingException;
+    if (cancellingException != 0) except = cancellingException;
 
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);

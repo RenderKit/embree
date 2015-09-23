@@ -422,14 +422,14 @@ namespace embree
 		}
 	      }
 	    /* update hit information */
-	    store16f(valid,(float*)&ray16.u,u);
-	    store16f(valid,(float*)&ray16.v,v);
-	    store16f(valid,(float*)&ray16.tfar,t);
+	    vfloat16::store(valid,(float*)&ray16.u,u);
+	    vfloat16::store(valid,(float*)&ray16.v,v);
+	    vfloat16::store(valid,(float*)&ray16.tfar,t);
 	    store16i(valid,(float*)&ray16.geomID,geomID);
 	    store16i(valid,(float*)&ray16.primID,primID);
-	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
+	    vfloat16::store(valid,(float*)&ray16.Ng.x,Ng.x);
+	    vfloat16::store(valid,(float*)&ray16.Ng.y,Ng.y);
+	    vfloat16::store(valid,(float*)&ray16.Ng.z,Ng.z);
 	  }
 
       }

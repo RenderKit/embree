@@ -115,12 +115,12 @@ namespace embree
 			      const vint16 &new_geomID,
 			      const vint16 &new_primID)
     {
-      store16f(m_mask,(float*)&tfar,new_t);
-      store16f(m_mask,(float*)&u,new_u);
-      store16f(m_mask,(float*)&v,new_v);
-      store16f(m_mask,(float*)&Ng.x,new_gnormalx);
-      store16f(m_mask,(float*)&Ng.y,new_gnormaly);
-      store16f(m_mask,(float*)&Ng.z,new_gnormalz);
+      vfloat16::store(m_mask,(float*)&tfar,new_t);
+      vfloat16::store(m_mask,(float*)&u,new_u);
+      vfloat16::store(m_mask,(float*)&v,new_v);
+      vfloat16::store(m_mask,(float*)&Ng.x,new_gnormalx);
+      vfloat16::store(m_mask,(float*)&Ng.y,new_gnormaly);
+      vfloat16::store(m_mask,(float*)&Ng.z,new_gnormalz);
       store16i(m_mask,(int*)&geomID,new_geomID);
       store16i(m_mask,(int*)&primID,new_primID);     
     }

@@ -29,9 +29,9 @@ namespace embree
 				       const void *__restrict__ const ptr1,
 				       const void *__restrict__ const ptr2) 
   {
-    vfloat16 v = uload16f((float*)ptr0);
-    v = uload16f(v,0b1111100000,(float*)ptr1);
-    v = uload16f(v,0b111110000000000,(float*)ptr2);
+    vfloat16 v = vfloat16::loadu((float*)ptr0);
+    v = vfloat16::loadu(v,0b1111100000,(float*)ptr1);
+    v = vfloat16::loadu(v,0b111110000000000,(float*)ptr2);
     return v;
   }
 

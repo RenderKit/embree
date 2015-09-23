@@ -249,8 +249,8 @@ namespace embree
 #if 1
 	vfloat16 lower = broadcast4to16f(&initQBVHNode[0]);
 	vfloat16 upper = broadcast4to16f(&initQBVHNode[1]);
-	store16f_ngo(((vfloat16*)this)+0,lower); 
-	store16f_ngo(((vfloat16*)this)+1,upper);             
+	vfloat16::store_ngo(((vfloat16*)this)+0,lower); 
+	vfloat16::store_ngo(((vfloat16*)this)+1,upper);             
 #else
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);

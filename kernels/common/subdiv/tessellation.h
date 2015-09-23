@@ -143,8 +143,8 @@ namespace embree
 
 	const vfloat16 u = select(m_u, vfloat16(x0+u_i) * inv_grid_u_segments, 1.0f);
 	const vfloat16 v = select(m_v, vfloat16(y0+v_i) * inv_grid_v_segments, 1.0f);
-	ustore16f(&u_array[index + x],u);
-	ustore16f(&v_array[index + x],v);	   
+	vfloat16::storeu(&u_array[index + x],u);
+	vfloat16::storeu(&v_array[index + x],v);	   
       }
     }       
 

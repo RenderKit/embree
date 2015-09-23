@@ -90,9 +90,9 @@ namespace embree
 		const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 		const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 		const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-		const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-		vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-		const vfloat16 time         = broadcast1to16f(&ray16.time[rayIndex]);
+		const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+		vfloat16       max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
+		const vfloat16 time         = vfloat16::broadcast(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -312,9 +312,9 @@ namespace embree
 		const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 		const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 		const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-		const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-		const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
-		const vfloat16 time         = broadcast1to16f(&ray16.time[rayIndex]);
+		const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+		const vfloat16 max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
+		const vfloat16 time         = vfloat16::broadcast(&ray16.time[rayIndex]);
 
 		const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 

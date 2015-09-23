@@ -192,9 +192,9 @@ namespace embree
       vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const vfloat16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
       if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
       if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
       if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);
