@@ -52,6 +52,37 @@ namespace embree
       }
     };
 
+    struct BVH4BuilderMblur
+    {
+      typedef FastAllocator::ThreadLocal2 Allocator;
+      
+      struct BVH4BuilderV {
+        void build(BVH4* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                   const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+        virtual std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
+      };
+
+      template<typename CreateLeafFunc>
+      struct BVH4BuilderT : public BVH4BuilderV
+      {
+        BVH4BuilderT (CreateLeafFunc createLeafFunc) 
+          : createLeafFunc(createLeafFunc) {}
+
+        std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
+          return createLeafFunc(current,alloc);
+        }
+
+      private:
+        CreateLeafFunc createLeafFunc;
+      };
+
+      template<typename CreateLeafFunc>
+      static void build(BVH4* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                        const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
+        BVH4BuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      }
+    };
+
     struct BVH4BuilderSpatial
     {
       typedef FastAllocator::ThreadLocal2 Allocator;

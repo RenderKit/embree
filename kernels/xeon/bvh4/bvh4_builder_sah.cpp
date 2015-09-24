@@ -298,23 +298,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    struct CreateBVH4NodeMB
-    {
-      __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
-      
-      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
-      {
-        BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
-        for (size_t i=0; i<N; i++) {
-          children[i].parent = (size_t*)&node->child(i);
-        }
-        *current.parent = bvh->encodeNode(node);
-	return node;
-      }
-
-      BVH4* bvh;
-    };
-
     template<typename Primitive>
     struct CreateBVH4LeafMB
     {
@@ -369,45 +352,21 @@ namespace embree
           return;
         }
       
-	/* reduction function */
-	auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) -> std::pair<BBox3fa,BBox3fa>
-	{
-	  assert(N <= BVH4::N);
-	  BBox3fa bounds0 = empty;
-	  BBox3fa bounds1 = empty;
-	  for (size_t i=0; i<N; i++) {
-	    const BBox3fa b0 = bounds[i].first;
-	    const BBox3fa b1 = bounds[i].second;
-	    node->set(i,b0,b1);
-	    bounds0 = merge(bounds0,b0);
-	    bounds1 = merge(bounds1,b1);
-	  }
-	  return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
-	};
-	auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
-
         double t0 = bvh->preBuild(mesh ? nullptr : TOSTRING(isa) "::BVH4BuilderMblurSAH");
 
-	//profile("BVH4BuilderMblurBinnedSAH",2,20,numPrimitives,[&] () {
+        if (bvh->device->verbosity(1)) t0 = getSeconds();
 	    
-	    if (bvh->device->verbosity(1)) t0 = getSeconds();
-	    
-	    bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
-	    prims.resize(numPrimitives);
-            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-	    const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
-              : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
-	    BVH4::NodeRef root;
-            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,BVH4::CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),progress,
-	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
-	    bvh->set(root,pinfo.geomBounds,pinfo.size());
-            
-            //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
-
-        //});
-
+        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
+        prims.resize(numPrimitives);
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+        const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
+          : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
+        
+        /* call BVH builder */
+        BVH4BuilderMblur::build(bvh,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,
+                                sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+        
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {

@@ -72,6 +72,68 @@ namespace embree
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
+    struct CreateBVH4NodeMB
+    {
+      __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
+      
+      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
+      {
+        BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
+        for (size_t i=0; i<N; i++) {
+          children[i].parent = (size_t*)&node->child(i);
+        }
+        *current.parent = bvh->encodeNode(node);
+	return node;
+      }
+
+      BVH4* bvh;
+    };
+
+    void BVH4BuilderMblur::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    {
+      bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+
+      auto progressFunc = [&] (size_t dn) { 
+        progress_in(dn); 
+      };
+            
+      auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> std::pair<BBox3fa,BBox3fa> {
+        return createLeaf(current,alloc);
+      };
+
+      /* reduction function */
+      auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) -> std::pair<BBox3fa,BBox3fa>
+      {
+        assert(N <= BVH4::N);
+        BBox3fa bounds0 = empty;
+        BBox3fa bounds1 = empty;
+        for (size_t i=0; i<N; i++) {
+          const BBox3fa b0 = bounds[i].first;
+          const BBox3fa b1 = bounds[i].second;
+          node->set(i,b0,b1);
+          bounds0 = merge(bounds0,b0);
+          bounds1 = merge(bounds1,b1);
+        }
+        return std::pair<BBox3fa,BBox3fa>(bounds0,bounds1);
+      };
+      auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
+      
+      BVH4::NodeRef root;
+      BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
+        (root,BVH4::CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,createLeafFunc,progressFunc,
+         prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      
+#if ROTATE_TREE
+      for (int i=0; i<ROTATE_TREE; i++) 
+        BVH4Rotate::rotate(bvh->root);
+      bvh->clearBarrier(bvh->root);
+#endif
+      
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
+    }
+
     void BVH4BuilderSpatial::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
                                                  const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
