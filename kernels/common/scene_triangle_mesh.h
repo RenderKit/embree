@@ -37,6 +37,42 @@ namespace embree
         return cout << "{ tri " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
       }
     };
+
+    /*! triangle edge based on two indices */
+    struct Edge 
+    {
+      uint64_t e;
+
+      __forceinline Edge() {}
+
+      __forceinline Edge(const uint32_t &v0,
+                         const uint32_t &v1)
+      {
+        e = v0 < v1 ? (((uint64_t)v1 << 32) | (uint64_t)v0) : (((uint64_t)v0 << 32) | (uint64_t)v1);
+      }
+
+      __forceinline friend bool operator==( const Edge& a, const Edge& b ) 
+      { return a.e == b.e; };
+
+    };
+
+
+    /*! tests if a shared exists between another triangle */
+    __forceinline bool hasSharedEdge(const Triangle &tri0,
+                                     const Triangle &tri1)
+    {
+      const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
+      const Edge tri0_edge1(tri0.v[1],tri0.v[2]);
+      const Edge tri0_edge2(tri0.v[2],tri0.v[0]);
+      const Edge tri1_edge0(tri1.v[0],tri1.v[1]);
+      const Edge tri1_edge1(tri1.v[1],tri1.v[2]);
+      const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
+      if (tri0_edge0 == tri1_edge0 || tri0_edge0 == tri1_edge1 || tri0_edge0 == tri1_edge2) return true; 
+      if (tri0_edge1 == tri1_edge0 || tri0_edge1 == tri1_edge1 || tri0_edge1 == tri1_edge2) return true; 
+      if (tri0_edge2 == tri1_edge0 || tri0_edge2 == tri1_edge1 || tri0_edge2 == tri1_edge2) return true; 
+      return false;
+    }
+
     
   public:
 
