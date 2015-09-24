@@ -194,35 +194,6 @@ namespace embree
       BVH4* bvh;
     };
 
-    struct SpatialSplitHeuristic
-    {
-      Scene* scene;
-
-      SpatialSplitHeuristic(Scene* scene)
-        : scene(scene) {}
-
-      float operator() (const PrimRef& prim)
-      {
-        const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa v0 = mesh->vertex(tri.v[0]);
-        const Vec3fa v1 = mesh->vertex(tri.v[1]);
-        const Vec3fa v2 = mesh->vertex(tri.v[2]);
-        const float triAreaX = triangleArea(Vec2f(v0.y,v0.z),Vec2f(v1.y,v1.z),Vec2f(v2.y,v2.z));
-        const float triAreaY = triangleArea(Vec2f(v0.x,v0.z),Vec2f(v1.x,v1.z),Vec2f(v2.x,v2.z));
-        const float triAreaZ = triangleArea(Vec2f(v0.x,v0.y),Vec2f(v1.x,v1.y),Vec2f(v2.x,v2.y));
-        const float triBoxArea = triAreaX+triAreaY+triAreaZ;
-        const float boxArea = area(prim.bounds());
-        //assert(boxArea>=2.0f*triBoxArea);
-        //return max(0.0f,boxArea-0.9f*2.0f*triBoxArea);
-        return boxArea;
-        //return triBoxArea;
-        //return boxArea-triBoxArea;
-      }
-    };
-
     template<typename Mesh, typename Primitive>
     struct BVH4BuilderSpatialSAH : public Builder
     {
@@ -288,8 +259,6 @@ namespace embree
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
             PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,virtualprogress);
             
-            SpatialSplitHeuristic heuristic(scene);
-
             /* calculate total surface area */
             PrimRefList::iterator iter = prims;
             const size_t threadCount = TaskSchedulerTBB::threadCount();
@@ -299,7 +268,6 @@ namespace embree
               while (PrimRefList::item* block = iter.next()) {
                 for (size_t i=0; i<block->size(); i++) 
                   A += area(block->at(i).bounds());
-                //A += heuristic(block->at(i));
               }
               return A;
             },std::plus<double>());
