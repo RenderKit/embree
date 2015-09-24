@@ -175,15 +175,7 @@ namespace embree
           }
           break;
 
-          case /*0b01*/ 1: 
-//#if defined (__TARGET_AVX2__) && !defined(__WIN32__) // FIXME: have to disable under Windows as watertightness tests fail
-//            if (hasISA(AVX2))
-//              accels.add(BVH8::BVH8Triangle8vObjectSplit(this)); 
-//            else
-//#endif
-              accels.add(BVH4::BVH4Triangle4vObjectSplit(this));
-
-            break;
+        case /*0b01*/ 1: accels.add(BVH4::BVH4Triangle4vObjectSplit(this)); break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
@@ -212,8 +204,6 @@ namespace embree
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
     else if (device->tri_accel == "bvh8.trianglepairs8")    accels.add(BVH8::BVH8TrianglePairs8(this));
-    //else if (device->tri_accel == "bvh8.triangle8v")    accels.add(BVH8::BVH8Triangle8v(this));
-
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);
   }
@@ -455,11 +445,6 @@ namespace embree
     Lock<MutexSys> lock(buildMutex);
 
     progress_monitor_counter = 0;
-
-    //if (isStatic() && isBuild()) {
-    //  throw_RTCError(RTC_INVALID_OPERATION,"static geometries cannot get committed twice");
-    //  return;
-    //}
 
     if (!ready()) {
       throw_RTCError(RTC_INVALID_OPERATION,"not all buffers are unmapped");
