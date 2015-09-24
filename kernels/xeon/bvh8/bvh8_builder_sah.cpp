@@ -122,8 +122,10 @@ namespace embree
 	bvh->alloc2.cleanup();
 
 	/* verbose mode */
-	if (bvh->device->verbosity(1) && mesh == nullptr)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+	if (bvh->device->verbosity(1) && mesh == nullptr) {
+          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
+        }
 	if (bvh->device->verbosity(2) && mesh == nullptr)
 	  bvh->printStatistics();
 
@@ -315,8 +317,10 @@ namespace embree
 	bvh->alloc2.cleanup();
 
         /* verbose mode */
-	if (bvh->device->verbosity(1) && mesh == nullptr)
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms (" << numPrimitives/dt*1E-6 << " Mtris/s)" << std::endl;
+	if (bvh->device->verbosity(1) && mesh == nullptr) {
+          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
+        }
 	if (bvh->device->verbosity(2) && mesh == nullptr)
 	  bvh->printStatistics();
 

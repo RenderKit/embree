@@ -430,7 +430,8 @@ namespace embree
 
     /* print statistics */
     if (device->verbosity(1)) {
-      std::cout << " [DONE]" << "  " << 1000.0f*dt << "ms (" << 1E-6*double(numPrimitives)/dt << " Mprim/s)" << std::endl;
+      const size_t usedBytes = alloc.getUsedBytes();
+      std::cout << " [DONE]" << "  " << 1000.0f*dt << "ms, " << 1E-6*double(numPrimitives)/dt << " Mprim/s, " << 1E-9*double(usedBytes)/dt << " GB/s" << std::endl;
     }
     
     if (device->verbosity(2))
