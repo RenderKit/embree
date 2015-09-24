@@ -44,21 +44,77 @@ namespace embree
 #endif
         return n;
       };
-      
-      //auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-      auto progress = [&] (size_t dn) { progress_in(dn); };
-      //auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
+     
       bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-      
+
+      auto progressFunc = [&] (size_t dn) { 
+        progress_in(dn); 
+      };
+            
       auto createLeafFunc = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> size_t {
         return createLeaf(current,alloc);
       };
       
       BVH4::NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-        (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,createLeafFunc,progress,
+        (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,createLeafFunc,progressFunc,
          prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+      bvh->set(root,pinfo.geomBounds,pinfo.size());
+      
+#if ROTATE_TREE
+      for (int i=0; i<ROTATE_TREE; i++) 
+        BVH4Rotate::rotate(bvh,bvh->root);
+      bvh->clearBarrier(bvh->root);
+#endif
+      
+      bvh->layoutLargeNodes(pinfo.size()*0.005f);
+    }
+
+    void BVH4BuilderSpatial::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
+                                                 const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    {
+      /* tree rotations */
+      auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) -> size_t {
+        size_t n = 0;
+#if ROTATE_TREE
+        assert(N <= BVH4::N);
+        for (size_t i=0; i<N; i++) 
+          n += counts[i];
+        if (n >= 4096) {
+          for (size_t i=0; i<N; i++) {
+            if (counts[i] < 4096) {
+              for (int j=0; j<ROTATE_TREE; j++) 
+                BVH4Rotate::rotate(bvh,node->child(i)); 
+              node->child(i).setBarrier();
+            }
+          }
+        }
+#endif
+        return n;
+      };
+      
+      
+      bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+      
+      auto progressFunc = [&] (size_t dn) { 
+        progress_in(dn); 
+      };
+
+      auto splitPrimitiveFunc = [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) -> void {
+        splitPrimitive(prim,dim,pos,left_o,right_o);
+      };
+
+      auto createLeafFunc = [&] (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) -> size_t {
+        return createLeaf(current,alloc);
+      };
+      
+      BVH4::NodeRef root;
+      BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
+        (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,
+         createLeafFunc,splitPrimitiveFunc,progressFunc,
+         prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
