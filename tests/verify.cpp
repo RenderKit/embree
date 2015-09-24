@@ -3051,6 +3051,11 @@ namespace embree
       monitorProgressBreak = -1;
       monitorProgressInvokations = 0;
       func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      if (monitorMemoryBytesUsed) {
+        rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
+        //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
+        return false;
+      }
       monitorMemoryBreak = monitorMemoryInvokations * drand48();
       monitorMemoryBytesUsed = 0;
       monitorMemoryInvokations = 0;
@@ -3590,8 +3595,6 @@ namespace embree
     //exit(1);
 
 #if 1
-
-#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
@@ -3677,7 +3680,6 @@ namespace embree
       rtcore_watertight_closed8("cube",pos);
       rtcore_watertight_plane8(100000);
     }
-#endif
 #endif
 
 #if HAS_INTERSECT16

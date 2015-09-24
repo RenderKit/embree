@@ -438,7 +438,7 @@ namespace embree
       {
         allocEnd = max(allocEnd,(size_t)cur);
         cur = 0;
-        if (next) next->reset();
+        if (next) next->reset(); 
       }
 
       void shrink (MemoryMonitorInterface* device) 
@@ -455,11 +455,11 @@ namespace embree
       }
 
       size_t getBlockAllocatedBytes() const {
-	return max(allocEnd,size_t(cur));
+	return min(max(allocEnd,size_t(cur)),reserveEnd);
       }
 
       size_t getAllocatedBytes() const {
-	return max(allocEnd,size_t(cur)) + (next ? next->getAllocatedBytes() : 0);
+	return getBlockAllocatedBytes() + (next ? next->getAllocatedBytes() : 0);
       }
 
       size_t getReservedBytes() const {
