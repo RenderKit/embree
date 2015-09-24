@@ -81,6 +81,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh4/bvh4_statistics.cpp
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
+  bvh4/bvh4_builder.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh4/bvh4_builder_sah.cpp
@@ -139,6 +140,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
 
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_refit.avx.cpp
+    bvh4/bvh4_builder.cpp
     bvh4/bvh4_builder_hair.avx.cpp
     bvh4/bvh4_builder_morton.avx.cpp
     bvh4/bvh4_builder_sah.avx.cpp
@@ -216,6 +218,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     bvh8/bvh8_builder_sah.avx512.cpp
 
     bvh4/bvh4_refit.cpp
+    bvh4/bvh4_builder.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp
     bvh4/bvh4_intersector1.cpp
 

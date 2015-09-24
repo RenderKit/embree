@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 
-#define INSTANCING 1  // 0=no instancing, 1=geometry instancing, 2=scene instancing
+#define INSTANCING 0  // 0=no instancing, 1=geometry instancing, 2=scene instancing
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;

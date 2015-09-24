@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4.h"
+#include "bvh4_builder.h"
 #include "bvh4_rotate.h"
 
 #include "../builders/primrefgen.h"
@@ -99,62 +100,24 @@ namespace embree
           bvh->clear();
           return;
         }
-        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-      
-        /* tree rotations */
-	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) -> size_t
-	{
-          size_t n = 0;
-#if ROTATE_TREE
-	  assert(N <= BVH4::N);
-          for (size_t i=0; i<N; i++) 
-            n += counts[i];
-          if (n >= 4096) {
-            for (size_t i=0; i<N; i++) {
-              if (counts[i] < 4096) {
-                for (int j=0; j<ROTATE_TREE; j++) 
-                  BVH4Rotate::rotate(bvh,node->child(i)); 
-                node->child(i).setBarrier();
-              }
-            }
-          }
-#endif
-	  return n;
-	};
-
+        
         double t0 = bvh->preBuild(mesh ? nullptr : TOSTRING(isa) "::BVH4BuilderSAH");
 
-#if PROFILE
-	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
-        {
-#endif
-          bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
-	    prims.resize(numSplitPrimitives);
-            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
-              : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-            if (presplitFactor > 1.0f)
-              pinfo = presplit<Mesh>(scene, pinfo, prims);
-
-	    BVH4::NodeRef root;
-            BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-	      (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,CreateBVH4Leaf<Primitive>(bvh,prims.data()),progress,
-	       prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
-	    bvh->set(root,pinfo.geomBounds,pinfo.size());
-
-#if ROTATE_TREE
-            for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh,bvh->root);
-            bvh->clearBarrier(bvh->root);
-#endif
-
-            bvh->layoutLargeNodes(pinfo.size()*0.005f);
-
-#if PROFILE
-        }); 
-#endif
+        /* create primref array */
+        const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
+        prims.resize(numSplitPrimitives);
+        PrimInfo pinfo = mesh ? 
+          createPrimRefArray<Mesh>  (mesh ,prims,virtualprogress) : 
+          createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
+        
+        if (presplitFactor > 1.0f) 
+          pinfo = presplit<Mesh>(scene, pinfo, prims);
+        
+        /* call BVH builder */
+        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
