@@ -17,7 +17,7 @@
 #pragma once
 
 #include "subdivpatch1.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 #include "filter.h"
 
 namespace embree
@@ -29,9 +29,9 @@ namespace embree
 				       const void *__restrict__ const ptr1,
 				       const void *__restrict__ const ptr2) 
   {
-    vfloat16 v = uload16f((float*)ptr0);
-    v = uload16f(v,0b1111100000,(float*)ptr1);
-    v = uload16f(v,0b111110000000000,(float*)ptr2);
+    vfloat16 v = vfloat16::loadu((float*)ptr0);
+    v = vfloat16::loadu(v,0b1111100000,(float*)ptr1);
+    v = vfloat16::loadu(v,0b111110000000000,(float*)ptr2);
     return v;
   }
 
@@ -93,9 +93,9 @@ namespace embree
 						const unsigned int subdiv_patch_index,
                                                 const vbool16 m_input = 0xffff) const
     {
-      const vint16 perm_v0 = load16i(tri_permute_v0);
-      const vint16 perm_v1 = load16i(tri_permute_v1);
-      const vint16 perm_v2 = load16i(tri_permute_v2);
+      const vint16 perm_v0 = vint16::load(tri_permute_v0);
+      const vint16 perm_v1 = vint16::load(tri_permute_v1);
+      const vint16 perm_v2 = vint16::load(tri_permute_v2);
 
       const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
       const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
@@ -199,9 +199,9 @@ namespace embree
 					       const Precalculations &pre,
                                                const vbool16 m_input = 0xffff)
     {
-      const vint16 perm_v0 = load16i(tri_permute_v0);
-      const vint16 perm_v1 = load16i(tri_permute_v1);
-      const vint16 perm_v2 = load16i(tri_permute_v2);
+      const vint16 perm_v0 = vint16::load(tri_permute_v0);
+      const vint16 perm_v1 = vint16::load(tri_permute_v1);
+      const vint16 perm_v2 = vint16::load(tri_permute_v2);
 
       const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
       const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
@@ -257,9 +257,9 @@ namespace embree
 						const unsigned int subdiv_patch_index,
                                                 const vbool16 m_input = 0xffff) const
     {
-      const vint16 perm_v0 = load16i(tri_permute_v0);
-      const vint16 perm_v1 = load16i(tri_permute_v1);
-      const vint16 perm_v2 = load16i(tri_permute_v2);
+      const vint16 perm_v0 = vint16::load(tri_permute_v0);
+      const vint16 perm_v1 = vint16::load(tri_permute_v1);
+      const vint16 perm_v2 = vint16::load(tri_permute_v2);
 
       const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
       const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));
@@ -354,9 +354,9 @@ namespace embree
 					       const Precalculations &pre,
                                                const vbool16 m_input = 0xffff)
     {
-      const vint16 perm_v0 = load16i(tri_permute_v0);
-      const vint16 perm_v1 = load16i(tri_permute_v1);
-      const vint16 perm_v2 = load16i(tri_permute_v2);
+      const vint16 perm_v0 = vint16::load(tri_permute_v0);
+      const vint16 perm_v1 = vint16::load(tri_permute_v1);
+      const vint16 perm_v2 = vint16::load(tri_permute_v2);
 
       const Vec3vf16 ray_dir(swAAAA(dir_xyz),swBBBB(dir_xyz),swCCCC(dir_xyz));
       const Vec3vf16 ray_org(swAAAA(org_xyz),swBBBB(org_xyz),swCCCC(org_xyz));

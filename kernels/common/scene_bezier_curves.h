@@ -153,10 +153,10 @@ namespace embree
       const float* cp3 = (float*) vertices[0].getPtr(index+3);
       
       const vbool16 m_4f = 0xf;
-      const vfloat16 v0 = permute<0,0,0,0>(uload16f(m_4f,cp0));
-      const vfloat16 v1 = permute<0,0,0,0>(uload16f(m_4f,cp1));
-      const vfloat16 v2 = permute<0,0,0,0>(uload16f(m_4f,cp2));
-      const vfloat16 v3 = permute<0,0,0,0>(uload16f(m_4f,cp3));
+      const vfloat16 v0 = shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,cp0));
+      const vfloat16 v1 = shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,cp1));
+      const vfloat16 v2 = shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,cp2));
+      const vfloat16 v3 = shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,cp3));
       
       const vfloat16 b_min = min(min(v0,v1),min(v2,v3));
       const vfloat16 b_max = max(max(v0,v1),max(v2,v3));

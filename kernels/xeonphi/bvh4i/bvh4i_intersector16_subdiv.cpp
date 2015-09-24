@@ -37,10 +37,10 @@ namespace embree
 				       const void *__restrict__ const ptr2,
 				       const void *__restrict__ const ptr3) 
   {
-    vfloat16 v = uload16f((float*)ptr0);
-    v = uload16f(v,0xf0,(float*)ptr1);
-    v = uload16f(v,0xf00,(float*)ptr2);
-    v = uload16f(v,0xf000,(float*)ptr3);
+    vfloat16 v = vfloat16::loadu((float*)ptr0);
+    v = vfloat16::loadu(v,0xf0,(float*)ptr1);
+    v = vfloat16::loadu(v,0xf00,(float*)ptr2);
+    v = vfloat16::loadu(v,0xf000,(float*)ptr3);
     return v;
   }
 
@@ -141,9 +141,9 @@ namespace embree
 	      prefetch<PFHINT_NT>(&grid_y_array[ offset ]);
 	      prefetch<PFHINT_NT>(&grid_z_array[ offset ]);
 
-	      const vfloat16 x = uload16f(&grid_x_array[ offset ]);
-	      const vfloat16 y = uload16f(&grid_y_array[ offset ]);
-	      const vfloat16 z = uload16f(&grid_z_array[ offset ]);
+	      const vfloat16 x = vfloat16::loadu(&grid_x_array[ offset ]);
+	      const vfloat16 y = vfloat16::loadu(&grid_y_array[ offset ]);
+	      const vfloat16 z = vfloat16::loadu(&grid_z_array[ offset ]);
 	      min_x = min(min_x,x);
 	      max_x = max(max_x,x);
 	      min_y = min(min_y,y);
@@ -309,7 +309,7 @@ namespace embree
 	  const vint16 u_i = vint16(u * 65535.0f/2.0f);
 	  const vint16 v_i = vint16(v * 65535.0f/2.0f);
 	  const vint16 uv_i = (v_i << 16) | u_i;
-	  store16i(&grid_uv[i],uv_i);
+          vint16::store(&grid_uv[i],uv_i);
 	}
 
 
@@ -400,7 +400,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const vint16 old_primID = ray16.primID;
       const vint16 old_geomID = ray16.geomID;
@@ -428,8 +428,8 @@ namespace embree
 	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -483,7 +483,7 @@ namespace embree
 	      NodeRef * __restrict__ const sub_stack_node = &stack_node[sindex];
 	      sub_stack_node[0] = BVH4i::invalidNode;
 	      sub_stack_node[1] = subtree_root;
-	      ustore16f(sub_stack_dist,inf);
+	      vfloat16::storeu(sub_stack_dist,inf);
 	      size_t sub_sindex = 2;
 
 	      while (1)
@@ -573,8 +573,8 @@ namespace embree
 	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 	  const vint16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -672,7 +672,7 @@ namespace embree
 	}
 
 
-      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+      vint16::store(m_valid & toMask(terminated),&ray16.geomID,0);
 
     }
 
@@ -692,7 +692,7 @@ namespace embree
 
       const unsigned int oldID = ray.primID;
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const Node      * __restrict__ nodes = (Node    *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -710,8 +710,8 @@ namespace embree
       const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
       //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      vfloat16       max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray.tnear);
+      vfloat16       max_dist_xyz = vfloat16::broadcast(&ray.tfar);
 	  
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);
@@ -764,7 +764,7 @@ namespace embree
 	  NodeRef * __restrict__ const sub_stack_node = &stack_node[sindex];
 	  sub_stack_node[0] = BVH4i::invalidNode;
 	  sub_stack_node[1] = subtree_root;
-	  ustore16f(sub_stack_dist,inf);
+	  vfloat16::storeu(sub_stack_dist,inf);
 	  size_t sub_sindex = 2;
 
 	  while (1)
@@ -832,8 +832,8 @@ namespace embree
       const vfloat16 dir_xyz      = loadAOS4to16f(ray.dir.x,ray.dir.y,ray.dir.z);
       const vfloat16 rdir_xyz     = loadAOS4to16f(rdir16.x[0],rdir16.y[0],rdir16.z[0]);
       //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-      const vfloat16 min_dist_xyz = broadcast1to16f(&ray.tnear);
-      const vfloat16 max_dist_xyz = broadcast1to16f(&ray.tfar);
+      const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray.tnear);
+      const vfloat16 max_dist_xyz = vfloat16::broadcast(&ray.tfar);
 
       const unsigned int leaf_mask = BVH4I_LEAF_MASK;
       const Precalculations precalculations(org_xyz,rdir_xyz);

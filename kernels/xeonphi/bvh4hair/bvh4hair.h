@@ -133,7 +133,7 @@ namespace embree
 
       __forceinline vint16 getChildren() const
       {
-	return load16i((int*)lower);
+	return vint16::load((int*)lower);
       }
 
       __forceinline vfloat16 getRow(size_t i) const
@@ -313,7 +313,7 @@ namespace embree
 
       __forceinline vint16 getChildren() const
       {
-	return load16i((int*)lower);
+	return vint16::load((int*)lower);
       }
 
       __forceinline void setInvalid(size_t i)

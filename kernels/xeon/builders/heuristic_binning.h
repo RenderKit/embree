@@ -482,9 +482,9 @@ namespace embree
           const vfloat16 b_max_y = prims[i].upper.y;
           const vfloat16 b_max_z = prims[i].upper.z;
 
-          const vint16 bin0 = swizzle<0>(bin);
-          const vint16 bin1 = swizzle<1>(bin);
-          const vint16 bin2 = swizzle<2>(bin);
+          const vint16 bin0 = shuffle<0>(bin);
+          const vint16 bin1 = shuffle<1>(bin);
+          const vint16 bin2 = shuffle<2>(bin);
 
           const vbool16 m_update_x = step16 == bin0;
           const vbool16 m_update_y = step16 == bin1;

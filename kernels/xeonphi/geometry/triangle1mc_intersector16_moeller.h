@@ -17,7 +17,7 @@
 #pragma once
 
 #include "triangle1.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 #include "filter.h"
 
 namespace embree
@@ -71,7 +71,7 @@ namespace embree
 	const vfloat16 e2 = v0 - v2;	     
 	const vfloat16 normal = lcross_zxy(e1,e2);
 	const vfloat16 org = v0 - org_xyz;
-	const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+	const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
 	const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
 	const vfloat16 rcp_den = rcp(den);
 	const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -245,7 +245,7 @@ namespace embree
 	const vfloat16 normal = lcross_zxy(e1,e2);
 
 	const vfloat16 org = v0 - org_xyz;
-	const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+	const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
 	const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
 	const vfloat16 rcp_den = rcp(den);
 	const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -354,7 +354,7 @@ namespace embree
 	    const vfloat16 e2 = v2-v0;
 
 	    /* calculate denominator */
-	    const Vec3vf16 _v0 = Vec3vf16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const Vec3vf16 _v0 = Vec3vf16(shuffle<0>(v0),shuffle<1>(v0),shuffle<2>(v0));
 	    const Vec3vf16 C =  _v0 - org;
 	    
 	    //const Vec3vf16 Ng = Vec3vf16(tri.Ng);
@@ -374,9 +374,9 @@ namespace embree
 
 	    /* perform edge tests */
 	    const Vec3vf16 R = -cross(C,ray16.dir);
-	    const Vec3vf16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const Vec3vf16 _e2(shuffle<0>(e2),shuffle<1>(e2),shuffle<2>(e2));
 	    const vfloat16 u = dot(R,_e2)*rcp_den;
-	    const Vec3vf16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const Vec3vf16 _e1(shuffle<0>(e1),shuffle<1>(e1),shuffle<2>(e1));
 	    const vfloat16 v = dot(R,_e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);
@@ -422,14 +422,14 @@ namespace embree
 		}
 	      }
 	    /* update hit information */
-	    store16f(valid,(float*)&ray16.u,u);
-	    store16f(valid,(float*)&ray16.v,v);
-	    store16f(valid,(float*)&ray16.tfar,t);
-	    store16i(valid,(float*)&ray16.geomID,geomID);
-	    store16i(valid,(float*)&ray16.primID,primID);
-	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
+	    vfloat16::store(valid,(float*)&ray16.u,u);
+	    vfloat16::store(valid,(float*)&ray16.v,v);
+	    vfloat16::store(valid,(float*)&ray16.tfar,t);
+	    vint16::store(valid,(float*)&ray16.geomID,geomID);
+	    vint16::store(valid,(float*)&ray16.primID,primID);
+	    vfloat16::store(valid,(float*)&ray16.Ng.x,Ng.x);
+	    vfloat16::store(valid,(float*)&ray16.Ng.y,Ng.y);
+	    vfloat16::store(valid,(float*)&ray16.Ng.z,Ng.z);
 	  }
 
       }
@@ -462,7 +462,7 @@ namespace embree
 	    const vfloat16 e2 = v2-v0;
 
 	    /* calculate denominator */
-	    const Vec3vf16 _v0 = Vec3vf16(swizzle<0>(v0),swizzle<1>(v0),swizzle<2>(v0));
+	    const Vec3vf16 _v0 = Vec3vf16(shuffle<0>(v0),shuffle<1>(v0),shuffle<2>(v0));
 	    const Vec3vf16 C =  _v0 - org;
 	    
 	    const vfloat16 normal_xyz = lcross_zxy(e1,e2);
@@ -480,9 +480,9 @@ namespace embree
 	    /* perform edge tests */
 	    const vfloat16 rcp_den = rcp(den);
 	    const Vec3vf16 R = cross(dir,C);
-	    const Vec3vf16 _e2(swizzle<0>(e2),swizzle<1>(e2),swizzle<2>(e2));
+	    const Vec3vf16 _e2(shuffle<0>(e2),shuffle<1>(e2),shuffle<2>(e2));
 	    const vfloat16 u = dot(R,_e2)*rcp_den;
-	    const Vec3vf16 _e1(swizzle<0>(e1),swizzle<1>(e1),swizzle<2>(e1));
+	    const Vec3vf16 _e1(shuffle<0>(e1),shuffle<1>(e1),shuffle<2>(e1));
 	    const vfloat16 v = dot(R,_e1)*rcp_den;
 	    valid = ge(valid,u,zero);
 	    valid = ge(valid,v,zero);

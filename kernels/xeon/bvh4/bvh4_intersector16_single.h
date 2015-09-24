@@ -19,7 +19,7 @@
 #include "bvh4.h"
 #include "bvh4_intersector_node.h"
 
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 #include "../../common/stack_item.h"
 
 namespace embree

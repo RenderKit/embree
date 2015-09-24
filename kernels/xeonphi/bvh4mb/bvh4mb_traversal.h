@@ -130,14 +130,14 @@ namespace embree
 	const unsigned int old_sindex = sindex;
 	sindex += countbits(hiti) - 1;
 	assert(sindex < 3*BVH4i::maxDepth+1);
-	const vint16 plower_node = load16i((int*)plower);
+	const vint16 plower_node = vint16::load((int*)plower);
         
 	const vbool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
 	curNode = ((unsigned int*)plower)[closest_child_pos];
-	compactustore16f(m_pos,&stack_dist[old_sindex],tNear);
-	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	vfloat16::storeu_compact(m_pos,&stack_dist[old_sindex],tNear);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],plower_node);
       }
   }
 
@@ -248,9 +248,9 @@ namespace embree
 	const vbool16 closest_child = eq(hitm,min_dist,tNear);
 	const unsigned long closest_child_pos = bitscan64(closest_child);
 	const vbool16 m_pos = andn(hitm,andn(closest_child,(vbool16)((unsigned int)closest_child - 1)));
-	const vint16 plower_node = load16i((int*)plower);
+	const vint16 plower_node = vint16::load((int*)plower);
 	curNode = ((unsigned int*)plower)[closest_child_pos];
-	compactustore16i(m_pos,&stack_node[old_sindex],plower_node);
+	vint16::storeu_compact(m_pos,&stack_node[old_sindex],plower_node);
       }    
   }
 

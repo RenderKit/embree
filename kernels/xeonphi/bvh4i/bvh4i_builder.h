@@ -162,8 +162,8 @@ namespace embree
 	  m_lane = (unsigned int)m_lane << 4;
 	}      
 
-      store16f_ngo((vfloat16*)ptr+0,lower); 
-      store16f_ngo((vfloat16*)ptr+1,upper);             
+      vfloat16::store_ngo((vfloat16*)ptr+0,lower); 
+      vfloat16::store_ngo((vfloat16*)ptr+1,upper);             
     }
 
 

@@ -36,7 +36,7 @@ namespace embree
 					const void *__restrict__ const accel,
 					const Scene*__restrict__ const geometry)
     {
-      const vfloat16 time     = broadcast1to16f(&ray.time);
+      const vfloat16 time     = vfloat16::broadcast(&ray.time);
       const vfloat16 one_time = (vfloat16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
@@ -95,7 +95,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -175,7 +175,7 @@ namespace embree
 					 const void *__restrict__ const accel,
 					 const Scene*__restrict__ const geometry)
     {
-      const vfloat16 time     = broadcast1to16f(&ray.time);
+      const vfloat16 time     = vfloat16::broadcast(&ray.time);
       const vfloat16 one_time = (vfloat16::one() - time);
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
 
@@ -235,7 +235,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -283,7 +283,7 @@ namespace embree
 					const void *__restrict__ const accel,
 					const Scene*__restrict__ const geometry)
     {
-      const vfloat16 time     = broadcast1to16f(&ray16.time[rayIndex]);
+      const vfloat16 time     = vfloat16::broadcast(&ray16.time[rayIndex]);
       const vfloat16 one_time = (vfloat16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
@@ -344,7 +344,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -436,7 +436,7 @@ namespace embree
 				       const void *__restrict__ const accel,
 				       const Scene*__restrict__ const geometry)
     {
-      const vfloat16 time     = broadcast1to16f(&ray16.time[rayIndex]);
+      const vfloat16 time     = vfloat16::broadcast(&ray16.time[rayIndex]);
       const vfloat16 one_time = (vfloat16::one() - time);
 
       const BVH4mb::Triangle01* tptr  = (BVH4mb::Triangle01*) curNode.leaf<8>(accel);
@@ -498,7 +498,7 @@ namespace embree
       const vfloat16 e2 = v0 - v2;	     
       const vfloat16 normal = lcross_zxy(e1,e2);
       const vfloat16 org = v0 - org_xyz;
-      const vfloat16 odzxy = msubr231(org * swizzle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, swizzle(org,_MM_SWIZ_REG_DACB));
+      const vfloat16 odzxy = msubr231(org * shuffle(dir_xyz,_MM_SWIZ_REG_DACB), dir_xyz, shuffle(org,_MM_SWIZ_REG_DACB));
       const vfloat16 den = ldot3_zxy(dir_xyz,normal);	      
       const vfloat16 rcp_den = rcp(den);
       const vfloat16 uu = ldot3_zxy(e2,odzxy); 
@@ -580,14 +580,14 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf),16);
         
 	    /* load vertices and calculate edges */
-	    const Vec3vf16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const Vec3vf16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3vf16 v0_t0( vfloat16::broadcast(&tri_t0.v0.x), vfloat16::broadcast(&tri_t0.v0.y), vfloat16::broadcast(&tri_t0.v0.z) );
+	    const Vec3vf16 v0_t1( vfloat16::broadcast(&tri_t1.v0.x), vfloat16::broadcast(&tri_t1.v0.y), vfloat16::broadcast(&tri_t1.v0.z) );
 	    const Vec3vf16 v0 = v0_t0 * one_time + time * v0_t1;
-	    const Vec3vf16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const Vec3vf16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3vf16 v1_t0( vfloat16::broadcast(&tri_t0.v1.x), vfloat16::broadcast(&tri_t0.v1.y), vfloat16::broadcast(&tri_t0.v1.z) );
+	    const Vec3vf16 v1_t1( vfloat16::broadcast(&tri_t1.v1.x), vfloat16::broadcast(&tri_t1.v1.y), vfloat16::broadcast(&tri_t1.v1.z) );
 	    const Vec3vf16 v1 = v1_t0 * one_time + time * v1_t1;
-	    const Vec3vf16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const Vec3vf16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3vf16 v2_t0( vfloat16::broadcast(&tri_t0.v2.x), vfloat16::broadcast(&tri_t0.v2.y), vfloat16::broadcast(&tri_t0.v2.z) );
+	    const Vec3vf16 v2_t1( vfloat16::broadcast(&tri_t1.v2.x), vfloat16::broadcast(&tri_t1.v2.y), vfloat16::broadcast(&tri_t1.v2.z) );
 	    const Vec3vf16 v2 = v2_t0 * one_time + time * v2_t1;
 
 	    const Vec3vf16 e1 = v0-v1;
@@ -641,14 +641,14 @@ namespace embree
 	    if (unlikely(none(valid))) continue;
         
 	    /* update hit information */
-	    store16f(valid,(float*)&ray16.u,u);
-	    store16f(valid,(float*)&ray16.v,v);
-	    store16f(valid,(float*)&ray16.tfar,t);
-	    store16i(valid,(float*)&ray16.geomID,geomID);
-	    store16i(valid,(float*)&ray16.primID,primID);
-	    store16f(valid,(float*)&ray16.Ng.x,Ng.x);
-	    store16f(valid,(float*)&ray16.Ng.y,Ng.y);
-	    store16f(valid,(float*)&ray16.Ng.z,Ng.z);
+	    vfloat16::store(valid,(float*)&ray16.u,u);
+	    vfloat16::store(valid,(float*)&ray16.v,v);
+	    vfloat16::store(valid,(float*)&ray16.tfar,t);
+	    vint16::store(valid,(float*)&ray16.geomID,geomID);
+	    vint16::store(valid,(float*)&ray16.primID,primID);
+	    vfloat16::store(valid,(float*)&ray16.Ng.x,Ng.x);
+	    vfloat16::store(valid,(float*)&ray16.Ng.y,Ng.y);
+	    vfloat16::store(valid,(float*)&ray16.Ng.z,Ng.z);
 	  }
       }
 
@@ -691,14 +691,14 @@ namespace embree
 	    STAT3(normal.trav_prims,1,popcnt(m_valid_leaf_active),16);
         
 	    /* load vertices and calculate edges */
-	    const Vec3vf16 v0_t0( broadcast1to16f(&tri_t0.v0.x), broadcast1to16f(&tri_t0.v0.y), broadcast1to16f(&tri_t0.v0.z) );
-	    const Vec3vf16 v0_t1( broadcast1to16f(&tri_t1.v0.x), broadcast1to16f(&tri_t1.v0.y), broadcast1to16f(&tri_t1.v0.z) );
+	    const Vec3vf16 v0_t0( vfloat16::broadcast(&tri_t0.v0.x), vfloat16::broadcast(&tri_t0.v0.y), vfloat16::broadcast(&tri_t0.v0.z) );
+	    const Vec3vf16 v0_t1( vfloat16::broadcast(&tri_t1.v0.x), vfloat16::broadcast(&tri_t1.v0.y), vfloat16::broadcast(&tri_t1.v0.z) );
 	    const Vec3vf16 v0 = v0_t0 * one_time + time * v0_t1;
-	    const Vec3vf16 v1_t0( broadcast1to16f(&tri_t0.v1.x), broadcast1to16f(&tri_t0.v1.y), broadcast1to16f(&tri_t0.v1.z) );
-	    const Vec3vf16 v1_t1( broadcast1to16f(&tri_t1.v1.x), broadcast1to16f(&tri_t1.v1.y), broadcast1to16f(&tri_t1.v1.z) );
+	    const Vec3vf16 v1_t0( vfloat16::broadcast(&tri_t0.v1.x), vfloat16::broadcast(&tri_t0.v1.y), vfloat16::broadcast(&tri_t0.v1.z) );
+	    const Vec3vf16 v1_t1( vfloat16::broadcast(&tri_t1.v1.x), vfloat16::broadcast(&tri_t1.v1.y), vfloat16::broadcast(&tri_t1.v1.z) );
 	    const Vec3vf16 v1 = v1_t0 * one_time + time * v1_t1;
-	    const Vec3vf16 v2_t0( broadcast1to16f(&tri_t0.v2.x), broadcast1to16f(&tri_t0.v2.y), broadcast1to16f(&tri_t0.v2.z) );
-	    const Vec3vf16 v2_t1( broadcast1to16f(&tri_t1.v2.x), broadcast1to16f(&tri_t1.v2.y), broadcast1to16f(&tri_t1.v2.z) );
+	    const Vec3vf16 v2_t0( vfloat16::broadcast(&tri_t0.v2.x), vfloat16::broadcast(&tri_t0.v2.y), vfloat16::broadcast(&tri_t0.v2.z) );
+	    const Vec3vf16 v2_t1( vfloat16::broadcast(&tri_t1.v2.x), vfloat16::broadcast(&tri_t1.v2.y), vfloat16::broadcast(&tri_t1.v2.z) );
 	    const Vec3vf16 v2 = v2_t0 * one_time + time * v2_t1;
 
 	    const Vec3vf16 e1 = v0-v1;

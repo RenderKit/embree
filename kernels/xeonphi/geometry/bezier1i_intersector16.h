@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bezier1i.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 #include "filter.h"
 
 namespace embree
@@ -52,10 +52,10 @@ namespace embree
 				      const vfloat16 &c3)
     {
 #if 1
-      const vfloat16 p0 = permute<0>(p0123);
-      const vfloat16 p1 = permute<1>(p0123);
-      const vfloat16 p2 = permute<2>(p0123);
-      const vfloat16 p3 = permute<3>(p0123);
+      const vfloat16 p0 = shuffle128<0>(p0123);
+      const vfloat16 p1 = shuffle128<1>(p0123);
+      const vfloat16 p2 = shuffle128<2>(p0123);
+      const vfloat16 p3 = shuffle128<3>(p0123);
 
       const vfloat16 x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
       const vfloat16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);
@@ -117,7 +117,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
 
       const vfloat16 p0123_org = p0123 - org_xyz;
 
@@ -215,7 +215,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
@@ -316,7 +316,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);
@@ -416,7 +416,7 @@ namespace embree
       prefetch<PFHINT_L1>(curve_in.p + 0);
       prefetch<PFHINT_L1>(curve_in.p + 3);
 
-      const vfloat16 p0123 = uload16f((float*)curve_in.p);
+      const vfloat16 p0123 = vfloat16::loadu((float*)curve_in.p);
       const vfloat16 p0123_org = p0123 - org_xyz;
 
       const vfloat16 p0123_2D = select(0x7777,pre_vx * swAAAA(p0123_org) + pre_vy * swBBBB(p0123_org) + pre_vz * swCCCC(p0123_org),p0123);

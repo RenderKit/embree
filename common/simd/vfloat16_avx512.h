@@ -20,7 +20,7 @@ namespace embree
 {
   /* 16-wide AVX-512 float type */
   template<>
-  struct vfloat<16>
+    struct vfloat<16>
   {
     typedef vboolf16 Bool;
     typedef vint16   Int;
@@ -76,6 +76,7 @@ namespace embree
 #endif
     }
 
+
     static __forceinline vfloat16 loadu(const float* const ptr) {
 #if defined(__AVX512F__)
       return _mm512_loadu_ps(ptr); 
@@ -86,14 +87,33 @@ namespace embree
 #endif
     }
 
+    static __forceinline vfloat16 loadu(vfloat16 &r, const vboolf16& mask, const float *const ptr) {
+#if defined(__AVX512F__)
+      return  _mm512_mask_expandloadu_ps(r,mask,ptr);
+#else
+      r =_mm512_mask_extloadunpacklo_ps(r, mask,ptr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      r = _mm512_mask_extloadunpackhi_ps(r, mask, ptr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
+      return r;
+#endif
+    }
 
-    static __forceinline void store(float* const ptr, const vfloat16& v) {
+    static __forceinline vfloat16 loadu(const vboolf16& mask, const float *const ptr) {
+      vfloat16 r = vfloat16::undefined();
+      return vfloat16::loadu(r,mask,ptr);
+    }
+
+    static __forceinline void store(vfloat16* const ptr, const vfloat16& v) {
 #if defined(__AVX512F__)
       _mm512_store_ps(ptr,v);
 #else
       _mm512_extstore_ps(ptr,v,_MM_DOWNCONV_PS_NONE,0);
 #endif
     }
+
+    static __forceinline void store(float* const ptr, const vfloat16& v) {
+      vfloat16::store((vfloat16*)ptr,v);
+    }
+
 
     static __forceinline void store(const vboolf16& mask, vfloat16* const ptr, const vfloat16& v) {
 #if defined(__AVX512F__)
@@ -104,12 +124,9 @@ namespace embree
     }
 
     static __forceinline void store(const vboolf16& mask, float* const ptr, const vfloat16& v) {
-#if defined(__AVX512F__)
-      _mm512_mask_store_ps(ptr,mask,v);
-#else
-      _mm512_mask_extstore_ps(ptr,mask,v,_MM_DOWNCONV_PS_NONE,0);
-#endif
+      vfloat16::store(mask,(vfloat16*)ptr,v);
     }
+
 
 
     static __forceinline void storeu(float* const ptr, const vfloat16& v ) {
@@ -133,6 +150,41 @@ namespace embree
       _mm512_extpackstorehi_ps(ptr+16 ,r, _MM_DOWNCONV_PS_NONE , 0);
 #endif
     }
+
+
+    static __forceinline void store_nt(void *__restrict__ ptr, const vfloat16& a) {
+#if defined(__AVX512F__)
+      _mm512_stream_ps(ptr,a);
+#else
+      _mm512_storenr_ps(ptr,a);
+#endif
+    }
+
+    static __forceinline vfloat16 broadcast(const float *const f) {
+#if defined(__AVX512F__)
+      return _mm512_set1_ps(*f);
+#else
+      return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
+#endif
+    }
+
+  /* pass by value to avoid compiler generating inefficient code */
+    static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
+#if defined(__AVX512F__)
+      _mm512_mask_compressstoreu_ps(addr,mask,reg);
+#else
+    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+    _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+#endif
+  }
+
+
+/* only available on KNC */
+#if defined(__MIC__)  
+    static __forceinline void store_ngo(void *__restrict__ ptr, const vfloat16& a) {
+      _mm512_storenrngo_ps(ptr,a);
+    }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -174,6 +226,7 @@ namespace embree
     return _mm512_gmaxabs_ps(a,a); 
 #endif
   }
+  
   __forceinline const vfloat16 signmsk   ( const vfloat16& a ) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline const vfloat16 rcp  ( const vfloat16& a ) {
@@ -444,7 +497,7 @@ namespace embree
 #else
     return _mm512_trunc_ps(a); 
 #endif
-} 
+  } 
   __forceinline vfloat16 frac( const vfloat16& a ) { return a-trunc(a); }
 
   __forceinline const vfloat16 rcp_nr  ( const vfloat16& a ) {
@@ -456,51 +509,51 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 swizzle(const vfloat16& x,_MM_SWIZZLE_ENUM perm32 ) {
+  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_SWIZZLE_ENUM perm32 ) {
 #if 0 
     return _mm512_permute_ps(x,perm32); // WARNING: permute has a different intermediate encoding!!!
 #else
     return _mm512_swizzle_ps(x,perm32); 
 #endif
   }
-  __forceinline vfloat16 permute(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
+  __forceinline vfloat16 shuffle128(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
   
-  template<int D, int C, int B, int A> __forceinline vfloat16 swizzle   (const vfloat16& v) {
+  template<int D, int C, int B, int A> __forceinline vfloat16 shuffle   (const vfloat16& v) {
 #if defined(__AVX512F__)
     return _mm512_permute_ps(v,_MM_SHUF_PERM(D,C,B,A)); 
 #else
     return cast(_mm512_shuffle_epi32(cast(v),_MM_SHUF_PERM(D,C,B,A)));
 #endif
   }
-  template<int A>                      __forceinline vfloat16 swizzle   (const vfloat16& x) { return swizzle<A,A,A,A>(v); }
-  template<>                           __forceinline vfloat16 swizzle<0>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_AAAA); }
-  template<>                           __forceinline vfloat16 swizzle<1>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_BBBB); }
-  template<>                           __forceinline vfloat16 swizzle<2>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_CCCC); }
-  template<>                           __forceinline vfloat16 swizzle<3>(const vfloat16& x) { return swizzle(x,_MM_SWIZ_REG_DDDD); }
+  template<int A>                      __forceinline vfloat16 shuffle   (const vfloat16& x) { return shuffle<A,A,A,A>(v); }
+  template<>                           __forceinline vfloat16 shuffle<0>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_AAAA); }
+  template<>                           __forceinline vfloat16 shuffle<1>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_BBBB); }
+  template<>                           __forceinline vfloat16 shuffle<2>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_CCCC); }
+  template<>                           __forceinline vfloat16 shuffle<3>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_DDDD); }
 
-  template<int D, int C, int B, int A> __forceinline vfloat16 permute(const vfloat16& v) { return permute(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vfloat16 permute(const vfloat16& x) { return permute<A,A,A,A>(x); }
+  template<int D, int C, int B, int A> __forceinline vfloat16 shuffle128(const vfloat16& v) { return shuffle128(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int A>                      __forceinline vfloat16 shuffle128(const vfloat16& x) { return shuffle128<A,A,A,A>(x); }
 
-  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return swizzle(permute(x,perm128),perm32); }
+  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle128(x,perm128),perm32); }
   
   __forceinline vfloat16 shuffle(const vboolf16& mask, vfloat16& v, const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
     return _mm512_mask_swizzle_ps(_mm512_mask_permute4f128_ps(v,mask,x,perm128),mask,x,perm32);  
   }
 
   __forceinline vfloat16 swAAAA(const vfloat16 &x) {
-    return swizzle(x,_MM_SWIZ_REG_AAAA);
+    return shuffle(x,_MM_SWIZ_REG_AAAA);
   }
 
   __forceinline vfloat16 swBBBB(const vfloat16 &x) {
-    return swizzle(x,_MM_SWIZ_REG_BBBB);
+    return shuffle(x,_MM_SWIZ_REG_BBBB);
   }
 
   __forceinline vfloat16 swCCCC(const vfloat16 &x) {
-    return swizzle(x,_MM_SWIZ_REG_CCCC);
+    return shuffle(x,_MM_SWIZ_REG_CCCC);
   }
 
   __forceinline vfloat16 swDDDD(const vfloat16 &x) {
-    return swizzle(x,_MM_SWIZ_REG_DDDD);
+    return shuffle(x,_MM_SWIZ_REG_DDDD);
   }
 
   __forceinline vfloat16 _mm512_permutev_ps(__m512i index, vfloat16 v)
@@ -524,16 +577,16 @@ namespace embree
   }
 
   template<int i>
-  __forceinline vfloat16 align_shift_right(const vfloat16 &a, const vfloat16 &b)
+    __forceinline vfloat16 align_shift_right(const vfloat16 &a, const vfloat16 &b)
   {
     return _mm512_castsi512_ps(_mm512_alignr_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
   };
 
   template<int i>
     __forceinline vfloat16 mask_align_shift_right(const vboolf16 &mask,vfloat16 &c,const vfloat16 &a, const vfloat16 &b)
-    {
-      return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c),mask,_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
-    };
+  {
+    return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c),mask,_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
+  };
  
   __forceinline vfloat16 shl1_zero_extend(const vfloat16 &a)
   {
@@ -546,16 +599,16 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float reduce_add(vfloat16 a) { return _mm512_reduce_add_ps(a); }
-  __forceinline float reduce_mul(vfloat16 a) { return _mm512_reduce_mul_ps(a); }
-  __forceinline float reduce_min(vfloat16 a) {
+  __forceinline float reduce_add(const vfloat16 &a) { return _mm512_reduce_add_ps(a); }
+  __forceinline float reduce_mul(const vfloat16 &a) { return _mm512_reduce_mul_ps(a); }
+  __forceinline float reduce_min(const vfloat16 &a) {
 #if defined(__AVX512F__)
     return _mm512_reduce_min_ps(a); 
 #else
     return _mm512_reduce_gmin_ps(a); 
 #endif
   }
-  __forceinline float reduce_max(vfloat16 a) {
+  __forceinline float reduce_max(const vfloat16 &a) {
 #if defined(__AVX512F__)
     return _mm512_reduce_max_ps(a); 
 #else
@@ -564,20 +617,20 @@ namespace embree
 
   }
 
-  __forceinline vfloat16 vreduce_min2(vfloat16 x) {                      return min(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vfloat16 vreduce_min4(vfloat16 x) { x = vreduce_min2(x); return min(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_min2(vfloat16 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
+  __forceinline vfloat16 vreduce_min4(vfloat16 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
+  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vfloat16 vreduce_max2(vfloat16 x) {                      return max(x,swizzle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vfloat16 vreduce_max4(vfloat16 x) { x = vreduce_max2(x); return max(x,swizzle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,permute(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,permute(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_max2(vfloat16 x) {                      return max(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
+  __forceinline vfloat16 vreduce_max4(vfloat16 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
+  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vfloat16 vreduce_add2(vfloat16 x) {                      return x + swizzle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vfloat16 vreduce_add4(vfloat16 x) { x = vreduce_add2(x); return x + swizzle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + permute(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + permute(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vfloat16 vreduce_add2(vfloat16 x) {                      return x + shuffle(x,_MM_SWIZ_REG_BADC); }
+  __forceinline vfloat16 vreduce_add4(vfloat16 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SWIZ_REG_CDAB); }
+  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline size_t select_min(const vfloat16& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vfloat16& v) { return __bsf(movemask(v == vreduce_max(v))); }
@@ -593,8 +646,8 @@ namespace embree
   __forceinline vfloat16 prefix_sum(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_add(0xaaaa,v,v,swizzle<2,2,0,0>(v));
-    v = mask_add(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    v = mask_add(0xaaaa,v,v,shuffle<2,2,0,0>(v));
+    v = mask_add(0xcccc,v,v,shuffle<1,1,1,1>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_add(0xf0f0,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
@@ -605,8 +658,8 @@ namespace embree
   __forceinline vfloat16 prefix_min(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_min(0xaaaa,v,v,swizzle<2,2,0,0>(v));
-    v = mask_min(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    v = mask_min(0xaaaa,v,v,shuffle<2,2,0,0>(v));
+    v = mask_min(0xcccc,v,v,shuffle<1,1,1,1>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_min(0xf0f0,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
@@ -617,8 +670,8 @@ namespace embree
   __forceinline vfloat16 prefix_max(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_max(0xaaaa,v,v,swizzle<2,2,0,0>(v));
-    v = mask_max(0xcccc,v,v,swizzle<1,1,1,1>(v));
+    v = mask_max(0xaaaa,v,v,shuffle<2,2,0,0>(v));
+    v = mask_max(0xcccc,v,v,shuffle<1,1,1,1>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,0,0),_MM_SWIZ_REG_DDDD);
     v = mask_max(0xf0f0,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(1,1,0,0),_MM_SWIZ_REG_DDDD);
@@ -629,8 +682,8 @@ namespace embree
   __forceinline vfloat16 reverse_prefix_min(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_min(0x5555,v,v,swizzle<3,3,1,1>(v));
-    v = mask_min(0x3333,v,v,swizzle<2,2,2,2>(v));
+    v = mask_min(0x5555,v,v,shuffle<3,3,1,1>(v));
+    v = mask_min(0x3333,v,v,shuffle<2,2,2,2>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
     v = mask_min(0x0f0f,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
@@ -641,8 +694,8 @@ namespace embree
   __forceinline vfloat16 reverse_prefix_max(const vfloat16& a)
   {
     vfloat16 v = a;
-    v = mask_max(0x5555,v,v,swizzle<3,3,1,1>(v));
-    v = mask_max(0x3333,v,v,swizzle<2,2,2,2>(v));
+    v = mask_max(0x5555,v,v,shuffle<3,3,1,1>(v));
+    v = mask_max(0x3333,v,v,shuffle<2,2,2,2>(v));
     const vfloat16 shuf_v0 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(3,3,1,1),_MM_SWIZ_REG_AAAA);
     v = mask_max(0x0f0f,v,v,shuf_v0);
     const vfloat16 shuf_v1 = shuffle(v,(_MM_PERM_ENUM)_MM_SHUF_PERM(2,2,2,2),_MM_SWIZ_REG_AAAA);
@@ -652,8 +705,8 @@ namespace embree
 
 
   __forceinline vfloat16 set_min4(vfloat16 x) {
-    x = min(x,swizzle(x,_MM_SWIZ_REG_BADC));
-    x = min(x,swizzle(x,_MM_SWIZ_REG_CDAB));
+    x = min(x,shuffle(x,_MM_SWIZ_REG_BADC));
+    x = min(x,shuffle(x,_MM_SWIZ_REG_CDAB));
     return x;
   }
 
@@ -679,53 +732,16 @@ namespace embree
   /// Memory load and store operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  /* __forceinline vfloat16 load1f(const void *f) { */
-  /*   return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);   */
-  /* } */
-  
-  /* __forceinline vfloat16 load16f(const void *f) { */
-  /*   return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);   */
-  /* } */
-
-  __forceinline vfloat16 load16f(const vfloat16 d, const vboolf16 valid, const void *f) {
-    return _mm512_mask_extload_ps(d,valid,f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_16X16,_MM_HINT_NONE);  
-  }
-
-  __forceinline vfloat16 broadcast1to16f(const void *f) {
-    return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);  
-  }
   
   __forceinline vfloat16 broadcast4to16f(const void *f) {
     return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,0);  
   }
-
-  __forceinline vfloat16 broadcast8to16f(const void *f) {
-    return  _mm512_castpd_ps(_mm512_extload_pd(f,_MM_UPCONV_PD_NONE,_MM_BROADCAST_4X8,0));  
-  }
     
-  __forceinline vfloat16 load16f_uint8(const unsigned char *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/255.0f));
-  }
-
-  __forceinline vfloat16 load16f_uint16(const unsigned short *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT16,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/65535.0f));
-  }
-
-#if !defined(__AVX512F__)
-  __forceinline vfloat16 uload16f_low_uint8(const vboolf16& mask, const void* addr, const vfloat16& v1) {
-    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_UINT8, _MM_HINT_NONE);
-  }
-#endif
-
-  __forceinline vfloat16 load16f_int8(const char *const ptr) {
-    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_SINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/127.0f));
-  }
-
 
   __forceinline vfloat16 gather16f_4f(const float *__restrict__ const ptr0,
-                                   const float *__restrict__ const ptr1,
-                                   const float *__restrict__ const ptr2,
-                                   const float *__restrict__ const ptr3) 
+                                      const float *__restrict__ const ptr1,
+                                      const float *__restrict__ const ptr2,
+                                      const float *__restrict__ const ptr3) 
   {
     vfloat16 v = broadcast4to16f(ptr0);
     v = select((vboolf16)0x00f0,broadcast4to16f(ptr1),v);
@@ -809,26 +825,33 @@ namespace embree
     return cast(cast(v) & v_mask);
   }
 
-
-  __forceinline vfloat16 uload16f(const vboolf16& mask,const float *const addr) {
-    vfloat16 r = vfloat16::undefined();
-    r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-    r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
-    return r;
+  __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {
+#if defined(__AVX512F__)
+    _mm512_mask_compressstoreu_ps(addr,mask,reg);
+#else
+    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
+#endif
   }
 
-  __forceinline vfloat16 uload16f(vfloat16 &r, const vboolf16& mask, const float *const addr) {
-    r =_mm512_mask_extloadunpacklo_ps(r, mask,addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-    r = _mm512_mask_extloadunpackhi_ps(r, mask, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
-    return r;
+/* only available on KNC */
+#if defined(__MIC__)
+
+  __forceinline vfloat16 load16f_uint8(const unsigned char *const ptr) {
+    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/255.0f));
   }
 
-  __forceinline vfloat16 uload16f(const float *const addr) {
-    vfloat16 r = vfloat16::undefined();
-    r =_mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
-    return _mm512_extloadunpackhi_ps(r, addr+16, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);  
+  __forceinline vfloat16 load16f_uint16(const unsigned short *const ptr) {
+    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_UINT16,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/65535.0f));
   }
-  
+
+  __forceinline vfloat16 uload16f_low_uint8(const vboolf16& mask, const void* addr, const vfloat16& v1) {
+    return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_UINT8, _MM_HINT_NONE);
+  }
+
+  __forceinline vfloat16 load16f_int8(const char *const ptr) {
+    return _mm512_mul_ps(_mm512_extload_ps(ptr,_MM_UPCONV_PS_SINT8,_MM_BROADCAST_16X16,_MM_HINT_NONE),vfloat16(1.0f/127.0f));
+  }
+
   __forceinline vfloat16 uload16f_low(const float *const addr) {
     vfloat16 r = vfloat16::undefined();
     return _mm512_extloadunpacklo_ps(r, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
@@ -842,26 +865,7 @@ namespace embree
     vfloat16 v1 = vfloat16::undefined();
     return _mm512_mask_extloadunpacklo_ps(v1, mask, addr, _MM_UPCONV_PS_NONE, _MM_HINT_NONE);
   }
-  
-  __forceinline void ustore16f(float *addr, const vfloat16& reg) {
-#if defined(__AVX512F__)
-      _mm512_storeu_ps(addr,reg);
-#else
-    _mm512_extpackstorelo_ps(addr+0 ,reg, _MM_DOWNCONV_PS_NONE , 0);
-    _mm512_extpackstorehi_ps(addr+16 ,reg, _MM_DOWNCONV_PS_NONE , 0);
-#endif
-  }
-  
-  /* pass by value to avoid compiler generating inefficient code */
-  __forceinline void compactustore16f(const vboolf16& mask, float *addr, const vfloat16 reg) {
-    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
-    _mm512_mask_extpackstorehi_ps(addr+16 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
-  }
-  
-  __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {
-    _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_NONE , 0);
-  }
-
+      
   __forceinline void compactustore16f_low_uint8(const vboolf16& mask, void * addr, const vfloat16 &reg) {
     _mm512_mask_extpackstorelo_ps(addr+0 ,mask, reg, _MM_DOWNCONV_PS_UINT8 , 0);
   }
@@ -874,15 +878,6 @@ namespace embree
     _mm512_extpackstorehi_ps(addr+0 ,reg, _MM_DOWNCONV_PS_NONE , 0);
   }
   
-  __forceinline void store16f(const vboolf16& mask, void* addr, const vfloat16& v2) {
-    _mm512_mask_extstore_ps(addr,mask,v2,_MM_DOWNCONV_PS_NONE,0);
-  }
-
-  
-  __forceinline void store16f(void* addr, const vfloat16& v2) {
-    _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_NONE,0);
-  }
-
   __forceinline void store16f_int8(void* addr, const vfloat16& v2) {
     _mm512_extstore_ps(addr,v2,_MM_DOWNCONV_PS_SINT8,0);
   }
@@ -911,25 +906,12 @@ namespace embree
     _mm512_mask_extpackstorelo_ps(addr,0xf, v1, _MM_DOWNCONV_PS_NONE , _MM_HINT_NT);
   }
   
-  __forceinline void store16f_nt(void *__restrict__ ptr, const vfloat16& a) {
-#if defined(__AVX512F__)
-    _mm512_stream_ps(ptr,a);
-#else
-    _mm512_storenr_ps(ptr,a);
-#endif
-  }
-  
-  __forceinline void store16f_ngo(void *__restrict__ ptr, const vfloat16& a) {
-#if defined(__AVX512F__)
-    _mm512_stream_ps(ptr,a);
-#else
-    _mm512_storenrngo_ps(ptr,a);
-#endif
-  }
-
   __forceinline void store1f(void *addr, const vfloat16& reg) {
     _mm512_mask_extpackstorelo_ps((float*)addr+0  ,(vboolf16)1, reg, _MM_DOWNCONV_PS_NONE, _MM_HINT_NONE);
   }
+#endif
+
+
   
   __forceinline vfloat16 gather16f(const vboolf16& mask, const float *const ptr, __m512i index, const _MM_INDEX_SCALE_ENUM scale) {
     vfloat16 r = vfloat16::undefined();
@@ -943,9 +925,9 @@ namespace embree
   __forceinline vfloat16 loadAOS4to16f(const float& x,const float& y, const float& z)
   {
     vfloat16 f = vfloat16::zero();
-    f = select(0x1111,broadcast1to16f(&x),f);
-    f = select(0x2222,broadcast1to16f(&y),f);
-    f = select(0x4444,broadcast1to16f(&z),f);
+    f = select(0x1111,vfloat16::broadcast(&x),f);
+    f = select(0x2222,vfloat16::broadcast(&y),f);
+    f = select(0x4444,vfloat16::broadcast(&z),f);
     return f;
   }
 
@@ -955,9 +937,9 @@ namespace embree
                                        const vfloat16 &z)
   {
     vfloat16 f = vfloat16::zero();
-    f = select(0x1111,broadcast1to16f((float*)&x + index),f);
-    f = select(0x2222,broadcast1to16f((float*)&y + index),f);
-    f = select(0x4444,broadcast1to16f((float*)&z + index),f);
+    f = select(0x1111,vfloat16::broadcast((float*)&x + index),f);
+    f = select(0x2222,vfloat16::broadcast((float*)&y + index),f);
+    f = select(0x4444,vfloat16::broadcast((float*)&z + index),f);
     return f;
   }
 
@@ -968,9 +950,9 @@ namespace embree
                                        const vfloat16 &fill)
   {
     vfloat16 f = fill;
-    f = select(0x1111,broadcast1to16f((float*)&x + index),f);
-    f = select(0x2222,broadcast1to16f((float*)&y + index),f);
-    f = select(0x4444,broadcast1to16f((float*)&z + index),f);
+    f = select(0x1111,vfloat16::broadcast((float*)&x + index),f);
+    f = select(0x2222,vfloat16::broadcast((float*)&y + index),f);
+    f = select(0x4444,vfloat16::broadcast((float*)&z + index),f);
     return f;
   }
 
@@ -979,10 +961,10 @@ namespace embree
                                               const void *__restrict__ const ptr2,
                                               const void *__restrict__ const ptr3)
   {
-    vfloat16 v = permute<0>(uload16f((float*)ptr3));
-    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr2)));
-    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr1)));
-    v = align_shift_right<12>(v,permute<0>(uload16f((float*)ptr0)));
+    vfloat16 v = shuffle128<0>(vfloat16::loadu((float*)ptr3));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr2)));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr1)));
+    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr0)));
     return v;
   }
 
@@ -995,65 +977,65 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-__forceinline vfloat16 lcross_zxy(const vfloat16 &ao, const vfloat16 &bo) {
-    vfloat16 ao_bo = bo * swizzle(ao,_MM_SWIZ_REG_DACB);
-    ao_bo = msub231(ao_bo,ao,swizzle(bo,_MM_SWIZ_REG_DACB));
+  __forceinline vfloat16 lcross_zxy(const vfloat16 &ao, const vfloat16 &bo) {
+    vfloat16 ao_bo = bo * shuffle(ao,_MM_SWIZ_REG_DACB);
+    ao_bo = msub231(ao_bo,ao,shuffle(bo,_MM_SWIZ_REG_DACB));
     return ao_bo;
   }
   
   __forceinline vfloat16 ldot16_zxy(const vfloat16 &a,const vfloat16 &v0, const vfloat16 &v1, const vfloat16 &v2)
   {
-    vfloat16 v = v0 * swizzle(a,_MM_SWIZ_REG_BBBB);
-    v = madd231(v,v1,swizzle(a,_MM_SWIZ_REG_CCCC));
-    v = madd231(v,v2,swizzle(a,_MM_SWIZ_REG_AAAA));
+    vfloat16 v = v0 * shuffle(a,_MM_SWIZ_REG_BBBB);
+    v = madd231(v,v1,shuffle(a,_MM_SWIZ_REG_CCCC));
+    v = madd231(v,v2,shuffle(a,_MM_SWIZ_REG_AAAA));
     return v;
   }
   
   __forceinline vfloat16 ldot16_xyz(const vfloat16 &a,const vfloat16 &v0, const vfloat16 &v1, const vfloat16 &v2)
   {
-    vfloat16 v = v0 * swizzle(a,_MM_SWIZ_REG_AAAA);
-    v = madd231(v, v1,swizzle(a,_MM_SWIZ_REG_BBBB));
-    v = madd231(v, v2,swizzle(a,_MM_SWIZ_REG_CCCC));
+    vfloat16 v = v0 * shuffle(a,_MM_SWIZ_REG_AAAA);
+    v = madd231(v, v1,shuffle(a,_MM_SWIZ_REG_BBBB));
+    v = madd231(v, v2,shuffle(a,_MM_SWIZ_REG_CCCC));
     return v;
   }
   
   __forceinline vfloat16 lcross_xyz(const vfloat16 &a, const vfloat16 &b)
   {
-    vfloat16 c = b * swizzle(a,_MM_SWIZ_REG_DACB);
-    c = msub231(c,a,swizzle(b,_MM_SWIZ_REG_DACB));
-    c = swizzle(c,_MM_SWIZ_REG_DACB);
+    vfloat16 c = b * shuffle(a,_MM_SWIZ_REG_DACB);
+    c = msub231(c,a,shuffle(b,_MM_SWIZ_REG_DACB));
+    c = shuffle(c,_MM_SWIZ_REG_DACB);
     return c;
   }
   
   __forceinline vfloat16 ldot3_xyz(const vfloat16 &ao, const vfloat16 &normal)
   {
     vfloat16 vv = ao * normal;
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_CDAB));
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_BADC));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_CDAB));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_BADC));
     return vv;        
   }
 
   __forceinline vfloat16 lsum3_xyz(const vfloat16 &v)
   {
     vfloat16 vv = v;
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_CDAB));
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_BADC));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_CDAB));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_BADC));
     return vv;        
   }
 
   __forceinline vfloat16 ldot3_xyz(const vboolf16 &m_mask, const vfloat16 &ao, const vfloat16 &normal)
   {
     vfloat16 vv = _mm512_mask_mul_ps(ao,m_mask,ao,normal);
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_CDAB));
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_BADC));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_CDAB));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_BADC));
     return vv;        
   }
   
   __forceinline vfloat16 ldot3_zxy(const vfloat16 &ao, const vfloat16 &normal)
   {
-    vfloat16 vv = ao * swizzle(normal,_MM_SWIZ_REG_DACB);
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_CDAB));
-    vv = _mm512_add_ps(vv,swizzle(vv,_MM_SWIZ_REG_BADC));
+    vfloat16 vv = ao * shuffle(normal,_MM_SWIZ_REG_DACB);
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_CDAB));
+    vv = _mm512_add_ps(vv,shuffle(vv,_MM_SWIZ_REG_BADC));
     return vv;        
   }
 

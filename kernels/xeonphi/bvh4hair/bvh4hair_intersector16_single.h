@@ -17,7 +17,7 @@
 #pragma once
 
 #include "bvh4hair.h"
-#include "../../common/ray16.h" 
+#include "../../common/ray.h"
 #include "../../common/accelset.h"
 
 namespace embree

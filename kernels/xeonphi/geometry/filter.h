@@ -18,7 +18,6 @@
 
 #include "../../common/geometry.h"
 #include "../../common/ray.h"
-#include "../../common/ray16.h"
 
 namespace embree
 {
@@ -90,14 +89,14 @@ namespace embree
                                               const vfloat16& u, const vfloat16& v, const vfloat16& t, const Vec3vf16& Ng, const vint16& geomID, const vint16& primID)
   {
     /* temporarily update hit information */
-    const vfloat16 ray_u = ray.u;           store16f(valid,&ray.u,u);
-    const vfloat16 ray_v = ray.v;           store16f(valid,&ray.v,v);
-    const vfloat16 ray_tfar = ray.tfar;     store16f(valid,&ray.tfar,t);
-    const vint16 ray_geomID = ray.geomID; store16i(valid,&ray.geomID,geomID);
-    const vint16 ray_primID = ray.primID; store16i(valid,&ray.primID,primID);
-    const vfloat16 ray_Ng_x = ray.Ng.x;     store16f(valid,&ray.Ng.x,Ng.x);
-    const vfloat16 ray_Ng_y = ray.Ng.y;     store16f(valid,&ray.Ng.y,Ng.y);
-    const vfloat16 ray_Ng_z = ray.Ng.z;     store16f(valid,&ray.Ng.z,Ng.z);
+    const vfloat16 ray_u = ray.u;           vfloat16::store(valid,&ray.u,u);
+    const vfloat16 ray_v = ray.v;           vfloat16::store(valid,&ray.v,v);
+    const vfloat16 ray_tfar = ray.tfar;     vfloat16::store(valid,&ray.tfar,t);
+    const vint16 ray_geomID = ray.geomID; vint16::store(valid,&ray.geomID,geomID);
+    const vint16 ray_primID = ray.primID; vint16::store(valid,&ray.primID,primID);
+    const vfloat16 ray_Ng_x = ray.Ng.x;     vfloat16::store(valid,&ray.Ng.x,Ng.x);
+    const vfloat16 ray_Ng_y = ray.Ng.y;     vfloat16::store(valid,&ray.Ng.y,Ng.y);
+    const vfloat16 ray_Ng_z = ray.Ng.z;     vfloat16::store(valid,&ray.Ng.z,Ng.z);
 
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->intersectionFilter16;
@@ -110,14 +109,14 @@ namespace embree
     /* restore hit if filter not passed */
     if (unlikely(any(valid_failed))) 
     {
-      store16f(valid_failed,&ray.u,ray_u);
-      store16f(valid_failed,&ray.v,ray_v);
-      store16f(valid_failed,&ray.tfar,ray_tfar);
-      store16i(valid_failed,&ray.geomID,ray_geomID);
-      store16i(valid_failed,&ray.primID,ray_primID);
-      store16f(valid_failed,&ray.Ng.x,ray_Ng_x);
-      store16f(valid_failed,&ray.Ng.y,ray_Ng_y);
-      store16f(valid_failed,&ray.Ng.z,ray_Ng_z);
+      vfloat16::store(valid_failed,&ray.u,ray_u);
+      vfloat16::store(valid_failed,&ray.v,ray_v);
+      vfloat16::store(valid_failed,&ray.tfar,ray_tfar);
+      vint16::store(valid_failed,&ray.geomID,ray_geomID);
+      vint16::store(valid_failed,&ray.primID,ray_primID);
+      vfloat16::store(valid_failed,&ray.Ng.x,ray_Ng_x);
+      vfloat16::store(valid_failed,&ray.Ng.y,ray_Ng_y);
+      vfloat16::store(valid_failed,&ray.Ng.z,ray_Ng_z);
     }
     return valid_passed;
   }
@@ -128,14 +127,14 @@ namespace embree
     /* temporarily update hit information */
     const vfloat16 ray_tfar = ray.tfar; 
     const vint16 ray_geomID = ray.geomID;
-    store16f(valid,&ray.u,u);
-    store16f(valid,&ray.v,v);
-    store16f(valid,&ray.tfar,t);
-    store16i(valid,&ray.geomID,geomID);
-    store16i(valid,&ray.primID,primID);
-    store16f(valid,&ray.Ng.x,Ng.x);
-    store16f(valid,&ray.Ng.y,Ng.y);
-    store16f(valid,&ray.Ng.z,Ng.z);
+    vfloat16::store(valid,&ray.u,u);
+    vfloat16::store(valid,&ray.v,v);
+    vfloat16::store(valid,&ray.tfar,t);
+    vint16::store(valid,&ray.geomID,geomID);
+    vint16::store(valid,&ray.primID,primID);
+    vfloat16::store(valid,&ray.Ng.x,Ng.x);
+    vfloat16::store(valid,&ray.Ng.y,Ng.y);
+    vfloat16::store(valid,&ray.Ng.z,Ng.z);
 
     /* invoke filter function */
     RTCFilterFunc16  filter16     = (RTCFilterFunc16)  geometry->occlusionFilter16;
@@ -146,8 +145,8 @@ namespace embree
     const vbool16 valid_passed = valid & (ray.geomID != vint16(-1));
 
     /* restore hit if filter not passed */
-    store16f(valid_failed,&ray.tfar,ray_tfar);
-    store16i(valid_failed,&ray.geomID,ray_geomID);
+    vfloat16::store(valid_failed,&ray.tfar,ray_tfar);
+    vint16::store(valid_failed,&ray.geomID,ray_geomID);
     return valid_passed;
   }
 
@@ -175,14 +174,14 @@ namespace embree
 
     /* restore hit if filter not passed */
     if (unlikely(!passed)) {
-      store16f(&ray.u,ray_u);
-      store16f(&ray.v,ray_v);
-      store16f(&ray.tfar,ray_tfar);
-      store16i(&ray.geomID,ray_geomID);
-      store16i(&ray.primID,ray_primID);
-      store16f(&ray.Ng.x,ray_Ng_x);
-      store16f(&ray.Ng.y,ray_Ng_y);
-      store16f(&ray.Ng.z,ray_Ng_z);
+      vfloat16::store(&ray.u,ray_u);
+      vfloat16::store(&ray.v,ray_v);
+      vfloat16::store(&ray.tfar,ray_tfar);
+      vint16::store(&ray.geomID,ray_geomID);
+      vint16::store(&ray.primID,ray_primID);
+      vfloat16::store(&ray.Ng.x,ray_Ng_x);
+      vfloat16::store(&ray.Ng.y,ray_Ng_y);
+      vfloat16::store(&ray.Ng.z,ray_Ng_z);
     }
     return passed;
   }
@@ -213,8 +212,8 @@ namespace embree
 
     /* restore hit if filter not passed */
     if (unlikely(!passed)) {
-      store16f(&ray.tfar,ray_tfar);
-      store16i(&ray.geomID,ray_geomID);
+      vfloat16::store(&ray.tfar,ray_tfar);
+      vint16::store(&ray.geomID,ray_geomID);
     }
     return passed;
   }

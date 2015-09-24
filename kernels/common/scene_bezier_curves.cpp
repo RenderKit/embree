@@ -198,14 +198,14 @@ namespace embree
       size_t ofs = i*sizeof(float);
       vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const size_t curve = curves[primID];
-      const vfloat16 p0 = uload16f(mask,(float*)&src[(curve+0)*stride+ofs]);
-      const vfloat16 p1 = uload16f(mask,(float*)&src[(curve+1)*stride+ofs]);
-      const vfloat16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
-      const vfloat16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
+      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[(curve+0)*stride+ofs]);
+      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[(curve+1)*stride+ofs]);
+      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[(curve+2)*stride+ofs]);
+      const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[(curve+3)*stride+ofs]);
       const BezierCurveT<vfloat16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
       vfloat16 Q, dQdu; bezier.eval(u,Q,dQdu);
-      if (P   ) compactustore16f(mask,P+i,Q);
-      if (dPdu) compactustore16f(mask,dPdu+i,dQdu);
+      if (P   ) vfloat16::storeu_compact(mask,P+i,Q);
+      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,dQdu);
     }
 
 

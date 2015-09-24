@@ -44,7 +44,7 @@ namespace embree
       const vfloat16 inf        = vfloat16(pos_inf);
       const vfloat16 zero       = vfloat16::zero();
 
-      store16f(stack_dist,inf);
+      vfloat16::store(stack_dist,inf);
 
       const Node      * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const Triangle1 * __restrict__ accel = (Triangle1*)bvh->triPtr();
@@ -59,8 +59,8 @@ namespace embree
 	  const vfloat16 org_xyz      = loadAOS4to16f(rayIndex,ray16.org.x,ray16.org.y,ray16.org.z);
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  vfloat16       max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  vfloat16       max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 	  
@@ -141,8 +141,8 @@ namespace embree
 	  const vfloat16 dir_xyz      = loadAOS4to16f(rayIndex,ray16.dir.x,ray16.dir.y,ray16.dir.z);
 	  const vfloat16 rdir_xyz     = loadAOS4to16f(rayIndex,rdir16.x,rdir16.y,rdir16.z);
 	  //const vfloat16 org_rdir_xyz = org_xyz * rdir_xyz;
-	  const vfloat16 min_dist_xyz = broadcast1to16f(&ray16.tnear[rayIndex]);
-	  const vfloat16 max_dist_xyz = broadcast1to16f(&ray16.tfar[rayIndex]);
+	  const vfloat16 min_dist_xyz = vfloat16::broadcast(&ray16.tnear[rayIndex]);
+	  const vfloat16 max_dist_xyz = vfloat16::broadcast(&ray16.tfar[rayIndex]);
 	  const vint16 v_invalidNode(BVH4i::invalidNode);
 	  const unsigned int leaf_mask = BVH4I_LEAF_MASK;
 
@@ -194,7 +194,7 @@ namespace embree
 	}
 
 
-      store16i(m_valid & toMask(terminated),&ray16.geomID,0);
+      vint16::store(m_valid & toMask(terminated),&ray16.geomID,0);
 
     }
 

@@ -259,8 +259,8 @@ namespace embree
       assert(sizeof(BuildRecord) == 128);
       const vfloat16 b0 = vfloat16::load((float*)&v);
       const vfloat16 b1 = vfloat16::load((float*)&v + 16);
-      store16f((float*)this +  0, b0);
-      store16f((float*)this + 16, b1);
+      vfloat16::store((float*)this +  0, b0);
+      vfloat16::store((float*)this + 16, b1);
     };
 #endif
 

@@ -425,7 +425,7 @@ namespace embree
 		    if (numLocalPrims == 2)
 		      {
 			numLocalPrims = 0;
-			store16f_ngo(dest,twoAABBs);
+                        vfloat16::store_ngo(dest,twoAABBs);
 			dest+=2;
 		      }
 		  }	
@@ -471,7 +471,7 @@ namespace embree
 #endif
 
     const vfloat16 tri_accel = initTriangle1(v[0],v[1],v[2],gID,pID,vint16(mesh->mask));
-    store16f_ngo(acc,tri_accel);
+    vfloat16::store_ngo(acc,tri_accel);
   }
 
   void BVH4iBuilder::createTriangle1AccelRange(const size_t startID, const size_t endID)

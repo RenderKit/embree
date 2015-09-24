@@ -155,7 +155,7 @@ namespace embree
       }
 
       __forceinline size_t numChildren() const {
-	vint16 c = load16i((int*)lower);
+	vint16 c = vint16::load((int*)lower);
 	const size_t children = countbits(ne(0x8888,c,vint16(BVH4i::invalidNode))); 
 	assert(children >=2 && children <= 4);
 	return children;
@@ -249,8 +249,8 @@ namespace embree
 #if 1
 	vfloat16 lower = broadcast4to16f(&initQBVHNode[0]);
 	vfloat16 upper = broadcast4to16f(&initQBVHNode[1]);
-	store16f_ngo(((vfloat16*)this)+0,lower); 
-	store16f_ngo(((vfloat16*)this)+1,upper);             
+	vfloat16::store_ngo(((vfloat16*)this)+0,lower); 
+	vfloat16::store_ngo(((vfloat16*)this)+1,upper);             
 #else
 	for (size_t i=0;i<4;i++)
 	  setInvalid(i);

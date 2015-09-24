@@ -100,7 +100,7 @@ namespace embree
 
     static __forceinline Vec3fa_t loadu( const void* const a ) { 
       const vbool16 m_4f = 0xf;
-      return (__m512)permute<0,0,0,0>(uload16f(m_4f,(float*)a));
+      return (__m512)shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,(float*)a));
     }
 
     static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  // FIXME: implement fast version
