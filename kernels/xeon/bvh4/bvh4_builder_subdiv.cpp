@@ -99,7 +99,7 @@ namespace embree
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
 
-        BVH4Builder::build(bvh,CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
+        BVH4Builder::build(bvh,CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -214,7 +214,7 @@ namespace embree
           return 0;
         };
        
-        BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
+        BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -414,7 +414,7 @@ namespace embree
             return 0;
           };
           
-          BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
+          BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
 
           delete refitter; refitter = nullptr;
         }
