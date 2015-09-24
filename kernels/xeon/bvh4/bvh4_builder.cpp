@@ -46,7 +46,7 @@ namespace embree
 
     void BVH4Builder::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
-      bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
@@ -91,7 +91,7 @@ namespace embree
 
     void BVH4BuilderMblur::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
-      bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 
@@ -137,7 +137,7 @@ namespace embree
     void BVH4BuilderSpatial::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
                                                  const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
-      bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+      //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
       
       auto progressFunc = [&] (size_t dn) { 
         progress_in(dn); 

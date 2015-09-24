@@ -110,6 +110,7 @@ namespace embree
           pinfo = presplit<Mesh>(scene, pinfo, prims);
         
         /* call BVH builder */
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 
 	/* clear temporary data for static geometry */
@@ -214,13 +215,9 @@ namespace embree
       
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderSpatialSAH");
         
-        /* progress interface */
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
         /* create primref list */
         PrimRefList prims;
-        PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,virtualprogress);
+        PrimInfo pinfo = createPrimRefList<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
         /* calculate total surface area */
         PrimRefList::iterator iter = prims;
@@ -266,7 +263,8 @@ namespace embree
         };
              
         /* call BVH builder */
-        BVH4BuilderSpatial::build(bvh,splitPrimitive,CreateBVH4ListLeaf<Primitive>(bvh),virtualprogress,prims,pinfo,
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+        BVH4BuilderSpatial::build(bvh,splitPrimitive,CreateBVH4ListLeaf<Primitive>(bvh),bvh->scene->progressInterface,prims,pinfo,
                                   sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
         
         /* clear temporary data for static geometry */
@@ -353,13 +351,14 @@ namespace embree
 	    
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-        const PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) 
-          : createPrimRefArray<Mesh,2>(scene,prims,virtualprogress);
+        
+        const PrimInfo pinfo = mesh ? 
+          createPrimRefArray<Mesh>(mesh,prims,bvh->scene->progressInterface) : 
+          createPrimRefArray<Mesh,2>(scene,prims,bvh->scene->progressInterface);
         
         /* call BVH builder */
-        BVH4BuilderMblur::build(bvh,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,
+        bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+        BVH4BuilderMblur::build(bvh,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
                                 sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
         
 	/* clear temporary data for static geometry */

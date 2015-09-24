@@ -16,6 +16,7 @@
 
 #include "bvh4.h"
 #include "bvh4_refit.h"
+#include "bvh4_builder.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
@@ -97,11 +98,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+        BVH4Builder::build(bvh,CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -210,17 +208,13 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
-             *current.parent = (size_t) prims[current.prims.begin()].ID();
-             return 0;
-           },
-           progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        auto createLeaf =  [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+          if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+          *current.parent = (size_t) prims[current.prims.begin()].ID();
+          return 0;
+        };
+       
+        BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -411,21 +405,17 @@ namespace embree
         }
         else
         {
-          BVH4::NodeRef root;
-          BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-            (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-              size_t items = current.pinfo.size();
-              assert(items == 1);
-              const unsigned int patchIndex = prims[current.prims.begin()].ID();
-              SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-              *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-              return 0;
-            },
-             progress,
-             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+            size_t items = current.pinfo.size();
+            assert(items == 1);
+            const unsigned int patchIndex = prims[current.prims.begin()].ID();
+            SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+            return 0;
+          };
+          
+          BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,1,1,1,1.0f,1.0f);
 
-          bvh->set(root,pinfo.geomBounds,pinfo.size());
           delete refitter; refitter = nullptr;
         }
         
