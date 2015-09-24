@@ -102,15 +102,15 @@ namespace embree
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
         prims.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims,scene->progressInterface) : 
-          createPrimRefArray<Mesh,1>(scene,prims,scene->progressInterface);
+          createPrimRefArray<Mesh>  (mesh ,prims,bvh->scene->progressInterface) : 
+          createPrimRefArray<Mesh,1>(scene,prims,bvh->scene->progressInterface);
         
         /* perform pre-splitting */
         if (presplitFactor > 1.0f) 
           pinfo = presplit<Mesh>(scene, pinfo, prims);
         
         /* call BVH builder */
-        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
