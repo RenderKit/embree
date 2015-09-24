@@ -199,7 +199,6 @@ namespace embree
     {
       BVH4* bvh;
       Scene* scene;
-      Mesh* mesh;
       const size_t sahBlockSize;
       const float intCost;
       const size_t minLeafSize;
@@ -207,17 +206,13 @@ namespace embree
       const float presplitFactor;
 
       BVH4BuilderSpatialSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
-
-      BVH4BuilderSpatialSAH (BVH4* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
+        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
       void build(size_t, size_t) 
       {
 	/* skip build for empty scene */
-	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+	const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
         if (numPrimitives == 0) {
           bvh->clear();
           return;
@@ -244,7 +239,7 @@ namespace embree
 	  return n;
 	};
 
-        double t0 = bvh->preBuild(mesh ? nullptr : TOSTRING(isa) "::BVH4BuilderSpatialSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderSpatialSAH");
 
         /* progress interface */
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
@@ -302,10 +297,7 @@ namespace embree
                                   sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
         
         /* clear temporary data for static geometry */
-        bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
-          bvh->shrink();
-        }
+	if (scene->isStatic()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
