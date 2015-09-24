@@ -52,7 +52,8 @@ namespace embree
       numInstancedTriangles(0),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), commitCounterSubdiv(0), 
-      progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
+      progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0),
+      progressInterface(this)
   {
 #if defined(TASKING_LOCKSTEP) 
     lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);

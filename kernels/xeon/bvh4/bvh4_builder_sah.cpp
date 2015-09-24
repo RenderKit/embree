@@ -89,7 +89,7 @@ namespace embree
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      // FIXME: shrink bvh->alloc in destructor here an in other builders too
+      // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
       void build(size_t, size_t) 
       {
@@ -103,21 +103,19 @@ namespace embree
         
         double t0 = bvh->preBuild(mesh ? nullptr : TOSTRING(isa) "::BVH4BuilderSAH");
 
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
         /* create primref array */
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
         prims.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? 
-          createPrimRefArray<Mesh>  (mesh ,prims,virtualprogress) : 
-          createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
+          createPrimRefArray<Mesh>  (mesh ,prims,scene->progressInterface) : 
+          createPrimRefArray<Mesh,1>(scene,prims,scene->progressInterface);
         
+        /* perform pre-splitting */
         if (presplitFactor > 1.0f) 
           pinfo = presplit<Mesh>(scene, pinfo, prims);
         
         /* call BVH builder */
-        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

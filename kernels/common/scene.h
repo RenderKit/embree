@@ -271,6 +271,14 @@ namespace embree
 #endif
     
   public:
+    struct BuildProgressMonitorInterface : public BuildProgressMonitor {
+      BuildProgressMonitorInterface(Scene* scene) 
+      : scene(scene) {}
+      void operator() (size_t dn) { scene->progressMonitor(dn); }
+    private:
+      Scene* scene;
+    };
+    BuildProgressMonitorInterface progressInterface;
     RTCProgressMonitorFunc progress_monitor_function;
     void* progress_monitor_ptr;
     atomic_t progress_monitor_counter;
