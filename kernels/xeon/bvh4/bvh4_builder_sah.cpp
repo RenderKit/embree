@@ -16,11 +16,9 @@
 
 #include "bvh4.h"
 #include "bvh4_builder.h"
-#include "bvh4_rotate.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/presplit.h"
-#include "../builders/bvh_builder_sah.h"
 
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
@@ -30,9 +28,6 @@
 #include "../geometry/triangle4i.h"
 #include "../geometry/triangle4v_mb.h"
 #include "../geometry/object.h"
-
-#define ROTATE_TREE 0
-#define PROFILE 0
 
 namespace embree
 {
