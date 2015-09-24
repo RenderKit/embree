@@ -27,7 +27,7 @@ namespace embree
       return a[0]+a[1]+a[2];
     }
     
-    size_t BVH4Rotate::rotate(BVH4* bvh, NodeRef parentRef, size_t depth)
+    size_t BVH4Rotate::rotate(NodeRef parentRef, size_t depth)
     {
       /*! nothing to rotate if we reached a leaf node. */
       if (parentRef.isBarrier()) return 0;
@@ -37,7 +37,7 @@ namespace embree
       /*! rotate all children first */
       vint4 cdepth;
       for (size_t c=0; c<BVH4::N; c++)
-	cdepth[c] = (int)rotate(bvh,parent->child(c),depth+1);
+	cdepth[c] = (int)rotate(parent->child(c),depth+1);
       
       /* compute current areas of all children */
       vfloat4 sizeX = parent->upper_x-parent->lower_x;

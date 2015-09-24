@@ -72,7 +72,7 @@ namespace embree
           for (size_t i=0; i<N; i++) {
             if (bounds[i].lower.a < 4096) {
               for (int j=0; j<ROTATE_TREE; j++) 
-                BVH4Rotate::rotate(bvh,node->child(i)); 
+                BVH4Rotate::rotate(node->child(i)); 
               node->child(i).setBarrier();
             }
           }
@@ -480,7 +480,7 @@ namespace embree
 
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh,bvh->root);
+              BVH4Rotate::rotate(bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
             
@@ -666,7 +666,7 @@ namespace embree
 
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh,bvh->root);
+              BVH4Rotate::rotate(bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
 

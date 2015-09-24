@@ -205,7 +205,8 @@ namespace embree
       const size_t maxLeafSize;
       const float presplitFactor;
 
-      BVH4BuilderSpatialSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVH4BuilderSpatialSAH (BVH4* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, 
+                             const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH4::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
@@ -218,29 +219,8 @@ namespace embree
           return;
         }
       
-        /* reduction function */
-	auto rotate = [&] (BVH4::Node* node, const size_t* counts, const size_t N) -> size_t
-	{
-          size_t n = 0;
-#if ROTATE_TREE
-	  assert(N <= BVH4::N);
-          for (size_t i=0; i<N; i++) 
-            n += counts[i];
-          if (n >= 4096) {
-            for (size_t i=0; i<N; i++) {
-              if (counts[i] < 4096) {
-                for (int j=0; j<ROTATE_TREE; j++) 
-                  BVH4Rotate::rotate(bvh,node->child(i)); 
-                node->child(i).setBarrier();
-              }
-            }
-          }
-#endif
-	  return n;
-	};
-
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderSpatialSAH");
-
+        
         /* progress interface */
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
