@@ -27,14 +27,12 @@ namespace embree
   namespace isa
   {
     /*! Intersector1 for triangle4i */
-    template<bool enableIntersectionFilter>
+    template<bool filter>
     struct Triangle4iIntersector1Pluecker
       {
+        enum { M = Triangle4i::M };
         typedef Triangle4i Primitive;
-        
-        struct Precalculations {
-          __forceinline Precalculations (const Ray& ray, const void* ptr) {}
-        };
+        typedef PlueckerIntersector1<M> Precalculations;
         
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
@@ -50,7 +48,7 @@ namespace embree
           Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          triangle_intersect_pluecker<enableIntersectionFilter,vbool4,vfloat4,vint4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
+          pre.intersect(ray,p0,p1,p2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
@@ -67,12 +65,12 @@ namespace embree
           Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
           Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
           Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          return triangle_occluded_pluecker<enableIntersectionFilter,vbool4,vfloat4,vint4>(ray,p0,p1,p2,tri.geomIDs,tri.primIDs,scene,geomID_to_instID);
+          return pre.intersect(ray,p0,p1,p2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
 
     /*! Intersector4 for triangle4i */
-    template<typename RayM, bool enableIntersectionFilter>
+    template<typename RayM, bool filter>
       struct Triangle4iIntersectorMPluecker
       {
         typedef Triangle4i Primitive;
@@ -99,7 +97,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            triangle_intersect_pluecker<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_intersect_pluecker<filter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
         
@@ -117,7 +115,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            triangle_occluded_pluecker<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_occluded_pluecker<filter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
           return !valid0;

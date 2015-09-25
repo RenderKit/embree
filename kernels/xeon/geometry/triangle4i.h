@@ -23,6 +23,8 @@ namespace embree
   /*! Stores 4 triangles from an indexed face set. */
   struct Triangle4i
   {
+    enum { M = 4 };
+
     /*! virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
