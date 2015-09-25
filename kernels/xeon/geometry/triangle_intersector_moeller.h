@@ -33,17 +33,15 @@ namespace embree
     template<int M>
       struct MoellerTrumboreIntersector1
     {
-      struct Precalculations {
-        __forceinline Precalculations (const Ray& ray, const void* ptr) {}
-      };
+      __forceinline MoellerTrumboreIntersector1 (const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
-      __forceinline static bool intersect(Ray& ray, 
+      __forceinline bool intersect(Ray& ray, 
                                           const Vec3<vfloat<M>>& tri_v0, 
                                           const Vec3<vfloat<M>>& tri_e1, 
                                           const Vec3<vfloat<M>>& tri_e2, 
                                           const Vec3<vfloat<M>>& tri_Ng,
-                                          const Epilog& epilog)
+                                          const Epilog& epilog) const
       {
         /* calculate denominator */
         typedef Vec3<vfloat<M>> Vec3vfM;
@@ -83,11 +81,11 @@ namespace embree
       }
       
       template<typename Epilog>
-        __forceinline static bool intersect(Ray& ray, 
+        __forceinline bool intersect(Ray& ray, 
                                             const Vec3<vfloat<M>>& v0, 
                                             const Vec3<vfloat<M>>& v1, 
                                             const Vec3<vfloat<M>>& v2, 
-                                            const Epilog& epilog)
+                                            const Epilog& epilog) const
       {
         const Vec3<vfloat<M>> e1 = v0-v1;
         const Vec3<vfloat<M>> e2 = v2-v0;
@@ -99,19 +97,17 @@ namespace embree
     template<int K, int M>
     struct MoellerTrumboreIntersectorK
     {
-      struct Precalculations {
-        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray) {}
-      };
-      
+      __forceinline MoellerTrumboreIntersectorK (const vbool<K>& valid, const RayK<K>& ray) {}
+            
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
-        __forceinline static vbool<K> intersectK(const vbool<K>& valid0, 
+        __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                                  RayK<K>& ray, 
                                                  const Vec3<vfloat<K>>& tri_v0, 
                                                  const Vec3<vfloat<K>>& tri_e1, 
                                                  const Vec3<vfloat<K>>& tri_e2, 
                                                  const Vec3<vfloat<K>>& tri_Ng, 
-                                                 const Epilog& epilog)
+                                                 const Epilog& epilog) const
       {
         /* ray SIMD type shortcuts */
         typedef Vec3<vfloat<K>> rsimd3f;
@@ -165,12 +161,12 @@ namespace embree
       
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
-      __forceinline static vbool<K> intersectK(const vbool<K>& valid0, 
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                                RayK<K>& ray, 
                                                const Vec3<vfloat<K>>& tri_v0, 
                                                const Vec3<vfloat<K>>& tri_v1, 
                                                const Vec3<vfloat<K>>& tri_v2, 
-                                               const Epilog& epilog)
+                                               const Epilog& epilog) const
       {
         typedef Vec3<vfloat<K>> tsimd3f;
         const tsimd3f e1 = tri_v0-tri_v1;
@@ -181,12 +177,12 @@ namespace embree
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<typename Epilog>
-        __forceinline static bool intersect(RayK<K>& ray, size_t k,
+        __forceinline bool intersect(RayK<K>& ray, size_t k,
                                             const Vec3<vfloat<M>>& tri_v0, 
                                             const Vec3<vfloat<M>>& tri_e1, 
                                             const Vec3<vfloat<M>>& tri_e2, 
                                             const Vec3<vfloat<M>>& tri_Ng,
-                                            const Epilog& epilog)
+                                            const Epilog& epilog) const
       {
         /* calculate denominator */
         typedef Vec3<vfloat<M>> tsimd3f;
@@ -226,11 +222,11 @@ namespace embree
       }
       
       template<typename Epilog>
-      __forceinline static bool intersect1(RayK<K>& ray, size_t k,
+      __forceinline bool intersect1(RayK<K>& ray, size_t k,
                                            const Vec3<vfloat<M>>& v0, 
                                            const Vec3<vfloat<M>>& v1, 
                                            const Vec3<vfloat<M>>& v2, 
-                                           const Epilog& epilog)
+                                           const Epilog& epilog) const
       {
         const Vec3<vfloat<M>> e1 = v0-v1;
         const Vec3<vfloat<M>> e2 = v2-v0;
@@ -240,38 +236,36 @@ namespace embree
     };
 
     /*! Intersects N triangles with 1 ray */
-    template<typename TriangleN, bool enableIntersectionFilter>
+    template<typename TriangleN, bool filter>
       struct TriangleNIntersector1MoellerTrumbore
       {
         enum { M = TriangleN::M };
         typedef TriangleN Primitive;
-        typedef typename MoellerTrumboreIntersector1<M>::Precalculations Precalculations;
+        typedef MoellerTrumboreIntersector1<M> Precalculations;
         
         /*! Intersect a ray with the N triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          MoellerTrumboreIntersector1<M>::intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                                    Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return MoellerTrumboreIntersector1<M>::intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                                            Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
 
     /*! Intersector for M triangles with K rays. */
-    template<typename RayK, typename TriangleM, bool enableIntersectionFilter>
+    template<typename RayK, typename TriangleM, bool filter>
       struct TriangleNIntersectorMMoellerTrumbore
       {
         enum { K = RayK::K };
         enum { M = TriangleM::M };
         typedef TriangleM Primitive;
-        typedef typename MoellerTrumboreIntersectorK<K,M>::Precalculations Precalculations;
+        typedef MoellerTrumboreIntersectorK<K,M> Precalculations;
         
         /*! Intersects a M rays with N triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
@@ -284,8 +278,7 @@ namespace embree
             const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
             const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
             const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            MoellerTrumboreIntersectorK<K,M>::intersectK(valid_i,ray,p0,e1,e2,Ng,
-                                                         IntersectKEpilog<K,M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p0,e1,e2,Ng,IntersectKEpilog<K,M,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
@@ -302,8 +295,7 @@ namespace embree
             const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
             const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
             const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            MoellerTrumboreIntersectorK<K,M>::intersectK(valid0,ray,p0,e1,e2,Ng,
-                                                         OccludedKEpilog<K,M,enableIntersectionFilter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,p0,e1,e2,Ng,OccludedKEpilog<K,M,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
@@ -313,26 +305,24 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          MoellerTrumboreIntersectorK<K,M>::intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                                     Intersect1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return MoellerTrumboreIntersectorK<K,M>::intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                                             Occluded1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          return pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
     
     /*! Intersects N triangles with 1 ray */
-    template<typename TriangleNMblur, bool enableIntersectionFilter>
+    template<typename TriangleNMblur, bool filter>
       struct TriangleNMblurIntersector1MoellerTrumbore
       {
         enum { M = TriangleNMblur::M };
         typedef TriangleNMblur Primitive;
-        typedef typename MoellerTrumboreIntersector1<M>::Precalculations Precalculations;
+        typedef MoellerTrumboreIntersector1<M> Precalculations;
         
         /*! Intersect a ray with the N triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleNMblur& tri, Scene* scene, const unsigned* geomID_to_instID)
@@ -342,8 +332,7 @@ namespace embree
           const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
-          MoellerTrumboreIntersector1<M>::intersect(ray,v0,v1,v2,
-                                                    Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,v0,v1,v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
@@ -354,19 +343,18 @@ namespace embree
           const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
-          return MoellerTrumboreIntersector1<M>::intersect(ray,v0,v1,v2,
-                                                           Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,v0,v1,v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
     
     /*! Intersector for M triangles with K rays. */
-    template<typename RayK, typename TriangleMMblur, bool enableIntersectionFilter>
+    template<typename RayK, typename TriangleMMblur, bool filter>
       struct TriangleNMblurIntersectorMMoellerTrumbore
       {
         enum { K = RayK::K };
         enum { M = TriangleMMblur::M };
         typedef TriangleMMblur Primitive;
-        typedef typename MoellerTrumboreIntersectorK<K,M>::Precalculations Precalculations;
+        typedef MoellerTrumboreIntersectorK<K,M> Precalculations;
         
         /*! Intersects a M rays with N triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
@@ -379,8 +367,7 @@ namespace embree
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
-            MoellerTrumboreIntersectorK<K,M>::intersectK(valid_i,ray,v0,v1,v2,
-                                                         IntersectKEpilog<K,M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<K,M,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
@@ -397,8 +384,7 @@ namespace embree
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
-            MoellerTrumboreIntersectorK<K,M>::intersectK(valid0,ray,v0,v1,v2,
-                                                         OccludedKEpilog<K,M,enableIntersectionFilter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<K,M,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
@@ -412,8 +398,7 @@ namespace embree
           const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
-          MoellerTrumboreIntersectorK<K,M>::intersect(ray,k,v0,v1,v2,
-                                                      Intersect1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          pre.intersect(ray,k,v0,v1,v2,Intersect1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
         /*! Test if the ray is occluded by one of the N triangles. */
@@ -424,8 +409,7 @@ namespace embree
           const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
-          return MoellerTrumboreIntersectorK<K,M>::intersect(ray,k,v0,v1,v2,
-                                                             Occluded1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          return pre.intersect(ray,k,v0,v1,v2,Occluded1KEpilog<K,M,filte>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
   }
