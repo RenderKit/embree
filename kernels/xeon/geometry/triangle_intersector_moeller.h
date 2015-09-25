@@ -251,34 +251,6 @@ namespace embree
         }
       };
 
-    /*! Intersects N/2 triangle pairs with 1 ray */
-    template<typename TrianglePairsN, bool enableIntersectionFilter>
-      struct TrianglePairsNIntersector1MoellerTrumbore // FIXME: not working
-      {
-        enum { M = TrianglePairsN::M };
-        typedef TrianglePairsN Primitive;
-        
-        struct Precalculations {
-          __forceinline Precalculations (const Ray& ray, const void* ptr) {}
-        };
-        
-        /*! Intersect a ray with the N/2 triangle pairs and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TrianglePairsN& tri, Scene* scene, const unsigned* geomID_to_instID)
-        {
-          STAT3(normal.trav_prims,1,1,1);
-          moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,
-                                         Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
-        }
-        
-        /*! Test if the ray is occluded by one of N/2 triangle pairs. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TrianglePairsN& tri, Scene* scene, const unsigned* geomID_to_instID)
-        {
-          STAT3(shadow.trav_prims,1,1,1);
-          return moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,
-                                                Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
-        }
-      };
-    
     /*! Intersector for M triangles with K rays. */
     template<typename RayK, typename TriangleM, bool enableIntersectionFilter>
       struct TriangleNIntersectorMMoellerTrumbore
