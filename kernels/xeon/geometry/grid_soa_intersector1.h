@@ -55,6 +55,7 @@ namespace embree
                                             Precalculations& pre,
                                             Scene* scene)
       {
+        enum { M = Loader::M };
         typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
@@ -65,14 +66,17 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        triangle_intersect_pluecker<vbool>(ray,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
-            const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-            const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-            const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-            const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-            const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-            u = uv[0];v = uv[1]; 
-          });
+        auto mapUV = [&](vfloat& u, vfloat& v) {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        };
+
+        PlueckerIntersector1<M> intersector(ray,nullptr);
+        intersector.intersect(ray,v0,v1,v2,mapUV,Intersect1EpilogU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       };
       
       template<typename Loader>
@@ -85,6 +89,7 @@ namespace embree
                                            Precalculations& pre,
                                            Scene* scene)
       {
+        enum { M = Loader::M };
         typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
@@ -95,14 +100,17 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        return triangle_occluded_pluecker<vbool>(ray,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
-            const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-            const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-            const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-            const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-            const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-            u = uv[0];v = uv[1]; 
-          });
+        auto mapUV = [&](vfloat& u, vfloat& v) {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        };
+
+        PlueckerIntersector1<M> intersector(ray,nullptr);
+        return intersector.intersect(ray,v0,v1,v2,mapUV,Occluded1EpilogU<M,true>(ray,pre.grid->geomID,pre.grid->primID,scene,nullptr));
       }
       
       /*! Intersect a ray with the primitive. */

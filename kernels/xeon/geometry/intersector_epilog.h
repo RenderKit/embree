@@ -23,6 +23,13 @@ namespace embree
 {
   namespace isa
   {
+    template<int M>
+      struct UVIdentity
+      {
+        __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {
+        }
+      };
+
     template<int M, bool enableIntersectionFilter>
       struct Intersect1Epilog
       {
@@ -161,6 +168,121 @@ namespace embree
           return true;
         }
       };
+
+    template<int M, bool enableIntersectionFilter>
+      struct Intersect1EpilogU
+      {
+        Ray& ray;
+        const unsigned int geomID;
+        const unsigned int primID;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+        
+        __forceinline Intersect1EpilogU(Ray& ray,
+                                        const unsigned int geomID, 
+                                        const unsigned int primID, 
+                                        Scene* scene,
+                                        const unsigned* geomID_to_instID)
+          : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
+        
+        template<typename Hit>
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        {
+          /* ray mask test */
+          Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+          if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+          
+          vfloat<M> u, v, t; 
+          Vec3<vfloat<M>> tri_Ng;
+          std::tie(u,v,t,tri_Ng) = hit();
+          vbool<M> valid = valid_i;
+          
+          size_t i = select_min(valid,t);
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (unlikely(geometry->hasIntersectionFilter1())) 
+          {
+            while (true) 
+            {
+              /* call intersection filter function */
+              Vec3fa Ng_i = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+              if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
+                return true;
+              }
+              valid[i] = 0;
+              if (unlikely(none(valid))) return false;
+              i = select_min(valid,t);
+            }
+            return false; // FIXME: not reachable?
+          }
+#endif
+          
+          /* update hit information */
+          ray.u         = u[i];
+          ray.v         = v[i];
+          ray.tfar      = t[i];
+          ray.geomID    = geomID;
+          ray.primID    = primID;
+          ray.Ng.x      = tri_Ng.x[i];
+          ray.Ng.y      = tri_Ng.y[i];
+          ray.Ng.z      = tri_Ng.z[i];
+          return true;
+        }
+      };
+        
+    template<int M, bool enableIntersectionFilter>
+      struct Occluded1EpilogU
+      {
+        Ray& ray;
+        const unsigned int geomID;
+        const unsigned int primID;
+        Scene* scene;
+        const unsigned* geomID_to_instID;
+
+        __forceinline Occluded1EpilogU(Ray& ray,
+                                       const unsigned int geomID, 
+                                       const unsigned int primID, 
+                                       Scene* scene,
+                                       const unsigned* geomID_to_instID)
+          : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
+
+        template<typename Hit>
+        __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
+        {
+           /* ray mask test */
+        Geometry* geometry = scene->get(geomID);
+#if defined(RTCORE_RAY_MASK)
+        if ((geometry->mask & ray.mask) == 0) return false;
+#endif
+        
+        /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+        if (unlikely(geometry->hasOcclusionFilter1())) 
+        {
+          vfloat<M> u, v, t; 
+          Vec3<vfloat<M>> tri_Ng;
+          std::tie(u,v,t,tri_Ng) = hit();
+          
+          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
+            const Vec3fa Ng_i = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
+          }
+          return false;
+        }
+#endif
+        return true;
+        }
+      };
+        
+        
+        
+        
+
+
+
 
     template<int K, int M, bool enableIntersectionFilter>
       struct IntersectKEpilog

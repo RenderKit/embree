@@ -110,6 +110,7 @@ namespace embree
 
       struct Gather2x3
       {
+        enum { M = 4 };
         typedef vbool4 vbool;
         typedef vint4 vint;
         typedef vfloat4 vfloat;
@@ -127,6 +128,7 @@ namespace embree
 #if defined (__AVX__)
       struct Gather3x3
       {
+        enum { M = 8 };
         typedef vbool8 vbool;
         typedef vint8 vint;
         typedef vfloat8 vfloat;

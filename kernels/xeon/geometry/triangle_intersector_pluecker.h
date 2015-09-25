@@ -33,11 +33,12 @@ namespace embree
       {
         __forceinline PlueckerIntersector1 (const Ray& ray, const void* ptr) {}
         
-        template<typename Epilog>
+        template<typename UVMapper, typename Epilog>
         __forceinline bool intersect(Ray& ray, 
                                      const Vec3<vfloat<M>>& tri_v0, 
                                      const Vec3<vfloat<M>>& tri_v1, 
                                      const Vec3<vfloat<M>>& tri_v2,  
+                                     const UVMapper& mapUV,
                                      const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
@@ -86,187 +87,14 @@ namespace embree
           return epilog(valid,[&] () {
               const vfloat<M> rcpDen = rcp(den);
               const vfloat<M> t = T * rcpDen;
-              const vfloat<M> u = U * rcpDen;
-              const vfloat<M> v = V * rcpDen;
+              vfloat<M> u = U * rcpDen;
+              vfloat<M> v = V * rcpDen;
+              mapUV(u,v);
               return std::make_tuple(u,v,t,tri_Ng);
             });
         }
       };
     
-    template<typename tsimdb, typename tsimdf, typename UVMapper>
-      __forceinline void triangle_intersect_pluecker(Ray& ray, 
-                                                     const Vec3<tsimdf>& tri_v0, 
-						     const Vec3<tsimdf>& tri_v1, 
-						     const Vec3<tsimdf>& tri_v2,  
-                                                     const unsigned int& geomID, 
-						     const unsigned int& primID, 
-                                                     Scene* scene,
-                                                     const UVMapper& mapUV) // FIXME: add const unsigned* geomID_to_instID
-      {
-        /* calculate vertices relative to ray origin */
-        typedef Vec3<tsimdf> tsimd3f;
-        const tsimd3f O = tsimd3f(ray.org);
-        const tsimd3f D = tsimd3f(ray.dir);
-        const tsimd3f v0 = tri_v0-O;
-        const tsimd3f v1 = tri_v1-O;
-        const tsimd3f v2 = tri_v2-O;
-        
-        /* calculate triangle edges */
-        const tsimd3f e0 = v2-v0;
-        const tsimd3f e1 = v0-v1;
-        const tsimd3f e2 = v1-v2;
-        
-        /* perform edge tests */
-        const tsimdf U = dot(cross(v2+v0,e0),D);
-        const tsimdf V = dot(cross(v0+v1,e1),D);
-        const tsimdf W = dot(cross(v1+v2,e2),D);
-        const tsimdf minUVW = min(U,V,W);
-        const tsimdf maxUVW = max(U,V,W);
-        tsimdb valid = minUVW >= 0.0f;
-#if !defined(RTCORE_BACKFACE_CULLING)
-        valid |= maxUVW <= 0.0f;
-#endif
-        if (unlikely(none(valid))) return;
-
-        /* calculate geometry normal and denominator */
-        //const tsimd3f Ng1 = cross(e1,e0);
-        const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-        const tsimd3f tri_Ng = Ng1+Ng1;
-        const tsimdf den = dot(tri_Ng,D);
-        const tsimdf absDen = abs(den);
-        const tsimdf sgnDen = signmsk(den);
-        
-        /* perform depth test */
-        const tsimdf T = dot(v0,tri_Ng);
-        valid &= ((T^sgnDen) >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= (T^sgnDen));
-        if (unlikely(none(valid))) return;
-        
-        /* perform backface culling */
-        valid &= den != tsimdf(zero);
-        if (unlikely(none(valid))) return;
-
-        /* ray mask test */
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return;
-#endif
-        
-        const tsimdf rcpDen = rcp(den);
-        const tsimdf t = T * rcpDen;
-        tsimdf u = U * rcpDen;
-        tsimdf v = V * rcpDen;
-        mapUV(u,v);
-        
-	size_t i = select_min(valid,t);
-
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasIntersectionFilter1())) 
-        {
-          while (true) 
-          {
-            /* call intersection filter function */
-            Vec3fa Ng_i = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
-              return;
-            }
-            valid[i] = 0;
-            if (unlikely(none(valid))) return;
-            i = select_min(valid,t);
-          }
-          return;
-        }
-#endif
-
-	/* update hit information */
-	ray.u         = u[i];
-	ray.v         = v[i];
-	ray.tfar      = t[i];
-        ray.geomID    = geomID;
-        ray.primID    = primID;
-        ray.Ng.x      = tri_Ng.x[i];
-        ray.Ng.y      = tri_Ng.y[i];
-        ray.Ng.z      = tri_Ng.z[i];
-      };
-
-    template<typename tsimdb, typename tsimdf, typename UVMapper>
-      __forceinline bool triangle_occluded_pluecker(Ray& ray, 
-                                                    const Vec3<tsimdf>& tri_v0, 
-                                                    const Vec3<tsimdf>& tri_v1, 
-                                                    const Vec3<tsimdf>& tri_v2, 
-                                                    const unsigned int& geomID, 
-                                                    const unsigned int& primID,
-                                                    Scene* scene,
-                                                    const UVMapper& mapUV) // FIXME: add const unsigned* geomID_to_instID
-    {
-      /* calculate vertices relative to ray origin */
-      typedef Vec3<tsimdf> tsimd3f;
-      const tsimd3f O = tsimd3f(ray.org);
-      const tsimd3f D = tsimd3f(ray.dir);
-      const tsimd3f v0 = tri_v0-O;
-      const tsimd3f v1 = tri_v1-O;
-      const tsimd3f v2 = tri_v2-O;
-      
-      /* calculate triangle edges */
-      const tsimd3f e0 = v2-v0;
-      const tsimd3f e1 = v0-v1;
-      const tsimd3f e2 = v1-v2;
-      
-      const tsimdf U = dot(cross(v2+v0,e0),D);
-      const tsimdf V = dot(cross(v0+v1,e1),D);
-      const tsimdf W = dot(cross(v1+v2,e2),D);
-      const tsimdf minUVW = min(U,V,W);
-      const tsimdf maxUVW = max(U,V,W);
-      tsimdb valid = minUVW >= 0.0f;
-#if !defined(RTCORE_BACKFACE_CULLING)
-      valid |= maxUVW <= 0.0f;
-#endif
-      if (unlikely(none(valid))) return false;
-
-      /* calculate geometry normal and denominator */
-      //const tsimd3f Ng1 = cross(e1,e0);
-      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-      const tsimd3f tri_Ng = Ng1+Ng1;
-      const tsimdf den = dot(tri_Ng,D);
-      const tsimdf absDen = abs(den);
-      const tsimdf sgnDen = signmsk(den);
-
-      /* perform depth test */
-      const tsimdf T = dot(v0,tri_Ng);
-      valid &= ((T^sgnDen) >= absDen*tsimdf(ray.tnear)) & (absDen*tsimdf(ray.tfar) >= (T^sgnDen));
-      if (unlikely(none(valid))) return false;
-      
-      /* perform backface culling */
-      valid &= den != tsimdf(zero);
-      if (unlikely(none(valid))) return false;
-
-        /* ray mask test */
-        Geometry* geometry = scene->get(geomID);
-#if defined(RTCORE_RAY_MASK)
-        if ((geometry->mask & ray.mask) == 0) return false;
-#endif
-        
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        if (unlikely(geometry->hasOcclusionFilter1())) 
-        {
-          /* calculate hit information */
-          const tsimdf rcpDen = rcp(den);
-          const tsimdf t = T*rcpDen;
-          tsimdf u =  U*rcpDen;
-          tsimdf v =  V*rcpDen;
-          mapUV(u,v);
-          
-          for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
-            const Vec3fa Ng_i = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
-          }
-          return false;
-        }
-#endif
-        return true;
-      }
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1076,14 +904,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,tri.v0,tri.v1,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
     
