@@ -110,12 +110,12 @@ namespace embree
                                                  const Epilog& epilog) const
       {
         /* ray SIMD type shortcuts */
-        typedef Vec3<vfloat<K>> rsimd3f;
+        typedef Vec3<vfloat<K>> Vec3vfK;
         
         /* calculate denominator */
         vbool<K> valid = valid0;
-        const rsimd3f C = tri_v0 - ray.org;
-        const rsimd3f R = cross(ray.dir,C);
+        const Vec3vfK C = tri_v0 - ray.org;
+        const Vec3vfK R = cross(ray.dir,C);
         const vfloat<K> den = dot(tri_Ng,ray.dir);
         const vfloat<K> absDen = abs(den);
         const vfloat<K> sgnDen = signmsk(den);
@@ -168,10 +168,10 @@ namespace embree
                                                const Vec3<vfloat<K>>& tri_v2, 
                                                const Epilog& epilog) const
       {
-        typedef Vec3<vfloat<K>> tsimd3f;
-        const tsimd3f e1 = tri_v0-tri_v1;
-        const tsimd3f e2 = tri_v2-tri_v0;
-        const tsimd3f Ng = cross(e1,e2);
+        typedef Vec3<vfloat<K>> Vec3vfK;
+        const Vec3vfK e1 = tri_v0-tri_v1;
+        const Vec3vfK e2 = tri_v2-tri_v0;
+        const Vec3vfK Ng = cross(e1,e2);
         return intersectK(valid0,ray,tri_v0,e1,e2,Ng,epilog);
       }
       
@@ -185,18 +185,18 @@ namespace embree
                                             const Epilog& epilog) const
       {
         /* calculate denominator */
-        typedef Vec3<vfloat<M>> tsimd3f;
-        const tsimd3f O = broadcast<vfloat<M>>(ray.org,k);
-        const tsimd3f D = broadcast<vfloat<M>>(ray.dir,k);
-        const tsimd3f C = tsimd3f(tri_v0) - O;
-        const tsimd3f R = cross(D,C);
-        const vfloat<M> den = dot(tsimd3f(tri_Ng),D);
+        typedef Vec3<vfloat<M>> Vec3vfM;
+        const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
+        const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
+        const Vec3vfM C = Vec3vfM(tri_v0) - O;
+        const Vec3vfM R = cross(D,C);
+        const vfloat<M> den = dot(Vec3vfM(tri_Ng),D);
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
         
         /* perform edge tests */
-        const vfloat<M> U = dot(R,tsimd3f(tri_e2)) ^ sgnDen;
-        const vfloat<M> V = dot(R,tsimd3f(tri_e1)) ^ sgnDen;
+        const vfloat<M> U = dot(R,Vec3vfM(tri_e2)) ^ sgnDen;
+        const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
         
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
@@ -207,7 +207,7 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* perform depth test */
-        const vfloat<M> T = dot(tsimd3f(tri_Ng),C) ^ sgnDen;
+        const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
         valid &= (T > absDen*vfloat<M>(ray.tnear[k])) & (T < absDen*vfloat<M>(ray.tfar[k]));
         if (likely(none(valid))) return false;
         
