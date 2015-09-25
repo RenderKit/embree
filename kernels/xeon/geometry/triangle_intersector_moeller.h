@@ -88,9 +88,6 @@ namespace embree
       return moeller_trumbore_intersect1<M>(ray,v0,e1,e2,Ng,epilog);
     }
     
-
-///////////////////////////////////////////////////////////////////////
-    
     /*! Intersects K rays with one of M triangles. */
     template<int K, int M, typename Epilog>
       __forceinline vbool<K> moeller_trumbore_intersectK(const vbool<K>& valid0, 
@@ -166,15 +163,8 @@ namespace embree
       const tsimd3f Ng = cross(e1,e2);
       return moeller_trumbore_intersectK<K,M>(valid0,ray,tri_v0,e1,e2,Ng,epilog);
     }
-    
-
-    
-    
-
-//////////////////////////////////////////////////////////////////
-
-    
-    /*! Intersect a ray with the 4 triangles and updates the hit. */
+        
+    /*! Intersect k'th ray from ray packet of size K with M triangles. */
     template<int K, int M, typename Epilog>
       __forceinline bool moeller_trumbore_intersect(RayK<K>& ray, size_t k,
                                                     const Vec3<vfloat<M>>& tri_v0, 
@@ -233,11 +223,6 @@ namespace embree
       return moeller_trumbore_intersect<K,M>(ray,k,v0,e1,e2,Ng,epilog);
     }
     
-     
-          
-////////////////////////////////////////////////
-
-    
     /*! Intersects N triangles with 1 ray */
     template<typename TriangleN, bool enableIntersectionFilter>
       struct TriangleNIntersector1MoellerTrumbore
@@ -265,7 +250,6 @@ namespace embree
                                                 Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
-
 
     /*! Intersects N/2 triangle pairs with 1 ray */
     template<typename TrianglePairsN, bool enableIntersectionFilter>
@@ -303,50 +287,39 @@ namespace embree
         enum { M = TriangleM::M };
         typedef TriangleM Primitive;
         
-        /* triangle SIMD type shortcuts */
-        typedef typename TriangleM::simdb tsimdb;
-        typedef typename TriangleM::simdf tsimdf;
-        typedef Vec3<tsimdf> tsimd3f;
-        
-        /* ray SIMD type shortcuts */
-        typedef typename RayK::simdb rsimdb;
-        typedef typename RayK::simdf rsimdf;
-        typedef typename RayK::simdi rsimdi;
-        typedef Vec3<rsimdf> rsimd3f;
-        
         struct Precalculations {
-          __forceinline Precalculations (const rsimdb& valid, const RayK& ray) {}
+          __forceinline Precalculations (const vbool<K>& valid, const RayK& ray) {}
         };
         
         /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
         {
           for (size_t i=0; i<TriangleM::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
-            const rsimd3f p0 = broadcast<rsimdf>(tri.v0,i);
-            const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
-            const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
-            const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
+            const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
+            const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
             moeller_trumbore_intersectK<K,M>(valid_i,ray,p0,e1,e2,Ng,
                                              IntersectKEpilog<K,M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
         {
-          rsimdb valid0 = valid_i;
+          vbool<K> valid0 = valid_i;
           
           for (size_t i=0; i<TriangleM::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
-            const rsimd3f p0 = broadcast<rsimdf>(tri.v0,i);
-            const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
-            const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
-            const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
+            const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
+            const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
+            const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
             moeller_trumbore_intersectK<K,M>(valid0,ray,p0,e1,e2,Ng,
                                              OccludedKEpilog<K,M,enableIntersectionFilter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
@@ -415,50 +388,39 @@ namespace embree
         enum { M = TriangleMMblur::M };
         typedef TriangleMMblur Primitive;
         
-        /* triangle SIMD type shortcuts */
-        typedef typename TriangleMMblur::simdb tsimdb;
-        typedef typename TriangleMMblur::simdf tsimdf;
-        typedef Vec3<tsimdf> tsimd3f;
-        
-        /* ray SIMD type shortcuts */
-        typedef typename RayK::simdb rsimdb;
-        typedef typename RayK::simdf rsimdf;
-        typedef typename RayK::simdi rsimdi;
-        typedef Vec3<rsimdf> rsimd3f;
-        
         struct Precalculations {
-          __forceinline Precalculations (const rsimdb& valid, const RayK& ray) {}
+          __forceinline Precalculations (const vbool<K>& valid, const RayK& ray) {}
         };
         
         /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
         {
           for (size_t i=0; i<TriangleMMblur::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
-            const rsimdf time = ray.time;
-            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
-            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
-            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
+            const vfloat<K> time = ray.time;
+            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
+            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
+            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
             moeller_trumbore_intersectK<K,M>(valid_i,ray,v0,v1,v2,
                                              IntersectKEpilog<K,M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
         {
-          rsimdb valid0 = valid_i;
+          vbool<K> valid0 = valid_i;
           
           for (size_t i=0; i<TriangleMMblur::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
-            const rsimdf time = ray.time;
-            const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
-            const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
-            const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
+            const vfloat<K> time = ray.time;
+            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
+            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
+            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
             moeller_trumbore_intersectK<K,M>(valid0,ray,v0,v1,v2,
                                              OccludedKEpilog<K,M,enableIntersectionFilter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
@@ -470,10 +432,10 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const tsimdf time = broadcast<tsimdf>(ray.time,k);
-          const tsimd3f v0 = tri.v0 + time*tri.dv0;
-          const tsimd3f v1 = tri.v1 + time*tri.dv1;
-          const tsimd3f v2 = tri.v2 + time*tri.dv2;
+          const vfloat<M> time = broadcast<vfloat<M>>(ray.time,k);
+          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
+          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
+          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
           moeller_trumbore_intersect<K,M>(ray,k,v0,v1,v2,
                                           Intersect1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
@@ -482,10 +444,10 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const tsimdf time = broadcast<tsimdf>(ray.time,k);
-          const tsimd3f v0 = tri.v0 + time*tri.dv0;
-          const tsimd3f v1 = tri.v1 + time*tri.dv1;
-          const tsimd3f v2 = tri.v2 + time*tri.dv2;
+          const vfloat<M> time = broadcast<vfloat<M>>(ray.time,k);
+          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
+          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
+          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
           return moeller_trumbore_intersect<K,M>(ray,k,v0,v1,v2,
                                                  Occluded1KEpilog<K,M,enableIntersectionFilter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
