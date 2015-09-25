@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "../../common/default.h"
 #include "../../common/scene.h"
 #include "../../common/ray.h"
 
@@ -24,33 +23,6 @@ namespace embree
 {
   namespace isa
   {
-    template<typename Intersector>
-      struct ListIntersector1
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(pre,ray,*prim,scene,geomID_to_instID);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
-        {
-          while (true) {
-            if (Intersector::occluded(pre,ray,*prim,scene,geomID_to_instID))
-              return true;
-            if (prim->last()) break;
-            prim++;
-          }
-          return false;
-        }
-      };
-    
     template<typename Intersector>
       struct ArrayIntersector1
       {
@@ -105,34 +77,6 @@ namespace embree
 #if defined __SSE__
     
     template<typename Intersector>
-      struct ListIntersector4
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(valid,pre,ray,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline vbool4 occluded(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          vbool4 valid0 = valid;
-          while (true) {
-            valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,scene);
-            if (none(valid0)) break;
-            if (prim->last()) break;
-            prim++;
-          }
-          return !valid0;
-        }
-      };
-    
-    template<typename Intersector>
       struct ArrayIntersector4
       {
         typedef typename Intersector::Primitive Primitive;
@@ -153,55 +97,6 @@ namespace embree
             if (none(valid0)) break;
           }
           return !valid0;
-        }
-      };
-    
-    
-    template<typename Intersector>
-      struct ListIntersector4_1
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(valid,pre,ray,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline vbool4 occluded(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          vbool4 valid0 = valid;
-          while (true) {
-            valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,scene);
-            if (none(valid0)) break;
-            if (prim->last()) break;
-            prim++;
-          }
-          return !valid0;
-        }
-        
-        static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(pre,ray,k,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          while (true) {
-            if (Intersector::occluded(pre,ray,k,*prim,scene))
-              return true;
-            if (prim->last()) break;
-            prim++;
-          }
-          return false;
         }
       };
     
@@ -250,34 +145,6 @@ namespace embree
 #if defined __AVX__
     
     template<typename Intersector>
-      struct ListIntersector8
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(valid,pre,ray,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline vbool8 occluded(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          vbool8 valid0 = valid;
-          while (true) {
-            valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,scene);
-            if (none(valid0)) break;
-            if (prim->last()) break;
-            prim++;
-          }
-          return !valid0;
-        }
-      };
-    
-    template<typename Intersector>
       struct ArrayIntersector8
       {
         typedef typename Intersector::Primitive Primitive;
@@ -298,55 +165,6 @@ namespace embree
             if (none(valid0)) break;
           }
           return !valid0;
-        }
-      };
-    
-    
-    template<typename Intersector>
-      struct ListIntersector8_1
-      {
-        typedef typename Intersector::Primitive Primitive;
-        typedef typename Intersector::Precalculations Precalculations;
-        
-        static __forceinline void intersect(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(valid,pre,ray,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline vbool8 occluded(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          vbool8 valid0 = valid;
-          while (true) {
-            valid0 &= !Intersector::occluded(valid0,pre,ray,*prim,scene);
-            if (none(valid0)) break;
-            if (prim->last()) break;
-            prim++;
-          }
-          return !valid0;
-        }
-        
-        static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node)
-        {
-          while (true) {
-            Intersector::intersect(pre,ray,k,*prim,scene);
-            if (prim->last()) break;
-            prim++;
-          }
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) 
-        {
-          while (true) {
-            if (Intersector::occluded(pre,ray,k,*prim,scene))
-              return true;
-            if (prim->last()) break;
-            prim++;
-          }
-          return false;
         }
       };
     
