@@ -91,66 +91,63 @@ namespace embree
 
 ///////////////////////////////////////////////////////////////////////
     
-    /*! Intersects a K rays with M triangles. */
-    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_intersect_moeller_trumbore(const typename RayK::simdb& valid0, 
-							     RayK& ray, 
-                                                             const Vec3<tsimdf>& tri_v0, 
-							     const Vec3<tsimdf>& tri_e1, 
-							     const Vec3<tsimdf>& tri_e2, 
-							     const Vec3<tsimdf>& tri_Ng, 
-                                                             const tsimdi& tri_geomIDs, 
-							     const tsimdi& tri_primIDs, 
+    /*! Intersects a K rays with one of M triangles. */
+    template<int K, int M, bool enableIntersectionFilter>
+      __forceinline void triangle_intersect_moeller_trumbore(const typename RayK<K>::simdb& valid0, 
+							     RayK<K>& ray, 
+                                                             const Vec3<vfloat<K>>& tri_v0, 
+							     const Vec3<vfloat<K>>& tri_e1, 
+							     const Vec3<vfloat<K>>& tri_e2, 
+							     const Vec3<vfloat<K>>& tri_Ng, 
+                                                             const vint<M>& tri_geomIDs, 
+							     const vint<M>& tri_primIDs, 
 							     const size_t i, Scene* scene)
     {
       /* ray SIMD type shortcuts */
-      typedef typename RayK::simdb rsimdb;
-      typedef typename RayK::simdf rsimdf;
-      typedef typename RayK::simdi rsimdi;
-      typedef Vec3<rsimdf> rsimd3f;
+      typedef Vec3<vfloat<K>> rsimd3f;
       
       /* calculate denominator */
-      rsimdb valid = valid0;
+      vbool<K> valid = valid0;
       const rsimd3f C = tri_v0 - ray.org;
       const rsimd3f R = cross(ray.dir,C);
-      const rsimdf den = dot(tri_Ng,ray.dir);
-      const rsimdf absDen = abs(den);
-      const rsimdf sgnDen = signmsk(den);
+      const vfloat<K> den = dot(tri_Ng,ray.dir);
+      const vfloat<K> absDen = abs(den);
+      const vfloat<K> sgnDen = signmsk(den);
       
       /* test against edge p2 p0 */
-      const rsimdf U = dot(R,tri_e2) ^ sgnDen;
+      const vfloat<K> U = dot(R,tri_e2) ^ sgnDen;
       valid &= U >= 0.0f;
       if (likely(none(valid))) return;
       
       /* test against edge p0 p1 */
-      const rsimdf V = dot(R,tri_e1) ^ sgnDen;
+      const vfloat<K> V = dot(R,tri_e1) ^ sgnDen;
       valid &= V >= 0.0f;
       if (likely(none(valid))) return;
       
       /* test against edge p1 p2 */
-      const rsimdf W = absDen-U-V;
+      const vfloat<K> W = absDen-U-V;
       valid &= W >= 0.0f;
       if (likely(none(valid))) return;
       
       /* perform depth test */
-      const rsimdf T = dot(tri_Ng,C) ^ sgnDen;
+      const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
       valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
       if (unlikely(none(valid))) return;
       
       /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > rsimdf(zero);
+      valid &= den > vfloat<K>(zero);
       if (unlikely(none(valid))) return;
 #else
-      valid &= den != rsimdf(zero);
+      valid &= den != vfloat<K>(zero);
       if (unlikely(none(valid))) return;
 #endif
       
       /* calculate hit information */
-      const rsimdf rcpAbsDen = rcp(absDen);
-      const rsimdf u = U*rcpAbsDen;
-      const rsimdf v = V*rcpAbsDen;
-      const rsimdf t = T*rcpAbsDen;
+      const vfloat<K> rcpAbsDen = rcp(absDen);
+      const vfloat<K> u = U*rcpAbsDen;
+      const vfloat<K> v = V*rcpAbsDen;
+      const vfloat<K> t = T*rcpAbsDen;
       const int geomID = tri_geomIDs[i];
       const int primID = tri_primIDs[i];
       Geometry* geometry = scene->get(geomID);
@@ -164,7 +161,7 @@ namespace embree
       /* occlusion filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
       if (enableIntersectionFilter) {
-        if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
+        if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
           runIntersectionFilter(valid,geometry,ray,u,v,t,tri_Ng,geomID,primID);
           return;
         }
@@ -172,79 +169,76 @@ namespace embree
 #endif
       
       /* update hit information */
-      rsimdf::store(valid,&ray.u,u);
-      rsimdf::store(valid,&ray.v,v);
-      rsimdf::store(valid,&ray.tfar,t);
-      rsimdi::store(valid,&ray.geomID,geomID);
-      rsimdi::store(valid,&ray.primID,primID);
-      rsimdf::store(valid,&ray.Ng.x,tri_Ng.x);
-      rsimdf::store(valid,&ray.Ng.y,tri_Ng.y);
-      rsimdf::store(valid,&ray.Ng.z,tri_Ng.z);
+      vfloat<K>::store(valid,&ray.u,u);
+      vfloat<K>::store(valid,&ray.v,v);
+      vfloat<K>::store(valid,&ray.tfar,t);
+      vint<K>::store(valid,&ray.geomID,geomID);
+      vint<K>::store(valid,&ray.primID,primID);
+      vfloat<K>::store(valid,&ray.Ng.x,tri_Ng.x);
+      vfloat<K>::store(valid,&ray.Ng.y,tri_Ng.y);
+      vfloat<K>::store(valid,&ray.Ng.z,tri_Ng.z);
     }
     
-    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_intersect_moeller_trumbore(const typename RayK::simdb& valid0, 
-							     RayK& ray, 
-                                                             const Vec3<tsimdf>& v0, 
-							     const Vec3<tsimdf>& v1, 
-							     const Vec3<tsimdf>& v2,
-                                                             const tsimdi& tri_geomIDs, 
-							     const tsimdi& tri_primIDs, 
+    template<int K, int M, bool enableIntersectionFilter>
+      __forceinline void triangle_intersect_moeller_trumbore(const typename RayK<K>::simdb& valid0, 
+							     RayK<K>& ray, 
+                                                             const Vec3<vfloat<K>>& v0, 
+							     const Vec3<vfloat<K>>& v1, 
+							     const Vec3<vfloat<K>>& v2,
+                                                             const vint<M>& tri_geomIDs, 
+							     const vint<M>& tri_primIDs, 
 							     const size_t i, Scene* scene)
     {
-      typedef Vec3<tsimdf> tsimd3f;
+      typedef Vec3<vfloat<K>> tsimd3f;
       const tsimd3f e1 = v0-v1;
       const tsimd3f e2 = v2-v0;
       const tsimd3f Ng = cross(e1,e2);
-      triangle_intersect_moeller_trumbore<enableIntersectionFilter>(valid0,ray,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
+      triangle_intersect_moeller_trumbore<K,M,enableIntersectionFilter>(valid0,ray,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
     }
     
     /*! Test for M rays if they are occluded by any of the N triangle. */
-    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_occluded_moeller_trumbore(typename RayK::simdb& valid0, RayK& ray, 
-                                                            const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_e1, const Vec3<tsimdf>& tri_e2, const Vec3<tsimdf>& tri_Ng, 
-                                                            const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, const size_t i, Scene* scene)
+    template<int K, int M, bool enableIntersectionFilter>
+      __forceinline void triangle_occluded_moeller_trumbore(typename RayK<K>::simdb& valid0, RayK<K>& ray, 
+                                                            const Vec3<vfloat<K>>& tri_v0, const Vec3<vfloat<K>>& tri_e1, const Vec3<vfloat<K>>& tri_e2, const Vec3<vfloat<K>>& tri_Ng, 
+                                                            const vint<M>& tri_geomIDs, const vint<M>& tri_primIDs, const size_t i, Scene* scene)
     {
       /* ray SIMD type shortcuts */
-      typedef typename RayK::simdb rsimdb;
-      typedef typename RayK::simdf rsimdf;
-      typedef typename RayK::simdi rsimdi;
-      typedef Vec3<rsimdf> rsimd3f;
+      typedef Vec3<vfloat<K>> rsimd3f;
       
       /* calculate denominator */
-      rsimdb valid = valid0;
+      vbool<K> valid = valid0;
       const rsimd3f C = tri_v0 - ray.org;
       const rsimd3f R = cross(ray.dir,C);
-      const rsimdf den = dot(tri_Ng,ray.dir);
-      const rsimdf absDen = abs(den);
-      const rsimdf sgnDen = signmsk(den);
+      const vfloat<K> den = dot(tri_Ng,ray.dir);
+      const vfloat<K> absDen = abs(den);
+      const vfloat<K> sgnDen = signmsk(den);
       
       /* test against edge p2 p0 */
-      const rsimdf U = dot(R,tri_e2) ^ sgnDen;
+      const vfloat<K> U = dot(R,tri_e2) ^ sgnDen;
       valid &= U >= 0.0f;
       if (likely(none(valid))) return;
       
       /* test against edge p0 p1 */
-      const rsimdf V = dot(R,tri_e1) ^ sgnDen;
+      const vfloat<K> V = dot(R,tri_e1) ^ sgnDen;
       valid &= V >= 0.0f;
       if (likely(none(valid))) return;
       
       /* test against edge p1 p2 */
-      const rsimdf W = absDen-U-V;
+      const vfloat<K> W = absDen-U-V;
       valid &= W >= 0.0f;
       if (likely(none(valid))) return;
       
       /* perform depth test */
-      const rsimdf T = dot(tri_Ng,C) ^ sgnDen;
+      const vfloat<K> T = dot(tri_Ng,C) ^ sgnDen;
       valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
       if (unlikely(none(valid))) return;
       
       /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > rsimdf(zero);
+      valid &= den > vfloat<K>(zero);
       if (unlikely(none(valid))) return;
 #else
-      valid &= den != rsimdf(zero);
+      valid &= den != vfloat<K>(zero);
       if (unlikely(none(valid))) return;
 #endif
       
@@ -260,12 +254,12 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
       if (enableIntersectionFilter) 
       {
-        if (unlikely(geometry->hasOcclusionFilter<rsimdf>()))
+        if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>()))
         {
-          const rsimdf rcpAbsDen = rcp(absDen);
-          const rsimdf u = U*rcpAbsDen;
-          const rsimdf v = V*rcpAbsDen;
-          const rsimdf t = T*rcpAbsDen;
+          const vfloat<K> rcpAbsDen = rcp(absDen);
+          const vfloat<K> u = U*rcpAbsDen;
+          const vfloat<K> v = V*rcpAbsDen;
+          const vfloat<K> t = T*rcpAbsDen;
           const int primID = tri_primIDs[i];
           valid = runOcclusionFilter(valid,geometry,ray,u,v,t,tri_Ng,geomID,primID);
         }
@@ -276,26 +270,31 @@ namespace embree
       valid0 &= !valid;
     }
     
-    template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_occluded_moeller_trumbore(typename RayK::simdb& valid0, 
-							    RayK& ray, 
-                                                            const Vec3<tsimdf>& v0, 
-							    const Vec3<tsimdf>& v1, 
-							    const Vec3<tsimdf>& v2,
-                                                            const tsimdi& tri_geomIDs, 
-							    const tsimdi& tri_primIDs, 
+    template<int K, int M, bool enableIntersectionFilter>
+      __forceinline void triangle_occluded_moeller_trumbore(typename RayK<K>::simdb& valid0, 
+							    RayK<K>& ray, 
+                                                            const Vec3<vfloat<K>>& v0, 
+							    const Vec3<vfloat<K>>& v1, 
+							    const Vec3<vfloat<K>>& v2,
+                                                            const vint<M>& tri_geomIDs, 
+							    const vint<M>& tri_primIDs, 
 							    const size_t i, Scene* scene)
     {
-      typedef Vec3<tsimdf> tsimd3f;
+      typedef Vec3<vfloat<K>> tsimd3f;
       const tsimd3f e1 = v0-v1;
       const tsimd3f e2 = v2-v0;
       const tsimd3f Ng = cross(e1,e2);
-      triangle_occluded_moeller_trumbore<enableIntersectionFilter>(valid0,ray,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
+      triangle_occluded_moeller_trumbore<K,M,enableIntersectionFilter>(valid0,ray,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
     }
+
+
+
+//////////////////////////////////////////////////////////////////
+
     
     /*! Intersect a ray with the 4 triangles and updates the hit. */
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_intersect_moeller_trumbore(RayK& ray, size_t k,
+      __forceinline void triangle_intersect_moeller_trumbore_k(RayK& ray, size_t k,
                                                              const Vec3<tsimdf>& tri_v0, 
 							     const Vec3<tsimdf>& tri_e1, 
 							     const Vec3<tsimdf>& tri_e2, 
@@ -389,7 +388,7 @@ namespace embree
     }
     
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline void triangle_intersect_moeller_trumbore(RayK& ray, size_t k,
+      __forceinline void triangle_intersect_moeller_trumbore_k(RayK& ray, size_t k,
                                                              const Vec3<tsimdf>& v0, const Vec3<tsimdf>& v1, const Vec3<tsimdf>& v2,
                                                              const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, const size_t i, Scene* scene)
     {
@@ -397,13 +396,13 @@ namespace embree
       const tsimd3f e1 = v0-v1;
       const tsimd3f e2 = v2-v0;
       const tsimd3f Ng = cross(e1,e2);
-      triangle_intersect_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
+      triangle_intersect_moeller_trumbore_k<enableIntersectionFilter>(ray,k,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
     }
     
     
     /*! Test if the ray is occluded by one of the triangles. */
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline bool triangle_occluded_moeller_trumbore(RayK& ray, size_t k, 
+      __forceinline bool triangle_occluded_moeller_trumbore_k(RayK& ray, size_t k, 
                                                             const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_e1, const Vec3<tsimdf>& tri_e2, const Vec3<tsimdf>& tri_Ng, 
                                                             const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
     {
@@ -486,7 +485,7 @@ namespace embree
     }
     
     template<bool enableIntersectionFilter, typename tsimdf, typename tsimdi, typename RayK>
-      __forceinline bool triangle_occluded_moeller_trumbore(RayK& ray, size_t k,
+      __forceinline bool triangle_occluded_moeller_trumbore_k(RayK& ray, size_t k,
                                                             const Vec3<tsimdf>& v0, const Vec3<tsimdf>& v1, const Vec3<tsimdf>& v2,
                                                             const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, const size_t i, Scene* scene)
     {
@@ -494,7 +493,7 @@ namespace embree
       const tsimd3f e1 = v0-v1;
       const tsimd3f e2 = v2-v0;
       const tsimd3f Ng = cross(e1,e2);
-      return triangle_occluded_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
+      return triangle_occluded_moeller_trumbore_k<enableIntersectionFilter>(ray,k,v0,e1,e2,Ng,tri_geomIDs,tri_primIDs,i,scene);
     }
     
     /*! Intersects N triangles with 1 ray */
@@ -554,15 +553,17 @@ namespace embree
         }
       };
     
-    /*! Intersector for N triangles with M rays. */
-    template<typename RayK, typename TriangleN, bool enableIntersectionFilter>
+    /*! Intersector for M triangles with K rays. */
+    template<typename RayK, typename TriangleM, bool enableIntersectionFilter>
       struct TriangleNIntersectorMMoellerTrumbore
       {
-        typedef TriangleN Primitive;
+        enum { K = RayK::K };
+        enum { M = TriangleM::M };
+        typedef TriangleM Primitive;
         
         /* triangle SIMD type shortcuts */
-        typedef typename TriangleN::simdb tsimdb;
-        typedef typename TriangleN::simdf tsimdf;
+        typedef typename TriangleM::simdb tsimdb;
+        typedef typename TriangleM::simdf tsimdf;
         typedef Vec3<tsimdf> tsimd3f;
         
         /* ray SIMD type shortcuts */
@@ -576,9 +577,9 @@ namespace embree
         };
         
         /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleN& tri, Scene* scene)
+        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
         {
-          for (size_t i=0; i<TriangleN::max_size(); i++)
+          for (size_t i=0; i<TriangleM::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
@@ -586,16 +587,16 @@ namespace embree
             const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
             const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
             const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
-            triangle_intersect_moeller_trumbore<enableIntersectionFilter>(valid_i,ray,p0,e1,e2,Ng,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_intersect_moeller_trumbore<K,M,enableIntersectionFilter>(valid_i,ray,p0,e1,e2,Ng,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleN& tri, Scene* scene)
+        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
         {
           rsimdb valid0 = valid_i;
           
-          for (size_t i=0; i<TriangleN::max_size(); i++)
+          for (size_t i=0; i<TriangleM::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
@@ -603,24 +604,25 @@ namespace embree
             const rsimd3f e1 = broadcast<rsimdf>(tri.e1,i);
             const rsimd3f e2 = broadcast<rsimdf>(tri.e2,i);
             const rsimd3f Ng = broadcast<rsimdf>(tri.Ng,i);
-            triangle_occluded_moeller_trumbore<enableIntersectionFilter>(valid0,ray,p0,e1,e2,Ng,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_occluded_moeller_trumbore<K,M,enableIntersectionFilter>(valid0,ray,p0,e1,e2,Ng,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
         /*! Intersect a ray with the 4 triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleN& tri, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          triangle_intersect_moeller_trumbore<enableIntersectionFilter>(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,tri.geomIDs,tri.primIDs,scene);
+          triangle_intersect_moeller_trumbore_k<enableIntersectionFilter>(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleN& tri, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return triangle_occluded_moeller_trumbore<enableIntersectionFilter>(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,tri.geomIDs,tri.primIDs,scene);
+          return triangle_occluded_moeller_trumbore_k<enableIntersectionFilter>(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,tri.geomIDs,tri.primIDs,scene);
+          return true;
         }
       };
     
@@ -660,15 +662,17 @@ namespace embree
         }
       };
     
-    /*! Intersector for N triangles with M rays. */
-    template<typename RayK, typename TriangleNMblur, bool enableIntersectionFilter>
+    /*! Intersector for M triangles with K rays. */
+    template<typename RayK, typename TriangleMMblur, bool enableIntersectionFilter>
       struct TriangleNMblurIntersectorMMoellerTrumbore
       {
-        typedef TriangleNMblur Primitive;
+        enum { K = RayK::K };
+        enum { M = TriangleMMblur::M };
+        typedef TriangleMMblur Primitive;
         
         /* triangle SIMD type shortcuts */
-        typedef typename TriangleNMblur::simdb tsimdb;
-        typedef typename TriangleNMblur::simdf tsimdf;
+        typedef typename TriangleMMblur::simdb tsimdb;
+        typedef typename TriangleMMblur::simdf tsimdf;
         typedef Vec3<tsimdf> tsimd3f;
         
         /* ray SIMD type shortcuts */
@@ -682,9 +686,9 @@ namespace embree
         };
         
         /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleNMblur& tri, Scene* scene)
+        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
         {
-          for (size_t i=0; i<TriangleNMblur::max_size(); i++)
+          for (size_t i=0; i<TriangleMMblur::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
@@ -692,16 +696,16 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
-            triangle_intersect_moeller_trumbore<enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_intersect_moeller_trumbore<K,M,enableIntersectionFilter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
           }
         }
         
         /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleNMblur& tri, Scene* scene)
+        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
         {
           rsimdb valid0 = valid_i;
           
-          for (size_t i=0; i<TriangleNMblur::max_size(); i++)
+          for (size_t i=0; i<TriangleMMblur::max_size(); i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
@@ -709,32 +713,32 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i) + time*broadcast<rsimdf>(tri.dv0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i) + time*broadcast<rsimdf>(tri.dv1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i) + time*broadcast<rsimdf>(tri.dv2,i);
-            triangle_occluded_moeller_trumbore<enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            triangle_occluded_moeller_trumbore<K,M,enableIntersectionFilter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
         /*! Intersect a ray with the N triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleNMblur& tri, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           const tsimdf time = broadcast<tsimdf>(ray.time,k);
           const tsimd3f v0 = tri.v0 + time*tri.dv0;
           const tsimd3f v1 = tri.v1 + time*tri.dv1;
           const tsimd3f v2 = tri.v2 + time*tri.dv2;
-          triangle_intersect_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
+          triangle_intersect_moeller_trumbore_k<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
         
         /*! Test if the ray is occluded by one of the N triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleNMblur& tri, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
           const tsimdf time = broadcast<tsimdf>(ray.time,k);
           const tsimd3f v0 = tri.v0 + time*tri.dv0;
           const tsimd3f v1 = tri.v1 + time*tri.dv1;
           const tsimd3f v2 = tri.v2 + time*tri.dv2;
-          return triangle_occluded_moeller_trumbore<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
+          return triangle_occluded_moeller_trumbore_k<enableIntersectionFilter>(ray,k,v0,v1,v2,tri.geomIDs,tri.primIDs,scene);
         }
       };
   }

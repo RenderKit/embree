@@ -21,9 +21,10 @@
 namespace embree
 {
   /* Ray structure for K rays */
-  template<int K>
+  template<int KK>
   struct RayK
   {
+    enum { K = KK };
     typedef vbool<K>  simdb;
     typedef vfloat<K> simdf;
     typedef vint<K>   simdi;
