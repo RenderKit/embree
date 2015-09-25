@@ -315,11 +315,11 @@ namespace embree
     const vint8 b0 = shuffle<1,0,3,2>(a0);
     const vint8 c0 = umin(a0,b0);
     const vint8 d0 = umax(a0,b0);
-    const vint8 a1 = (0x55 /* 0b01010101 */,c0,d0);
+    const vint8 a1 = select(0x55 /* 0b01010101 */,c0,d0);
     const vint8 b1 = shuffle<2,3,0,1>(a1);
     const vint8 c1 = umin(a1,b1);
     const vint8 d1 = umax(a1,b1);
-    const vint8 a2 = (0x33 /* 0b00110011 */,c1,d1);
+    const vint8 a2 = select(0x33 /* 0b00110011 */,c1,d1);
     const vint8 b2 = shuffle<0,2,1,3>(a2);
     const vint8 c2 = umin(a2,b2);
     const vint8 d2 = umax(a2,b2);

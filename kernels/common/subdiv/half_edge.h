@@ -28,8 +28,7 @@ namespace embree
     enum PatchType : char { 
       REGULAR_QUAD_PATCH       = 0, //!< a regular quad patch can be represented as a B-Spline
       IRREGULAR_QUAD_PATCH     = 1, //!< an irregular quad patch can be represented as a Gregory patch
-      IRREGULAR_TRIANGLE_PATCH = 2, //!< an irregular triangle patch can be represented as a Gregory patch
-      COMPLEX_PATCH            = 3  //!< these patches need subdivision and cannot be processed by the above fast code paths
+      COMPLEX_PATCH            = 2  //!< these patches need subdivision and cannot be processed by the above fast code paths
     };
     
     enum VertexType : char { 
@@ -129,14 +128,7 @@ namespace embree
       if ((p = p->next()) == this) return COMPLEX_PATCH;
       
       ret = max(ret,p->vertexType());
-      if ((p = p->next()) == this) 
-      {
-        /* if (ret == REGULAR_QUAD_PATCH || ret == IRREGULAR_QUAD_PATCH) */
-        /*   { */
-        /* 	return IRREGULAR_TRIANGLE_PATCH; */
-        /*   } */
-        return COMPLEX_PATCH;
-      }
+      if ((p = p->next()) == this) return COMPLEX_PATCH;
       
       ret = max(ret,p->vertexType());
       if ((p = p->next()) != this) return COMPLEX_PATCH;

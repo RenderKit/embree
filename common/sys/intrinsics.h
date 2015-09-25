@@ -441,14 +441,15 @@ namespace embree
 #endif
   }
 
+#if 0 // FIXME: not compiling with CLANG
   __forceinline size_t __blsr(size_t v) {
 #if defined(__AVX2__) 
     return _blsr_u64(v);
 #else
     return v & (v-1);
 #endif
-
   }
+#endif
   
   __forceinline int __btc(int v, int i) {
     int r = 0; asm ("btc %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags" ); return r;

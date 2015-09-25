@@ -172,7 +172,7 @@ namespace embree
           {
             //STAT3(normal.transform_nodes,1,1,1);
             const BVH4::TransformNode* node = cur.transformNode();
-            if (unlikely(ray.mask & node->mask == 0)) goto pop;
+            if (unlikely((ray.mask & node->mask) == 0)) goto pop;
             const Vec3fa ray_org = xfmPoint (node->world2local,((BVH4TravRay&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((BVH4TravRay&)tlray).dir_xyz);
             geomID_to_instID = &node->instID;

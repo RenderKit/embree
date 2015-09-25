@@ -84,6 +84,7 @@ namespace embree
       }
     }
 
+#if defined(__MIC__)
     template<int PFHINT>
     __forceinline void prefetchHitData() const
     {
@@ -96,6 +97,7 @@ namespace embree
       prefetch<PFHINT>(&Ng.y);
       prefetch<PFHINT>(&Ng.z);
     }
+#endif
 
     __forceinline void update(const vbool<K>& m_mask,
                               const vfloat<K>& new_t,

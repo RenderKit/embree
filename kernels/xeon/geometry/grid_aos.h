@@ -75,19 +75,19 @@ namespace embree
           const size_t nearX = 4*_nearX, nearY = 4*_nearY, nearZ = 4*_nearZ; 
           const size_t farX  = nearX ^ (4*sizeof(vfloat4)), farY  = nearY ^ (4*sizeof(vfloat4)), farZ  = nearZ ^ (4*sizeof(vfloat4));
 #if defined (__AVX2__)
-          const vfloat4 tNearX = msub(load4f((const char*)&lower_x[i]+nearX), rdir.x, org_rdir.x);
-          const vfloat4 tNearY = msub(load4f((const char*)&lower_x[i]+nearY), rdir.y, org_rdir.y);
-          const vfloat4 tNearZ = msub(load4f((const char*)&lower_x[i]+nearZ), rdir.z, org_rdir.z);
-          const vfloat4 tFarX  = msub(load4f((const char*)&lower_x[i]+farX ), rdir.x, org_rdir.x);
-          const vfloat4 tFarY  = msub(load4f((const char*)&lower_x[i]+farY ), rdir.y, org_rdir.y);
-          const vfloat4 tFarZ  = msub(load4f((const char*)&lower_x[i]+farZ ), rdir.z, org_rdir.z);
+          const vfloat4 tNearX = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+nearX)), rdir.x, org_rdir.x);
+          const vfloat4 tNearY = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+nearY)), rdir.y, org_rdir.y);
+          const vfloat4 tNearZ = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+nearZ)), rdir.z, org_rdir.z);
+          const vfloat4 tFarX  = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+farX )), rdir.x, org_rdir.x);
+          const vfloat4 tFarY  = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+farY )), rdir.y, org_rdir.y);
+          const vfloat4 tFarZ  = msub(vfloat4::load((const float*)((const char*)&lower_x[i]+farZ )), rdir.z, org_rdir.z);
 #else
-          const vfloat4 tNearX = (load4f((const char*)&lower_x[i]+nearX) - org.x) * rdir.x;
-          const vfloat4 tNearY = (load4f((const char*)&lower_x[i]+nearY) - org.y) * rdir.y;
-          const vfloat4 tNearZ = (load4f((const char*)&lower_x[i]+nearZ) - org.z) * rdir.z;
-          const vfloat4 tFarX  = (load4f((const char*)&lower_x[i]+farX ) - org.x) * rdir.x;
-          const vfloat4 tFarY  = (load4f((const char*)&lower_x[i]+farY ) - org.y) * rdir.y;
-          const vfloat4 tFarZ  = (load4f((const char*)&lower_x[i]+farZ ) - org.z) * rdir.z;
+          const vfloat4 tNearX = (vfloat4::load((const float*)((const char*)&lower_x[i]+nearX)) - org.x) * rdir.x;
+          const vfloat4 tNearY = (vfloat4::load((const float*)((const char*)&lower_x[i]+nearY)) - org.y) * rdir.y;
+          const vfloat4 tNearZ = (vfloat4::load((const float*)((const char*)&lower_x[i]+nearZ)) - org.z) * rdir.z;
+          const vfloat4 tFarX  = (vfloat4::load((const float*)((const char*)&lower_x[i]+farX )) - org.x) * rdir.x;
+          const vfloat4 tFarY  = (vfloat4::load((const float*)((const char*)&lower_x[i]+farY )) - org.y) * rdir.y;
+          const vfloat4 tFarZ  = (vfloat4::load((const float*)((const char*)&lower_x[i]+farZ )) - org.z) * rdir.z;
 #endif
           
           if (robust) {
