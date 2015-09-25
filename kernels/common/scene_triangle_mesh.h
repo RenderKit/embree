@@ -57,20 +57,32 @@ namespace embree
     };
 
 
-    /*! tests if a shared exists between another triangle */
-    static __forceinline bool hasSharedEdge(const Triangle &tri0,
-                                     const Triangle &tri1)
+    /*! tests if a shared exists between two triangles, returns -1 if no shared edge exists and the opposite vertex index of the second triangle if a shared edge exists */
+    static __forceinline int sharedEdge(const Triangle &tri0,
+                                        const Triangle &tri1)
     {
       const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
       const Edge tri0_edge1(tri0.v[1],tri0.v[2]);
       const Edge tri0_edge2(tri0.v[2],tri0.v[0]);
+
       const Edge tri1_edge0(tri1.v[0],tri1.v[1]);
       const Edge tri1_edge1(tri1.v[1],tri1.v[2]);
       const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
-      if (tri0_edge0 == tri1_edge0 || tri0_edge0 == tri1_edge1 || tri0_edge0 == tri1_edge2) return true; 
-      if (tri0_edge1 == tri1_edge0 || tri0_edge1 == tri1_edge1 || tri0_edge1 == tri1_edge2) return true; 
-      if (tri0_edge2 == tri1_edge0 || tri0_edge2 == tri1_edge1 || tri0_edge2 == tri1_edge2) return true; 
-      return false;
+
+      int opp_vtx = -1;
+      if (tri0_edge0 == tri1_edge0 ||
+          tri0_edge1 == tri1_edge0 || 
+          tri0_edge2 == tri1_edge0) return tri1.v[2];
+
+      if (tri0_edge0 == tri1_edge1 || 
+          tri0_edge1 == tri1_edge1 || 
+          tri0_edge2 == tri1_edge1) return tri1.v[0];
+
+      if (tri0_edge0 == tri1_edge2 || 
+          tri0_edge1 == tri1_edge2 || 
+          tri0_edge2 == tri1_edge2) return tri1.v[1];
+
+      return -1;
     }
 
     
