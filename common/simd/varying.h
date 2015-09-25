@@ -39,8 +39,8 @@ namespace embree
   #define vreal  vfloat
   #define vboolf vbool
 
-  template<int N> struct vboolf;
-  template<int N> struct vboold;
+  template<int N> struct vboolf { int     v[N]; };
+  template<int N> struct vboold { int64_t v[N]; };
 #endif
 
   /* Maximum supported varying size */
