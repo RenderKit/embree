@@ -117,7 +117,7 @@ namespace embree
       if (n >= 4) ptr[3] = v[3];
     }
 
-    static __forceinline void store_nt ( vfloat4* ptr, const vfloat4& v)
+    static __forceinline void store_nt ( void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)
       _mm_stream_ps((float*)ptr,v);
