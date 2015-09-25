@@ -45,35 +45,6 @@ namespace embree
         }
       };
     
-    template<typename Intersector1, typename Intersector2>
-      struct Switch2Intersector1
-      {
-        typedef typename Intersector1::Primitive Primitive1;
-        typedef typename Intersector2::Primitive Primitive2;
-        typedef void Primitive;
-        
-        struct Precalculations 
-        {
-          __forceinline Precalculations (const Ray& ray, const void *ptr) 
-            : pre1(ray,ptr), pre2(ray,ptr) {}
-          
-          typename Intersector1::Precalculations pre1;
-          typename Intersector2::Precalculations pre2;
-        };
-        
-        static __forceinline void intersect(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
-        {
-          if (ty == 0) Intersector1::intersect(pre.pre1,ray,*(Primitive1*)prim,scene,geomID_to_instID,lazy_node);
-          else         Intersector2::intersect(pre.pre2,ray,*(Primitive2*)prim,scene,geomID_to_instID,lazy_node);
-        }
-        
-        static __forceinline bool occluded(Precalculations& pre, Ray& ray, Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
-        {
-          if (ty == 0) return Intersector1::occluded(pre.pre1,ray,*(Primitive1*)prim,scene,geomID_to_instID,lazy_node);
-          else         return Intersector2::occluded(pre.pre2,ray,*(Primitive2*)prim,scene,geomID_to_instID,lazy_node);
-        }
-      };
-    
 #if defined __SSE__
     
     template<typename Intersector>
