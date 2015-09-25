@@ -238,41 +238,43 @@ namespace embree
         //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
 
 
+        /* store primrefs for triangle pairs */
+
         ParallelForForPrefixSumState<PrimInfo> pstate;
         Scene::Iterator<Mesh,1> iter(scene);
 
         pstate.init(iter,size_t(1024));
         PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
                                                       {
-                                                        // 1.)  need to determine k !!!!
-                                                        // 2.)  encode non-pairs with flagged geomID
+                                                        k = base.size();
                                                         PrimInfo pinfo(empty);
                                                         for (size_t j=r.begin(); j<r.end(); j++)
                                                         {
                                                           BBox3fa bounds = empty;
                                                           if (!mesh->valid(j,&bounds)) continue;
-                                                          const PrimRef prim(bounds,mesh->id,j);
-                                                          pinfo.add(bounds,bounds.center2());
 
                                                           TriangleMesh* trimesh = (TriangleMesh*)mesh;
-
+                                                          const size_t ID = j;
                                                           if (j+1 < r.end())
                                                           {
                                                             BBox3fa bounds_second = empty;
                                                             if (!mesh->valid(j+1,&bounds_second)) continue;
+                                                            bounds = bounds.extend(bounds_second);
+                                                            pinfo.add(bounds_second,bounds.center2());
+
                                                             TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                             if (TriangleMesh::sharedEdge(trimesh->triangle(j),
                                                                                          trimesh->triangle(j+1)) != -1)
-                                                            {
                                                               j++;
-                                                            }
-                                                              
                                                           }
-
+                                                          pinfo.add(bounds,bounds.center2());
+                                                          const PrimRef prim(bounds,mesh->id,ID);
+                                                          prims[k++] = prim;
                                                         }
                                                         return pinfo;
                                                       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
+        assert(pinfo.size() == numPrimitives);
 
         // ============================================
 
