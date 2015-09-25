@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "../../common/ray.h"
-#include "filter.h"
+#include "intersector_epilog.h"
 
 /*! This intersector implements a modified version of the Moeller
  *  Trumbore intersector from the paper "Fast, Minimum Storage
@@ -31,13 +30,13 @@ namespace embree
 {
   namespace isa
   {
-    template<int M, typename UpdateHit>
+    template<int M, typename Epilog>
     __forceinline bool moeller_trumbore_intersect1(Ray& ray, 
                                                    const Vec3<vfloat<M>>& tri_v0, 
                                                    const Vec3<vfloat<M>>& tri_e1, 
                                                    const Vec3<vfloat<M>>& tri_e2, 
                                                    const Vec3<vfloat<M>>& tri_Ng,
-                                                   const UpdateHit& updateHit)
+                                                   const Epilog& epilog)
     {
       /* calculate denominator */
       typedef Vec3<vfloat<M>> Vec3vfM;
@@ -67,7 +66,7 @@ namespace embree
       if (likely(none(valid))) return false;
 
       /* update hit information */
-      return updateHit(valid,[&] () {
+      return epilog(valid,[&] () {
           const vfloat<M> rcpAbsDen = rcp(absDen);
           const vfloat<M> u = U * rcpAbsDen;
           const vfloat<M> v = V * rcpAbsDen;
@@ -76,157 +75,18 @@ namespace embree
         });
     }
 
-    template<int M, typename UpdateHit>
+    template<int M, typename Epilog>
     __forceinline bool moeller_trumbore_intersect1(Ray& ray, 
                                                    const Vec3<vfloat<M>>& v0, 
                                                    const Vec3<vfloat<M>>& v1, 
                                                    const Vec3<vfloat<M>>& v2, 
-                                                   const UpdateHit& updateHit)
+                                                   const Epilog& epilog)
     {
       const Vec3<vfloat<M>> e1 = v0-v1;
       const Vec3<vfloat<M>> e2 = v2-v0;
       const Vec3<vfloat<M>> Ng = cross(e1,e2);
-      return moeller_trumbore_intersect1<M>(ray,v0,e1,e2,Ng,updateHit);
+      return moeller_trumbore_intersect1<M>(ray,v0,e1,e2,Ng,epilog);
     }
-      
-    template<int M, bool enableIntersectionFilter>
-      struct Intersect1UpdateHit
-      {
-        Ray& ray;
-        const vint<M>& tri_geomIDs;
-        const vint<M>& tri_primIDs;
-        Scene* scene;
-        const unsigned* geomID_to_instID;
-
-        __forceinline Intersect1UpdateHit(Ray& ray,
-                                          const vint<M>& tri_geomIDs, 
-                                          const vint<M>& tri_primIDs, 
-                                          Scene* scene,
-                                          const unsigned* geomID_to_instID)
-          : ray(ray), tri_geomIDs(tri_geomIDs), tri_primIDs(tri_primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
-
-        template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
-        {
-          vfloat<M> u, v, t; 
-          Vec3<vfloat<M>> tri_Ng;
-          std::tie(u,v,t,tri_Ng) = hit();
-          vbool<M> valid = valid_i;
-
-          size_t i = select_min(valid,t);
-          int geomID = tri_geomIDs[i];
-          int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          
-          /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-          goto entry;
-          while (true) 
-          {
-            if (unlikely(none(valid))) return false;
-            i = select_min(valid,t);
-            geomID = tri_geomIDs[i];
-            instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          entry:
-            Geometry* geometry = scene->get(geomID);
-            
-#if defined(RTCORE_RAY_MASK)
-            /* goto next hit if mask test fails */
-            if ((geometry->mask & ray.mask) == 0) {
-              valid[i] = 0;
-              continue;
-            }
-#endif
-            
-#if defined(RTCORE_INTERSECTION_FILTER) 
-            /* call intersection filter function */
-            if (enableIntersectionFilter) {
-              if (unlikely(geometry->hasIntersectionFilter1())) {
-                Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-                if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng,instID,tri_primIDs[i])) return true;
-                valid[i] = 0;
-                continue;
-              }
-            }
-#endif
-            break;
-          }
-#endif
-          
-          /* update hit information */
-          ray.u = u[i];
-          ray.v = v[i];
-          ray.tfar = t[i];
-          ray.Ng.x = tri_Ng.x[i];
-          ray.Ng.y = tri_Ng.y[i];
-          ray.Ng.z = tri_Ng.z[i];
-          ray.geomID = instID;
-          ray.primID = tri_primIDs[i];
-          return true;
-        }
-      };
-
-
-    template<int M, bool enableIntersectionFilter>
-      struct Occluded1UpdateHit
-      {
-        Ray& ray;
-        const vint<M>& tri_geomIDs;
-        const vint<M>& tri_primIDs;
-        Scene* scene;
-        const unsigned* geomID_to_instID;
-
-        __forceinline Occluded1UpdateHit(Ray& ray,
-                                         const vint<M>& tri_geomIDs, 
-                                         const vint<M>& tri_primIDs, 
-                                         Scene* scene,
-                                         const unsigned* geomID_to_instID)
-          : ray(ray), tri_geomIDs(tri_geomIDs), tri_primIDs(tri_primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
-
-        template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
-        {
-          /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-          size_t m=movemask(valid);
-          goto entry;
-          while (true)
-          {  
-            if (unlikely(m == 0)) return false;
-          entry:
-            size_t i=__bsf(m);
-            const int geomID = tri_geomIDs[i];
-            const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-            Geometry* geometry = scene->get(geomID);
-            
-#if defined(RTCORE_RAY_MASK)
-            /* goto next hit if mask test fails */
-            if ((geometry->mask & ray.mask) == 0) {
-              m=__btc(m,i);
-              continue;
-            }
-#endif
-            
-#if defined(RTCORE_INTERSECTION_FILTER)
-            /* if we have no filter then the test passed */
-            if (enableIntersectionFilter) {
-              if (unlikely(geometry->hasOcclusionFilter1())) 
-              {
-                Vec3<vfloat<M>> tri_Ng;
-                vfloat<M> u,v,t; std::tie(u,v,t,tri_Ng) = hit();
-                const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-                if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng,instID,tri_primIDs[i])) return true;
-                m=__btc(m,i);
-                continue;
-              }
-            }
-#endif
-            break;
-          }
-#endif
-          
-          return true;
-        }
-      };
     
 
 ///////////////////////////////////////////////////////////////////////
@@ -653,7 +513,7 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                         Intersect1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                         Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
@@ -661,7 +521,7 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           return moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,tri.Ng,
-                                                Occluded1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                                Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
 
@@ -682,7 +542,7 @@ namespace embree
         {
           STAT3(normal.trav_prims,1,1,1);
           moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,
-                                         Intersect1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                         Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of N/2 triangle pairs. */
@@ -690,7 +550,7 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
           return moeller_trumbore_intersect1<M>(ray,tri.v0,tri.e1,tri.e2,
-                                                Occluded1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                                Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
     
@@ -784,7 +644,7 @@ namespace embree
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
           moeller_trumbore_intersect1<M>(ray,v0,v1,v2,
-                                         Intersect1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                         Intersect1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         /*! Test if the ray is occluded by one of N triangles. */
@@ -796,7 +656,7 @@ namespace embree
           const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
           const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
           return moeller_trumbore_intersect1<M>(ray,v0,v1,v2,
-                                                Occluded1UpdateHit<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+                                                Occluded1Epilog<M,enableIntersectionFilter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
     
