@@ -25,6 +25,7 @@ namespace embree
       speed up intersection calculations. */
   struct Triangle8
   {
+    enum { M = 8 };
 #if defined __AVX__
     typedef vbool8 simdb;
     typedef vfloat8 simdf;

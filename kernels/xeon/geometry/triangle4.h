@@ -25,6 +25,7 @@ namespace embree
       speed up intersection calculations. */
   struct Triangle4
   {
+    enum { M = 4 };
     typedef vbool4 simdb;
     typedef vfloat4 simdf;
     typedef vint4 simdi;

@@ -23,6 +23,7 @@ namespace embree
   /*! Stores the vertices of 4 triangles in struct of array layout. */
   struct Triangle4vMB
   {
+    enum { M = 4 };
     typedef vbool4 simdb;
     typedef vfloat4 simdf;
     typedef vint4 simdi;
