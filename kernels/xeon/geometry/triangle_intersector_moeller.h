@@ -328,10 +328,10 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleNMblur& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const vfloat<M> time = ray.time;
-          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
-          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
-          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
+          const Vec3<vfloat<M>> time(ray.time);
+          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
+          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
+          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
           pre.intersect(ray,v0,v1,v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
@@ -339,10 +339,10 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleNMblur& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const vfloat<M> time = ray.time;
-          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
-          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
-          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
+          const Vec3<vfloat<M>> time(ray.time);
+          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
+          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
+          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
           return pre.intersect(ray,v0,v1,v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
@@ -363,10 +363,10 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
-            const vfloat<K> time = ray.time;
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
+            const Vec3<vfloat<K>> time(ray.time);
+            const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
+            const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
+            const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
             pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<K,M,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
@@ -380,10 +380,10 @@ namespace embree
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
-            const vfloat<K> time = ray.time;
-            const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i) + time*broadcast<vfloat<K>>(tri.dv0,i);
-            const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i) + time*broadcast<vfloat<K>>(tri.dv1,i);
-            const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i) + time*broadcast<vfloat<K>>(tri.dv2,i);
+            const Vec3<vfloat<K>> time(ray.time);
+            const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
+            const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
+            const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
             pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<K,M,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
@@ -394,10 +394,10 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const vfloat<M> time = broadcast<vfloat<M>>(ray.time,k);
-          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
-          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
-          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
+          const Vec3<vfloat<M>> time = broadcast<vfloat<M>>(ray.time,k);
+          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
+          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
+          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
           pre.intersect(ray,k,v0,v1,v2,Intersect1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
@@ -405,10 +405,10 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const vfloat<M> time = broadcast<vfloat<M>>(ray.time,k);
-          const Vec3<vfloat<M>> v0 = tri.v0 + time*tri.dv0;
-          const Vec3<vfloat<M>> v1 = tri.v1 + time*tri.dv1;
-          const Vec3<vfloat<M>> v2 = tri.v2 + time*tri.dv2;
+          const Vec3<vfloat<M>> time = broadcast<vfloat<M>>(ray.time,k);
+          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
+          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
+          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
           return pre.intersect(ray,k,v0,v1,v2,Occluded1KEpilog<K,M,filte>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
