@@ -22,7 +22,7 @@
 #include "triangle4i.h"
 #include "triangle4v_mb.h"
 #include "triangle8.h"
-#include "trianglepairs8.h"
+#include "trianglepairs4.h"
 #include "subdivpatch1.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
@@ -126,17 +126,17 @@ namespace embree
 #endif
 #endif
 
-  /********************** TrianglePairs8 **************************/
+  /********************** TrianglePairs4 **************************/
 
 #if defined(__TARGET_AVX__)
 #if !defined(__AVX__)
-  TrianglePairs8::Type TrianglePairs8::type;
+  TrianglePairs4::Type TrianglePairs4::type;
 
-  TrianglePairs8::Type::Type () 
-    : PrimitiveType("trianglepairs8",11*32,8) {}
+  TrianglePairs4::Type::Type () 
+    : PrimitiveType("trianglepairs4",11*32,8) {}
 #else
-  size_t TrianglePairs8::Type::size(const char* This) const {
-    return ((TrianglePairs8*)This)->size();
+  size_t TrianglePairs4::Type::size(const char* This) const {
+    return ((TrianglePairs4*)This)->size();
   }
 #endif
 #endif

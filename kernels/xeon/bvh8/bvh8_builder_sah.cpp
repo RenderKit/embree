@@ -24,7 +24,9 @@
 
 #include "../geometry/triangle4.h"
 #include "../geometry/triangle8.h"
-#include "../geometry/trianglepairs8.h"
+#include "../geometry/trianglepairs4.h"
+
+#include "../../algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree
 {
@@ -101,12 +103,57 @@ namespace embree
         
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-        
+
         bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
         prims.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
         if (presplitFactor > 1.0f)
           pinfo = presplit<Mesh>(scene, pinfo, prims);
+
+        // ============================================ WILL BE REMOVED SOON
+#if 0
+        if (mesh == 0)
+        {
+          const size_t numTriangles = pinfo.size();
+          PRINT("Triangle Pairs Test");
+          ParallelForForPrefixSumState<PrimInfo> pstate;
+          Scene::Iterator<Mesh,1> iter(scene);
+      
+          /* first try */
+          pstate.init(iter,size_t(1024));
+          PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+                                                        {
+                                                          PrimInfo pinfo(empty);
+                                                          for (size_t j=r.begin(); j<r.end(); j++)
+                                                          {
+                                                            BBox3fa bounds = empty;
+                                                            if (!mesh->valid(j,&bounds)) continue;
+                                                            const PrimRef prim(bounds,mesh->id,j);
+                                                            pinfo.add(bounds,bounds.center2());
+
+                                                            TriangleMesh* trimesh = (TriangleMesh*)mesh;
+
+                                                            if (j+1 < r.end())
+                                                            {
+#if 1
+                                                              if (TriangleMesh::hasSharedEdge(trimesh->triangle(j),
+                                                                                              trimesh->triangle(j+1)))
+                                                              {
+                                                                j++;
+                                                              }
+#endif
+                                                            }
+
+                                                          }
+                                                          return pinfo;
+                                                        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+
+          PRINT(pinfo.size());
+          PRINT(100*pinfo.size() / double(numTriangles));
+          exit(0);
+        }
+#endif
+        // ============================================
 
         BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
                            prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
@@ -144,7 +191,7 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
     Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
-    Builder* BVH8TrianglePairs8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH8TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,TrianglePairs4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
 
 
     /************************************************************************************/ 

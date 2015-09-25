@@ -58,7 +58,7 @@ namespace embree
 
 
     /*! tests if a shared exists between another triangle */
-    __forceinline bool hasSharedEdge(const Triangle &tri0,
+    static __forceinline bool hasSharedEdge(const Triangle &tri0,
                                      const Triangle &tri1)
     {
       const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
