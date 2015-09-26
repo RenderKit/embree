@@ -115,8 +115,8 @@ namespace embree
     }
 #endif
     
-    static __forceinline void store_nt(float* ptr, const vfloat8& v) {
-      _mm256_stream_ps(ptr,v);
+    static __forceinline void store_nt(void* ptr, const vfloat8& v) {
+      _mm256_stream_ps((float*)ptr,v);
     }
 
     static __forceinline void store ( const vboolf8& mask, void* ptr, const vint8& ofs, const vfloat8& v, const int scale = 1 )
