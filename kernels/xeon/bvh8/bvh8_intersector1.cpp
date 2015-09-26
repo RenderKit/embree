@@ -15,8 +15,7 @@
 // ======================================================================== //
 
 #include "bvh8_intersector1.h"
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
+#include "../geometry/triangle.h"
 //#include "../geometry/trianglepairs8.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"

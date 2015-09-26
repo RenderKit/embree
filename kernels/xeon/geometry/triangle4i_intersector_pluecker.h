@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "triangle4i.h"
+#include "trianglei.h"
 #include "../../common/ray.h"
 
 #include "triangle_intersector_pluecker.h"

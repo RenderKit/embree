@@ -20,107 +20,106 @@
 
 namespace embree
 {
-  /*! Precalculated representation for 8 triangles. Stores for each
-      triangle a base vertex, two edges, and the geometry normal to
-      speed up intersection calculations. */
-  struct Triangle8
+  /* Precalculated representation for M triangles. Stores for each
+     triangle a base vertex, two edges, and the geometry normal to
+     speed up intersection calculations */
+  template<int MM>
+  struct TriangleM
   {
-    enum { M = 8 };
-#if defined __AVX__
-    typedef vbool8 simdb;
-    typedef vfloat8 simdf;
-    typedef vint8 simdi;
-#endif
+    enum { M = MM };
+    typedef vbool<M> simdb;
+    typedef vfloat<M> simdf;
+    typedef vint<M> simdi;
+
+    typedef Vec3<vfloat<M>> Vec3vfM;
 
   public:
     struct Type : public PrimitiveType 
     {
-      Type ();
+      Type();
       size_t size(const char* This) const;
     };
     static Type type;
-
-public:
-
-    /*! returns maximal number of stored triangles */
-    static __forceinline size_t max_size() { return 8; }
     
-     /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
-   
-
-#if defined __AVX__
   public:
 
-    /*! Default constructor. */
-    __forceinline Triangle8 () {}
+    /* Returns maximal number of stored triangles */
+    static __forceinline size_t max_size() { return M; }
+    
+    /* Returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
 
-    /*! Construction from vertices and IDs. */
-    __forceinline Triangle8 (const Vec3vf8& v0, const Vec3vf8& v1, const Vec3vf8& v2, const vint8& geomIDs, const vint8& primIDs)
+  public:
+
+    /* Default constructor */
+    __forceinline TriangleM() {}
+
+    /* Construction from vertices and IDs */
+    __forceinline TriangleM(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(v0), e1(v0-v1), e2(v2-v0), Ng(cross(e1,e2)), geomIDs(geomIDs), primIDs(primIDs) {}
 
-    /*! Returns a mask that tells which triangles are valid. */
-    __forceinline vbool8 valid() const { return geomIDs != vint8(-1); }
+    /* Returns a mask that tells which triangles are valid */
+    __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
 
-    /*! Returns if the specified triangle is valid. */
-    __forceinline bool valid(const size_t i) const { assert(i<8); return geomIDs[i] != -1; }
+    /* Returns true if the specified triangle is valid */
+    __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
+    
+    /* Returns the number of stored triangles */
+    __forceinline size_t size() const { return __bsf(~movemask(valid()));  }
 
-    /*! Returns the number of stored triangles. */
-    __forceinline unsigned int size() const { return __bsf(~movemask(valid())); }
+    /* Returns the geometry IDs */
+    __forceinline vint<M> geomID() const { return geomIDs;  }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
-    /*! returns the geometry IDs */
-    __forceinline vint8 geomID() const { return geomIDs; }
-    __forceinline int  geomID(const size_t i) const { assert(i<8); return geomIDs[i]; }
+    /* Returns the primitive IDs */
+    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-    /*! returns the primitive IDs */
-    __forceinline vint8 primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<8); return primIDs[i]; }
-
-    /*! calculate the bounds of the triangle */
+    /* Calculate the bounds of the triangle */
     __forceinline BBox3fa bounds() const 
     {
-      Vec3vf8 p0 = v0;
-      Vec3vf8 p1 = v0-e1;
-      Vec3vf8 p2 = v0+e2;
-      Vec3vf8 lower = min(p0,p1,p2);
-      Vec3vf8 upper = max(p0,p1,p2);
-      vbool8 mask = valid();
-      lower.x = select(mask,lower.x,vfloat8(pos_inf));
-      lower.y = select(mask,lower.y,vfloat8(pos_inf));
-      lower.z = select(mask,lower.z,vfloat8(pos_inf));
-      upper.x = select(mask,upper.x,vfloat8(neg_inf));
-      upper.y = select(mask,upper.y,vfloat8(neg_inf));
-      upper.z = select(mask,upper.z,vfloat8(neg_inf));
+      Vec3vfM p0 = v0;
+      Vec3vfM p1 = v0-e1;
+      Vec3vfM p2 = v0+e2;
+      Vec3vfM lower = min(p0,p1,p2);
+      Vec3vfM upper = max(p0,p1,p2);
+      vbool<M> mask = valid();
+      lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
+      lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
+      lower.z = select(mask,lower.z,vfloat<M>(pos_inf));
+      upper.x = select(mask,upper.x,vfloat<M>(neg_inf));
+      upper.y = select(mask,upper.y,vfloat<M>(neg_inf));
+      upper.z = select(mask,upper.z,vfloat<M>(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
                      Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
-    /*! non temporal store */
-    __forceinline static void store_nt(Triangle8* dst, const Triangle8& src)
+    /* Non temporal store */
+    __forceinline static void store_nt(TriangleM* dst, const TriangleM& src)
     {
-      vfloat8::store_nt((float*)&dst->v0.x,src.v0.x);
-      vfloat8::store_nt((float*)&dst->v0.y,src.v0.y);
-      vfloat8::store_nt((float*)&dst->v0.z,src.v0.z);
-      vfloat8::store_nt((float*)&dst->e1.x,src.e1.x);
-      vfloat8::store_nt((float*)&dst->e1.y,src.e1.y);
-      vfloat8::store_nt((float*)&dst->e1.z,src.e1.z);
-      vfloat8::store_nt((float*)&dst->e2.x,src.e2.x);
-      vfloat8::store_nt((float*)&dst->e2.y,src.e2.y);
-      vfloat8::store_nt((float*)&dst->e2.z,src.e2.z);
-      vfloat8::store_nt((float*)&dst->Ng.x,src.Ng.x);
-      vfloat8::store_nt((float*)&dst->Ng.y,src.Ng.y);
-      vfloat8::store_nt((float*)&dst->Ng.z,src.Ng.z);
-      vint8::store_nt((int*)&dst->geomIDs,src.geomIDs);
-      vint8::store_nt((int*)&dst->primIDs,src.primIDs);
+      vfloat<M>::store_nt(&dst->v0.x,src.v0.x);
+      vfloat<M>::store_nt(&dst->v0.y,src.v0.y);
+      vfloat<M>::store_nt(&dst->v0.z,src.v0.z);
+      vfloat<M>::store_nt(&dst->e1.x,src.e1.x);
+      vfloat<M>::store_nt(&dst->e1.y,src.e1.y);
+      vfloat<M>::store_nt(&dst->e1.z,src.e1.z);
+      vfloat<M>::store_nt(&dst->e2.x,src.e2.x);
+      vfloat<M>::store_nt(&dst->e2.y,src.e2.y);
+      vfloat<M>::store_nt(&dst->e2.z,src.e2.z);
+      vfloat<M>::store_nt(&dst->Ng.x,src.Ng.x);
+      vfloat<M>::store_nt(&dst->Ng.y,src.Ng.y);
+      vfloat<M>::store_nt(&dst->Ng.z,src.Ng.z);
+      vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
+      vint<M>::store_nt(&dst->primIDs,src.primIDs);
     }
 
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint8 vgeomID = -1, vprimID = -1;
-      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
-      for (size_t i=0; i<8 && prims; i++, prims++)
+      for (size_t i=0; i<M && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
 	const size_t geomID = prim.geomID();
@@ -136,16 +135,16 @@ public:
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID));
+      TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
     }
 
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      vint8 vgeomID = -1, vprimID = -1;
-      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
-      for (size_t i=0; i<8 && begin<end; i++, begin++)
+      for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
         const size_t geomID = prim.geomID();
@@ -161,19 +160,19 @@ public:
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID));
+      TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
     }
 
-    /*! updates the primitive */
+    /* Updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vint8 vgeomID = -1, vprimID = -1;
-      Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<8; i++)
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+	
+      for (size_t i=0; i<M; i++)
       {
-        if (primID(i) == -1) break;
+        if (geomID(i) == -1) break;
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
         const TriangleMesh::Triangle& tri = mesh->triangle(primId);
@@ -187,17 +186,19 @@ public:
         v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
         v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
       }
-      Triangle8::store_nt(this,Triangle8(v0,v1,v2,vgeomID,vprimID));
+      TriangleM::store_nt(this,TriangleM(v0,v1,v2,vgeomID,vprimID));
       return bounds;
     }
 
   public:
-    Vec3vf8 v0;       //!< Base vertex of the triangles
-    Vec3vf8 e1;       //!< 1st edge of the triangles (v0-v1)
-    Vec3vf8 e2;       //!< 2nd edge of the triangles (v2-v0)
-    Vec3vf8 Ng;       //!< Geometry normal of the triangles (cross(e1,e2))
-    vint8 geomIDs;   //!< geometry ID
-    vint8 primIDs;   //!< primitive ID
-#endif
+    Vec3vfM v0;      // base vertex of the triangles
+    Vec3vfM e1;      // 1st edge of the triangles (v0-v1)
+    Vec3vfM e2;      // 2nd edge of the triangles (v2-v0)
+    Vec3vfM Ng;      // geometry normal of the triangles (cross(e1,e2))
+    vint<M> geomIDs; // geometry IDs
+    vint<M> primIDs; // primitive IDs
   };
+
+  typedef TriangleM<4> Triangle4;
+  typedef TriangleM<8> Triangle8;
 }

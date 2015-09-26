@@ -20,18 +20,21 @@
 
 namespace embree
 {
-  /*! Stores the vertices of 4 triangles in struct of array layout. */
-  struct Triangle4vMB
+  /* Stores the vertices of M triangles in struct of array layout */
+  template<int MM>
+  struct TriangleMvMB
   {
-    enum { M = 4 };
-    typedef vbool4 simdb;
-    typedef vfloat4 simdf;
-    typedef vint4 simdi;
+    enum { M = MM };
+    typedef vbool<M> simdb;
+    typedef vfloat<M> simdf;
+    typedef vint<M> simdi;
+
+    typedef Vec3<vfloat<M>> Vec3vfM;
 
   public:
     struct Type : public PrimitiveType 
     {
-      Type ();
+      Type();
       size_t size(const char* This) const;
     };
 
@@ -39,89 +42,89 @@ namespace embree
 
   public:
     
-    /*! returns maximal number of stored triangles */
-    static __forceinline size_t max_size() { return 4; }
+    /* Returns maximal number of stored triangles */
+    static __forceinline size_t max_size() { return M; }
     
-     /*! returns required number of primitive blocks for N primitives */
+    /* Returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
    
   public:
 
-    /*! Default constructor. */
-    __forceinline Triangle4vMB () {}
+    /* Default constructor */
+    __forceinline TriangleMvMB() {}
 
-    /*! Construction from vertices and IDs. */
-    __forceinline Triangle4vMB (const Vec3vf4& a0, const Vec3vf4& a1, 
-				const Vec3vf4& b0, const Vec3vf4& b1,
-				const Vec3vf4& c0, const Vec3vf4& c1, 
-				const vint4& geomIDs, const vint4& primIDs)
+    /* Construction from vertices and IDs */
+    __forceinline TriangleMvMB(const Vec3vfM& a0, const Vec3vfM& a1,
+                               const Vec3vfM& b0, const Vec3vfM& b1,
+                               const Vec3vfM& c0, const Vec3vfM& c1,
+                               const vint<M>& geomIDs, const vint<M>& primIDs)
       : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
 
-     /*! Returns a mask that tells which triangles are valid. */
-    __forceinline vbool4 valid() const { return geomIDs != vint4(-1); }
+    /* Returns a mask that tells which triangles are valid */
+    __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
 
-    /*! Returns if the specified triangle is valid. */
-    __forceinline bool valid(const size_t i) const { assert(i<4); return geomIDs[i] != -1; }
+    /* Returns if the specified triangle is valid */
+    __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
 
-    /*! Returns the number of stored triangles. */
+    /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
 
-    /*! returns the geometry IDs */
-    __forceinline vint4 geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
+    /* Returns the geometry IDs */
+    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
 
-    /*! returns the primitive IDs */
-    __forceinline vint4 primID() const { return primIDs; }
-    __forceinline int  primID(const size_t i) const { assert(i<4); return primIDs[i]; }
+    /* Returns the primitive IDs */
+    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-    /*! calculate the bounds of the triangles at t0 */
+    /* Calculate the bounds of the triangles at t0 */
     __forceinline BBox3fa bounds0() const 
     {
-      Vec3vf4 lower = min(v0,v1,v2);
-      Vec3vf4 upper = max(v0,v1,v2);
-      const vbool4 mask = valid();
-      lower.x = select(mask,lower.x,vfloat4(pos_inf));
-      lower.y = select(mask,lower.y,vfloat4(pos_inf));
-      lower.z = select(mask,lower.z,vfloat4(pos_inf));
-      upper.x = select(mask,upper.x,vfloat4(neg_inf));
-      upper.y = select(mask,upper.y,vfloat4(neg_inf));
-      upper.z = select(mask,upper.z,vfloat4(neg_inf));
+      Vec3vfM lower = min(v0,v1,v2);
+      Vec3vfM upper = max(v0,v1,v2);
+      const vbool<M> mask = valid();
+      lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
+      lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
+      lower.z = select(mask,lower.z,vfloat<M>(pos_inf));
+      upper.x = select(mask,upper.x,vfloat<M>(neg_inf));
+      upper.y = select(mask,upper.y,vfloat<M>(neg_inf));
+      upper.z = select(mask,upper.z,vfloat<M>(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
-    /*! calculate the bounds of the triangles at t1 */
+    /* Calculate the bounds of the triangles at t1 */
     __forceinline BBox3fa bounds1() const 
     {
-      const Vec3vf4 p0 = v0+dv0;
-      const Vec3vf4 p1 = v1+dv1;
-      const Vec3vf4 p2 = v2+dv2;
-      Vec3vf4 lower = min(p0,p1,p2);
-      Vec3vf4 upper = max(p0,p1,p2);
-      const vbool4 mask = valid();
-      lower.x = select(mask,lower.x,vfloat4(pos_inf));
-      lower.y = select(mask,lower.y,vfloat4(pos_inf));
-      lower.z = select(mask,lower.z,vfloat4(pos_inf));
-      upper.x = select(mask,upper.x,vfloat4(neg_inf));
-      upper.y = select(mask,upper.y,vfloat4(neg_inf));
-      upper.z = select(mask,upper.z,vfloat4(neg_inf));
+      const Vec3vfM p0 = v0+dv0;
+      const Vec3vfM p1 = v1+dv1;
+      const Vec3vfM p2 = v2+dv2;
+      Vec3vfM lower = min(p0,p1,p2);
+      Vec3vfM upper = max(p0,p1,p2);
+      const vbool<M> mask = valid();
+      lower.x = select(mask,lower.x,vfloat<M>(pos_inf));
+      lower.y = select(mask,lower.y,vfloat<M>(pos_inf));
+      lower.z = select(mask,lower.z,vfloat<M>(pos_inf));
+      upper.x = select(mask,upper.x,vfloat<M>(neg_inf));
+      upper.y = select(mask,upper.y,vfloat<M>(neg_inf));
+      upper.z = select(mask,upper.z,vfloat<M>(neg_inf));
       return BBox3fa(Vec3fa(reduce_min(lower.x),reduce_min(lower.y),reduce_min(lower.z)),
 		     Vec3fa(reduce_max(upper.x),reduce_max(upper.y),reduce_max(upper.z)));
     }
 
-    /*! calculate primitive bounds */
+    /* Calculate primitive bounds */
     __forceinline std::pair<BBox3fa,BBox3fa> bounds() {
       return std::make_pair(bounds0(),bounds1());
     }
 
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint4 vgeomID = -1, vprimID = -1;
-      Vec3vf4 va0 = zero, vb0 = zero, vc0 = zero;
-      Vec3vf4 va1 = zero, vb1 = zero, vc1 = zero;
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
       
-      for (size_t i=0; i<4 && prims; i++, prims++)
+      for (size_t i=0; i<M && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
 	const size_t geomID = prim.geomID();
@@ -143,20 +146,20 @@ namespace embree
 	vc0.x[i] = c0.x; vc0.y[i] = c0.y; vc0.z[i] = c0.z;
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
-      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID); // FIXME: store_nt
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID); // FIXME: store_nt
     }
     
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline std::pair<BBox3fa,BBox3fa> fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      vint4 vgeomID = -1, vprimID = -1;
-      Vec3vf4 va0 = zero, vb0 = zero, vc0 = zero;
-      Vec3vf4 va1 = zero, vb1 = zero, vc1 = zero;
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;
+      Vec3vfM va1 = zero, vb1 = zero, vc1 = zero;
 
       BBox3fa bounds0 = empty;
       BBox3fa bounds1 = empty;
       
-      for (size_t i=0; i<4 && begin<end; i++, begin++)
+      for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
         const size_t geomID = prim.geomID();
@@ -178,18 +181,20 @@ namespace embree
 	vc0.x[i] = c0.x; vc0.y[i] = c0.y; vc0.z[i] = c0.z;
 	vc1.x[i] = c1.x; vc1.y[i] = c1.y; vc1.z[i] = c1.z;
       }
-      new (this) Triangle4vMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
+      new (this) TriangleMvMB(va0,va1,vb0,vb1,vc0,vc1,vgeomID,vprimID);
       return std::make_pair(bounds0,bounds1);
     }
    
   public:
-    Vec3vf4 v0;      //!< 1st vertex of the triangles.
-    Vec3vf4 v1;      //!< 2nd vertex of the triangles.
-    Vec3vf4 v2;      //!< 3rd vertex of the triangles.
-    Vec3vf4 dv0;      //!< difference vector between time steps t0 and t1 for first vertex
-    Vec3vf4 dv1;      //!< difference vector between time steps t0 and t1 for second vertex
-    Vec3vf4 dv2;      //!< difference vector between time steps t0 and t1 for third vertex
-    vint4 geomIDs;  //!< geometry ID
-    vint4 primIDs;  //!< primitive ID
+    Vec3vfM v0;      // 1st vertex of the triangles
+    Vec3vfM v1;      // 2nd vertex of the triangles
+    Vec3vfM v2;      // 3rd vertex of the triangles
+    Vec3vfM dv0;     // difference vector between time steps t0 and t1 for first vertex
+    Vec3vfM dv1;     // difference vector between time steps t0 and t1 for second vertex
+    Vec3vfM dv2;     // difference vector between time steps t0 and t1 for third vertex
+    vint<M> geomIDs; // geometry ID
+    vint<M> primIDs; // primitive ID
   };
+
+  typedef TriangleMvMB<4> Triangle4vMB;
 }

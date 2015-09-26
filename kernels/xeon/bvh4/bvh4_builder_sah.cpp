@@ -22,11 +22,10 @@
 
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
-#include "../geometry/triangle4v.h"
-#include "../geometry/triangle4i.h"
-#include "../geometry/triangle4v_mb.h"
+#include "../geometry/triangle.h"
+#include "../geometry/trianglev.h"
+#include "../geometry/trianglei.h"
+#include "../geometry/trianglev_mb.h"
 #include "../geometry/object.h"
 
 namespace embree

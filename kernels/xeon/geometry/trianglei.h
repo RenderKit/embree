@@ -20,64 +20,64 @@
 
 namespace embree
 {
-  /*! Stores 4 triangles from an indexed face set. */
-  struct Triangle4i
+  /* Stores M triangles from an indexed face set */
+  template <int MM>
+  struct TriangleMi
   {
-    enum { M = 4 };
+    enum { M = MM };
+    typedef Vec3<vfloat<M>> Vec3vfM;
 
-    /*! virtual interface to query information about the triangle type */
+    /* Virtual interface to query information about the triangle type */
     struct Type : public PrimitiveType
     {
-      Type ();
+      Type();
       size_t size(const char* This) const;
     };
     static Type type;
 
   public:
 
-    /*! returns maximal number of stored triangles */
-    static __forceinline size_t max_size() { return 4; }
+    /* Returns maximal number of stored triangles */
+    static __forceinline size_t max_size() { return M; }
     
-     /*! returns required number of primitive blocks for N primitives */
+    /* Returns required number of primitive blocks for N primitives */
     static __forceinline size_t blocks(size_t N) { return (N+max_size()-1)/max_size(); }
   
   public:
 
-    /*! Default constructor. */
-    __forceinline Triangle4i () {}
+    /* Default constructor */
+    __forceinline TriangleMi() {}
 
-    /*! Construction from vertices and IDs. */
-    __forceinline Triangle4i (Vec3f* base[4], const vint4& v1, const vint4& v2, const vint4& geomIDs, const vint4& primIDs)
+    /* Construction from vertices and IDs */
+    __forceinline TriangleMi(Vec3f* base[M], const vint<M>& v1, const vint<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)
       : v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) 
     {
-      v0[0] = base[0];
-      v0[1] = base[1];
-      v0[2] = base[2];
-      v0[3] = base[3];
+      for (size_t i=0; i<M; i++)
+        v0[i] = base[i];
     }
 
-    /*! Returns a mask that tells which triangles are valid. */
-    __forceinline vbool4 valid() const { return primIDs != vint4(-1); }
+    /* Returns a mask that tells which triangles are valid */
+    __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
     
-    /*! Returns if the specified triangle is valid. */
-    __forceinline bool valid(const size_t i) const { assert(i<4); return geomIDs[i] != -1; }
+    /* Returns if the specified triangle is valid */
+    __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
     
-    /*! Returns the number of stored triangles. */
+    /* Returns the number of stored triangles */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
     
-    /*! returns the geometry IDs */
-    __forceinline vint4 geomID() const { return geomIDs; }
-    __forceinline int geomID(const size_t i) const { assert(i<4); return geomIDs[i]; }
+    /* Returns the geometry IDs */
+    __forceinline vint<M> geomID() const { return geomIDs; }
+    __forceinline int geomID(const size_t i) const { assert(i<M); return geomIDs[i]; }
     
-    /*! returns the primitive IDs */
-    __forceinline vint4 primID() const { return primIDs; }
-    __forceinline int primID(const size_t i) const { assert(i<4); return primIDs[i]; }
+    /* Returns the primitive IDs */
+    __forceinline vint<M> primID() const { return primIDs; }
+    __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
     
-    /*! calculate the bounds of the triangles */
+    /* Calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds() const 
     {
       BBox3fa bounds = empty;
-      for (size_t i=0; i<4 && geomIDs[i] != -1; i++)
+      for (size_t i=0; i<M && geomIDs[i] != -1; i++)
       {
 	const int* base = (int*) v0[i];
 	const Vec3fa p0 = *(Vec3fa*)(base);
@@ -90,15 +90,15 @@ namespace embree
       return bounds;
     }
     
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint4 geomID = -1, primID = -1;
-      Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-      vint4 v1 = zero, v2 = zero;
+      vint<M> geomID = -1, primID = -1;
+      Vec3f* v0[M];
+      vint<M> v1 = zero, v2 = zero;
       PrimRef& prim = *prims;
       
-      for (size_t i=0; i<4; i++)
+      for (size_t i=0; i<M; i++)
       {
 	const TriangleMesh* mesh = scene->getTriangleMesh(prim.geomID());
 	const TriangleMesh::Triangle& tri = mesh->triangle(prim.primID());
@@ -120,18 +120,18 @@ namespace embree
 	if (prims) prim = *prims; 
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+      new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
     }
     
-    /*! fill triangle from triangle list */
+    /* Fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      vint4 geomID = -1, primID = -1;
-      Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-      vint4 v1 = zero, v2 = zero;
+      vint<M> geomID = -1, primID = -1;
+      Vec3f* v0[M];
+      vint<M> v1 = zero, v2 = zero;
       const PrimRef* prim = &prims[begin];
       
-      for (size_t i=0; i<4; i++)
+      for (size_t i=0; i<M; i++)
       {
 	const TriangleMesh* mesh = scene->getTriangleMesh(prim->geomID());
 	const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
@@ -153,17 +153,17 @@ namespace embree
 	if (begin<end) prim = &prims[begin];
       }
       
-      new (this) Triangle4i(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+      new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
     }
     
-    /*! updates the primitive */
+    /* Updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vint4 vgeomID = -1, vprimID = -1;
-      Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
+      vint<M> vgeomID = -1, vprimID = -1;
+      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
-      for (size_t i=0; i<4; i++)
+      for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;
         const unsigned geomId = geomID(i);
@@ -178,10 +178,12 @@ namespace embree
     }
     
   public:
-    const Vec3f* v0[4];  //!< Pointer to 1st vertex
-    vint4 v1;             //!< Offset to 2nd vertex
-    vint4 v2;             //!< Offset to 3rd vertex
-    vint4 geomIDs;        //!< geometry ID of mesh
-    vint4 primIDs;        //!< primitive ID of primitive inside mesh
+    const Vec3f* v0[M]; // pointer to 1st vertex
+    vint<M> v1;         // offset to 2nd vertex
+    vint<M> v2;         // offset to 3rd vertex
+    vint<M> geomIDs;    // geometry ID of mesh
+    vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
+
+  typedef TriangleMi<4> Triangle4i;
 }

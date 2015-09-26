@@ -16,8 +16,7 @@
 
 #include "bvh8.h"
 #include "bvh8_statistics.h"
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
+#include "../geometry/triangle.h"
 #include "../geometry/trianglepairs4.h"
 #include "../../common/accelinstance.h"
 

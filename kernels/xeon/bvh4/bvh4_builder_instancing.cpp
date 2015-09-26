@@ -17,7 +17,7 @@
 #include "bvh4_builder_instancing.h"
 #include "bvh4_statistics.h"
 #include "../builders/bvh_builder_sah.h"
-#include "../geometry/triangle4.h"
+#include "../geometry/triangle.h"
 
 namespace embree
 {

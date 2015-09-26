@@ -24,10 +24,9 @@
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_morton.h"
 
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
-#include "../geometry/triangle4v.h"
-#include "../geometry/triangle4i.h"
+#include "../geometry/triangle.h"
+#include "../geometry/trianglev.h"
+#include "../geometry/trianglei.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 #define PROFILE 0

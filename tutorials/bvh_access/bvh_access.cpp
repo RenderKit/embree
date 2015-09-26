@@ -17,7 +17,7 @@
 #include "../common/tutorial/tutorial.h"
 #include "../../include/embree2/rtcore.h"
 #include "../../kernels/xeon/bvh4/bvh4.h"
-#include "../../kernels/xeon/geometry/triangle4v.h"
+#include "../../kernels/xeon/geometry/trianglev.h"
 
 namespace embree
 {
