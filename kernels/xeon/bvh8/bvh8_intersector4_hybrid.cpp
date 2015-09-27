@@ -638,10 +638,10 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle4 COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle4Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
 
-    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleNIntersectorMMoellerTrumbore<Ray4 COMMA Triangle8 COMMA false> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoeller, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Triangle8Intersector4HybridMoellerNoFilter, BVH8Intersector4Hybrid<ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA false> > >);
   }
 }

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "triangle.h"
+#include "trianglev_mb.h"
 #include "intersector_epilog.h"
 
 /*! This intersector implements a modified version of the Moeller
@@ -33,7 +35,7 @@ namespace embree
     template<int M>
       struct MoellerTrumboreIntersector1
     {
-      __forceinline MoellerTrumboreIntersector1 (const Ray& ray, const void* ptr) {}
+      __forceinline MoellerTrumboreIntersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray, 
@@ -94,10 +96,10 @@ namespace embree
       }
     };
     
-    template<int K, int M>
+    template<int M, int K>
     struct MoellerTrumboreIntersectorK
     {
-      __forceinline MoellerTrumboreIntersectorK (const vbool<K>& valid, const RayK<K>& ray) {}
+      __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
@@ -235,97 +237,93 @@ namespace embree
       }
     };
 
-    /*! Intersects N triangles with 1 ray */
-    template<typename TriangleN, bool filter>
-      struct TriangleNIntersector1MoellerTrumbore
+    /*! Intersects M triangles with 1 ray */
+    template<int M, bool filter>
+      struct TriangleMIntersector1MoellerTrumbore
       {
-        enum { M = TriangleN::M };
-        typedef TriangleN Primitive;
+        typedef TriangleM<M> Primitive;
         typedef MoellerTrumboreIntersector1<M> Precalculations;
         
-        /*! Intersect a ray with the N triangles and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene, const unsigned* geomID_to_instID)
+        /*! Intersect a ray with the M triangles and updates the hit. */
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
           pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
-        /*! Test if the ray is occluded by one of N triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleN& tri, Scene* scene, const unsigned* geomID_to_instID)
+        /*! Test if the ray is occluded by one of M triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
           return pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
 
-    /*! Intersector for M triangles with K rays. */
-    template<typename RayK, typename TriangleM, bool filter>
-      struct TriangleNIntersectorMMoellerTrumbore
+    /*! Intersects M triangles with K rays. */
+    template<int M, int K, bool filter>
+      struct TriangleMIntersectorKMoellerTrumbore
       {
-        enum { K = RayK::K };
-        enum { M = TriangleM::M };
-        typedef TriangleM Primitive;
-        typedef MoellerTrumboreIntersectorK<K,M> Precalculations;
+        typedef TriangleM<M> Primitive;
+        typedef MoellerTrumboreIntersectorK<M,K> Precalculations;
         
-        /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
+        /*! Intersects K rays with M triangles. */
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TriangleM<M>& tri, Scene* scene)
         {
-          for (size_t i=0; i<TriangleM::max_size(); i++)
+          for (size_t i=0; i<TriangleM<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
+            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
             const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
             const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            pre.intersectK(valid_i,ray,p0,e1,e2,Ng,IntersectKEpilog<K,M,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p0,e1,e2,Ng,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
-        /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleM& tri, Scene* scene)
+        /*! Test for K rays if they are occluded by any of the M triangles. */
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TriangleM<M>& tri, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
           
-          for (size_t i=0; i<TriangleM::max_size(); i++)
+          for (size_t i=0; i<TriangleM<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
+            STAT3(shadow.trav_prims,1,popcnt(valid0),K);
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> e1 = broadcast<vfloat<K>>(tri.e1,i);
             const Vec3<vfloat<K>> e2 = broadcast<vfloat<K>>(tri.e2,i);
             const Vec3<vfloat<K>> Ng = broadcast<vfloat<K>>(tri.Ng,i);
-            pre.intersectK(valid0,ray,p0,e1,e2,Ng,OccludedKEpilog<K,M,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,p0,e1,e2,Ng,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
-        /*! Intersect a ray with the 4 triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
+        /*! Intersect a ray with M triangles and updates the hit. */
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleM<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
-        /*! Test if the ray is occluded by one of the triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleM& tri, Scene* scene)
+        /*! Test if the ray is occluded by one of the M triangles. */
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleM<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          return pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
     
-    /*! Intersects N triangles with 1 ray */
-    template<typename TriangleNMblur, bool filter>
-      struct TriangleNMblurIntersector1MoellerTrumbore
+    /*! Intersects M motion blur triangles with 1 ray */
+    template<int M, bool filter>
+      struct TriangleMvMBIntersector1MoellerTrumbore
       {
-        enum { M = TriangleNMblur::M };
-        typedef TriangleNMblur Primitive;
+        typedef TriangleMvMB<M> Primitive;
         typedef MoellerTrumboreIntersector1<M> Precalculations;
         
-        /*! Intersect a ray with the N triangles and updates the hit. */
-        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleNMblur& tri, Scene* scene, const unsigned* geomID_to_instID)
+        /*! Intersect a ray with the M triangles and updates the hit. */
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
           const Vec3<vfloat<M>> time(ray.time);
@@ -335,8 +333,8 @@ namespace embree
           pre.intersect(ray,v0,v1,v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
-        /*! Test if the ray is occluded by one of N triangles. */
-        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleNMblur& tri, Scene* scene, const unsigned* geomID_to_instID)
+        /*! Test if the ray is occluded by one of M triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const TriangleMvMB<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
           const Vec3<vfloat<M>> time(ray.time);
@@ -347,69 +345,67 @@ namespace embree
         }
       };
     
-    /*! Intersector for M triangles with K rays. */
-    template<typename RayK, typename TriangleMMblur, bool filter>
-      struct TriangleNMblurIntersectorMMoellerTrumbore
+    /*! Intersects M motion blur triangles with K rays. */
+    template<int M, int K, bool filter>
+      struct TriangleMvMBIntersectorKMoellerTrumbore
       {
-        enum { K = RayK::K };
-        enum { M = TriangleMMblur::M };
-        typedef TriangleMMblur Primitive;
-        typedef MoellerTrumboreIntersectorK<K,M> Precalculations;
+        typedef TriangleMvMB<M> Primitive;
+        typedef MoellerTrumboreIntersectorK<M,K> Precalculations;
         
-        /*! Intersects a M rays with N triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
+        /*! Intersects K rays with M triangles. */
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TriangleMvMB<M>& tri, Scene* scene)
         {
-          for (size_t i=0; i<TriangleMMblur::max_size(); i++)
+          for (size_t i=0; i<TriangleMvMB<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(normal.trav_prims,1,popcnt(valid_i),RayK::size());
+            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
             const Vec3<vfloat<K>> time(ray.time);
             const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
-            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<K,M,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
-        /*! Test for M rays if they are occluded by any of the N triangle. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK& ray, const TriangleMMblur& tri, Scene* scene)
+        /*! Test for K rays if they are occluded by any of the M triangles. */
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TriangleMvMB<M>& tri, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
           
-          for (size_t i=0; i<TriangleMMblur::max_size(); i++)
+          for (size_t i=0; i<TriangleMvMB<M>::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid0),RayK::size());
+            STAT3(shadow.trav_prims,1,popcnt(valid0),K);
             const Vec3<vfloat<K>> time(ray.time);
             const Vec3<vfloat<K>> v0 = madd(time,broadcast<vfloat<K>>(tri.dv0,i),broadcast<vfloat<K>>(tri.v0,i));
             const Vec3<vfloat<K>> v1 = madd(time,broadcast<vfloat<K>>(tri.dv1,i),broadcast<vfloat<K>>(tri.v1,i));
             const Vec3<vfloat<K>> v2 = madd(time,broadcast<vfloat<K>>(tri.dv2,i),broadcast<vfloat<K>>(tri.v2,i));
-            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<K,M,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
-        /*! Intersect a ray with the N triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
+        /*! Intersect a ray with M triangles and updates the hit. */
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           const Vec3<vfloat<M>> time = broadcast<vfloat<M>>(ray.time,k);
           const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
           const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
           const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          pre.intersect(ray,k,v0,v1,v2,Intersect1KEpilog<K,M,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          pre.intersect(ray,k,v0,v1,v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
-        /*! Test if the ray is occluded by one of the N triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK& ray, size_t k, const TriangleMMblur& tri, Scene* scene)
+        /*! Test if the ray is occluded by one of the M triangles. */
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
           const Vec3<vfloat<M>> time = broadcast<vfloat<M>>(ray.time,k);
           const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
           const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
           const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          return pre.intersect(ray,k,v0,v1,v2,Occluded1KEpilog<K,M,filte>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          return pre.intersect(ray,k,v0,v1,v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
   }

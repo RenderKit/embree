@@ -284,7 +284,7 @@ namespace embree
 
 
 
-    template<int K, int M, bool enableIntersectionFilter>
+    template<int M, int K, bool enableIntersectionFilter>
       struct IntersectKEpilog
       {
         RayK<K>& ray;
@@ -340,7 +340,7 @@ namespace embree
         }
       };
 
-    template<int K, int M, bool enableIntersectionFilter>
+    template<int M, int K, bool enableIntersectionFilter>
       struct OccludedKEpilog
       {
         vbool<K>& valid0;
@@ -392,7 +392,7 @@ namespace embree
         }
       };
 
-     template<int K, int M, bool enableIntersectionFilter>
+     template<int M, int K, bool enableIntersectionFilter>
       struct Intersect1KEpilog
       {
         RayK<K>& ray;
@@ -465,7 +465,7 @@ namespace embree
         }
       };
       
-      template<int K, int M, bool enableIntersectionFilter>
+      template<int M, int K, bool enableIntersectionFilter>
         struct Occluded1KEpilog
         {
           RayK<K>& ray;

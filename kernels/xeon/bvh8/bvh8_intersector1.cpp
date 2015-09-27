@@ -339,8 +339,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle4 COMMA true> > >);
-    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleNIntersector1MoellerTrumbore<Triangle8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA true> > >);
     //DEFINE_INTERSECTOR1(BVH8TrianglePairs8Intersector1Moeller,BVH8Intersector1<false COMMA ArrayIntersector1<TrianglePairsNIntersector1MoellerTrumbore<TrianglePairs8 COMMA true> > >);
   }
 }
