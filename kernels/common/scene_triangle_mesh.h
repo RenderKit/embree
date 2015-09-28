@@ -57,9 +57,11 @@ namespace embree
     };
 
 
+
     /*! tests if a shared exists between two triangles, returns -1 if no shared edge exists and the opposite vertex index of the second triangle if a shared edge exists */
-    static __forceinline int sharedEdge(const Triangle &tri0,
-                                        const Triangle &tri1)
+
+    static __forceinline std::pair<int,int> sharedEdge(const Triangle &tri0,
+                                                       const Triangle &tri1)
     {
       const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
       const Edge tri0_edge1(tri0.v[1],tri0.v[2]);
@@ -70,19 +72,32 @@ namespace embree
       const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
 
       int opp_vtx = -1;
-      if (tri0_edge0 == tri1_edge0 ||
-          tri0_edge1 == tri1_edge0 || 
-          tri0_edge2 == tri1_edge0) return tri1.v[2];
 
-      if (tri0_edge0 == tri1_edge1 || 
-          tri0_edge1 == tri1_edge1 || 
-          tri0_edge2 == tri1_edge1) return tri1.v[0];
+      /* if (tri0_edge0 == tri1_edge0 || */
+      /*     tri0_edge1 == tri1_edge0 ||  */
+      /*     tri0_edge2 == tri1_edge0) return tri1.v[2]; */
 
-      if (tri0_edge0 == tri1_edge2 || 
-          tri0_edge1 == tri1_edge2 || 
-          tri0_edge2 == tri1_edge2) return tri1.v[1];
+      if (unlikely(tri0_edge0 == tri1_edge0)) return std::make_pair(1,2); /* pos 1, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge1 == tri1_edge0)) return std::make_pair(2,2); /* pos 2, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge2 == tri1_edge0)) return std::make_pair(3,2); /* pos 3, vtx 2 of tri 1 */
 
-      return -1;
+      /* if (tri0_edge0 == tri1_edge1 ||  */
+      /*     tri0_edge1 == tri1_edge1 ||  */
+      /*     tri0_edge2 == tri1_edge1) return tri1.v[0]; */
+
+      if (unlikely(tri0_edge0 == tri1_edge1)) return std::make_pair(1,0); /* pos 1, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge1 == tri1_edge1)) return std::make_pair(2,0); /* pos 2, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge2 == tri1_edge1)) return std::make_pair(3,0); /* pos 3, vtx 2 of tri 1 */
+
+      /* if (tri0_edge0 == tri1_edge2 ||  */
+      /*     tri0_edge1 == tri1_edge2 ||  */
+      /*     tri0_edge2 == tri1_edge2) return tri1.v[1]; */
+
+      if (unlikely(tri0_edge0 == tri1_edge2)) return std::make_pair(1,1); /* pos 1, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge1 == tri1_edge2)) return std::make_pair(2,1); /* pos 2, vtx 2 of tri 1 */
+      if (unlikely(tri0_edge2 == tri1_edge2)) return std::make_pair(3,1); /* pos 3, vtx 2 of tri 1 */
+
+      return std::make_pair(-1,-1);
     }
 
     

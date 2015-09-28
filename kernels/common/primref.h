@@ -44,7 +44,7 @@ namespace embree
     }
 #endif
 
-    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) 
+    __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
