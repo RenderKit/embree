@@ -119,19 +119,45 @@ namespace embree
       for (size_t i=0; i<4 && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
-	const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        FATAL("init v3");
+	const unsigned int geomId = prim.geomID();
+        const unsigned int primId = prim.primID();
+
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
+
+        vgeomID[i] = geomId;
+        vprimID[i] = primId;
+        /* single triangle, degenerate second triangle */
+        if (geomId & ((unsigned int)1 << 31))
+        {
+          const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p2.x; v3.y[i] = p2.y; v3.z[i] = p2.z;
+        }
+        else
+        {
+          const TriangleMesh::Triangle& tri0 = mesh->triangle(primId);
+          assert(primId + 1 < mesh->size());
+          const TriangleMesh::Triangle& tri1 = mesh->triangle(primId+1);
+
+          const unsigned int order = TriangleMesh::sharedEdge(tri0,tri1);
+          const unsigned int i0  = (order >>  0) & 0xff;
+          const unsigned int i1  = (order >>  8) & 0xff;
+          const unsigned int i2  = (order >> 16) & 0xff;
+          const unsigned int opp = (order >> 24) & 0xff;
+          const Vec3fa& p0 = mesh->vertex(tri0.v[i0]);
+          const Vec3fa& p1 = mesh->vertex(tri0.v[i1]);
+          const Vec3fa& p2 = mesh->vertex(tri0.v[i2]);
+          const Vec3fa& p3 = mesh->vertex(tri1.v[opp]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
+        }
       }
       TrianglePairs4::store_nt(this,TrianglePairs4(v0,v1,v2,v3,vgeomID,vprimID));
     }
@@ -145,19 +171,45 @@ namespace embree
       for (size_t i=0; i<4 && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
-        const size_t geomID = prim.geomID();
-        const size_t primID = prim.primID();
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomID);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        vgeomID [i] = geomID;
-        vprimID [i] = primID;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        FATAL("init v3");
+	const unsigned int geomId = prim.geomID();
+        const unsigned int primId = prim.primID();
+
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
+
+        vgeomID[i] = geomId;
+        vprimID[i] = primId;
+        /* single triangle, degenerate second triangle */
+        if (geomId & ((unsigned int)1 << 31))
+        {
+          const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p2.x; v3.y[i] = p2.y; v3.z[i] = p2.z;
+        }
+        else
+        {
+          const TriangleMesh::Triangle& tri0 = mesh->triangle(primId);
+          assert(primId + 1 < mesh->size());
+          const TriangleMesh::Triangle& tri1 = mesh->triangle(primId+1);
+
+          const unsigned int order = TriangleMesh::sharedEdge(tri0,tri1);
+          const unsigned int i0  = (order >>  0) & 0xff;
+          const unsigned int i1  = (order >>  8) & 0xff;
+          const unsigned int i2  = (order >> 16) & 0xff;
+          const unsigned int opp = (order >> 24) & 0xff;
+          const Vec3fa& p0 = mesh->vertex(tri0.v[i0]);
+          const Vec3fa& p1 = mesh->vertex(tri0.v[i1]);
+          const Vec3fa& p2 = mesh->vertex(tri0.v[i2]);
+          const Vec3fa& p3 = mesh->vertex(tri1.v[opp]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
+        }
       }
       TrianglePairs4::store_nt(this,TrianglePairs4(v0,v1,v2,v3,vgeomID,vprimID));
     }
@@ -172,19 +224,46 @@ namespace embree
       for (size_t i=0; i<4; i++)
       {
         if (primID(i) == -1) break;
+
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primId);
-        const Vec3fa p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
-        vgeomID [i] = geomId;
-        vprimID [i] = primId;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-        FATAL("init v3");
+
+        vgeomID[i] = geomId;
+        vprimID[i] = primId;
+        /* single triangle, degenerate second triangle */
+        if (geomId & ((unsigned int)1 << 31))
+        {
+          const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p2.x; v3.y[i] = p2.y; v3.z[i] = p2.z;
+        }
+        else
+        {
+          const TriangleMesh::Triangle& tri0 = mesh->triangle(primId);
+          assert(primId + 1 < mesh->size());
+          const TriangleMesh::Triangle& tri1 = mesh->triangle(primId+1);
+
+          const unsigned int order = TriangleMesh::sharedEdge(tri0,tri1);
+          const unsigned int i0  = (order >>  0) & 0xff;
+          const unsigned int i1  = (order >>  8) & 0xff;
+          const unsigned int i2  = (order >> 16) & 0xff;
+          const unsigned int opp = (order >> 24) & 0xff;
+          const Vec3fa& p0 = mesh->vertex(tri0.v[i0]);
+          const Vec3fa& p1 = mesh->vertex(tri0.v[i1]);
+          const Vec3fa& p2 = mesh->vertex(tri0.v[i2]);
+          const Vec3fa& p3 = mesh->vertex(tri1.v[opp]);
+          bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3)));
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
+        }
       }
       new (this) TrianglePairs4(v0,v1,v2,v3,vgeomID,vprimID);
       return bounds;
