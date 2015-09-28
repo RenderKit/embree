@@ -129,13 +129,13 @@ namespace embree
 
 #if defined(__TARGET_AVX__)
 #if !defined(__AVX__)
-  TrianglePairs4::Type TrianglePairs4::type;
+  TrianglePairs4v::Type TrianglePairs4v::type;
 
-  TrianglePairs4::Type::Type () 
+  TrianglePairs4v::Type::Type () 
     : PrimitiveType("trianglepairs4",11*32,8) {}
 #else
-  size_t TrianglePairs4::Type::size(const char* This) const {
-    return ((TrianglePairs4*)This)->size();
+  size_t TrianglePairs4v::Type::size(const char* This) const {
+    return ((TrianglePairs4v*)This)->size();
   }
 #endif
 #endif

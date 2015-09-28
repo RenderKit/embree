@@ -36,7 +36,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
-  //DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
@@ -67,7 +67,7 @@ namespace embree
     /* select intersectors1 */
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
-    //SELECT_SYMBOL_AVX_AVX2(features,BVH8TrianglePairs4Intersector1Moeller);
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -282,12 +282,12 @@ namespace embree
 
   Accel* BVH8::BVH8TrianglePairs4(Scene* scene)
   { 
-    BVH8* accel = new BVH8(TrianglePairs4::type,scene);
+    BVH8* accel = new BVH8(TrianglePairs4v::type,scene);
     Accel::Intersectors intersectors = BVH8TrianglePairs4Intersectors(accel);
     
     Builder* builder = nullptr;
     if      (scene->device->tri_builder == "default"     ) builder = BVH8TrianglePairs4SceneBuilderSAH(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+scene->device->tri_builder+" for BVH8<TrianglePairs4>");
+    else THROW_RUNTIME_ERROR("unknown builder "+scene->device->tri_builder+" for BVH8<TrianglePairs4v>");
     
     return new AccelInstance(accel,builder,intersectors);
   }
