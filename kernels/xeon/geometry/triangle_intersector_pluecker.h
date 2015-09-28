@@ -192,6 +192,19 @@ namespace embree
           const tsimd3f e1 = v0-v1;
           const tsimd3f e2 = v1-v2;
           
+          /* perform edge tests */
+          const vfloat<M> U = dot(cross(v2+v0,e0),D);
+          const vfloat<M> V = dot(cross(v0+v1,e1),D);
+          const vfloat<M> W = dot(cross(v1+v2,e2),D);
+          const vfloat<M> minUVW = min(U,V,W);
+          const vfloat<M> maxUVW = max(U,V,W);
+#if defined(RTCORE_BACKFACE_CULLING)
+          vbool<M> valid = minUVW >= 0.0f;
+#else
+          vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+#endif
+          if (unlikely(none(valid))) return false;
+          
           /* calculate geometry normal and denominator */
           //const tsimd3f Ng1 = cross(e1,e0);
           const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
@@ -199,34 +212,22 @@ namespace embree
           const vfloat<M> den = dot(tri_Ng,D);
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
-          
-          /* perform edge tests */
-          const vfloat<M> U = dot(cross(v2+v0,e0),D) ^ sgnDen;
-          const vfloat<M> V = dot(cross(v0+v1,e1),D) ^ sgnDen;
-          const vfloat<M> W = dot(cross(v1+v2,e2),D) ^ sgnDen;
-          vbool<M> valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
-          if (unlikely(none(valid))) return false;
-          
+
           /* perform depth test */
-          const vfloat<M> T = dot(v0,tri_Ng) ^ sgnDen;
-          valid &= (T >= absDen*vfloat<M>(ray.tnear[k])) & (absDen*vfloat<M>(ray.tfar[k]) >= T);
+          const vfloat<M> T = dot(v0,tri_Ng);
+          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear[k])) & (absDen*vfloat<M>(ray.tfar[k]) >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
           
-          /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-          valid &= den > vfloat<M>(zero);
-          if (unlikely(none(valid))) return false;
-#else
+          /* avoid division by 0 */
           valid &= den != vfloat<M>(zero);
           if (unlikely(none(valid))) return false;
-#endif
           
           /* calculate hit information */
           return epilog(valid,[&] () {
-              const vfloat<M> rcpAbsDen = rcp(absDen);
-              const vfloat<M> t = T * rcpAbsDen;
-              vfloat<M> u = U * rcpAbsDen;
-              vfloat<M> v = V * rcpAbsDen;
+              const vfloat<M> rcpDen = rcp(den);
+              const vfloat<M> t = T * rcpDen;
+              vfloat<M> u = U * rcpDen;
+              vfloat<M> v = V * rcpDen;
               mapUV(u,v);
               return std::make_tuple(u,v,t,tri_Ng);
             });
