@@ -105,12 +105,13 @@ namespace embree
       __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
-      template<typename Epilog>
+      template<typename UVMapper, typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                           RayK<K>& ray, 
                                           const Vec3<vfloat<K>>& tri_v0, 
                                           const Vec3<vfloat<K>>& tri_v1, 
                                           const Vec3<vfloat<K>>& tri_v2, 
+                                          const UVMapper& mapUV,
                                           const Epilog& epilog) const
       {
         /* ray SIMD type shortcuts */
@@ -165,9 +166,10 @@ namespace embree
         /* calculate hit information */
         return epilog(valid,[&] () {
             const vfloat<K> rcpAbsDen = rcp(absDen);
-            const vfloat<K> u = U * rcpAbsDen;
-            const vfloat<K> v = V * rcpAbsDen;
+            vfloat<K> u = U * rcpAbsDen;
+            vfloat<K> v = V * rcpAbsDen;
             const vfloat<K> t = T * rcpAbsDen;
+            mapUV(u,v);
             return std::make_tuple(u,v,t,Ng);
           });
       }
@@ -835,7 +837,7 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
-            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
@@ -851,7 +853,7 @@ namespace embree
             const rsimd3f v0 = broadcast<rsimdf>(tri.v0,i);
             const rsimd3f v1 = broadcast<rsimdf>(tri.v1,i);
             const rsimd3f v2 = broadcast<rsimdf>(tri.v2,i);
-            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;

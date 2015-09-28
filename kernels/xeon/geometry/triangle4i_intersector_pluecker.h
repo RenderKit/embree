@@ -96,7 +96,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
@@ -114,7 +114,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
