@@ -9,7 +9,7 @@
 //                                                                          //
 // Unless required by applicable law or agreed to in writing, software      //
 // distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDI &TIONS OF ANY KIND, either express or implied. //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
@@ -28,6 +28,7 @@ namespace embree
     class GridSOAIntersectorN
     {
     public:
+      enum { K = RayN::K };
       typedef SubdivPatch1Cached Primitive;
       typedef typename RayN::simdb rsimdb;
       typedef typename RayN::simdi rsimdi;
@@ -50,9 +51,10 @@ namespace embree
         GridSOA* grid;
       };     
 
-      /*! Intersect a ray with the primitive. */
+       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
+        PlueckerIntersectorK<1,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -72,8 +74,9 @@ namespace embree
             const rsimd3f p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const rsimd3f p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-
-            triangle_intersect_pluecker<true>(valid_i,ray,p00,p01,p10,pre.grid->geomID,pre.grid->primID,scene,[&](rsimdf& u, rsimdf& v) { // FIXME: use quad intersector
+            
+            // FIXME: use quad intersector
+            auto mapUV0 = [&](rsimdf& u, rsimdf& v) { 
                 const rsimdf uv00(grid_uv[ofs00]);
                 const rsimdf uv01(grid_uv[ofs01]);
                 const rsimdf uv10(grid_uv[ofs10]);
@@ -83,9 +86,10 @@ namespace embree
                 const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv10);
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
-              });
+            };
+            intersector.intersectK(valid_i,ray,p00,p01,p10,mapUV0,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
 
-            triangle_intersect_pluecker<true>(valid_i,ray,p10,p01,p11,pre.grid->geomID,pre.grid->primID,scene,[&](rsimdf& u, rsimdf& v) {
+            auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
                 const rsimdf uv00(grid_uv[ofs00]);
                 const rsimdf uv01(grid_uv[ofs01]);
                 const rsimdf uv10(grid_uv[ofs10]);
@@ -95,7 +99,8 @@ namespace embree
                 const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv11);
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
-              });
+            };
+            intersector.intersectK(valid_i,ray,p10,p01,p11,mapUV1,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
@@ -103,6 +108,7 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
+        PlueckerIntersectorK<1,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -124,7 +130,7 @@ namespace embree
             const rsimd3f p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            triangle_occluded_pluecker<true>(valid,ray,p00,p01,p10,pre.grid->geomID,pre.grid->primID,scene,[&](rsimdf& u, rsimdf& v) {
+            auto mapUV0 = [&](rsimdf& u, rsimdf& v) { 
                 const rsimdf uv00(grid_uv[ofs00]);
                 const rsimdf uv01(grid_uv[ofs01]);
                 const rsimdf uv10(grid_uv[ofs10]);
@@ -134,10 +140,11 @@ namespace embree
                 const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv10);
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
-              });
+            };
+            intersector.intersectK(valid,ray,p00,p01,p10,mapUV0,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-
-            triangle_occluded_pluecker<true>(valid,ray,p10,p01,p11,pre.grid->geomID,pre.grid->primID,scene,[&](rsimdf& u, rsimdf& v) {
+            
+            auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
                 const rsimdf uv00(grid_uv[ofs00]);
                 const rsimdf uv01(grid_uv[ofs01]);
                 const rsimdf uv10(grid_uv[ofs10]);
@@ -147,14 +154,15 @@ namespace embree
                 const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv11);
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
-              });
+            };
+            intersector.intersectK(valid,ray,p10,p01,p11,mapUV1,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
         return !valid;
       }
 
-         template<typename Loader>
+      template<typename Loader>
         static __forceinline void intersect(RayN& ray, size_t k,
                                             const float* const grid_x,
                                             const float* const grid_y,
