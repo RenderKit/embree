@@ -224,7 +224,6 @@ namespace embree
         PRINT(numOriginalPrimitives);
         PRINT(100*numPrimitives / double(numOriginalPrimitives));
 
-        exit(0);
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -258,20 +257,24 @@ namespace embree
                                                           {
                                                             BBox3fa bounds_second = empty;
                                                             if (!mesh->valid(j+1,&bounds_second)) continue;
-                                                            bounds = bounds.extend(bounds_second);
-                                                            pinfo.add(bounds_second,bounds.center2());
 
                                                             TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                             if (TriangleMesh::sharedEdge(trimesh->triangle(j),
                                                                                          trimesh->triangle(j+1)) != -1)
+                                                            {
+                                                              bounds = bounds.extend(bounds_second);
                                                               j++;
+                                                            }
                                                           }
                                                           pinfo.add(bounds,bounds.center2());
                                                           const PrimRef prim(bounds,mesh->id,ID);
                                                           prims[k++] = prim;
+
                                                         }
                                                         return pinfo;
                                                       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+
+        PRINT(pinfo);
 
         assert(pinfo.size() == numPrimitives);
 
@@ -303,6 +306,9 @@ namespace embree
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
+
+        PRINT("BUILD DONE");
+        exit(0);
       }
 
       void clear() {
