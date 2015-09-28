@@ -99,7 +99,7 @@ namespace embree
       static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         enum { M = 1 };
-        PlueckerIntersectorK<K,M> intersector(valid_i,ray);
+        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -131,7 +131,7 @@ namespace embree
       static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
         enum { M = 1 };
-        PlueckerIntersectorK<K,M> intersector(valid_i,ray);
+        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -203,7 +203,7 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        PlueckerIntersectorK<K,M> intersector(true,ray); // FIXME: create in precalc
+        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
         intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       };
       
@@ -228,7 +228,7 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
 
-        PlueckerIntersectorK<K,M> intersector(true,ray); // FIXME: create in precalc
+        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
         return intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       }
 

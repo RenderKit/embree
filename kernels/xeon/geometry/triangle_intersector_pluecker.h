@@ -100,7 +100,7 @@ namespace embree
         }
       };
     
-    template<int K, int M>
+    template<int M, int K>
       struct PlueckerIntersectorK
       {
         __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
@@ -162,9 +162,9 @@ namespace embree
           /* calculate hit information */
           return epilog(valid,[&] () {
               const vfloat<K> rcpDen = rcp(den);
+              const vfloat<K> t = T * rcpDen;
               vfloat<K> u = U * rcpDen;
               vfloat<K> v = V * rcpDen;
-              const vfloat<K> t = T * rcpDen;
               mapUV(u,v);
               return std::make_tuple(u,v,t,Ng);
             });
@@ -234,7 +234,6 @@ namespace embree
         }
       };
     
-    
     /*! Intersects M triangles with 1 ray */
     template<int M, bool filter>
       struct TriangleMvIntersector1Pluecker
@@ -257,11 +256,12 @@ namespace embree
         }
       };
     
+    /*! Intersects M triangles with K rays */
     template<int M, int K, bool filter>
       struct TriangleMvIntersectorKPluecker
       {
         typedef TriangleMv<M> Primitive;
-        typedef PlueckerIntersectorK<K,M> Precalculations;
+        typedef PlueckerIntersectorK<M,K> Precalculations;
         
         /*! Intersects a M rays with N triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
