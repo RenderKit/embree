@@ -110,10 +110,8 @@ namespace embree
                                           const UVMapper& mapUV,
                                           const Epilog& epilog) const
       {
-        /* ray SIMD type shortcuts */
-        typedef Vec3<vfloat<K>> rsimd3f;
-        
         /* calculate vertices relative to ray origin */
+        typedef Vec3<vfloat<K>> rsimd3f;
         vbool<K> valid = valid0;
         const rsimd3f O = ray.org;
         const rsimd3f D = ray.dir;
@@ -169,422 +167,71 @@ namespace embree
             return std::make_tuple(u,v,t,Ng);
           });
       }
+
+      /*! Intersect k'th ray from ray packet of size K with M triangles. */
+      template<typename UVMapper, typename Epilog>
+        __forceinline bool intersect(RayK<K>& ray, size_t k,
+                                     const Vec3<vfloat<M>>& tri_v0, 
+                                     const Vec3<vfloat<M>>& tri_v1, 
+                                     const Vec3<vfloat<M>>& tri_v2, 
+                                     const UVMapper& mapUV,
+                                     const Epilog& epilog) const
+      {
+        /* calculate vertices relative to ray origin */
+        typedef Vec3<vfloat<M>> tsimd3f;
+        const tsimd3f O = broadcast<vfloat<M>>(ray.org,k);
+        const tsimd3f D = broadcast<vfloat<M>>(ray.dir,k);
+        const tsimd3f v0 = tri_v0-O;
+        const tsimd3f v1 = tri_v1-O;
+        const tsimd3f v2 = tri_v2-O;
+        
+        /* calculate triangle edges */
+        const tsimd3f e0 = v2-v0;
+        const tsimd3f e1 = v0-v1;
+        const tsimd3f e2 = v1-v2;
+        
+        /* calculate geometry normal and denominator */
+        //const tsimd3f Ng1 = cross(e1,e0);
+        const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
+        const tsimd3f tri_Ng = Ng1+Ng1;
+        const vfloat<M> den = dot(tri_Ng,D);
+        const vfloat<M> absDen = abs(den);
+        const vfloat<M> sgnDen = signmsk(den);
+        
+        /* perform edge tests */
+        const vfloat<M> U = dot(cross(v2+v0,e0),D) ^ sgnDen;
+        const vfloat<M> V = dot(cross(v0+v1,e1),D) ^ sgnDen;
+        const vfloat<M> W = dot(cross(v1+v2,e2),D) ^ sgnDen;
+        vbool<M> valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
+        if (unlikely(none(valid))) return false;
+        
+        /* perform depth test */
+        const vfloat<M> T = dot(v0,tri_Ng) ^ sgnDen;
+        valid &= (T >= absDen*vfloat<M>(ray.tnear[k])) & (absDen*vfloat<M>(ray.tfar[k]) >= T);
+        if (unlikely(none(valid))) return false;
+        
+        /* perform backface culling */
+#if defined(RTCORE_BACKFACE_CULLING)
+        valid &= den > vfloat<M>(zero);
+        if (unlikely(none(valid))) return false;
+#else
+        valid &= den != vfloat<M>(zero);
+        if (unlikely(none(valid))) return false;
+#endif
+        
+        /* calculate hit information */
+        return epilog(valid,[&] () {
+            const vfloat<M> rcpAbsDen = rcp(absDen);
+            const vfloat<M> t = T * rcpAbsDen;
+            vfloat<M> u = U * rcpAbsDen;
+            vfloat<M> v = V * rcpAbsDen;
+            mapUV(u,v);
+            return std::make_tuple(u,v,t,tri_Ng);
+          });
+      }
     };
 
-    
-    /*! Intersect a ray with the N triangles and updates the hit. */
-    template<bool filter, typename tsimdf, typename tsimdi, typename RayM>
-      __forceinline void triangle_intersect_pluecker(RayM& ray, size_t k, 
-                                                     const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2,
-                                                     const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
-    {
-      /* type shortcuts */
-      typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Bool tsimdb;
-      typedef Vec3<tsimdf> tsimd3f;
-      
-      /* calculate vertices relative to ray origin */
-      const tsimd3f O = broadcast<tsimdf>(ray.org,k);
-      const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-      const tsimd3f v0 = tri_v0-O;
-      const tsimd3f v1 = tri_v1-O;
-      const tsimd3f v2 = tri_v2-O;
-      
-      /* calculate triangle edges */
-      const tsimd3f e0 = v2-v0;
-      const tsimd3f e1 = v0-v1;
-      const tsimd3f e2 = v1-v2;
-      
-      /* calculate geometry normal and denominator */
-      //const tsimd3f Ng1 = cross(e1,e0);
-      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-      const tsimd3f tri_Ng = Ng1+Ng1;
-      const tsimdf den = dot(tri_Ng,D);
-      const tsimdf absDen = abs(den);
-      const tsimdf sgnDen = signmsk(den);
-      
-      /* perform edge tests */
-      const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
-      const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
-      const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
-      tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
-      if (unlikely(none(valid))) return;
-      
-      /* perform depth test */
-      const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
-      valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
-      if (unlikely(none(valid))) return;
-      
-      /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > tsimdf(zero);
-      if (unlikely(none(valid))) return;
-#else
-      valid &= den != tsimdf(zero);
-      if (unlikely(none(valid))) return;
-#endif
-      
-      /* calculate hit information */
-      const tsimdf rcpAbsDen = rcp(absDen);
-      const tsimdf t = T * rcpAbsDen;
-      const tsimdf u = U * rcpAbsDen;
-      const tsimdf v = V * rcpAbsDen;
 
-      size_t i = select_min(valid,t);
-      int geomID = tri_geomIDs[i];
-      
-/* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-      goto entry;
-      while (true) 
-      {
-        if (unlikely(none(valid))) return;
-        i = select_min(valid,t);
-        geomID = tri_geomIDs[i];
-      entry:
-        Geometry* geometry = scene->get(geomID);
-        
-#if defined(RTCORE_RAY_MASK)
-        /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask[k]) == 0) {
-          valid[i] = 0;
-          continue;
-        }
-#endif
-        
-#if defined(RTCORE_INTERSECTION_FILTER) 
-        /* call intersection filter function */
-        if (filter) {
-          if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
-            Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return;
-            valid[i] = 0;
-            continue;
-          }
-        }
-#endif
-        break;
-      }
-#endif
-      
-      /* update hit information */
-      ray.u[k] = u[i];
-      ray.v[k] = v[i];
-      ray.tfar[k] = t[i];
-      ray.Ng.x[k] = tri_Ng.x[i];
-      ray.Ng.y[k] = tri_Ng.y[i];
-      ray.Ng.z[k] = tri_Ng.z[i];
-      ray.geomID[k] = geomID;
-      ray.primID[k] = tri_primIDs[i];
-    }
-    
-    /*! Test if the ray is occluded by one of the triangles. */
-    template<bool filter,typename tsimdf, typename tsimdi, typename RayM>
-      __forceinline bool triangle_occluded_pluecker(RayM& ray, size_t k, 
-                                                    const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
-                                                    const tsimdi& tri_geomIDs, const tsimdi& tri_primIDs, Scene* scene)
-    {
-      /* type shortcuts */
-      typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Bool tsimdb;
-      typedef Vec3<tsimdf> tsimd3f;
-      
-      /* calculate vertices relative to ray origin */
-      const tsimd3f O = broadcast<tsimdf>(ray.org,k);
-      const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-      const tsimd3f v0 = tri_v0-O;
-      const tsimd3f v1 = tri_v1-O;
-      const tsimd3f v2 = tri_v2-O;
-      
-      /* calculate triangle edges */
-      const tsimd3f e0 = v2-v0;
-      const tsimd3f e1 = v0-v1;
-      const tsimd3f e2 = v1-v2;
-      
-      /* calculate geometry normal and denominator */
-      //const tsimd3f Ng1 = cross(e1,e0);
-      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-      const tsimd3f tri_Ng = Ng1+Ng1;
-      const tsimdf den = dot(tri_Ng,D);
-      const tsimdf absDen = abs(den);
-      const tsimdf sgnDen = signmsk(den);
-      
-      /* perform edge tests */
-      const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
-      const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
-      const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
-      tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
-      if (unlikely(none(valid))) return false;
-      
-      /* perform depth test */
-      const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
-      valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
-      if (unlikely(none(valid))) return false;
-      
-      /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > tsimdf(zero);
-      if (unlikely(none(valid))) return false;
-#else
-      valid &= den != tsimdf(zero);
-      if (unlikely(none(valid))) return false;
-#endif
-      
-/* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-      size_t m=movemask(valid);
-      goto entry;
-      while (true)
-      {  
-        if (unlikely(m == 0)) return false;
-      entry:
-        size_t i=__bsf(m);
-        const int geomID = tri_geomIDs[i];
-        Geometry* geometry = scene->get(geomID);
-        
-#if defined(RTCORE_RAY_MASK)
-        /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask[k]) == 0) {
-          m=__btc(m,i);
-          continue;
-        }
-#endif
-        
-#if defined(RTCORE_INTERSECTION_FILTER)
-        /* execute occlusion filer */
-        if (filter) {
-          if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
-          {
-            const tsimdf rcpAbsDen = rcp(absDen);
-	    const tsimdf t = T * rcpAbsDen;
-	    const tsimdf u = U * rcpAbsDen;
-	    const tsimdf v = V * rcpAbsDen;
-            const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primIDs[i])) return true;
-            m=__btc(m,i);
-            continue;
-          }
-        }
-#endif
-        break;
-      }
-#endif
-      
-      return true;
-    }
-    
-
-/////////////////////////////////////////////////
-
-/*! Intersect a ray with the N triangles and updates the hit. */
-    template<bool filter, typename tsimdf, typename RayM, typename UVMapper>
-      __forceinline void triangle_intersect_pluecker(RayM& ray, size_t k, 
-                                                     const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2,
-                                                     const unsigned tri_geomID, const unsigned tri_primID, Scene* scene,
-                                                     const UVMapper& mapUV)
-    {
-      /* type shortcuts */
-      typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Bool tsimdb;
-      typedef Vec3<tsimdf> tsimd3f;
-      
-      /* calculate vertices relative to ray origin */
-      const tsimd3f O = broadcast<tsimdf>(ray.org,k);
-      const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-      const tsimd3f v0 = tri_v0-O;
-      const tsimd3f v1 = tri_v1-O;
-      const tsimd3f v2 = tri_v2-O;
-      
-      /* calculate triangle edges */
-      const tsimd3f e0 = v2-v0;
-      const tsimd3f e1 = v0-v1;
-      const tsimd3f e2 = v1-v2;
-      
-      /* calculate geometry normal and denominator */
-      //const tsimd3f Ng1 = cross(e1,e0);
-      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-      const tsimd3f tri_Ng = Ng1+Ng1;
-      const tsimdf den = dot(tri_Ng,D);
-      const tsimdf absDen = abs(den);
-      const tsimdf sgnDen = signmsk(den);
-      
-      /* perform edge tests */
-      const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
-      const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
-      const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
-      tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
-      if (unlikely(none(valid))) return;
-      
-      /* perform depth test */
-      const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
-      valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
-      if (unlikely(none(valid))) return;
-      
-      /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > tsimdf(zero);
-      if (unlikely(none(valid))) return;
-#else
-      valid &= den != tsimdf(zero);
-      if (unlikely(none(valid))) return;
-#endif
-      
-      /* calculate hit information */
-      const tsimdf rcpAbsDen = rcp(absDen);
-      const tsimdf t = T * rcpAbsDen;
-      tsimdf u = U * rcpAbsDen;
-      tsimdf v = V * rcpAbsDen;
-      mapUV(u,v);
-
-      size_t i = select_min(valid,t);
-      int geomID = tri_geomID;
-      
-/* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-      goto entry;
-      while (true) 
-      {
-        if (unlikely(none(valid))) return;
-        i = select_min(valid,t);
-        geomID = tri_geomID;
-      entry:
-        Geometry* geometry = scene->get(geomID);
-        
-#if defined(RTCORE_RAY_MASK)
-        /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask[k]) == 0) {
-          valid[i] = 0;
-          continue;
-        }
-#endif
-        
-#if defined(RTCORE_INTERSECTION_FILTER) 
-        /* call intersection filter function */
-        if (filter) {
-          if (unlikely(geometry->hasIntersectionFilter<rsimdf>())) {
-            Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primID)) return;
-            valid[i] = 0;
-            continue;
-          }
-        }
-#endif
-        break;
-      }
-#endif
-      
-      /* update hit information */
-      ray.u[k] = u[i];
-      ray.v[k] = v[i];
-      ray.tfar[k] = t[i];
-      ray.Ng.x[k] = tri_Ng.x[i];
-      ray.Ng.y[k] = tri_Ng.y[i];
-      ray.Ng.z[k] = tri_Ng.z[i];
-      ray.geomID[k] = geomID;
-      ray.primID[k] = tri_primID;
-    }
-    
-    /*! Test if the ray is occluded by one of the triangles. */
-    template<bool filter,typename tsimdf, typename RayM, typename UVMapper>
-      __forceinline bool triangle_occluded_pluecker(RayM& ray, size_t k, 
-                                                    const Vec3<tsimdf>& tri_v0, const Vec3<tsimdf>& tri_v1, const Vec3<tsimdf>& tri_v2, 
-                                                    const unsigned tri_geomID, const unsigned tri_primID, Scene* scene,
-                                                    const UVMapper& mapUV)
-    {
-      /* type shortcuts */
-      typedef typename RayM::simdf rsimdf;
-      typedef typename tsimdf::Bool tsimdb;
-      typedef Vec3<tsimdf> tsimd3f;
-      
-      /* calculate vertices relative to ray origin */
-      const tsimd3f O = broadcast<tsimdf>(ray.org,k);
-      const tsimd3f D = broadcast<tsimdf>(ray.dir,k);
-      const tsimd3f v0 = tri_v0-O;
-      const tsimd3f v1 = tri_v1-O;
-      const tsimd3f v2 = tri_v2-O;
-      
-      /* calculate triangle edges */
-      const tsimd3f e0 = v2-v0;
-      const tsimd3f e1 = v0-v1;
-      const tsimd3f e2 = v1-v2;
-      
-      /* calculate geometry normal and denominator */
-      //const tsimd3f Ng1 = cross(e1,e0);
-      const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-      const tsimd3f tri_Ng = Ng1+Ng1;
-      const tsimdf den = dot(tri_Ng,D);
-      const tsimdf absDen = abs(den);
-      const tsimdf sgnDen = signmsk(den);
-      
-      /* perform edge tests */
-      const tsimdf U = dot(cross(v2+v0,e0),D) ^ sgnDen;
-      const tsimdf V = dot(cross(v0+v1,e1),D) ^ sgnDen;
-      const tsimdf W = dot(cross(v1+v2,e2),D) ^ sgnDen;
-      tsimdb valid = (U >= 0.0f) & (V >= 0.0f) & (W >= 0.0f);
-      if (unlikely(none(valid))) return false;
-      
-      /* perform depth test */
-      const tsimdf T = dot(v0,tri_Ng) ^ sgnDen;
-      valid &= (T >= absDen*tsimdf(ray.tnear[k])) & (absDen*tsimdf(ray.tfar[k]) >= T);
-      if (unlikely(none(valid))) return false;
-      
-      /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-      valid &= den > tsimdf(zero);
-      if (unlikely(none(valid))) return false;
-#else
-      valid &= den != tsimdf(zero);
-      if (unlikely(none(valid))) return false;
-#endif
-      
-/* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-      size_t m=movemask(valid);
-      goto entry;
-      while (true)
-      {  
-        if (unlikely(m == 0)) return false;
-      entry:
-        size_t i=__bsf(m);
-        const int geomID = tri_geomID;
-        Geometry* geometry = scene->get(geomID);
-        
-#if defined(RTCORE_RAY_MASK)
-        /* goto next hit if mask test fails */
-        if ((geometry->mask & ray.mask[k]) == 0) {
-          m=__btc(m,i);
-          continue;
-        }
-#endif
-        
-#if defined(RTCORE_INTERSECTION_FILTER)
-        /* execute occlusion filer */
-        if (filter) {
-          if (unlikely(geometry->hasOcclusionFilter<rsimdf>())) 
-          {
-            const tsimdf rcpAbsDen = rcp(absDen);
-	    const tsimdf t = T * rcpAbsDen;
-	    tsimdf u = U * rcpAbsDen;
-	    tsimdf v = V * rcpAbsDen;
-            mapUV(u,v);
-            const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
-            if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,tri_primID)) return true;
-            m=__btc(m,i);
-            continue;
-          }
-        }
-#endif
-        break;
-      }
-#endif
-      
-      return true;
-    }
-    
-
-
-///////////////////////////////////////////////
-    
     /*! Intersects N triangles with 1 ray */
     template<typename TriangleNv, bool filter>
       struct TriangleNvIntersector1Pluecker
@@ -663,14 +310,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          triangle_intersect_pluecker<filter>(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
         /*! Test if the ray is occluded by one of the triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayM& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return triangle_occluded_pluecker<filter>(ray,k,tri.v0,tri.v1,tri.v2,tri.geomIDs,tri.primIDs,scene);
+          return pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
   }

@@ -54,7 +54,8 @@ namespace embree
        /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        PlueckerIntersectorK<1,K> intersector(valid_i,ray);
+        enum { M = 1 };
+        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -87,7 +88,7 @@ namespace embree
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
             };
-            intersector.intersectK(valid_i,ray,p00,p01,p10,mapUV0,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p00,p01,p10,mapUV0,IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
 
             auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
                 const rsimdf uv00(grid_uv[ofs00]);
@@ -100,7 +101,7 @@ namespace embree
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
             };
-            intersector.intersectK(valid_i,ray,p10,p01,p11,mapUV1,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p10,p01,p11,mapUV1,IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
@@ -108,7 +109,8 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
-        PlueckerIntersectorK<1,K> intersector(valid_i,ray);
+        enum { M = 1 };
+        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -141,7 +143,7 @@ namespace embree
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
             };
-            intersector.intersectK(valid,ray,p00,p01,p10,mapUV0,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p00,p01,p10,mapUV0,OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
             
             auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
@@ -155,7 +157,7 @@ namespace embree
                 const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
                 u = uv[0];v = uv[1]; 
             };
-            intersector.intersectK(valid,ray,p10,p01,p11,mapUV1,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p10,p01,p11,mapUV1,OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
@@ -172,6 +174,7 @@ namespace embree
                                             Precalculations& pre,
                                             Scene* scene)
       {
+        enum { M = Loader::M };
         typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
@@ -182,14 +185,17 @@ namespace embree
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         
-        triangle_intersect_pluecker<true>(ray,k,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
-            const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-            const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-            const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-            const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-            const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-            u = uv[0];v = uv[1]; 
-          });
+        auto mapUV = [&](vfloat& u, vfloat& v) {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        };
+
+        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
+        intersector.intersect(ray,k,v0,v1,v2,mapUV,Intersect1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
@@ -202,6 +208,7 @@ namespace embree
                                            Precalculations& pre,
                                            Scene* scene)
       {
+        enum { M = Loader::M };
         typedef typename Loader::vbool vbool;
         typedef typename Loader::vfloat vfloat;
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
@@ -211,15 +218,18 @@ namespace embree
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
+
+        auto mapUV = [&](vfloat& u, vfloat& v) {
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
+          const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
+          const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        };
         
-        return triangle_occluded_pluecker<true>(ray,k,v0,v1,v2,pre.grid->geomID,pre.grid->primID,scene,[&](vfloat& u, vfloat& v) {
-            const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset);	
-            const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
-            const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-            const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-            const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-            u = uv[0];v = uv[1]; 
-          });
+        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
+        return intersector.intersect(ray,k,v0,v1,v2,mapUV,Occluded1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       }
 
       /*! Intersect a ray with the primitive. */

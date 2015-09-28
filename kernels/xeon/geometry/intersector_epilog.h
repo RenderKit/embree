@@ -623,5 +623,138 @@ namespace embree
             return true;
           }
         };
+
+      template<int M, int K, bool filter>
+        struct Intersect1KEpilogU // FIXME: simplify
+      {
+        RayK<K>& ray;
+        int k;
+        const unsigned int geomID;
+        const unsigned int primID;
+        Scene* const scene;
+
+        __forceinline Intersect1KEpilogU(RayK<K>& ray, int k,
+                                         const unsigned int geomID, 
+                                         const unsigned int primID, 
+                                         Scene* scene)
+          : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
+
+        template<typename Hit>
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        {
+          vfloat<M> u, v, t; 
+          Vec3<vfloat<M>> tri_Ng;
+          std::tie(u,v,t,tri_Ng) = hit();
+          vbool<M> valid = valid_i;
+          
+          size_t i = select_min(valid,t);
+          //int geomID = tri_geomIDs[i];
+          
+          /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          goto entry;
+          while (true) 
+          {
+            if (unlikely(none(valid))) return false;
+            i = select_min(valid,t);
+            //geomID = tri_geomIDs[i];
+          entry:
+            Geometry* geometry = scene->get(geomID);
+            
+#if defined(RTCORE_RAY_MASK)
+            /* goto next hit if mask test fails */
+            if ((geometry->mask & ray.mask[k]) == 0) {
+              valid[i] = 0;
+              continue;
+            }
+#endif
+            
+#if defined(RTCORE_INTERSECTION_FILTER) 
+            /* call intersection filter function */
+            if (filter) {
+              if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
+                Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+                if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,primID)) return true;
+                valid[i] = 0;
+                continue;
+              }
+            }
+#endif
+            break;
+          }
+#endif
+          
+          /* update hit information */
+          ray.u[k] = u[i];
+          ray.v[k] = v[i];
+          ray.tfar[k] = t[i];
+          ray.Ng.x[k] = tri_Ng.x[i];
+          ray.Ng.y[k] = tri_Ng.y[i];
+          ray.Ng.z[k] = tri_Ng.z[i];
+          ray.geomID[k] = geomID;
+          ray.primID[k] = primID;
+          return true;
+        }
+      };
+
+      template<int M, int K, bool filter>
+        struct Occluded1KEpilogU // FIXME: simplify
+        {
+          RayK<K>& ray;
+          int k;
+          const unsigned int geomID;
+          const unsigned int primID;
+          Scene* const scene;
+          
+          __forceinline Occluded1KEpilogU(RayK<K>& ray, int k,
+                                          const unsigned int geomID, 
+                                          const unsigned int primID, 
+                                          Scene* scene)
+            : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
+          
+          template<typename Hit>
+          __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
+          {
+            /* intersection filter test */
+#if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+            size_t m=movemask(valid);
+            goto entry;
+            while (true)
+            {  
+              if (unlikely(m == 0)) return false;
+            entry:
+              size_t i=__bsf(m);
+              //const int geomID = tri_geomIDs[i];
+              Geometry* geometry = scene->get(geomID);
+              
+#if defined(RTCORE_RAY_MASK)
+              /* goto next hit if mask test fails */
+              if ((geometry->mask & ray.mask[k]) == 0) {
+                m=__btc(m,i);
+                continue;
+              }
+#endif
+              
+#if defined(RTCORE_INTERSECTION_FILTER)
+              /* execute occlusion filer */
+              if (filter) {
+                if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
+                {
+                  vfloat<M> u, v, t; 
+                  Vec3<vfloat<M>> tri_Ng;
+                  std::tie(u,v,t,tri_Ng) = hit();
+                  const Vec3fa Ng = Vec3fa(tri_Ng.x[i],tri_Ng.y[i],tri_Ng.z[i]);
+                  if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ng,geomID,primID)) return true;
+                  m=__btc(m,i);
+                  continue;
+                }
+              }
+#endif
+              break;
+            }
+#endif 
+            return true;
+          }
+        };
   }
 }
