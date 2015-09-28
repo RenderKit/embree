@@ -74,16 +74,15 @@ namespace embree
       struct Triangle4iIntersectorMPluecker
       {
         typedef Triangle4i Primitive;
-        
+        enum { M = Triangle4i::M };
+        enum { K = RayM::K };
+        typedef PlueckerIntersectorK<M,K> Precalculations;
+ 
         /* ray SIMD type shortcuts */
         typedef typename RayM::simdb rsimdb;
         typedef typename RayM::simdf rsimdf;
         typedef typename RayM::simdi rsimdi;
         typedef Vec3<rsimdf> rsimd3f;
-        
-        struct Precalculations {
-          __forceinline Precalculations (const rsimdb& valid, const RayM& ray) {}
-        };
         
         static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const Primitive& tri, Scene* scene)
         {
@@ -97,7 +96,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            triangle_intersect_pluecker<filter>(valid_i,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            pre.intersectK(valid_i,ray,v0,v1,v2,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
@@ -115,7 +114,7 @@ namespace embree
             const rsimd3f v0 = rsimd3f(p0);
             const rsimd3f v1 = rsimd3f(p1);
             const rsimd3f v2 = rsimd3f(p2);
-            triangle_occluded_pluecker<filter>(valid0,ray,v0,v1,v2,tri.geomIDs,tri.primIDs,i,scene);
+            pre.intersectK(valid0,ray,v0,v1,v2,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;

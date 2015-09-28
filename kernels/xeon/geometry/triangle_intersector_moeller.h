@@ -39,11 +39,11 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(Ray& ray, 
-                                          const Vec3<vfloat<M>>& tri_v0, 
-                                          const Vec3<vfloat<M>>& tri_e1, 
-                                          const Vec3<vfloat<M>>& tri_e2, 
-                                          const Vec3<vfloat<M>>& tri_Ng,
-                                          const Epilog& epilog) const
+                                   const Vec3<vfloat<M>>& tri_v0, 
+                                   const Vec3<vfloat<M>>& tri_e1, 
+                                   const Vec3<vfloat<M>>& tri_e2, 
+                                   const Vec3<vfloat<M>>& tri_Ng,
+                                   const Epilog& epilog) const
       {
         /* calculate denominator */
         typedef Vec3<vfloat<M>> Vec3vfM;
@@ -84,10 +84,10 @@ namespace embree
       
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, 
-                                            const Vec3<vfloat<M>>& v0, 
-                                            const Vec3<vfloat<M>>& v1, 
-                                            const Vec3<vfloat<M>>& v2, 
-                                            const Epilog& epilog) const
+                                     const Vec3<vfloat<M>>& v0, 
+                                     const Vec3<vfloat<M>>& v1, 
+                                     const Vec3<vfloat<M>>& v2, 
+                                     const Epilog& epilog) const
       {
         const Vec3<vfloat<M>> e1 = v0-v1;
         const Vec3<vfloat<M>> e2 = v2-v0;
@@ -104,12 +104,12 @@ namespace embree
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                                 RayK<K>& ray, 
-                                                 const Vec3<vfloat<K>>& tri_v0, 
-                                                 const Vec3<vfloat<K>>& tri_e1, 
-                                                 const Vec3<vfloat<K>>& tri_e2, 
-                                                 const Vec3<vfloat<K>>& tri_Ng, 
-                                                 const Epilog& epilog) const
+                                          RayK<K>& ray, 
+                                          const Vec3<vfloat<K>>& tri_v0, 
+                                          const Vec3<vfloat<K>>& tri_e1, 
+                                          const Vec3<vfloat<K>>& tri_e2, 
+                                          const Vec3<vfloat<K>>& tri_Ng, 
+                                          const Epilog& epilog) const
       {
         /* ray SIMD type shortcuts */
         typedef Vec3<vfloat<K>> Vec3vfK;
@@ -164,11 +164,11 @@ namespace embree
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
       __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                               RayK<K>& ray, 
-                                               const Vec3<vfloat<K>>& tri_v0, 
-                                               const Vec3<vfloat<K>>& tri_v1, 
-                                               const Vec3<vfloat<K>>& tri_v2, 
-                                               const Epilog& epilog) const
+                                        RayK<K>& ray, 
+                                        const Vec3<vfloat<K>>& tri_v0, 
+                                        const Vec3<vfloat<K>>& tri_v1, 
+                                        const Vec3<vfloat<K>>& tri_v2, 
+                                        const Epilog& epilog) const
       {
         typedef Vec3<vfloat<K>> Vec3vfK;
         const Vec3vfK e1 = tri_v0-tri_v1;
@@ -180,11 +180,11 @@ namespace embree
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<typename Epilog>
         __forceinline bool intersect(RayK<K>& ray, size_t k,
-                                            const Vec3<vfloat<M>>& tri_v0, 
-                                            const Vec3<vfloat<M>>& tri_e1, 
-                                            const Vec3<vfloat<M>>& tri_e2, 
-                                            const Vec3<vfloat<M>>& tri_Ng,
-                                            const Epilog& epilog) const
+                                     const Vec3<vfloat<M>>& tri_v0, 
+                                     const Vec3<vfloat<M>>& tri_e1, 
+                                     const Vec3<vfloat<M>>& tri_e2, 
+                                     const Vec3<vfloat<M>>& tri_Ng,
+                                     const Epilog& epilog) const
       {
         /* calculate denominator */
         typedef Vec3<vfloat<M>> Vec3vfM;
@@ -225,10 +225,10 @@ namespace embree
       
       template<typename Epilog>
       __forceinline bool intersect1(RayK<K>& ray, size_t k,
-                                           const Vec3<vfloat<M>>& v0, 
-                                           const Vec3<vfloat<M>>& v1, 
-                                           const Vec3<vfloat<M>>& v2, 
-                                           const Epilog& epilog) const
+                                    const Vec3<vfloat<M>>& v0, 
+                                    const Vec3<vfloat<M>>& v1, 
+                                    const Vec3<vfloat<M>>& v2, 
+                                    const Epilog& epilog) const
       {
         const Vec3<vfloat<M>> e1 = v0-v1;
         const Vec3<vfloat<M>> e2 = v2-v0;
