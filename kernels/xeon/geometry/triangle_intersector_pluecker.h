@@ -74,14 +74,15 @@ namespace embree
           /* calculate geometry normal and denominator */
           //const tsimd3f Ng1 = cross(e1,e0);
           const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-          const tsimd3f tri_Ng = Ng1+Ng1;
-          const vfloat<M> den = dot(tri_Ng,D);
+          const tsimd3f Ng = Ng1+Ng1;
+          const vfloat<M> den = dot(Ng,D);
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
           
           /* perform depth test */
-          const vfloat<M> T = dot(v0,tri_Ng);
-          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear)) & (absDen*vfloat<M>(ray.tfar) >= (T^sgnDen));
+          const vfloat<M> T = dot(v0,Ng);
+          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear));
+          valid &=(absDen*vfloat<M>(ray.tfar) >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -95,7 +96,7 @@ namespace embree
               vfloat<M> u = U * rcpDen;
               vfloat<M> v = V * rcpDen;
               mapUV(u,v);
-              return std::make_tuple(u,v,t,tri_Ng);
+              return std::make_tuple(u,v,t,Ng);
             });
         }
       };
@@ -152,7 +153,8 @@ namespace embree
 
           /* perform depth test */
           const vfloat<K> T = dot(v0,rsimd3f(Ng));
-          valid &= ((T^sgnDen) >= absDen*ray.tnear) & (absDen*ray.tfar >= (T^sgnDen));
+          valid &= ((T^sgnDen) >= absDen*ray.tnear);
+          valid &= (absDen*ray.tfar >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -208,14 +210,15 @@ namespace embree
           /* calculate geometry normal and denominator */
           //const tsimd3f Ng1 = cross(e1,e0);
           const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-          const tsimd3f tri_Ng = Ng1+Ng1;
-          const vfloat<M> den = dot(tri_Ng,D);
+          const tsimd3f Ng = Ng1+Ng1;
+          const vfloat<M> den = dot(Ng,D);
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<M> T = dot(v0,tri_Ng);
-          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear[k])) & (absDen*vfloat<M>(ray.tfar[k]) >= (T^sgnDen));
+          const vfloat<M> T = dot(v0,Ng);
+          valid &= ((T^sgnDen) >= absDen*vfloat<M>(ray.tnear[k]));
+          valid &= (absDen*vfloat<M>(ray.tfar[k]) >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
@@ -229,7 +232,7 @@ namespace embree
               vfloat<M> u = U * rcpDen;
               vfloat<M> v = V * rcpDen;
               mapUV(u,v);
-              return std::make_tuple(u,v,t,tri_Ng);
+              return std::make_tuple(u,v,t,Ng);
             });
         }
       };
@@ -266,7 +269,7 @@ namespace embree
         /*! Intersects a M rays with N triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
         {
-          for (size_t i=0; i<Primitive::max_size(); i++)
+          for (size_t i=0; i<M; i++)
           {
             if (!tri.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
@@ -282,7 +285,7 @@ namespace embree
         {
           vbool<K> valid0 = valid_i;
           
-          for (size_t i=0; i<Primitive::max_size(); i++)
+          for (size_t i=0; i<M; i++)
           {
             if (!tri.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
