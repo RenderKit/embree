@@ -76,7 +76,7 @@ namespace embree
         typedef Triangle4i Primitive;
         enum { M = Triangle4i::M };
         enum { K = RayM::K };
-        typedef PlueckerIntersectorK<M,K> Precalculations;
+        typedef PlueckerIntersectorK<K,M> Precalculations;
  
         /* ray SIMD type shortcuts */
         typedef typename RayM::simdb rsimdb;

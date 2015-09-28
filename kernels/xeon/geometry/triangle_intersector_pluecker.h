@@ -100,7 +100,7 @@ namespace embree
         }
       };
     
-    template<int M, int K>
+    template<int K, int M>
       struct PlueckerIntersectorK
       {
         __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
@@ -263,7 +263,7 @@ namespace embree
       struct TriangleMvIntersectorKPluecker
       {
         typedef TriangleMv<M> Primitive;
-        typedef PlueckerIntersectorK<M,K> Precalculations;
+        typedef PlueckerIntersectorK<K,M> Precalculations;
         
         /*! Intersects a M rays with N triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
