@@ -476,9 +476,9 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersector4_1<TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  false> > >);
 #endif
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA true COMMA ArrayIntersector4_1<TriangleNvIntersectorMPluecker<Ray4 COMMA Triangle4v COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA true COMMA ArrayIntersector4_1<TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
 
-    // FIXME: add Triangle4vMblur intersector
+   // FIXME: add Triangle4vMblur intersector
     // FIXME: add Triangle4i intersector
   }
 }
