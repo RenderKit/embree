@@ -389,7 +389,7 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersector8<TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersector8<TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersector8<TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ArrayIntersector8<TriangleNvIntersectorMPluecker<Ray8 COMMA Triangle4v COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ArrayIntersector8<TriangleMvIntersectorKPluecker<4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVH4Intersector8Chunk<0x1 COMMA true COMMA ArrayIntersector8<Triangle4iIntersectorMPluecker<Ray8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersector8<ObjectIntersector8> >);
 
