@@ -390,7 +390,7 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoeller, BVH4Intersector16Chunk<0x1 COMMA false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoellerNoFilter, BVH4Intersector16Chunk<0x1 COMMA false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle4vIntersector16ChunkPluecker, BVH4Intersector16Chunk<0x1 COMMA true COMMA ArrayIntersector16<TriangleMvIntersectorKPluecker<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle4iIntersector16ChunkPluecker, BVH4Intersector16Chunk<0x1 COMMA true COMMA ArrayIntersector16<Triangle4iIntersectorMPluecker<Ray16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Triangle4iIntersector16ChunkPluecker, BVH4Intersector16Chunk<0x1 COMMA true COMMA ArrayIntersector16<Triangle4iIntersectorKPluecker<16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4VirtualIntersector16Chunk, BVH4Intersector16Chunk<0x1 COMMA false COMMA ArrayIntersector16<ObjectIntersector16> >);
     DEFINE_INTERSECTOR16(BVH4Triangle4vMBIntersector16ChunkMoeller, BVH4Intersector16Chunk<0x10 COMMA false COMMA ArrayIntersector16<TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
   }

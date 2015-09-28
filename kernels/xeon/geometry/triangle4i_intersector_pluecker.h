@@ -69,51 +69,44 @@ namespace embree
         }
       };
 
-    /*! Intersector4 for triangle4i */
-    template<typename RayM, bool filter>
-      struct Triangle4iIntersectorMPluecker
+    /*! triangle4i intersector for K rays */
+    template<int K, bool filter>
+      struct Triangle4iIntersectorKPluecker
       {
         typedef Triangle4i Primitive;
         enum { M = Triangle4i::M };
-        enum { K = RayM::K };
         typedef PlueckerIntersectorK<M,K> Precalculations;
  
-        /* ray SIMD type shortcuts */
-        typedef typename RayM::simdb rsimdb;
-        typedef typename RayM::simdf rsimdf;
-        typedef typename RayM::simdi rsimdi;
-        typedef Vec3<rsimdf> rsimd3f;
-        
-        static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const Primitive& tri, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
         {
           for (size_t i=0; i<Triangle4i::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(normal.trav_prims,1,popcnt(valid_i),RayM::size());
+            STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
             const Vec3f& p0 = *tri.v0[i];
             const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
             const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
-            const rsimd3f v0 = rsimd3f(p0);
-            const rsimd3f v1 = rsimd3f(p1);
-            const rsimd3f v2 = rsimd3f(p2);
+            const Vec3<vfloat<K>> v0 = Vec3<vfloat<K>>(p0);
+            const Vec3<vfloat<K>> v1 = Vec3<vfloat<K>>(p1);
+            const Vec3<vfloat<K>> v2 = Vec3<vfloat<K>>(p2);
             pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
           }
         }
         
-        static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayM& ray, const Primitive& tri, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
         {
-          rsimdb valid0 = valid_i;
+          vbool<K> valid0 = valid_i;
           
           for (size_t i=0; i<Triangle4i::max_size(); i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid_i),RayM::size());
+            STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
             const Vec3f& p0 = *tri.v0[i];
             const Vec3f& p1 = *(Vec3f*)((int*)&p0 + tri.v1[i]);
             const Vec3f& p2 = *(Vec3f*)((int*)&p0 + tri.v2[i]);
-            const rsimd3f v0 = rsimd3f(p0);
-            const rsimd3f v1 = rsimd3f(p1);
-            const rsimd3f v2 = rsimd3f(p2);
+            const Vec3<vfloat<K>> v0 = Vec3<vfloat<K>>(p0);
+            const Vec3<vfloat<K>> v1 = Vec3<vfloat<K>>(p1);
+            const Vec3<vfloat<K>> v2 = Vec3<vfloat<K>>(p2);
             pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }

@@ -393,7 +393,7 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA false> > >);
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersectorMPluecker<Ray4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersector4<Triangle4iIntersectorKPluecker<4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersector4<ObjectIntersector4> >);
 
     DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4Intersector4Chunk<0x10 COMMA false COMMA ArrayIntersector4<TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
