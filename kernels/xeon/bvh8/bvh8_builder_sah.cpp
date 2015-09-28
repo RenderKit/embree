@@ -212,7 +212,7 @@ namespace embree
                                                              if (!mesh->valid(j+1)) continue;
                                                               TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                               if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                           trimesh->triangle(j+1)) != -1)
+                                                                                           trimesh->triangle(j+1)).first != -1)
                                                                 j++;
                                                            }
                                                          }
@@ -252,7 +252,9 @@ namespace embree
                                                           if (!mesh->valid(j,&bounds)) continue;
 
                                                           TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                          const size_t ID = j;
+                                                          const unsigned int primID = j;
+                                                          const unsigned int geomID = mesh->id;
+                                                          unsigned int flag = (unsigned int)1 << 31;
                                                           if (j+1 < r.end())
                                                           {
                                                             BBox3fa bounds_second = empty;
@@ -260,14 +262,15 @@ namespace embree
 
                                                             TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                             if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                         trimesh->triangle(j+1)) != -1)
+                                                                                         trimesh->triangle(j+1)).first != -1)
                                                             {
                                                               bounds = bounds.extend(bounds_second);
+                                                              flag = 0;
                                                               j++;
                                                             }
                                                           }
                                                           pinfo.add(bounds,bounds.center2());
-                                                          const PrimRef prim(bounds,mesh->id,ID);
+                                                          const PrimRef prim(bounds,geomID | flag,primID);
                                                           prims[k++] = prim;
 
                                                         }
