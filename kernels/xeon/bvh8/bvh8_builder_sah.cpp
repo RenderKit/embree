@@ -212,7 +212,7 @@ namespace embree
                                                              if (!mesh->valid(j+1)) continue;
                                                               TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                               if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                           trimesh->triangle(j+1)).first != -1)
+                                                                                           trimesh->triangle(j+1)) != -1)
                                                                 j++;
                                                            }
                                                          }
@@ -262,7 +262,7 @@ namespace embree
 
                                                             TriangleMesh* trimesh = (TriangleMesh*)mesh;
                                                             if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                         trimesh->triangle(j+1)).first != -1)
+                                                                                         trimesh->triangle(j+1)) != -1)
                                                             {
                                                               bounds = bounds.extend(bounds_second);
                                                               flag = 0;
