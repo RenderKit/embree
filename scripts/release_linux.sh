@@ -39,7 +39,8 @@ rm version.h
 
 # set release settings
 cmake \
--D COMPILER=ICC \
+-D CMAKE_C_COMPILER=icc \
+-D CMAKE_CXX_COMPILER=icpc \
 -D ENABLE_XEON_PHI_SUPPORT=ON \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \

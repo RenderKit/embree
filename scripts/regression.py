@@ -193,10 +193,21 @@ def compile(OS,compiler,platform,build,isa,tasking):
       sys.stderr.write('unknown platform: ' + platform + '\n')
       sys.exit(1)
 
+    c_compiler_bin   = 'gcc'
+    cpp_compiler_bin = 'g++'
+
+    if (complier == 'CLANG'):
+      c_compiler_bin = 'clang'
+      cpp_compiler_bin = 'clang++'
+    elif (compiler == 'ICC'):
+      c_compiler_bin = 'icc'
+      cpp_compiler_bin = 'icpc'
+
     # compile Embree
     command = 'mkdir -p build && cd build && cmake > /dev/null'
-    command += ' -D COMPILER=' + compiler
-    command += ' -D CMAKE_BUILD_TYPE='+build
+    command += ' -D CMAKE_C_COMPILER=' + c_compiler_bin
+    command += ' -D CMAKE_CXX_COMPILER=' + cpp_compiler_bin
+    command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
@@ -208,7 +219,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     elif tasking == 'internal':
       command += ' -D RTCORE_TASKING_SYSTEM=INTERNAL'
     else:
-      sys.stdout.write("invalid tasking system: "+tasking)
+      sys.stdout.write("invalid tasking system: " + tasking)
       return 1
     command += ' .. && make clean && make -j 8'
     command += ' &> ../' + logFile
