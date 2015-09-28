@@ -626,12 +626,12 @@ namespace embree
 #endif      
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
   }
 }  

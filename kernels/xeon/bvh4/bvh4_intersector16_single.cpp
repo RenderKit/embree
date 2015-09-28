@@ -126,9 +126,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single_OBB, BVH4Intersector16Single<0x101 COMMA false COMMA ArrayIntersector16_1<Bezier1vIntersectorN<Ray16> > >);
-    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single_OBB, BVH4Intersector16Single<0x101 COMMA false COMMA ArrayIntersector16_1<Bezier1iIntersectorN<Ray16> > >);
-    DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVH4Intersector16Single<0x1010 COMMA false COMMA ArrayIntersector16_1<Bezier1iIntersectorNMB<Ray16> > >);
+    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single_OBB, BVH4Intersector16Single<0x101 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorN<Ray16> > >);
+    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single_OBB, BVH4Intersector16Single<0x101 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorN<Ray16> > >);
+    DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVH4Intersector16Single<0x1010 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorNMB<Ray16> > >);
 
     DEFINE_INTERSECTOR16(BVH4Subdivpatch1Intersector16, BVH4Intersector16FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16,BVH4Intersector16FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
