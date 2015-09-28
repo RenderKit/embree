@@ -23,8 +23,7 @@
 #include "../builders/bvh_builder_sah.h"
 
 #include "../geometry/triangle.h"
-#include "../geometry/trianglepairs4.h"
-
+#include "../geometry/trianglepairsv.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
 
 namespace embree

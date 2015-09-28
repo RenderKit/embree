@@ -21,7 +21,7 @@
 #include "trianglev.h"
 #include "trianglei.h"
 #include "trianglev_mb.h"
-#include "trianglepairs4.h"
+#include "trianglepairsv.h"
 #include "subdivpatch1.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
