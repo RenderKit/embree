@@ -132,7 +132,7 @@ namespace embree
   TrianglePairs4v::Type TrianglePairs4v::type;
 
   TrianglePairs4v::Type::Type () 
-    : PrimitiveType("trianglepairs4",11*32,8) {}
+    : PrimitiveType("trianglepairs4",sizeof(TrianglePairs4v),4) {}
 #else
   size_t TrianglePairs4v::Type::size(const char* This) const {
     return ((TrianglePairs4v*)This)->size();
