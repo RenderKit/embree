@@ -128,46 +128,43 @@ namespace embree
           const rsimd3f e0 = v2-v0;
           const rsimd3f e1 = v0-v1;
           const rsimd3f e2 = v1-v2;
+           
+          /* perform edge tests */
+          const vfloat<K> U = dot(rsimd3f(cross(v2+v0,e0)),D);
+          const vfloat<K> V = dot(rsimd3f(cross(v0+v1,e1)),D);
+          const vfloat<K> W = dot(rsimd3f(cross(v1+v2,e2)),D);
+          const vfloat<K> minUVW = min(U,V,W);
+          const vfloat<K> maxUVW = max(U,V,W);
+#if defined(RTCORE_BACKFACE_CULLING)
+          valid &= minUVW >= 0.0f;
+#else
+          valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+#endif
+          if (unlikely(none(valid))) return false;
           
-          /* calculate geometry normal and denominator */
+           /* calculate geometry normal and denominator */
           //const rsimd3f Ng1 = cross(e1,e0);
           const rsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
           const rsimd3f Ng = Ng1+Ng1;
           const vfloat<K> den = dot(rsimd3f(Ng),D);
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
-          
-          /* perform edge tests */
-          const vfloat<K> U = dot(rsimd3f(cross(v2+v0,e0)),D) ^ sgnDen;
-          valid &= U >= 0.0f;
-          if (likely(none(valid))) return false;
-          const vfloat<K> V = dot(rsimd3f(cross(v0+v1,e1)),D) ^ sgnDen;
-          valid &= V >= 0.0f;
-          if (likely(none(valid))) return false;
-          const vfloat<K> W = dot(rsimd3f(cross(v1+v2,e2)),D) ^ sgnDen;
-          valid &= W >= 0.0f;
-          if (likely(none(valid))) return false;
-          
+
           /* perform depth test */
-          const vfloat<K> T = dot(v0,rsimd3f(Ng)) ^ sgnDen;
-          valid &= (T >= absDen*ray.tnear) & (absDen*ray.tfar >= T);
+          const vfloat<K> T = dot(v0,rsimd3f(Ng));
+          valid &= ((T^sgnDen) >= absDen*ray.tnear) & (absDen*ray.tfar >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
           
-          /* perform backface culling */
-#if defined(RTCORE_BACKFACE_CULLING)
-          valid &= den > vfloat<K>(zero);
-          if (unlikely(none(valid))) return false;
-#else
+          /* avoid division by 0 */
           valid &= den != vfloat<K>(zero);
           if (unlikely(none(valid))) return false;
-#endif
           
           /* calculate hit information */
           return epilog(valid,[&] () {
-              const vfloat<K> rcpAbsDen = rcp(absDen);
-              vfloat<K> u = U * rcpAbsDen;
-              vfloat<K> v = V * rcpAbsDen;
-              const vfloat<K> t = T * rcpAbsDen;
+              const vfloat<K> rcpDen = rcp(den);
+              vfloat<K> u = U * rcpDen;
+              vfloat<K> v = V * rcpDen;
+              const vfloat<K> t = T * rcpDen;
               mapUV(u,v);
               return std::make_tuple(u,v,t,Ng);
             });
