@@ -51,6 +51,50 @@ namespace embree
         GridSOA* grid;
       };     
 
+      template<int K>
+      struct MapUV0
+      {
+        const float* const grid_uv;
+        size_t ofs00, ofs01, ofs10, ofs11;
+
+        __forceinline MapUV0(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
+          : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
+
+        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const { 
+          const vfloat<K> uv00(grid_uv[ofs00]);
+          const vfloat<K> uv01(grid_uv[ofs01]);
+          const vfloat<K> uv10(grid_uv[ofs10]);
+          const vfloat<K> uv11(grid_uv[ofs11]);
+          const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv00);
+          const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
+          const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv10);
+          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        }
+      };
+
+       template<int K>
+      struct MapUV1
+      {
+        const float* const grid_uv;
+        size_t ofs00, ofs01, ofs10, ofs11;
+
+        __forceinline MapUV1(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
+          : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
+
+        __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const { 
+          const vfloat<K> uv00(grid_uv[ofs00]);
+          const vfloat<K> uv01(grid_uv[ofs01]);
+          const vfloat<K> uv10(grid_uv[ofs10]);
+          const vfloat<K> uv11(grid_uv[ofs11]);
+          const Vec2<vfloat<K>> uv0 = GridSOA::decodeUV(uv10);
+          const Vec2<vfloat<K>> uv1 = GridSOA::decodeUV(uv01);
+          const Vec2<vfloat<K>> uv2 = GridSOA::decodeUV(uv11);
+          const Vec2<vfloat<K>> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
+          u = uv[0];v = uv[1]; 
+        }
+      };
+
        /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
       {
@@ -76,31 +120,8 @@ namespace embree
             const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
             
             // FIXME: use quad intersector
-            auto mapUV0 = [&](rsimdf& u, rsimdf& v) { 
-                const rsimdf uv00(grid_uv[ofs00]);
-                const rsimdf uv01(grid_uv[ofs01]);
-                const rsimdf uv10(grid_uv[ofs10]);
-                const rsimdf uv11(grid_uv[ofs11]);
-                const Vec2<rsimdf> uv0 = GridSOA::decodeUV(uv00);
-                const Vec2<rsimdf> uv1 = GridSOA::decodeUV(uv01);
-                const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv10);
-                const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-                u = uv[0];v = uv[1]; 
-            };
-            intersector.intersectK(valid_i,ray,p00,p01,p10,mapUV0,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
-
-            auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
-                const rsimdf uv00(grid_uv[ofs00]);
-                const rsimdf uv01(grid_uv[ofs01]);
-                const rsimdf uv10(grid_uv[ofs10]);
-                const rsimdf uv11(grid_uv[ofs11]);
-                const Vec2<rsimdf> uv0 = GridSOA::decodeUV(uv10);
-                const Vec2<rsimdf> uv1 = GridSOA::decodeUV(uv01);
-                const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv11);
-                const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-                u = uv[0];v = uv[1]; 
-            };
-            intersector.intersectK(valid_i,ray,p10,p01,p11,mapUV1,IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
@@ -130,32 +151,9 @@ namespace embree
             const rsimd3f p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            auto mapUV0 = [&](rsimdf& u, rsimdf& v) { 
-                const rsimdf uv00(grid_uv[ofs00]);
-                const rsimdf uv01(grid_uv[ofs01]);
-                const rsimdf uv10(grid_uv[ofs10]);
-                const rsimdf uv11(grid_uv[ofs11]);
-                const Vec2<rsimdf> uv0 = GridSOA::decodeUV(uv00);
-                const Vec2<rsimdf> uv1 = GridSOA::decodeUV(uv01);
-                const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv10);
-                const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-                u = uv[0];v = uv[1]; 
-            };
-            intersector.intersectK(valid,ray,p00,p01,p10,mapUV0,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-            
-            auto mapUV1 = [&](rsimdf& u, rsimdf& v) {
-                const rsimdf uv00(grid_uv[ofs00]);
-                const rsimdf uv01(grid_uv[ofs01]);
-                const rsimdf uv10(grid_uv[ofs10]);
-                const rsimdf uv11(grid_uv[ofs11]);
-                const Vec2<rsimdf> uv0 = GridSOA::decodeUV(uv10);
-                const Vec2<rsimdf> uv1 = GridSOA::decodeUV(uv01);
-                const Vec2<rsimdf> uv2 = GridSOA::decodeUV(uv11);
-                const Vec2<rsimdf> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-                u = uv[0];v = uv[1]; 
-            };
-            intersector.intersectK(valid,ray,p10,p01,p11,mapUV1,OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
