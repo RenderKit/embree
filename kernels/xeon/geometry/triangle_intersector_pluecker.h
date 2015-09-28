@@ -35,8 +35,7 @@ namespace embree
     template<int M>
       struct PlueckerIntersector1
       {
-        __forceinline PlueckerIntersector1 (const Ray& ray, const void* ptr) {
-        }
+        __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
         
         template<typename UVMapper, typename Epilog>
           __forceinline bool intersect(Ray& ray, 
@@ -47,17 +46,17 @@ namespace embree
                                        const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> tsimd3f;
-          const tsimd3f O = tsimd3f(ray.org);
-          const tsimd3f D = tsimd3f(ray.dir);
-          const tsimd3f v0 = tri_v0-O;
-          const tsimd3f v1 = tri_v1-O;
-          const tsimd3f v2 = tri_v2-O;
+          typedef Vec3<vfloat<M>> Vec3vfM;
+          const Vec3vfM O = Vec3vfM(ray.org);
+          const Vec3vfM D = Vec3vfM(ray.dir);
+          const Vec3vfM v0 = tri_v0-O;
+          const Vec3vfM v1 = tri_v1-O;
+          const Vec3vfM v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const tsimd3f e0 = v2-v0;
-          const tsimd3f e1 = v0-v1;
-          const tsimd3f e2 = v1-v2;
+          const Vec3vfM e0 = v2-v0;
+          const Vec3vfM e1 = v0-v1;
+          const Vec3vfM e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -72,9 +71,9 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          //const tsimd3f Ng1 = cross(e1,e0);
-          const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-          const tsimd3f Ng = Ng1+Ng1;
+          //const Vec3vfM Ng1 = cross(e1,e0);
+          const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0);
+          const Vec3vfM Ng = Ng1+Ng1;
           const vfloat<M> den = dot(Ng,D);
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
@@ -117,23 +116,23 @@ namespace embree
                                             const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<K>> rsimd3f;
+          typedef Vec3<vfloat<K>> Vec3vfK;
           vbool<K> valid = valid0;
-          const rsimd3f O = ray.org;
-          const rsimd3f D = ray.dir;
-          const rsimd3f v0 = tri_v0-O;
-          const rsimd3f v1 = tri_v1-O;
-          const rsimd3f v2 = tri_v2-O;
+          const Vec3vfK O = ray.org;
+          const Vec3vfK D = ray.dir;
+          const Vec3vfK v0 = tri_v0-O;
+          const Vec3vfK v1 = tri_v1-O;
+          const Vec3vfK v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const rsimd3f e0 = v2-v0;
-          const rsimd3f e1 = v0-v1;
-          const rsimd3f e2 = v1-v2;
+          const Vec3vfK e0 = v2-v0;
+          const Vec3vfK e1 = v0-v1;
+          const Vec3vfK e2 = v1-v2;
            
           /* perform edge tests */
-          const vfloat<K> U = dot(rsimd3f(cross(v2+v0,e0)),D);
-          const vfloat<K> V = dot(rsimd3f(cross(v0+v1,e1)),D);
-          const vfloat<K> W = dot(rsimd3f(cross(v1+v2,e2)),D);
+          const vfloat<K> U = dot(Vec3vfK(cross(v2+v0,e0)),D);
+          const vfloat<K> V = dot(Vec3vfK(cross(v0+v1,e1)),D);
+          const vfloat<K> W = dot(Vec3vfK(cross(v1+v2,e2)),D);
           const vfloat<K> minUVW = min(U,V,W);
           const vfloat<K> maxUVW = max(U,V,W);
 #if defined(RTCORE_BACKFACE_CULLING)
@@ -144,15 +143,15 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
            /* calculate geometry normal and denominator */
-          //const rsimd3f Ng1 = cross(e1,e0);
-          const rsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-          const rsimd3f Ng = Ng1+Ng1;
-          const vfloat<K> den = dot(rsimd3f(Ng),D);
+          //const Vec3vfK Ng1 = cross(e1,e0);
+          const Vec3vfK Ng1 = stable_triangle_normal(e2,e1,e0);
+          const Vec3vfK Ng = Ng1+Ng1;
+          const vfloat<K> den = dot(Vec3vfK(Ng),D);
           const vfloat<K> absDen = abs(den);
           const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
-          const vfloat<K> T = dot(v0,rsimd3f(Ng));
+          const vfloat<K> T = dot(v0,Vec3vfK(Ng));
           valid &= ((T^sgnDen) >= absDen*ray.tnear);
           valid &= (absDen*ray.tfar >= (T^sgnDen));
           if (unlikely(none(valid))) return false;
@@ -182,17 +181,17 @@ namespace embree
                                        const Epilog& epilog) const
         {
           /* calculate vertices relative to ray origin */
-          typedef Vec3<vfloat<M>> tsimd3f;
-          const tsimd3f O = broadcast<vfloat<M>>(ray.org,k);
-          const tsimd3f D = broadcast<vfloat<M>>(ray.dir,k);
-          const tsimd3f v0 = tri_v0-O;
-          const tsimd3f v1 = tri_v1-O;
-          const tsimd3f v2 = tri_v2-O;
+          typedef Vec3<vfloat<M>> Vec3vfM;
+          const Vec3vfM O = broadcast<vfloat<M>>(ray.org,k);
+          const Vec3vfM D = broadcast<vfloat<M>>(ray.dir,k);
+          const Vec3vfM v0 = tri_v0-O;
+          const Vec3vfM v1 = tri_v1-O;
+          const Vec3vfM v2 = tri_v2-O;
           
           /* calculate triangle edges */
-          const tsimd3f e0 = v2-v0;
-          const tsimd3f e1 = v0-v1;
-          const tsimd3f e2 = v1-v2;
+          const Vec3vfM e0 = v2-v0;
+          const Vec3vfM e1 = v0-v1;
+          const Vec3vfM e2 = v1-v2;
           
           /* perform edge tests */
           const vfloat<M> U = dot(cross(v2+v0,e0),D);
@@ -208,9 +207,9 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
-          //const tsimd3f Ng1 = cross(e1,e0);
-          const tsimd3f Ng1 = stable_triangle_normal(e2,e1,e0);
-          const tsimd3f Ng = Ng1+Ng1;
+          //const Vec3vfM Ng1 = cross(e1,e0);
+          const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0);
+          const Vec3vfM Ng = Ng1+Ng1;
           const vfloat<M> den = dot(Ng,D);
           const vfloat<M> absDen = abs(den);
           const vfloat<M> sgnDen = signmsk(den);
@@ -244,14 +243,14 @@ namespace embree
         typedef TriangleMv<M> Primitive;
         typedef PlueckerIntersector1<M> Precalculations;
         
-        /*! Intersect a ray with the 4 triangles and updates the hit. */
+        /*! Intersect a ray with M triangles and updates the hit. */
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
           pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
-        /*! Test if the ray is occluded by one of the triangles. */
+        /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
@@ -266,13 +265,13 @@ namespace embree
         typedef TriangleMv<M> Primitive;
         typedef PlueckerIntersectorK<M,K> Precalculations;
         
-        /*! Intersects a M rays with N triangles. */
+        /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
         {
           for (size_t i=0; i<M; i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(normal.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
@@ -280,7 +279,7 @@ namespace embree
           }
         }
         
-        /*! Test for M rays if they are occluded by any of the N triangle. */
+        /*! Test for K rays if they are occluded by any of the M triangles. */
         static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
@@ -288,7 +287,7 @@ namespace embree
           for (size_t i=0; i<M; i++)
           {
             if (!tri.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid_i),RayK<K>::size());
+            STAT3(shadow.trav_prims,1,popcnt(valid_i),K);
             const Vec3<vfloat<K>> v0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> v1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> v2 = broadcast<vfloat<K>>(tri.v2,i);
@@ -298,14 +297,14 @@ namespace embree
           return !valid0;
         }
         
-        /*! Intersect a ray with the N triangles and updates the hit. */
+        /*! Intersect a ray with M triangles and updates the hit. */
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
           pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
         
-        /*! Test if the ray is occluded by one of the triangles. */
+        /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
