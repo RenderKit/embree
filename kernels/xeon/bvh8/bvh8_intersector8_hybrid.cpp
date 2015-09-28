@@ -19,6 +19,7 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 #define DBG(x) 
 
@@ -706,6 +707,10 @@ namespace embree
     
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoeller,BVH8Intersector8Hybrid<ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
+
+    //DEFINE_INTERSECTOR8(BVH8TrianglePairs4Intersector8HybridMoeller,BVH8Intersector8Hybrid<ArrayIntersectorK_1<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
+    //DEFINE_INTERSECTOR8(BVH8TrianglePairs4Intersector8HybridMoellerNoFilter,BVH8Intersector8Hybrid<ArrayIntersectorK_1<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
+
   }
 }  
 

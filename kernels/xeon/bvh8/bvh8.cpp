@@ -37,6 +37,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
   DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
+  DECLARE_SYMBOL(Accel::Intersector8,BVH8TrianglePairs4Intersector8ChunkMoeller);
 
   DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16ChunkMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
@@ -84,6 +85,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
+
+    SELECT_SYMBOL_AVX_AVX2(features,BVH8TrianglePairs4Intersector8ChunkMoeller);
 
     /* select intersectors16 */
     SELECT_SYMBOL_AVX512(features,BVH8Triangle4Intersector16ChunkMoeller);
@@ -227,8 +230,8 @@ namespace embree
     intersectors.intersector1           = BVH8TrianglePairs4Intersector1Moeller;
     intersectors.intersector4_filter    = nullptr;
     intersectors.intersector4_nofilter  = nullptr;
-    intersectors.intersector8_filter    = nullptr;
-    intersectors.intersector8_nofilter  = nullptr;
+    intersectors.intersector8_filter    = BVH8TrianglePairs4Intersector8ChunkMoeller;
+    intersectors.intersector8_nofilter  = BVH8TrianglePairs4Intersector8ChunkMoeller;
     intersectors.intersector16_filter   = nullptr;
     intersectors.intersector16_nofilter = nullptr;
     return intersectors;
