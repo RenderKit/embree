@@ -116,7 +116,6 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      PING;
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
@@ -169,7 +168,6 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      PING;
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
