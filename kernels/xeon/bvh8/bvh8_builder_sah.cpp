@@ -310,7 +310,6 @@ namespace embree
         }
 
         PRINT("BUILD DONE");
-        exit(0);
       }
 
       void clear() {

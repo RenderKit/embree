@@ -222,6 +222,7 @@ namespace embree
 
   Accel::Intersectors BVH8TrianglePairs4Intersectors(BVH8* bvh)
   {
+    PING;
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH8Triangle8Intersector1Moeller;

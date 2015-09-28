@@ -116,6 +116,7 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
+      PING;
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
@@ -175,7 +176,7 @@ namespace embree
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
-	const unsigned int geomId = prim.geomID();
+	const unsigned int geomId = prim.geomID() & 0x7fffffff; /* REMOVE !!!! */
         const unsigned int primId = prim.primID();
 
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
@@ -183,7 +184,7 @@ namespace embree
         vgeomID[i] = geomId;
         vprimID[i] = primId;
         /* single triangle, degenerate second triangle */
-        if (geomId & ((unsigned int)1 << 31))
+        if (prim.geomID() & ((unsigned int)1 << 31))
         {
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
