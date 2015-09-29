@@ -23,10 +23,12 @@ namespace embree
 {
   namespace isa
   {
-    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode);
+    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
+    Builder* BVH4Triangle4MeshBuilderSAH   (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+    Builder* BVH4Triangle4MBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
-    BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device), 
+    BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
+      : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), 
         nextRef(0), numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene,0)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
     {
       bvh->worldBVH = worldBVH; // BVH4 manages lifetime
@@ -100,8 +102,11 @@ namespace embree
             }
             
             /* create BVH and builder for new meshes */
-            if (objects[objectID] == nullptr)
-              createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
+            if (objects[objectID] == nullptr) {
+              //createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
+              objects[objectID] = new BVH4(Triangle4::type,mesh->parent,0);
+              builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],mesh);
+            }
           }
         });
       
@@ -352,7 +357,7 @@ namespace embree
     }
     
     Builder* BVH4BuilderInstancingSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVH4BuilderInstancing((BVH4*)bvh,scene,createTriangleMeshAccel);
+      return new BVH4BuilderInstancing((BVH4*)bvh,scene);
     }
   }
 }

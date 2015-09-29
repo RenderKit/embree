@@ -62,7 +62,7 @@ namespace embree
     };
       
       /*! Constructor. */
-      BVH4BuilderInstancing (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
+      BVH4BuilderInstancing (BVH4* bvh, Scene* scene);
       
       /*! Destructor */
       ~BVH4BuilderInstancing ();
@@ -85,7 +85,6 @@ namespace embree
 
     public:
       Scene* scene;
-      createTriangleMeshAccelTy createTriangleMeshAccel;
       
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
