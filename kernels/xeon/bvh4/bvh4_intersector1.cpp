@@ -83,7 +83,7 @@ namespace embree
           continue;
         
         /* downtraversal loop */
-        while (true)
+        while (true) cont2:
         {
 	  size_t mask; 
 	  vfloat4 tNear;
@@ -112,8 +112,20 @@ namespace embree
 
           /*! if no child is hit, pop next node */
 	  const BVH4::BaseNode* node = cur.baseNode(types);
-          if (unlikely(mask == 0))
-            goto pop;
+          if (unlikely(mask == 0)) 
+          {
+            /*! pop next node */
+            while (true)
+            {
+              if (unlikely(stackPtr == stack)) goto pop;
+              stackPtr--;
+              cur = NodeRef(stackPtr->ptr);
+              
+              /*! if popped node is too far, pop next one */
+              if (likely(*(float*)&stackPtr->dist <= ray.tfar))
+                goto cont2;
+            }
+          }
           
           /*! one child is hit, continue with that child */
 	  size_t r = __bscf(mask);
