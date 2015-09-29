@@ -58,8 +58,9 @@ namespace embree
                                    const Vec3vfM& v2, 
                                    const Vec3vfM& v3, 
                                    const vint<M>& geomIDs, 
-                                   const vint<M>& primIDs)
-      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
+                                   const vint<M>& primIDs,
+      const vint<M>& flags)
+      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs), flags(flags) {}
     
     /*! Returns a mask that tells which triangles are valid. */
     __forceinline vbool<M> valid() const { return geomIDs !=  vint<M>(-1); }
@@ -77,6 +78,10 @@ namespace embree
     /*! returns the primitive IDs */
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+
+    /*! returns the flags */
+    __forceinline vint<M> flag() const { return flags; }
+    __forceinline int  flag(const size_t i) const { assert(i<M); return flags[i]; }
 
     /*! calculate the bounds of the triangles */
     __forceinline BBox3fa bounds() const 
@@ -111,79 +116,81 @@ namespace embree
       vfloat<M>::store_nt(&dst->v3.z,src.v3.z);
       vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
       vint<M>::store_nt(&dst->primIDs,src.primIDs);
+      vint<M>::store_nt(&dst->flags,src.flags);
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint<M> vgeomID = -1, vprimID = -1;
+      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && prims; i++, prims++)
       {
 	const PrimRef& prim = *prims;
-	const unsigned int geomId = prim.geomID();
+	const unsigned int geomId = prim.geomID() & ~((unsigned int)1 << 31); /* remove single triangle flag */
         const unsigned int primId = prim.primID();
 
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
-
-        vgeomID[i] = geomId;
-        vprimID[i] = primId;
-        /* single triangle, degenerate second triangle */
-        if (geomId & ((unsigned int)1 << 31))
-        {
-          const TriangleMesh::Triangle& tri = mesh->triangle(primId);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-          v3.x[i] = p2.x; v3.y[i] = p2.y; v3.z[i] = p2.z;
-        }
-        else
-        {
-          const TriangleMesh::Triangle& tri0 = mesh->triangle(primId);
-          assert(primId + 1 < mesh->size());
-          const TriangleMesh::Triangle& tri1 = mesh->triangle(primId+1);
-
-          const unsigned int order = TriangleMesh::sharedEdge(tri0,tri1);
-          const unsigned int i0  = (order >>  0) & 0xff;
-          const unsigned int i1  = (order >>  8) & 0xff;
-          const unsigned int i2  = (order >> 16) & 0xff;
-          const unsigned int opp = (order >> 24) & 0xff;
-          const Vec3fa& p0 = mesh->vertex(tri0.v[i0]);
-          const Vec3fa& p1 = mesh->vertex(tri0.v[i1]);
-          const Vec3fa& p2 = mesh->vertex(tri0.v[i2]);
-          const Vec3fa& p3 = mesh->vertex(tri1.v[opp]);
-          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
-          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
-        }
-      }
-      TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID));
-    }
-
-    /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
-    {
-      vint<M> vgeomID = -1, vprimID = -1;
-      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-      
-      for (size_t i=0; i<M && begin<end; i++, begin++)
-      {
-	const PrimRef& prim = prims[begin];
-	const unsigned int geomId = prim.geomID();
-        const unsigned int primId = prim.primID();
-
-        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId); 
 
         vgeomID[i] = geomId;
         vprimID[i] = primId;
         /* single triangle, degenerate second triangle */
         if (prim.geomID() & ((unsigned int)1 << 31))
         {
+          vflags[i] = (unsigned int)1 << 31);
+          const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p2.x; v3.y[i] = p2.y; v3.z[i] = p2.z;
+        }
+        else
+        {
+          const TriangleMesh::Triangle& tri0 = mesh->triangle(primId);
+          assert(primId + 1 < mesh->size());
+          const TriangleMesh::Triangle& tri1 = mesh->triangle(primId+1);
+          const unsigned int order = TriangleMesh::sharedEdge(tri0,tri1);
+          const unsigned int i0  = (order >>  0) & 0xff;
+          const unsigned int i1  = (order >>  8) & 0xff;
+          const unsigned int i2  = (order >> 16) & 0xff;
+          const unsigned int opp = (order >> 24) & 0xff;
+          const Vec3fa& p0 = mesh->vertex(tri0.v[i0]);
+          const Vec3fa& p1 = mesh->vertex(tri0.v[i1]);
+          const Vec3fa& p2 = mesh->vertex(tri0.v[i2]);
+          const Vec3fa& p3 = mesh->vertex(tri1.v[opp]);
+          v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
+          v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
+          v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+          v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
+        }
+      }
+    TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags));
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    {
+      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
+      Vec3vfM v0 = zero, v1 = zero, v2 = zero;
+      
+      for (size_t i=0; i<M && begin<end; i++, begin++)
+      {
+	const PrimRef& prim = prims[begin];
+	const unsigned int geomId = prim.geomID() & ~((unsigned int)1 << 31); /* remove single triangle flag */
+        const unsigned int primId = prim.primID();
+
+        const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId); 
+
+        vgeomID[i] = geomId;
+        vprimID[i] = primId;
+        /* single triangle, degenerate second triangle */
+        if (prim.geomID() & ((unsigned int)1 << 31))
+        {
+          vflags[i] = (unsigned int)1 << 31;
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -215,27 +222,30 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
         }
       }
-      TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID));
+    TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags));
     }
 
     /*! updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vint<M> vgeomID = -1, vprimID = -1;
+      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;
 
-        const unsigned geomId = geomID(i);
-        const unsigned primId = primID(i);
+        const unsigned int geomId = geomID(i);
+        const unsigned int primId = primID(i);
+        const unsigned int flag   = flag(i);
 
         vgeomID[i] = geomId;
         vprimID[i] = primId;
+        vflags[i]  = flag;
+
         /* single triangle, degenerate second triangle */
-        if (geomId & ((unsigned int)1 << 31))
+        if (flag(i) & ((unsigned int)1 << 31))
         {
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -281,6 +291,7 @@ namespace embree
     Vec3vfM v3;       //!< 4rd vertex of the triangles.
     vint<M> geomIDs;   //!< geometry ID
     vint<M> primIDs;   //!< primitive ID
+    vint<M> flags;     //!< flags
   };
 
   template<int MM>
