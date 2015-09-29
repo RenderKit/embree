@@ -40,31 +40,32 @@ namespace embree
       struct TrianglePairsMIntersector1MoellerTrumbore
       {
         typedef TrianglePairsMv<M> Primitive;
+#if defined(__AVX__)
+        typedef MoellerTrumboreIntersector1<2*M> Precalculations;
+#else
         typedef MoellerTrumboreIntersector1<M> Precalculations;
+#endif
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-#if 0 //defined(__AVX__)
-          /* Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x), */
-          /*              vfloat8(tri.v1.y,tri.v3.y), */
-          /*              vfloat8(tri.v1.z,tri.v3.z)); */
-          /* Vec3vf8 vtx1(vfloat8(tri.v0.x), */
-          /*              vfloat8(tri.v0.y), */
-          /*              vfloat8(tri.v0.z)); */
-          /* Vec3vf8 vtx2(vfloat8(tri.v2.x), */
-          /*              vfloat8(tri.v2.y), */
-          /*              vfloat8(tri.v2.z)); */
-
-          Vec3vf8 vtx0,vtx1,vtx2;
-          vint8   geomIDs(tri.geomIDs);
-          vint8   primIDs(tri.primIDs);
-          pre.intersect(ray,vtx0,vtx1,vtx2,Intersect1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
-          
+#if defined(__AVX__)
+        Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
+                     vfloat8(tri.v1.y,tri.v3.y),
+                     vfloat8(tri.v1.z,tri.v3.z));
+        Vec3vf8 vtx1(vfloat8(tri.v0.x),
+                     vfloat8(tri.v0.y),
+                     vfloat8(tri.v0.z));
+        Vec3vf8 vtx2(vfloat8(tri.v2.x),
+                     vfloat8(tri.v2.y),
+                     vfloat8(tri.v2.z));
+        vint8   geomIDs(tri.geomIDs);
+        vint8   primIDs(tri.primIDs,tri.primIDs+1);
+        pre.intersect(ray,vtx0,vtx1,vtx2,Intersect1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
 #else
-          pre.intersect(ray,tri.v1,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
-          pre.intersect(ray,tri.v3,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+        pre.intersect(ray,tri.v1,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+0,scene,geomID_to_instID));
+        pre.intersect(ray,tri.v3,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+1,scene,geomID_to_instID));
 #endif
         }
         
@@ -72,9 +73,25 @@ namespace embree
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID))) return true;
-          if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID))) return true;
+
+#if defined(__AVX__)
+          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
+                       vfloat8(tri.v1.y,tri.v3.y),
+                       vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf8 vtx1(vfloat8(tri.v0.x),
+                       vfloat8(tri.v0.y),
+                       vfloat8(tri.v0.z));
+          Vec3vf8 vtx2(vfloat8(tri.v2.x),
+                       vfloat8(tri.v2.y),
+                       vfloat8(tri.v2.z));
+          vint8   geomIDs(tri.geomIDs);
+          vint8   primIDs(tri.primIDs,tri.primIDs+1);
+          return pre.intersect(ray,vtx0,vtx1,vtx2,Occluded1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
+#else
+          if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
+          if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
           return false;
+#endif
         }
       };
 
