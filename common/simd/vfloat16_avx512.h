@@ -350,6 +350,13 @@ namespace embree
 #endif
   }; 
 
+  __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
+    return min(a,b);
+  }
+  __forceinline vfloat16 maxi(const vfloat16& a, const vfloat16& b) {
+    return max(a,b);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////

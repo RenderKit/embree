@@ -225,6 +225,13 @@ namespace embree
       const vint8 ci = _mm256_max_epi32(ai,bi);
       return _mm256_castsi256_ps(ci);
     }
+#else
+    __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
+      return min(a,b);
+    }
+    __forceinline vfloat8 maxi(const vfloat8& a, const vfloat8& b) {
+      return max(a,b);
+    }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

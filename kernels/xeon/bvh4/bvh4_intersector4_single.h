@@ -96,19 +96,19 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-	      mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	      mask = intersect_node<BVH4::N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-	      mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
+	      mask = intersect_node<BVH4::N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
 	    
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-	      mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+	      mask = intersect_node<BVH4::N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-	      mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+	      mask = intersect_node<BVH4::N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
 	    const BVH4::BaseNode* node = cur.baseNode(types);
@@ -221,19 +221,19 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-	      mask = intersect_node<robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+	      mask = intersect_node<BVH4::N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-	      mask = intersect_node(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
+	      mask = intersect_node<BVH4::N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
 
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-	      mask = intersect_node(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+	      mask = intersect_node<BVH4::N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-	      mask = intersect_node(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+	      mask = intersect_node<BVH4::N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
 	    const BVH4::BaseNode* node = cur.baseNode(types);

@@ -121,7 +121,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat16 lnearP; const vbool16 lhit = intersect16_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      vfloat16 lnearP; const vbool16 lhit = intersect_node<16,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -179,7 +179,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat16 lnearP; const vbool16 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      vfloat16 lnearP; const vbool16 lhit = intersect_node<16>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -339,7 +339,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat16 lnearP; const vbool16 lhit = intersect16_node<robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+	      vfloat16 lnearP; const vbool16 lhit = intersect_node<16,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -397,7 +397,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat16 lnearP; const vbool16 lhit = intersect_node(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+	      vfloat16 lnearP; const vbool16 lhit = intersect_node<16>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
