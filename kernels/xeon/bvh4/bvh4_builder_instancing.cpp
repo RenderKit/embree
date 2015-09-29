@@ -71,6 +71,19 @@ namespace embree
       return 0;
     }
     
+
+    const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, BVH4::NodeRef ref, size_t depth)
+    {
+      if (ref == BVH4::emptyNode) return empty;
+      if (depth == 0 || !ref.isNode()) return xfmBounds(xfm,bounds);
+      BVH4::Node* node = ref.node();
+
+      BBox3fa box = empty;
+      for (size_t i=0; i<BVH4::N; i++)
+        box.extend(xfmDeepBounds(xfm,node->bounds(i),node->child(i),depth-1));
+      return box;
+    }
+
     void BVH4BuilderInstancing::build(size_t threadIndex, size_t threadCount) 
     {
       /* delete some objects */
@@ -214,7 +227,7 @@ namespace embree
       
       /* open all large nodes */  
       open(numPrimitives); 
-      
+
       /* fast path for small geometries */
       /*if (refs.size() == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
@@ -240,7 +253,9 @@ namespace embree
       
       else if (pinfo.size() == 1) {
         BuildRef* ref = (BuildRef*) prims[0].ID();
-        bvh->set(ref->node,xfmBounds(ref->local2world,ref->localBounds),numPrimitives);
+        //const BBox3fa bounds = xfmBounds(ref->local2world,ref->localBounds);
+        const BBox3fa bounds = xfmDeepBounds(ref->local2world,ref->localBounds,ref->node,2);
+        bvh->set(ref->node,bounds,numPrimitives);
       }
 
       /* otherwise build toplevel hierarchy */
