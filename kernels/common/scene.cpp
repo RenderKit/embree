@@ -141,10 +141,11 @@ namespace embree
 #else
     createTriangleAccel();
     accels.add(BVH4::BVH4Triangle4vMB(this));
-    accels.add(BVH4::BVH4UserGeometry(this));
+    accels.add(BVH4::BVH4UserGeometry(this)); // FIXME: should go to end!
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
+    accels.add(BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(this));
 #endif
 
     /* increment number of scenes */
@@ -191,7 +192,6 @@ namespace embree
         }
       }
     }
-    else if (device->tri_accel == "bvh4.instanced_bvh4.triangle4")    accels.add(BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this));
     else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this));
