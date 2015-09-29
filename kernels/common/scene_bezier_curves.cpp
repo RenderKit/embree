@@ -32,14 +32,14 @@ namespace embree
 
   void BezierCurves::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,numPrimitives); 
-    else                   atomic_add(&parent->numBezierCurves2,numPrimitives); 
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numBezierCurves,numPrimitives); 
+    else                   atomic_add(&parent->world2.numBezierCurves,numPrimitives); 
   }
   
   void BezierCurves::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-(ssize_t)numPrimitives); 
-    else                   atomic_add(&parent->numBezierCurves2,-(ssize_t)numPrimitives);
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numBezierCurves,-(ssize_t)numPrimitives); 
+    else                   atomic_add(&parent->world2.numBezierCurves,-(ssize_t)numPrimitives);
   }
   
   void BezierCurves::setMask (unsigned mask) 

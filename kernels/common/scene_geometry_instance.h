@@ -31,6 +31,7 @@ namespace embree
     virtual void setMask (unsigned mask);
     virtual void setTransform(const AffineSpace3fa& local2world);
     
+    void count(ssize_t f);
   public:
     AffineSpace3fa local2world; //!< transforms from local space to world space
     AffineSpace3fa world2local; //!< transforms from world space to local space

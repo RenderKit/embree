@@ -67,7 +67,7 @@ namespace embree
       /* skip build for empty scene */
       size_t numPrimitives = 0;
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,1>();
-      numPrimitives += scene->numInstancedTriangles;
+      numPrimitives += scene->instanced1.numTriangles;
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH4::emptyNode,empty,0);
