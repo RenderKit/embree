@@ -289,6 +289,11 @@ namespace embree
       dist = tNear;
       return mask;
     }
+
+    /*! intersection with single rays */
+    __forceinline size_t intersect_node(const BVH4::NodeMB* node, const BVH4TravRay& ray, const vfloat4& tnear, const vfloat4& tfar, const float time, vfloat4& dist) {
+      return intersect_node(node,ray.nearX,ray.nearY,ray.nearZ,ray.org,ray.rdir,ray.org_rdir,tnear,tfar,time,dist);
+    }
     
     /*! intersection with ray packet of size 4 */
     __forceinline vbool4 intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3vf4& org, const Vec3vf4& rdir, const Vec3vf4& org_rdir, const vfloat4& tnear, const vfloat4& tfar, 
@@ -433,6 +438,11 @@ namespace embree
 #endif
     }
 
+     /*! intersect 4 OBBs with single ray */
+    __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const BVH4TravRay& ray, const vfloat4& tnear, const vfloat4& tfar, vfloat4& dist) {
+      return intersect_node(node,ray.org,ray.dir,tnear,tfar,dist);
+    }
+
     
     /*! intersect 4 OBBs with single ray */
     __forceinline size_t intersect_node(const BVH4::UnalignedNodeMB* node,
@@ -481,7 +491,11 @@ namespace embree
 	return movemask(vmask);
 #endif
       }
-    
+
+     /*! intersect 4 OBBs with single ray */
+    __forceinline size_t intersect_node(const BVH4::UnalignedNodeMB* node, const BVH4TravRay& ray, const vfloat4& tnear, const vfloat4& tfar, const float time, vfloat4& dist) {
+      return intersect_node(node,ray.org,ray.dir,tnear,tfar,time,dist);
+    }
   }
 }
 
