@@ -24,21 +24,18 @@ namespace embree
 {
   namespace isa
   {
-    template<typename RayN>
-    class GridSOAIntersectorN
+    template<int KK>
+    class GridSOAIntersectorK
     {
     public:
-      enum { K = RayN::K };
+      enum { K = KK };
       typedef SubdivPatch1Cached Primitive;
-      typedef typename RayN::simdb rsimdb;
-      typedef typename RayN::simdi rsimdi;
-      typedef typename RayN::simdf rsimdf;
-      typedef Vec3<rsimdf> rsimd3f;
+      typedef Vec3<vfloat<K>> Vec3vfK;
       
       class Precalculations 
       { 
       public:
-        __forceinline Precalculations (const rsimdb& valid, RayN& ray) 
+        __forceinline Precalculations (const vbool<K>& valid, RayK<K>& ray)
           : grid(nullptr) {}
         
         __forceinline ~Precalculations() 
@@ -51,7 +48,6 @@ namespace embree
         GridSOA* grid;
       };     
 
-      template<int K>
       struct MapUV0
       {
         const float* const grid_uv;
@@ -73,7 +69,6 @@ namespace embree
         }
       };
 
-       template<int K>
       struct MapUV1
       {
         const float* const grid_uv;
@@ -96,7 +91,7 @@ namespace embree
       };
 
        /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         enum { M = 1 };
         PlueckerIntersectorK<M,K> intersector(valid_i,ray);
@@ -115,20 +110,20 @@ namespace embree
             const size_t ofs01 = (y+0)*line_offset+(x+1);
             const size_t ofs10 = (y+1)*line_offset+(x+0);
             const size_t ofs11 = (y+1)*line_offset+(x+1);
-            const rsimd3f p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const rsimd3f p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const rsimd3f p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vfK p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
             
             // FIXME: use quad intersector
-            intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
-            intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
 
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         enum { M = 1 };
         PlueckerIntersectorK<M,K> intersector(valid_i,ray);
@@ -139,7 +134,7 @@ namespace embree
         const float* const grid_z  = grid_x + 2 * dim_offset;
         const float* const grid_uv = grid_x + 3 * dim_offset;
         
-        rsimdb valid = valid_i;
+        vbool<K> valid = valid_i;
         for (size_t y=0; y<2; y++) 
         {
           for (size_t x=0; x<2; x++) 
@@ -148,14 +143,14 @@ namespace embree
             const size_t ofs01 = (y+0)*line_offset+(x+1);
             const size_t ofs10 = (y+1)*line_offset+(x+0);
             const size_t ofs11 = (y+1)*line_offset+(x+1);
-            const rsimd3f p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
-            const rsimd3f p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
-            const rsimd3f p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
-            const rsimd3f p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
+            const Vec3vfK p00(grid_x[ofs00],grid_y[ofs00],grid_z[ofs00]);
+            const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
+            const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
+            const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            intersector.intersectK(valid,ray,p00,p01,p10,MapUV0<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-            intersector.intersectK(valid,ray,p10,p01,p11,MapUV1<K>(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
@@ -183,7 +178,7 @@ namespace embree
       };
 
       template<typename Loader>
-        static __forceinline void intersect(RayN& ray, size_t k,
+        static __forceinline void intersect(RayK<K>& ray, size_t k,
                                             const float* const grid_x,
                                             const float* const grid_y,
                                             const float* const grid_z,
@@ -208,7 +203,7 @@ namespace embree
       };
       
       template<typename Loader>
-        static __forceinline bool occluded(RayN& ray, size_t k,
+        static __forceinline bool occluded(RayK<K>& ray, size_t k,
                                            const float* const grid_x,
                                            const float* const grid_y,
                                            const float* const grid_z,
@@ -233,7 +228,7 @@ namespace embree
       }
 
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(Precalculations& pre, RayN& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
@@ -251,7 +246,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(Precalculations& pre, RayN& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
