@@ -18,14 +18,15 @@
 #include "bvh4_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 #include "../geometry/triangle.h"
+#include "../geometry/trianglev_mb.h"
 
 namespace embree
 {
   namespace isa
   {
     //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
-    Builder* BVH4Triangle4MeshBuilderSAH   (void* bvh, TriangleMesh* mesh, size_t mode = 0);
-    Builder* BVH4Triangle4MBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+    Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
+    Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
     BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
       : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), 
@@ -68,6 +69,7 @@ namespace embree
       size_t numPrimitives = 0;
       //numPrimitives += scene->getNumPrimitives<TriangleMesh,1>();
       numPrimitives += scene->instanced1.numTriangles;
+      numPrimitives += scene->instanced2.numTriangles;
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH4::emptyNode,empty,0);
@@ -86,56 +88,61 @@ namespace embree
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
-            TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+            Geometry* geom = scene->get(objectID);
             
-            /* verify meshes got deleted properly */
-            if (mesh == nullptr || mesh->numTimeSteps != 1) {
+            /* verify if geometry got deleted properly */
+            if (geom == nullptr) {
               assert(objectID < objects.size () && objects[objectID] == nullptr);
               assert(objectID < builders.size() && builders[objectID] == nullptr);
               continue;
             }
             
-            /* delete BVH and builder for meshes that are scheduled for deletion */
-            if (mesh->isErasing()) {
+            /* delete BVH and builder for geometries that are scheduled for deletion */
+            if (geom->isErasing()) {
               delete builders[objectID]; builders[objectID] = nullptr;
               delete objects [objectID]; objects [objectID] = nullptr;
               continue;
             }
             
             /* create BVH and builder for new meshes */
-            if (objects[objectID] == nullptr) {
-              //createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
-              objects[objectID] = new BVH4(Triangle4::type,mesh->parent);
-              builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],mesh);
+            if (objects[objectID] == nullptr) 
+            {
+              if (geom->numTimeSteps == 1)
+              {
+                switch (geom->type) {
+                case Geometry::TRIANGLE_MESH:
+                  objects[objectID] = new BVH4(Triangle4::type,geom->parent);
+                  builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
+                  break;
+                case Geometry::USER_GEOMETRY: break;
+                case Geometry::BEZIER_CURVES: break;
+                case Geometry::SUBDIV_MESH  : break;
+                }
+              } else {
+                 switch (geom->type) {
+                 case Geometry::TRIANGLE_MESH:
+                   objects[objectID] = new BVH4(Triangle4vMB::type,geom->parent);
+                   builders[objectID] = BVH4Triangle4vMBMeshBuilderSAH((BVH4*)objects[objectID],(TriangleMesh*)geom);
+                   break;
+                 case Geometry::USER_GEOMETRY: break;
+                 case Geometry::BEZIER_CURVES: break;
+                 case Geometry::SUBDIV_MESH  : break;
+                 }
+              }
             }
           }
         });
-      
-      //numInstancedPrimitives = 0; // FIXME: same as numPrimitives
       
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
-            /* ignore if no triangle mesh or not enabled */
-            TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
-            if (mesh == nullptr || mesh->numTimeSteps != 1) 
-              continue;
-            
-            BVH4*    object  = objects [objectID]; assert(object);
-            Builder* builder = builders[objectID]; assert(builder);
-            
-            /* build object if it got modified */
-            //if (mesh->isModified() && mesh->isUsed()) 
-            if (mesh->isModified() && mesh->isInstanced()) 
+            Geometry* geom = scene->get(objectID);
+            if (geom == nullptr) continue;
+            Builder* builder = builders[objectID]; 
+            if (builder == nullptr) continue;
+            if (geom->isModified() && geom->isInstanced()) 
               builder->build(0,0);
-            
-            /* create build primitive */
-            //if (mesh->isEnabled()) {
-              //if (!object->bounds.empty())
-                //refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1,0);
-            //numInstancedPrimitives += mesh->size();
-            //}
           }
         });
 
@@ -148,22 +155,15 @@ namespace embree
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
-            /* ignore if no triangle mesh or not enabled */
             Geometry* geom = scene->get(objectID);
-            if (geom->getType() != (Geometry::TRIANGLE_MESH | Geometry::INSTANCE))
-              continue;
-            
+            if (geom == nullptr) continue;
+            if (!(geom->getType() & Geometry::INSTANCE)) continue;
             GeometryInstance* instance = (GeometryInstance*) geom;
-            if (!instance->isEnabled() || instance->numTimeSteps != 1) 
-              continue;
-            
-            BVH4*    object  = objects [instance->geom->id]; assert(object);
-            
-            /* create build primitive */
-            if (!object->bounds.empty()) {
-              refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world));
-              //numInstancedPrimitives += instance->geom->size();
-            }
+            if (!instance->isEnabled()) continue;
+            BVH4* object = objects[instance->geom->id];
+            if (object == nullptr) continue;
+            if (object->bounds.empty()) continue;
+            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world));
           }
         });
       refs.resize(nextRef);
