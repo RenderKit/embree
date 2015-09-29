@@ -26,6 +26,8 @@
 #include "../geometry/trianglepairsv.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
 
+#define PROFILE 0
+
 namespace embree
 {
   namespace isa
@@ -96,196 +98,215 @@ namespace embree
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
 
 	double t0 = 0.0f, dt = 0.0f;
+#if PROFILE
+	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+                {
+#endif
 	    
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
+                  if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
+
         
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+                  auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+                  auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-        bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
-        prims.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
-        if (presplitFactor > 1.0f)
-          pinfo = presplit<Mesh>(scene, pinfo, prims);
+                  bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
+                  prims.resize(numSplitPrimitives);
+                  PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
+                  if (presplitFactor > 1.0f)
+                    pinfo = presplit<Mesh>(scene, pinfo, prims);
 
-        BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                           prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                  BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
+                    prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
         
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
+                  if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
+
+#if PROFILE
+                  dt = timer.avg();
+                }); 
+#endif	
         
-	/* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
-          prims.clear();
-          bvh->alloc2.shrink();
-        }
-	bvh->alloc2.cleanup();
+                  /* clear temporary data for static geometry */
+                  bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
+                  if (staticGeom) {
+                  prims.clear();
+                  bvh->alloc2.shrink();
+                }
+                  bvh->alloc2.cleanup();
 
-	/* verbose mode */
-	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc2.getUsedBytes();
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
-        }
-	if (bvh->device->verbosity(2) && mesh == nullptr)
-	  bvh->printStatistics();
+                  /* verbose mode */
+                  if (bvh->device->verbosity(1) && mesh == nullptr) {
+                  const size_t usedBytes = bvh->alloc2.getUsedBytes();
+                  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
+                }
+                  if (bvh->device->verbosity(2) && mesh == nullptr)
+                    bvh->printStatistics();
 
-        /* benchmark mode */
-        if (bvh->device->benchmark) {
-          BVH8Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
-        }
-      }
+                  /* benchmark mode */
+                  if (bvh->device->benchmark) {
+                  BVH8Statistics stat(bvh);
+                  std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+                }
+                }
 
-      void clear() {
-        prims.clear();
-      }
-    };
+                  void clear() {
+                  prims.clear();
+                }
+                };
 
-    /* entry functions for the scene builder */
-    Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+                  /* entry functions for the scene builder */
+                  Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
+                  Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 
 
-    /************************************************************************************/ 
-    /************************************************************************************/
-    /************************************************************************************/
-    /************************************************************************************/
+                  /************************************************************************************/ 
+                  /************************************************************************************/
+                  /************************************************************************************/
+                  /************************************************************************************/
 
-    template<typename Mesh, typename Primitive>
-    struct BVH8BuilderSAHTrianglePairs : public Builder
-    {
-      BVH8* bvh;
-      Scene* scene;
-      Mesh* mesh;
-      mvector<PrimRef> prims;
-      const size_t sahBlockSize;
-      const float intCost;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
+                  template<typename Mesh, typename Primitive>
+                    struct BVH8BuilderSAHTrianglePairs : public Builder
+                  {
+                  BVH8* bvh;
+                  Scene* scene;
+                  Mesh* mesh;
+                  mvector<PrimRef> prims;
+                  const size_t sahBlockSize;
+                  const float intCost;
+                  const size_t minLeafSize;
+                  const size_t maxLeafSize;
 
-      BVH8BuilderSAHTrianglePairs (BVH8* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)) 
-      {}
+                  BVH8BuilderSAHTrianglePairs (BVH8* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+                    : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)) 
+                  {}
 
-      BVH8BuilderSAHTrianglePairs (BVH8* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)) {}
+                  BVH8BuilderSAHTrianglePairs (BVH8* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+                    : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)) {}
 
-      void build(size_t, size_t) 
-      {
-	/* skip build for empty scene */
-	const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
-        if (numOriginalPrimitives == 0) {
-          prims.resize(numOriginalPrimitives);
-          bvh->set(BVH8::emptyNode,empty,0);
-          return;
-        }
+                  void build(size_t, size_t) 
+                  {
+                  /* skip build for empty scene */
+                  const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
+                  if (numOriginalPrimitives == 0) {
+                  prims.resize(numOriginalPrimitives);
+                  bvh->set(BVH8::emptyNode,empty,0);
+                  return;
+                }
 
       
-        /* verbose mode */
-        if (bvh->device->verbosity(1) && mesh == nullptr)
-	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << " ... " << std::flush;
+                  /* verbose mode */
+                  if (bvh->device->verbosity(1) && mesh == nullptr)
+                    std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << " ... " << std::flush;
 
 
-	double t0 = 0.0f, dt = 0.0f;
+                  double t0 = 0.0f, dt = 0.0f;
+
+#if PROFILE
+                  profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+                          {
+#endif
 	    
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
+                            if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
 
-        size_t numPrimitives = 0;
+                            size_t numPrimitives = 0;
 
-        /* compute number of triangle pairs */
-        {
-          ParallelForForPrefixSumState<size_t> pstate;
-          Scene::Iterator<Mesh,1> iter(scene);
-          pstate.init(iter,size_t(1024));
-          numPrimitives = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](Mesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
-                                                       {
-                                                         size_t prims = 0;
-                                                         for (size_t j=r.begin(); j<r.end(); j++)
-                                                         {
-                                                           BBox3fa bounds = empty;
-                                                           if (!mesh->valid(j,&bounds)) continue;
-                                                           const PrimRef prim(bounds,mesh->id,j);
-                                                           prims++;
-                                                           if (j+1 < r.end())
-                                                           {
-                                                             if (!mesh->valid(j+1)) continue;
-                                                              TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                              if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                           trimesh->triangle(j+1)) != -1)
-                                                                j++;
-                                                           }
-                                                         }
-                                                         return prims;
-                                                       }, [](const size_t a, const size_t b) { return a+b; });
+                            /* compute number of triangle pairs */
+                            {
+                              ParallelForForPrefixSumState<size_t> pstate;
+                              Scene::Iterator<Mesh,1> iter(scene);
+                              pstate.init(iter,size_t(1024));
+                              numPrimitives = parallel_for_for_prefix_sum( pstate, iter, size_t(0), [&](Mesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
+                                                                           {
+                                                                             size_t prims = 0;
+                                                                             for (size_t j=r.begin(); j<r.end(); j++)
+                                                                             {
+                                                                               BBox3fa bounds = empty;
+                                                                               if (!mesh->valid(j,&bounds)) continue;
+                                                                               const PrimRef prim(bounds,mesh->id,j);
+                                                                               prims++;
+                                                                               if (j+1 < r.end())
+                                                                               {
+                                                                                 if (!mesh->valid(j+1)) continue;
+                                                                                 TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                                                 if (TriangleMesh::sharedEdge(trimesh->triangle(j),
+                                                                                                              trimesh->triangle(j+1)) != -1)
+                                                                                   j++;
+                                                                               }
+                                                                             }
+                                                                             return prims;
+                                                                           }, [](const size_t a, const size_t b) { return a+b; });
           
-        }
-        PRINT(numPrimitives);
-        PRINT(numOriginalPrimitives);
-        PRINT(100*numPrimitives / double(numOriginalPrimitives));
+                            }
+#if 0
+                            PRINT(numPrimitives);
+                            PRINT(numOriginalPrimitives);
+                            PRINT(100*numPrimitives / double(numOriginalPrimitives));
+#endif
+
+                            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+                            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+
+                            bvh->alloc2.init_estimate(numPrimitives*sizeof(PrimRef));
+                            prims.resize(numPrimitives);
+                            assert(!mesh);
+
+                            /* compute prim refs for triangle pairs */
+                            //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
 
 
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+                            /* store primrefs for triangle pairs */
 
-        bvh->alloc2.init_estimate(numPrimitives*sizeof(PrimRef));
-        prims.resize(numPrimitives);
-        assert(!mesh);
+                            ParallelForForPrefixSumState<PrimInfo> pstate;
+                            Scene::Iterator<Mesh,1> iter(scene);
 
-        /* compute prim refs for triangle pairs */
-        //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
+                            pstate.init(iter,size_t(1024));
+                            PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
+                                                                          {
+                                                                            k = base.size();
+                                                                            PrimInfo pinfo(empty);
+                                                                            for (size_t j=r.begin(); j<r.end(); j++)
+                                                                            {
+                                                                              BBox3fa bounds = empty;
+                                                                              if (!mesh->valid(j,&bounds)) continue;
 
+                                                                              TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                                              const unsigned int primID = j;
+                                                                              const unsigned int geomID = mesh->id;
+                                                                              unsigned int flag = (unsigned int)1 << 31;
+                                                                              if (j+1 < r.end())
+                                                                              {
+                                                                                BBox3fa bounds_second = empty;
+                                                                                if (!mesh->valid(j+1,&bounds_second)) continue;
 
-        /* store primrefs for triangle pairs */
+                                                                                TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                                                if (TriangleMesh::sharedEdge(trimesh->triangle(j),
+                                                                                                             trimesh->triangle(j+1)) != -1)
+                                                                                {
+                                                                                  bounds = bounds.extend(bounds_second);
+                                                                                  flag = 0;
+                                                                                  j++;
+                                                                                }
+                                                                              }
+                                                                              pinfo.add(bounds,bounds.center2());
+                                                                              const PrimRef prim(bounds,geomID | flag,primID);
+                                                                              prims[k++] = prim;
 
-        ParallelForForPrefixSumState<PrimInfo> pstate;
-        Scene::Iterator<Mesh,1> iter(scene);
+                                                                            }
+                                                                            return pinfo;
+                                                                          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
-        pstate.init(iter,size_t(1024));
-        PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
-                                                      {
-                                                        k = base.size();
-                                                        PrimInfo pinfo(empty);
-                                                        for (size_t j=r.begin(); j<r.end(); j++)
-                                                        {
-                                                          BBox3fa bounds = empty;
-                                                          if (!mesh->valid(j,&bounds)) continue;
+                            assert(pinfo.size() == numPrimitives);
 
-                                                          TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                          const unsigned int primID = j;
-                                                          const unsigned int geomID = mesh->id;
-                                                          unsigned int flag = (unsigned int)1 << 31;
-                                                          if (j+1 < r.end())
-                                                          {
-                                                            BBox3fa bounds_second = empty;
-                                                            if (!mesh->valid(j+1,&bounds_second)) continue;
+                            // ============================================
 
-                                                            TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                            if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                         trimesh->triangle(j+1)) != -1)
-                                                            {
-                                                              bounds = bounds.extend(bounds_second);
-                                                              flag = 0;
-                                                              j++;
-                                                            }
-                                                          }
-                                                          pinfo.add(bounds,bounds.center2());
-                                                          const PrimRef prim(bounds,geomID | flag,primID);
-                                                          prims[k++] = prim;
-
-                                                        }
-                                                        return pinfo;
-                                                      }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-
-        PRINT(pinfo);
-
-        assert(pinfo.size() == numPrimitives);
-
-        // ============================================
-
-        BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                           prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                            BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
+                                               prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
         
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
+                            if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
+
+#if PROFILE
+                            dt = timer.avg();
+                          }); 
+#endif	
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

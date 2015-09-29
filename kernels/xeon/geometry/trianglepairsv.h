@@ -59,7 +59,7 @@ namespace embree
                                    const Vec3vfM& v3, 
                                    const vint<M>& geomIDs, 
                                    const vint<M>& primIDs,
-      const vint<M>& flags)
+                                   const vint<2*M>& flags)
       : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs), flags(flags) {}
     
     /*! Returns a mask that tells which triangles are valid. */
@@ -80,8 +80,8 @@ namespace embree
     __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /*! returns the flags */
-    __forceinline vint<M> flag() const { return flags; }
-    __forceinline int  flag(const size_t i) const { assert(i<M); return flags[i]; }
+    __forceinline vint<2*M> flag() const { return flags; }
+    __forceinline int  flag(const size_t i) const { assert(i<2*M); return flags[i]; }
 
     /*! calculate the bounds of the triangles */
     __forceinline BBox3fa bounds() const 
@@ -116,13 +116,14 @@ namespace embree
       vfloat<M>::store_nt(&dst->v3.z,src.v3.z);
       vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
       vint<M>::store_nt(&dst->primIDs,src.primIDs);
-      vint<M>::store_nt(&dst->flags,src.flags);
+      vint<2*M>::store_nt(&dst->flags,src.flags);
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
+      vint<M> vgeomID = -1, vprimID = -1;
+      vint<2*M> vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && prims; i++, prims++)
@@ -174,7 +175,8 @@ namespace embree
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
+      vint<M> vgeomID = -1, vprimID = -1;
+      vint<2*M> vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -229,7 +231,8 @@ namespace embree
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vint<M> vgeomID = -1, vprimID = -1, vflags = 0;
+      vint<M> vgeomID = -1, vprimID = -1;
+      vint<2*M> vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
 	
       for (size_t i=0; i<M; i++)
@@ -291,7 +294,7 @@ namespace embree
     Vec3vfM v3;       //!< 4rd vertex of the triangles.
     vint<M> geomIDs;   //!< geometry ID
     vint<M> primIDs;   //!< primitive ID
-    vint<M> flags;     //!< flags
+    vint<2*M> flags;     //!< flags
   };
 
   template<int MM>
