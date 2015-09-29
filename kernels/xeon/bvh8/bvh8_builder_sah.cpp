@@ -329,8 +329,6 @@ namespace embree
           BVH8Statistics stat(bvh);
           std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
-
-        PRINT("BUILD DONE");
       }
 
       void clear() {
