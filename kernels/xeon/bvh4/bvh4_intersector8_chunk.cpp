@@ -383,8 +383,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1vIntersectorN<Ray8> > >);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1iIntersectorN<Ray8> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1vIntersectorK<8> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1iIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);

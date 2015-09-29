@@ -229,18 +229,15 @@ namespace embree
 
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
-    template<typename RayN>
-    struct Bezier1IntersectorN
+    template<int KK>
+    struct Bezier1IntersectorK
     {
-      /* ray SIMD type shortcuts */
-      typedef typename RayN::simdb rsimdb;
-      typedef typename RayN::simdf rsimdf;
-      typedef typename RayN::simdi rsimdi;
-      typedef Vec3<rsimdf> rsimd3f;
+      enum { K = KK };
+      typedef Vec3<vfloat<K>> Vec3vfK;
       
       struct Precalculations 
       {
-        __forceinline Precalculations (const rsimdb& valid, const RayN& ray) 
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
         {
           int mask = movemask(valid);
           depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -250,18 +247,18 @@ namespace embree
           }
         }
         
-        __forceinline Precalculations (const RayN& ray, size_t k) 
+        __forceinline Precalculations (const RayK<K>& ray, size_t k)
         {
           Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
           depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
           ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
         }
         
-        rsimdf depth_scale;
-        LinearSpace3fa ray_space[rsimdf::size];
+        vfloat<K> depth_scale;
+        LinearSpace3fa ray_space[vfloat<K>::size];
       };
       
-      static __forceinline void intersect(const Precalculations& pre, RayN& ray, size_t k, 
+      static __forceinline void intersect(const Precalculations& pre, RayK<K>& ray, size_t k,
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
                                           Scene* scene)
       {
@@ -336,7 +333,7 @@ namespace embree
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
         const Geometry* geometry = scene->get(geomID);
-        if (!likely(geometry->hasIntersectionFilter<rsimdf>())) 
+        if (!likely(geometry->hasIntersectionFilter<vfloat<K>>()))
         {
 #endif
           /* update hit information */
@@ -372,7 +369,7 @@ namespace embree
 #endif
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, RayN& ray, const size_t k, 
+      static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, const size_t k,
                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
                                          Scene* scene) 
       {
@@ -446,7 +443,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
         size_t i = select_min(valid,t);
         const Geometry* geometry = scene->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter<rsimdf>())) return true;
+        if (likely(!geometry->hasOcclusionFilter<vfloat<K>>())) return true;
         
         while (true) 
         {

@@ -39,34 +39,30 @@ namespace embree
     };
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
-    template<typename RayN>
-      struct Bezier1vIntersectorN
+    template<int KK>
+      struct Bezier1vIntersectorK
     {
-      /* ray SIMD type shortcuts */
-      typedef typename RayN::simdb rsimdb;
-      typedef typename RayN::simdf rsimdf;
-      typedef typename RayN::simdi rsimdi;
-
+      enum { K = KK };
       typedef Bezier1v Primitive;
-      typedef typename Bezier1IntersectorN<RayN>::Precalculations Precalculations;
+      typedef typename Bezier1IntersectorK<K>::Precalculations Precalculations;
       
-      static __forceinline void intersect(Precalculations& pre, RayN& ray, const size_t k, const Primitive& curve, Scene* scene) {
-        Bezier1IntersectorN<RayN>::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) {
+        Bezier1IntersectorK<K>::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
       }
 
-      static __forceinline void intersect(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive& curve, Scene* scene)
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
       {
         int mask = movemask(valid_i);
         while (mask) intersect(pre,ray,__bscf(mask),curve,scene);
       }
  
-      static __forceinline bool occluded(Precalculations& pre, RayN& ray, const size_t k, const Primitive& curve, Scene* scene) {
-        return Bezier1IntersectorN<RayN>::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) {
+        return Bezier1IntersectorK<K>::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
       }
 
-      static __forceinline rsimdb occluded(const rsimdb& valid_i, Precalculations& pre, RayN& ray, const Primitive& curve, Scene* scene)
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
       {
-        rsimdb valid_o = false;
+        vbool<K> valid_o = false;
         int mask = movemask(valid_i);
         while (mask) {
           size_t k = __bscf(mask);

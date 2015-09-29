@@ -384,8 +384,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1vIntersectorN<Ray4> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1iIntersectorN<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1vIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1iIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
 #if defined (__AVX__)

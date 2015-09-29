@@ -127,9 +127,9 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorN<Ray4> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorN<Ray4> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4Intersector4Single<0x1010 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorNMB<Ray4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4Intersector4Single<0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4Intersector4Single<0x1010 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
 
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4Intersector4FromIntersector1<BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
