@@ -23,15 +23,15 @@ namespace embree
 {
   namespace isa
   {
-    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
+    //Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode = 0);
     Builder* BVH4Triangle4MeshBuilderSAH   (void* bvh, TriangleMesh* mesh, size_t mode = 0);
     Builder* BVH4Triangle4MBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
     BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
       : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), 
-        nextRef(0), numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
+        nextRef(0)//, numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
     {
-      bvh->worldBVH = worldBVH; // BVH4 manages lifetime
+      //bvh->worldBVH = worldBVH; // BVH4 manages lifetime
     }
     
     BVH4BuilderInstancing::~BVH4BuilderInstancing ()
@@ -65,7 +65,8 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
+      size_t numPrimitives = 0;
+      //numPrimitives += scene->getNumPrimitives<TriangleMesh,1>();
       numPrimitives += scene->numInstancedTriangles;
       if (numPrimitives == 0) {
         prims.resize(0);
@@ -110,7 +111,7 @@ namespace embree
           }
         });
       
-      numInstancedPrimitives = 0; // FIXME: same as numPrimitives
+      //numInstancedPrimitives = 0; // FIXME: same as numPrimitives
       
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
@@ -130,18 +131,18 @@ namespace embree
               builder->build(0,0);
             
             /* create build primitive */
-            if (mesh->isEnabled()) {
+            //if (mesh->isEnabled()) {
               //if (!object->bounds.empty())
                 //refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,object->bounds,object->root,-1,0);
-              numInstancedPrimitives += mesh->size();
-            }
+            //numInstancedPrimitives += mesh->size();
+            //}
           }
         });
 
       /* create world space instance */
-      worldBuilder->build();
-      if (!worldBVH->bounds.empty())
-        refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,worldBVH->bounds,worldBVH->root,-1,-1,0);
+      //worldBuilder->build();
+      //if (!worldBVH->bounds.empty())
+      //  refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,worldBVH->bounds,worldBVH->root,-1,-1,0);
       
       /* creates all instances */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
@@ -161,7 +162,7 @@ namespace embree
             /* create build primitive */
             if (!object->bounds.empty()) {
               refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world));
-              numInstancedPrimitives += instance->geom->size();
+              //numInstancedPrimitives += instance->geom->size();
             }
           }
         });
@@ -188,8 +189,7 @@ namespace embree
         return;
         }*/
       
-      /* open all large nodes */
-      
+      /* open all large nodes */  
       open(numPrimitives); 
       
       /* fast path for small geometries */
@@ -270,7 +270,7 @@ namespace embree
       refs.clear();
     }
     
-    void BVH4BuilderInstancing::open(size_t)
+    void BVH4BuilderInstancing::open(size_t numInstancedPrimitives)
     {
       if (refs.size() == 0)
 	return;
