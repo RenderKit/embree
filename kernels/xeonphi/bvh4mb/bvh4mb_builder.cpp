@@ -38,7 +38,7 @@ namespace embree
   }
 
   size_t BVH4mbBuilder::getNumPrimitives() {
-    return scene->numTriangles2;
+    return scene->world2.numTriangles;
   }
 
   void BVH4mbBuilder::computePrimRefs(const size_t threadIndex, const size_t threadCount) {
