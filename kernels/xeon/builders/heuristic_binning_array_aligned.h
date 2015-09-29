@@ -32,6 +32,11 @@ namespace embree
       {
         typedef BinSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
+
+#if defined(__AVX512F__)
+        typedef Bin16Info<PrimRef> Binner16;
+#endif
+
         typedef range<size_t> Set;
         
         static const size_t PARALLEL_THRESHOLD = 10000;
@@ -80,7 +85,7 @@ namespace embree
         {
 #if defined(__AVX512F__)
           const BinMapping<16> mapping(pinfo);
-          Bin16Info<PrimRef> binner;          
+          Binner16 binner;          
 #else
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -93,6 +98,14 @@ namespace embree
         /*! finds the best split */
         const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+#if defined(__AVX512F__)
+          const BinMapping<16> mapping(pinfo);
+          Binner16 binner( empty );          
+          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
+                                   [&] (const range<size_t>& r) -> Binner16 { Binner16 binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                   [&] (const Binner16& b0, const Binner16& b1) -> Binner16 { Binner16 r = b0; r.merge(b1,mapping.size()); return r; });
+          return binner.best(mapping,logBlockSize);
+#else
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
@@ -100,6 +113,7 @@ namespace embree
                                    [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping); return binner; },
                                    [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
+#endif
         }
         
         /*! array partitioning */

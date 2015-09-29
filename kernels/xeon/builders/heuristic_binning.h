@@ -560,7 +560,7 @@ namespace embree
         {
           lower[i]  = min(lower[i],other.lower[i]);
           upper[i]  = max(upper[i],other.upper[i]);
-          counts[i] += other.counts[i];
+          count[i] += other.count[i];
         }
       }
 
