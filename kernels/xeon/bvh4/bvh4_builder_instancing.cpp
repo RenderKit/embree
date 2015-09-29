@@ -29,7 +29,7 @@ namespace embree
 
     BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
       : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), 
-        nextRef(0), numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene,0)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
+        nextRef(0), numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
     {
       bvh->worldBVH = worldBVH; // BVH4 manages lifetime
     }
@@ -104,7 +104,7 @@ namespace embree
             /* create BVH and builder for new meshes */
             if (objects[objectID] == nullptr) {
               //createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
-              objects[objectID] = new BVH4(Triangle4::type,mesh->parent,0);
+              objects[objectID] = new BVH4(Triangle4::type,mesh->parent);
               builders[objectID] = BVH4Triangle4MeshBuilderSAH((BVH4*)objects[objectID],mesh);
             }
           }

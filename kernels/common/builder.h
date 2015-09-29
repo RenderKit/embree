@@ -22,7 +22,6 @@
 namespace embree
 {
 #define MODE_HIGH_QUALITY (1<<8)
-#define LeafMode 0 // FIXME: remove
 
   /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {

@@ -710,7 +710,7 @@ namespace embree
   public:
 
     /*! BVH4 default constructor. */
-    BVH4 (const PrimitiveType& primTy, Scene* scene, bool listMode);
+    BVH4 (const PrimitiveType& primTy, Scene* scene);
 
     /*! BVH4 destruction */
     ~BVH4 ();
