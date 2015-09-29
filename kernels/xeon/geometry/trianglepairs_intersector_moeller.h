@@ -60,12 +60,13 @@ namespace embree
         Vec3vf8 vtx2(vfloat8(tri.v2.x),
                      vfloat8(tri.v2.y),
                      vfloat8(tri.v2.z));
-        vint8   geomIDs(tri.geomIDs);
+        vint8   geomIDs(tri.geomIDs & 0xfffffff); /* mask out the four most significant bits */
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         pre.intersect(ray,vtx0,vtx1,vtx2,Intersect1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
 #else
-        pre.intersect(ray,tri.v1,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+0,scene,geomID_to_instID));
-        pre.intersect(ray,tri.v3,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+1,scene,geomID_to_instID));
+        vint<M> geomIDs(tri.geomIDs & 0xfffffff);
+        pre.intersect(ray,tri.v1,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID));
+        pre.intersect(ray,tri.v3,tri.v0,tri.v2,Intersect1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID));
 #endif
         }
         
@@ -84,12 +85,13 @@ namespace embree
           Vec3vf8 vtx2(vfloat8(tri.v2.x),
                        vfloat8(tri.v2.y),
                        vfloat8(tri.v2.z));
-          vint8   geomIDs(tri.geomIDs);
+          vint8   geomIDs(tri.geomIDs & 0xfffffff); /* mask out the four most significant bits */
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           return pre.intersect(ray,vtx0,vtx1,vtx2,Occluded1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
 #else
-          if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
-          if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
+          vint<M> geomIDs(tri.geomIDs & 0xfffffff);
+          if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,Occluded1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
+          if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,Occluded1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
           return false;
 #endif
         }

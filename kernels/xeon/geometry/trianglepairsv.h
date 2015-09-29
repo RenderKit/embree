@@ -174,7 +174,7 @@ namespace embree
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
 	const PrimRef& prim = prims[begin];
-	const unsigned int geomId = prim.geomID() & 0x7fffffff; /* REMOVE !!!! */
+	const unsigned int geomId = prim.geomID();
         const unsigned int primId = prim.primID();
 
         const TriangleMesh* __restrict__ const mesh = scene->getTriangleMesh(geomId & ~((unsigned int)1 << 31)); /* remove flag for geomID query */
