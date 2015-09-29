@@ -31,7 +31,7 @@ namespace embree
   {
     ALIGNED_CLASS;
   public:
-    
+
     /*! forward declaration of node type */
     struct Node;
 
@@ -44,20 +44,20 @@ namespace embree
     static const size_t alignment = 5;
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const size_t align_mask = (1 << alignment)-1;  
-    static const size_t items_mask = (1 << (alignment-1))-1;  
+    static const size_t align_mask = (1 << alignment)-1;
+    static const size_t items_mask = (1 << (alignment-1))-1;
 
     /*! Empty node */
     static const size_t emptyNode = 1;
 
     /*! Invalid node, used as marker in traversal */
     static const size_t invalidNode = (((size_t)-1) & (~items_mask)) | 1;
-      
+
     /*! Maximal depth of the BVH. */
     static const size_t maxBuildDepth = 32;
     static const size_t maxBuildDepthLeaf = maxBuildDepth+16;
     static const size_t maxDepth = maxBuildDepthLeaf+maxBuildDepthLeaf+maxBuildDepth;
-    
+
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = 6; //items_mask-1;
 
@@ -94,7 +94,7 @@ namespace embree
 
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() { ptr |= (size_t)(1 << (alignment-1)); }
-      
+
       /*! Clears the barrier bit. */
       __forceinline void clearBarrier() { ptr &= ~(size_t)(1 << (alignment-1)); }
 
@@ -103,14 +103,14 @@ namespace embree
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf() const { return (ptr & (size_t)align_mask) != 0; }
-      
+
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == 0; }
-      
+
       /*! returns node pointer */
       __forceinline       Node* node()       { assert(isNode()); return (      Node*)ptr; }
       __forceinline const Node* node() const { assert(isNode()); return (const Node*)ptr; }
-      
+
       /*! returns leaf pointer */
       __forceinline char* leaf(size_t& num) const {
         assert(isLeaf());
@@ -129,13 +129,13 @@ namespace embree
     {
       /*! Clears the node. */
       __forceinline void clear() {
-        lower_x = lower_y = lower_z = pos_inf; 
+        lower_x = lower_y = lower_z = pos_inf;
         upper_x = upper_y = upper_z = neg_inf;
 	for (size_t i=0; i<N; i++) children[i] = emptyNode;
       }
 
       /*! Sets bounding box of child. */
-      __forceinline void set(size_t i, const BBox3fa& bounds) 
+      __forceinline void set(size_t i, const BBox3fa& bounds)
       {
         assert(i < N);
         lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
@@ -156,7 +156,7 @@ namespace embree
       }
 
       /*! Returns bounds of specified child. */
-      __forceinline BBox3fa bounds(size_t i) const 
+      __forceinline BBox3fa bounds(size_t i) const
       {
         assert(i < N);
         const Vec3fa lower(lower_x[i],lower_y[i],lower_z[i]);
@@ -219,7 +219,7 @@ namespace embree
       }
     }
 #endif
-    
+
   public:
 
     /*! BVH8 default constructor. */
@@ -232,7 +232,7 @@ namespace embree
     static Accel* BVH8Triangle4(Scene* scene);
     static Accel* BVH8Triangle4ObjectSplit(Scene* scene);
     static Accel* BVH8Triangle4SpatialSplit(Scene* scene);
-
+    static Accel* BVH8Triangle4Bonsai(Scene* scene);
     static Accel* BVH8Triangle8(Scene* scene);
     //static Accel* BVH8Triangle8v(Scene* scene);
     static Accel* BVH8TrianglePairs8(Scene* scene);
@@ -260,19 +260,19 @@ namespace embree
 #if defined (__AVX__)
 
     /*! Encodes a node */
-    __forceinline NodeRef encodeNode(Node* node) { 
+    __forceinline NodeRef encodeNode(Node* node) {
       return NodeRef((size_t) node);
     }
-    
+
     /*! Encodes a leaf */
     __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
-      assert(!((size_t)tri & align_mask)); 
+      assert(!((size_t)tri & align_mask));
       return NodeRef((size_t)tri | (1+min(num,(size_t)maxLeafBlocks)));
     }
 #endif
 
   public:
-    
+
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
       return alloc2.getAllocatedBytes();
@@ -305,7 +305,7 @@ namespace embree
     for (size_t i=0;i<BVH8::N;i++) o << n.children[i] << " ";
     o << std::endl;
     return o;
-  } 
+  }
 #endif
 
 }

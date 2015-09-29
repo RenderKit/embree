@@ -23,22 +23,22 @@ namespace embree
 
 #if defined(VECTOR_INIT_ALLOCATOR)
     template<typename M>
-    vector_t (M alloc) 
+    vector_t (M alloc)
       : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) {}
 
     template<typename M>
-    vector_t (M alloc, size_t sz) 
+    vector_t (M alloc, size_t sz)
       : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
 
 #else
-      vector_t () 
+      vector_t ()
         : size_active(0), size_alloced(0), items(nullptr) {}
-    
-      vector_t (size_t sz) 
+
+      vector_t (size_t sz)
         : size_active(0), size_alloced(0), items(nullptr) { resize(sz); }
 #endif
 
-      
+
       ~vector_t() {
         clear();
       }
@@ -51,7 +51,7 @@ namespace embree
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
       }
 
-      vector_t& operator=(const vector_t& other) 
+      vector_t& operator=(const vector_t& other)
       {
         resize(other.size_active);
         for (size_t i=0; i<size_active; i++) items[i] = other.items[i];
@@ -75,10 +75,10 @@ namespace embree
         internal_resize(new_size,size_alloced < new_size ? new_size : size_alloced);
       }
 
-      void reserve(size_t new_alloced) 
+      void reserve(size_t new_alloced)
       {
         /* do nothing if container already large enough */
-        if (new_alloced <= size_alloced) 
+        if (new_alloced <= size_alloced)
           return;
 
         /* resize exact otherwise */
@@ -103,10 +103,10 @@ namespace embree
       __forceinline       T* data()       { return items; };
       __forceinline const T* data() const { return items; };
 
-     
+
       /******************** Modifiers **************************/
 
-      __forceinline void push_back(const T& nt) 
+      __forceinline void push_back(const T& nt)
       {
         const T v = nt; // need local copy as input reference could point to this vector
         internal_grow(size_active+1);
@@ -118,12 +118,12 @@ namespace embree
         size_active--;
       }
 
-      void clear() 
+      void clear()
       {
         /* destroy elements */
         for (size_t i=0; i<size_active; i++)
           alloc.destroy(&items[i]);
-        
+
         /* free memory */
         alloc.deallocate(items,size_alloced); items = nullptr;
         size_active = size_alloced = 0;
@@ -133,7 +133,7 @@ namespace embree
 
       void internal_resize(size_t new_active, size_t new_alloced)
       {
-        assert(new_active <= new_alloced); 
+        assert(new_active <= new_alloced);
 
         /* destroy elements */
         for (size_t i=new_active; i<size_active; i++)
@@ -143,9 +143,9 @@ namespace embree
         size_active = new_active;
 
         /* only reallocate if necessary */
-        if (new_alloced == size_alloced) 
+        if (new_alloced == size_alloced)
           return;
-        
+
         /* reallocate and copy items */
         T* old_items = items;
         items = alloc.allocate(new_alloced);
@@ -157,7 +157,7 @@ namespace embree
       void internal_grow(size_t new_alloced)
       {
         /* do nothing if container already large enough */
-        if (new_alloced <= size_alloced) 
+        if (new_alloced <= size_alloced)
           return;
 
         /* resize to next power of 2 otherwise */

@@ -53,11 +53,12 @@ IF (TASKING_TBB)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES
- 
+
    embree.rc
 
   ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/tasksys.cpp
+
 
   ../algorithms/parallel_for.cpp
   ../algorithms/parallel_reduce.cpp
@@ -93,7 +94,7 @@ SET(EMBREE_LIBRARY_FILES
   geometry/instance_intersector1.cpp
   geometry/instance_intersector4.cpp
   geometry/subdivpatch1_intersector1.cpp
-  geometry/grid_soa.cpp		
+  geometry/grid_soa.cpp
   builders/primrefgen.cpp
 
   bvh4/bvh4.cpp
@@ -137,12 +138,12 @@ IF (RTCORE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX
-    
+
     ../common/scene_subdiv_mesh_avx.cpp
 
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
-    
+
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     builders/primrefgen.avx.cpp
@@ -155,10 +156,11 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
     bvh4/bvh4_intersector1.cpp
-    
+
     bvh8/bvh8.cpp
     bvh8/bvh8_statistics.cpp
     bvh8/bvh8_builder_sah.avx.cpp
+
     bvh8/bvh8_intersector1.cpp
     )
 
@@ -182,13 +184,19 @@ ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_AVX2
 
+
+
     geometry/instance_intersector1.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
 
     bvh4/bvh4_intersector1.cpp
-    
-    bvh8/bvh8_intersector1.cpp)
+
+    bvh8/bvh8_intersector1.cpp
+builders/primrefgen.avx.cpp
+../algorithms/IndexSort.cpp
+bvh8/bvh8_builder_bonsai.cpp
+    )
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}

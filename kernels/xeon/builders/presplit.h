@@ -28,22 +28,22 @@ namespace embree
 {
   namespace isa
   {
-    __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos, 
+    __forceinline void splitTriangle(const PrimRef& prim, int dim, float pos,
                                      const Vec3fa& a, const Vec3fa& b, const Vec3fa& c, PrimRef& left_o, PrimRef& right_o)
     {
       BBox3fa left = empty, right = empty;
       const Vec3fa v[3] = { a,b,c };
-      
+
       /* clip triangle to left and right box by processing all edges */
       Vec3fa v1 = v[2];
       for (size_t i=0; i<3; i++)
       {
         Vec3fa v0 = v1; v1 = v[i];
         float v0d = v0[dim], v1d = v1[dim];
-        
+
         if (v0d <= pos) left. extend(v0); // this point is on left side
         if (v0d >= pos) right.extend(v0); // this point is on right side
-        
+
         if ((v0d < pos && pos < v1d) || (v1d < pos && pos < v0d)) // the edge crosses the splitting location
         {
           assert((v1d-v0d) != 0.0f);
@@ -54,12 +54,12 @@ namespace embree
       }
       //assert(!left.empty());  // happens if split does not hit triangle
       //assert(!right.empty()); // happens if split does not hit triangle
-      
+
       /* clip against current bounds */
       BBox3fa bounds = prim.bounds();
       BBox3fa cleft (max(left .lower,bounds.lower),min(left .upper,bounds.upper));
       BBox3fa cright(max(right.lower,bounds.lower),min(right.upper,bounds.upper));
-      
+
       new (&left_o ) PrimRef(cleft, prim.geomID(), prim.primID());
       new (&right_o) PrimRef(cright,prim.geomID(), prim.primID());
     }
@@ -84,11 +84,11 @@ namespace embree
       auto order = [] (const Item& a, const Item& b) {
         return halfArea(a.sceneBounds) < halfArea(b.sceneBounds);
       };
-      
+
       while (i < N)
       {
         /* pop item with largest scene bounds */
-        std::pop_heap (&items[0],&items[i],order); 
+        std::pop_heap (&items[0],&items[i],order);
         const Item item = items[--i];
 
         /* split scene bounds into two halfes along largest dimension */
@@ -108,7 +108,7 @@ namespace embree
           items[i++] = Item(rsceneBounds,item.prim);
           std::push_heap (&items[0],&items[i],order);
         }
-        
+
         /* if split is on the right side of primitive, continue with left half of scene bounds */
         else if (center > upper)
         {
@@ -137,7 +137,7 @@ namespace embree
       for (size_t i=1; i<N; i++)
         prims_o[i-1] = items[i].prim;
     }
-    
+
     template<typename Area, typename Split>
       inline const PrimInfo presplit(const PrimInfo& pinfo, mvector<PrimRef>& prims, const Area& area, const Split& split)
     {
@@ -155,7 +155,7 @@ namespace embree
       do {
         f *= 0.9f;
         N = pinfo.size() + parallel_prefix_sum (state, size_t(0), pinfo.size(), size_t(1024), size_t(0), [&] (const range<size_t>& r, const size_t sum) -> size_t
-        { 
+        {
           size_t N=0;
           for (size_t i=r.begin(); i<r.end(); i++) {
             const float nf = ceil(f*pinfo.size()*area(prims[i])/A);
@@ -164,7 +164,7 @@ namespace embree
           }
           return N;
         },std::plus<size_t>());
-        if (iter++ == 10) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
+        if (iter++ == 100) // to avoid infinite loop, e.g. for pinfo.size()==1 and prims.size()==1
           return pinfo;
 
       } while (pinfo.size()+N > prims.size());
@@ -209,8 +209,8 @@ namespace embree
     template<>
       inline const PrimInfo presplit<TriangleMesh>(Scene* scene, const PrimInfo& pinfo, mvector<PrimRef>& prims)
     {
-      return presplit(pinfo,prims, 
-                      [&] (const PrimRef& prim) -> float { 
+      return presplit(pinfo,prims,
+                      [&] (const PrimRef& prim) -> float {
                         const size_t geomID = prim.geomID();
                         const size_t primID = prim.primID();
                         const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
@@ -240,4 +240,3 @@ namespace embree
     }
   }
 }
-

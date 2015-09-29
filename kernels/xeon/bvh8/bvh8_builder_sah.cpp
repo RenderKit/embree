@@ -45,13 +45,13 @@ namespace embree
     struct CreateBVH8Node
     {
       __forceinline CreateBVH8Node (BVH8* bvh) : bvh(bvh) {}
-      
-      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
+
+      __forceinline int operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, Allocator* alloc)
       {
         BVH8::Node* node = nullptr;
         //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc2.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
         //else
-        node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), 1 << BVH8::alignment); 
+        node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), 1 << BVH8::alignment);
         node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].pinfo.geomBounds);
@@ -68,7 +68,7 @@ namespace embree
     struct CreateBVH8Leaf
     {
       __forceinline CreateBVH8Leaf (BVH8* bvh, PrimRef* prims) : bvh(bvh), prims(prims) {}
-      
+
       __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
       {
         size_t items = Primitive::blocks(current.prims.size());
@@ -85,8 +85,8 @@ namespace embree
       BVH8* bvh;
       PrimRef* prims;
     };
-    
-    /************************************************************************************/ 
+
+    /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
@@ -106,13 +106,13 @@ namespace embree
 
       BVH8BuilderSAH (BVH8* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 2.5f : 1.0f) {}
 
       BVH8BuilderSAH (BVH8* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
-          presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
+          presplitFactor((mode & MODE_HIGH_QUALITY) ? 2.5f : 1.0f) {}
 
-      void build(size_t, size_t) 
+      void build(size_t, size_t)
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -122,7 +122,7 @@ namespace embree
           return;
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-      
+
         /* verbose mode */
         if (bvh->device->verbosity(1) && mesh == nullptr)
 	  std::cout << "building BVH8<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH8BuilderSAH " << (presplitFactor != 1.0f ? "presplit" : "") << " ... " << std::flush;
@@ -132,18 +132,18 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-	    
+
           if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
-          
+
           auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
           auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-          
+
 	    bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    prims.resize(numSplitPrimitives);
 	    PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
             if (presplitFactor > 1.0f)
               pinfo = presplit<Mesh>(scene, pinfo, prims);
-	    BVH8::NodeRef root; 
+	    BVH8::NodeRef root;
             BVHBuilderBinnedSAH::build<BVH8::NodeRef>
               (root,CreateBVH8Alloc(bvh),CreateBVH8Node(bvh),CreateBVH8Leaf<Primitive>(bvh,prims.data()), progress,
                prims.data(),pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
@@ -155,8 +155,8 @@ namespace embree
 
 #if PROFILE
            dt = timer.avg();
-        }); 
-#endif	
+        });
+#endif
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -193,7 +193,7 @@ namespace embree
     Builder* BVH8TrianglePairs8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAH<TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 
 
-    /************************************************************************************/ 
+    /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
     /************************************************************************************/
@@ -201,8 +201,8 @@ namespace embree
     struct CreateListBVH8Node // FIXME: merge with above class
     {
       __forceinline CreateListBVH8Node (BVH8* bvh) : bvh(bvh) {}
-      
-      __forceinline BVH8::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
+
+      __forceinline BVH8::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc)
       {
         BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), 1 << BVH8::alignment); node->clear();
         for (size_t i=0; i<N; i++) {
@@ -220,7 +220,7 @@ namespace embree
     struct CreateBVH8ListLeaf
     {
       __forceinline CreateBVH8ListLeaf (BVH8* bvh) : bvh(bvh) {}
-      
+
       __forceinline size_t operator() (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) // FIXME: why are prims passed here but not for createNode
       {
         size_t n = current.pinfo.size();
@@ -245,7 +245,7 @@ namespace embree
         PrimRefList::block_iterator_unsafe iter(current.prims);
         for (size_t i=0; i<N; i++) leaf[i].fill(iter,bvh->scene,false);
         assert(!iter);
-        
+
         /* free all primitive blocks */
         while (PrimRefList::item* block = current.prims.take())
           delete block;
@@ -277,7 +277,7 @@ namespace embree
         : bvh(bvh), scene(nullptr), mesh(mesh), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH8::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      void build(size_t, size_t) 
+      void build(size_t, size_t)
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
@@ -287,20 +287,20 @@ namespace embree
           return;
         }
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
-      
+
         /* reduction function */
 	auto rotate = [&] (BVH8::Node* node, const size_t* counts, const size_t N) -> size_t
 	{
           size_t n = 0;
 #if ROTATE_TREE
 	  assert(N <= BVH8::N);
-          for (size_t i=0; i<N; i++) 
+          for (size_t i=0; i<N; i++)
             n += counts[i];
           if (n >= 4096) {
             for (size_t i=0; i<N; i++) {
               if (counts[i] < 4096) {
-                for (int j=0; j<ROTATE_TREE; j++) 
-                  BVH8Rotate::rotate(bvh,node->child(i)); 
+                for (int j=0; j<ROTATE_TREE; j++)
+                  BVH8Rotate::rotate(bvh,node->child(i));
                 node->child(i).setBarrier();
               }
             }
@@ -318,9 +318,9 @@ namespace embree
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
         {
 #endif
-	    
+
           if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
-	    
+
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
@@ -340,7 +340,7 @@ namespace embree
             {
               double A = 0.0f;
               while (PrimRefList::item* block = iter.next()) {
-                for (size_t i=0; i<block->size(); i++) 
+                for (size_t i=0; i<block->size(); i++)
                   A += area(block->at(i).bounds());
                 //A += heuristic(block->at(i));
               }
@@ -372,7 +372,7 @@ namespace embree
 	      (root,CreateBVH8Alloc(bvh),size_t(0),CreateListBVH8Node(bvh),rotate,CreateBVH8ListLeaf<Primitive>(bvh),
                [&] (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o)
                {
-                TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); 
+                TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF);
                 TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
                 const Vec3fa v0 = mesh->vertex(tri.v[0]);
                 const Vec3fa v1 = mesh->vertex(tri.v[1]);
@@ -382,21 +382,21 @@ namespace embree
                progress,
 	       prims,pinfo,BVH8::N,BVH8::maxBuildDepthLeaf,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
 	    bvh->set(root,pinfo.geomBounds,pinfo.size());
-            
+
 #if ROTATE_TREE
-            for (int i=0; i<ROTATE_TREE; i++) 
+            for (int i=0; i<ROTATE_TREE; i++)
               BVH8Rotate::rotate(bvh,bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
-            
+
             bvh->layoutLargeNodes(pinfo.size()*0.005f);
 
             if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
-            
+
 #if PROFILE
             dt = timer.avg();
-        }); 
-#endif	
+        });
+#endif
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();

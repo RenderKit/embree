@@ -35,17 +35,17 @@ namespace embree
       typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
       typedef std::ptrdiff_t difference_type;
 
-      __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
+      __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device)
         : device(device) {}
 
-      __forceinline pointer allocate( size_type n ) 
+      __forceinline pointer allocate( size_type n )
       {
         assert(device);
         device->memoryMonitor(n*sizeof(T),false);
         return (pointer) alignedMalloc(n*sizeof(value_type),alignment);
       }
 
-      __forceinline void deallocate( pointer p, size_type n ) 
+      __forceinline void deallocate( pointer p, size_type n )
       {
         assert(device);
         alignedFree(p);
