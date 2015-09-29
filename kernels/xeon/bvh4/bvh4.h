@@ -642,8 +642,8 @@ namespace embree
     {
       __forceinline TransformNode () {}
 
-      __forceinline TransformNode(const AffineSpace3fa& local2world, const BBox3fa& localBounds, NodeRef child, unsigned mask, unsigned int instID, unsigned int xfmID) 
-        : local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), child(child), mask(mask), instID(instID), xfmID(xfmID) {}
+      __forceinline TransformNode(const AffineSpace3fa& local2world, const BBox3fa& localBounds, NodeRef child, unsigned mask, unsigned int instID, unsigned int xfmID, unsigned int type) 
+        : local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), child(child), mask(mask), instID(instID), xfmID(xfmID), type(type) {}
 
       NodeRef child;
       unsigned mask; 
@@ -652,6 +652,7 @@ namespace embree
       BBox3fa localBounds;
       unsigned int instID;
       unsigned int xfmID;
+      unsigned int type;
     };
 
     /*! swap the children of two nodes */

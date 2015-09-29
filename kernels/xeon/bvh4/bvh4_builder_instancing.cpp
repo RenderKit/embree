@@ -48,6 +48,28 @@ namespace embree
         xfmID ^= 0x12F576E1*i*((int*)&space)[i];
       return xfmID;
     }
+
+    int slot(int type, int numTimeSteps)
+    {
+      if (numTimeSteps == 1)
+      {
+        switch (type) {
+        case Geometry::TRIANGLE_MESH: return 0;
+        case Geometry::USER_GEOMETRY: break;
+        case Geometry::BEZIER_CURVES: break;
+        case Geometry::SUBDIV_MESH  : break;
+        }
+      } else {
+        switch (type) {
+        case Geometry::TRIANGLE_MESH: return 1;
+        case Geometry::USER_GEOMETRY: break;
+        case Geometry::BEZIER_CURVES: break;
+        case Geometry::SUBDIV_MESH  : break;
+        }
+      }
+      assert(false);
+      return 0;
+    }
     
     void BVH4BuilderInstancing::build(size_t threadIndex, size_t threadCount) 
     {
@@ -163,7 +185,8 @@ namespace embree
             BVH4* object = objects[instance->geom->id];
             if (object == nullptr) continue;
             if (object->bounds.empty()) continue;
-            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world));
+            int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
+            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world),s);
           }
         });
       refs.resize(nextRef);
@@ -242,7 +265,7 @@ namespace embree
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
             BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
-            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID); // FIXME: rcp should be precalculated somewhere
+            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
             *current.parent = BVH4::encodeNode(node);
             //*current.parent = ref->node;
             ((BVH4::NodeRef*)current.parent)->setBarrier();
@@ -290,13 +313,14 @@ namespace embree
         const unsigned mask = refs.back().mask;
         const int instID = refs.back().instID;
         const int xfmID = refs.back().xfmID;
+        const int type = refs.back().type;
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
         BVH4::Node* node = ref.node();
         for (size_t i=0; i<BVH4::N; i++) {
           if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),mask,instID,xfmID));
+          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),mask,instID,xfmID,type));
           std::push_heap (refs.begin(),refs.end()); 
         }
       }
