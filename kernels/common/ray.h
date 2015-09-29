@@ -56,33 +56,8 @@ namespace embree
       return vx & vy & vz & vn & vf;
     }
 
-    /* Converts ray packet to single rays */
-    __forceinline void get(RayK<1> ray[K]) const
-    {
-      for (size_t i=0; i<K; i++) // FIXME: use SIMD transpose
-      {
-        ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i];
-        ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i];
-        ray[i].tnear = tnear[i]; ray[i].tfar  = tfar [i]; ray[i].time  = time[i]; ray[i].mask = mask[i];
-        ray[i].Ng.x = Ng.x[i]; ray[i].Ng.y = Ng.y[i]; ray[i].Ng.z = Ng.z[i];
-        ray[i].u = u[i]; ray[i].v = v[i];
-        ray[i].geomID = geomID[i]; ray[i].primID = primID[i]; ray[i].instID = instID[i];
-      }
-    }
-
-    /* Converts single rays to ray packet */
-    __forceinline void set(const RayK<1> ray[K])
-    {
-      for (size_t i=0; i<K; i++)
-      {
-        org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z;
-        dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z;
-        tnear[i] = ray[i].tnear; tfar [i] = ray[i].tfar;  time[i] = ray[i].time; mask[i] = ray[i].mask;
-        Ng.x[i] = ray[i].Ng.x; Ng.y[i] = ray[i].Ng.y; Ng.z[i] = ray[i].Ng.z;
-        u[i] = ray[i].u; v[i] = ray[i].v;
-        geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
-      }
-    }
+    __forceinline void get(RayK<1> ray[K]) const;
+    __forceinline void set(const RayK<1> ray[K]);
 
 #if defined(__MIC__)
     template<int PFHINT>
@@ -231,6 +206,36 @@ namespace embree
     }
 #endif
   };
+
+  /* Converts ray packet to single rays */
+  template<int KK>
+  __forceinline void RayK<KK>::get(RayK<1> ray[K]) const
+  {
+    for (size_t i=0; i<K; i++) // FIXME: use SIMD transpose
+    {
+      ray[i].org.x = org.x[i]; ray[i].org.y = org.y[i]; ray[i].org.z = org.z[i];
+      ray[i].dir.x = dir.x[i]; ray[i].dir.y = dir.y[i]; ray[i].dir.z = dir.z[i];
+      ray[i].tnear = tnear[i]; ray[i].tfar  = tfar [i]; ray[i].time  = time[i]; ray[i].mask = mask[i];
+      ray[i].Ng.x = Ng.x[i]; ray[i].Ng.y = Ng.y[i]; ray[i].Ng.z = Ng.z[i];
+      ray[i].u = u[i]; ray[i].v = v[i];
+      ray[i].geomID = geomID[i]; ray[i].primID = primID[i]; ray[i].instID = instID[i];
+    }
+  }
+
+  /* Converts single rays to ray packet */
+  template<int KK>
+  __forceinline void RayK<KK>::set(const RayK<1> ray[K])
+  {
+    for (size_t i=0; i<K; i++)
+    {
+      org.x[i] = ray[i].org.x; org.y[i] = ray[i].org.y; org.z[i] = ray[i].org.z;
+      dir.x[i] = ray[i].dir.x; dir.y[i] = ray[i].dir.y; dir.z[i] = ray[i].dir.z;
+      tnear[i] = ray[i].tnear; tfar [i] = ray[i].tfar;  time[i] = ray[i].time; mask[i] = ray[i].mask;
+      Ng.x[i] = ray[i].Ng.x; Ng.y[i] = ray[i].Ng.y; Ng.z[i] = ray[i].Ng.z;
+      u[i] = ray[i].u; v[i] = ray[i].v;
+      geomID[i] = ray[i].geomID; primID[i] = ray[i].primID; instID[i] = ray[i].instID;
+    }
+  }
 
   /* Shortcuts */
   typedef RayK<1>  Ray;
