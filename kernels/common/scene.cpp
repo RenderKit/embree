@@ -141,11 +141,11 @@ namespace embree
 #else
     createTriangleAccel();
     accels.add(BVH4::BVH4Triangle4vMB(this));
-    accels.add(BVH4::BVH4UserGeometry(this)); // FIXME: should go to end!
     createHairAccel();
     accels.add(BVH4::BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
     accels.add(BVH4::BVH4InstancedBVH4Triangle4ObjectSplit(this));
+    accels.add(BVH4::BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
 
     /* increment number of scenes */
