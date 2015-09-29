@@ -185,5 +185,8 @@ namespace embree
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
+  template<int MM>
+  typename TriangleMi<MM>::Type TriangleMi<MM>::type;
+
   typedef TriangleMi<4> Triangle4i;
 }

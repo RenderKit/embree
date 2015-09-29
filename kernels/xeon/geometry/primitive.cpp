@@ -35,37 +35,37 @@ namespace embree
   /********************** Bezier1v **************************/
 
 #if !defined(__AVX__)
-  Bezier1v::Type Bezier1v::type;
-
   Bezier1v::Type::Type () 
     : PrimitiveType("bezier1v",sizeof(Bezier1v),1) {} 
   
   size_t Bezier1v::Type::size(const char* This) const {
     return 1;
   }
+
+  Bezier1v::Type Bezier1v::type;
 #endif
 
   /********************** Bezier1i **************************/
 
 #if !defined(__AVX__)
-  Bezier1i::Type Bezier1i::type;
-
   Bezier1i::Type::Type () 
     : PrimitiveType("bezier1i",sizeof(Bezier1i),1) {} 
   
   size_t Bezier1i::Type::size(const char* This) const {
     return 1;
   }
+
+  Bezier1i::Type Bezier1i::type;
 #endif
   
   /********************** Triangle4 **************************/
 
 #if !defined(__AVX__)
-  Triangle4::Type Triangle4::type;
-
+  template<>
   Triangle4::Type::Type () 
     : PrimitiveType("triangle4",sizeof(Triangle4),4) {} 
 
+  template<>
   size_t Triangle4::Type::size(const char* This) const {
     return ((Triangle4*)This)->size();
   }
@@ -74,11 +74,11 @@ namespace embree
   /********************** Triangle4v **************************/
 
 #if !defined(__AVX__)
-  Triangle4v::Type Triangle4v::type;
-
+  template<>
   Triangle4v::Type::Type () 
   : PrimitiveType("triangle4v",sizeof(Triangle4v),4) {} 
   
+  template<>
   size_t Triangle4v::Type::size(const char* This) const {
     return ((Triangle4v*)This)->size();
   }
@@ -87,11 +87,11 @@ namespace embree
   /********************** Triangle4i **************************/
 
 #if !defined(__AVX__)
-  Triangle4i::Type Triangle4i::type;
-
+  template<>
   Triangle4i::Type::Type () 
     : PrimitiveType("triangle4i",sizeof(Triangle4i),4) {} 
-  
+
+  template<>
   size_t Triangle4i::Type::size(const char* This) const {
     return ((Triangle4i*)This)->size();
   }
@@ -100,11 +100,11 @@ namespace embree
   /********************** Triangle4vMB **************************/
 
 #if !defined(__AVX__)
-  Triangle4vMB::Type Triangle4vMB::type;
-
+  template<>
   Triangle4vMB::Type::Type () 
   : PrimitiveType("triangle4vmb",sizeof(Triangle4vMB),4) {} 
   
+  template<>
   size_t Triangle4vMB::Type::size(const char* This) const {
     return ((Triangle4vMB*)This)->size();
   }
@@ -114,11 +114,11 @@ namespace embree
 
 #if defined(__TARGET_AVX__)
 #if !defined(__AVX__)
-  Triangle8::Type Triangle8::type;
-
+  template<>
   Triangle8::Type::Type () 
     : PrimitiveType("triangle8",2*sizeof(Triangle4),8) {}
 #else
+  template<>
   size_t Triangle8::Type::size(const char* This) const {
     return ((Triangle8*)This)->size();
   }
@@ -129,11 +129,11 @@ namespace embree
 
 #if defined(__TARGET_AVX__)
 #if !defined(__AVX__)
-  TrianglePairs4v::Type TrianglePairs4v::type;
-
+  template<>
   TrianglePairs4v::Type::Type () 
     : PrimitiveType("trianglepairs4",sizeof(TrianglePairs4v),4) {}
 #else
+  template<>
   size_t TrianglePairs4v::Type::size(const char* This) const {
     return ((TrianglePairs4v*)This)->size();
   }
@@ -143,39 +143,39 @@ namespace embree
   /********************** SubdivPatch1 **************************/
 
 #if !defined(__AVX__)
-  SubdivPatch1::Type SubdivPatch1::type;
-  
   SubdivPatch1::Type::Type () 
     : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {} 
   
   size_t SubdivPatch1::Type::size(const char* This) const {
     return 1;
   }
+
+  SubdivPatch1::Type SubdivPatch1::type;
 #endif
 
   /********************** SubdivPatch1Cached **************************/
 
 #if !defined(__AVX__)
-  SubdivPatch1Cached::Type SubdivPatch1Cached::type;
-  
   SubdivPatch1Cached::Type::Type () 
     : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {} 
   
   size_t SubdivPatch1Cached::Type::size(const char* This) const {
     return 1;
   }
+
+  SubdivPatch1Cached::Type SubdivPatch1Cached::type;
 #endif
 
   /********************** Virtual Object **************************/
 
 #if !defined(__AVX__)
-  Object::Type Object::type;
-
   Object::Type::Type () 
     : PrimitiveType("object",sizeof(Object),1) {} 
 
   size_t Object::Type::size(const char* This) const {
     return 1;
   }
+
+  Object::Type Object::type;
 #endif
 }

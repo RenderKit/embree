@@ -283,6 +283,8 @@ namespace embree
     vint<M> primIDs;   //!< primitive ID
   };
 
-  typedef TrianglePairsMv<4> TrianglePairs4v;
+  template<int MM>
+  typename TrianglePairsMv<MM>::Type TrianglePairsMv<MM>::type;
 
+  typedef TrianglePairsMv<4> TrianglePairs4v;
 }

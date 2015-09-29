@@ -196,5 +196,8 @@ namespace embree
     vint<M> primIDs; // primitive ID
   };
 
+  template<int MM>
+  typename TriangleMvMB<MM>::Type TriangleMvMB<MM>::type;
+
   typedef TriangleMvMB<4> Triangle4vMB;
 }
