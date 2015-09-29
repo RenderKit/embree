@@ -124,7 +124,7 @@ namespace embree
    void BVH8::printStatistics()
    {
      std::cout << BVH8Statistics(this).str();
-     std::cout << "  "; alloc2.print_statistics();
+     //std::cout << "  "; alloc2.print_statistics();
    }	
   
   void BVH8::clearBarrier(NodeRef& node)
