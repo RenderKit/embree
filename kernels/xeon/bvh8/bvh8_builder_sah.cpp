@@ -201,7 +201,7 @@ namespace embree
                   double t0 = 0.0f, dt = 0.0f;
 
 #if PROFILE
-                  profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
+                  profile(2,20,numOriginalPrimitives,[&] (ProfileTimer& timer)
                           {
 #endif
 	    
@@ -319,7 +319,7 @@ namespace embree
 	/* verbose mode */
 	if (bvh->device->verbosity(1) && mesh == nullptr) {
           const size_t usedBytes = bvh->alloc2.getUsedBytes();
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
+	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numOriginalPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
         }
 	if (bvh->device->verbosity(2) && mesh == nullptr)
 	  bvh->printStatistics();
@@ -327,7 +327,7 @@ namespace embree
         /* benchmark mode */
         if (bvh->device->benchmark) {
           BVH8Statistics stat(bvh);
-          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
+          std::cout << "BENCHMARK_BUILD " << dt << " " << double(numOriginalPrimitives)/dt << " " << stat.sah() << " " << stat.bytesUsed() << std::endl;
         }
       }
 
