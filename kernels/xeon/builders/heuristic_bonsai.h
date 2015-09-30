@@ -427,7 +427,7 @@ namespace embree
 			  unsigned first = cprims.begin();
 			  unsigned last = cprims.end();
 
-				__restrict float* leafBounds = reinterpret_cast<float*>(prims);
+				 float* __restrict__ leafBounds = reinterpret_cast<float*>(prims);
 
 				/*
 				if (depth == 0) {
