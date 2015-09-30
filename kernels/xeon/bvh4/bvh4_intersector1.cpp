@@ -76,7 +76,7 @@ namespace embree
         else if (unlikely(cur.isUnalignedNodeMB(types)))
           mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
         
-        else assert(false);
+        else break;
         
         /*! if no child is hit, pop next node */
         const BVH4::BaseNode* node = cur.baseNode(types);
@@ -182,6 +182,8 @@ namespace embree
         /*! process nodes with unaligned bounds and motion blur */
         else if (unlikely(cur.isUnalignedNodeMB(types)))
           mask = intersect_node<N>(cur.unalignedNodeMB(),vray.org,vray.dir,ray_near,ray_far,ray.time,tNear);
+
+        else break;
         
         /*! if no child is hit, pop next node */
         const BVH4::BaseNode* node = cur.baseNode(types);
@@ -472,7 +474,7 @@ namespace embree
     typedef Select2Intersector1<
       TriangleMIntersector1MoellerTrumbore<4 COMMA true>,
       TriangleMvMBIntersector1MoellerTrumbore<4 COMMA true> > Intersector1_Triangle4Moeller_Triangle4vMBMoeller;
-    DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVH4Intersector1<0x10001 COMMA false COMMA Intersector1_Triangle4Moeller_Triangle4vMBMoeller>);
+    DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVH4Intersector1<0x10011 COMMA false COMMA Intersector1_Triangle4Moeller_Triangle4vMBMoeller>);
     //DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVH4Intersector1<0x10001 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA true> > >);
 
 #if defined(__AVX__)
