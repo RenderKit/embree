@@ -576,17 +576,17 @@ namespace embree
           Allocator alloc;
           alloc = createAlloc();
 
-          ttIndicesX.resize(4*miniTreeCount+8);
-          ttIndicesY.resize(4*miniTreeCount+8);
-          ttIndicesZ.resize(4*miniTreeCount+8);
+          ttIndicesX.resize(2*miniTreeCount+64);
+          ttIndicesY.resize(2*miniTreeCount+64);
+          ttIndicesZ.resize(2*miniTreeCount+64);
 
-          ttMidpointsX.resize(miniTreeCount+4);
-          ttMidpointsY.resize(miniTreeCount+4);
-          ttMidpointsZ.resize(miniTreeCount+4);
+          ttMidpointsX.resize(miniTreeCount+32);
+          ttMidpointsY.resize(miniTreeCount+32);
+          ttMidpointsZ.resize(miniTreeCount+32);
 
           ttIndices[0] = (unsigned* __restrict)ttIndicesX.data();
-          ttIndices[1] = ttIndicesY.data();
-          ttIndices[2] = ttIndicesZ.data();
+          ttIndices[1] = (unsigned* __restrict)ttIndicesY.data();
+          ttIndices[2] = (unsigned* __restrict)ttIndicesZ.data();
 /*
           ttIndices[0] = (unsigned*)alloc->alloc0.malloc(2*sizeof(unsigned) * miniTreeCount + 256, 64);
           ttIndices[1] = (unsigned*)alloc->alloc0.malloc(2*sizeof(unsigned) * miniTreeCount + 256, 64);
@@ -603,10 +603,6 @@ namespace embree
         float* __restrict mpx = ttMidpointsX.data();
         float* __restrict mpy = ttMidpointsY.data();
         float* __restrict mpz = ttMidpointsZ.data();
-
-        unsigned* __restrict idx = ttIndices[0];
-        unsigned* __restrict idy = ttIndices[1];
-        unsigned* __restrict idz = ttIndices[2];
 
         for (; i < miniTreeCount - 3; i += 4) {
           BBox3fa b = mtrp[i].pinfo.geomBounds;
@@ -639,9 +635,9 @@ namespace embree
 			  }
 
         SPAWN_BEGIN;
-        SPAWN(([&] {sortedIndicesFromFloats(mpx, idx, miniTreeCount);}));
-        SPAWN(([&] {sortedIndicesFromFloats(mpy, idy, miniTreeCount);}));
-        SPAWN(([&] {sortedIndicesFromFloats(mpz, idz, miniTreeCount);}));
+        SPAWN(([&] {sortedIndicesFromFloats(mpx, ttIndices[0], miniTreeCount);}));
+        SPAWN(([&] {sortedIndicesFromFloats(mpy, ttIndices[1], miniTreeCount);}));
+        SPAWN(([&] {sortedIndicesFromFloats(mpz, ttIndices[2], miniTreeCount);}));
         SPAWN_END;
 
       }
