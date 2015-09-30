@@ -53,13 +53,19 @@ namespace embree
         if (likely(ty == 0)) GridSOAIntersector1::intersect(pre,ray,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,prim,scene,lazy_node);
       }
+      static __forceinline void intersect(Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        intersect(pre,ray,prim,ty,scene,geomID_to_instID,lazy_node);
+      }
       
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
       {
         if (likely(ty == 0)) return GridSOAIntersector1::occluded(pre,ray,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,prim,scene,lazy_node);
-      }      
+      }
+      static __forceinline bool occluded(Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        return occluded(pre,ray,prim,ty,scene,geomID_to_instID,lazy_node);
+      }
     };
 
 #if defined(__SSE__)

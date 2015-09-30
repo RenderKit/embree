@@ -258,6 +258,7 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
+      size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N> vray(ray.org,ray.dir);
       __aligned(32) char tlray[sizeof(TravRay<N>)];
@@ -318,6 +319,7 @@ namespace embree
             if (unlikely((ray.mask & node->mask) == 0)) continue;
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+            leafType = node->type;
             geomID_to_instID = &node->instID;
             new (&vray) TravRay<N>(ray_org,ray_dir);
             ray.org = ray_org;
@@ -329,6 +331,7 @@ namespace embree
           
           /*! restore toplevel ray */
           if (cur == BVH4::popRay) {
+            leafType = 0;
             geomID_to_instID = nullptr;
             vray = (TravRay<N>&) tlray; 
             ray.org = ((TravRay<N>&)tlray).org_xyz;
@@ -342,7 +345,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene,geomID_to_instID,lazy_node);
+        PrimitiveIntersector::intersect(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node);
         ray_far = ray.tfar;
 
         /*! push lazy node onto stack */
@@ -387,6 +390,7 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
+      size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N> vray(ray.org,ray.dir);
       __aligned(32) char tlray[sizeof(TravRay<N>)];
@@ -418,6 +422,7 @@ namespace embree
             const BVH4::TransformNode* node = cur.transformNode();
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+            leafType = node->type;
             geomID_to_instID = &node->instID;
             new (&vray) TravRay<N>(ray_org,ray_dir);
             ray.org = ray_org;
@@ -429,6 +434,7 @@ namespace embree
           
           /*! restore toplevel ray */
           if (cur == BVH4::popRay) {
+            leafType = 0;
             geomID_to_instID = nullptr;
             vray = (TravRay<N>&) tlray; 
             ray.org = ((TravRay<N>&)tlray).org_xyz;
@@ -441,7 +447,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector::occluded(pre,ray,prim,num,bvh->scene,nullptr,lazy_node)) {
+        if (PrimitiveIntersector::occluded(pre,ray,leafType,prim,num,bvh->scene,nullptr,lazy_node)) {
           ray.geomID = 0;
           break;
         }
