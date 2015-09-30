@@ -44,6 +44,57 @@ namespace embree
           return false;
         }
       };
+
+    template<typename Intersector1, typename Intersector2>
+      struct Select2Intersector1
+      {
+        typedef void* Primitive;
+        typedef typename Intersector1::Primitive* Primitive1;
+        typedef typename Intersector2::Primitive* Primitive2;
+        typedef typename Intersector1::Precalculations Precalculations1;
+        typedef typename Intersector2::Precalculations Precalculations2;
+
+        struct Precalculations
+        {
+          __forceinline Precalculations (const Ray& ray, const void* ptr)
+            : pre1(ray,ptr), pre2(ray,ptr) {}
+
+        public:
+          Precalculations1 pre1;
+          Precalculations2 pre2;
+        };
+        
+        static __forceinline void intersect(Precalculations& pre, Ray& ray, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node)
+        {
+          if (likely(ty == 0)) {
+            Primitive1 prim = (Primitive1) prim_i;
+            for (size_t i=0; i<num; i++)
+              Intersector1::intersect(pre.pre1,ray,prim[i],scene,geomID_to_instID);
+          } else {
+            Primitive2 prim = (Primitive2) prim_i;
+            for (size_t i=0; i<num; i++)
+              Intersector2::intersect(pre.pre2,ray,prim[i],scene,geomID_to_instID);
+          }
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, Ray& ray, size_t ty, const Primitive* prim_i, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) 
+        {
+          if (likely(ty == 0)) {
+            Primitive1 prim = (Primitive1) prim_i;
+            for (size_t i=0; i<num; i++) {
+              if (Intersector1::occluded(pre.pre1,ray,prim[i],scene,geomID_to_instID))
+                return true;
+            }
+          } else {
+            Primitive2 prim = (Primitive2) prim_i;
+            for (size_t i=0; i<num; i++) {
+              if (Intersector2::occluded(pre.pre2,ray,prim[i],scene,geomID_to_instID))
+                return true;
+            }
+          }
+          return false;
+        }
+      };
     
     template<int K, typename Intersector>
       struct ArrayIntersectorK
