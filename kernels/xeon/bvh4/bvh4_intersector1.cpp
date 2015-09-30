@@ -326,6 +326,15 @@ namespace embree
           stackPtr->dist = neg_inf;
           stackPtr++;
         }
+
+        // perform stack compaction
+        /*StackItemT<NodeRef>* left=stack;
+        for (StackItemT<NodeRef>* right=stack; right<stackPtr; right++) 
+        {
+          if (*(float*)&right->dist >= ray.tfar) continue;
+          *left = *right; left++;
+        }
+        stackPtr = left;*/
       }
       AVX_ZERO_UPPER();
     }
