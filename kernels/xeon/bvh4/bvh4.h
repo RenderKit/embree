@@ -196,6 +196,9 @@ namespace embree
 	else return isLeaf();
       }
       
+      /*! returns node type */
+      __forceinline int type() const { return ptr & (size_t)align_mask; }
+
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
       __forceinline int isNode(int types) const { return ((types & ~0x10000) == 0x1) || ((types & 0x1) && isNode()); }

@@ -41,7 +41,7 @@ namespace embree
     }
 
     template<int N, int types, bool robust>
-    void traverse_nodes_sort4(BVH4::NodeRef& cur,
+    __forceinline void traverse_nodes_sort4(BVH4::NodeRef& cur,
                               const Ray& ray,
                               const TravRay<4>& vray,
                               const vfloat4& ray_near,
@@ -147,14 +147,14 @@ namespace embree
     }
 
     template<int N, int types, bool robust>
-    void traverse_nodes_sort2(BVH4::NodeRef& cur,
-                              const Ray& ray,
-                              const TravRay<4>& vray,
-                              const vfloat4& ray_near,
-                              const vfloat4& ray_far,
-                              BVH4::NodeRef* stackBegin,
-                              BVH4::NodeRef*& stackPtr,
-                              BVH4::NodeRef* stackEnd)
+    __forceinline void traverse_nodes_sort2(BVH4::NodeRef& cur,
+                                            const Ray& ray,
+                                            const TravRay<4>& vray,
+                                            const vfloat4& ray_near,
+                                            const vfloat4& ray_far,
+                                            BVH4::NodeRef* stackBegin,
+                                            BVH4::NodeRef*& stackPtr,
+                                            BVH4::NodeRef* stackEnd)
     {
       
       /* downtraversal loop */
@@ -242,7 +242,7 @@ namespace embree
       Precalculations pre(ray,bvh);
 
       /*! stack state */
-      StackItemT<NodeRef> stack[stackSize];            //!< stack of nodes 
+      StackItemT<NodeRef> stack[stackSize];           //!< stack of nodes 
       StackItemT<NodeRef>* stackPtr = stack+1;        //!< current stack pointer
       StackItemT<NodeRef>* stackEnd = stack+stackSize;
       stack[0].ptr  = bvh->root;
@@ -266,7 +266,7 @@ namespace embree
       vfloat4 ray_far (ray.tfar);
 
       /* pop loop */
-      while (true) pop:
+      while (true) 
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
@@ -278,20 +278,44 @@ namespace embree
           continue;
         
         /*! traverse to next leaf node */
+#if 0
+        while (true)
+        {
+          switch (cur.type())
+          {
+          case BVH4::tyNode:
+            if (types & BVH4::FLAG_ALIGNED_NODE) traverse_nodes_sort4<N,BVH4::FLAG_ALIGNED_NODE,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
+            break;
+          case BVH4::tyNodeMB:
+            if (types & BVH4::FLAG_ALIGNED_NODE_MB) traverse_nodes_sort4<N,BVH4::FLAG_ALIGNED_NODE_MB,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
+            break;
+          case BVH4::tyUnalignedNode:
+            if (types & BVH4::FLAG_UNALIGNED_NODE) traverse_nodes_sort4<N,BVH4::FLAG_UNALIGNED_NODE,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
+            break;
+          case BVH4::tyUnalignedNodeMB:
+            if (types & BVH4::FLAG_UNALIGNED_NODE_MB) traverse_nodes_sort4<N,BVH4::FLAG_UNALIGNED_NODE_MB,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
+            break;
+          default:
+            goto break1;
+          }
+        }
+      break1:
+#else
         traverse_nodes_sort4<N,types,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
+#endif
 
         /* return if stack is empty */
         if (unlikely(cur == BVH4::invalidNode)) break;
         
         /* ray transformation support */
-        if (types & 0x10000)
+        if (types & BVH4::FLAG_TRANSFORM_NODE)
         {
           /*! process transformation nodes */
           if (unlikely(cur.isTransformNode(types))) 
           {
             //STAT3(normal.transform_nodes,1,1,1);
             const BVH4::TransformNode* node = cur.transformNode();
-            if (unlikely((ray.mask & node->mask) == 0)) goto pop;
+            if (unlikely((ray.mask & node->mask) == 0)) continue;
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
             geomID_to_instID = &node->instID;
@@ -300,7 +324,7 @@ namespace embree
             ray.dir = ray_dir;
             stackPtr->ptr = BVH4::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
             stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
-            goto pop;
+            continue;
           }
           
           /*! restore toplevel ray */
@@ -309,7 +333,7 @@ namespace embree
             vray = (TravRay<N>&) tlray; 
             ray.org = ((TravRay<N>&)tlray).org_xyz;
             ray.dir = ((TravRay<N>&)tlray).dir_xyz;
-            goto pop;
+            continue;
           }
         }
         
@@ -321,6 +345,7 @@ namespace embree
         PrimitiveIntersector::intersect(pre,ray,prim,num,bvh->scene,geomID_to_instID,lazy_node);
         ray_far = ray.tfar;
 
+        /*! push lazy node onto stack */
         if (unlikely(lazy_node)) {
           stackPtr->ptr = lazy_node;
           stackPtr->dist = neg_inf;
@@ -421,6 +446,7 @@ namespace embree
           break;
         }
         
+        /*! push lazy node onto stack */
         if (unlikely(lazy_node)) {
           *stackPtr = (NodeRef)lazy_node;
           stackPtr++;
@@ -428,7 +454,7 @@ namespace embree
       }
       AVX_ZERO_UPPER();
     }
-    
+
     DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >);
     
@@ -451,5 +477,5 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4VirtualIntersector1,BVH4Intersector1<0x1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1> >);
 
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVH4Intersector1<0x10 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<4 COMMA true> > >);
-    }
+  }
 }
