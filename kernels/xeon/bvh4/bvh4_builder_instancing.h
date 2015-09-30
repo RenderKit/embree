@@ -36,11 +36,11 @@ namespace embree
       __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, unsigned mask, int instID, int xfmID, int type) 
         : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type)
       {
-        if (node.isLeaf())
-          localBounds.lower.w = 0.0f;
-        else {
+        if (node.isNode() || node.isNodeMB()) {
           const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
           localBounds.lower.w = area(worldBounds);
+        } else {
+          localBounds.lower.w = 0.0f;
         }
       }
       

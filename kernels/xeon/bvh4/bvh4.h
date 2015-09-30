@@ -472,6 +472,11 @@ namespace embree
                              reduce_max(max(upper_z,upper_z+upper_dz))));
       }
 
+      /*! Return bounding box of child i */
+      __forceinline BBox3fa bounds(size_t i) const {
+        return merge(bounds0(i),bounds1(i));
+      }
+
       /*! swap two children of the node */
       __forceinline void swap(size_t i, size_t j)
       {

@@ -323,20 +323,30 @@ namespace embree
       while (refs.size()+BVH4::N-1 <= N)
       {
         std::pop_heap (refs.begin(),refs.end()); 
-        BVH4::NodeRef ref = refs.back().node;
-        const AffineSpace3fa local2world = refs.back().local2world;
-        const unsigned mask = refs.back().mask;
-        const int instID = refs.back().instID;
-        const int xfmID = refs.back().xfmID;
-        const int type = refs.back().type;
-        if (ref.isLeaf()) break;
+        BuildRef ref = refs.back();
         refs.pop_back();    
         
-        BVH4::Node* node = ref.node();
-        for (size_t i=0; i<BVH4::N; i++) {
-          if (node->child(i) == BVH4::emptyNode) continue;
-          refs.push_back(BuildRef(local2world,node->bounds(i),node->child(i),mask,instID,xfmID,type));
-          std::push_heap (refs.begin(),refs.end()); 
+        if (ref.node.isNode()) 
+        {
+          BVH4::Node* node = ref.node.node();
+          for (size_t i=0; i<BVH4::N; i++) {
+            if (node->child(i) == BVH4::emptyNode) continue;
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            std::push_heap (refs.begin(),refs.end()); 
+          }
+        } 
+        else if (ref.node.isNodeMB()) 
+        {
+          BVH4::NodeMB* node = ref.node.nodeMB();
+          for (size_t i=0; i<BVH4::N; i++) {
+            if (node->child(i) == BVH4::emptyNode) continue;
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            std::push_heap (refs.begin(),refs.end()); 
+          }
+        } 
+        else {
+          refs.push_back(ref);
+          break;
         }
       }
     }
