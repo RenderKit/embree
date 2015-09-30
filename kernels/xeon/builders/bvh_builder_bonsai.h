@@ -576,9 +576,9 @@ namespace embree
           Allocator alloc;
           alloc = createAlloc();
 
-          ttIndicesX.resize(2*miniTreeCount+8);
-          ttIndicesY.resize(2*miniTreeCount+8);
-          ttIndicesZ.resize(2*miniTreeCount+8);
+          ttIndicesX.resize(4*miniTreeCount+8);
+          ttIndicesY.resize(4*miniTreeCount+8);
+          ttIndicesZ.resize(4*miniTreeCount+8);
 
           ttMidpointsX.resize(miniTreeCount+4);
           ttMidpointsY.resize(miniTreeCount+4);

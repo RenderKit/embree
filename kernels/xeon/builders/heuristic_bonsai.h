@@ -100,7 +100,7 @@ namespace embree
 			  midY = static_cast<float*>(_mm_malloc(size*sizeof(float) + 256, 64));
 			  midZ = static_cast<float*>(_mm_malloc(size*sizeof(float) + 256, 64));
 
-			  accumulatedArea = static_cast<float*>(_mm_malloc(size * sizeof(float) + 256, 64)); //new float[size];
+			  accumulatedArea = static_cast<float*>(_mm_malloc(size * sizeof(float), 64)); //new float[size];
 			  temporaryIndices = new unsigned[size];
 			  leftPartition = new unsigned char[size];
 			  gatheredRefs = static_cast<PrimRef*>(_mm_malloc(maxLeafSize * 2 * sizeof(PrimRef), 64));
@@ -117,6 +117,7 @@ namespace embree
 			  _mm_free(midZ);
 
 			  _mm_free(accumulatedArea);
+				_mm_free(gatheredRefs);
 			  delete [] temporaryIndices;
 			  delete [] leftPartition;
 		  }
@@ -320,7 +321,14 @@ namespace embree
 				  _mm_store_ps(data.midX + i, mid0);
 				  _mm_store_ps(data.midY + i, mid1);
 				  _mm_store_ps(data.midZ + i, mid2);
+//#define STD_SORT
 
+#ifdef STD_SORT
+					data.indices[0][i+0] = data.indices[1][i+0] = data.indices[2][i+0] = i + offset + 0;
+					data.indices[0][i+1] = data.indices[1][i+1] = data.indices[2][i+1] = i + offset + 1;
+					data.indices[0][i+2] = data.indices[1][i+2] = data.indices[2][i+2] = i + offset + 2;
+					data.indices[0][i+3] = data.indices[1][i+3] = data.indices[2][i+3] = i + offset + 3;
+#endif
 			  }
 
 			  for (; i < count; i++) {
@@ -333,12 +341,27 @@ namespace embree
 				  data.midX[i] = midArray[0];
 				  data.midY[i] = midArray[1];
 				  data.midZ[i] = midArray[2];
-
+#ifdef STD_SORT
+					data.indices[0][i+0] = data.indices[1][i+0] = data.indices[2][i+0] = i + offset + 0;
+#endif
 			  }
+				float* mmx = data.midX;
+				float* mmy = data.midY;
+				float* mmz = data.midZ;
 
-			  sortedIndicesFromFloatsX3(data.midX, data.midY, data.midZ, data.indices[0], data.indices[1], data.indices[2], count, offset);
-
-		  }
+#ifdef STD_SORT
+				std::sort(data.indices[0], data.indices[0] + count, [mmx, offset](unsigned& a, unsigned& b) { return mmx[a-offset] < mmx[b-offset]; });
+				std::sort(data.indices[1], data.indices[1] + count, [mmy, offset](unsigned& a, unsigned& b) { return mmy[a-offset] < mmy[b-offset]; });
+				std::sort(data.indices[2], data.indices[2] + count, [mmz, offset](unsigned& a, unsigned& b) { return mmz[a-offset] < mmz[b-offset]; });
+#else
+				sortedIndicesFromFloatsX3(data.midX, data.midY, data.midZ, data.indices[0], data.indices[1], data.indices[2], count, offset);
+#endif
+				for (int i = 0; i < count-1; i++) {
+					assert(mmx[data.indices[0][i]-offset] <= mmx[data.indices[0][i+1]-offset]);
+					assert(mmy[data.indices[1][i]-offset] <= mmy[data.indices[1][i+1]-offset]);
+					assert(mmz[data.indices[2][i]-offset] <= mmz[data.indices[2][i+1]-offset]);
+				}
+			  }
 
 			__forceinline __m256 computeBounds(const float* __restrict leafBounds, const unsigned* __restrict remap, unsigned first, unsigned last) {
 				__m256 bounds0 = _mm256_load_ps(leafBounds + remap[first]*8);

@@ -166,7 +166,7 @@ namespace embree
 
 	    bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
 	    if (splitTriangles)
-        prims.resize(numSplitPrimitives*32);
+        prims.resize(numSplitPrimitives*4);
       else
         prims.resize(numSplitPrimitives);
 
