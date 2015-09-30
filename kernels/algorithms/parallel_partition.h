@@ -1047,4 +1047,108 @@ namespace embree
     return true;
   }
 
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
+  class __aligned(64) parallel_partition_static_task
+    {
+    private:
+
+      const Compare& cmp;
+      const Reduction_T& reduction_t;
+      const Reduction_V& reduction_v;
+      const V &init;
+
+      struct Range {
+	int start;
+	int end;
+	Range() {}
+
+      Range(int start, int end) : start(start), end(end) {}
+
+	__forceinline void reset() { start = 0; end = -1; } 
+	
+	__forceinline Range intersect(const Range& r) const
+	{
+	  return Range (max(start,r.start),min(end,r.end)); // carefull with ssize_t here
+	}
+
+	__forceinline bool empty() const { return end < start; } 
+	
+	__forceinline size_t size() const { 
+	  assert(!empty());
+	  return end-start+1; 
+	}
+      };
+
+      size_t N;
+      size_t blockSize;
+      size_t blocks;
+      T* array;
+
+      size_t numMisplacedRangesLeft;
+      size_t numMisplacedRangesRight;
+      size_t numMisplacedItems;
+
+      __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
+      __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
+      __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
+      __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+
+
+     
+    public:
+     
+      __forceinline parallel_partition_static_task(T *array, 
+                                                   const size_t N, 
+                                                   const size_t minBlockSize,
+                                                   const size_t maxNumThreads,
+                                                   const V& init, 
+                                                   const Compare& cmp, 
+                                                   const Reduction_T& reduction_t, 
+                                                   const Reduction_V& reduction_v) : 
+      array(array), N(N), init(init), cmp(cmp), reduction_t(reduction_t) , reduction_v(reduction_v)
+      {
+	numMisplacedRangesLeft  = 0;
+	numMisplacedRangesRight = 0;
+	numMisplacedItems  = 0;
+	schedulerNumThreads = 0;
+        blockSize = max(minBlockSize,N / maxNumThreads);
+        blocks = (N+blockSize-1)/blockSize;
+
+parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
+
+	const size_t numThreads = p->schedulerNumThreads /*workaround*/;
+
+	const size_t startID = (threadID+0)*p->N/numThreads;
+	const size_t endID   = (threadID+1)*p->N/numThreads;
+	const size_t size    = endID-startID;
+	
+        const size_t mid = p->partition_serial(&p->array[startID],size);
+      }
+
+      __forceinline size_t partition()
+      {
+
+	parallel_for(blocks,[&] (const size_t blockIndex) {
+
+            const size_t startID = (blockIndex+0)*N/blockSize;
+            const size_t endID   = (blockIndex+1)*N/blockSize;
+            const size_t size    = endID-startID;
+            V local_left(empty);
+            V local_right(empty);
+
+            const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
+            counter_start[blockIndex] = startID;
+            counter_left [blockIndex] = mid;
+
+	  });
+
+      }
+
+    };
+
+
 };

@@ -187,12 +187,23 @@ namespace embree
           PrimInfo init; init.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          
-          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>
-	  (&prims[begin],end-begin,init,left,right,
-	   [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-	   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-	   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
+
+#if defined(__AVX512F__)
+          const vint4 vSplitPos(splitPos);
+          const vbool4 vSplitMask( (int)splitDimMask );
+
+          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+                                                                                                           [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); },
+                                                                                                           [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                                                           [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+
+#else
+          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+                                                                                                           [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                                                           [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                                                           [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+#endif
           
           const size_t center = begin+mid;
           left.begin  = begin;  left.end  = center; // FIXME: remove?
