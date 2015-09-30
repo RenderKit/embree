@@ -152,9 +152,17 @@ namespace embree
           const unsigned int splitDim = split.dim;
           const unsigned int splitDimMask = (unsigned int)1 << splitDim; // FIXME: also use in unaligned and spatial binner
 
+#if defined(__AVX512F__)
+          const vint4 vSplitPos(splitPos);
+          const vbool4 vSplitMask( (int)splitDimMask );
+          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
+                                              [&] (const PrimRef& ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); },
+                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+#else
           size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+#endif
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);

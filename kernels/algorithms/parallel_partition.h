@@ -42,7 +42,7 @@ namespace embree
       /* *l < pivot */
       while (likely(l <= r && cmp(*l) )) 
       {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(l+4);	  
 #endif
         reduction_t(leftReduction,*l);
@@ -51,7 +51,7 @@ namespace embree
       /* *r >= pivot) */
       while (likely(l <= r && !cmp(*r)))
       {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
         prefetch<PFHINT_L1EX>(r-4);	  
 #endif
         reduction_t(rightReduction,*r);
@@ -199,7 +199,7 @@ namespace embree
 	    /* *l < pivot */
             while (likely(l <= r && cmp(*l) )) 
               {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L1EX>(l+4);	  
 #endif
 		//if (!cmp(*l)) break;
@@ -209,7 +209,7 @@ namespace embree
 	    /* *r >= pivot) */
             while (likely(l <= r && !cmp(*r)))
               {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L1EX>(r-4);	  
 #endif
 		//if (cmp(*r)) break;
@@ -240,7 +240,7 @@ namespace embree
           {
             while(cmp(array[left_begin]) /* array[left_begin] < pivot */)
               {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L1EX>(&array[left_begin] + 2);	  
 #endif
 
@@ -251,7 +251,7 @@ namespace embree
 
             while(!cmp(array[right_begin]) /* array[right_begin] >= pivot */)
               {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L1EX>(&array[right_begin] - 2);	  
 #endif
 
@@ -773,7 +773,7 @@ namespace embree
 #pragma nounroll
 	    for (size_t j=0;j<items;j++)
 	      {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L1EX>(((char*)&l[j]) + 4*64);
 		prefetch<PFHINT_L1EX>(((char*)&r[j]) + 4*64);	  
 #endif
@@ -834,7 +834,7 @@ namespace embree
 #pragma nounroll
 	    while(items)
 	      {
-#if defined(__MIC__)
+#if defined(__MIC__) || defined(__AVX512F__)
 		prefetch<PFHINT_L2EX>(((char*)l) + 4*64);
 		prefetch<PFHINT_L2EX>(((char*)r) + 4*64);	  
 
