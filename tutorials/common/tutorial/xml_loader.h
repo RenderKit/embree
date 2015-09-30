@@ -23,7 +23,7 @@
 namespace embree
 {
   /*! read from disk */
-  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space);
+  Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space = one);
 }
 
 #endif

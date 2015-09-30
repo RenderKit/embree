@@ -21,6 +21,8 @@
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
+#include "../../../common/sys/filename.h"
+#include "../../../common/sys/string.h"
 
 #include <vector>
 #include <memory>
@@ -437,6 +439,7 @@ namespace embree
       Ref<MaterialNode> material;
     };
 
+    static Ref<Node> load(const FileName& fname);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
   };
 }

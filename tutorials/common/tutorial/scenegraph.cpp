@@ -15,9 +15,23 @@
 // ======================================================================== //
 
 #include "scenegraph.h"
+#include "xml_loader.h"
+#include "obj_loader.h"
 
 namespace embree
 {
+  Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
+  {
+    if (strlwr(filename.ext()) == std::string("obj")) {
+      return loadOBJ(filename);
+    }
+    else if (strlwr(filename.ext()) == std::string("xml")) {
+      return loadXML(filename);
+    }
+    else
+      throw std::runtime_error("unknown scene format: " + filename.ext());
+  }
+  
   void SceneGraph::set_motion_blur(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode0 = node0.dynamicCast<SceneGraph::TransformNode>()) 
