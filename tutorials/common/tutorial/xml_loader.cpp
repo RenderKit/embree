@@ -676,7 +676,7 @@ namespace embree
 
     Ref<XML> parameters = xml->child("parameters");
     if (materialCache.find(parameters) != materialCache.end()) {
-      return materialCache[parameters];
+      return materialMap[id] = materialCache[parameters];
     }
 
     std::string type = load<std::string>(xml->child("code")).c_str();
