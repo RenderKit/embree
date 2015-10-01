@@ -33,8 +33,6 @@ namespace embree
     void open(const char* str, size_t id);
     void close(const char* str);
     
-    ssize_t storeReference(Ref<SceneGraph::Node> node);
-    
     void store(const char* name, const char* str);
     void store(const char* name, const float& v);
     void store(const char* name, const Vec3fa& v);
@@ -59,7 +57,7 @@ namespace embree
     void store(const VelvetMaterial& material, ssize_t id);
     void store(const DielectricMaterial& material, ssize_t id);
     void store(const MetallicPaintMaterial& material, ssize_t id);
-    void store(Ref<SceneGraph::MaterialNode> material, ssize_t id);
+    void store(Ref<SceneGraph::MaterialNode> material);
 
     void store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id);
@@ -106,15 +104,6 @@ namespace embree
     assert(ident>=2);
     ident-=2;
     tab(); fprintf(xml,"</%s>\n",str);
-  }
-
-  ssize_t XMLWriter::storeReference(Ref<SceneGraph::Node> node) 
-  {
-    if (nodeMap.find(node) != nodeMap.end()) {
-      tab(); fprintf(xml,"<ref id=\"%zu\"/>\n",nodeMap[node]);
-      return -1;
-    }
-    return currentNodeID++;
   }
 
   void XMLWriter::store(const char* name, const char* str) {
@@ -324,19 +313,26 @@ namespace embree
     close("material");
   }
 
-  void XMLWriter::store(Ref<SceneGraph::MaterialNode> node, ssize_t id)
+  void XMLWriter::store(Ref<SceneGraph::MaterialNode> mnode)
   {
-    switch (node->material.ty)
+    Ref<SceneGraph::Node> node = mnode.dynamicCast<SceneGraph::Node>();
+    if (nodeMap.find(node) != nodeMap.end()) {
+      tab(); fprintf(xml,"<material id=\"%zu\"/>\n",nodeMap[node]);
+      return;
+    }
+    const ssize_t id = nodeMap[node] = currentNodeID++;
+
+    switch (mnode->material.ty)
     {
-    case MATERIAL_OBJ             : store((OBJMaterial&)node->material,id); break;
-    case MATERIAL_THIN_DIELECTRIC : store((ThinDielectricMaterial&)node->material,id); break;
-    case MATERIAL_METAL           : store((MetalMaterial&)node->material,id); break;
-    case MATERIAL_VELVET          : store((VelvetMaterial&)node->material,id); break;
-    case MATERIAL_DIELECTRIC      : store((DielectricMaterial&)node->material,id); break;
-    case MATERIAL_METALLIC_PAINT  : store((MetallicPaintMaterial&)node->material,id); break;
-    case MATERIAL_MATTE           : store((MatteMaterial&)node->material,id); break;
-    case MATERIAL_MIRROR          : store((MirrorMaterial&)node->material,id); break;
-    case MATERIAL_REFLECTIVE_METAL: store((ReflectiveMetalMaterial&)node->material,id); break;
+    case MATERIAL_OBJ             : store((OBJMaterial&)mnode->material,id); break;
+    case MATERIAL_THIN_DIELECTRIC : store((ThinDielectricMaterial&)mnode->material,id); break;
+    case MATERIAL_METAL           : store((MetalMaterial&)mnode->material,id); break;
+    case MATERIAL_VELVET          : store((VelvetMaterial&)mnode->material,id); break;
+    case MATERIAL_DIELECTRIC      : store((DielectricMaterial&)mnode->material,id); break;
+    case MATERIAL_METALLIC_PAINT  : store((MetallicPaintMaterial&)mnode->material,id); break;
+    case MATERIAL_MATTE           : store((MatteMaterial&)mnode->material,id); break;
+    case MATERIAL_MIRROR          : store((MirrorMaterial&)mnode->material,id); break;
+    case MATERIAL_REFLECTIVE_METAL: store((ReflectiveMetalMaterial&)mnode->material,id); break;
     default: throw std::runtime_error("unsupported material");
     }
   }
@@ -344,7 +340,7 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id) 
   {
     open("TriangleMesh",id);
-    store(mesh->material.dynamicCast<SceneGraph::Node>());
+    store(mesh->material);
     store("positions",mesh->v);
     if (mesh->v2.size()) store("positions2",mesh->v2);
     store("normals",mesh->vn);
@@ -356,7 +352,7 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id)
   {
     open("SubdivisionMesh",id);
-    store(mesh->material.dynamicCast<SceneGraph::Node>());
+    store(mesh->material);
     store("positions",mesh->positions);
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
@@ -375,7 +371,7 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> hair, ssize_t id)
   {
     open("Hair",id);
-    store(hair->material.dynamicCast<SceneGraph::Node>());
+    store(hair->material);
     store("positions",hair->v);
     if (hair->v2.size()) store("positions2",hair->v2);
     store("indices",hair->hairs);
@@ -411,8 +407,10 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::Node> node)
   {
-    const ssize_t id = storeReference(node);
-    if (id < 0) return;
+    if (nodeMap.find(node) != nodeMap.end()) {
+      tab(); fprintf(xml,"<ref id=\"%zu\"/>\n",nodeMap[node]); return;
+    }
+    const ssize_t id = nodeMap[node] = currentNodeID++;
 
     if      (Ref<SceneGraph::LightNode<PointLight>> cnode = node.dynamicCast<SceneGraph::LightNode<PointLight>>()) store(cnode,id);
     else if (Ref<SceneGraph::LightNode<SpotLight>> cnode = node.dynamicCast<SceneGraph::LightNode<SpotLight>>()) store(cnode,id);
@@ -421,7 +419,7 @@ namespace embree
     else if (Ref<SceneGraph::LightNode<AmbientLight>> cnode = node.dynamicCast<SceneGraph::LightNode<AmbientLight>>()) store(cnode,id);
     else if (Ref<SceneGraph::LightNode<TriangleLight>> cnode = node.dynamicCast<SceneGraph::LightNode<TriangleLight>>()) store(cnode,id);
     else if (Ref<SceneGraph::LightNode<QuadLight>> cnode = node.dynamicCast<SceneGraph::LightNode<QuadLight>>()) store(cnode,id);
-    else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
+    //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
