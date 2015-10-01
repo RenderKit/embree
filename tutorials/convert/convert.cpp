@@ -35,9 +35,9 @@ namespace embree
       const size_t width  = texture->width;
       const size_t height = texture->height;
       const Color4 c = texture->get(x,y);
-      const Vec2f p(x/(width-1),y/(height-1));
+      const Vec2f p(x/float(width-1),y/float(height-1));
       const float px = p.x*(bounds.upper.x-bounds.lower.x) + bounds.lower.x;
-      const float py = c.r;
+      const float py = c.r*(bounds.upper.y-bounds.lower.y) + bounds.lower.y;
       const float pz = p.y*(bounds.upper.z-bounds.lower.z) + bounds.lower.z;
       return Vec3fa(px,py,pz);
     }
@@ -50,7 +50,7 @@ namespace embree
       const size_t y = clamp((size_t)(p.y*(height-1)),(size_t)0,height-1);
       const Color4 c = texture->get(x,y);
       const float px = p.x*(bounds.upper.x-bounds.lower.x) + bounds.lower.x;
-      const float py = c.r;
+      const float py = c.r*(bounds.upper.y-bounds.lower.y) + bounds.lower.y;
       const float pz = p.y*(bounds.upper.z-bounds.lower.z) + bounds.lower.z;
       return AffineSpace3fa::translate(Vec3fa(px,py,pz));
     }
