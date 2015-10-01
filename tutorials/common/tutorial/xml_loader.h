@@ -14,8 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __EMBREE_XML_LOADER_H__
-#define __EMBREE_XML_LOADER_H__
+#pragma once
 
 #include "obj_loader.h"
 #include "scenegraph.h"
@@ -26,4 +25,3 @@ namespace embree
   Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space = one);
 }
 
-#endif

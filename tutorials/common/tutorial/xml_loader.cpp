@@ -806,13 +806,14 @@ namespace embree
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    std::vector<Vec3f> motions   = loadVec3fArray(xml->childOpt("motions"  ));
+    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
     std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
     std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
     std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
 
     SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
     for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
+    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
     for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
     for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
     for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
@@ -854,29 +855,30 @@ namespace embree
     }
     else 
     {
+      const std::string id = xml->parm("id");
       if (xml->name == "xml") {
-        return XMLLoader::load(path + xml->parm("src"),one);
+        return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
       }
       else if (xml->name == "extern") {
         FileName fname = path + xml->parm("src");
-        if (fname.ext() == "xml") return XMLLoader::load(path + xml->parm("src"),one);
+        if (fname.ext() == "xml") return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
         else THROW_RUNTIME_ERROR("unknown file type:" + fname.str());
       }
-      else if (xml->name == "ref"             ) return sceneMap[xml->parm("id")];
+      else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
       
-      else if (xml->name == "PointLight"      ) return loadPointLight      (xml);
-      else if (xml->name == "SpotLight"       ) return loadSpotLight       (xml);
-      else if (xml->name == "DirectionalLight") return loadDirectionalLight(xml);
-      else if (xml->name == "DistantLight"    ) return loadDistantLight    (xml);
-      else if (xml->name == "AmbientLight"    ) return loadAmbientLight    (xml);
-      else if (xml->name == "TriangleLight"   ) return loadTriangleLight   (xml);
-      else if (xml->name == "QuadLight"       ) return loadQuadLight       (xml);
-      else if (xml->name == "HDRILight"       ) return loadHDRILight       (xml);
+      else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
+      else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);
+      else if (xml->name == "DirectionalLight") return sceneMap[id] = loadDirectionalLight(xml);
+      else if (xml->name == "DistantLight"    ) return sceneMap[id] = loadDistantLight    (xml);
+      else if (xml->name == "AmbientLight"    ) return sceneMap[id] = loadAmbientLight    (xml);
+      else if (xml->name == "TriangleLight"   ) return sceneMap[id] = loadTriangleLight   (xml);
+      else if (xml->name == "QuadLight"       ) return sceneMap[id] = loadQuadLight       (xml);
+      else if (xml->name == "HDRILight"       ) return sceneMap[id] = loadHDRILight       (xml);
 
-      else if (xml->name == "TriangleMesh"    ) return loadTriangleMesh    (xml);
-      else if (xml->name == "SubdivisionMesh" ) return loadSubdivMesh      (xml);
-      else if (xml->name == "Group"           ) return loadGroupNode       (xml);
-      else if (xml->name == "Transform"       ) return loadTransformNode   (xml);
+      else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
+      else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
+      else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
