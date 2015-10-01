@@ -30,6 +30,18 @@ namespace embree
     HeightField (Ref<Image> texture, const BBox3fa& bounds)
       : texture(texture), bounds(bounds) {}
     
+    const Vec3fa at(const size_t x, const size_t y)
+    {
+      const size_t width  = texture->width;
+      const size_t height = texture->height;
+      const Color4 c = texture->get(x,y);
+      const Vec2f p(x/(width-1),y/(height-1));
+      const float px = p.x*(bounds.upper.x-bounds.lower.x) + bounds.lower.x;
+      const float py = c.r;
+      const float pz = p.y*(bounds.upper.z-bounds.lower.z) + bounds.lower.z;
+      return Vec3fa(px,py,pz);
+    }
+
     const AffineSpace3fa get(Vec2f p)
     {
       const size_t width  = texture->width;
@@ -41,6 +53,35 @@ namespace embree
       const float py = c.r;
       const float pz = p.y*(bounds.upper.z-bounds.lower.z) + bounds.lower.z;
       return AffineSpace3fa::translate(Vec3fa(px,py,pz));
+    }
+
+    Ref<SceneGraph::Node> geometry()
+    {
+      OBJMaterial material(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),1.0f);
+      Ref<SceneGraph::MaterialNode> mnode = new SceneGraph::MaterialNode((Material&)material);
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode);
+
+      const size_t width = texture->width;
+      const size_t height = texture->height;
+      
+      mesh->v.resize(height*width);
+      for (size_t y=0; y<height; y++) 
+        for (size_t x=0; x<width; x++) 
+          mesh->v[y*width+x] = at(x,y);
+
+      mesh->triangles.resize(2*(height-1)*(width-1));
+      for (size_t y=0; y<height-1; y++) {
+        for (size_t x=0; x<width-1; x++) {
+          const size_t p00 = (y+0)*width+(x+0);
+          const size_t p01 = (y+0)*width+(x+1);
+          const size_t p10 = (y+1)*width+(x+0);
+          const size_t p11 = (y+1)*width+(x+1);
+          const size_t tri = y*(width-1)+x;
+          mesh->triangles[2*tri+0] = SceneGraph::TriangleMeshNode::Triangle(p00,p01,p10);
+          mesh->triangles[2*tri+1] = SceneGraph::TriangleMeshNode::Triangle(p01,p11,p10);
+        }
+      }
+      return mesh.dynamicCast<SceneGraph::Node>();
     }
     
   private:
@@ -108,11 +149,13 @@ namespace embree
       }
 
       /* load terrain */
-      else if (tag == "-terrain") {
+      else if (tag == "-terrain") 
+      {
         Ref<Image> tex = loadImage(path + cin->getFileName());
         const Vec3fa lower = cin->getVec3fa();
         const Vec3fa upper = cin->getVec3fa();
         g_height_field = new HeightField(tex,BBox3fa(lower,upper));
+        g_scene->add(g_height_field->geometry());
       }
 
       /* instantiate model */
