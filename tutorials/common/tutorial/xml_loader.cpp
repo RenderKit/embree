@@ -16,6 +16,7 @@
 
 #include "xml_loader.h"
 #include "xml_parser.h"
+#include "obj_loader.h"
 #include "scene.h"
 #include "../../../common/math/affinespace.h"
 #include "../../../common/math/vec2.h"
@@ -861,7 +862,8 @@ namespace embree
       }
       else if (xml->name == "extern") {
         FileName fname = path + xml->parm("src");
-        if (fname.ext() == "xml") return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
+        if      (fname.ext() == "xml") return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
+        else if (fname.ext() == "obj") return sceneMap[id] = loadOBJ(path + xml->parm("src"));
         else THROW_RUNTIME_ERROR("unknown file type:" + fname.str());
       }
       else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
