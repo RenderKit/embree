@@ -14,6 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(worldgen worldgen.cpp distribution1d.cpp distribution2d.cpp)
-TARGET_LINK_LIBRARIES(worldgen tutorial image transport tutorial_device)
-SET_PROPERTY(TARGET worldgen PROPERTY FOLDER tutorials/single)
+ADD_EXECUTABLE(convert convert.cpp distribution1d.cpp distribution2d.cpp)
+TARGET_LINK_LIBRARIES(convert tutorial image transport tutorial_device)
+SET_PROPERTY(TARGET convert PROPERTY FOLDER tutorials/single)

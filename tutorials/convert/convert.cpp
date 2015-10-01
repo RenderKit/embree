@@ -23,7 +23,7 @@
 namespace embree
 {
   /* name of the tutorial */
-  const char* tutorialName = "worldgen";
+  const char* tutorialName = "convert";
 
   struct HeightField : public RefCount
   {
