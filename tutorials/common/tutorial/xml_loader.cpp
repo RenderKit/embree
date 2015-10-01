@@ -669,9 +669,9 @@ namespace embree
 
   Ref<SceneGraph::MaterialNode> XMLLoader::loadMaterial(const Ref<XML>& xml) 
   {
-    if (xml->parm("id") != "") {
-      return materialMap[xml->parm("id")];
-    }
+    //if (xml->parm("id") != "") {
+    //  return materialMap[xml->parm("id")];
+    //}
 
     Ref<XML> parameters = xml->child("parameters");
     if (materialCache.find(parameters) != materialCache.end()) {

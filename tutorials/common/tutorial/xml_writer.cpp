@@ -105,7 +105,7 @@ namespace embree
   {
     assert(ident>=2);
     ident-=2;
-    tab(); fprintf(xml,"<%s>\n",str);
+    tab(); fprintf(xml,"</%s>\n",str);
   }
 
   ssize_t XMLWriter::storeReference(Ref<SceneGraph::Node> node) 
@@ -133,14 +133,14 @@ namespace embree
   void XMLWriter::store(const char* name, const std::vector<T>& vec)
   {
     const long int offset = ftell(bin);
-    tab(); fprintf(bin, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
+    tab(); fprintf(xml, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
     if (vec.size()) fwrite(vec.data(),vec.size(),sizeof(T),bin);
   }
 
   void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
   {
     const long int offset = ftell(bin);
-    tab(); fprintf(bin, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
+    tab(); fprintf(xml, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
     for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3f),bin);
   }
 
@@ -346,7 +346,7 @@ namespace embree
     open("TriangleMesh",id);
     store(mesh->material.dynamicCast<SceneGraph::Node>());
     store("positions",mesh->v);
-    store("positions2",mesh->v2);
+    if (mesh->v2.size()) store("positions2",mesh->v2);
     store("normals",mesh->vn);
     store("texcoords",mesh->vt);
     store("triangles",mesh->triangles);
@@ -377,7 +377,7 @@ namespace embree
     open("Hair",id);
     store(hair->material.dynamicCast<SceneGraph::Node>());
     store("positions",hair->v);
-    store("positions2",hair->v2);
+    if (hair->v2.size()) store("positions2",hair->v2);
     store("indices",hair->hairs);
     close("Hair");
   }
@@ -436,7 +436,8 @@ namespace embree
     FileName binFileName = fileName.addExt(".bin");
     xml = fopen(fileName.c_str(),"w");
     bin = fopen(binFileName.c_str(),"wb");
-    
+
+    fprintf(xml,"<?xml version=\"1.0\"?>\n");
     open("scene");
     store(root);
     close("scene");
