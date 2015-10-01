@@ -60,13 +60,14 @@ namespace embree
   {
   public:
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-    : ty(MATERIAL_THIN_DIELECTRIC), transmission(log(transmission)*thickness), eta(eta) {}
+    : ty(MATERIAL_THIN_DIELECTRIC), transmission(log(transmission)*thickness), eta(eta), thickness(thickness) {}
     
   public:
     int ty;
     int align[3];
     Vec3fa transmission;
     float eta;
+    float thickness;
   };
   
   /*! OBJ material */
@@ -440,6 +441,7 @@ namespace embree
     };
 
     static Ref<Node> load(const FileName& fname);
+    static void store(Ref<SceneGraph::Node> root, const FileName& fname);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
   };
 }

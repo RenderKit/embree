@@ -16,6 +16,7 @@
 
 #include "scenegraph.h"
 #include "xml_loader.h"
+#include "xml_writer.h"
 #include "obj_loader.h"
 
 namespace embree
@@ -27,6 +28,15 @@ namespace embree
     }
     else if (strlwr(filename.ext()) == std::string("xml")) {
       return loadXML(filename);
+    }
+    else
+      throw std::runtime_error("unknown scene format: " + filename.ext());
+  }
+
+  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename)
+  {
+    if (strlwr(filename.ext()) == std::string("xml")) {
+      storeXML(root,filename);
     }
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());
