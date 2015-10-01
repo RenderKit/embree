@@ -1049,7 +1049,7 @@ namespace embree
 
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#if 0 // FIXME: dead code, not compiling with clang
 
   template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition_static_task
@@ -1118,8 +1118,8 @@ namespace embree
         blockSize = max(minBlockSize,N / maxNumThreads);
         blocks = (N+blockSize-1)/blockSize;
 
-parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
-
+        parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
+        
 	const size_t numThreads = p->schedulerNumThreads /*workaround*/;
 
 	const size_t startID = (threadID+0)*p->N/numThreads;
@@ -1149,6 +1149,6 @@ parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_parti
       }
 
     };
+#endif
 
-
-};
+}
