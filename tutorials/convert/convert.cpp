@@ -27,8 +27,8 @@ namespace embree
 
   struct HeightField : public RefCount
   {
-    HeightField (Ref<Image> texture, const AffineSpace3fa& space)
-      : texture(texture), space(space) {}
+    HeightField (Ref<Image> texture, const BBox3fa& bounds)
+      : texture(texture), bounds(bounds) {}
     
     const AffineSpace3fa get(Vec2f p)
     {
@@ -37,12 +37,15 @@ namespace embree
       const size_t x = clamp((size_t)(p.x*(width-1)),(size_t)0,width-1);
       const size_t y = clamp((size_t)(p.y*(height-1)),(size_t)0,height-1);
       const Color4 c = texture->get(x,y);
-      return space*AffineSpace3fa::translate(Vec3fa(p.x,c.r,p.y));
+      const float px = p.x*(bounds.upper.x-bounds.lower.x) + bounds.lower.x;
+      const float py = c.r;
+      const float pz = p.y*(bounds.upper.z-bounds.lower.z) + bounds.lower.z;
+      return AffineSpace3fa::translate(Vec3fa(px,py,pz));
     }
     
   private:
     Ref<Image> texture;
-    AffineSpace3fa space;
+    BBox3fa bounds;
   };
 
   struct Instantiator : public RefCount
@@ -109,8 +112,7 @@ namespace embree
         Ref<Image> tex = loadImage(path + cin->getFileName());
         const Vec3fa lower = cin->getVec3fa();
         const Vec3fa upper = cin->getVec3fa();
-        const AffineSpace3fa space = AffineSpace3fa::translate(-lower)*AffineSpace3fa::scale(upper-lower);
-        g_height_field = new HeightField(tex,space);
+        g_height_field = new HeightField(tex,BBox3fa(lower,upper));
       }
 
       /* instantiate model */
