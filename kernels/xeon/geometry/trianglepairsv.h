@@ -139,7 +139,7 @@ namespace embree
         /* single triangle, degenerate second triangle */
         if (prim.geomID() & ((unsigned int)1 << 31))
         {
-          vflags[i] = (unsigned int)1 << 31);
+          vflags[i] = (unsigned int)(1 << 31);
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -241,11 +241,11 @@ namespace embree
 
         const unsigned int geomId = geomID(i);
         const unsigned int primId = primID(i);
-        const unsigned int flag   = flag(i);
+        const unsigned int gflag  = flag(i);
 
         vgeomID[i] = geomId;
         vprimID[i] = primId;
-        vflags[i]  = flag;
+        vflags[i]  = gflag;
 
         /* single triangle, degenerate second triangle */
         if (flag(i) & ((unsigned int)1 << 31))

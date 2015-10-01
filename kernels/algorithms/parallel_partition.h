@@ -1050,7 +1050,6 @@ namespace embree
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
   template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition_static_task
     {
@@ -1113,7 +1112,6 @@ namespace embree
 	numMisplacedRangesLeft  = 0;
 	numMisplacedRangesRight = 0;
 	numMisplacedItems  = 0;
-	schedulerNumThreads = 0;
         tasks = (N+maxNumThreads-1)/maxNumThreads >= minBlockSize ? maxNumThreads : (N+minBlockSize-1)/minBlockSize;
         PRINT(tasks);
         PRINT(maxNumThreads);
@@ -1131,13 +1129,12 @@ namespace embree
             V local_left(empty);
             V local_right(empty);
             const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
-            counter_start[blockIndex] = startID;
-            counter_left [blockIndex] = mid;
+            counter_start[taskID] = startID;
+            counter_left [taskID] = mid;
 	  });
 
       }
 
     };
 
-
-};
+}
