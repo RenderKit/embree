@@ -193,13 +193,16 @@ namespace embree
           const vint4 vSplitPos(splitPos);
           const vbool4 vSplitMask( (int)splitDimMask );
 
-          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+          const size_t threadCount = TaskSchedulerTBB::threadCount();
+          const size_t mid = parallel_in_place_partitioning_task<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,threadCount,init,left,right,
                                                                                                            [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); },
                                                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
                                                                                                            [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
 
 #else
-#if 0
+
+          /* new static partition code */
+#if 1
           const size_t threadCount = TaskSchedulerTBB::threadCount();
           const size_t mid = parallel_in_place_partitioning_task<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,threadCount,init,left,right,
                                                                                                            [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
