@@ -1049,7 +1049,6 @@ namespace embree
 
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#if 0 // FIXME: dead code, not compiling with clang
 
   template<typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
   class __aligned(64) parallel_partition_static_task
@@ -1084,8 +1083,7 @@ namespace embree
       };
 
       size_t N;
-      size_t blockSize;
-      size_t blocks;
+      size_t tasks; 
       T* array;
 
       size_t numMisplacedRangesLeft;
@@ -1114,41 +1112,29 @@ namespace embree
 	numMisplacedRangesLeft  = 0;
 	numMisplacedRangesRight = 0;
 	numMisplacedItems  = 0;
-	schedulerNumThreads = 0;
-        blockSize = max(minBlockSize,N / maxNumThreads);
-        blocks = (N+blockSize-1)/blockSize;
-
-        parallel_partition_static<T,ThreadLocalPartition,Scheduler>* p = (parallel_partition_static<T,ThreadLocalPartition,Scheduler>*)data;
-        
-	const size_t numThreads = p->schedulerNumThreads /*workaround*/;
-
-	const size_t startID = (threadID+0)*p->N/numThreads;
-	const size_t endID   = (threadID+1)*p->N/numThreads;
-	const size_t size    = endID-startID;
-	
-        const size_t mid = p->partition_serial(&p->array[startID],size);
+        tasks = (N+maxNumThreads-1)/maxNumThreads >= minBlockSize ? maxNumThreads : (N+minBlockSize-1)/minBlockSize;
+        PRINT(tasks);
+        PRINT(maxNumThreads);
+        PRINT(minBlockSize);
       }
 
       __forceinline size_t partition()
       {
 
-	parallel_for(blocks,[&] (const size_t blockIndex) {
+	parallel_for(tasks,[&] (const size_t taskID) {
 
-            const size_t startID = (blockIndex+0)*N/blockSize;
-            const size_t endID   = (blockIndex+1)*N/blockSize;
+            const size_t startID = (taskID+0)*N/tasks;
+            const size_t endID   = (taskID+1)*N/tasks;
             const size_t size    = endID-startID;
             V local_left(empty);
             V local_right(empty);
-
             const size_t mid = serial_partitioning(array,startID,endID,local_left,local_right,cmp,reduction_t);
-            counter_start[blockIndex] = startID;
-            counter_left [blockIndex] = mid;
-
+            counter_start[taskID] = startID;
+            counter_left [taskID] = mid;
 	  });
 
       }
 
     };
-#endif
 
 }
