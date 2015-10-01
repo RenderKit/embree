@@ -125,7 +125,7 @@ namespace embree
 
       /* output filename */
       else if (tag == "-o") {
-        //SceneGraph::save(path + cin->getFileName());
+        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName());
       }
 
       /* skip unknown command line parameter */
