@@ -61,7 +61,9 @@ namespace embree
     int index = clamp(int(pointer-CDF-1),0,int(size)-1);
 
     /*! refine sampling linearly by assuming the distribution being a step function */
-    float fraction = (u - CDF[index]) * rcp(CDF[index+1] - CDF[index]);
+    const float dCDF = CDF[index+1] - CDF[index];
+    if (dCDF == 0.0f) return float(index);
+    float fraction = (u - CDF[index]) * rcp(dCDF);
     return float(index)+fraction;
   }
   
