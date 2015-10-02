@@ -17,11 +17,7 @@
 #include "obj_loader.h"
 #include "texture_loader.h"
 
-#include <fstream>
-#include <iostream>
 #include <map>
-#include <vector>
-#include <string.h>
 
 namespace embree
 {
@@ -298,8 +294,7 @@ namespace embree
         cur->map_Kd = loadTexture(path + FileName(token));
         continue;
       }
-
-
+ 
       if (!strncmp(token, "Ks_map", 6)) { continue; }
       if (!strncmp(token, "Tf_map", 6)) { continue; }
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {

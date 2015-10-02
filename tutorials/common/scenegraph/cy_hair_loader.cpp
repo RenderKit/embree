@@ -168,8 +168,7 @@ namespace embree
       if (cyFile.segments)
       {
         ssize_t numSegments = cyFile.segments[i];       
-        for (ssize_t j=0; j<numSegments-3; j+=3)
-        {
+        for (ssize_t j=0; j<numSegments-3; j+=3) {
           hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(index + j,i));
         }
         index += numSegments+1;	
@@ -177,12 +176,10 @@ namespace embree
       else
       {
         ssize_t numSegments = cyFile.header.defaultSegments;       
-        for (ssize_t j=0; j<numSegments-3; j+=3)
-        {
+        for (ssize_t j=0; j<numSegments-3; j+=3) {
           hairset->hairs.push_back(SceneGraph::HairSetNode::Hair(index + j,i));
         }
-        index += numSegments+1;	
-        
+        index += numSegments+1;
       }
     }
     

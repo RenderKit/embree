@@ -99,7 +99,6 @@ namespace embree
 
   Ref<SceneGraph::Node> loadBinHair(const FileName& fileName)
   {
-    /* add new hair set to scene */
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
@@ -109,11 +108,9 @@ namespace embree
 
   Ref<SceneGraph::Node> loadTxtHair(const FileName& fileName)
   {
-    /* add new hair set to scene */
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
-
     int numHairs = loadHairASCII(fileName,hairset);
     
 #if CONVERT_TO_BINARY
@@ -133,4 +130,3 @@ namespace embree
     return hairset.cast<SceneGraph::Node>();
   }
 }
-
