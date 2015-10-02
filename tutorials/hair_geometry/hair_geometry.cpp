@@ -502,10 +502,10 @@ float noise(float x, float y, float z)
 
     /* load scene */
     if (objFilename.str() != "" && objFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = loadOBJ(objFilename,false);
+      Ref<SceneGraph::Node> node = SceneGraph::load(objFilename);
       Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (objFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = loadOBJ(objFilename2,false);
+        Ref<SceneGraph::Node> node = SceneGraph::load(objFilename2);
         Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
         SceneGraph::set_motion_blur(node0,node1);
       }
@@ -514,10 +514,10 @@ float noise(float x, float y, float z)
 
     /* load hair */
     if (hairFilename.str() != "" && hairFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = loadHair(hairFilename);
+      Ref<SceneGraph::Node> node = SceneGraph::load(hairFilename);
       Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
       if (hairFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = loadHair(hairFilename2);
+        Ref<SceneGraph::Node> node = SceneGraph::load(hairFilename2);
         Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
         SceneGraph::set_motion_blur(node0,node1);
       }
@@ -526,7 +526,7 @@ float noise(float x, float y, float z)
 
     /* load cy_hair */
     if (cy_hairFilename.str() != "") {
-      Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
+      Ref<SceneGraph::Node> node = SceneGraph::load(cy_hairFilename);
       g_scene->add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
     }
     

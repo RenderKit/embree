@@ -132,12 +132,5 @@ namespace embree
 
     return hairset.cast<SceneGraph::Node>();
   }
-
-  Ref<SceneGraph::Node> loadHair(const FileName& fileName)
-  {
-    if      (fileName.ext() == "txt") return loadTxtHair(fileName);
-    else if (fileName.ext() == "bin") return loadBinHair(fileName);
-    else throw std::runtime_error("unknown hair file format");
-  }
 }
 

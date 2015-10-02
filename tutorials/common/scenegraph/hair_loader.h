@@ -16,12 +16,10 @@
 
 #pragma once
 
-#include "obj_loader.h"
 #include "scenegraph.h"
 
 namespace embree
 {
-  Ref<SceneGraph::Node> loadHair(const FileName& fileName);
   Ref<SceneGraph::Node> loadBinHair(const FileName& fileName);
   Ref<SceneGraph::Node> loadTxtHair(const FileName& fileName);
 }
