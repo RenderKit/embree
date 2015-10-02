@@ -21,10 +21,6 @@
 #include "Ptexture.h"
 #endif
 
-#include <map>
-#include <string>
-#include "../../../common/sys/string.h"
-
 namespace embree
 {
   bool isPowerOf2 (unsigned int x)
@@ -35,7 +31,7 @@ namespace embree
   }
 
   /*! read png texture from disk */
-  Texture *loadTexture(const FileName& fileName)
+  Texture* loadTexture(const FileName& fileName)
   {
     Texture *texture = new Texture();
     
@@ -55,7 +51,7 @@ namespace embree
     return texture;
   }
   
-  Texture *loadPtexTexture(const FileName& filename)
+  Texture* loadPtexTexture(const FileName& filename)
   {
 #if defined(USE_PTEX)
     std::string fn = filename.str();

@@ -16,20 +16,11 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/filename.h"
-#include "../../../common/sys/vector.h"
-#include "../../../common/math/vec2.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/affinespace.h"
+#include "../default.h"
 #include "scenegraph.h"
-
-#include <vector>
-#include <memory>
 
 namespace embree
 {
-  /*! read texture from disk */
-  Texture *loadTexture(const FileName& fileName);
-  Texture *loadPtexTexture(const FileName& fileName);   
+  Texture* loadTexture(const FileName& fileName);
+  Texture* loadPtexTexture(const FileName& fileName);   
 }
