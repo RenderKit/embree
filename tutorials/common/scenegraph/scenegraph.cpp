@@ -18,19 +18,19 @@
 #include "xml_loader.h"
 #include "xml_writer.h"
 #include "obj_loader.h"
+#include "hair_loader.h"
+#include "cy_hair_loader.h"
 
 namespace embree
 {
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
   {
-    if (strlwr(filename.ext()) == std::string("obj")) {
-      return loadOBJ(filename);
-    }
-    else if (strlwr(filename.ext()) == std::string("xml")) {
-      return loadXML(filename);
-    }
-    else
-      throw std::runtime_error("unknown scene format: " + filename.ext());
+    if      (strlwr(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    else if (strlwr(filename.ext()) == std::string("xml" )) return loadXML(filename);
+    else if (strlwr(filename.ext()) == std::string("hair")) return loadCYHair(filename);
+    else if (strlwr(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
+    else if (strlwr(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
+    else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
   void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename)

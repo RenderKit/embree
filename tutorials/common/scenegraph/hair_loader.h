@@ -22,4 +22,6 @@
 namespace embree
 {
   Ref<SceneGraph::Node> loadHair(const FileName& fileName);
+  Ref<SceneGraph::Node> loadBinHair(const FileName& fileName);
+  Ref<SceneGraph::Node> loadTxtHair(const FileName& fileName);
 }

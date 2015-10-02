@@ -97,18 +97,24 @@ namespace embree
     return numHairs;
   }
 
-  Ref<SceneGraph::Node> loadHair(const FileName& fileName)
+  Ref<SceneGraph::Node> loadBinHair(const FileName& fileName)
+  {
+    /* add new hair set to scene */
+    Material objmtl; new (&objmtl) OBJMaterial;
+    Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
+    Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
+    loadHairBin(fileName,hairset);
+    return hairset.cast<SceneGraph::Node>();
+  }
+
+  Ref<SceneGraph::Node> loadTxtHair(const FileName& fileName)
   {
     /* add new hair set to scene */
     Material objmtl; new (&objmtl) OBJMaterial;
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
 
-    int numHairs = 0;
-    if (fileName.ext() == "txt")
-      numHairs = loadHairASCII(fileName,hairset);
-    else
-      numHairs = loadHairBin(fileName,hairset);
+    int numHairs = loadHairASCII(fileName,hairset);
     
 #if CONVERT_TO_BINARY
     int numPoints = hairset->v.size();
@@ -126,6 +132,12 @@ namespace embree
 
     return hairset.cast<SceneGraph::Node>();
   }
+
+  Ref<SceneGraph::Node> loadHair(const FileName& fileName)
+  {
+    if      (fileName.ext() == "txt") return loadTxtHair(fileName);
+    else if (fileName.ext() == "bin") return loadBinHair(fileName);
+    else throw std::runtime_error("unknown hair file format");
+  }
 }
 
-  
