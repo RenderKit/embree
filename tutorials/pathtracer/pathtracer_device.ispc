@@ -1174,6 +1174,16 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
   uniform ISPCGeometry* varying geometry = geomID_to_mesh[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
     uniform ISPCTriangleMesh* varying mesh = (uniform ISPCTriangleMesh* varying) geometry;
+    if (mesh->texcoords) {
+      ISPCTriangle* tri = &mesh->triangles[ray.primID];
+      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
+      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
+      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      const Vec2f st = w*st0 + u*st1 + v*st2;
+      dg.u = st.x;
+      dg.v = st.y;
+    }
     materialID = mesh->triangles[ray.primID].materialID; 
   }
   else if (geometry->type == SUBDIV_MESH)
