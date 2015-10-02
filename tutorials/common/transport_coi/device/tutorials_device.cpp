@@ -224,8 +224,9 @@ struct ISPCSubdivMeshKeyFrame {
 	  if (materials[i].ty == MATERIAL_OBJ)
 	  {
 	     OBJMaterial *objm = ( OBJMaterial*)&materials[i];
+             objm->map_d     = NULL;
 	     objm->map_Kd    = NULL;
-	     objm->map_Displ = NULL;
+             objm->map_Displ = NULL;
 	  }
 	
         ambientLights = new AmbientLight[numAmbientLights];

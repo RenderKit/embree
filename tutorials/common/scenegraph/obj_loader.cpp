@@ -286,6 +286,11 @@ namespace embree
       if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  cur->Ns = getFloat(token); continue; }
       if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  cur->Ni = getFloat(token); continue; }
 
+      if (!strncmp(token, "d_map", 5)) {
+        parseSep(token += 5);
+        cur->map_d = Texture::load(path + FileName(token));
+        continue;
+      }
       if (!strncmp(token, "Ka_map", 6)) { continue; }
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);

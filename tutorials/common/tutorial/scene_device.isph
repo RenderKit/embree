@@ -193,7 +193,8 @@ struct OBJMaterial
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
 
-  Texture* map_Kd;       /*< dummy */
+  Texture* map_d;
+  Texture* map_Kd;          /*< dummy */
   Texture* map_Displ;       /*< dummy */
 };
 
