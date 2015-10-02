@@ -34,21 +34,17 @@ namespace embree
   /* scene */
   extern "C" ISPCScene* g_ispc_scene = nullptr;
 
-  extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
-  extern "C" size_t g_numframes = 0;
-
   void init(const char* cfg) {
     device_init(cfg);
   }
 
-  void key_pressed (int key) 
-  {
+  void key_pressed (int key) {
     call_key_pressed_handler(key);
   }
 
   void resize(int width, int height)
   {
-    if (width == g_width && height == g_height)
+    if (width == g_width && height == g_height) 
       return;
 
     if (g_pixels) alignedFree(g_pixels);
@@ -64,26 +60,25 @@ namespace embree
   void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames)
   {
     if (g_ispc_scene)
+    {
+      g_ispc_scene->subdivMeshKeyFrames = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
+      g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
+      for (size_t k=0; k<numKeyFrames; k++)
       {
-	g_ispc_scene->subdivMeshKeyFrames    = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
-	g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
-	for (size_t k=0; k<numKeyFrames; k++)
-	  {
-	    ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
-
-	    kf->subdiv = new ISPCSubdivMesh*[in[k]->geometries.size()];
-
-	    for (size_t i=0; i<in[k]->geometries.size(); i++)
-	      kf->subdiv[i] = new ISPCSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
-
-	    kf->numSubdivMeshes = in[k]->geometries.size();
-
-	    g_ispc_scene->subdivMeshKeyFrames[k] = kf;
-	    
-	  }
+        ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
+        
+        kf->subdiv = new ISPCSubdivMesh*[in[k]->geometries.size()];
+        
+        for (size_t i=0; i<in[k]->geometries.size(); i++)
+          kf->subdiv[i] = new ISPCSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
+        
+        kf->numSubdivMeshes = in[k]->geometries.size();
+        
+        g_ispc_scene->subdivMeshKeyFrames[k] = kf;	
       }
+    }
   }
-
+  
   bool pick(const float x, const float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p, Vec3fa& hitPos) {
     return device_pick(x,y,vx,vy,vz,p,hitPos);
   }
