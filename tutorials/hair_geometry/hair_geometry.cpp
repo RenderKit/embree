@@ -214,7 +214,7 @@ float noise(float x, float y, float z)
   {
     const size_t numPhi   = 20;
     const size_t numTheta = 2*numPhi;
-    TutorialScene::Mesh* mesh = new TutorialScene::Mesh;
+    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
     int materialID = scene.materials.size();
@@ -300,7 +300,7 @@ float noise(float x, float y, float z)
 
   void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
   {
-    TutorialScene::Mesh* mesh = new TutorialScene::Mesh;
+    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
     int materialID = scene.materials.size();

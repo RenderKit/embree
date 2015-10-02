@@ -48,7 +48,7 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertTriangleMesh (Ref<TutorialScene::Mesh> in)
+  ISPCMesh* convertTriangleMesh (Ref<TutorialScene::TriangleMesh> in)
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
@@ -110,7 +110,7 @@ namespace embree
   ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
   {
     if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
-      return (ISPCGeometry*) convertTriangleMesh(in.dynamicCast<TutorialScene::Mesh>());
+      return (ISPCGeometry*) convertTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
     else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
       return (ISPCGeometry*) convertSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
     else if (in->type == TutorialScene::Geometry::HAIR_SET)

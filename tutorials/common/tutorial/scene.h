@@ -64,10 +64,10 @@ namespace embree
       Geometry (Type type) : type(type) {}
     };
 
-    /*! Mesh. */
-    struct Mesh : public Geometry
+    /*! Triangle Mesh. */
+    struct TriangleMesh : public Geometry
     {
-      Mesh () : Geometry(TRIANGLE_MESH) {}
+      TriangleMesh () : Geometry(TRIANGLE_MESH) {}
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;

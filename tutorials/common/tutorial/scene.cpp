@@ -41,7 +41,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      TutorialScene::Mesh* objmesh = new TutorialScene::Mesh();
+      TutorialScene::TriangleMesh* objmesh = new TutorialScene::TriangleMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
       objmesh->v. resize(mesh->v. size()); for (size_t i=0; i<mesh->v. size(); i++) objmesh->v [i] = xfmPoint ( space0,mesh->v [i]);
       objmesh->v2.resize(mesh->v2.size()); for (size_t i=0; i<mesh->v2.size(); i++) objmesh->v2[i] = xfmPoint ( space1,mesh->v2[i]);
