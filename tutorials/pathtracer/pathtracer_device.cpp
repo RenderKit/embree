@@ -889,7 +889,7 @@ extern "C" void device_init (char* cfg)
 
 } // device_init
 
-void convertTriangleMesh(ISPCMesh* mesh, RTCScene scene_out)
+void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   /* create a triangle mesh */
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -1061,7 +1061,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
     if (geometry->type == SUBDIV_MESH) 
       convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
-      convertTriangleMesh((ISPCMesh*) geometry, scene_out);
+      convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
   }
 
   /* commit changes to scene */
@@ -1114,7 +1114,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 inline Vec3fa interpolate_normal(RTCRay& ray)
 {
 #if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  ISPCMesh* mesh = g_ispc_scene->meshes[ray.geomID];
+  ISPCTriangleMesh* mesh = g_ispc_scene->meshes[ray.geomID];
   ISPCTriangle* tri = &mesh->triangles[ray.primID];
 
   /* load material ID */
@@ -1139,7 +1139,7 @@ inline Vec3fa interpolate_normal(RTCRay& ray)
   {
     if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
 
-    ISPCMesh* mesh = g_ispc_scene->meshes[geomID];
+    ISPCTriangleMesh* mesh = g_ispc_scene->meshes[geomID];
     
     foreach_unique (primID in ray.primID) 
     {
@@ -1173,7 +1173,7 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
   int materialID = 0;
   ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    ISPCMesh* mesh = (ISPCMesh*) geometry;
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
     materialID = mesh->triangles[ray.primID].materialID; 
   }
   else if (geometry->type == SUBDIV_MESH)
@@ -1197,8 +1197,8 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
     if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) {
-      ISPCMesh* mesh = (ISPCMesh*) geometry;
-      materialID = ((ISPCMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+      materialID = ((ISPCTriangleMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
     }
     else if (geometry->type == SUBDIV_MESH) 
     {

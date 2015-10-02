@@ -162,7 +162,7 @@ extern "C" void device_init (char* cfg)
   key_pressed_handler = device_key_pressed;
 }
 
-unsigned int convertTriangleMesh(ISPCMesh* mesh, int meshID, RTCScene scene_o)
+unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, int meshID, RTCScene scene_o)
 {
 #if INSTANCING == 2
   RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
@@ -268,7 +268,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     if (geometry->type == SUBDIV_MESH) 
       convertSubdivMesh((ISPCSubdivMesh*) geometry, i, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
-      convertTriangleMesh((ISPCMesh*) geometry, i, scene_out);
+      convertTriangleMesh((ISPCTriangleMesh*) geometry, i, scene_out);
     else if (geometry->type == INSTANCE)
       convertInstance((ISPCInstance*) geometry, i, scene_out);
   }
@@ -331,7 +331,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
   if (geometry->type == TRIANGLE_MESH)
   {
-    ISPCMesh* mesh = (ISPCMesh*) geometry;
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
     ISPCTriangle* tri = &mesh->triangles[ray.primID];
 
     /* load material ID */
@@ -360,7 +360,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCMesh* mesh = (ISPCMesh*) geometry;
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
 
       foreach_unique (primID in ray.primID) 
       {

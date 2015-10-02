@@ -93,7 +93,7 @@ Vec3fa sampleSphere(const float u, const float v)
   return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
 }
 
-void convertTriangleMesh(ISPCMesh* mesh, RTCScene scene_out)
+void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
   rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(Vertex));
@@ -120,7 +120,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == TRIANGLE_MESH) 
-      convertTriangleMesh((ISPCMesh*) geometry, scene_out);
+      convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((ISPCHairSet*) geometry, scene_out);
   }
@@ -408,7 +408,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
-      ISPCMesh* mesh = (ISPCMesh*) geometry;
+      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
       OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
 

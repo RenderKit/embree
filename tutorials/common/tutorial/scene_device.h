@@ -61,9 +61,9 @@ namespace embree
   };
   
   
-  struct ISPCMesh
+  struct ISPCTriangleMesh
   {
-    ISPCMesh () : geom(TRIANGLE_MESH) {}
+    ISPCTriangleMesh () : geom(TRIANGLE_MESH) {}
     ISPCGeometry geom;
     Vec3fa* positions;    //!< vertex position array
     Vec3fa* positions2;    //!< vertex position array

@@ -55,11 +55,11 @@ namespace embree
   };
 
   /* ISPC compatible mesh */
-  struct ISPCMesh : public ISPCGeometry // FIXME: why all these replicated classes!!!!!!!
+  struct ISPCTriangleMesh : public ISPCGeometry // FIXME: why all these replicated classes!!!!!!!
   {
     ALIGNED_CLASS;
   public:
-    ISPCMesh (int numTriangles, 
+    ISPCTriangleMesh (int numTriangles, 
 	      int numQuads, 
 	      int numVertices, 
 	      int meshMaterialID) 
@@ -73,7 +73,7 @@ namespace embree
       sizeQuads     = 0;
     }
 
-    ~ISPCMesh () {
+    ~ISPCTriangleMesh () {
       if (positions)  os_free(positions ,sizePositions);
       if (positions2) os_free(positions2,sizePositions);
       if (normals)    os_free(normals   ,sizeNormals);
@@ -320,7 +320,7 @@ struct ISPCSubdivMeshKeyFrame {
   {
     size_t geomID = g_geometryID++;
 
-    ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
+    ISPCTriangleMesh* mesh = new ISPCTriangleMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
     assert( mesh );
     assert( in_pMiscData->numTriangles*sizeof(TutorialScene::Triangle) == in_pBufferLengths[3] );
     assert( in_pMiscData->numQuads*sizeof(TutorialScene::Quad) == in_pBufferLengths[4] );

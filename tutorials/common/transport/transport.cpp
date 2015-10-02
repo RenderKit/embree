@@ -48,9 +48,9 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertTriangleMesh (Ref<TutorialScene::TriangleMesh> in)
+  ISPCTriangleMesh* convertTriangleMesh (Ref<TutorialScene::TriangleMesh> in)
   {
-    ISPCMesh* out = new ISPCMesh;
+    ISPCTriangleMesh* out = new ISPCTriangleMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
     out->positions2 = in->v2.size() ? &in->v2[0] : nullptr;
     out->normals = in->vn.size() ? &in->vn[0] : nullptr;
