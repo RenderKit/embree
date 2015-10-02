@@ -14,14 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-#OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
-
-IF (TUTORIAL_USE_PTEX)
-  FIND_PACKAGE(Ptex REQUIRED)
-  ADD_DEFINITIONS(-DUSE_PTEX)
-  INCLUDE_DIRECTORIES(${PTEX_INCLUDE_DIRS})
-ENDIF()
-
 ADD_SUBDIRECTORY(common)
 
 SET (__XEON__ 1)

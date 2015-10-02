@@ -33,7 +33,6 @@
 #define ENABLE_TEXTURING 0
 #define ENABLE_TEXTURE_COORDINATES 0
 #define ENABLE_OCCLUSION_FILTER 0
-#define ENABLE_DISPLACEMENTS 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -476,13 +475,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) 
-      {
-#if ENABLE_PTEX == 1
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
-#else
-        brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-#endif
-      }
+      brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
 
     brdf.Ks = d * Vec3fa(material->Ks);  
@@ -896,33 +889,6 @@ extern "C" void device_init (char* cfg)
 } // device_init
 
 
-#if ENABLE_DISPLACEMENTS
-void displacementFunction(void* ptr, unsigned int geomID, int unsigned primID, 
-                      const float* u,      /*!< u coordinates (source) */
-                      const float* v,      /*!< v coordinates (source) */
-                      const float* nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const float* ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const float* nz,     /*!< z coordinates of normal at point to displace (source) */
-                      float* px,           /*!< x coordinates of points to displace (source and target) */
-                      float* py,           /*!< y coordinates of points to displace (source and target) */
-                      float* pz,           /*!< z coordinates of points to displace (source and target) */
-                      size_t N)
-{
-  ISPCSubdivMesh* mesh = (ISPCSubdivMesh*)geomID_to_mesh[geomID];
-  int materialID = mesh->materialID;
-  int numMaterials = g_ispc_scene->numMaterials;
-  OBJMaterial* material = (OBJMaterial*)&g_ispc_scene->materials[materialID];
-  if (material->map_Displ)
-    for (size_t i=0;i<N;i++) 
-      {
-	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
-	px[i] += nx[i] * displ;
-	py[i] += ny[i] * displ;
-	pz[i] += nz[i] * displ;
-      }
-}
-#endif
-
 void convertTriangleMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeometries)
 {
   /* add all meshes to the scene */
@@ -1074,9 +1040,6 @@ void convertSubdivMeshes(ISPCScene* scene_in, RTCScene scene_out, size_t numGeom
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
-#if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,nullptr);
-#endif
   }
 }      
 

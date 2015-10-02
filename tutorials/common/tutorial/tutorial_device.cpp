@@ -659,30 +659,6 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-Vec3f getPtexTexel3f(void* _texture, const int faceId, const float u, const float v)
-{
-  Texture *texture = (Texture*)_texture;
-  if (texture->format == PTEX_RGBA8)
-    {
-      assert(faceId < texture->faceTextures);
-      Texture **face_texture = (Texture **)texture->data;
-      return getTextureTexel3f(face_texture[faceId],u,v);
-    }
-  return zero;
-}
-
-float getPtexTexel1f(void* _texture, const int faceId, const float u, const float v)
-{
-  Texture *texture = (Texture*)_texture;
-  if (texture->format == PTEX_FLOAT32)
-    {
-      assert(faceId < texture->faceTextures);
-      Texture **face_texture = (Texture **)texture->data;
-      return getTextureTexel1f(face_texture[faceId],u,v);
-    }
-  return 0.0f;
-}
-
 Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
 {
   ISPCSubdivMesh *mesh = (ISPCSubdivMesh *)_mesh;

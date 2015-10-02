@@ -572,34 +572,6 @@ uniform bool progressMonitor(void* uniform ptr, const uniform double n) {
 void progressEnd() {
 }
 
-float  getPtexTexel1f(void* uniform _texture, int faceId, float u, float v)
-{
-  float value = 0.0f;
-  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
-  if (texture->format == PTEX_FLOAT32)
-    {
-     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
-     foreach_unique (id in faceId) {
-      value += getTextureTexel1f(face_texture[id],u,v);
-     }
-    }
-  return value;
-}
-
-Vec3f getPtexTexel3f(void* uniform _texture, int faceId, float u, float v)
-{
- Vec3f value = make_Vec3f(0.0f,0.0f,0.0f);
-  uniform Texture *uniform texture = (uniform Texture *uniform)_texture;
-  if (texture->format == PTEX_RGBA8)
-    {
-     uniform Texture ** uniform face_texture = (uniform Texture **uniform )texture->data;
-     foreach_unique (id in faceId) {
-      value = value + getTextureTexel3f(face_texture[id],u,v);
-     }
-    }
-  return value;
-}
-
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
 {
   uniform ISPCSubdivMesh *uniform mesh = (uniform ISPCSubdivMesh *uniform )_mesh;

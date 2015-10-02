@@ -26,8 +26,6 @@ namespace embree
       RGBA8        = 1,
       RGB8         = 2,
       FLOAT32      = 3,
-      PTEX_RGBA8   = 4,
-      PTEX_FLOAT32 = 5
     };
     
     int width;
@@ -47,6 +45,5 @@ namespace embree
 
   };
 
-  Texture* loadTexture(const FileName& fileName);
-  Texture* loadPtexTexture(const FileName& fileName);   
+  Texture* loadTexture(const FileName& fileName); // FIXME: return reference
 }

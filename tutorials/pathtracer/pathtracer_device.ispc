@@ -33,7 +33,6 @@
 #define ENABLE_TEXTURING 0
 #define ENABLE_TEXTURE_COORDINATES 0
 #define ENABLE_OCCLUSION_FILTER 0
-#define ENABLE_DISPLACEMENTS 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -475,14 +474,9 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
 
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) 
-      {
-#if ENABLE_PTEX == 1
-        brdf.Kd = d * getPtexTexel3f(material->map_Kd, dg.primID, dg.v, dg.u);
-#else
-        brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-#endif
-      }
+    if (material->map_Kd) {
+      brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+    }
 #endif
 
     brdf.Ks = d * make_Vec3f(material->Ks);  
@@ -895,34 +889,6 @@ export void device_init (uniform int8* uniform cfg)
 
 } // device_init
 
-
-#if ENABLE_DISPLACEMENTS
-void displacementFunction(void* uniform ptr, uniform unsigned int geomID, uniform int unsigned primID, 
-                      const uniform float* uniform u,      /*!< u coordinates (source) */
-                      const uniform float* uniform v,      /*!< v coordinates (source) */
-                      const uniform float* uniform nx,     /*!< x coordinates of normal at point to displace (source) */
-                      const uniform float* uniform ny,     /*!< y coordinates of normal at point to displace (source) */
-                      const uniform float* uniform nz,     /*!< z coordinates of normal at point to displace (source) */
-                      uniform float* uniform px,           /*!< x coordinates of points to displace (source and target) */
-                      uniform float* uniform py,           /*!< y coordinates of points to displace (source and target) */
-                      uniform float* uniform pz,           /*!< z coordinates of points to displace (source and target) */
-                      uniform size_t N)
-{
-  uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform)geomID_to_mesh[geomID];
-  uniform int materialID = mesh->materialID;
-  uniform int numMaterials = g_ispc_scene->numMaterials;
-  uniform OBJMaterial* uniform material = (uniform OBJMaterial* uniform)&g_ispc_scene->materials[materialID];
-  if (material->map_Displ)
-    for (size_t i=0;i<N;i++) 
-      {
-	const float displ = getPtexTexel1f(material->map_Displ, primID, v[i], u[i]);
-	px[i] += nx[i] * displ;
-	py[i] += ny[i] * displ;
-	pz[i] += nz[i] * displ;
-      }
-}
-#endif
-
 void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
 {
   /* add all meshes to the scene */
@@ -1074,14 +1040,8 @@ void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out
     rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
     rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
-#if ENABLE_DISPLACEMENTS == 1
-      rtcSetDisplacementFunction(scene_out,geomID,(RTCDisplacementFunc)&displacementFunction,NULL);
-#endif
   }
 }      
-
-
-
 
 typedef void* uniform void_ptr;
 
