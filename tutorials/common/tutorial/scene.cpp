@@ -164,24 +164,18 @@ namespace embree
       }
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
-        if (instancing)
-          scene->geometries.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
-        else
-          convertTriangleMesh(mesh,space0,space1);
+        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
+        else            convertTriangleMesh(mesh,space0,space1);
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
       {
-        //if (instancing)
-        //  scene->instances.push_back(TutorialScene::Instance(space0,lookupSubdivMesh(mesh)));
-        //else
-        convertSubdivMesh(mesh,space0,space1);
+        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupSubdivMesh(mesh)));
+        else            convertSubdivMesh(mesh,space0,space1);
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
       {
-        //if (instancing)
-        //  scene->instances.push_back(TutorialScene::Instance(space0,lookupHairSet(mesh)));
-        //else
-        convertHairSet(mesh,space0,space1);
+        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupHairSet(mesh)));
+        else            convertHairSet(mesh,space0,space1);
       }
     }
   };
