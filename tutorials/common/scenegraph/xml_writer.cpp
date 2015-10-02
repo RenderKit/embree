@@ -15,8 +15,6 @@
 // ======================================================================== //
 
 #include "xml_writer.h"
-#include "xml_parser.h"
-#include "scenegraph.h"
 
 namespace embree
 {

@@ -16,13 +16,7 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/filename.h"
-#include "../../../common/lexers/tokenstream.h"
-
-#include <map>
-#include <string>
-#include <vector>
+#include "../default.h"
 
 namespace embree
 {

@@ -16,12 +16,10 @@
 
 #pragma once
 
-#include "obj_loader.h"
 #include "scenegraph.h"
 
 namespace embree
 {
-  /*! read from disk */
   Ref<SceneGraph::Node> loadXML(const FileName& fileName, const AffineSpace3fa& space = one);
 }
 

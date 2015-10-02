@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "obj_loader.h"
 #include "scenegraph.h"
 
 namespace embree
