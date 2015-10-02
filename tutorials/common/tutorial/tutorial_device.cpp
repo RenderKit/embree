@@ -715,7 +715,25 @@ float getTextureTexel1f(void *_texture, const float s, const float t)
       const int vi  = min((int)floorf((texture->height-1)*v),texture->height-1);
       float *data   = (float *)texture->data;
       return data[vi*texture->width + ui];
-    }
+    } 
+  else if (likely(texture && texture->format == RGBA8))
+  {
+    //u = max(min(u,1.0f),0.0f);
+    //v = max(min(v,1.0f),0.0f);
+    
+    int iu = (int)(s * (float)(texture->width));
+    if (texture->width_mask) 
+      iu &= texture->width_mask;
+    else
+      iu = min(iu,texture->width-1);
+    int iv = (int)(t * (float)(texture->height));
+    if (texture->height_mask) 
+      iv &= texture->height_mask;
+    else
+      iv = min(iv,texture->height-1);
+    unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
+    return (float)t[3] * 1.0f/255.0f;
+  }  
   return 0.0f;
 }
 

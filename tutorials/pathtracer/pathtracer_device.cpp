@@ -467,18 +467,17 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 {
 
     float d = material->d;
+#if ENABLE_TEXTURING == 1
+    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);	
+#endif
     //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
     //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
-
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) {
-      brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-    }
+    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
-
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
