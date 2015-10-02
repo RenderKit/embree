@@ -18,7 +18,6 @@
 
 #include "../default.h"
 #include "../scenegraph/scenegraph.h"
-#include "scene_device.h"
 
 namespace embree
 {

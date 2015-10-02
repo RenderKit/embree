@@ -37,86 +37,16 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCHairSet* convertHairSet (Ref<TutorialScene::HairSet> in)
-  {
-    ISPCHairSet* out = new ISPCHairSet;
-    out->v = in->v.size() ? &in->v[0] : nullptr;
-    out->v2 = in->v2.size() ? &in->v2[0] : nullptr;
-    out->hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
-    out->numVertices = in->v.size();
-    out->numHairs = in->hairs.size();
-    return out;
-  }
-  
-  ISPCTriangleMesh* convertTriangleMesh (Ref<TutorialScene::TriangleMesh> in)
-  {
-    ISPCTriangleMesh* out = new ISPCTriangleMesh;
-    out->positions = in->v.size() ? &in->v[0] : nullptr;
-    out->positions2 = in->v2.size() ? &in->v2[0] : nullptr;
-    out->normals = in->vn.size() ? &in->vn[0] : nullptr;
-    out->texcoords = in->vt.size() ? &in->vt[0] : nullptr;
-    out->triangles = (ISPCTriangle*) (in->triangles.size() ? &in->triangles[0] : nullptr);
-    out->quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
-    out->numVertices = in->v.size();
-    out->numTriangles = in->triangles.size();
-    out->numQuads = in->quads.size();   
-    out->geomID = -1;
-    out->meshMaterialID = in->meshMaterialID;
-    return out;
-  }
-
-  ISPCSubdivMesh* convertSubdivMesh (Ref<TutorialScene::SubdivMesh> in)
-  {
-    ISPCSubdivMesh* out = new ISPCSubdivMesh;
-    out->positions = in->positions.size() ? &in->positions[0] : nullptr;
-    out->normals = in->normals.size() ? &in->normals[0] : nullptr;
-    out->texcoords = in->texcoords.size() ? &in->texcoords[0] : nullptr;
-    out->position_indices = in->position_indices.size()   ? &in->position_indices[0] : nullptr;
-    out->normal_indices = in->normal_indices.size()   ? &in->normal_indices[0] : nullptr;
-    out->texcoord_indices = in->texcoord_indices.size()   ? &in->texcoord_indices[0] : nullptr;
-    out->verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : nullptr;
-    out->holes = in->holes.size() ? &in->holes[0] : nullptr;
-    out->edge_creases = in->edge_creases.size() ? &in->edge_creases[0] : nullptr;
-    out->edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : nullptr;
-    out->vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : nullptr;
-    out->vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : nullptr;
-    out->numVertices = in->positions.size();
-    out->numFaces = in->verticesPerFace.size();
-    out->numEdges = in->position_indices.size();   
-    out->numEdgeCreases = in->edge_creases.size();
-    out->numVertexCreases = in->vertex_creases.size();
-    out->numHoles = in->holes.size();
-    out->materialID = in->materialID;
-    out->geomID = -1;
-
-    size_t numEdges = in->position_indices.size();
-    size_t numFaces = in->verticesPerFace.size();
-    out->subdivlevel = new float[numEdges];
-    out->face_offsets = new int[numFaces];
-    for (size_t i=0; i<numEdges; i++) out->subdivlevel[i] = 1.0f;
-    int offset = 0;
-    for (size_t i=0; i<numFaces; i++)
-      {
-        out->face_offsets[i] = offset;
-        offset+=out->verticesPerFace[i];       
-      }
-    return out;
-  }
-
-  ISPCInstance* convertInstance (Ref<TutorialScene::Instance> in) {
-    return new ISPCInstance(in->space,in->geomID);
-  }
-
   ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
   {
     if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
-      return (ISPCGeometry*) convertTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
+      return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
     else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
-      return (ISPCGeometry*) convertSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
+      return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
     else if (in->type == TutorialScene::Geometry::HAIR_SET)
-      return (ISPCGeometry*) convertHairSet(in.dynamicCast<TutorialScene::HairSet>());
+      return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
     else if (in->type == TutorialScene::Geometry::INSTANCE)
-      return (ISPCGeometry*) convertInstance(in.dynamicCast<TutorialScene::Instance>());
+      return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
     else 
       THROW_RUNTIME_ERROR("unknown geometry type");
   }
@@ -183,7 +113,7 @@ namespace embree
 	    kf->subdiv = new ISPCSubdivMesh*[in[k]->geometries.size()];
 
 	    for (size_t i=0; i<in[k]->geometries.size(); i++)
-	      kf->subdiv[i] = convertSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
+	      kf->subdiv[i] = new ISPCSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
 
 	    kf->numSubdivMeshes = in[k]->geometries.size();
 

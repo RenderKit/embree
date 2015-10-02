@@ -51,7 +51,15 @@ namespace embree
   
   struct ISPCHairSet
   {
-    ISPCHairSet () : geom(HAIR_SET) {}
+    ISPCHairSet (Ref<TutorialScene::HairSet> in) : geom(HAIR_SET) 
+    {
+      v = in->v.size() ? &in->v[0] : nullptr;
+      v2 = in->v2.size() ? &in->v2[0] : nullptr;
+      hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
+      numVertices = in->v.size();
+      numHairs = in->hairs.size();
+    }
+
     ISPCGeometry geom;
     Vec3fa* v;       //!< hair control points (x,y,z,r)
     Vec3fa* v2;       //!< hair control points (x,y,z,r)
@@ -63,7 +71,22 @@ namespace embree
   
   struct ISPCTriangleMesh
   {
-    ISPCTriangleMesh () : geom(TRIANGLE_MESH) {}
+    ISPCTriangleMesh (Ref<TutorialScene::TriangleMesh> in) : geom(TRIANGLE_MESH) 
+    {
+      positions = in->v.size() ? &in->v[0] : nullptr;
+      positions2 = in->v2.size() ? &in->v2[0] : nullptr;
+      normals = in->vn.size() ? &in->vn[0] : nullptr;
+      texcoords = in->vt.size() ? &in->vt[0] : nullptr;
+      triangles = (ISPCTriangle*) (in->triangles.size() ? &in->triangles[0] : nullptr);
+      quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
+      numVertices = in->v.size();
+      numTriangles = in->triangles.size();
+      numQuads = in->quads.size();   
+      geomID = -1;
+      meshMaterialID = in->meshMaterialID;
+    }
+
+  public:
     ISPCGeometry geom;
     Vec3fa* positions;    //!< vertex position array
     Vec3fa* positions2;    //!< vertex position array
@@ -80,7 +103,43 @@ namespace embree
   
   struct ISPCSubdivMesh
   {
-    ISPCSubdivMesh () : geom(SUBDIV_MESH) {}
+    ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH) 
+    {
+      positions = in->positions.size() ? &in->positions[0] : nullptr;
+      normals = in->normals.size() ? &in->normals[0] : nullptr;
+      texcoords = in->texcoords.size() ? &in->texcoords[0] : nullptr;
+      position_indices = in->position_indices.size()   ? &in->position_indices[0] : nullptr;
+      normal_indices = in->normal_indices.size()   ? &in->normal_indices[0] : nullptr;
+      texcoord_indices = in->texcoord_indices.size()   ? &in->texcoord_indices[0] : nullptr;
+      verticesPerFace = in->verticesPerFace.size() ? &in->verticesPerFace[0] : nullptr;
+      holes = in->holes.size() ? &in->holes[0] : nullptr;
+      edge_creases = in->edge_creases.size() ? &in->edge_creases[0] : nullptr;
+      edge_crease_weights = in->edge_crease_weights.size() ? &in->edge_crease_weights[0] : nullptr;
+      vertex_creases = in->vertex_creases.size() ? &in->vertex_creases[0] : nullptr;
+      vertex_crease_weights = in->vertex_crease_weights.size() ? &in->vertex_crease_weights[0] : nullptr;
+      numVertices = in->positions.size();
+      numFaces = in->verticesPerFace.size();
+      numEdges = in->position_indices.size();   
+      numEdgeCreases = in->edge_creases.size();
+      numVertexCreases = in->vertex_creases.size();
+      numHoles = in->holes.size();
+      materialID = in->materialID;
+      geomID = -1;
+      
+      size_t numEdges = in->position_indices.size();
+      size_t numFaces = in->verticesPerFace.size();
+      subdivlevel = new float[numEdges];
+      face_offsets = new int[numFaces];
+      for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
+      int offset = 0;
+      for (size_t i=0; i<numFaces; i++)
+      {
+        face_offsets[i] = offset;
+        offset+=verticesPerFace[i];       
+      }
+    }
+    
+  public:
     ISPCGeometry geom;
     Vec3fa* positions;       //!< vertex positions
     Vec3fa* normals;         //!< face vertex normals
@@ -108,8 +167,8 @@ namespace embree
   
   struct ISPCInstance
   {
-    ISPCInstance (const AffineSpace3fa& space, int geomID)
-    : geom(INSTANCE), space(space), geomID(geomID) {}
+    ISPCInstance (Ref<TutorialScene::Instance> in)
+    : geom(INSTANCE), space(in->space), geomID(in->geomID) {}
     
     ISPCGeometry geom;
     AffineSpace3fa space;
