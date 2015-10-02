@@ -223,6 +223,46 @@ namespace embree
   
   struct ISPCScene 
   {
+    ISPCScene(TutorialScene* in)
+    {
+      geometries = new ISPCGeometry*[in->geometries.size()];
+      for (size_t i=0; i<in->geometries.size(); i++) geometries[i] = convertGeometry(in->geometries[i]);
+      numGeometries = in->geometries.size();
+      
+      materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
+      numMaterials = in->materials.size();
+      
+      ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? in->ambientLights.begin() : nullptr);
+      numAmbientLights = in->ambientLights.size();
+      
+      pointLights = (ISPCPointLight*) (in->pointLights.size() ? in->pointLights.begin() : nullptr);
+      numPointLights = in->pointLights.size();
+      
+      dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? in->directionalLights.begin() : nullptr);
+      numDirectionalLights = in->directionalLights.size();
+      
+      distantLights = (ISPCDistantLight*) (in->distantLights.size() ? in->distantLights.begin() : nullptr);
+      numDistantLights = in->distantLights.size();
+      
+      subdivMeshKeyFrames = nullptr;
+      numSubdivMeshKeyFrames = 0;
+    }
+
+    ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
+    {
+      if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
+        return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
+      else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
+        return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
+      else if (in->type == TutorialScene::Geometry::HAIR_SET)
+        return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
+      else if (in->type == TutorialScene::Geometry::INSTANCE)
+        return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
+      else 
+        THROW_RUNTIME_ERROR("unknown geometry type");
+    }
+
+  public:
     ISPCGeometry** geometries;   //!< list of geometries
     ISPCMaterial* materials;     //!< material list
     int numGeometries;           //!< number of geometries

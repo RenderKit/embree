@@ -37,20 +37,6 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
-  {
-    if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
-      return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
-    else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
-      return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
-    else if (in->type == TutorialScene::Geometry::HAIR_SET)
-      return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
-    else if (in->type == TutorialScene::Geometry::INSTANCE)
-      return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
-    else 
-      THROW_RUNTIME_ERROR("unknown geometry type");
-  }
-
   void init(const char* cfg) {
     device_init(cfg);
   }
@@ -71,33 +57,8 @@ namespace embree
     g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
   }
 
-  void set_scene (TutorialScene* in) 
-  {
-    ISPCScene* out = new ISPCScene;
-
-    out->geometries = new ISPCGeometry*[in->geometries.size()];
-    for (size_t i=0; i<in->geometries.size(); i++) out->geometries[i] = convertGeometry(in->geometries[i]);
-    out->numGeometries = in->geometries.size();
-
-    out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
-    out->numMaterials = in->materials.size();
-
-    out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? in->ambientLights.begin() : nullptr);
-    out->numAmbientLights = in->ambientLights.size();
-
-    out->pointLights = (ISPCPointLight*) (in->pointLights.size() ? in->pointLights.begin() : nullptr);
-    out->numPointLights = in->pointLights.size();
-
-    out->dirLights = (ISPCDirectionalLight*) (in->directionalLights.size() ? in->directionalLights.begin() : nullptr);
-    out->numDirectionalLights = in->directionalLights.size();
-
-    out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? in->distantLights.begin() : nullptr);
-    out->numDistantLights = in->distantLights.size();
-
-    out->subdivMeshKeyFrames = nullptr;
-    out->numSubdivMeshKeyFrames = 0;
-
-    g_ispc_scene = out;
+  void set_scene (TutorialScene* in) {
+    g_ispc_scene = new ISPCScene(in);
   }
 
   void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames)
