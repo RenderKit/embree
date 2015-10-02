@@ -42,18 +42,11 @@ namespace embree
   /* scene */
   OBJScene g_obj_scene;
   Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
-  static FileName objFilename = "";
-  static FileName objFilename2 = "";
-  static FileName hairFilename = "";
-  static FileName hairFilename2 = "";
-  static FileName cy_hairFilename = "";
+  static FileName sceneFilename = "";
   static FileName outFilename = "";
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
-
-  Vec3fa offset = zero;
-  Vec3fa offset_mb = zero;
 
   Vec3fa uniformSampleSphere(const float& u, const float& v) 
   {
@@ -339,39 +332,7 @@ float noise(float x, float y, float z)
 
       /* load OBJ model */
       else if (tag == "-i") {
-        objFilename = path + cin->getFileName();
-      }
-
-      /* load motion blur OBJ model */
-      else if (tag == "-i_mb") {
-        objFilename = path + cin->getFileName();
-        objFilename2 = path + cin->getFileName();
-      }
-
-      /* load hair model */
-      else if (tag == "--hair") {
-        hairFilename = path + cin->getFileName();
-      }
-
-      /* motion blur hair model */
-      else if (tag == "--hair_mb") {
-        hairFilename = path + cin->getFileName();
-        hairFilename2 = path + cin->getFileName();
-      }
-
-      /* load hair model */
-      else if (tag == "--cy_hair") {
-        cy_hairFilename = path + cin->getFileName();
-      }
-
-      /* scene offset */
-      else if (tag == "--offset") {
-        offset = cin->getVec3fa();
-      }
-
-      /* scene offset */
-      else if (tag == "--offset_mb") {
-        offset_mb = cin->getVec3fa();
+        sceneFilename = path + cin->getFileName();
       }
 
       /* directional light */
@@ -501,34 +462,8 @@ float noise(float x, float y, float z)
     init(g_rtcore.c_str());
 
     /* load scene */
-    if (objFilename.str() != "" && objFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = SceneGraph::load(objFilename);
-      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
-      if (objFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = SceneGraph::load(objFilename2);
-        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
-        SceneGraph::set_motion_blur(node0,node1);
-      }
-      g_scene->add(node0);
-    }
-
-    /* load hair */
-    if (hairFilename.str() != "" && hairFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = SceneGraph::load(hairFilename);
-      Ref<SceneGraph::Node> node0 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node);
-      if (hairFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = SceneGraph::load(hairFilename2);
-        Ref<SceneGraph::Node> node1 = new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node);
-        SceneGraph::set_motion_blur(node0,node1);
-      }
-      g_scene->add(node0);
-    }
-
-    /* load cy_hair */
-    if (cy_hairFilename.str() != "") {
-      Ref<SceneGraph::Node> node = SceneGraph::load(cy_hairFilename);
-      g_scene->add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
-    }
+    if (sceneFilename.str() != "" && sceneFilename.str() != "none")
+      g_scene->add(SceneGraph::load(sceneFilename));
     
     /* convert scene graph to OBJ scene */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>());
