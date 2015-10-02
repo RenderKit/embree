@@ -152,6 +152,7 @@ namespace embree
                 case Geometry::USER_GEOMETRY: break;
                 case Geometry::BEZIER_CURVES: break;
                 case Geometry::SUBDIV_MESH  : break;
+                default                     : break; 
                 }
               } else {
                  switch (geom->type) {
@@ -162,6 +163,7 @@ namespace embree
                  case Geometry::USER_GEOMETRY: break;
                  case Geometry::BEZIER_CURVES: break;
                  case Geometry::SUBDIV_MESH  : break;
+                 default                     : break;
                  }
               }
             }
