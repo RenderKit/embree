@@ -92,7 +92,7 @@ namespace embree
     hairset->v.resize(numPoints);
     hairset->hairs.resize(numSegments);
     if (numPoints) fread(&hairset->v[0],sizeof(Vec3fa),numPoints,fin);
-    if (numSegments) fread(&hairset->hairs[0],sizeof(OBJScene::Hair),numSegments,fin);
+    if (numSegments) fread(&hairset->hairs[0],sizeof(SceneGraph::HairSetNode::Hair),numSegments,fin);
     fclose(fin);
     return numHairs;
   }

@@ -21,7 +21,7 @@
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
-#include "scenegraph.h"
+#include "../scenegraph/scenegraph.h"
 
 #include <vector>
 #include <memory>

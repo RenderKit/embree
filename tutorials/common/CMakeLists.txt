@@ -15,10 +15,10 @@
 ## ======================================================================== ##
 
 SET (__XEON__ 1)
-
 ADD_SUBDIRECTORY(image)
 ADD_SUBDIRECTORY(transport)
 ADD_SUBDIRECTORY(tutorial)
+ADD_SUBDIRECTORY(scenegraph)
   
 IF (ENABLE_XEON_PHI_SUPPORT)
   SET (__XEON__ 0)

@@ -16,8 +16,7 @@
 
 #include "default.h"
 #include "distribution2d.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/xml_loader.h"
+#include "../common/scenegraph/scenegraph.h"
 #include "../common/image/image.h"
 
 namespace embree

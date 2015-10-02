@@ -17,7 +17,6 @@
 #include "xml_loader.h"
 #include "xml_parser.h"
 #include "obj_loader.h"
-#include "scene.h"
 #include "../../../common/math/affinespace.h"
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"

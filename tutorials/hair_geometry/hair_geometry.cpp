@@ -15,9 +15,11 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/hair_loader.h"
-#include "../common/tutorial/cy_hair_loader.h"
+#include "../common/tutorial/scene.h"
+#include "../common/scenegraph/obj_loader.h"
+#include "../common/scenegraph/xml_loader.h"
+#include "../common/scenegraph/hair_loader.h"
+#include "../common/scenegraph/cy_hair_loader.h"
 #include "../common/image/image.h"
 
 extern "C" embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));

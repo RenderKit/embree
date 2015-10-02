@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../../../common/tutorial/obj_loader.h"
+#include "../../../common/tutorial/scene.h"
 #include "../../transport/transport_host.h"
 #include "../../transport/transport_device.h"
 #include "../common.h"

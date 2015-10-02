@@ -22,7 +22,7 @@
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
-#include "scene.h"
+#include "scenegraph.h"
 
 #include <vector>
 #include <memory>

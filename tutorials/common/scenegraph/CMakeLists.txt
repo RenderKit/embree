@@ -14,6 +14,15 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(convert convert.cpp distribution1d.cpp distribution2d.cpp)
-TARGET_LINK_LIBRARIES(convert scenegraph image)
-SET_PROPERTY(TARGET convert PROPERTY FOLDER tutorials/single)
+ADD_LIBRARY(scenegraph STATIC
+    xml_parser.cpp
+    xml_loader.cpp
+    xml_writer.cpp
+    obj_loader.cpp
+    hair_loader.cpp
+    texture_loader.cpp
+    cy_hair_loader.cpp
+    scenegraph.cpp)
+
+TARGET_LINK_LIBRARIES(scenegraph sys lexers)
+SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)

@@ -16,7 +16,7 @@
 
 #include "transport_host.h"
 #include "transport_device.h"
-#include "../../common/tutorial/obj_loader.h"
+#include "../../common/tutorial/scene.h"
 #include "../../common/tutorial/tutorial_device.h"
 #include "../../common/tutorial/scene_device.h"
 
