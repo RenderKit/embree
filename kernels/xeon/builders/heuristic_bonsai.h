@@ -158,9 +158,9 @@ namespace embree
 		  typedef BonsaiSplit Split;
         typedef range<size_t> Set;
 
-        static const size_t PARALLEL_THRESHOLD = 500000;
+        static const size_t PARALLEL_THRESHOLD = 10000;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 4096;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 256;
+        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
 
 				volatile int newIndex = 0;
 
@@ -418,10 +418,11 @@ namespace embree
 				return BBox3fa(lower, upper);
 			}
 
-		  bool fastSweep(FastSweepData& data, PrimInfo& current, Split& csplit, Set& cprims, PrimInfo& left, Set& lprims, Split& lsplit, PrimInfo& right, Set& rprims, Split& rsplit, const size_t maxLeafSize, unsigned offset, int depth) {
+		  bool fastSweep(FastSweepData& data, PrimInfo& current, Split& csplit, Set& cprims, PrimInfo& left, Set& lprims, Split& lsplit, PrimInfo& right, Set& rprims, Split& rsplit, const size_t maxLeafSize, unsigned offset) {
 
-
-			  const float traversalCost = 2.0f;
+				int block_shift = 2;
+				const int mult = 1;//1000000;
+			  const float traversalCost = 0.5f;
 			  const float intersectionCost = 1.0f;
 
 			  unsigned first = cprims.begin();
@@ -445,7 +446,7 @@ namespace embree
 			  unsigned pivot = 0xffffffff;
 
 			  __m256 bestBounds;
-
+				//std::cout << "first: " << first << " pivot: " << pivot << " last: " << last << std::endl;
 			  if (divPsa != std::numeric_limits<float>::infinity()) {
 
 				  for (unsigned dim = 0; dim < 3; ++dim) {
@@ -565,15 +566,34 @@ namespace embree
 								_MM256_TRANSPOSE4_PS(d0, d1, d2, d3);
 
 								__m256 rsa = _mm256_fmadd_ps(d0, d1, _mm256_fmadd_ps(d0, d2, _mm256_mul_ps(d1, d2)));
+								__m256i leftIndices;
+								__m256i rightIndices;
+								if (last - first <= maxLeafSize*mult) {
+								int lbi[8];
+								int rbi[8];
+								for (int bi = 0; bi < 8; bi++) {
+										lbi[bi] = ((size_t((i - bi) - first)+(size_t(1)<<block_shift)-1) >> block_shift);
+										rbi[bi] = ((size_t(last - (i - bi))+(size_t(1)<<block_shift)-1) >> block_shift);
+								}
+								//std::cout << "first: " << first << " pivot: " << pivot << " last: " << last << std::endl;
+								leftIndices = _mm256_setr_epi32(lbi[0], lbi[1], lbi[2], lbi[3], lbi[4], lbi[5], lbi[6], lbi[7]);
+								rightIndices = _mm256_setr_epi32(rbi[0], rbi[1], rbi[2], rbi[3], rbi[4], rbi[5], rbi[6], rbi[7]);
+								}
+/*
+								__m256 sah = _mm256_add_ps(_mm256_mul_ps(lsa, leftIndices),
+															_mm256_mul_ps(rsa, rightIndices));
+*/
+								else {
+									__m256i indices = _mm256_sub_epi32(_mm256_set1_epi32(i), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
+									leftIndices = _mm256_sub_epi32(indices, _mm256_set1_epi32(first));
+									rightIndices = _mm256_sub_epi32(_mm256_set1_epi32(last), indices);
+								}
 
-								__m256i indices = _mm256_sub_epi32(_mm256_set1_epi32(i), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7));
-								__m256i leftIndices = _mm256_sub_epi32(indices, _mm256_set1_epi32(first));
-								__m256i rightIndices = _mm256_sub_epi32(_mm256_set1_epi32(last), indices);
 /*
 								__m256 sah = _mm256_fmadd_ps(_mm256_set1_ps(intersectionCost * divPsa),
 															_mm256_fmadd_ps(lsa, _mm256_cvtepi32_ps(leftIndices),
 															_mm256_mul_ps(rsa, _mm256_cvtepi32_ps(rightIndices))), _mm256_set1_ps(traversalCost));
-	*/
+*/
 															__m256 sah = _mm256_add_ps(_mm256_mul_ps(lsa, _mm256_cvtepi32_ps(leftIndices)),
 																						_mm256_mul_ps(rsa, _mm256_cvtepi32_ps(rightIndices)));
 
@@ -602,9 +622,21 @@ namespace embree
 				float lsa = accumulatedArea[i - 1];
 				float rsa = surfaceArea(bounds);
 
-				float sah = // traversalCost + intersectionCost * divPsa * // Constant cost.
-				(lsa * ((float)(i - (int)first)) +	// Left child.
-				 rsa * ((float)((int)last - i)));	// Right child.
+				if (last - first <= maxLeafSize*mult) {
+					lsa *= float((size_t(i-first)+(size_t(1)<<block_shift)-1) >> block_shift);
+					rsa *= float((size_t(last-i)+(size_t(1)<<block_shift)-1) >> block_shift);
+				}
+				else {
+					lsa *= ((float)(i - (int)first));	// Left child.
+					rsa *= ((float)((int)last - i));	// Right child.
+				}
+
+				//std::cout << lcount << ", " << rcount << std::endl;
+				float sah =  //traversalCost + intersectionCost * divPsa * // Constant cost.
+				//(lsa * ((float)(i - (int)first)) +	// Left child.
+				//rsa * ((float)((int)last - i)));	// Right child.
+				 lsa +
+				 rsa;
 
 				if (sah < bestSah) {
 					bestBounds = bounds;
@@ -620,15 +652,20 @@ namespace embree
 				  divPsa = 1.f;
 				  bestDim = 0;
 			  }
-
-			  if (traversalCost + intersectionCost * divPsa * bestSah > (float)((int)(last-first)) * intersectionCost) {
+				//std::cout << "first: " << first << " pivot: " << pivot << " last: " << last << std::endl;
+				float leafBlocks = (last - first);//float((size_t(last-first)+(size_t(1)<<block_shift)-1) >> block_shift);
+				if (last - first <= maxLeafSize*mult)
+					leafBlocks = float((size_t(last-first)+(size_t(1)<<block_shift)-1) >> block_shift);
+				//float blockBestSah = surfaceArea(bestBounds) * leafBlocks;
+			  //if (bestSah > leafBlocks * intersectionCost) {
+					if (traversalCost + intersectionCost * divPsa * bestSah > leafBlocks * intersectionCost) {
 				  if (last - first > maxLeafSize) {
 
-						if (bestSah == std::numeric_limits<float>::infinity()) {
+						//if (bestSah == std::numeric_limits<float>::infinity()) {
 					  	pivot = (first + last) >> 1;
 
 							bestBounds = computeBounds(leafBounds, data.indices[bestDim], pivot, last);
-						}
+						//}
 
 				  }
 
@@ -640,6 +677,7 @@ namespace embree
 
 			  lprims = Set(first, pivot);
 			  rprims = Set(pivot, last);
+
 
 			  partition(data, bestDim, first, last, pivot, offset);
 

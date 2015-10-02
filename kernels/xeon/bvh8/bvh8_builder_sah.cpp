@@ -26,7 +26,7 @@
 #include "../geometry/triangle8v.h"
 #include "../geometry/trianglepairs8.h"
 
-#define PROFILE 0
+#define PROFILE 1
 
 namespace embree
 {

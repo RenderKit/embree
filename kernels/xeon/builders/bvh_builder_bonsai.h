@@ -54,7 +54,6 @@ namespace embree
 		  size_t depth;     //!< Depth of the root of this subtree.
 		  Set prims;        //!< The list of primitives.
 		  PrimInfo pinfo;   //!< Bounding info of primitives.
-	//Split split;      //!< The best split for the primitives.
 		  Split split;
       Set indexRange;   //!< In memory available space for split partitioning
       };
@@ -74,8 +73,8 @@ namespace embree
         static const size_t MAX_BRANCHING_FACTOR = 16;        //!< maximal supported BVH branching factor
         static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximal tree depth
         static const size_t SINGLE_THREADED_THRESHOLD = 4096; //!< threshold to switch to single threaded build
-		size_t MAX_MINI_TREE_SIZE = 8192;		//!< maximum size of a mini tree
-		float  PRUNING_THRESHOLD = 0.1f;			//!< a pruning treshold in the range ]0,1[, anything else results in no pruning
+		    size_t MAX_MINI_TREE_SIZE = 8192;		//!< maximum size of a mini tree
+		float  PRUNING_THRESHOLD = 0.95f;			//!< a pruning treshold in the range ]0,1[, anything else results in no pruning
       const bool splitTriangles = false;
       const int numberOfTriangles;
 		  volatile int miniTreeCount;
@@ -94,15 +93,11 @@ namespace embree
       unsigned* __restrict ttIndices[3];
 
       mvector<PrimRef> ttBounds;
-      /*
+
       mvector<unsigned> ttTemporaryIndices;
 		  mvector<unsigned char> ttLeftPartition;
 		  mvector<float> ttAccumulatedArea;
-      mvector<FastSweepData*> fsd;
-      */
-      mvector<unsigned> ttTemporaryIndices;
-		  mvector<unsigned char> ttLeftPartition;
-		  mvector<float> ttAccumulatedArea;
+      mvector<unsigned> ttAccumulatedCounts;
       mvector<FastSweepData*> fsd;
       public:
         mvector<BuildRecord> miniTreeRecords;
@@ -131,7 +126,7 @@ namespace embree
           ttTemporaryIndices(scene->device), ttLeftPartition(scene->device), ttAccumulatedArea(scene->device),
           fsd(scene->device), miniTreeRecords(scene->device), miniTreeRecordsPruned(scene->device), miniTreeRoots(scene->device),
           ttBounds(scene->device), ttIndicesX(scene->device), ttIndicesY(scene->device), ttIndicesZ(scene->device),
-          ttMidpointsX(scene->device), ttMidpointsY(scene->device), ttMidpointsZ(scene->device)
+          ttMidpointsX(scene->device), ttMidpointsY(scene->device), ttMidpointsZ(scene->device), ttAccumulatedCounts(scene->device)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
@@ -195,19 +190,14 @@ namespace embree
 		  }
 
 		  __forceinline bool sweep(FastSweepData& data, BuildRecord& current, BuildRecord& left, BuildRecord& right, unsigned offset) {
-			  return heuristic.fastSweep(data, current.pinfo, current.split, current.prims, left.pinfo, left.prims, left.split, right.pinfo, right.prims, right.split, maxLeafSize, offset, current.depth);
+			  return heuristic.fastSweep(data, current.pinfo, current.split, current.prims, left.pinfo, left.prims, left.split, right.pinfo, right.prims, right.split, maxLeafSize, offset);
 		  }
 
 
-		  void buildMiniTreesRecursive(FastSweepData& data, BuildRecord& current, unsigned offset, Allocator alloc) {
+		  void buildMiniTreesRecursive(FastSweepData& data, BuildRecord& current, unsigned offset, Allocator alloc, size_t& miniTreeDepth) {
 
 			  if (alloc == nullptr)
 				 Allocator alloc = createAlloc();
-			  /* call memory monitor function to signal progress */
-			  //if (toplevel && current.size() <= SINGLE_THREADED_THRESHOLD)
-			//	  progressMonitor(current.size());
-
-			  //assert(current.pinfo.size() == 0);
 
 			  /*! initialize child list */
 			  BuildRecord children[MAX_BRANCHING_FACTOR];
@@ -245,19 +235,27 @@ namespace embree
 			  } while (numChildren < branchingFactor);
 
 			  /*! create an inner node */
-			  if (numChildren > 1) {
+        if (numChildren == 1) {
+          heuristic.gatherReferences(data, current.prims);
+          createLeaf(current, data.gatheredRefs, alloc);
+        return;
+        }
+        else
+          auto node = createNode(current,children,numChildren,alloc);
 
-				  auto node = createNode(current,children,numChildren,alloc);
-			  }
-			  else {
-				  heuristic.gatherReferences(data, current.prims);
-				  //std::sort(data.gatheredRefs.data(),data.gatheredRefs.data() + current.prims.size());
-				  createLeaf(current, data.gatheredRefs, alloc);
+        if (numChildren < 8) {
+          for (ssize_t i=numChildren-1; i>=0; i--) {
+
+				      heuristic.gatherReferences(data, children[i].prims);
+				      createLeaf(children[i], data.gatheredRefs, alloc);
+          }
 				  return;
 			  }
 			  /* spawn tasks */
 			  for (ssize_t i=numChildren-1; i>=0; i--) {
-				  buildMiniTreesRecursive(data, children[i], offset, alloc);
+          if (children[i].depth > miniTreeDepth)
+            miniTreeDepth = children[i].depth;
+				  buildMiniTreesRecursive(data, children[i], offset, alloc, miniTreeDepth);
 			  }
 		  }
 
@@ -270,11 +268,13 @@ namespace embree
 
 			  if (miniTreeCount == 1) {
           FastSweepData data((int)(MAX_MINI_TREE_SIZE), maxLeafSize);
+          size_t depth = 0;
   			  Allocator alloc = createAlloc();
 				  BuildRecord& br = miniTreeRecords[0];
 				  br.prims = range<size_t>(0, br.prims.size());
 				  heuristic.sortIndices(data, br.prims.size(), 0);
-				  buildMiniTreesRecursive(data, br, 0, alloc);
+				  buildMiniTreesRecursive(data, br, 0, alloc, depth);
+          br.depth = depth;
 			  }
 			  else {
 #if 0
@@ -283,6 +283,7 @@ namespace embree
 				  for (int i = 0; i < miniTreeCount; ++i) {
 					  BuildRecord& br = miniTreeRecords[i];
 					  data.setOffset(br.prims.begin());
+            size_t depth = 0;
             unsigned offset = br.prims.begin();
 					  br.parent = (size_t*)&(miniTreeRoots.data()[i]);
 					  br.depth = 0;
@@ -290,7 +291,8 @@ namespace embree
 					  br.pinfo.begin = 0;
 					  br.pinfo.end = br.prims.size();
 					  heuristic.sortIndices(data, br.prims.size(), offset);
-					  buildMiniTreesRecursive(data, br, offset, alloc);
+					  buildMiniTreesRecursive(data, br, offset, alloc, depth);
+            br.depth = depth;
 				  }
 #else
 
@@ -327,7 +329,7 @@ namespace embree
 
 						  for (int i = treeID; i < treeID + granularity; ++i) {
                 BuildRecord& br = miniTreeRecords[i];
-
+                size_t depth = 0;
                 int offset = br.prims.begin();
 							  br.parent = (size_t*)&(miniTreeRootsPtr[i]);
 							  br.depth = 0;
@@ -335,7 +337,8 @@ namespace embree
 							  br.pinfo.begin = 0;
 							  br.pinfo.end = br.prims.size();
 							  heuristic.sortIndices(data, br.prims.size(), offset);
-							  buildMiniTreesRecursive(data, br, offset, alloc);
+							  buildMiniTreesRecursive(data, br, offset, alloc, depth);
+                br.depth = depth;
 						}
 					  }));
 				  }
@@ -349,6 +352,7 @@ namespace embree
 					  for (int i = treeID; i < miniTreeCount; ++i) {
 						  BuildRecord& br = miniTreeRecords[i];
 						  //data.setOffset(br.prims.begin());
+              size_t depth = 0;
               int offset = br.prims.begin();
 						  br.parent = (size_t*)&(miniTreeRootsPtr[i]);
 						  br.depth = 0;
@@ -356,7 +360,8 @@ namespace embree
 						  br.pinfo.begin = 0;
 						  br.pinfo.end = br.prims.size();
 						  heuristic.sortIndices(data, br.prims.size(), offset);
-						  buildMiniTreesRecursive(data, br, offset, alloc);
+						  buildMiniTreesRecursive(data, br, offset, alloc, depth);
+              br.depth = depth;
 					  }}));
           }
         SPAWN_END;
@@ -411,7 +416,7 @@ namespace embree
 		  }
 
 		  void topTreeSweep(BuildRecord& current, BuildRecord& lrecord, BuildRecord& rrecord) {
-
+        int block_shift = 3;
 			  unsigned first = current.prims.begin();
 			  unsigned last = current.prims.end();
 
@@ -422,37 +427,50 @@ namespace embree
 
 			  BBox3fa bestBounds;
 
+        unsigned bestLeftCounts = 0;
+        unsigned bestRightCounts = 0;
+
 			  for (unsigned dim = 0; dim < 3; ++dim) {
 				  //unsigned* __restrict sortedIndices = ttIndices[dim].data();
           unsigned* __restrict sortedIndices = ttIndices[dim];
 				  float* __restrict accumulatedArea = ttAccumulatedArea.data();
+          unsigned* __restrict accumulatedCounts = ttAccumulatedCounts.data();
 				  BBox3fa bounds = miniTreeRecordsPruned[sortedIndices[first]].pinfo.geomBounds;
 
 				  {
 					  int i = (int)first;
-
+            size_t lCounts = 0;
 					  for(; (int)i < (int)last-1; i++) {
 						  bounds.extend(miniTreeRecordsPruned[sortedIndices[i]].pinfo.geomBounds);
 						  float sa = halfArea(bounds);
-						  accumulatedArea[i] =  sa * (float)((int)(i - first + 1));
+						  //lCounts += miniTreeRecordsPruned[sortedIndices[i]].pinfo.size();
+              lCounts = miniTreeRecordsPruned[sortedIndices[i]].depth > lCounts ? miniTreeRecordsPruned[sortedIndices[i]].depth : lCounts;
+              accumulatedArea[i] =  sa * sa * (float)((int)(i - first + 1));
+              //accumulatedArea[i] =  sa * float((size_t(i - first + 1)+(size_t(1)<<block_shift)-1) >> block_shift);
+              accumulatedCounts[i] = lCounts;
 					  }
 				  }
 
 				  bounds = miniTreeRecordsPruned[sortedIndices[last - 1]].pinfo.geomBounds;
 				  {
 					  int i = (int)last - 1;
-
+            size_t rCounts = 0;
 					  for (; (int)i > (int)first; i--) {
 						  bounds.extend(miniTreeRecordsPruned[sortedIndices[i]].pinfo.geomBounds);
-						  float sa = halfArea(bounds);
-						  float sah = (accumulatedArea[i - 1] + // left side SAH
-									     sa * (float)((int)(last - i))); // right side SAH
+						  //rCounts += miniTreeRecordsPruned[sortedIndices[i]].pinfo.size();
+              rCounts = miniTreeRecordsPruned[sortedIndices[i]].depth > rCounts ? miniTreeRecordsPruned[sortedIndices[i]].depth : rCounts;
+              float sa = halfArea(bounds);
+						  float sah = (accumulatedArea[i - 1] + sa * sa * (float)((int)(last - i)));
+
+              //float sah = accumulatedArea[i - 1] +  sa * float((size_t(last-i)+(size_t(1)<<block_shift)-1) >> block_shift);
 
 						  if (sah < bestSah) {
 							  bestSah = sah;
 							  bestDim = dim;
 							  pivot = i;
 							  bestBounds = bounds;
+                bestLeftCounts = accumulatedCounts[i];
+                bestRightCounts = rCounts;
 						  }
 					  }
 				  }
@@ -464,6 +482,7 @@ namespace embree
 			  ttPartition(bestDim, first, last, pivot);
 
 			  rrecord.pinfo = PrimInfo(pivot, last, bestBounds, bestBounds);
+        rrecord.depth = bestRightCounts;
 			  //bestBounds = miniTreeRecordsPruned[ttIndices[0].data()[first]].pinfo.geomBounds;
         bestBounds = miniTreeRecordsPruned[ttIndices[0][first]].pinfo.geomBounds;
 			  size_t index = first + 1;
@@ -473,6 +492,7 @@ namespace embree
 			  }
 
 			  lrecord.pinfo = PrimInfo(first, pivot, bestBounds, bestBounds);
+        lrecord.depth = bestLeftCounts;
 		  }
 
 		  void buildTopTreeRecursive(BuildRecord& current, Allocator alloc) {
@@ -518,10 +538,7 @@ namespace embree
 				  ssize_t largestChild = -1;
 				  for (size_t i=0; i<numChildren; i++)
 				  {
-					  //float currentSAH = children[i].pinfo.leafSAH();
-             // not clear why, but tree quality is improved. I would like to try
-             // the max depth of the set of mini trees times the area as a cost measurement.
-            float currentSAH = children[i].pinfo.leafSAH(32);
+					  float currentSAH = children[i].pinfo.leafSAH(3);
 					  if (children[i].pinfo.size() == 1) continue;
 					  if (currentSAH > largestSAH) { largestChild = i; largestSAH = currentSAH; }
 				  }
@@ -562,7 +579,6 @@ namespace embree
 			  }
 			  else {
 				  for (ssize_t i=numChildren-1; i>=0; i--) {
-					  // if (children[i].size() > 1)
 					  buildTopTreeRecursive(children[i], alloc);
 
 				  }
@@ -587,15 +603,6 @@ namespace embree
           ttIndices[0] = (unsigned* __restrict)ttIndicesX.data();
           ttIndices[1] = (unsigned* __restrict)ttIndicesY.data();
           ttIndices[2] = (unsigned* __restrict)ttIndicesZ.data();
-/*
-          ttIndices[0] = (unsigned*)alloc->alloc0.malloc(2*sizeof(unsigned) * miniTreeCount + 256, 64);
-          ttIndices[1] = (unsigned*)alloc->alloc0.malloc(2*sizeof(unsigned) * miniTreeCount + 256, 64);
-          ttIndices[2] = (unsigned*)alloc->alloc0.malloc(2*sizeof(unsigned) * miniTreeCount + 256, 64);
-
-          ttMidpoints[0] = (float*)alloc->alloc0.malloc(sizeof(float) * miniTreeCount + 128, 64);
-          ttMidpoints[1] = (float*)alloc->alloc0.malloc(sizeof(float) * miniTreeCount + 128, 64);
-          ttMidpoints[2] = (float*)alloc->alloc0.malloc(sizeof(float) * miniTreeCount + 128, 64);
-*/
 
         BuildRecord* __restrict mtrp = miniTreeRecordsPruned.data();
         int i = 0;
@@ -647,6 +654,7 @@ namespace embree
 			  ttTemporaryIndices.resize(miniTreeCount);
 			  ttLeftPartition.resize(miniTreeCount);
 			  ttAccumulatedArea.resize(miniTreeCount);
+        ttAccumulatedCounts.resize(miniTreeCount);
 
         sortTopTree();
 
@@ -656,45 +664,53 @@ namespace embree
         buildTopTreeRecursive(rootRecord, nullptr);
 		  }
 
-		  void pruneRecursive(int& newMiniTreeCount, const float averageArea, BVH8::NodeRef& nf) {
-			  for (int j = 0; j < branchingFactor; j++) {
+		  void pruneRecursive(int& newMiniTreeCount, const float averageArea, BVH8::NodeRef& nf, size_t depth) {
+			  depth -= 1;
+        for (int j = 0; j < branchingFactor; j++) {
 				  if (nf.node()->child(j).isNode() && (area(nf.node()->bounds(j)) > averageArea)) {
-					  pruneRecursive(newMiniTreeCount, averageArea, nf.node()->child(j));
+					  pruneRecursive(newMiniTreeCount, averageArea, nf.node()->child(j), depth);
 				  }
 				  else if (nf.node()->child(j) != BVH8::emptyNode) {
 					  BuildRecord br;
 					  br.pinfo.geomBounds = nf.node()->bounds(j);
 					  br.parent = (size_t*)&nf.node()->child(j);
+            br.depth = depth;
 					  miniTreeRecordsPruned[newMiniTreeCount++] = br;
 				  }
 			  }
 		  }
 
       // digs in to mini trees and removes too large pieces, which become mini trees of their own
-		  void prune() {
+		  int prune() {
 			  float averageArea = 0;
 			  for (int i = 0; i < miniTreeCount; i++) {
 				  averageArea += area(miniTreeRecords[i].pinfo.geomBounds);
+
 			  }
 			  averageArea /= (float)miniTreeCount;
 
+        //std::cout << "area: " << averageArea << std::endl;
 			  averageArea *= PRUNING_THRESHOLD;
 			  int newMiniTreeCount = 0;
 			  int originalMiniTreeCount = miniTreeCount;
+        //std::cout << "originalMiniTreeCount: " << originalMiniTreeCount << std::endl;
 			  for (int i = 0; i < originalMiniTreeCount; i++) {
+          size_t originalDepth = miniTreeRecords[i].depth;
 
 				  BVH8::NodeRef nf = BVH8::NodeRef(*(miniTreeRecords[i].parent));
 				  if (nf.isNode() && area(miniTreeRecords[i].pinfo.geomBounds) > averageArea) {
+            originalDepth -= 1;
 					  for (int j = 0; j < branchingFactor; j++) {
 
 						  if (nf.node()->child(j).isNode() && (area(nf.node()->bounds(j)) > averageArea)) {
-
-							  pruneRecursive(newMiniTreeCount, averageArea, nf.node()->child(j));
+							  pruneRecursive(newMiniTreeCount, averageArea, nf.node()->child(j), originalDepth);
 						  }
 						  else if (nf.node()->child(j) != BVH8::emptyNode) {
 							  BuildRecord br;
 							  br.pinfo.geomBounds = nf.node()->bounds(j);
 							  br.parent = (size_t*)&nf.node()->child(j);
+                br.depth = originalDepth;
+                //std::cout << originalDepth << std::endl;
 							  miniTreeRecordsPruned[newMiniTreeCount++] = br;
 						  }
 					  }
@@ -703,7 +719,7 @@ namespace embree
 					miniTreeRecordsPruned[newMiniTreeCount++] = miniTreeRecords[i];
 				  }
 			  }
-			  miniTreeCount = newMiniTreeCount;
+			  return newMiniTreeCount;
 
 		  }
 
@@ -748,11 +764,15 @@ namespace embree
 
 		//	t = startTime();
 			if (PRUNING_THRESHOLD < 1.f && PRUNING_THRESHOLD > 0.f) {
-				prune();
-				//miniTreeRecordsPruned = miniTreeRecords;
+				int newMiniTreeCount = prune();
+        while (float(newMiniTreeCount) / float(miniTreeCount) < 10.f) {
+          PRUNING_THRESHOLD *= 0.4f;
+          newMiniTreeCount = prune();
+        }
+				miniTreeCount = newMiniTreeCount;
 			}
 		//	printTime("Pruning", t);
-		//	std::cout << "Mini tree count after pruning: " << miniTreeCount << std::endl;
+			//std::cout << "Mini tree count after pruning: " << miniTreeCount << std::endl;
 		//	t = startTime();
 			if (miniTreeCount > 1)
 				buildTopTree(record);
@@ -760,6 +780,7 @@ namespace embree
 				record = miniTreeRecords[0];
 		//	printTime("Build top tree", t);
 			//std::cout << "Underfilled nodes: " << underFilledNodes << std::endl;
+
 			return 0;
 	    }
 
