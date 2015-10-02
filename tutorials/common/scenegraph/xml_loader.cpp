@@ -16,12 +16,6 @@
 
 #include "xml_loader.h"
 #include "xml_parser.h"
-#include "obj_loader.h"
-#include "../../../common/math/affinespace.h"
-#include "../../../common/math/vec2.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/vec4.h"
-#include <stack>
 
 namespace embree
 {
@@ -895,17 +889,8 @@ namespace embree
     else 
     {
       const std::string id = xml->parm("id");
-      if (xml->name == "xml") {
-        return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
-      }
-      else if (xml->name == "extern") {
-        FileName fname = path + xml->parm("src");
-        if      (fname.ext() == "xml") return sceneMap[id] = XMLLoader::load(path + xml->parm("src"),one);
-        else if (fname.ext() == "obj") return sceneMap[id] = loadOBJ(path + xml->parm("src"));
-        else THROW_RUNTIME_ERROR("unknown file type:" + fname.str());
-      }
+      if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
       else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
-      
       else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
       else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);
       else if (xml->name == "DirectionalLight") return sceneMap[id] = loadDirectionalLight(xml);
@@ -914,7 +899,6 @@ namespace embree
       else if (xml->name == "TriangleLight"   ) return sceneMap[id] = loadTriangleLight   (xml);
       else if (xml->name == "QuadLight"       ) return sceneMap[id] = loadQuadLight       (xml);
       else if (xml->name == "HDRILight"       ) return sceneMap[id] = loadHDRILight       (xml);
-
       else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
