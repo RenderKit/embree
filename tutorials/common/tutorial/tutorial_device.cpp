@@ -16,7 +16,7 @@
 
 #include "tutorial_device.h"
 #include "../../../kernels/algorithms/parallel_for.h"
-#include "../scenegraph/scenegraph.h"
+#include "../scenegraph/texture.h"
 #include "scene_device.h"
 
 /* the scene to render */

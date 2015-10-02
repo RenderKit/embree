@@ -20,8 +20,8 @@ ADD_LIBRARY(scenegraph STATIC
     xml_writer.cpp
     obj_loader.cpp
     hair_loader.cpp
-    texture_loader.cpp
     cy_hair_loader.cpp
+    texture.cpp
     scenegraph.cpp)
 
 TARGET_LINK_LIBRARIES(scenegraph sys lexers)

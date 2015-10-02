@@ -15,9 +15,7 @@
 // ======================================================================== //
 
 #include "obj_loader.h"
-#include "texture_loader.h"
-
-#include <map>
+#include "texture.h"
 
 namespace embree
 {

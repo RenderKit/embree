@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "texture_loader.h"
+#include "texture.h"
 #include "../image/image.h"
 
 #if defined(USE_PTEX)
