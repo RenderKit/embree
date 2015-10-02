@@ -30,9 +30,9 @@
 namespace embree
 {
   /*! Scene representing the OBJ file */
-  struct OBJScene  // FIXME: name Scene
+  struct TutorialScene  // FIXME: name Scene
   {
-    OBJScene () {}
+    TutorialScene () {}
 
     void add (Ref<SceneGraph::Node> node, bool instancing = false);
 

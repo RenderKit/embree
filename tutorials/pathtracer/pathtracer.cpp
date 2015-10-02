@@ -43,12 +43,12 @@ namespace embree
   static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
   Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName filename = "";
 
   std::vector<FileName> keyframeList;
-  std::vector<OBJScene*> g_keyframes;
+  std::vector<TutorialScene*> g_keyframes;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -219,7 +219,7 @@ namespace embree
     for (size_t i=0; i<fileName.size(); i++)
     {
       std::cout << "." << std::flush;
-      OBJScene *scene = new OBJScene;
+      TutorialScene *scene = new TutorialScene;
       FileName keyframe = fileName[i];
       scene->add(loadOBJ(keyframe,true));
       g_keyframes.push_back(scene);

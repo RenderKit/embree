@@ -20,12 +20,12 @@ namespace embree
 {
   struct SceneGraphConverter
   {
-    OBJScene* scene;
+    TutorialScene* scene;
     bool instancing;
     std::map<Ref<SceneGraph::MaterialNode>, size_t> material2id;
     std::map<Ref<SceneGraph::Node>, size_t> geometry2id;
     
-    SceneGraphConverter (Ref<SceneGraph::Node> in, OBJScene* scene, bool instancing)
+    SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, bool instancing)
       : scene(scene), instancing(instancing) { convert(in,one,one); }
 
     int convert(Ref<SceneGraph::MaterialNode> node) 
@@ -41,7 +41,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      OBJScene::Mesh* objmesh = new OBJScene::Mesh();
+      TutorialScene::Mesh* objmesh = new TutorialScene::Mesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
       objmesh->v. resize(mesh->v. size()); for (size_t i=0; i<mesh->v. size(); i++) objmesh->v [i] = xfmPoint ( space0,mesh->v [i]);
       objmesh->v2.resize(mesh->v2.size()); for (size_t i=0; i<mesh->v2.size(); i++) objmesh->v2[i] = xfmPoint ( space1,mesh->v2[i]);
@@ -51,7 +51,7 @@ namespace embree
       objmesh->triangles.resize(mesh->triangles.size());
       for (size_t i=0; i<mesh->triangles.size(); i++) {
         SceneGraph::TriangleMeshNode::Triangle& tri = mesh->triangles[i];
-        objmesh->triangles[i] = OBJScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
+        objmesh->triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
       }
       objmesh->meshMaterialID = materialID;
       scene->meshes.push_back(objmesh);
@@ -70,7 +70,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      OBJScene::SubdivMesh* subdivmesh = new OBJScene::SubdivMesh();
+      TutorialScene::SubdivMesh* subdivmesh = new TutorialScene::SubdivMesh();
       const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
       
       subdivmesh->positions.resize(mesh->positions.size()); 
@@ -109,7 +109,7 @@ namespace embree
     {
       int materialID = convert(mesh->material);
       
-      OBJScene::HairSet* hairset = new OBJScene::HairSet;
+      TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
       
       hairset->v.resize(mesh->v.size()); 
       for (size_t i=0; i<mesh->v.size(); i++) {
@@ -125,7 +125,7 @@ namespace embree
       
       hairset->hairs.resize(mesh->hairs.size()); 
       for (size_t i=0; i<mesh->hairs.size(); i++)
-        hairset->hairs[i] = OBJScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
+        hairset->hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
 
       scene->hairsets.push_back(hairset);
       return scene->hairsets.size()-1;
@@ -165,28 +165,28 @@ namespace embree
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
         if (instancing)
-          scene->instances.push_back(new OBJScene::Instance(space0,lookupTriangleMesh(mesh)));
+          scene->instances.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
         else
           convertTriangleMesh(mesh,space0,space1);
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
       {
         //if (instancing)
-        //  scene->instances.push_back(OBJScene::Instance(space0,lookupSubdivMesh(mesh)));
+        //  scene->instances.push_back(TutorialScene::Instance(space0,lookupSubdivMesh(mesh)));
         //else
         convertSubdivMesh(mesh,space0,space1);
       }
       else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
       {
         //if (instancing)
-        //  scene->instances.push_back(OBJScene::Instance(space0,lookupHairSet(mesh)));
+        //  scene->instances.push_back(TutorialScene::Instance(space0,lookupHairSet(mesh)));
         //else
         convertHairSet(mesh,space0,space1);
       }
     }
   };
 
-  void OBJScene::add(Ref<SceneGraph::Node> node, bool instancing) {
+  void TutorialScene::add(Ref<SceneGraph::Node> node, bool instancing) {
     SceneGraphConverter(node,this,instancing);
   }
 };

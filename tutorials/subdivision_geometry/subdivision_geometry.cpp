@@ -38,7 +38,7 @@ namespace embree
   static bool g_interactive = true;
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
   static FileName filename = "";
 
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {

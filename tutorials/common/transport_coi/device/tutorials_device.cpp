@@ -80,8 +80,8 @@ namespace embree
     Vec3fa* positions2;    //!< vertex position array
     Vec3fa* normals;       //!< vertex normal array
     Vec2f*  texcoords;     //!< vertex texcoord array
-    OBJScene::Triangle* triangles;  //!< list of triangles
-    OBJScene::Quad* quads;          //!< list of quads
+    TutorialScene::Triangle* triangles;  //!< list of triangles
+    TutorialScene::Quad* quads;          //!< list of quads
     float *edge_level;
 
     int numVertices;
@@ -321,16 +321,16 @@ struct ISPCSubdivMeshKeyFrame {
 
     ISPCMesh* mesh = new ISPCMesh(in_pMiscData->numTriangles,in_pMiscData->numQuads,in_pMiscData->numVertices,in_pMiscData->meshMaterialID);
     assert( mesh );
-    assert( in_pMiscData->numTriangles*sizeof(OBJScene::Triangle) == in_pBufferLengths[3] );
-    assert( in_pMiscData->numQuads*sizeof(OBJScene::Quad) == in_pBufferLengths[4] );
+    assert( in_pMiscData->numTriangles*sizeof(TutorialScene::Triangle) == in_pBufferLengths[3] );
+    assert( in_pMiscData->numQuads*sizeof(TutorialScene::Quad) == in_pBufferLengths[4] );
 
     //assert( in_pMiscData->numVertices*sizeof(Vec3fa) == in_pBufferLengths[1] );
 
     mesh->positions = (Vec3fa*)os_malloc(in_pBufferLengths[0]);
     mesh->normals   = (Vec3fa*)os_malloc(in_pBufferLengths[1]);
     mesh->texcoords = (Vec2f* )os_malloc(in_pBufferLengths[2]);
-    mesh->triangles = (OBJScene::Triangle*)os_malloc(in_pBufferLengths[3]);
-    mesh->quads     = (OBJScene::Quad*)os_malloc(in_pBufferLengths[4]);
+    mesh->triangles = (TutorialScene::Triangle*)os_malloc(in_pBufferLengths[3]);
+    mesh->quads     = (TutorialScene::Quad*)os_malloc(in_pBufferLengths[4]);
 
     memcpy(mesh->positions,in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(mesh->normals  ,in_ppBufferPointers[1],in_pBufferLengths[1]);

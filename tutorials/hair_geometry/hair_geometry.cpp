@@ -40,7 +40,7 @@ namespace embree
   static size_t g_numThreads = 0;
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
   Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName sceneFilename = "";
   static FileName outFilename = "";
@@ -210,11 +210,11 @@ float noise(float x, float y, float z)
     return p+0.2f*Vec3fa(x,y,z);
   }
 
-  void addHairySphere (OBJScene& scene, const Vec3fa& p, float r)
+  void addHairySphere (TutorialScene& scene, const Vec3fa& p, float r)
   {
     const size_t numPhi   = 20;
     const size_t numTheta = 2*numPhi;
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
+    TutorialScene::Mesh* mesh = new TutorialScene::Mesh;
 
     Material material;
     int materialID = scene.materials.size();
@@ -242,10 +242,10 @@ float noise(float x, float y, float z)
         int p11 = phi*numTheta+theta%numTheta;
 
         if (phi > 1)
-          mesh->triangles.push_back(OBJScene::Triangle(p10,p00,p01,materialID));
+          mesh->triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
         
         if (phi < numPhi) 
-          mesh->triangles.push_back(OBJScene::Triangle(p11,p10,p01,materialID));
+          mesh->triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
       }
     }
     scene.meshes.push_back(mesh);
@@ -253,7 +253,7 @@ float noise(float x, float y, float z)
 
 #if 0
     const float thickness = 0.01f*r;
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
     srand48(123456789);
     for (size_t t=0; t<16; t++) 
       {
@@ -270,12 +270,12 @@ float noise(float x, float y, float z)
 	hairset->v.push_back(l2);
 	hairset->v.push_back(l3);
 
-	hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+	hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
       }
     scene.hairsets.push_back(hairset);
 #else
     const float thickness = 0.001f*r;
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
 
     for (size_t t=0; t<100000; t++) 
     {
@@ -292,15 +292,15 @@ float noise(float x, float y, float z)
       hairset->v.push_back(l2);
       hairset->v.push_back(l3);
 	
-      hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+      hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
     }
     scene.hairsets.push_back(hairset);
 #endif
   }
 
-  void addGroundPlane (OBJScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
+  void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
   {
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
+    TutorialScene::Mesh* mesh = new TutorialScene::Mesh;
 
     Material material;
     int materialID = scene.materials.size();
@@ -311,8 +311,8 @@ float noise(float x, float y, float z)
     mesh->v.push_back(p10);
     mesh->v.push_back(p11);
 
-    mesh->triangles.push_back(OBJScene::Triangle(0,1,2,materialID));
-    mesh->triangles.push_back(OBJScene::Triangle(2,1,3,materialID));
+    mesh->triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
+    mesh->triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
 
     scene.meshes.push_back(mesh);
   }

@@ -43,7 +43,7 @@ namespace embree
   static FileName keyframeList = "";
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
   Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName filename = "";
 

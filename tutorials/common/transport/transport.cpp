@@ -37,7 +37,7 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCHairSet* convertHair (Ref<OBJScene::HairSet> in)
+  ISPCHairSet* convertHair (Ref<TutorialScene::HairSet> in)
   {
     ISPCHairSet* out = new ISPCHairSet;
     out->v = in->v.size() ? &in->v[0] : nullptr;
@@ -48,7 +48,7 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertMesh (Ref<OBJScene::Mesh> in)
+  ISPCMesh* convertMesh (Ref<TutorialScene::Mesh> in)
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
@@ -65,7 +65,7 @@ namespace embree
     return out;
   }
 
-  ISPCSubdivMesh* convertSubdivMesh (Ref<OBJScene::SubdivMesh> in)
+  ISPCSubdivMesh* convertSubdivMesh (Ref<TutorialScene::SubdivMesh> in)
   {
     ISPCSubdivMesh* out = new ISPCSubdivMesh;
     out->positions = in->positions.size() ? &in->positions[0] : nullptr;
@@ -126,7 +126,7 @@ namespace embree
     g_pixels = (int*) alignedMalloc(g_width*g_height*sizeof(int),64);
   }
 
-  void set_scene (OBJScene* in) 
+  void set_scene (TutorialScene* in) 
   {
     ISPCScene* out = new ISPCScene;
 
@@ -167,7 +167,7 @@ namespace embree
     g_ispc_scene = out;
   }
 
-  void set_scene_keyframes(OBJScene** in, size_t numKeyFrames)
+  void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames)
   {
     if (g_ispc_scene)
       {
