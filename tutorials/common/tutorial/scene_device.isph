@@ -39,7 +39,7 @@ struct ISPCGeometry
   ISPCType type;
 };
 
-struct ISPCMesh
+struct ISPCTriangleMesh
 {
   uniform ISPCGeometry geom;
   uniform Vec3fa* positions;    //!< vertex position array

@@ -889,7 +889,7 @@ export void device_init (uniform int8* uniform cfg)
 
 } // device_init
 
-void convertTriangleMesh(uniform ISPCMesh* uniform mesh, RTCScene scene_out)
+void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
   /* create a triangle mesh */
   uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
@@ -1061,7 +1061,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
     if (geometry->type == SUBDIV_MESH) 
       convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
-      convertTriangleMesh((uniform ISPCMesh* uniform) geometry, scene_out);
+      convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
   }
 
   /* commit changes to scene */
@@ -1114,7 +1114,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
 inline Vec3f interpolate_normal(RTCRay& ray)
 {
 #if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  uniform ISPCMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
+  uniform ISPCTriangleMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
   uniform ISPCTriangle* varying tri = &mesh->triangles[ray.primID];
 
   /* load material ID */
@@ -1139,7 +1139,7 @@ inline Vec3f interpolate_normal(RTCRay& ray)
   {
     if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
 
-    uniform ISPCMesh* uniform mesh = g_ispc_scene->meshes[geomID];
+    uniform ISPCTriangleMesh* uniform mesh = g_ispc_scene->meshes[geomID];
     
     foreach_unique (primID in ray.primID) 
     {
@@ -1173,7 +1173,7 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
   int materialID = 0;
   uniform ISPCGeometry* varying geometry = geomID_to_mesh[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
-    uniform ISPCMesh* varying mesh = (uniform ISPCMesh* varying) geometry;
+    uniform ISPCTriangleMesh* varying mesh = (uniform ISPCTriangleMesh* varying) geometry;
     materialID = mesh->triangles[ray.primID].materialID; 
   }
   else if (geometry->type == SUBDIV_MESH)
@@ -1197,8 +1197,8 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
     if (geomID < 0) continue;
     uniform ISPCGeometry* uniform geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) {
-      uniform ISPCMesh* uniform mesh = (uniform ISPCMesh* uniform) geometry;
-      materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+      uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
+      materialID = ((ISPCTriangleMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
     }
     else if (geometry->type == SUBDIV_MESH) 
     {
