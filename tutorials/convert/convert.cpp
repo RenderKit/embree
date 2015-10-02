@@ -112,7 +112,8 @@ namespace embree
         Vec2f r = Vec2f(random<float>(),random<float>());
         Vec2f p = dist->sample(r);
         p.x *= rcp(float(dist->width)); p.y *= rcp(float(dist->height));
-        const AffineSpace3fa space = heightField->get(p);
+        float angle = 2.0f*float(pi)*random<float>();
+        const AffineSpace3fa space = heightField->get(p)*AffineSpace3fa::rotate(Vec3fa(0,1,0),angle);
         group->add(new SceneGraph::TransformNode(space,object));
       }
     }
