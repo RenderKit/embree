@@ -93,34 +93,36 @@ Vec3fa sampleSphere(const float u, const float v)
   return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
 }
 
+void convertTriangleMesh(ISPCMesh* mesh, RTCScene scene_out)
+{
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(Vertex));
+  if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+}
+
+void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
+{
+  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+  if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+}
+
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  //scene_in->numHairSets = 0;
-  //scene_in->numMeshes = 0;
-
   /* create scene */
   RTCScene scene_out = rtcDeviceNewScene(g_device, RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT, RTC_INTERSECT1);
 
-  /* add all hair sets to the scene */
-  for (int i=0; i<scene_in->numHairSets; i++)
+  for (size_t i=0; i<scene_in->numGeometries; i++)
   {
-    ISPCHairSet* hair = scene_in->hairs[i];
-    unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
-    if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
-  }
-
-  /* add all triangle meshes to the scene */
-  for (int i=0; i<scene_in->numMeshes; i++)
-  {
-    ISPCMesh* mesh = scene_in->meshes[i];
-    unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
-    rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->positions,0,sizeof(Vertex));
-    if (mesh->positions2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->positions2,0,sizeof(Vertex));
-    rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->triangles,0,sizeof(ISPCTriangle));
-    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+    ISPCGeometry* geometry = scene_in->geometries[i];
+    if (geometry->type == TRIANGLE_MESH) 
+      convertTriangleMesh((ISPCMesh*) geometry, scene_out);
+    else if (geometry->type == HAIR_SET)
+      convertHairSet((ISPCHairSet*) geometry, scene_out);
   }
 
   /* commit changes to scene */
@@ -270,7 +272,7 @@ typedef Vec3fa*_Vec3fa_ptr;
 inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = g_ispc_scene->hairs[geomID];
+  const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
   
@@ -328,7 +330,8 @@ void filterDispatch(void* ptr, RTCRay2& ray) {
 void occlusionFilter(void* ptr, RTCRay2& ray)
 {
   /* make all surfaces opaque */
-  if (ray.geomID >= g_ispc_scene->numHairSets) {
+  ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+  if (geometry->type == TRIANGLE_MESH) {
     ray.transparency = Vec3fa(0.0f);
     return;
   }
@@ -389,7 +392,8 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     AnisotropicBlinn brdf;
     float tnear_eps = 0.0001f;
 
-    if (ray.geomID < g_ispc_scene->numHairSets) 
+    ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+    if (geometry->type == HAIR_SET) 
     {
       /* calculate tangent space */
       const Vec3fa dx = normalize(ray.Ng);
@@ -402,11 +406,9 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
       Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
       tnear_eps = 1.1f*p.w;
     }
-    else 
+    else if (geometry->type == TRIANGLE_MESH)
     {
-      int meshID = ray.geomID-g_ispc_scene->numHairSets;
-      ISPCMesh* mesh = g_ispc_scene->meshes[meshID];
-
+      ISPCMesh* mesh = (ISPCMesh*) geometry;
       ISPCTriangle* triangle = &mesh->triangles[ray.primID];
       OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[triangle->materialID];
 
@@ -492,7 +494,8 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
     return Vec3fa(0.0f);
   
   Vec3fa Ng;
-  if (ray.geomID < g_ispc_scene->numHairSets) 
+  ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+  if (geometry->type == HAIR_SET) 
   {
     const Vec3fa dx = normalize(ray.Ng);
     const Vec3fa dy = normalize(cross(ray.dir,dx));

@@ -37,7 +37,7 @@ namespace embree
   extern "C" ISPCScene** g_ispc_scene_keyframes = nullptr;
   extern "C" size_t g_numframes = 0;
 
-  ISPCHairSet* convertHair (Ref<TutorialScene::HairSet> in)
+  ISPCHairSet* convertHairSet (Ref<TutorialScene::HairSet> in)
   {
     ISPCHairSet* out = new ISPCHairSet;
     out->v = in->v.size() ? &in->v[0] : nullptr;
@@ -48,7 +48,7 @@ namespace embree
     return out;
   }
   
-  ISPCMesh* convertMesh (Ref<TutorialScene::Mesh> in)
+  ISPCMesh* convertTriangleMesh (Ref<TutorialScene::Mesh> in)
   {
     ISPCMesh* out = new ISPCMesh;
     out->positions = in->v.size() ? &in->v[0] : nullptr;
@@ -106,6 +106,24 @@ namespace embree
     return out;
   }
 
+  ISPCInstance* convertInstance (Ref<TutorialScene::Instance> in) {
+    return new ISPCInstance(in->space,in->geomID);
+  }
+
+  ISPCGeometry* convertGeometry (Ref<TutorialScene::Geometry> in)
+  {
+    if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
+      return (ISPCGeometry*) convertTriangleMesh(in.dynamicCast<TutorialScene::Mesh>());
+    else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
+      return (ISPCGeometry*) convertSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
+    else if (in->type == TutorialScene::Geometry::HAIR_SET)
+      return (ISPCGeometry*) convertHairSet(in.dynamicCast<TutorialScene::HairSet>());
+    else if (in->type == TutorialScene::Geometry::INSTANCE)
+      return (ISPCGeometry*) convertInstance(in.dynamicCast<TutorialScene::Instance>());
+    else 
+      THROW_RUNTIME_ERROR("unknown geometry type");
+  }
+
   void init(const char* cfg) {
     device_init(cfg);
   }
@@ -130,16 +148,12 @@ namespace embree
   {
     ISPCScene* out = new ISPCScene;
 
-    out->meshes = new ISPCMesh*[in->meshes.size()];
-    for (size_t i=0; i<in->meshes.size(); i++) out->meshes[i] = convertMesh(in->meshes[i]);
-    out->numMeshes = in->meshes.size();
+    out->geometries = new ISPCGeometry*[in->geometries.size()];
+    for (size_t i=0; i<in->geometries.size(); i++) out->geometries[i] = convertGeometry(in->geometries[i]);
+    out->numGeometries = in->geometries.size();
 
     out->materials = (ISPCMaterial*) (in->materials.size() ? &in->materials[0] : nullptr);
     out->numMaterials = in->materials.size();
-
-    out->hairs = new ISPCHairSet*[in->hairsets.size()];
-    for (size_t i=0; i<in->hairsets.size(); i++) out->hairs[i] = convertHair(in->hairsets[i]);
-    out->numHairSets = in->hairsets.size();
 
     out->ambientLights = (ISPCAmbientLight*) (in->ambientLights.size() ? in->ambientLights.begin() : nullptr);
     out->numAmbientLights = in->ambientLights.size();
@@ -153,14 +167,6 @@ namespace embree
     out->distantLights = (ISPCDistantLight*) (in->distantLights.size() ? in->distantLights.begin() : nullptr);
     out->numDistantLights = in->distantLights.size();
 
-    out->subdiv = new ISPCSubdivMesh*[in->subdiv.size()];
-    for (size_t i=0; i<in->subdiv.size(); i++) out->subdiv[i] = convertSubdivMesh(in->subdiv[i]);
-    out->numSubdivMeshes = in->subdiv.size();
-
-    out->instances = new ISPCInstance*[in->instances.size()];
-    for (size_t i=0; i<in->instances.size(); i++) out->instances[i] = new ISPCInstance(in->instances[i]->space,in->instances[i]->geomID);
-    out->numInstances = in->instances.size();
-
     out->subdivMeshKeyFrames = nullptr;
     out->numSubdivMeshKeyFrames = 0;
 
@@ -173,16 +179,16 @@ namespace embree
       {
 	g_ispc_scene->subdivMeshKeyFrames    = new ISPCSubdivMeshKeyFrame*[numKeyFrames];
 	g_ispc_scene->numSubdivMeshKeyFrames = numKeyFrames;
-	for (size_t k=0;k<numKeyFrames;k++)
+	for (size_t k=0; k<numKeyFrames; k++)
 	  {
 	    ISPCSubdivMeshKeyFrame *kf = new ISPCSubdivMeshKeyFrame;
 
-	    kf->subdiv = new ISPCSubdivMesh*[in[k]->subdiv.size()];
+	    kf->subdiv = new ISPCSubdivMesh*[in[k]->geometries.size()];
 
-	    for (size_t i=0; i<in[k]->subdiv.size(); i++)
-	      kf->subdiv[i] = convertSubdivMesh(in[k]->subdiv[i]);
+	    for (size_t i=0; i<in[k]->geometries.size(); i++)
+	      kf->subdiv[i] = convertSubdivMesh(in[k]->geometries[i].dynamicCast<TutorialScene::SubdivMesh>());
 
-	    kf->numSubdivMeshes = in[k]->subdiv.size();
+	    kf->numSubdivMeshes = in[k]->geometries.size();
 
 	    g_ispc_scene->subdivMeshKeyFrames[k] = kf;
 	    

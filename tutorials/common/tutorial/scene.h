@@ -63,9 +63,18 @@ namespace embree
       int v0, v1, v2, v3;
     };
 
-    /*! Mesh. */
-    struct Mesh : public RefCount
+    struct Geometry : public RefCount
     {
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+      Type type;
+
+      Geometry (Type type) : type(type) {}
+    };
+
+    /*! Mesh. */
+    struct Mesh : public Geometry
+    {
+      Mesh () : Geometry(TRIANGLE_MESH) {}
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -77,8 +86,9 @@ namespace embree
     };
 
     /*! Subdivision Mesh. */
-    struct SubdivMesh : public RefCount
+    struct SubdivMesh : public Geometry
     {
+      SubdivMesh () : Geometry(SUBDIV_MESH) {}
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
@@ -105,19 +115,20 @@ namespace embree
     };
 
     /*! Hair Set. */
-    struct HairSet : public RefCount
+    struct HairSet : public Geometry
     {
+      HairSet () : Geometry(HAIR_SET) {}
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
     };
 
-    struct Instance : public RefCount
+    struct Instance : public Geometry
     {
       ALIGNED_STRUCT;
 
       Instance(const AffineSpace3fa& space, int geomID)
-      : space(space), geomID(geomID) {}
+        : Geometry(INSTANCE), space(space), geomID(geomID) {}
 
     public:
       AffineSpace3fa space;
@@ -125,15 +136,12 @@ namespace embree
     };
 
     bool empty() const {
-      return meshes.size() == 0 && hairsets.size() == 0;
+      return geometries.size() == 0;
     }
 
   public:
-    avector<Material> materials;                      //!< material list
-    std::vector<Ref<Mesh> > meshes;                         //!< list of meshes
-    std::vector<Ref<HairSet> > hairsets;                    //!< list of hair sets
-    std::vector<Ref<SubdivMesh> > subdiv;                  //!< list of subdivision meshes
-    std::vector<Ref<Instance> > instances;               //!< list of mesh instances
+    avector<Material> materials;                   //!< material list
+    std::vector<Ref<Geometry> > geometries;        //!< list of geometries
     avector<AmbientLight> ambientLights;           //!< list of ambient lights
     avector<PointLight> pointLights;               //!< list of point lights
     avector<DirectionalLight> directionalLights;   //!< list of directional lights

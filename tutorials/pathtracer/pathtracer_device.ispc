@@ -813,8 +813,8 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCDevice g_device = NULL;
 RTCScene g_scene = NULL;
-void* uniform* uniform geomID_to_mesh = NULL;
-uniform int* uniform geomID_to_type = NULL;
+uniform ISPCGeometry* uniform* uniform geomID_to_mesh = NULL;
+//uniform int* uniform geomID_to_type = NULL;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -889,56 +889,46 @@ export void device_init (uniform int8* uniform cfg)
 
 } // device_init
 
-void convertTriangleMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries)
+void convertTriangleMesh(uniform ISPCMesh* uniform mesh, RTCScene scene_out)
 {
-  /* add all meshes to the scene */
-  for (uniform int i=0; i<scene_in->numMeshes; i++)
-  {
-
-    /* get ith mesh */
-    uniform ISPCMesh* uniform mesh = scene_in->meshes[i];
-
-    /* create a triangle mesh */
-    uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
-    assert(geomID < numGeometries);
-    geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 0;
-    
-    /* set vertices */
-    uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-    for (uniform int j=0; j<mesh->numVertices; j++) {
-      vertices[j].x = mesh->positions[j].x;
-      vertices[j].y = mesh->positions[j].y;
-      vertices[j].z = mesh->positions[j].z;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-
-    /* set triangles */
-    uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-    for (uniform int j=0; j<mesh->numTriangles; j++) {
-      triangles[j].v0 = mesh->triangles[j].v0;
-      triangles[j].v1 = mesh->triangles[j].v1;
-      triangles[j].v2 = mesh->triangles[j].v2;
-    }
-    rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-
-    uniform bool allOpaque = true;
-    uniform bool allTransparent = true;
-    for (uniform size_t j=0; j<mesh->numTriangles; j++) {
-      uniform ISPCTriangle triangle = mesh->triangles[j];
-      if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
-	  g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
-	allOpaque = false;
-      else 
-	allTransparent = false;
-    }
-
-#if ENABLE_OCCLUSION_FILTER == 1
-    if (allTransparent)
-      rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterReject);
-#endif
-
+  /* create a triangle mesh */
+  uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+  mesh->geomID = geomID;
+  geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) mesh;
+      
+  /* set vertices */
+  uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+  for (uniform int j=0; j<mesh->numVertices; j++) {
+    vertices[j].x = mesh->positions[j].x;
+    vertices[j].y = mesh->positions[j].y;
+    vertices[j].z = mesh->positions[j].z;
   }
+  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
+  
+  /* set triangles */
+  uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+  for (uniform int j=0; j<mesh->numTriangles; j++) {
+    triangles[j].v0 = mesh->triangles[j].v0;
+    triangles[j].v1 = mesh->triangles[j].v1;
+    triangles[j].v2 = mesh->triangles[j].v2;
+  }
+  rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
+  
+  uniform bool allOpaque = true;
+  uniform bool allTransparent = true;
+  for (uniform size_t j=0; j<mesh->numTriangles; j++) {
+    uniform ISPCTriangle triangle = mesh->triangles[j];
+    if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
+        g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
+      allOpaque = false;
+    else 
+      allTransparent = false;
+  }
+  
+#if ENABLE_OCCLUSION_FILTER == 1
+  if (allTransparent)
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterReject);
+#endif
 }
 
 inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
@@ -980,9 +970,11 @@ task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const
 
 void updateKeyFrame(uniform ISPCScene* uniform scene_in)
 {
-  for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
   {
-    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
+    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     uniform unsigned int geomID = mesh->geomID;
 
     if (g_ispc_scene->subdivMeshKeyFrames)
@@ -997,15 +989,15 @@ void updateKeyFrame(uniform ISPCScene* uniform scene_in)
   keyframeID++;
   if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
     keyframeID = 0;
-
 }
-
 
 void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
 {
-  for (uniform size_t g=0; g<scene_in->numSubdivMeshes; g++)
+  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
   {
-    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[g];
+    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     uniform unsigned int geomID = mesh->geomID;
 #if defined(ISPC)
       launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
@@ -1016,41 +1008,41 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
   }
 }
 
-
-
-void convertSubdivMeshes(uniform ISPCScene* uniform scene_in, RTCScene scene_out, uniform size_t numGeometries, const uniform Vec3fa& cam_pos)
+void convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 {
-  for (uniform size_t i=0; i<g_ispc_scene->numSubdivMeshes; i++)
-  {
-    uniform ISPCSubdivMesh* uniform mesh = g_ispc_scene->subdiv[i];
-    uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
-						mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
-    mesh->geomID = geomID;												
-    assert(geomID < numGeometries);
-    geomID_to_mesh[geomID] = mesh;
-    geomID_to_type[geomID] = 1; //2
-
-    for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
-    rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
-    rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
-    rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
-  }
+  uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+                                                      mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
+  mesh->geomID = geomID;												
+  geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) mesh;
+  
+  for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa  ));
+  rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(uniform float));
+  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->position_indices  , 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_out, geomID, RTC_FACE_BUFFER,   mesh->verticesPerFace, 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_out, geomID, RTC_HOLE_BUFFER,   mesh->holes, 0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_INDEX_BUFFER,    mesh->edge_creases,          0, 2*sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
 }      
 
-typedef void* uniform void_ptr;
+typedef uniform ISPCGeometry* uniform ISPCGeometry_ptr;
 
 RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& cam_org)
 {  
-  uniform size_t numGeometries = scene_in->numMeshes + scene_in->numSubdivMeshes;
+  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  {
+    uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
+    if (geometry->type == SUBDIV_MESH) {
+      g_subdiv_mode = true; break;
+    }
+  } 
 
-  geomID_to_mesh = uniform new void_ptr[numGeometries];
-  geomID_to_type = uniform new uniform int[numGeometries];
+  uniform size_t numGeometries = scene_in->numGeometries;
+
+  geomID_to_mesh = uniform new ISPCGeometry_ptr[numGeometries];
+  //geomID_to_type = uniform new uniform int[numGeometries];
 
   /* create scene */
   uniform int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -1062,9 +1054,15 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   scene_aflags |= RTC_INTERPOLATE;
 
   RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
-  convertTriangleMeshes(scene_in,scene_out,numGeometries);
-  convertSubdivMeshes(scene_in,scene_out,numGeometries,cam_org);
 
+  for (uniform size_t i=0; i<scene_in->numGeometries; i++)
+  {
+    uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
+    if (geometry->type == SUBDIV_MESH) 
+      convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
+    else if (geometry->type == TRIANGLE_MESH)
+      convertTriangleMesh((uniform ISPCMesh* uniform) geometry, scene_out);
+  }
 
   /* commit changes to scene */
   progressStart();
@@ -1173,42 +1171,44 @@ inline Vec3f interpolate_normal(RTCRay& ray)
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  if (geomID_to_type[ray.geomID] == 0)
-    materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->triangles[ray.primID].materialID; 
-  else if (geomID_to_type[ray.geomID] == 1)       
+  uniform ISPCGeometry* varying geometry = geomID_to_mesh[ray.geomID];
+  if (geometry->type == TRIANGLE_MESH) {
+    uniform ISPCMesh* varying mesh = (uniform ISPCMesh* varying) geometry;
+    materialID = mesh->triangles[ray.primID].materialID; 
+  }
+  else if (geometry->type == SUBDIV_MESH)
   {                      
-    materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[ray.geomID])->materialID; 
+    uniform ISPCSubdivMesh* varying mesh = (uniform ISPCSubdivMesh* varying) geometry;
+    materialID = mesh->materialID; 
 #if ENABLE_TEXTURING == 1
-    const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[ray.geomID],ray.primID,ray.u,ray.v);
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
 #endif
   }
-  else
-    materialID = ((ISPCMesh* uniform) geomID_to_mesh[ray.geomID])->meshMaterialID; 
-  
   return materialID;
 }
 #else 
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
 {
   int materialID = 0;
-  foreach_unique (geomID in ray.geomID) {
-    
-    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes+g_ispc_scene->numSubdivMeshes) { // FIXME: workaround for ISPC bug
-      if (geomID_to_type[geomID] == 0) 
-	materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
-      else if (geomID_to_type[geomID] == 1)                
-      {             
-	materialID = ((ISPCSubdivMesh* uniform) geomID_to_mesh[geomID])->materialID; 
+  foreach_unique (geomID in ray.geomID) 
+  {
+    if (geomID < 0) continue;
+    uniform ISPCGeometry* uniform geometry = geomID_to_mesh[geomID];
+    if (geometry->type == TRIANGLE_MESH) {
+      uniform ISPCMesh* uniform mesh = (uniform ISPCMesh* uniform) geometry;
+      materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+    }
+    else if (geometry->type == SUBDIV_MESH) 
+    {
+      uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+      materialID = mesh->materialID; 
 #if ENABLE_TEXTURE_COORDINATES == 1
 	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
 	dg.u = st.x;
 	dg.v = st.y;
 #endif
-      }
-      else 
-	materialID = ((ISPCMesh* uniform) geomID_to_mesh[geomID])->meshMaterialID;         
     }
   }
   return materialID;
@@ -1459,9 +1459,6 @@ export void device_render (uniform int* uniform pixels,
   /* create scene */
   if (g_scene == NULL)
    {
-     if (g_ispc_scene->numSubdivMeshes > 0)
-       g_subdiv_mode = true;
-
      g_scene = convertScene(g_ispc_scene,cam_org);
 
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)

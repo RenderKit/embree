@@ -32,8 +32,16 @@ struct ISPCQuad
   int v3;                /*< fourth triangle vertex */
 };
 
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+
+struct ISPCGeometry
+{
+  ISPCType type;
+};
+
 struct ISPCMesh
 {
+  uniform ISPCGeometry geom;
   uniform Vec3fa* positions;    //!< vertex position array
   uniform Vec3fa* positions2;    //!< vertex position array
   uniform Vec3fa* normals;       //!< vertex normal array
@@ -50,6 +58,7 @@ struct ISPCMesh
 
 struct ISPCSubdivMesh
 {
+  uniform ISPCGeometry geom;
   uniform Vec3fa* positions;       //!< vertex positions
   uniform Vec3fa* normals;         //!< face vertex normals
   uniform Vec2f* texcoords;        //!< face texture coordinates
@@ -82,6 +91,7 @@ struct ISPCHair
 
 struct ISPCHairSet
 {
+  uniform ISPCGeometry geom;
   Vec3fa* v;       //!< hair control points (x,y,z,r)
   Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
@@ -91,6 +101,7 @@ struct ISPCHairSet
 
 struct ISPCInstance
 {
+  uniform ISPCGeometry geom;
   struct {
     struct {
       Vec3fa vx;
@@ -253,15 +264,12 @@ struct ISPCSubdivMeshKeyFrame {
   int numSubdivMeshes;                       //!< number of subdiv meshes
 };
 
-struct ISPCScene {
-
-  uniform ISPCMesh* uniform* meshes;   //!< list of meshes
-  uniform ISPCMaterial* materials;     //!< material list
-  int numMeshes;                       //!< number of meshes
-  int numMaterials;                    //!< number of materials
-
-  uniform ISPCHairSet* uniform* hairs;
-  int numHairSets;
+struct ISPCScene 
+{
+  uniform ISPCGeometry* uniform* geometries;   //!< list of geometries
+  uniform ISPCMaterial* materials;             //!< material list
+  int numGeometries;                           //!< number of geometries
+  int numMaterials;                            //!< number of materials
 
   uniform ISPCAmbientLight* ambientLights; //!< list of ambient lights
   int numAmbientLights;                    //!< number of ambient lights
@@ -275,13 +283,7 @@ struct ISPCScene {
   uniform ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
 
-  uniform ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-  int numSubdivMeshes;                       //!< number of subdiv meshes
-
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;
-
-  uniform ISPCInstance** uniform instances;
-  int numInstances;
 
 }; // ISPCScene

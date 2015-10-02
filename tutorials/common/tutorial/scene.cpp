@@ -54,8 +54,8 @@ namespace embree
         objmesh->triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
       }
       objmesh->meshMaterialID = materialID;
-      scene->meshes.push_back(objmesh);
-      return scene->meshes.size()-1;
+      scene->geometries.push_back(objmesh);
+      return scene->geometries.size()-1;
     }
 
     int lookupTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh)
@@ -93,8 +93,8 @@ namespace embree
       subdivmesh->vertex_crease_weights = mesh->vertex_crease_weights;
       subdivmesh->materialID = materialID;
 
-      scene->subdiv.push_back(subdivmesh);
-      return scene->subdiv.size()-1;
+      scene->geometries.push_back(subdivmesh);
+      return scene->geometries.size()-1;
     }
 
     int lookupSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh)
@@ -127,8 +127,8 @@ namespace embree
       for (size_t i=0; i<mesh->hairs.size(); i++)
         hairset->hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
 
-      scene->hairsets.push_back(hairset);
-      return scene->hairsets.size()-1;
+      scene->geometries.push_back(hairset);
+      return scene->geometries.size()-1;
     }
 
     int lookupHairSet(Ref<SceneGraph::HairSetNode> mesh)
@@ -165,7 +165,7 @@ namespace embree
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
         if (instancing)
-          scene->instances.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
+          scene->geometries.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
         else
           convertTriangleMesh(mesh,space0,space1);
       }

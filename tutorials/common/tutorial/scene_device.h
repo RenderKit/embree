@@ -39,8 +39,19 @@ struct ISPCHair
   int id;
 };
 
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+
+struct ISPCGeometry
+{
+  ISPCGeometry (ISPCType type) : type(type) {}
+
+  ISPCType type;
+};
+
 struct ISPCHairSet
 {
+  ISPCHairSet () : geom(HAIR_SET) {}
+  ISPCGeometry geom;
   Vec3fa* v;       //!< hair control points (x,y,z,r)
   Vec3fa* v2;       //!< hair control points (x,y,z,r)
   ISPCHair* hairs; //!< for each hair, index to first control point
@@ -51,6 +62,8 @@ struct ISPCHairSet
 
 struct ISPCMesh
 {
+  ISPCMesh () : geom(TRIANGLE_MESH) {}
+  ISPCGeometry geom;
   Vec3fa* positions;    //!< vertex position array
   Vec3fa* positions2;    //!< vertex position array
   Vec3fa* normals;       //!< vertex normal array
@@ -67,6 +80,8 @@ struct ISPCMesh
 
 struct ISPCSubdivMesh
 {
+  ISPCSubdivMesh () : geom(SUBDIV_MESH) {}
+  ISPCGeometry geom;
   Vec3fa* positions;       //!< vertex positions
   Vec3fa* normals;         //!< face vertex normals
   Vec2f* texcoords;        //!< face texture coordinates
@@ -95,8 +110,9 @@ struct ISPCSubdivMesh
 struct ISPCInstance
 {
   ISPCInstance (const AffineSpace3fa& space, int geomID)
-  : space(space), geomID(geomID) {}
+  : geom(INSTANCE), space(space), geomID(geomID) {}
 
+  ISPCGeometry geom;
   AffineSpace3fa space;
   int geomID;
 };
@@ -147,15 +163,12 @@ struct ISPCSubdivMeshKeyFrame {
   int numSubdivMeshes;                       //!< number of subdiv meshes
 };
 
-struct ISPCScene {
-
-  ISPCMesh** meshes;   //!< list of meshes
+struct ISPCScene 
+{
+  ISPCGeometry** geometries;   //!< list of geometries
   ISPCMaterial* materials;     //!< material list
-  int numMeshes;                       //!< number of meshes
-  int numMaterials;                    //!< number of materials
-
-  ISPCHairSet** hairs;
-  int numHairSets;
+  int numGeometries;           //!< number of geometries
+  int numMaterials;            //!< number of materials
 
   ISPCAmbientLight* ambientLights; //!< list of ambient lights
   int numAmbientLights;                    //!< number of ambient lights
@@ -169,14 +182,8 @@ struct ISPCScene {
   ISPCDistantLight* distantLights; //!< list of distant lights
   int numDistantLights;                    //!< number of distant lights
 
-  ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
-  int numSubdivMeshes;                       //!< number of subdiv meshes
-
   ISPCSubdivMeshKeyFrame** subdivMeshKeyFrames;
   int numSubdivMeshKeyFrames;
-
-  ISPCInstance** instances;
-  int numInstances;
 
 }; // ISPCScene
 

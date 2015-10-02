@@ -248,7 +248,7 @@ float noise(float x, float y, float z)
           mesh->triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
       }
     }
-    scene.meshes.push_back(mesh);
+    scene.geometries.push_back(mesh);
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
 #if 0
@@ -272,7 +272,7 @@ float noise(float x, float y, float z)
 
 	hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
       }
-    scene.hairsets.push_back(hairset);
+    scene.geometries.push_back(hairset);
 #else
     const float thickness = 0.001f*r;
     TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
@@ -294,7 +294,7 @@ float noise(float x, float y, float z)
 	
       hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
     }
-    scene.hairsets.push_back(hairset);
+    scene.geometries.push_back(hairset);
 #endif
   }
 
@@ -314,7 +314,7 @@ float noise(float x, float y, float z)
     mesh->triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
     mesh->triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
 
-    scene.meshes.push_back(mesh);
+    scene.geometries.push_back(mesh);
   }
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -470,7 +470,7 @@ float noise(float x, float y, float z)
     g_scene = nullptr;
     
     /* if scene is empty, create default scene */
-    if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) {
+    if (g_obj_scene.geometries.size() == 0) {
       addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
       addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
     }

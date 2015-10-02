@@ -416,6 +416,17 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
+  void send_geometry (Ref<TutorialScene::Geometry> geometry)
+  {
+    if (geometry->type == TutorialScene::Geometry::TRIANGLE_MESH)
+      send_mesh(geometry.dynamicCast<TutorialScene::Mesh>());
+    else if (geometry->type == TutorialScene::Geometry::SUBDIV_MESH)
+      send_subdiv_mesh(geometry.dynamicCast<TutorialScene::SubdivMesh>());
+    else if (geometry->type == TutorialScene::Geometry::HAIR_SET)
+      send_hairset(geometry.dynamicCast<TutorialScene::HairSet>());
+    else 
+      THROW_RUNTIME_ERROR("unknown geometry type");
+  }
 
   /* set scene to use */
   void set_scene (TutorialScene* scene)
@@ -460,13 +471,11 @@ namespace embree
     
     CreateSceneData parms;
     parms.numMaterials = scene->materials.size();
-    parms.numMeshes    = scene->meshes.size();
-    parms.numHairSets  = scene->hairsets.size();
+    parms.numGeometries = scene->geometries.size();
     parms.numAmbientLights = scene->ambientLights.size();
     parms.numPointLights = scene->pointLights.size();
     parms.numDirectionalLights = scene->directionalLights.size();
     parms.numDistantLights = scene->distantLights.size();
-    parms.numSubdivMeshes  = scene->subdiv.size();
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
@@ -482,18 +491,9 @@ namespace embree
     // result = COIBufferDestroy(materialBuffer);
     // if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
-    /* send all meshes */
-    for (size_t i=0; i<scene->meshes.size(); i++) 
-      send_mesh(scene->meshes[i]);
-
-    /* send all hairsets */
-    for (size_t i=0; i<scene->hairsets.size(); i++) 
-      send_hairset(scene->hairsets[i]);
-
-    /* send all subdiv meshes */
-    for (size_t i=0; i<scene->subdiv.size(); i++) 
-      send_subdiv_mesh(scene->subdiv[i]);
-
+    /* send all geometries */
+    for (size_t i=0; i<scene->geometries.size(); i++) 
+      send_geometry(scene->geometries[i]);
   }
 
   void resize(int width, int height)

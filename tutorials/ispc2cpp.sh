@@ -24,6 +24,7 @@ sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
