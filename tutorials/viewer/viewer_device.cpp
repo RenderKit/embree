@@ -165,7 +165,7 @@ extern "C" void device_init (char* cfg)
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, int meshID, RTCScene scene_o)
 {
 #if INSTANCING == 2
-  RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+  RTCScene scene_out = rtcDeviceNewScene(g_device, (RTCSceneFlags)RTC_SCENE_STATIC,(RTCAlgorithmFlags) RTC_INTERSECT1);
 #else
   RTCScene scene_out = scene_o;
 #endif
