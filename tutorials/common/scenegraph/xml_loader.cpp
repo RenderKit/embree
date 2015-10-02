@@ -231,6 +231,7 @@ namespace embree
   private:
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadTransform2Node(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadNode(const Ref<XML>& xml);
 
@@ -838,11 +839,24 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
     AffineSpace3fa space = load<AffineSpace3fa>(xml->children[0]);
+
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=1; i<xml->children.size(); i++) {
+    for (size_t i=1; i<xml->children.size(); i++)
       group->add(loadNode(xml->children[i]));
-    }
+
     return new SceneGraph::TransformNode(space,group.cast<SceneGraph::Node>());
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadTransform2Node(const Ref<XML>& xml) 
+  {
+    AffineSpace3fa space0 = load<AffineSpace3fa>(xml->children[0]);
+    AffineSpace3fa space1 = load<AffineSpace3fa>(xml->children[1]);
+
+    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
+    for (size_t i=2; i<xml->children.size(); i++) 
+      group->add(loadNode(xml->children[i]));
+
+    return new SceneGraph::TransformNode(space0,space1,group.cast<SceneGraph::Node>());
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadGroupNode(const Ref<XML>& xml) 
@@ -896,6 +910,7 @@ namespace embree
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
+      else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }

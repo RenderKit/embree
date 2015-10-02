@@ -99,5 +99,3 @@ namespace embree
     }
   }
 }
-
-  
