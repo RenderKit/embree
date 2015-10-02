@@ -232,6 +232,7 @@ namespace embree
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransform2Node(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadAnimation2Node(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadGroupNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadNode(const Ref<XML>& xml);
 
@@ -859,6 +860,15 @@ namespace embree
     return new SceneGraph::TransformNode(space0,space1,group.cast<SceneGraph::Node>());
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadAnimation2Node(const Ref<XML>& xml) 
+  {
+    if (xml->children.size() != 2) THROW_RUNTIME_ERROR("invalid Animation2 node");
+    Ref<SceneGraph::Node> node0 = loadNode(xml->children[0]);
+    Ref<SceneGraph::Node> node1 = loadNode(xml->children[1]);
+    SceneGraph::set_motion_blur(node0,node1);
+    return node0;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadGroupNode(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
@@ -911,6 +921,7 @@ namespace embree
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "Transform2"      ) return sceneMap[id] = loadTransform2Node  (xml);
+      else if (xml->name == "Animation2"      ) return sceneMap[id] = loadAnimation2Node  (xml);
 
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
     }
