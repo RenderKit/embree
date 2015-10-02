@@ -70,8 +70,7 @@ namespace embree
     Vec3fa* normals;       //!< vertex normal array
     Vec2f* texcoords;     //!< vertex texcoord array
     ISPCTriangle* triangles;  //!< list of triangles
-    ISPCQuad* quads;  //!< list of triangles
-    float* edge_level;
+    ISPCQuad* quads;      //!< list of quads
     int numVertices;
     int numTriangles;
     int numQuads;

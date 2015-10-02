@@ -97,8 +97,6 @@ namespace embree
     Vec2f*  texcoords;     //!< vertex texcoord array
     TutorialScene::Triangle* triangles;  //!< list of triangles
     TutorialScene::Quad* quads;          //!< list of quads
-    float *edge_level;
-
     int numVertices;
     int numTriangles;
     int numQuads;
