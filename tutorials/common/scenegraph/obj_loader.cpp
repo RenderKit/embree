@@ -289,7 +289,7 @@ namespace embree
       if (!strncmp(token, "Ka_map", 6)) { continue; }
       if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
         parseSep(token += 6);
-        cur->map_Kd = loadTexture(path + FileName(token));
+        cur->map_Kd = Texture::load(path + FileName(token));
         continue;
       }
  
@@ -297,7 +297,7 @@ namespace embree
       if (!strncmp(token, "Tf_map", 6)) { continue; }
       if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
         parseSep(token += 9);
-        cur->map_Displ = loadTexture(path + FileName(token));
+        cur->map_Displ = Texture::load(path + FileName(token));
         continue;
       }
       

@@ -23,27 +23,24 @@ namespace embree
   struct Texture 
   {
     enum {
-      RGBA8        = 1,
-      RGB8         = 2,
-      FLOAT32      = 3,
+      RGBA8   = 1,
+      RGB8    = 2,
+      FLOAT32 = 3,
     };
     
+  public:
+    Texture () 
+    : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
+
+    static Texture* load(const FileName& fileName); // FIXME: return reference
+    
+  public:
     int width;
     int height;    
     int format;
-    union {
-      int bytesPerTexel;
-      int faceTextures;
-    };
+    int bytesPerTexel;
     int width_mask;
     int height_mask;
-    
-    void *data;
-    
-  Texture() 
-  : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
-
+    void* data;
   };
-
-  Texture* loadTexture(const FileName& fileName); // FIXME: return reference
 }

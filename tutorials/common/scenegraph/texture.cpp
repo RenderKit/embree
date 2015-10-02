@@ -27,7 +27,7 @@ namespace embree
   }
 
   /*! read png texture from disk */
-  Texture* loadTexture(const FileName& fileName)
+  Texture* Texture::load(const FileName& fileName)
   {
     Ref<Image> img = loadImage(fileName);
 
