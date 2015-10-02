@@ -16,16 +16,8 @@
 
 #pragma once
 
-#include "../../../common/sys/ref.h"
-#include "../../../common/sys/vector.h"
-#include "../../../common/math/vec2.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/affinespace.h"
+#include "../default.h"
 #include "../scenegraph/scenegraph.h"
-
-#include <vector>
-#include <memory>
-#include <map>
 
 namespace embree
 {
