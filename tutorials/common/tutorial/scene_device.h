@@ -105,7 +105,6 @@ namespace embree
     int numHoles;
     int materialID;
     int geomID;
-    Vec3fa* colors; // FIXME: remove
   };
   
   struct ISPCInstance
