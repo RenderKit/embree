@@ -22,7 +22,7 @@
 namespace embree
 {
   /*! Scene representing the OBJ file */
-  struct TutorialScene  // FIXME: name Scene
+  struct TutorialScene
   {
     TutorialScene () {}
 
