@@ -226,6 +226,7 @@ namespace embree
     
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadHairSet(const Ref<XML>& xml);
 
   private:
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
@@ -780,6 +781,24 @@ namespace embree
     return new SceneGraph::MaterialNode(material);
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
+    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
+    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
+    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
+    std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
+
+    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
+    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
+    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
+    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
+    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
+    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -802,22 +821,18 @@ namespace embree
     return mesh;
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadTriangleMesh(const Ref<XML>& xml) 
+  Ref<SceneGraph::Node> XMLLoader::loadHairSet(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
-    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
-    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
-    std::vector<Vec3i> triangles = loadVec3iArray(xml->childOpt("triangles"));
+    std::vector<Vec2i> indices   = loadVec2iArray(xml->childOpt("indices"));
 
-    SceneGraph::TriangleMeshNode* mesh = new SceneGraph::TriangleMeshNode(material);
-    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
-    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
-    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
-    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
-    for (size_t i=0; i<triangles.size(); i++) mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(triangles[i].x,triangles[i].y,triangles[i].z));
-    return mesh;
+    SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(material);
+    hair->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) hair->v [i] = positions [i];
+    hair->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) hair->v2[i] = positions2[i];
+    hair->hairs.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) hair->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i].x,indices[i].y);
+    return hair;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
@@ -878,6 +893,7 @@ namespace embree
 
       else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
 

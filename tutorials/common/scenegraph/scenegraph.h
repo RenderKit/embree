@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "../default.h"
 #include "materials.h"
 #include "lights.h"
 
