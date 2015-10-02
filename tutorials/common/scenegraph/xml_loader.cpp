@@ -695,7 +695,7 @@ namespace embree
       const Vec3fa reflectance = parms.getVec3fa("reflectance",one);
       new (&material) MirrorMaterial(reflectance);
     }
-    else if (type == "OBJ" || type == "OBJMaterial") 
+    else if (type == "OBJ") 
     {
       //map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);
@@ -890,6 +890,7 @@ namespace embree
     {
       const std::string id = xml->parm("id");
       if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
+      else if (xml->name == "obj"             ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src")); // only for compatibility reasons
       else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
       else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
       else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);
