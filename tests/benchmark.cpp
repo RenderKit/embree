@@ -722,7 +722,7 @@ namespace embree
     {
     }
 
-    static void benchmark_rtcore_intersect1_throughput_thread(void* arg) 
+    static double benchmark_rtcore_intersect1_throughput_thread(void* arg) 
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
@@ -736,7 +736,9 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      g_barrier_active.wait(threadIndex,threadCount);
+      double t0 = getSeconds();
+      
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
 
@@ -745,9 +747,11 @@ namespace embree
         rtcIntersect(scene,ray);
       }        
 
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      g_barrier_active.wait(threadIndex,threadCount);
+      double t1 = getSeconds();
 
       delete [] numbers;
+      return t1-t0;
     }
     
     double run (size_t numThreads)
@@ -764,23 +768,23 @@ namespace embree
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
-      double t0 = getSeconds();
+      //g_barrier_active.wait(0,numThreads);
+      //double t0 = getSeconds();
 
-      benchmark_rtcore_intersect1_throughput_thread(0);
+      double delta = benchmark_rtcore_intersect1_throughput_thread(0);
 
-      g_barrier_active.wait(0,numThreads);
-      double t1 = getSeconds();
+      //g_barrier_active.wait(0,numThreads);
+      //double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
       
       rtcDeleteScene(scene);
       rtcDeleteDevice(device);
-      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+      return 1E-6*double(N)/(delta)*double(numThreads);
     }
   };
 
