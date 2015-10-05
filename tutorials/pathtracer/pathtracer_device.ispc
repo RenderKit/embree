@@ -30,8 +30,6 @@
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-#define ENABLE_TEXTURING 1
-#define ENABLE_TEXTURE_COORDINATES 1
 #define ENABLE_OCCLUSION_FILTER 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
@@ -466,16 +464,11 @@ __device__ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF
 __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
     float d = material->d;
-#if ENABLE_TEXTURING == 1
     if (material->map_Kd) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
-#endif
     brdf.Ka = make_Vec3f(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * make_Vec3f(material->Kd);  
-#if ENABLE_TEXTURING == 1
     if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-#endif
-
     brdf.Ks = d * make_Vec3f(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
@@ -1103,7 +1096,7 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
+inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   foreach_unique (geomID in ray.geomID) 
@@ -1112,6 +1105,7 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
     uniform ISPCGeometry* uniform geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) {
       uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
+      materialID = mesh->triangles[ray.primID].materialID;
       if (mesh->texcoords) {
         ISPCTriangle* tri = &mesh->triangles[ray.primID];
         const Vec2f st0 = make_Vec2f(mesh->texcoords[tri->v0]);
@@ -1121,18 +1115,15 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
         const Vec2f st = w*st0 + u*st1 + v*st2;
         dg.u = st.x;
         dg.v = st.y;
-      }
-      materialID = ((ISPCTriangleMesh* uniform) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+      } 
     }
     else if (geometry->type == SUBDIV_MESH) 
     {
       uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
       materialID = mesh->materialID; 
-#if ENABLE_TEXTURE_COORDINATES == 1
-	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
-	dg.u = st.x;
-	dg.v = st.y;
-#endif
+      const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
+      dg.u = st.x;
+      dg.v = st.y;
     }
   }
   return materialID;
@@ -1197,9 +1188,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     dg.Ns = face_forward(ray.dir,Ns);
-
-    /* shade all rays that hit something */
-    int materialID = getMaterialID(ray,dg);
+    int materialID = postIntersect(ray,dg);
 
     /*! Compute  simple volumetric effect. */
     Vec3f c = make_Vec3f(1.0f);
