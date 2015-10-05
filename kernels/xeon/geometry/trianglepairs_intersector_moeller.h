@@ -133,11 +133,9 @@ namespace embree
           Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
           size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid, flags);
-          
+          std::tie(u,v,t,Ng,i) = hit(valid, flags);          
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-
           ray.u = u[i];
           ray.v = v[i];
           ray.tfar = t[i];
