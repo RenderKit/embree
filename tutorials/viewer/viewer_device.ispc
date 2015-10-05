@@ -167,20 +167,10 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   /* create a triangle mesh */
   uniform unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
   
-#if INSTANCING != 2
-  geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) mesh;
-#endif
-  //geomID_to_type[geomID] = 0;
-  meshID_to_scene[meshID] = scene_out;
-  meshID_to_geomID[meshID] = geomID;
-  
   /* share vertex buffer */
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(uniform Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
-#if INSTANCING == 1
-  rtcDisable(scene_out,geomID);
-#endif
   return geomID;
 }
 
@@ -217,13 +207,15 @@ uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uni
   geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) instance;
   meshID_to_geomID[meshID] = geomID;
   return geomID;
-#else // INSTANCING == 2
+#elif INSTANCING == 2
   RTCScene scene_inst = meshID_to_scene[instance->geomID];
   uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
   rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
   geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) instance;
   meshID_to_geomID[meshID] = geomID;
   return geomID;
+#else
+  return 0;
 #endif
 }
 
@@ -257,11 +249,13 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     if (geometry->type == SUBDIV_MESH) {
       uniform unsigned int geomID = convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, i, scene_out);
       geomID_to_mesh[geomID] = geometry;
+      meshID_to_geomID[i] = geomID;
       rtcDisable(scene_out,geomID);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, i, scene_out);
       geomID_to_mesh[geomID] = geometry;
+      meshID_to_geomID[i] = geomID;
       rtcDisable(scene_out,geomID);
     }
     else if (geometry->type == INSTANCE)
@@ -274,15 +268,19 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     if (geometry->type == SUBDIV_MESH) {
       RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
       convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, i, scene_out);
+      meshID_to_scene[i] = objscene;
       rtcCommit(objscene);
     }
     else if (geometry->type == TRIANGLE_MESH) {
       RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, i, objscene);
+      meshID_to_scene[i] = objscene;
       rtcCommit(objscene);
     }
-    else if (geometry->type == INSTANCE)
+    else if (geometry->type == INSTANCE) {
       convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
+      meshID_to_scene[i] = NULL;
+    }
   }
 #else
   for (uniform size_t i=0; i<scene_in->numGeometries; i++)

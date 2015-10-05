@@ -30,6 +30,7 @@
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
+#define INSTANCING 0  // 0=no instancing, 1=geometry instancing, 2=scene instancing
 #define ENABLE_OCCLUSION_FILTER 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
@@ -1103,7 +1104,8 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   {
     //if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
-    if (geometry->type == TRIANGLE_MESH) {
+    if (geometry->type == TRIANGLE_MESH) 
+    {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
       materialID = mesh->triangles[ray.primID].materialID;
       if (mesh->texcoords) {
