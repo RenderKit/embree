@@ -132,13 +132,6 @@ namespace embree
               continue;
             }
             
-            /* delete BVH and builder for geometries that are scheduled for deletion */
-            if (geom->isErasing()) {
-              delete builders[objectID]; builders[objectID] = nullptr;
-              delete objects [objectID]; objects [objectID] = nullptr;
-              continue;
-            }
-            
             /* create BVH and builder for new meshes */
             if (objects[objectID] == nullptr) 
             {
@@ -299,6 +292,13 @@ namespace embree
       bvh->postBuild(t0);
     }
     
+    void BVH4BuilderInstancing::deleteGeometry(size_t geomID)
+    {
+      if (geomID >= objects.size()) return;
+      delete builders[geomID]; builders[geomID] = nullptr;
+      delete objects [geomID]; objects [geomID] = nullptr;
+    }
+
     void BVH4BuilderInstancing::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 

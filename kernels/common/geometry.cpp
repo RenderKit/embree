@@ -21,7 +21,7 @@ namespace embree
 {
   Geometry::Geometry (Scene* parent, Type type, size_t numPrimitives, size_t numTimeSteps, RTCGeometryFlags flags) 
     : parent(parent), type(type), numPrimitives(numPrimitives), numTimeSteps(numTimeSteps), id(0), flags(flags),
-      enabled(true), modified(true), erasing(false), mask(-1), used(1),
+      enabled(true), modified(true), mask(-1), used(1),
       intersectionFilter1(nullptr), occlusionFilter1(nullptr),
       intersectionFilter4(nullptr), occlusionFilter4(nullptr), ispcIntersectionFilter4(false), ispcOcclusionFilter4(false), 
       intersectionFilter8(nullptr), occlusionFilter8(nullptr), ispcIntersectionFilter8(false), ispcOcclusionFilter8(false), 
@@ -57,7 +57,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (isEnabled() || isErasing()) 
+    if (isEnabled()) 
       return;
 
     updateIntersectionFilters(true);
@@ -81,7 +81,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (isDisabled() || isErasing()) 
+    if (isDisabled()) 
       return;
 
     updateIntersectionFilters(false);
@@ -91,26 +91,6 @@ namespace embree
     disabling();
   }
 
-  void Geometry::erase () 
-  {
-    if (parent->isStatic())
-      throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");
-
-    if (isErasing())
-      return;
-
-    parent->setModified();
-    erasing = true;
-
-    if (isDisabled())
-      return;
-    
-    updateIntersectionFilters(false);
-    atomic_add(&used,-1);
-    enabled = false;
-    disabling();
-  }
-  
   void Geometry::setUserData (void* ptr)
   {
     if (parent->isStatic() && parent->isBuild())

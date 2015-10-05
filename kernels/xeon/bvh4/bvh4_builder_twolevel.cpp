@@ -85,13 +85,6 @@ namespace embree
             continue;
           }
           
-          /* delete BVH and builder for meshes that are scheduled for deletion */
-          if (mesh->isErasing()) {
-            delete builders[objectID]; builders[objectID] = nullptr;
-            delete objects [objectID]; objects [objectID] = nullptr;
-            continue;
-          }
-          
           /* create BVH and builder for new meshes */
           if (objects[objectID] == nullptr)
             createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
@@ -190,6 +183,13 @@ namespace embree
 
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
+    }
+
+    void BVH4BuilderTwoLevel::deleteGeometry(size_t geomID)
+    {
+      if (geomID >= objects.size()) return;
+      delete builders[geomID]; builders[geomID] = nullptr;
+      delete objects [geomID]; objects [geomID] = nullptr;
     }
 
     void BVH4BuilderTwoLevel::clear()

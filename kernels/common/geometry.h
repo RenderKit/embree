@@ -65,9 +65,6 @@ namespace embree
     /*! clears modified flag */
     __forceinline void clearModified() { modified = false; }
 
-    /*! tests if geometry is tagged for deletion */
-    __forceinline bool isErasing() const { return erasing; }
-
     /*! test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
 
@@ -99,9 +96,6 @@ namespace embree
     
     /*! Disable geometry. */
     virtual void disable ();
-
-    /*! Deletes the geometry again. */
-    virtual void erase ();
 
     /*! Free buffers that are unused */
     virtual void immutable () {}
@@ -262,7 +256,6 @@ namespace embree
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified
-    bool erasing;              //!< true if geometry is tagged for deletion
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
     atomic_t used;             //!< counts by how many enabled instances this geometry is used

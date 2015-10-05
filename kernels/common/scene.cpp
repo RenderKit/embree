@@ -352,12 +352,24 @@ namespace embree
       return geometries.size()-1;
     }
   }
-  
-  void Scene::remove(Geometry* geometry) 
+
+  void Scene::deleteGeometry(size_t geomID)
   {
     Lock<AtomicMutex> lock(geometriesMutex);
-    usedIDs.push_back(geometry->id);
-    geometries[geometry->id] = nullptr;
+    
+    if (isStatic())
+      throw_RTCError(RTC_INVALID_OPERATION,"rtcDeleteGeometry cannot get called in static scenes");
+    if (geomID >= geometries.size())
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry ID");
+
+    Geometry* geometry = geometries[geomID];
+    if (geometry == nullptr)
+      throw_RTCError(RTC_INVALID_OPERATION,"invalid geometry");
+    
+    geometry->disable();
+    accels.deleteGeometry(geomID);
+    usedIDs.push_back(geomID);
+    geometries[geomID] = nullptr;
     delete geometry;
   }
 
@@ -408,7 +420,6 @@ namespace embree
       Geometry* geom = geometries[i];
       if (!geom) continue;
       if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
-      if (geom->isErasing()) remove(geom);
     }
 
     updateInterface();
@@ -476,7 +487,6 @@ namespace embree
       Geometry* geom = geometries[i];
       if (!geom) continue;
       if (geom->isEnabled()) geom->clearModified(); // FIXME: should builders to this?
-      if (geom->isErasing()) remove(geom);
     }
 
     updateInterface();

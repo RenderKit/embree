@@ -129,6 +129,9 @@ namespace embree
     /*! Creates a new subdivision mesh. */
     unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
 
+    /*! deletes some geometry */
+    void deleteGeometry(size_t geomID);
+
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
     void build_task ();
@@ -150,9 +153,6 @@ namespace embree
     /* add user geometry to scene */
     unsigned int add (Geometry* geometry);
     
-    /* removes user geometry from scene again */
-    void remove(Geometry* geometry);
-
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }
 
