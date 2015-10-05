@@ -180,10 +180,6 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, int meshID, RTCScene scene_
                                                       mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
   mesh->geomID = geomID;												
-  geomID_to_mesh[geomID] = (ISPCGeometry*) mesh;
-  //geomID_to_type[geomID] = 1; //2
-  meshID_to_geomID[meshID] = geomID;
-  
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
