@@ -733,9 +733,9 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
 inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
 
   switch (material->ty) {
@@ -756,9 +756,9 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
 inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
@@ -779,9 +779,9 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
 inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {  
   Vec3fa c = Vec3fa(0.0f);
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -1109,7 +1109,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  int geomID = ray.geomID;  
+  int geomID = ray.geomID; 
   {
     //if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
@@ -1185,7 +1185,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID;  {
+      int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ns = normalize(cross(dPdv,dPdu));
@@ -1270,7 +1270,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.00001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
@@ -1291,7 +1291,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray = RTCRay(dg.P,normalize(wi1.v),0.00001f,inf);
+    ray = RTCRay(dg.P,normalize(wi1.v),0.001f,inf);
   }
   return L;
 }

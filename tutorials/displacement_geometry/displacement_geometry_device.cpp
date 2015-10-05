@@ -245,7 +245,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa P = ray.org + ray.tfar*ray.dir;
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID;  {
+      int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ng = normalize(cross(dPdv,dPdu));

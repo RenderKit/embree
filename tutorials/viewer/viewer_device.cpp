@@ -345,7 +345,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
   {
     Vec3fa dPdu,dPdv;
-    int geomID = ray.geomID;  {
+    int geomID = ray.geomID; {
       rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
     }
     Ns = cross(dPdv,dPdu);
@@ -381,14 +381,14 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
 #else
 
-  int geomID = ray.geomID;  
+  int geomID = ray.geomID; 
   {
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH)
     {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
 
-      foreach_unique (primID in ray.primID) 
+      int primID = ray.primID; 
       {
         ISPCTriangle* tri = &mesh->triangles[primID];
       
