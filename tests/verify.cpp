@@ -2946,6 +2946,17 @@ namespace embree
           }
           }
         }
+        
+        /* entirely delete all objects from time to time */
+        if (j%40 == 38) {
+          for (size_t i=0; i<1024; i++) {
+            if (geom[i] != -1) {
+              rtcDeleteGeometry(task->scene,geom[i]);
+              CountErrors();
+              geom[i] = -1;
+            }
+          }
+        }
       }
 
       if (thread->threadCount) {

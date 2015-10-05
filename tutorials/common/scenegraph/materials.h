@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../default.h"
+#include "texture.h"
 
 namespace embree
 {
@@ -76,11 +77,11 @@ namespace embree
   {
   public:
     OBJMaterial ()
-    : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(0.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
+    : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
     {};
     
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(0.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
+    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
     {};
     
     ~OBJMaterial() { // FIXME: destructor never called!
@@ -100,9 +101,9 @@ namespace embree
     Vec3fa Ks;              /*< specular reflectivity */
     Vec3fa Kt;              /*< transmission filter */
 
-    void* map_d;            /*< d texture */
-    void* map_Kd;           /*< Kd texture */
-    void* map_Displ;        /*< Displ texture */
+    Texture* map_d;            /*< d texture */
+    Texture* map_Kd;           /*< Kd texture */
+    Texture* map_Displ;        /*< Displ texture */
   };
   
   struct MetalMaterial

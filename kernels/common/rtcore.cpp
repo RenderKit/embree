@@ -727,7 +727,7 @@ namespace embree
     RTCORE_TRACE(rtcDeleteGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->erase();
+    scene->deleteGeometry(geomID);
     RTCORE_CATCH_END(scene->device);
   }
 

@@ -29,6 +29,9 @@ namespace embree
     /*! initiates the hierarchy builder */
     virtual void build(size_t threadIndex = 0, size_t threadCount = 0) = 0;
 
+    /*! notifies the builder about the deletion of some geometry */
+    virtual void deleteGeometry(size_t geomID) {};
+
     /*! clears internal builder state */
     virtual void clear() = 0;
   };

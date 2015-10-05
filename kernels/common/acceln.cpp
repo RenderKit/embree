@@ -175,6 +175,12 @@ namespace embree
       accels[i]->intersectors.select(filter4,filter8,filter16);
   }
 
+  void AccelN::deleteGeometry(size_t geomID) 
+  {
+    for (size_t i=0; i<accels.size(); i++) 
+      accels[i]->deleteGeometry(geomID);
+  }
+
   void AccelN::clear()
   {
     for (size_t i=0; i<accels.size(); i++) 

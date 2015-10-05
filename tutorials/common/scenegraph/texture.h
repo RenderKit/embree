@@ -17,10 +17,11 @@
 #pragma once
 
 #include "../default.h"
+#include "../image/image.h"
 
 namespace embree
 {
-  struct Texture 
+  struct Texture // FIXME: should be derived from SceneGraph::Node
   {
     enum {
       RGBA8   = 1,
@@ -29,8 +30,10 @@ namespace embree
     };
     
   public:
-    Texture () 
-    : width(-1), height(-1), format(-1), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
+    Texture (); 
+    Texture (Ref<Image> image); 
+
+    const char* strFormat() const;
 
     static Texture* load(const FileName& fileName); // FIXME: return reference
     

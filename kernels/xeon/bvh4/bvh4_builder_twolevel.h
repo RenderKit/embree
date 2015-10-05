@@ -64,7 +64,7 @@ namespace embree
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
-
+      void deleteGeometry(size_t geomID);
       void clear();
 
       void open_sequential(size_t numPrimitives);

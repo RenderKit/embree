@@ -163,7 +163,7 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
-  void send_mesh (Ref<TutorialScene::Mesh> mesh)
+  void send_mesh (Ref<TutorialScene::TriangleMesh> mesh)
   {
     COIRESULT result;
     struct {
@@ -419,7 +419,7 @@ namespace embree
   void send_geometry (Ref<TutorialScene::Geometry> geometry)
   {
     if (geometry->type == TutorialScene::Geometry::TRIANGLE_MESH)
-      send_mesh(geometry.dynamicCast<TutorialScene::Mesh>());
+      send_mesh(geometry.dynamicCast<TutorialScene::TriangleMesh>());
     else if (geometry->type == TutorialScene::Geometry::SUBDIV_MESH)
       send_subdiv_mesh(geometry.dynamicCast<TutorialScene::SubdivMesh>());
     else if (geometry->type == TutorialScene::Geometry::HAIR_SET)

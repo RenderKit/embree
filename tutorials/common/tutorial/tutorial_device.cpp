@@ -732,7 +732,7 @@ float getTextureTexel1f(void *_texture, const float s, const float t)
     else
       iv = min(iv,texture->height-1);
     unsigned char *t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4; //texture->bytesPerTexel;
-    return (float)t[3] * 1.0f/255.0f;
+    return (float)t[0] * 1.0f/255.0f;
   }  
   return 0.0f;
 }

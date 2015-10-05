@@ -30,8 +30,7 @@
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-#define ENABLE_TEXTURING 1
-#define ENABLE_TEXTURE_COORDINATES 1
+#define INSTANCING 0  // 0=no instancing, 1=geometry instancing, 2=scene instancing
 #define ENABLE_OCCLUSION_FILTER 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
@@ -465,26 +464,18 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
  void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-
     float d = material->d;
-#if ENABLE_TEXTURING == 1
-    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);	
-#endif
-    //if (material->map_d) { d *= material->map_d.get(s,t); }
+    if (material->map_Kd) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
-    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
-#if ENABLE_TEXTURING == 1
-    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-#endif
+    if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
-
 }
 
  Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
@@ -736,9 +727,9 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
 inline void Material__preprocess(ISPCMaterial* materials, int materialID, int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
 
   switch (material->ty) {
@@ -759,9 +750,9 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
 inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__eval  ((OBJMaterial*)  material, brdf, wo, dg, wi); break;
@@ -782,9 +773,9 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
 inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {  
   Vec3fa c = Vec3fa(0.0f);
-  
+  int id = materialID;
   {
-    
+    //if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* material = &materials[materialID];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__sample  ((OBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -802,7 +793,6 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
   return c;
 }
 
-#if !defined(CODE_DISABLED)
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
@@ -813,7 +803,8 @@ extern "C" ISPCScene* g_ispc_scene;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 ISPCGeometry** geomID_to_mesh = nullptr;
-//int* geomID_to_type = nullptr;
+int* meshID_to_geomID = nullptr;
+RTCScene* meshID_to_scene = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -856,6 +847,8 @@ Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
 extern "C" bool g_changed;
+extern "C" bool g_instancing_mode;
+
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
@@ -888,12 +881,11 @@ extern "C" void device_init (char* cfg)
 
 } // device_init
 
-void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
+unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   /* create a triangle mesh */
   unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
   mesh->geomID = geomID;
-  geomID_to_mesh[geomID] = (ISPCGeometry*) mesh;
       
   /* set vertices */
   Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
@@ -928,6 +920,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   if (allTransparent)
     rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterReject);
 #endif
+  return geomID;
 }
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const size_t e0, const size_t e1)
@@ -1007,13 +1000,11 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   }
 }
 
-void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
+unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
   mesh->geomID = geomID;												
-  geomID_to_mesh[geomID] = (ISPCGeometry*) mesh;
-  
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   rtcSetBuffer(scene_out, geomID, RTC_LEVEL_BUFFER,  mesh->subdivlevel, 0, sizeof(float));
@@ -1024,7 +1015,29 @@ void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
-}      
+  return geomID;
+} 
+
+unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
+{
+  if (g_instancing_mode == 1) {
+    unsigned int geom_inst = meshID_to_geomID[instance->geomID];
+    unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
+    meshID_to_geomID[meshID] = geomID;
+    return geomID;
+  } else if (g_instancing_mode == 2) {
+    RTCScene scene_inst = meshID_to_scene[instance->geomID];
+    unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
+    rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
+    geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
+    meshID_to_geomID[meshID] = geomID;
+    return geomID;
+  } else {
+    return 0;
+  }
+}     
 
 typedef ISPCGeometry* ISPCGeometry_ptr;
 
@@ -1039,9 +1052,10 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   } 
 
   size_t numGeometries = scene_in->numGeometries;
-
+  
   geomID_to_mesh = new ISPCGeometry_ptr[numGeometries];
-  //geomID_to_type = new int[numGeometries];
+  meshID_to_geomID = new int[numGeometries];
+  meshID_to_scene = new RTCScene[numGeometries];
 
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -1054,13 +1068,69 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   RTCScene scene_out = rtcDeviceNewScene(g_device,(RTCSceneFlags)scene_flags, (RTCAlgorithmFlags) scene_aflags);
 
-  for (size_t i=0; i<scene_in->numGeometries; i++)
+  /* use geometry instancing feature */
+  if (g_instancing_mode == 1)
   {
-    ISPCGeometry* geometry = scene_in->geometries[i];
-    if (geometry->type == SUBDIV_MESH) 
-      convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
-    else if (geometry->type == TRIANGLE_MESH)
-      convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+    for (size_t i=0; i<scene_in->numGeometries; i++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[i];
+      if (geometry->type == SUBDIV_MESH) {
+        unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+        meshID_to_geomID[i] = geomID;
+        rtcDisable(scene_out,geomID);
+      }
+      else if (geometry->type == TRIANGLE_MESH) {
+        unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+        meshID_to_geomID[i] = geomID;
+        rtcDisable(scene_out,geomID);
+      }
+      else if (geometry->type == INSTANCE)
+        convertInstance((ISPCInstance*) geometry, i, scene_out);
+    }
+  }
+
+  /* use scene isntancing feature */
+  else if (g_instancing_mode == 2)
+  {
+    for (size_t i=0; i<scene_in->numGeometries; i++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[i];
+      if (geometry->type == SUBDIV_MESH) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        meshID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == TRIANGLE_MESH) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertTriangleMesh((ISPCTriangleMesh*) geometry, objscene);
+        meshID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == INSTANCE) {
+        convertInstance((ISPCInstance*) geometry, i, scene_out);
+        meshID_to_scene[i] = nullptr;
+      }
+    }
+  } 
+
+  /* no instancing */
+  else
+  {
+    for (size_t i=0; i<scene_in->numGeometries; i++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[i];
+      if (geometry->type == SUBDIV_MESH) {
+        unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+      }
+      else if (geometry->type == TRIANGLE_MESH) {
+        unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+      }
+    }
   }
 
   /* commit changes to scene */
@@ -1072,8 +1142,6 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   return scene_out;
 } // convertScene
-
-#endif
 
 /* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
@@ -1109,123 +1177,47 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#if 0
-inline Vec3fa interpolate_normal(RTCRay& ray)
+inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
-#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  ISPCTriangleMesh* mesh = g_ispc_scene->meshes[ray.geomID];
-  ISPCTriangle* tri = &mesh->triangles[ray.primID];
-
-  /* load material ID */
-  int materialID = tri->materialID;
-
-  /* interpolate shading normal */
-  if (mesh->normals) {
-    Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-    Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-    Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    return normalize(w*n0 + u*n1 + v*n2);
-  } else {
-    return normalize(ray.Ng);
-  }
-
-#else
-
-  Vec3fa Ns = Vec3fa(0.0f);
   int materialID = 0;
-  int geomID = ray.geomID;  
+  int geomID = ray.geomID; 
   {
-    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
-
-    ISPCTriangleMesh* mesh = g_ispc_scene->meshes[geomID];
-    
-    foreach_unique (primID in ray.primID) 
-    {
-      ISPCTriangle* tri = &mesh->triangles[primID];
-      
-      /* load material ID */
-      materialID = tri->materialID;
-
-      /* interpolate shading normal */
-      if (mesh->normals) {
-        Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-        Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-        Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        Ns = w*n0 + u*n1 + v*n2;
-      } else {
-        Ns = normalize(ray.Ng);
-      }
-    }
-    }
-  }
-  return normalize(Ns);
-#endif
-}
-#endif
-
-#if !defined(CODE_DISABLED)
-#if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
-inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
-{
-  int materialID = 0;
-  ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
-  if (geometry->type == TRIANGLE_MESH) {
-    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-#if ENABLE_TEXTURING == 1
-    if (mesh->texcoords) {
-      ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
-      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      const Vec2f st = w*st0 + u*st1 + v*st2;
-      dg.u = st.x;
-      dg.v = st.y;
-    }
-#endif
-    materialID = mesh->triangles[ray.primID].materialID; 
-  }
-  else if (geometry->type == SUBDIV_MESH)
-  {                      
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->materialID; 
-#if ENABLE_TEXTURING == 1
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-    dg.u = st.x;
-    dg.v = st.y;
-#endif
-  }
-  return materialID;
-}
-#else 
-inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
-{
-  int materialID = 0;
-  int geomID = ray.geomID;  
-  {
-    if (geomID < 0) continue;
+    //if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
-    if (geometry->type == TRIANGLE_MESH) {
+    if (geometry->type == TRIANGLE_MESH) 
+    {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      materialID = ((ISPCTriangleMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
+      materialID = mesh->triangles[ray.primID].materialID;
+      if (mesh->texcoords) {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
+        const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
+        const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        const Vec2f st = w*st0 + u*st1 + v*st2;
+        dg.u = st.x;
+        dg.v = st.y;
+      } 
     }
     else if (geometry->type == SUBDIV_MESH) 
     {
       ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
       materialID = mesh->materialID; 
-#if ENABLE_TEXTURE_COORDINATES == 1
-	const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
-	dg.u = st.x;
-	dg.v = st.y;
-#endif
+      const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
+      dg.u = st.x;
+      dg.v = st.y;
     }
   }
+
+  if (g_instancing_mode)
+  {
+    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
+    ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
+    dg.Ns = dg.Ns.x * Vec3fa(instance->space.l.vx) + dg.Ns.y * Vec3fa(instance->space.l.vy) + dg.Ns.z * Vec3fa(instance->space.l.vz);
+  }
+
   return materialID;
 }
-#endif
-#endif
 
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -1271,7 +1263,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID;  {
+      int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ns = normalize(cross(dPdv,dPdu));
@@ -1286,9 +1278,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
     dg.Ns = face_forward(ray.dir,Ns);
-
-    /* shade all rays that hit something */
-    int materialID = getMaterialID(ray,dg);
+    int materialID = postIntersect(ray,dg);
 
     /*! Compute  simple volumetric effect. */
     Vec3fa c = Vec3fa(1.0f);
@@ -1299,18 +1289,13 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
     int numMaterials = g_ispc_scene->numMaterials;
-    //ISPCMaterial* material = &g_ispc_scene->materials[materialID];
     ISPCMaterial* material_array = &g_ispc_scene->materials[0];
-
-
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-
 
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
 
-    
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
@@ -1342,17 +1327,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
         L = L + Lw*L1;
       }
 #endif
-
-#if 0
-      float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
-      if (s > 0) {
-        float w0 = 0;
-        float w1 = 1;
-        //float w0 = wi0.pdf*wi0.pdf/s;
-        //float w1 = wi1.pdf*wi1.pdf/s;
-        L = L + Lw*(w0*L0+w1*L1);
-      }
-#endif
     }
     Sample3f wi; float tMax;
 
@@ -1372,7 +1346,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.00001f,tMax);
+      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
@@ -1418,8 +1392,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return L;
 }
 
-#if !defined(CODE_DISABLED)
-  
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                      const int width,
@@ -1535,4 +1507,3 @@ extern "C" void device_cleanup ()
   alignedFree(g_accu);
 } // device_cleanup
 
-#endif
