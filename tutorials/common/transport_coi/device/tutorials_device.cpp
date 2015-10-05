@@ -64,7 +64,7 @@ namespace embree
 	      int numVertices, 
 	      int meshMaterialID) 
       : ISPCGeometry(TRIANGLE_MESH), numTriangles(numTriangles), numQuads(numQuads), numVertices(numVertices),
-        positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr), edge_level(nullptr), meshMaterialID(meshMaterialID)
+        positions(nullptr), positions2(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), quads(nullptr), meshMaterialID(meshMaterialID)
     {
       sizePositions = 0;
       sizeNormals   = 0;
