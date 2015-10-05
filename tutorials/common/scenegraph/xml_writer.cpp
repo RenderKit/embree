@@ -38,6 +38,7 @@ namespace embree
     void store(const char* name, const avector<Vec3fa>& vec);
     void store_parm(const char* name, const float& v);
     void store_parm(const char* name, const Vec3fa& v);
+    void store_parm(const char* name, const Texture* tex);
     void store(const char* name, const AffineSpace3fa& space);
     void store(Ref<SceneGraph::LightNode<PointLight>> light, ssize_t id);
     void store(Ref<SceneGraph::LightNode<SpotLight>> light, ssize_t id);
@@ -73,6 +74,7 @@ namespace embree
     size_t ident;
     size_t currentNodeID;
     std::map<Ref<SceneGraph::Node>, size_t> nodeMap;   
+    std::map<const Texture*, size_t> textureMap; // FIXME: use Ref<Texture>
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -137,6 +139,18 @@ namespace embree
 
   void XMLWriter::store_parm(const char* name, const Vec3fa& v) {
     tab(); fprintf(xml,"<float3 name=\"%s\">%f %f %f</float3>\n",name,v.x,v.y,v.z);
+  }
+
+  void XMLWriter::store_parm(const char* name, const Texture* tex) 
+  {
+    if (textureMap.find(tex) != textureMap.end()) {
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\"/>\n",name,textureMap[tex]);
+    } else {
+      const long int offset = ftell(bin);
+      fwrite(tex->data,tex->width*tex->height,tex->bytesPerTexel,bin);
+      const size_t id = textureMap[tex] = currentNodeID++;
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%zu\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",name,id,offset,tex->width,tex->height,tex->strFormat());
+    }
   }
 
   void XMLWriter::store(const char* name, const AffineSpace3fa& space)
@@ -255,6 +269,8 @@ namespace embree
     store_parm("Kd",material.Kd);
     store_parm("Ks",material.Ks);
     store_parm("Ns",material.Ns);
+    store_parm("map_d",material.map_d);
+    store_parm("map_Kd",material.map_Kd);
     close("parameters");
     close("material");
   }

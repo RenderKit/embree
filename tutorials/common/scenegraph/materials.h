@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../default.h"
+#include "texture.h"
 
 namespace embree
 {
@@ -100,9 +101,9 @@ namespace embree
     Vec3fa Ks;              /*< specular reflectivity */
     Vec3fa Kt;              /*< transmission filter */
 
-    void* map_d;            /*< d texture */
-    void* map_Kd;           /*< Kd texture */
-    void* map_Displ;        /*< Displ texture */
+    Texture* map_d;            /*< d texture */
+    Texture* map_Kd;           /*< Kd texture */
+    Texture* map_Displ;        /*< Displ texture */
   };
   
   struct MetalMaterial
