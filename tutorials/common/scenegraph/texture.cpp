@@ -26,9 +26,14 @@ namespace embree
     return (x == 1);
   }
 
+  std::map<std::string,Texture*> texture_cache;
+
   /*! read png texture from disk */
   Texture* Texture::load(const FileName& fileName)
   {
+    if (texture_cache.find(fileName.str()) != texture_cache.end())
+      return texture_cache[fileName.str()];
+
     Ref<Image> img = loadImage(fileName);
 
     Texture* texture = new Texture();
