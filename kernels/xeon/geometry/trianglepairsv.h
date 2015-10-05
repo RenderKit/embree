@@ -207,7 +207,7 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      vint<2*M> vflags = 0;
+      vint<2*M> vflags(zero);
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)

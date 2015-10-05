@@ -26,7 +26,7 @@
 #include "../geometry/subdivpatch1.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
-
+#include "../geometry/trianglepairsv.h"
 #include "../../common/accelinstance.h"
 
 namespace embree
@@ -125,6 +125,7 @@ namespace embree
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vSceneBuilderSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4iSceneBuilderSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
+  DECLARE_BUILDER(void,Scene,size_t,BVH4TrianglePairs4SceneBuilderSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -175,6 +176,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH);
+    SELECT_SYMBOL_AVX_AVX512(features,BVH4TrianglePairs4SceneBuilderSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -971,5 +973,16 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
+
+#if defined (__TARGET_AVX__)
+  Accel* BVH4::BVH4TrianglePairs4(Scene* scene)
+  {
+    BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
+    Builder* builder = BVH4TrianglePairs4SceneBuilderSAH(accel,scene,0);
+    //Accel::Intersectors intersectors = BVH4TrianglePairs4IntersectorsHybrid(accel);
+    return NULL; //new AccelInstance(accel,builder,intersectors);
+  }
+#endif
+
 }
 

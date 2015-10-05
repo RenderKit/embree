@@ -75,9 +75,9 @@ namespace embree
       return _mm256_cvtepu8_epi32(_mm_load_si128((__m128i*)ptr));
     }
 
-      static __forceinline const vint8 load(const int* const i) {
-        return _mm256_load_si256((__m256i*)i); 
-      }
+    static __forceinline const vint8 load(const int* const i) {
+      return _mm256_load_si256((__m256i*)i); 
+    }
 
     static __forceinline const vint8 uload(const int* const i) {
       return _mm256_loadu_si256((__m256i*)i); 
