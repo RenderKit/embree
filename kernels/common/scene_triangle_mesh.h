@@ -86,27 +86,17 @@ namespace embree
 
       int opp_vtx = -1;
 
-      /* if (tri0_edge0 == tri1_edge0 || */
-      /*     tri0_edge1 == tri1_edge0 ||  */
-      /*     tri0_edge2 == tri1_edge0) return tri1.v[2]; */
+      /* rotate triangle 0 to force shared edge between the first and last vertex */
 
-      if (unlikely(tri0_edge0 == tri1_edge0)) return pair_order(0,2,1, 2); 
+      if (unlikely(tri0_edge0 == tri1_edge0)) return pair_order(1,2,0, 2); 
       if (unlikely(tri0_edge1 == tri1_edge0)) return pair_order(2,0,1, 2); 
       if (unlikely(tri0_edge2 == tri1_edge0)) return pair_order(0,1,2, 2);
 
-      /* if (tri0_edge0 == tri1_edge1 ||  */
-      /*     tri0_edge1 == tri1_edge1 ||  */
-      /*     tri0_edge2 == tri1_edge1) return tri1.v[0]; */
-
-      if (unlikely(tri0_edge0 == tri1_edge1)) return pair_order(0,2,1, 0); 
+      if (unlikely(tri0_edge0 == tri1_edge1)) return pair_order(1,2,0, 0); 
       if (unlikely(tri0_edge1 == tri1_edge1)) return pair_order(2,0,1, 0); 
       if (unlikely(tri0_edge2 == tri1_edge1)) return pair_order(0,1,2, 0); 
 
-      /* if (tri0_edge0 == tri1_edge2 ||  */
-      /*     tri0_edge1 == tri1_edge2 ||  */
-      /*     tri0_edge2 == tri1_edge2) return tri1.v[1]; */
-
-      if (unlikely(tri0_edge0 == tri1_edge2)) return pair_order(0,2,1, 1); 
+      if (unlikely(tri0_edge0 == tri1_edge2)) return pair_order(1,2,0, 1); 
       if (unlikely(tri0_edge1 == tri1_edge2)) return pair_order(2,0,1, 1); 
       if (unlikely(tri0_edge2 == tri1_edge2)) return pair_order(0,1,2, 1); 
 
