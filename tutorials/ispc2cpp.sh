@@ -31,7 +31,7 @@ sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/abort()/exit(1)/g' $2
-sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
+#sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
 sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
 sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach_tiled (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2

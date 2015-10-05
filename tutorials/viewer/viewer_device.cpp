@@ -356,35 +356,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   }
 
   int materialID = 0;
-#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-
-  ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
-  if (geometry->type == TRIANGLE_MESH)
-  {
-    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    ISPCTriangle* tri = &mesh->triangles[ray.primID];
-
-    /* load material ID */
-    materialID = tri->materialID;
-
-    /* interpolate shading normal */
-    if (mesh->normals) {
-      Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-      Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-      Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-      float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      Ns = normalize(w*n0 + u*n1 + v*n2);
-    } else {
-      Ns = normalize(ray.Ng);
-    }
-  } 
-  else if (geometry->type == SUBDIV_MESH) {
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->materialID;    
-  }
-
-#else
-
   int geomID = ray.geomID; 
   {
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
@@ -417,7 +388,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       materialID = mesh->materialID; 
     }
   }
-#endif
 
   Ns = normalize(Ns);
   OBJMaterial* material = (OBJMaterial*) &g_ispc_scene->materials[materialID];
