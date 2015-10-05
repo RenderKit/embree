@@ -76,14 +76,21 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* update hit information */
-        return epilog(valid,[&] () {
+        return epilog(valid,[&] (const vbool<M> &valid, const vint<M>& flags) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
+            const vfloat<M> t = T * rcpAbsDen;
+            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
             const vfloat<M> w = max(1.0f - u - v,vfloat<M>(zero));
-            const vfloat<M> t = T * rcpAbsDen;
-            //return std::make_tuple(u,v,w,t,tri_Ng);
-            return std::make_tuple(u,w,v,t,tri_Ng);
+            const vfloat<M> uvw[3] = { u,v,w };
+            const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
+            const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
+          
+          /* update hit information */
+            const vfloat<M> uu = uvw[indexU];
+            const vfloat<M> vv = uvw[indexV];
+            return std::make_tuple(uu,vv,t,tri_Ng,i);
           });
       }
       
@@ -122,23 +129,14 @@ namespace embree
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
         {
-          vfloat<M> uvw[3], t; 
+          vfloat<M> u,v,t; 
           Vec3<vfloat<M>> Ng;
-          std::tie(uvw[0],uvw[1],uvw[2],t,Ng) = hit();
           vbool<M> valid = valid_i;
+          size_t i;
+          std::tie(u,v,t,Ng,i) = hit(valid, flags);
           
-          size_t i = select_min(valid,t);
-
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-          unsigned int indexW = (((unsigned int)flags[i]) >>  8) & 0xff;
-          unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-          
-          /* update hit information */
-          vfloat<M> u = uvw[indexU];
-          vfloat<M> v = uvw[indexV];
-          vfloat<M> w = uvw[indexW];
 
           ray.u = u[i];
           ray.v = v[i];
