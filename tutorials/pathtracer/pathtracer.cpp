@@ -40,6 +40,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
+  extern "C" int g_instancing_mode = 0;
   static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
@@ -105,6 +106,14 @@ namespace embree
       
       else if (tag == "-anim") 
 	g_anim_mode = true;
+
+      else if (tag == "-instancing") {
+        std::string mode = cin->getString();
+        if      (mode == "none"    ) g_instancing_mode = 0;
+        else if (mode == "geometry") g_instancing_mode = 1;
+        else if (mode == "scene"   ) g_instancing_mode = 2;
+        else throw std::runtime_error("unknown instancing mode: "+mode);
+      }
 
       else if (tag == "-shader") {
         std::string mode = cin->getString();
@@ -270,7 +279,7 @@ namespace embree
       loadKeyFrameAnimation(keyframeList);
     
     /* initialize ray tracing core */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>()); 
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),g_instancing_mode); 
     g_scene = nullptr;
     init(g_rtcore.c_str());
 

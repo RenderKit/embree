@@ -27,7 +27,6 @@ RTCScene g_scene = nullptr;
 ISPCGeometry** geomID_to_mesh = nullptr;
 int* meshID_to_geomID = nullptr;
 RTCScene* meshID_to_scene = nullptr;
-//int* geomID_to_type = nullptr;
 bool g_subdiv_mode = false;
 
 #define SPP 1
