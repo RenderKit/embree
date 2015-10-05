@@ -473,7 +473,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+    if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
 
     brdf.Ks = d * Vec3fa(material->Ks);  
@@ -1106,48 +1106,25 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#if !defined(CODE_DISABLED)
-#if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
-{
-  int materialID = 0;
-  ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
-  if (geometry->type == TRIANGLE_MESH) {
-    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    if (mesh->texcoords) {
-      ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
-      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      const Vec2f st = w*st0 + u*st1 + v*st2;
-      dg.u = st.x;
-      dg.v = st.y;
-    }
-    materialID = mesh->triangles[ray.primID].materialID; 
-  }
-  else if (geometry->type == SUBDIV_MESH)
-  {                      
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->materialID; 
-#if ENABLE_TEXTURING == 1
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-    dg.u = st.x;
-    dg.v = st.y;
-#endif
-  }
-  return materialID;
-}
-#else 
-inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
 {
   int materialID = 0;
   int geomID = ray.geomID;  
   {
-    if (geomID < 0) continue;
+    //if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+      if (mesh->texcoords) {
+        ISPCTriangle* tri = &mesh->triangles[ray.primID];
+        const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
+        const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
+        const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+        const Vec2f st = w*st0 + u*st1 + v*st2;
+        dg.u = st.x;
+        dg.v = st.y;
+      }
       materialID = ((ISPCTriangleMesh*) geomID_to_mesh[geomID])->triangles[ray.primID].materialID; 
     }
     else if (geometry->type == SUBDIV_MESH) 
@@ -1163,8 +1140,6 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
   }
   return materialID;
 }
-#endif
-#endif
 
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {

@@ -1106,45 +1106,12 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#if !defined(CODE_DISABLED)
-#if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
-{
-  int materialID = 0;
-  uniform ISPCGeometry* varying geometry = geomID_to_mesh[ray.geomID];
-  if (geometry->type == TRIANGLE_MESH) {
-    uniform ISPCTriangleMesh* varying mesh = (uniform ISPCTriangleMesh* varying) geometry;
-    if (mesh->texcoords) {
-      ISPCTriangle* tri = &mesh->triangles[ray.primID];
-      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
-      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-      const Vec2f st = w*st0 + u*st1 + v*st2;
-      dg.u = st.x;
-      dg.v = st.y;
-    }
-    materialID = mesh->triangles[ray.primID].materialID; 
-  }
-  else if (geometry->type == SUBDIV_MESH)
-  {                      
-    uniform ISPCSubdivMesh* varying mesh = (uniform ISPCSubdivMesh* varying) geometry;
-    materialID = mesh->materialID; 
-#if ENABLE_TEXTURING == 1
-    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-    dg.u = st.x;
-    dg.v = st.y;
-#endif
-  }
-  return materialID;
-}
-#else 
-inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
 {
   int materialID = 0;
   foreach_unique (geomID in ray.geomID) 
   {
-    if (geomID < 0) continue;
+    //if (geomID < 0) continue;
     uniform ISPCGeometry* uniform geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) {
       uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
@@ -1173,8 +1140,6 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry dg)
   }
   return materialID;
 }
-#endif
-#endif
 
 Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
