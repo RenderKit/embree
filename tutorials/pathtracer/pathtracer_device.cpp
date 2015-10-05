@@ -468,13 +468,11 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
     float d = material->d;
 #if ENABLE_TEXTURING == 1
-    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);	
+    if (material->map_d) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
 #endif
-    //if (material->map_d) { d *= material->map_d.get(s,t); }
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);  
-    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
@@ -482,7 +480,7 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
-    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
+    brdf.Kt = Vec3fa(1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
 
 }
@@ -1109,62 +1107,6 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#if 0
-inline Vec3fa interpolate_normal(RTCRay& ray)
-{
-#if 1 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  ISPCTriangleMesh* mesh = g_ispc_scene->meshes[ray.geomID];
-  ISPCTriangle* tri = &mesh->triangles[ray.primID];
-
-  /* load material ID */
-  int materialID = tri->materialID;
-
-  /* interpolate shading normal */
-  if (mesh->normals) {
-    Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-    Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-    Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    return normalize(w*n0 + u*n1 + v*n2);
-  } else {
-    return normalize(ray.Ng);
-  }
-
-#else
-
-  Vec3fa Ns = Vec3fa(0.0f);
-  int materialID = 0;
-  int geomID = ray.geomID;  
-  {
-    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
-
-    ISPCTriangleMesh* mesh = g_ispc_scene->meshes[geomID];
-    
-    foreach_unique (primID in ray.primID) 
-    {
-      ISPCTriangle* tri = &mesh->triangles[primID];
-      
-      /* load material ID */
-      materialID = tri->materialID;
-
-      /* interpolate shading normal */
-      if (mesh->normals) {
-        Vec3fa n0 = Vec3fa(mesh->normals[tri->v0]);
-        Vec3fa n1 = Vec3fa(mesh->normals[tri->v1]);
-        Vec3fa n2 = Vec3fa(mesh->normals[tri->v2]);
-        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        Ns = w*n0 + u*n1 + v*n2;
-      } else {
-        Ns = normalize(ray.Ng);
-      }
-    }
-    }
-  }
-  return normalize(Ns);
-#endif
-}
-#endif
-
 #if !defined(CODE_DISABLED)
 #if 1 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
@@ -1393,7 +1335,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray = RTCRay(dg.P,normalize(wi1.v),0.001f,inf);
+    ray = RTCRay(dg.P,normalize(wi1.v),0.00001f,inf);
   }
   return L;
 }

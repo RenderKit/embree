@@ -465,18 +465,15 @@ __device__ Vec3f MirrorMaterial__sample(MirrorMaterial* uniform This, const BRDF
 
 __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-
     float d = material->d;
-    //if (material->map_d) { d *= material->map_d.get(s,t); }
+#if ENABLE_TEXTURING == 1
+    if (material->map_Kd) d *= getTextureTexel3f(material->map_d,dg.u,dg.v);	
+#endif
     brdf.Ka = make_Vec3f(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * make_Vec3f(material->Kd);  
-    //if (material->map_Kd) brdf.Kd *= material->map_Kd->get(dg.st);  
-
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) {
-      brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
-    }
+    if (material->map_Kd) brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
 
     brdf.Ks = d * make_Vec3f(material->Ks);  
@@ -485,7 +482,6 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
     brdf.Kt = (1.0f-d)*make_Vec3f(material->Kt);
     brdf.Ni = material->Ni;
-
 }
 
 __device__ Vec3f OBJMaterial__eval(OBJMaterial* uniform material, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi) 
@@ -1110,62 +1106,6 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-#if 0
-inline Vec3f interpolate_normal(RTCRay& ray)
-{
-#if 0 // FIXME: pointer gather not implemented on ISPC for Xeon Phi
-  uniform ISPCTriangleMesh* varying mesh = g_ispc_scene->meshes[ray.geomID];
-  uniform ISPCTriangle* varying tri = &mesh->triangles[ray.primID];
-
-  /* load material ID */
-  int materialID = tri->materialID;
-
-  /* interpolate shading normal */
-  if (mesh->normals) {
-    Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-    Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-    Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-    float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-    return normalize(w*n0 + u*n1 + v*n2);
-  } else {
-    return normalize(ray.Ng);
-  }
-
-#else
-
-  Vec3f Ns = make_Vec3f(0.0f);
-  int materialID = 0;
-  foreach_unique (geomID in ray.geomID) 
-  {
-    if (geomID >= 0 && geomID < g_ispc_scene->numMeshes)  { // FIXME: workaround for ISPC bug
-
-    uniform ISPCTriangleMesh* uniform mesh = g_ispc_scene->meshes[geomID];
-    
-    foreach_unique (primID in ray.primID) 
-    {
-      uniform ISPCTriangle* uniform tri = &mesh->triangles[primID];
-      
-      /* load material ID */
-      materialID = tri->materialID;
-
-      /* interpolate shading normal */
-      if (mesh->normals) {
-        Vec3f n0 = make_Vec3f(mesh->normals[tri->v0]);
-        Vec3f n1 = make_Vec3f(mesh->normals[tri->v1]);
-        Vec3f n2 = make_Vec3f(mesh->normals[tri->v2]);
-        float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        Ns = w*n0 + u*n1 + v*n2;
-      } else {
-        Ns = normalize(ray.Ng);
-      }
-    }
-    }
-  }
-  return normalize(Ns);
-#endif
-}
-#endif
-
 #if !defined(CODE_DISABLED)
 #if 0 // FIXME: pointer gather not implemented in ISPC for Xeon Phi
 inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
@@ -1392,7 +1332,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray = make_Ray(dg.P,normalize(wi1.v),0.001f,inf);
+    ray = make_Ray(dg.P,normalize(wi1.v),0.00001f,inf);
   }
   return L;
 }

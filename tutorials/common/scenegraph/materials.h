@@ -76,11 +76,11 @@ namespace embree
   {
   public:
     OBJMaterial ()
-    : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(0.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
+    : ty(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
     {};
     
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns)
-    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(0.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
+    : ty(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr)
     {};
     
     ~OBJMaterial() { // FIXME: destructor never called!

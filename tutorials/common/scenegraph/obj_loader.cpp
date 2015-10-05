@@ -286,21 +286,21 @@ namespace embree
       if (!strncmp(token, "Ns", 2)) { parseSep(token += 2);  cur->Ns = getFloat(token); continue; }
       if (!strncmp(token, "Ni", 2)) { parseSep(token += 2);  cur->Ni = getFloat(token); continue; }
 
-      if (!strncmp(token, "d_map", 5)) {
+      if (!strncmp(token, "map_d", 5) || !strncmp(token, "d_map", 5)) {
         parseSep(token += 5);
         cur->map_d = Texture::load(path + FileName(token));
         continue;
       }
-      if (!strncmp(token, "Ka_map", 6)) { continue; }
-      if (!strncmp(token, "Kd_map", 6) || !strncmp(token, "map_Kd", 6)) {
+      if (!strncmp(token, "map_Ka", 6) || !strncmp(token, "Ka_map", 6)) { continue; }
+      if (!strncmp(token, "map_Kd", 6) || !strncmp(token, "Kd_map", 6)) {
         parseSep(token += 6);
         cur->map_Kd = Texture::load(path + FileName(token));
         continue;
       }
  
-      if (!strncmp(token, "Ks_map", 6)) { continue; }
-      if (!strncmp(token, "Tf_map", 6)) { continue; }
-      if (!strncmp(token, "Displ_map", 9) || !strncmp(token, "map_Displ", 9)) {
+      if (!strncmp(token, "map_Ks", 6) || !strncmp(token, "Ks_map", 6)) { continue; }
+      if (!strncmp(token, "map_Tf", 6) || !strncmp(token, "Tf_map", 6)) { continue; }
+      if (!strncmp(token, "map_Displ", 9) || !strncmp(token, "Displ_map", 9)) {
         parseSep(token += 9);
         cur->map_Displ = Texture::load(path + FileName(token));
         continue;
