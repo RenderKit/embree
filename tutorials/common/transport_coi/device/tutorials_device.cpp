@@ -288,6 +288,7 @@ struct ISPCSubdivMeshKeyFrame {
   static size_t g_geometryID = 0;
 
   extern "C" ISPCScene* g_ispc_scene = nullptr;
+  extern "C" int g_instancing_mode = 0;
 
   extern "C" void run_init(uint32_t         in_BufferCount,
                            void**           in_ppBufferPointers,

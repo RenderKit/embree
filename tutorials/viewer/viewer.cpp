@@ -39,7 +39,7 @@ namespace embree
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
   static bool g_anim_mode = false;
-  static bool g_instancing_mode = false;
+  extern "C" int g_instancing_mode = 0;
   static FileName keyframeList = "";
 
   /* scene */
@@ -102,8 +102,13 @@ namespace embree
       else if (tag == "-anim") 
 	g_anim_mode = true;
 
-      else if (tag == "-instancing") 
-	g_instancing_mode = true;
+      else if (tag == "-instancing") {
+        std::string mode = cin->getString();
+        if      (mode == "none"    ) g_instancing_mode = 0;
+        else if (mode == "geometry") g_instancing_mode = 1;
+        else if (mode == "scene"   ) g_instancing_mode = 2;
+        else throw std::runtime_error("unknown instancing mode: "+mode);
+      }
 
       /* number of frames to render in benchmark mode */
       else if (tag == "-benchmark") {
