@@ -332,15 +332,6 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     return make_Vec3f(0.0f);
   }
 
-  Vec3f Ng = ray.Ng;
-  if (g_instancing_mode)
-  {
-    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
-    uniform ISPCInstance* instance = (uniform ISPCInstance*) geomID_to_mesh[instID];
-    Ng = Ng.x * make_Vec3f(instance->space.l.vx) + Ng.y * make_Vec3f(instance->space.l.vy) + Ng.z * make_Vec3f(instance->space.l.vz);
-    return make_Vec3f(abs(dot(normalize(ray.dir),normalize(Ng))));
-  }
-  
   /* shade all rays that hit something */
   Vec3f color = make_Vec3f(0.0f);
   Vec3f Ns = ray.Ng;
@@ -387,6 +378,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
       materialID = mesh->materialID; 
     }
+  }
+
+  if (g_instancing_mode)
+  {
+    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
+    uniform ISPCInstance* instance = (uniform ISPCInstance*) geomID_to_mesh[instID];
+    Ns = Ns.x * make_Vec3f(instance->space.l.vx) + Ns.y * make_Vec3f(instance->space.l.vy) + Ns.z * make_Vec3f(instance->space.l.vz);
   }
 
   Ns = normalize(Ns);

@@ -332,15 +332,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     return Vec3fa(0.0f);
   }
 
-  Vec3fa Ng = ray.Ng;
-  if (g_instancing_mode)
-  {
-    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
-    ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
-    Ng = Ng.x * Vec3fa(instance->space.l.vx) + Ng.y * Vec3fa(instance->space.l.vy) + Ng.z * Vec3fa(instance->space.l.vz);
-    return Vec3fa(abs(dot(normalize(ray.dir),normalize(Ng))));
-  }
-  
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.0f);
   Vec3fa Ns = ray.Ng;
@@ -387,6 +378,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
       materialID = mesh->materialID; 
     }
+  }
+
+  if (g_instancing_mode)
+  {
+    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
+    ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
+    Ns = Ns.x * Vec3fa(instance->space.l.vx) + Ns.y * Vec3fa(instance->space.l.vy) + Ns.z * Vec3fa(instance->space.l.vz);
   }
 
   Ns = normalize(Ns);
