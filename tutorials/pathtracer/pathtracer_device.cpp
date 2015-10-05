@@ -465,10 +465,9 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 
  void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-
     float d = material->d;
 #if ENABLE_TEXTURING == 1
-    if (material->map_d) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
+    if (material->map_Kd) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
 #endif
     brdf.Ka = Vec3fa(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
@@ -476,13 +475,13 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 #if ENABLE_TEXTURING == 1
     if (material->map_Kd) brdf.Kd *= getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
+
     brdf.Ks = d * Vec3fa(material->Ks);  
     //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st); 
     brdf.Ns = material->Ns;  
     //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
-    brdf.Kt = Vec3fa(1.0f-d)*Vec3fa(material->Kt);
+    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
     brdf.Ni = material->Ni;
-
 }
 
  Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
@@ -1115,7 +1114,6 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
   ISPCGeometry* geometry = geomID_to_mesh[ray.geomID];
   if (geometry->type == TRIANGLE_MESH) {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-#if ENABLE_TEXTURING == 1
     if (mesh->texcoords) {
       ISPCTriangle* tri = &mesh->triangles[ray.primID];
       const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
@@ -1126,7 +1124,6 @@ inline int getMaterialID(const RTCRay& ray, DifferentialGeometry& dg)
       dg.u = st.x;
       dg.v = st.y;
     }
-#endif
     materialID = mesh->triangles[ray.primID].materialID; 
   }
   else if (geometry->type == SUBDIV_MESH)
@@ -1241,18 +1238,13 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
     int numMaterials = g_ispc_scene->numMaterials;
-    //ISPCMaterial* material = &g_ispc_scene->materials[materialID];
     ISPCMaterial* material_array = &g_ispc_scene->materials[0];
-
-
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-
 
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
 
-    
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
@@ -1282,17 +1274,6 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
           L1 = Ll1/wi1.pdf*c;
         }
         L = L + Lw*L1;
-      }
-#endif
-
-#if 0
-      float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
-      if (s > 0) {
-        float w0 = 0;
-        float w1 = 1;
-        //float w0 = wi0.pdf*wi0.pdf/s;
-        //float w1 = wi1.pdf*wi1.pdf/s;
-        L = L + Lw*(w0*L0+w1*L1);
       }
 #endif
     }

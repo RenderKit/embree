@@ -30,8 +30,8 @@
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
 
-#define ENABLE_TEXTURING 0
-#define ENABLE_TEXTURE_COORDINATES 0
+#define ENABLE_TEXTURING 1
+#define ENABLE_TEXTURE_COORDINATES 1
 #define ENABLE_OCCLUSION_FILTER 0
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
@@ -467,13 +467,13 @@ __device__ void OBJMaterial__preprocess(uniform OBJMaterial* uniform material, B
 {
     float d = material->d;
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) d *= getTextureTexel3f(material->map_d,dg.u,dg.v);	
+    if (material->map_Kd) d *= 1.0f-getTextureTexel1f(material->map_d,dg.u,dg.v);	
 #endif
     brdf.Ka = make_Vec3f(material->Ka);
     //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * make_Vec3f(material->Kd);  
 #if ENABLE_TEXTURING == 1
-    if (material->map_Kd) brdf.Kd = getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
+    if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);	
 #endif
 
     brdf.Ks = d * make_Vec3f(material->Ks);  
@@ -1238,18 +1238,13 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* calculate BRDF */ // FIXME: avoid gathers
     BRDF brdf;
     uniform int numMaterials = g_ispc_scene->numMaterials;
-    //uniform ISPCMaterial* material = &g_ispc_scene->materials[materialID];
     uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
-
-
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-
 
     /* sample BRDF at hit point */
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, make_Vec2f(frand(state),frand(state)));
 
-    
     /* iterate over ambient lights */
     for (uniform size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
@@ -1279,17 +1274,6 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
           L1 = Ll1/wi1.pdf*c;
         }
         L = L + Lw*L1;
-      }
-#endif
-
-#if 0
-      float s = wi0.pdf*wi0.pdf + wi1.pdf*wi1.pdf;
-      if (s > 0) {
-        float w0 = 0;
-        float w1 = 1;
-        //float w0 = wi0.pdf*wi0.pdf/s;
-        //float w1 = wi1.pdf*wi1.pdf/s;
-        L = L + Lw*(w0*L0+w1*L1);
       }
 #endif
     }
