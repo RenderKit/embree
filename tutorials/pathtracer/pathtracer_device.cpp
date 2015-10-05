@@ -799,7 +799,6 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
   return c;
 }
 
-#if !defined(CODE_DISABLED)
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Scene                                        //
@@ -1070,8 +1069,6 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   return scene_out;
 } // convertScene
 
-#endif
-
 /* for details about this random number generator see: P. L'Ecuyer,
    "Maximally Equidistributed Combined Tausworthe Generators",
    Mathematics of Computation, 65, 213 (1996), 203--213:
@@ -1316,8 +1313,6 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   return L;
 }
 
-#if !defined(CODE_DISABLED)
-  
 /* task that renders a single screen tile */
 void renderTile(int taskIndex, int* pixels,
                      const int width,
@@ -1433,4 +1428,3 @@ extern "C" void device_cleanup ()
   alignedFree(g_accu);
 } // device_cleanup
 
-#endif
