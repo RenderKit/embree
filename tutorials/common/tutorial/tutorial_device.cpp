@@ -704,7 +704,7 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
-float getTextureTexel1f(Texture* texture, const float s, const float t)
+float getTextureTexel1f(const Texture* texture, const float s, const float t)
 {
   if (likely(texture && texture->format == FLOAT32))
   {
@@ -729,7 +729,7 @@ float getTextureTexel1f(Texture* texture, const float s, const float t)
   return 0.0f;
 }
 
-Vec3f getTextureTexel3f(Texture* texture,const float s, const float t)
+Vec3f getTextureTexel3f(const Texture* texture,const float s, const float t)
 {
   if (likely(texture && texture->format == RGBA8))
   {

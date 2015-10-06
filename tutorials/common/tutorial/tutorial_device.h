@@ -124,5 +124,5 @@ void progressEnd();
 
 Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
 
-float  getTextureTexel1f(Texture* texture,const float u, const float v);
-Vec3f  getTextureTexel3f(Texture* texture,const float u, const float v);
+float  getTextureTexel1f(const Texture* texture,const float u, const float v);
+Vec3f  getTextureTexel3f(const Texture* texture,const float u, const float v);

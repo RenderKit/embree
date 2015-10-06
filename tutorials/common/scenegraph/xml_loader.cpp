@@ -40,6 +40,7 @@ namespace embree
       FLOAT3,    /*!< variant stores float3 value      */
       FLOAT4,    /*!< variant stores float4 value      */
       STRING,    /*!< variant stores string value      */
+      TEXTURE,   /*!< variant stores texture value     */
     };
 
     /*! Constructs an empty variant object. */
@@ -87,6 +88,9 @@ namespace embree
     /*! Constructs a variant object holding a string value. */
     Variant (const std::string& str) : type(STRING), str(str) {}
 
+    /*! Constructs a variant object holding a texture value. */
+    Variant (const Texture* tex) : type(TEXTURE) { texture = tex; }
+
     /*! Extracts a boolean from the variant type. */
     bool  getBool () const { return b[0]; }
 
@@ -108,6 +112,9 @@ namespace embree
     /*! Extracts a string from the variant type. */
     std::string getString() const { return str;   }
 
+    /*! Extracts a texture from the variant type. */
+    const Texture* getTexture() const { return texture;   }
+
     operator bool() const {
       return type != EMPTY;
     }
@@ -118,6 +125,7 @@ namespace embree
       bool b[4];          //!< Storage for single bool,bool2,bool3, and bool4 values.
       int i[4];           //!< Storage for single int,int2,int3, and int4 values.
       float f[12];         //!< Storage for single float,float2,float3, float4, and AffineSpace3f values.
+      const Texture* texture;
     };
     std::string str;      //!< Storage for string values.
   };
@@ -183,6 +191,13 @@ namespace embree
       std::map<std::string,Variant>::const_iterator i = m.find(name);
       if (i == m.end() || (*i).second.type != Variant::STRING) return def;
       return (*i).second.getString();
+    }
+
+    /*! Extracts a named texture out of the container. */
+    const Texture* getTexture(const char* name) const {
+      std::map<std::string,Variant>::const_iterator i = m.find(name);
+      if (i == m.end() || (*i).second.type != Variant::TEXTURE) return nullptr;
+      return (*i).second.getTexture();
     }
 
     /*! Adds a new named element to the container. */
@@ -728,16 +743,16 @@ namespace embree
     }
     else if (type == "OBJ") 
     {
-      //map_d = parms.getTexture("map_d");  
+      const Texture* map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);
-      //map_Kd = parms.getTexture("map_Kd");  
+      const Texture* map_Kd = parms.getTexture("map_Kd");  
       const Vec3fa Kd = parms.getVec3fa("Kd", one);
-      //map_Ks = parms.getTexture("map_Ks");  
+      const Texture* map_Ks = parms.getTexture("map_Ks");  
       const Vec3fa Ks = parms.getVec3fa("Ks", zero);
-      //map_Ns = parms.getTexture("map_Ns");  
+      const Texture* map_Ns = parms.getTexture("map_Ns");  
       const float Ns = parms.getFloat("Ns", 10.0f);
-      //map_Bump = parms.getTexture("map_Bump");
-      new (&material) OBJMaterial(d,Kd,Ks,Ns);
+      const Texture* map_Bump = parms.getTexture("map_Bump");
+      new (&material) OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Bump);
     }
     else if (type == "OBJMaterial")  // for BGF file format
     {
