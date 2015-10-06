@@ -247,7 +247,6 @@ namespace embree
       numPrimitives = pairInfo.size();
 
       prims.resize(numPrimitives);
-      assert(!mesh);
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
                                                     {

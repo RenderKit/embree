@@ -347,10 +347,10 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
             const unsigned int rotation0 = tri.flags[i];
-            pre.intersectK(valid_i,ray,p1,p2,p0,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation0,i,scene));
+            pre.intersectK(valid_i,ray,p1,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation0,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
             const unsigned int rotation1 = tri.flags[M+i];
-            pre.intersectK(valid_i,ray,p3,p2,p0,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation1,i,scene));
+            pre.intersectK(valid_i,ray,p3,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation1,i,scene));
           }
         }
         
