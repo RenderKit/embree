@@ -205,6 +205,7 @@ namespace embree
    ~XMLLoader();
 
   public:
+    Texture* loadTextureParm(const Ref<XML>& xml);
     Parms loadMaterialParms(const Ref<XML>& parms);
     Ref<SceneGraph::MaterialNode> addMaterial(const std::string& type, const Parms& parms);
 
@@ -259,6 +260,7 @@ namespace embree
     std::map<std::string,Ref<SceneGraph::MaterialNode> > materialMap;     //!< named materials
     std::map<Ref<XML>, Ref<SceneGraph::MaterialNode> > materialCache;     //!< map for detecting repeated materials
     std::map<std::string,Ref<SceneGraph::Node> > sceneMap; 
+    std::map<std::string,Texture* > textureMap; 
 
   private:
     size_t currentNodeID;
@@ -628,6 +630,35 @@ namespace embree
     return new SceneGraph::GroupNode(0); 
   }
 
+  Texture* XMLLoader::loadTextureParm(const Ref<XML>& xml)
+  {
+    const std::string id = xml->parm("id");
+    if (id != "" && textureMap.find(id) != textureMap.end())
+      return textureMap[id];
+
+    Texture* texture = nullptr;
+    const std::string src = xml->parm("src");
+
+    /*! load texture from file */
+    if (src != "") {
+      texture = Texture::load(src);
+    }
+
+    /*! load texture from binary file */
+    else {
+      const size_t width  = stoi(xml->parm("width"));
+      const size_t height = stoi(xml->parm("height"));
+      const Texture::Format format = Texture::string_to_format(xml->parm("format"));
+      const size_t bytesPerTexel = Texture::getFormatBytesPerTexel(format);
+      texture = new Texture(width,height,format);
+      if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
+        THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
+    }
+    
+    if (id != "") textureMap[id] = texture;
+    return texture;
+  }
+
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
   {
     Parms material;
@@ -643,7 +674,7 @@ namespace embree
       else if (entry->name == "float2" ) { material.add(name, load<Vec2f>(entry)); }
       else if (entry->name == "float3" ) { material.add(name, load<Vec3f>(entry)); }
       else if (entry->name == "float4" ) { material.add(name, load<Vec4f>(entry)); }
-      else if (entry->name == "texture") { material.add(name, (path + load<std::string>(entry)).str()); }
+      else if (entry->name == "texture3d") { material.add(name, loadTextureParm(entry)); }
       else if (entry->name == "param") {
         const std::string type = entry->parm("type");
         if      (type ==  "int"   ) { material.add(name, load<int>  (entry)); }
@@ -657,7 +688,7 @@ namespace embree
         else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid param type: "+type);
       }
       else if (entry->name == "textures") {
-        // we do not parse textures for now
+        // we do not parse BGF format textures for now
       }
       else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid type: "+entry->name);
     }

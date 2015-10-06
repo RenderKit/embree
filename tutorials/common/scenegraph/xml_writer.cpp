@@ -149,7 +149,8 @@ namespace embree
       const long int offset = ftell(bin);
       fwrite(tex->data,tex->width*tex->height,tex->bytesPerTexel,bin);
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%zu\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",name,id,offset,tex->width,tex->height,tex->strFormat());
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%zu\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",
+                     name,id,offset,tex->width,tex->height,Texture::format_to_string(tex->format));
     }
   }
 

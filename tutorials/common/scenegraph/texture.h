@@ -23,7 +23,8 @@ namespace embree
 {
   struct Texture // FIXME: should be derived from SceneGraph::Node
   {
-    enum {
+    enum Format {
+      INVALID = 0,
       RGBA8   = 1,
       RGB8    = 2,
       FLOAT32 = 3,
@@ -32,15 +33,19 @@ namespace embree
   public:
     Texture (); 
     Texture (Ref<Image> image); 
+    Texture (size_t width, size_t height, const Format format, const char* in = nullptr);
+    ~Texture ();
 
-    const char* strFormat() const;
+    static const char* format_to_string(const Format format);
+    static Format string_to_format(const std::string& str);
+    static int getFormatBytesPerTexel(const Format format);
 
     static Texture* load(const FileName& fileName); // FIXME: return reference
     
   public:
     int width;
     int height;    
-    int format;
+    Format format;
     int bytesPerTexel;
     int width_mask;
     int height_mask;
