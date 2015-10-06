@@ -83,7 +83,7 @@ namespace embree
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
             const vfloat<M> w = max(1.0f - u - v,vfloat<M>(zero));
-            const vfloat<M> uvw[3] = { u,v,w };
+            const vfloat<M> uvw[3] = { u,w,v };
             const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
             const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
           
