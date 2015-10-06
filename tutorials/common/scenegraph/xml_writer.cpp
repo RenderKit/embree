@@ -143,6 +143,8 @@ namespace embree
 
   void XMLWriter::store_parm(const char* name, const Texture* tex) 
   {
+    if (tex == nullptr) return;
+
     if (textureMap.find(tex) != textureMap.end()) {
       tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\"/>\n",name,textureMap[tex]);
     } else {
