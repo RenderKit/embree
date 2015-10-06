@@ -220,7 +220,6 @@ namespace embree
           Vec3<vfloat<K>> Ng;
           std::tie(uwv[0],uwv[2],t,Ng) = hit();
           uwv[1] = 1.0f - uwv[0] - uwv[2];
-
           const unsigned int indexU = (rotation >>  0) & 0xff;
           const unsigned int indexV = (rotation >> 16) & 0xff;
           
@@ -349,8 +348,8 @@ namespace embree
             const unsigned int rotation0 = tri.flags[i];
             pre.intersectK(valid_i,ray,p1,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation0,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            const unsigned int rotation1 = tri.flags[M+i];
-            pre.intersectK(valid_i,ray,p3,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation1,i,scene));
+            const unsigned int rotation1 = tri.flags[4+i];
+            pre.intersectK(valid_i,ray,p3,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,rotation1,i,scene));
           }
         }
         
