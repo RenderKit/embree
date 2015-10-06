@@ -209,7 +209,10 @@ namespace embree
                             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
                             auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-                            PrimInfo pinfo = createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
+                            PrimInfo pinfo = mesh ?
+                              createPrimRefArrayTrianglePairs<Mesh>(mesh,prims,virtualprogress) :
+                              createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
+
                             const size_t numPrimitives = pinfo.size();
                             bvh->alloc2.init_estimate(numPrimitives*sizeof(PrimRef));
 
@@ -263,6 +266,8 @@ namespace embree
 
     /* entry functions for the scene builder */
     Builder* BVH8TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVH8BuilderSAHTrianglePairs<TriangleMesh,TrianglePairs4v>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
+
+    Builder* BVH8TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVH8BuilderSAHTrianglePairs<TriangleMesh,TrianglePairs4v>((BVH8*)bvh,mesh,4,4,1.0f,4,inf,mode); }
 
 
     /************************************************************************************/ 

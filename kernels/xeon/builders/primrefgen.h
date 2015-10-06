@@ -41,6 +41,10 @@ namespace embree
     template<typename Mesh, size_t timeSteps>
       PrimInfo createPrimRefArrayTrianglePairs(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
 
+
+    template<typename Mesh>
+      PrimInfo createPrimRefArrayTrianglePairs(Mesh* mesh, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+
   }
 }
 
