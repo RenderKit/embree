@@ -46,6 +46,7 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4GridAOSIntersector1);
   DECLARE_SYMBOL(Accel::Intersector1,BVH4VirtualIntersector1);
+  DECLARE_SYMBOL(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
 
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Bezier1vIntersector4Chunk);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Bezier1iIntersector4Chunk);
@@ -226,6 +227,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
+    SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -612,6 +614,17 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH4TrianglePairs4Intersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4TrianglePairs4Intersector1Moeller;
+    intersectors.intersector4  = NULL; //FIXME: not yet done
+    intersectors.intersector8  = NULL;
+    intersectors.intersector16 = NULL;
+    return intersectors;
+  }
+
   Accel* BVH4::BVH4Bezier1v(Scene* scene)
   { 
     BVH4* accel = new BVH4(Bezier1v::type,scene);
@@ -979,8 +992,8 @@ namespace embree
   {
     BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
     Builder* builder = BVH4TrianglePairs4SceneBuilderSAH(accel,scene,0);
-    //Accel::Intersectors intersectors = BVH4TrianglePairs4IntersectorsHybrid(accel);
-    return NULL; //new AccelInstance(accel,builder,intersectors);
+    Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
   }
 #endif
 
