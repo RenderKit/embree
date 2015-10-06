@@ -1180,8 +1180,15 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  int geomID = ray.geomID; 
+  unsigned ray_instID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  int instID = ray_instID; 
   {
+    unsigned int geomID = instID;
+    if (g_instancing_mode) {
+      ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
+      geomID = instance->geomID;
+    }
+
     //if (geomID < 0) continue;
     ISPCGeometry* geometry = geomID_to_mesh[geomID];
     if (geometry->type == TRIANGLE_MESH) 
@@ -1276,9 +1283,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     dg.u = ray.u;
     dg.v = ray.v;
     dg.P  = ray.org+ray.tfar*ray.dir;
-    dg.Ng = face_forward(ray.dir,normalize(ray.Ng));
-    dg.Ns = face_forward(ray.dir,Ns);
+    dg.Ng = ray.Ng;
+    dg.Ns = Ns;
     int materialID = postIntersect(ray,dg);
+    dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+    dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
     /*! Compute  simple volumetric effect. */
     Vec3fa c = Vec3fa(1.0f);
