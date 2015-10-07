@@ -451,7 +451,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector::occluded(pre,ray,leafType,prim,num,bvh->scene,nullptr,lazy_node)) {
+        if (PrimitiveIntersector::occluded(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node)) {
           ray.geomID = 0;
           break;
         }
