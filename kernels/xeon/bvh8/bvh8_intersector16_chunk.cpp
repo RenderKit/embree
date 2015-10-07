@@ -16,8 +16,10 @@
 
 #include "bvh8_intersector16_chunk.h"
 #include "../geometry/triangle.h"
+#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 #define DBG(x) 
 
@@ -284,7 +286,10 @@ namespace embree
 #endif      
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16ChunkMoeller,BVH8Intersector16Chunk<ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16ChunkMoeller,BVH8Intersector16Chunk<ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16ChunkMoeller,BVH8Intersector16Chunk<ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle8Intersector16ChunkMoeller,BVH8Intersector16Chunk<ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
+
+    DEFINE_INTERSECTOR16(BVH8TrianglePairs4Intersector16ChunkMoeller,BVH8Intersector16Chunk<ArrayIntersectorK<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+
   }
 }  

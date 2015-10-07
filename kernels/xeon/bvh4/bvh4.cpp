@@ -69,6 +69,8 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4GridAOSIntersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter);
 
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Bezier1vIntersector8Chunk);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Bezier1iIntersector8Chunk);
@@ -115,6 +117,8 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4GridAOSIntersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16ChunkMoeller);
+  DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter);
 
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
   DECLARE_BUILDER(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingSAH);
@@ -246,6 +250,8 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT2              (features,BVH4Triangle4Intersector4HybridMoeller,BVH4Triangle4Intersector4ChunkMoeller); // hybrid not supported below SSE4.2
 
+    SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4ChunkMoeller);
+    SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector8ChunkMoeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector8ChunkMoellerNoFilter);
 
@@ -311,6 +317,8 @@ namespace embree
     SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4GridAOSIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4VirtualIntersector16Chunk);
+    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoeller);
+    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter);
 
 #endif
   }
@@ -628,9 +636,9 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1  = BVH4TrianglePairs4Intersector1Moeller;
-    intersectors.intersector4  = NULL; 
+    intersectors.intersector4  = BVH4TrianglePairs4Intersector4ChunkMoeller;
     intersectors.intersector8  = BVH4TrianglePairs4Intersector8ChunkMoeller;
-    intersectors.intersector16 = NULL;
+    intersectors.intersector16 = BVH4TrianglePairs4Intersector16ChunkMoeller;
     return intersectors;
   }
 
@@ -775,10 +783,7 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(Triangle4::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     
-      PING;
-      builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,0); 
-      break;
+    case RTC_GEOMETRY_STATIC: builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
     default: THROW_RUNTIME_ERROR("internal error"); 

@@ -393,6 +393,12 @@ namespace embree
 #if defined (__AVX__)
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA false> > >);
+
+
+    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4ChunkMoeller, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter, BVH4Intersector4Chunk<0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
+
+
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersectorK<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVH4Intersector4Chunk<0x1 COMMA true COMMA ArrayIntersectorK<4 COMMA Triangle4iIntersectorKPluecker<4 COMMA true> > >);

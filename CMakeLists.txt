@@ -89,7 +89,7 @@ OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(RTCORE_INTERSECTION_FILTER "Enables intersection filter callback." ON)
 OPTION(RTCORE_BUFFER_STRIDE "Enables buffer strides." ON)
-OPTION(RTCORE_TRIANGLE_PAIRS "Enable triangle pairs." ON)
+OPTION(RTCORE_TRIANGLE_PAIRS "Enable triangle pairs." OFF)
 
 OPTION(RTCORE_EXPORT_ALL_SYMBOLS "Lets Embree library export all symbols.")
 OPTION(RTCORE_ENABLE_RAYSTREAM_LOGGER "Enables ray stream logger.")
