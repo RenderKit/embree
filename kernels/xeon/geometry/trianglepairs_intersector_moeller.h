@@ -34,7 +34,25 @@ namespace embree
 {
   namespace isa
   {
-
+#if 0
+    intersect (ray,p0,p1,p2,p3,swizlle,epilog)
+    {
+      v0 = convert(...);
+      e1 = convert(...);
+      e2 = convert(...);
+      Ng = convert(...);
+      
+      return standard_moeller_trumbore.intersect(ray,
+                                                 v0,e1,e2,Ng,
+                                                 [&] (valid, getHit)
+                                                 {
+                                                   (u,v,Ng) = getHit(valid);
+                                                   swizzle(u,v,Ng);
+                                                   return (u,v,Ng);
+                                                 };
+                                                 
+    }
+#endif
     template<int M>
       struct MoellerTrumboreIntersectorPairs1
     {
@@ -83,13 +101,13 @@ namespace embree
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
             const vfloat<M> w = max(1.0f - u - v,vfloat<M>(zero));
-            const vfloat<M> uvw[3] = { u,v,w };
+            const vfloat<M> uwv[3] = { u,w,v };
             const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
             const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
           
           /* update hit information */
-            const vfloat<M> uu = uvw[indexU];
-            const vfloat<M> vv = uvw[indexV];
+            const vfloat<M> uu = uwv[indexU];
+            const vfloat<M> vv = uwv[indexV];
             return std::make_tuple(uu,vv,t,tri_Ng,i);
           });
       }
@@ -175,6 +193,76 @@ namespace embree
       };
 
 
+    template<int M, int K, bool filter>
+      struct IntersectPairsKEpilog
+      {
+        RayK<K>& ray;
+        const vint<M>& geomIDs;
+        const vint<M>& primIDs;
+
+        const int i;
+        const int rotation;
+
+        Scene* const scene;
+        
+        __forceinline IntersectPairsKEpilog(RayK<K>& ray,
+                                       const vint<M>& geomIDs, 
+                                       const vint<M>& primIDs, 
+                                       const unsigned int rotation, 
+                                       int i,
+                                       Scene* scene)
+          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), rotation(rotation), i(i), scene(scene) {}
+        
+        template<typename Hit>
+        __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
+        {
+          vfloat<K> uwv[3], t; /* u,w,v */
+          Vec3<vfloat<K>> Ng;
+          std::tie(uwv[0],uwv[2],t,Ng) = hit();
+          uwv[1] = 1.0f - uwv[0] - uwv[2];
+          const unsigned int indexU = (rotation >>  0) & 0xff;
+          const unsigned int indexV = (rotation >> 16) & 0xff;
+          
+          /* update hit information */
+          const vfloat<K> u = uwv[indexU];
+          const vfloat<K> v = uwv[indexV];
+
+          vbool<K> valid = valid_i;
+          
+          const int geomID = geomIDs[i];
+          const int primID = primIDs[i];
+          Geometry* geometry = scene->get(geomID);
+          
+          /* ray masking test */
+#if defined(RTCORE_RAY_MASK)
+          valid &= (geometry->mask & ray.mask) != 0;
+          if (unlikely(none(valid))) return false;
+#endif
+          
+          /* occlusion filter test */
+#if defined(RTCORE_INTERSECTION_FILTER)
+          if (filter) {
+            if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
+              return runIntersectionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
+            }
+          }
+#endif
+          
+          /* update hit information */
+          vfloat<K>::store(valid,&ray.u,u);
+          vfloat<K>::store(valid,&ray.v,v);
+          vfloat<K>::store(valid,&ray.tfar,t);
+          vint<K>::store(valid,&ray.geomID,geomID);
+          vint<K>::store(valid,&ray.primID,primID);
+          vfloat<K>::store(valid,&ray.Ng.x,Ng.x);
+          vfloat<K>::store(valid,&ray.Ng.y,Ng.y);
+          vfloat<K>::store(valid,&ray.Ng.z,Ng.z);
+          return valid;
+        }
+      };
+
+
+
     /*! Intersects M triangle pairs with 1 ray */
     template<int M, bool filter>
       struct TrianglePairsMIntersector1MoellerTrumbore
@@ -257,9 +345,11 @@ namespace embree
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
+            const unsigned int rotation0 = tri.flags[i];
+            pre.intersectK(valid_i,ray,p1,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,rotation0,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p2,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
-            pre.intersectK(valid_i,ray,p0,p2,p3,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs,i,scene));
+            const unsigned int rotation1 = tri.flags[4+i];
+            pre.intersectK(valid_i,ray,p3,p0,p2,IntersectPairsKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,rotation1,i,scene));
           }
         }
         

@@ -21,6 +21,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
+#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
@@ -28,6 +29,7 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/object_intersector8.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 namespace embree
 {
@@ -394,5 +396,10 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA ObjectIntersector8> >);
 
     DEFINE_INTERSECTOR8(BVH4Triangle4vMBIntersector8ChunkMoeller, BVH4Intersector8Chunk<0x10 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
+
+    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector8ChunkMoeller, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
+DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector8ChunkMoellerNoFilter, BVH4Intersector8Chunk<0x1 COMMA false COMMA ArrayIntersectorK<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
+
+
   }
 }

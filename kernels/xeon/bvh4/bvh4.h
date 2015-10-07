@@ -760,6 +760,7 @@ namespace embree
     static Accel* BVH4Triangle4ObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4vObjectSplit(TriangleMesh* mesh);
     static Accel* BVH4Triangle4Refit(TriangleMesh* mesh);
+    static Accel* BVH4TrianglePairs4ObjectSplit(TriangleMesh* mesh);
 
     /*! clears the acceleration structure */
     void clear();

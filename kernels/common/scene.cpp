@@ -195,6 +195,7 @@ namespace embree
     else if (device->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(BVH4::BVH4TrianglePairs4(this));
     else if (device->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));

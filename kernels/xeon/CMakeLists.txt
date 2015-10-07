@@ -97,7 +97,7 @@ IF (RTCORE_RAY_PACKETS)
   ../common/rtcore_ispc.cpp
   ../common/rtcore_ispc.ispc
 
-  bvh4/bvh4_intersector4_single.cpp
+  bvh4/bvh4_intersector_single.cpp
   bvh4/bvh4_intersector4_chunk.cpp)
 ENDIF()
 
@@ -108,7 +108,7 @@ SET(EMBREE_LIBRARY_FILES_SSE41
 
 IF (RTCORE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE41 ${EMBREE_LIBRARY_FILES_SSE41}
-    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp)
 ENDIF()
 
@@ -162,10 +162,9 @@ IF (RTCORE_RAY_PACKETS)
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
 
-    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
 
@@ -193,10 +192,9 @@ IF (RTCORE_RAY_PACKETS)
     geometry/instance_intersector4.cpp
     geometry/instance_intersector8.cpp
 
-    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
 
@@ -235,13 +233,11 @@ IF (RTCORE_RAY_PACKETS)
     geometry/instance_intersector8.cpp
     geometry/instance_intersector16.cpp
 
-    bvh4/bvh4_intersector4_single.cpp
+    bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
     bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_single.cpp
     bvh4/bvh4_intersector8_chunk.cpp
     bvh4/bvh4_intersector8_hybrid.cpp
-    bvh4/bvh4_intersector16_single.cpp
     bvh4/bvh4_intersector16_chunk.cpp
     bvh4/bvh4_intersector16_hybrid.cpp
 

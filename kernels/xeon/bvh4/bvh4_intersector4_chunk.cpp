@@ -21,6 +21,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
+#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
@@ -28,6 +29,7 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/object_intersector4.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 namespace embree
 {
