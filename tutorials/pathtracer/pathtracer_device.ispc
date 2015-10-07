@@ -918,83 +918,6 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   return geomID;
 }
 
-inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
-{
-  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
-  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
-  const uniform Vec3fa edge = v1-v0;
-  const uniform Vec3fa P = 0.5f*(v1+v0);
-  const uniform Vec3fa dist = cam_pos - P;
-  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
-}
-
-void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
-{
-  for (uniform size_t f=startID; f<endID;f++) {
-       uniform int e = mesh->face_offsets[f];
-       uniform int N = mesh->verticesPerFace[f];
-       if (N == 4) /* fast path for quads */
-         for (uniform size_t i=0; i<4; i++) 
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
-       else if (N == 3) /* fast path for triangles */
-         for (uniform size_t i=0; i<3; i++) 
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
-       else /* fast path for general polygons */
-        for (uniform size_t i=0; i<N; i++) 
-           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
- }
-}
-
-#if defined(ISPC)
-task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
-{
-  const uniform size_t size = mesh->numFaces;
-  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
-  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
-  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
-}
-#endif
-
-void updateKeyFrame(uniform ISPCScene* uniform scene_in)
-{
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
-  {
-    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
-    if (geometry->type != SUBDIV_MESH) continue;
-    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    uniform unsigned int geomID = mesh->geomID;
-
-    if (g_ispc_scene->subdivMeshKeyFrames)
-      {
-	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
-	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
-	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
-	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
-      }
-  }
-
-  keyframeID++;
-  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
-    keyframeID = 0;
-}
-
-void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
-{
-  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
-  {
-    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
-    if (geometry->type != SUBDIV_MESH) continue;
-    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    uniform unsigned int geomID = mesh->geomID;
-#if defined(ISPC)
-      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
-#else
-      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
-#endif
-   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
-  }
-}
-
 uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
@@ -1428,6 +1351,86 @@ task void renderTile(uniform int* uniform pixels,
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 } // renderTile
+
+
+/***************************************************************************************/
+
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform size_t e0, const uniform size_t e1)
+{
+  const uniform Vec3fa v0 = mesh->positions[mesh->position_indices[e0]];
+  const uniform Vec3fa v1 = mesh->positions[mesh->position_indices[e1]];
+  const uniform Vec3fa edge = v1-v0;
+  const uniform Vec3fa P = 0.5f*(v1+v0);
+  const uniform Vec3fa dist = cam_pos - P;
+  return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
+}
+
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform size_t startID, uniform size_t endID )
+{
+  for (uniform size_t f=startID; f<endID;f++) {
+       uniform int e = mesh->face_offsets[f];
+       uniform int N = mesh->verticesPerFace[f];
+       if (N == 4) /* fast path for quads */
+         for (uniform size_t i=0; i<4; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%4);
+       else if (N == 3) /* fast path for triangles */
+         for (uniform size_t i=0; i<3; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%3);
+       else /* fast path for general polygons */
+        for (uniform size_t i=0; i<N; i++) 
+           mesh->subdivlevel[e+i] =  updateEdgeLevel(mesh,cam_pos,e+(i+0),e+(i+1)%N);              
+ }
+}
+
+#if defined(ISPC)
+task void updateEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
+{
+  const uniform size_t size = mesh->numFaces;
+  const uniform size_t startID = ((taskIndex+0)*size)/taskCount;
+  const uniform size_t endID   = ((taskIndex+1)*size)/taskCount;
+  updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
+}
+#endif
+
+void updateKeyFrame(uniform ISPCScene* uniform scene_in)
+{
+  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
+  {
+    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+    uniform unsigned int geomID = mesh->geomID;
+
+    if (g_ispc_scene->subdivMeshKeyFrames)
+      {
+	uniform ISPCSubdivMeshKeyFrame *uniform keyframe      = g_ispc_scene->subdivMeshKeyFrames[keyframeID];
+	uniform ISPCSubdivMesh         *uniform keyframe_mesh = keyframe->subdiv[g];
+	rtcSetBuffer(g_scene, geomID, RTC_VERTEX_BUFFER, keyframe_mesh->positions, 0, sizeof(uniform Vec3fa  ));
+	rtcUpdateBuffer(g_scene,geomID,RTC_VERTEX_BUFFER);    
+      }
+  }
+
+  keyframeID++;
+  if (keyframeID >= g_ispc_scene->numSubdivMeshKeyFrames)
+    keyframeID = 0;
+}
+
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
+{
+  for (uniform size_t g=0; g<scene_in->numGeometries; g++)
+  {
+    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
+    if (geometry->type != SUBDIV_MESH) continue;
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+    uniform unsigned int geomID = mesh->geomID;
+#if defined(ISPC)
+      launch[ getNumHWThreads() ] updateEdgeLevelBufferTask(mesh,cam_pos); sync;	           
+#else
+      updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
+#endif
+   rtcUpdateBuffer(g_scene,geomID,RTC_LEVEL_BUFFER);    
+  }
+}
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
