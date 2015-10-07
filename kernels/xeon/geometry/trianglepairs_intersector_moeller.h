@@ -128,68 +128,6 @@ namespace embree
       }
     };
 
-    template<int M, bool filter>
-      struct IntersectPairs1Epilog
-      {
-        Ray& ray;
-        const vint<M>& geomIDs;
-        const vint<M>& primIDs;
-        Scene* scene;
-        const unsigned* geomID_to_instID;
-        
-        __forceinline IntersectPairs1Epilog(Ray& ray,
-                                            const vint<M>& geomIDs, 
-                                            const vint<M>& primIDs, 
-                                            Scene* scene,
-                                            const unsigned* geomID_to_instID)
-          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
-        
-        template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
-        {
-          vfloat<M> u,v,t; 
-          Vec3<vfloat<M>> Ng;
-          vbool<M> valid = valid_i;
-          size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid);          
-          int geomID = geomIDs[i];
-          int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
-          ray.u = u[i];
-          ray.v = v[i];
-          ray.tfar = t[i];
-          ray.Ng.x = Ng.x[i];
-          ray.Ng.y = Ng.y[i];
-          ray.Ng.z = Ng.z[i];
-          ray.geomID = instID;
-          ray.primID = primIDs[i];
-          return true;
-        }
-      };
-
-
-    template<int M, bool filter>
-      struct OccludedPairs1Epilog
-      {
-        Ray& ray;
-        const vint<M>& geomIDs;
-        const vint<M>& primIDs;
-        Scene* scene;
-        const unsigned* geomID_to_instID;
-        
-        __forceinline OccludedPairs1Epilog(Ray& ray,
-                                           const vint<M>& geomIDs, 
-                                           const vint<M>& primIDs, 
-                                           Scene* scene,
-                                           const unsigned* geomID_to_instID)
-          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
-        
-        template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
-        {
-          return true;
-        }
-      };
-
 
     template<int M, int K, bool filter>
       struct IntersectPairsKEpilog
@@ -289,7 +227,7 @@ namespace embree
         vint8   geomIDs(tri.geomIDs); 
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         vint8   flags(tri.flags);
-        pre.intersect(ray,vtx0,vtx1,vtx2,flags,IntersectPairs1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
+        pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
 #else
         FATAL("SSE mode not yet supported");
         //vint<M> geomIDs(tri.geomIDs);
@@ -315,7 +253,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,OccludedPairs1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
 #else
           FATAL("SSE mode not yet supported");
           //vint<M> geomIDs(tri.geomIDs);

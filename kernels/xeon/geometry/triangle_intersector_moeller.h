@@ -75,10 +75,11 @@ namespace embree
         /* update hit information */
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
+            const vfloat<M> t = T * rcpAbsDen;
+            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> t = T * rcpAbsDen;
-            return std::make_tuple(u,v,t,tri_Ng);
+            return std::make_tuple(u,v,t,tri_Ng,i);
           });
       }
       
@@ -216,10 +217,11 @@ namespace embree
         /* calculate hit information */
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
+            const vfloat<M> t = T * rcpAbsDen;
+            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> t = T * rcpAbsDen;
-            return std::make_tuple(u,v,t,tri_Ng);
+            return std::make_tuple(u,v,t,tri_Ng,i);
           });
       }
       
