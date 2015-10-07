@@ -106,6 +106,8 @@ namespace embree
       TriangleMeshNode (Ref<MaterialNode> material) 
         : material(material) {}
       
+      void verify() const;
+
     public:
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
@@ -120,6 +122,8 @@ namespace embree
     {
       SubdivMeshNode (Ref<MaterialNode> material) 
         : material(material) {}
+
+      void verify() const;
       
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
@@ -145,6 +149,7 @@ namespace embree
         Hair () {}
         Hair (int vertex, int id)
         : vertex(vertex), id(id) {}
+
       public:
         int vertex,id;  //!< index of first control point and hair ID
       };
@@ -153,6 +158,8 @@ namespace embree
       HairSetNode (Ref<MaterialNode> material)
       : material(material) {}
       
+      void verify() const;
+
     public:
       avector<Vec3fa> v;        //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)

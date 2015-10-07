@@ -354,8 +354,14 @@ namespace embree
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
     mesh->v.push_back(Vec3fa(v[i.v].x,v[i.v].y,v[i.v].z));
-    if (i.vn >= 0) mesh->vn.push_back(vn[i.vn]);
-    if (i.vt >= 0) mesh->vt.push_back(vt[i.vt]);
+    if (i.vn >= 0) {
+      while (mesh->vn.size() < mesh->v.size()) mesh->vn.push_back(zero); // some vertices might not had a normal
+      mesh->vn[mesh->v.size()-1] = vn[i.vn];
+    }
+    if (i.vt >= 0) {
+      while (mesh->vt.size() < mesh->v.size()) mesh->vt.push_back(zero); // some vertices might not had a texture coordinate
+      mesh->vt[mesh->v.size()-1] = vt[i.vt];
+    }
     return(vertexMap[i] = int(mesh->v.size()) - 1);
   }
 
@@ -386,6 +392,7 @@ namespace embree
         for (size_t i=0; i<face.size(); i++)
           mesh->position_indices.push_back(face[i].v);
       }
+      mesh->verify();
     }
     else
     {
@@ -414,6 +421,10 @@ namespace embree
           mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(v0,v1,v2));
         }
       }
+      /* there may be vertices without normals or texture coordinates, thus we have to make these arrays the same size here */
+      if (mesh->vn.size()) while (mesh->vn.size() < mesh->v.size()) mesh->vn.push_back(zero);
+      if (mesh->vt.size()) while (mesh->vt.size() < mesh->v.size()) mesh->vt.push_back(zero);
+      mesh->verify();
     }
     curGroup.clear();
     ec.clear();

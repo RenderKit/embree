@@ -182,7 +182,8 @@ namespace embree
         index += numSegments+1;
       }
     }
-    
+
+    hairset->verify();
     return hairset.cast<SceneGraph::Node>();
   }
 }

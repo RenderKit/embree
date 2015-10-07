@@ -103,6 +103,7 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
     loadHairBin(fileName,hairset);
+    hairset->verify();
     return hairset.cast<SceneGraph::Node>();
   }
 
@@ -112,7 +113,8 @@ namespace embree
     Ref<SceneGraph::MaterialNode> material = new SceneGraph::MaterialNode(objmtl);
     Ref<SceneGraph::HairSetNode> hairset = new SceneGraph::HairSetNode(material); 
     int numHairs = loadHairASCII(fileName,hairset);
-    
+    hairset->verify();
+
 #if CONVERT_TO_BINARY
     int numPoints = hairset->v.size();
     int numSegments = hairset->hairs.size();
@@ -126,7 +128,7 @@ namespace embree
     if (numSegments) fwrite(&hairset->hairs[0],sizeof(SceneGraph::HairSet::Hair),numSegments,fout);
     fclose(fout);
 #endif
-
+    
     return hairset.cast<SceneGraph::Node>();
   }
 }

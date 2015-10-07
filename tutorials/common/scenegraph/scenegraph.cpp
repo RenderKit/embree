@@ -41,6 +41,48 @@ namespace embree
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
+
+  void SceneGraph::TriangleMeshNode::verify() const
+  {
+    const size_t numVertices = v.size();
+    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (vn.size() && vn.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (vt.size() && vt.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto tri : triangles) {
+      if (size_t(tri.v0) >= numVertices || size_t(tri.v1) >= numVertices || size_t(tri.v2) >= numVertices)
+        THROW_RUNTIME_ERROR("invalid triangle");
+    }
+  }
+
+  void SceneGraph::SubdivMeshNode::verify() const
+  {
+    for (auto i : position_indices) 
+      if (size_t(i) >= positions.size()) THROW_RUNTIME_ERROR("invalid position index array");
+    for (auto i : normal_indices) 
+      if (size_t(i) >= normals.size()) THROW_RUNTIME_ERROR("invalid normal index array");
+    for (auto i : texcoord_indices) 
+      if (size_t(i) >= texcoords.size()) THROW_RUNTIME_ERROR("invalid texcoord index array");
+    for (auto i : holes) 
+      if (size_t(i) >= verticesPerFace.size()) THROW_RUNTIME_ERROR("invalid hole index array");
+    for (auto crease : edge_creases) 
+      if (max(size_t(crease.x),size_t(crease.y)) >= positions.size()) THROW_RUNTIME_ERROR("invalid edge crease array");
+    if (edge_crease_weights.size() != edge_creases.size())
+      THROW_RUNTIME_ERROR("invalid edge crease weight array");
+    for (auto crease : vertex_creases) 
+      if (size_t(crease) >= positions.size()) THROW_RUNTIME_ERROR("invalid vertex crease array");
+    if (vertex_crease_weights.size() != vertex_creases.size())
+      THROW_RUNTIME_ERROR("invalid vertex crease weight array");
+  }
+
+  void SceneGraph::HairSetNode::verify() const
+  {
+    const size_t numVertices = v.size();
+    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto hair : hairs) {
+      if (size_t(hair.vertex) >= numVertices)
+        THROW_RUNTIME_ERROR("invalid hair");
+    }
+  }
   
   void SceneGraph::set_motion_blur(Ref<SceneGraph::Node> node0, Ref<SceneGraph::Node> node1)
   {
