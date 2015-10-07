@@ -126,6 +126,10 @@ namespace embree
       AVX_ZERO_UPPER();
     }
 
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector4 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4IntersectorKSingle<4 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVH4IntersectorKSingle<4 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4IntersectorKSingle<4 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
@@ -134,6 +138,10 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
     DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector8 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single_OBB, BVH4IntersectorKSingle<8 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
@@ -145,6 +153,10 @@ namespace embree
 
     DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVH4IntersectorKFromIntersector1<8 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector16 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
     DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single_OBB, BVH4IntersectorKSingle<16 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
