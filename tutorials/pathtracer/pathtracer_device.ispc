@@ -27,7 +27,6 @@
 
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
-#define ENABLE_OCCLUSION_FILTER 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -805,7 +804,8 @@ ISPCInstance* uniform* uniform geomID_to_inst = NULL;
 renderPixelFunc renderPixel;
 
 /* occlusion filter function */
-void occlusionFilterReject(void* uniform ptr, RTCRay& ray);
+void intersectionfilterReject(void* uniform ptr, RTCRay& ray);
+void intersectionfilterOBJ(void* uniform ptr, RTCRay& ray);
 
 /* error reporting function */
 void error_handler(const uniform RTCError code, const uniform int8* uniform str)
@@ -893,10 +893,17 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
       allTransparent = false;
   }
   
-#if ENABLE_OCCLUSION_FILTER == 1
-  if (allTransparent)
-    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterReject);
-#endif
+  uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
+  if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionfilterReject);
+  else if (material.ty == MATERIAL_OBJ) 
+  {
+    uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
+    if (obj.d != 1.0f || obj.map_d) {
+      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionfilterOBJ);
+      rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionfilterOBJ);
+    }
+  }
   return geomID;
 }
 
@@ -1124,7 +1131,11 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-void occlusionFilterReject(void* uniform ptr, RTCRay& ray) 
+void intersectionfilterReject(void* uniform ptr, RTCRay& ray) {
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+void intersectionfilterOBJ(void* uniform ptr, RTCRay& ray) 
 {
   /* compute differential geometry */
   DifferentialGeometry dg;
@@ -1146,7 +1157,7 @@ void occlusionFilterReject(void* uniform ptr, RTCRay& ray)
   uniform ISPCMaterial* uniform material_array = &g_ispc_scene->materials[0];
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-  if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.5f)
+  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
