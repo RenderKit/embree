@@ -158,14 +158,25 @@ namespace embree
         g_scene->add(g_height_field->geometry());
       }
 
-      /* instantiate model */
-      else if (tag == "-instantiate") {
+      /* distribute model */
+      else if (tag == "-distribute") {
         Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
         Ref<Image> distribution = loadImage(path + cin->getFileName());
         const float minDistance = cin->getFloat();
         const size_t N = cin->getInt();
         Ref<Instantiator> instantiator = new Instantiator(g_height_field,object,distribution,minDistance,N);
         instantiator->instantiate(g_scene);
+      }
+
+      /* instantiate model a single time */
+      else if (tag == "-instantiate") {
+        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        const float px = cin->getFloat();
+        const float py = cin->getFloat();
+        const Vec2f p(px,py);
+        const float angle = cin->getFloat()/180.0f*float(pi);
+        const AffineSpace3fa space = g_height_field->get(p)*AffineSpace3fa::rotate(Vec3fa(0,1,0),angle);
+        g_scene->add(new SceneGraph::TransformNode(space,object));
       }
 
       /* output filename */
