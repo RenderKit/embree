@@ -802,8 +802,8 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
 extern "C" ISPCScene* g_ispc_scene;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
-ISPCGeometry** geomID_to_mesh = nullptr;
-RTCScene* meshID_to_scene = nullptr;
+RTCScene* geomID_to_scene = nullptr;
+ISPCInstance** geomID_to_inst = nullptr;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -1023,19 +1023,18 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
     unsigned int geom_inst = instance->geomID;
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
-    geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
     return geomID;
   } else if (g_instancing_mode == 2) {
-    RTCScene scene_inst = meshID_to_scene[instance->geomID];
+    RTCScene scene_inst = geomID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
-    geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
     return geomID;
   } else {
     return 0;
   }
 }     
 
+typedef ISPCInstance* ISPCInstance_ptr;
 typedef ISPCGeometry* ISPCGeometry_ptr;
 
 RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
@@ -1050,8 +1049,8 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
 
   size_t numGeometries = scene_in->numGeometries;
   
-  geomID_to_mesh = new ISPCGeometry_ptr[numGeometries];
-  meshID_to_scene = new RTCScene[numGeometries];
+  geomID_to_scene = new RTCScene[numGeometries];
+  geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
 
   /* create scene */
   int scene_flags = RTC_SCENE_STATIC | RTC_SCENE_INCOHERENT;
@@ -1072,16 +1071,18 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
-        geomID_to_mesh[geomID] = geometry;
+        assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
-        geomID_to_mesh[geomID] = geometry;
+        assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
-      else if (geometry->type == INSTANCE)
-        convertInstance((ISPCInstance*) geometry, i, scene_out);
+      else if (geometry->type == INSTANCE) {
+        unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
+        assert(geomID == i); geomID_to_inst[geomID] = (ISPCInstance*) geometry;
+      }
     }
   }
 
@@ -1094,18 +1095,18 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       if (geometry->type == SUBDIV_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
-        meshID_to_scene[i] = objscene;
+        geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
       else if (geometry->type == TRIANGLE_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertTriangleMesh((ISPCTriangleMesh*) geometry, objscene);
-        meshID_to_scene[i] = objscene;
+        geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
       else if (geometry->type == INSTANCE) {
-        convertInstance((ISPCInstance*) geometry, i, scene_out);
-        meshID_to_scene[i] = nullptr;
+        unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
+        geomID_to_scene[i] = nullptr; geomID_to_inst[geomID] = (ISPCInstance*) geometry;
       }
     }
   } 
@@ -1118,11 +1119,11 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
-        geomID_to_mesh[geomID] = geometry;
+        assert(geomID == i);
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
-        geomID_to_mesh[geomID] = geometry;
+        assert(geomID == i);
       }
     }
   }
@@ -1179,12 +1180,12 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   {
     unsigned int geomID = instID;
     if (g_instancing_mode) {
-      ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
+      ISPCInstance* instance = geomID_to_inst[instID];
       geomID = instance->geomID;
     }
 
     //if (geomID < 0) continue;
-    ISPCGeometry* geometry = geomID_to_mesh[geomID];
+    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == TRIANGLE_MESH) 
     {
       ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
@@ -1204,7 +1205,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     {
       ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
       materialID = mesh->materialID; 
-      const Vec2f st = getTextureCoordinatesSubdivMesh((ISPCSubdivMesh*) geomID_to_mesh[geomID],ray.primID,ray.u,ray.v);
+      const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
       dg.u = st.x;
       dg.v = st.y;
     }
@@ -1212,8 +1213,8 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode)
   {
-    unsigned instID = g_instancing_mode == 1 ? ray.geomID : ray.instID;
-    ISPCInstance* instance = (ISPCInstance*) geomID_to_mesh[instID];
+    unsigned instID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+    ISPCInstance* instance = geomID_to_inst[instID];
     dg.Ns = dg.Ns.x * Vec3fa(instance->space.l.vx) + dg.Ns.y * Vec3fa(instance->space.l.vy) + dg.Ns.z * Vec3fa(instance->space.l.vz);
   }
 
