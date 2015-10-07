@@ -27,7 +27,7 @@
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
-#include "../geometry/object_intersector16.h"
+#include "../geometry/object_intersector.h"
 
 namespace embree
 {

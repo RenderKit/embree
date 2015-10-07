@@ -72,7 +72,7 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
-  geometry/instance_intersector4.cpp
+  geometry/instance_intersector.cpp
   geometry/subdivpatch1_intersector1.cpp
   geometry/grid_soa.cpp		
   builders/primrefgen.cpp
@@ -159,8 +159,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX ${EMBREE_LIBRARY_FILES_AVX}
 
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
+    geometry/instance_intersector.cpp
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
@@ -189,8 +188,7 @@ SET(EMBREE_LIBRARY_FILES_AVX2
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
+    geometry/instance_intersector.cpp
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp
@@ -229,9 +227,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
 
-    geometry/instance_intersector4.cpp
-    geometry/instance_intersector8.cpp
-    geometry/instance_intersector16.cpp
+    geometry/instance_intersector.cpp
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector4_chunk.cpp

@@ -16,35 +16,22 @@
 
 #pragma once
 
-#include "object.h"
+#include "../../common/scene_instance.h"
 #include "../../common/ray.h"
 
 namespace embree
 {
   namespace isa
   {
-    struct ObjectIntersector4
+    template<int K>
+    struct FastInstanceIntersectorK
     {
-      typedef Object Primitive;
-      
-      struct Precalculations {
-        __forceinline Precalculations (const vbool4& valid, const Ray4& ray) {}
-      };
-      
-      static __forceinline void intersect(const vbool4& valid_i, const Precalculations& pre, Ray4& ray, const Primitive& prim, Scene* scene) 
-      {
-        AVX_ZERO_UPPER();
-        // FIXME: add ray mask test
-        prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
-      }
-      
-      static __forceinline vbool4 occluded(const vbool4& valid_i, const Precalculations& pre, const Ray4& ray, const Primitive& prim, Scene* scene) 
-      {
-        AVX_ZERO_UPPER();
-        // FIXME: add ray mask test
-        prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
-        return ray.geomID == 0;
-      }
+      static void intersect(vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
+      static void occluded (vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
     };
+
+    typedef FastInstanceIntersectorK<4>  FastInstanceIntersector4;
+    typedef FastInstanceIntersectorK<8>  FastInstanceIntersector8;
+    typedef FastInstanceIntersectorK<16> FastInstanceIntersector16;
   }
 }

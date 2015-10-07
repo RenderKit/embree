@@ -622,6 +622,9 @@ float getTextureTexel1f(void *uniform _texture, float s, float t)
   uniform Texture * uniform texture = (Texture*)_texture;
   if (!texture) return 0.0f;
 
+  s = max(s,0.0f);
+  t = max(t,0.0f);
+
   if (texture->format == FLOAT32)
   { 
     const float u = min(max(s,0.0f),1.0f);
@@ -654,20 +657,27 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
   
   if (texture && texture->format == RGBA8)
   {
-    int iu = (int)(s * (float)(texture->width));
-    if (texture->width_mask) iu &= texture->width_mask;
-    else                     iu = min(iu,texture->width-1);
-    int iv = (int)(t * (float)(texture->height));
-    if (texture->height_mask) iv &= texture->height_mask;
-    else                      iv = min(iv,texture->height-1);
-    const int offset = (iv * texture->width + iu) * 4;
-    uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
-    
-    const unsigned int8  r = t[offset+0];
-    const unsigned int8  g = t[offset+1];
-    const unsigned int8  b = t[offset+2];
-    
-    return make_Vec3f(  (float)r * (1.0f/255.0f), (float)g * (1.0f/255.0f), (float)b * (1.0f/255.0f) );
-  }
+      s = max(s,0.0f);
+      t = max(t,0.0f);
+     
+      int iu = (int)(s * (float)(texture->width));
+      if (texture->width_mask) 
+	iu &= texture->width_mask;
+      else
+	iu = min(iu,texture->width-1);
+      int iv = (int)(t * (float)(texture->height));
+      if (texture->height_mask) 
+	iv &= texture->height_mask;
+      else
+	iv = min(iv,texture->height-1);
+      const int offset = (iv * texture->width + iu) * 4;
+      uniform unsigned int8 * uniform t = (uniform unsigned int8* uniform)texture->data;
+
+      const unsigned int8  r = t[offset+0];
+      const unsigned int8  g = t[offset+1];
+      const unsigned int8  b = t[offset+2];
+
+      return make_Vec3f(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+    }
   return make_Vec3f(0.0f,0.0f,0.0f);
 }
