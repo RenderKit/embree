@@ -165,6 +165,7 @@ namespace embree
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
       {
         if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
+        //if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,convertTriangleMesh(mesh,one,one)));
         else            convertTriangleMesh(mesh,space0,space1);
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
