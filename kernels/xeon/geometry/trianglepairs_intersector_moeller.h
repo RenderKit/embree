@@ -64,6 +64,7 @@ namespace embree
                                    const Vec3<vfloat<M>>& tri_e1, 
                                    const Vec3<vfloat<M>>& tri_e2, 
                                    const Vec3<vfloat<M>>& tri_Ng,
+                                   const vint<M>& flags,
                                    const Epilog& epilog) const
       {
         /* calculate denominator */
@@ -94,7 +95,7 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* update hit information */
-        return epilog(valid,[&] (const vbool<M> &valid, const vint<M>& flags) {
+        return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
             const size_t i = select_min(valid,t);
@@ -117,12 +118,13 @@ namespace embree
                                      const Vec3<vfloat<M>>& v0, 
                                      const Vec3<vfloat<M>>& v1, 
                                      const Vec3<vfloat<M>>& v2, 
+                                     const vint<M>& flags,
                                      const Epilog& epilog) const
       {
         const Vec3<vfloat<M>> e1 = v0-v1;
         const Vec3<vfloat<M>> e2 = v2-v0;
         const Vec3<vfloat<M>> Ng = cross(e1,e2);
-        return intersect(ray,v0,e1,e2,Ng,epilog);
+        return intersect(ray,v0,e1,e2,Ng,flags,epilog);
       }
     };
 
@@ -132,17 +134,15 @@ namespace embree
         Ray& ray;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const vint<M>& flags;
         Scene* scene;
         const unsigned* geomID_to_instID;
         
         __forceinline IntersectPairs1Epilog(Ray& ray,
                                             const vint<M>& geomIDs, 
                                             const vint<M>& primIDs, 
-                                            const vint<M>& flags, 
                                             Scene* scene,
                                             const unsigned* geomID_to_instID)
-          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), flags(flags), scene(scene), geomID_to_instID(geomID_to_instID) {}
+          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
@@ -151,7 +151,7 @@ namespace embree
           Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
           size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid, flags);          
+          std::tie(u,v,t,Ng,i) = hit(valid);          
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           ray.u = u[i];
@@ -173,17 +173,15 @@ namespace embree
         Ray& ray;
         const vint<M>& geomIDs;
         const vint<M>& primIDs;
-        const vint<M>& flags;
         Scene* scene;
         const unsigned* geomID_to_instID;
         
         __forceinline OccludedPairs1Epilog(Ray& ray,
                                            const vint<M>& geomIDs, 
                                            const vint<M>& primIDs, 
-                                           const vint<M>& flags, 
                                            Scene* scene,
                                            const unsigned* geomID_to_instID)
-          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), flags(flags), scene(scene), geomID_to_instID(geomID_to_instID) {}
+          : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
         __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
@@ -291,11 +289,12 @@ namespace embree
         vint8   geomIDs(tri.geomIDs); 
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         vint8   flags(tri.flags);
-        pre.intersect(ray,vtx0,vtx1,vtx2,IntersectPairs1Epilog<8,filter>(ray,geomIDs,primIDs,flags,scene,geomID_to_instID));          
+        pre.intersect(ray,vtx0,vtx1,vtx2,flags,IntersectPairs1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
 #else
-        vint<M> geomIDs(tri.geomIDs);
-        pre.intersect(ray,tri.v1,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID));
-        pre.intersect(ray,tri.v3,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID));
+        FATAL("SSE mode not yet supported");
+        //vint<M> geomIDs(tri.geomIDs);
+        //pre.intersect(ray,tri.v1,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID));
+        //pre.intersect(ray,tri.v3,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID));
 #endif
         }
         
@@ -316,11 +315,12 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          return pre.intersect(ray,vtx0,vtx1,vtx2,OccludedPairs1Epilog<8,filter>(ray,geomIDs,primIDs,flags,scene,geomID_to_instID));
+          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,OccludedPairs1Epilog<8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
 #else
-          vint<M> geomIDs(tri.geomIDs);
-          if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
-          if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
+          FATAL("SSE mode not yet supported");
+          //vint<M> geomIDs(tri.geomIDs);
+          //if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
+          //if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
           
 #endif
           return false;
