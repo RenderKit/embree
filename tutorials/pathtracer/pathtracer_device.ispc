@@ -1175,17 +1175,20 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_instID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
-  foreach_unique (instID in ray_instID) 
+  unsigned ray_geomID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  foreach_unique (geomID in ray_geomID) 
   {
-    uniform unsigned int geomID = instID;
+    /* get instance and geometry pointers */
+    ISPCInstance* uniform instance;
+    uniform ISPCGeometry* uniform geometry;
     if (g_instancing_mode) {
-      ISPCInstance* uniform instance = geomID_to_inst[instID];
-      geomID = instance->geomID;
+      instance = geomID_to_inst[geomID];
+      geometry = g_ispc_scene->geometries[instance->geomID];
+    } else {
+      instance = NULL;
+      geometry = g_ispc_scene->geometries[geomID];
     }
 
-    //if (geomID < 0) continue;
-    uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == TRIANGLE_MESH) 
     {
       uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
@@ -1209,13 +1212,12 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
       dg.u = st.x;
       dg.v = st.y;
     }
-  }
 
-  if (g_instancing_mode)
-  {
-    unsigned instID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
-    uniform ISPCInstance* instance = geomID_to_inst[instID];
-    dg.Ns = dg.Ns.x * make_Vec3f(instance->space.l.vx) + dg.Ns.y * make_Vec3f(instance->space.l.vy) + dg.Ns.z * make_Vec3f(instance->space.l.vz);
+    /* convert normals */
+    if (instance) {
+      dg.Ng = dg.Ng.x * make_Vec3f(instance->space.l.vx) + dg.Ng.y * make_Vec3f(instance->space.l.vy) + dg.Ng.z * make_Vec3f(instance->space.l.vz);
+      dg.Ns = dg.Ns.x * make_Vec3f(instance->space.l.vx) + dg.Ns.y * make_Vec3f(instance->space.l.vy) + dg.Ns.z * make_Vec3f(instance->space.l.vz);
+    }
   }
 
   return materialID;
