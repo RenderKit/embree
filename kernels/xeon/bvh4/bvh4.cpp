@@ -775,7 +775,10 @@ namespace embree
     if (mesh->numTimeSteps != 1) THROW_RUNTIME_ERROR("internal error");
     accel = new BVH4(Triangle4::type,mesh->parent);
     switch (mesh->flags) {
-    case RTC_GEOMETRY_STATIC:     builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_STATIC:     
+      PING;
+      builder = BVH4Triangle4MeshBuilderSAH(accel,mesh,0); 
+      break;
     case RTC_GEOMETRY_DEFORMABLE: builder = BVH4Triangle4MeshRefitSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
@@ -997,7 +1000,7 @@ namespace embree
   }
 
 #if defined (__TARGET_AVX__)
-  Accel* BVH4::BVH4TrianglePairs4(Scene* scene)
+  Accel* BVH4::BVH4TrianglePairs4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
     Builder* builder = BVH4TrianglePairs4SceneBuilderSAH(accel,scene,0);

@@ -283,7 +283,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH8::BVH8TrianglePairs4(Scene* scene)
+  Accel* BVH8::BVH8TrianglePairs4ObjectSplit(Scene* scene)
   { 
     BVH8* accel = new BVH8(TrianglePairs4v::type,scene);
     Accel::Intersectors intersectors = BVH8TrianglePairs4Intersectors(accel);

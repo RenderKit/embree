@@ -161,7 +161,12 @@ namespace embree
           if (hasISA(AVX))
 	  {
             if (isHighQuality()) accels.add(BVH8::BVH8Triangle4SpatialSplit(this)); 
+#if defined(RTCORE_TRIANGLE_PAIRS)
+            else                 accels.add(BVH8::BVH8TrianglePairs4ObjectSplit(this)); 
+#else
             else                 accels.add(BVH8::BVH8Triangle4ObjectSplit(this)); 
+#endif
+
           }
           else 
 #endif
@@ -175,7 +180,7 @@ namespace embree
         case /*0b10*/ 2: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4Triangle4iObjectSplit(this)); break;
         }
-      } 
+      }
       else 
       {
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
@@ -195,11 +200,11 @@ namespace embree
     else if (device->tri_accel == "bvh4.triangle4i")        accels.add(BVH4::BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4::BVH4BVH4Triangle8ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(BVH4::BVH4TrianglePairs4(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(BVH4::BVH4TrianglePairs4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.triangle8")         accels.add(BVH4::BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8::BVH8Triangle8(this));
-    else if (device->tri_accel == "bvh8.trianglepairs4")    accels.add(BVH8::BVH8TrianglePairs4(this));
+    else if (device->tri_accel == "bvh8.trianglepairs4")    accels.add(BVH8::BVH8TrianglePairs4ObjectSplit(this));
 #endif
     else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);
   }
