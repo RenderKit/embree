@@ -874,27 +874,11 @@ extern "C" void device_init (char* cfg)
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
-  /* create a triangle mesh */
-  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices);
+  unsigned int geomID = rtcNewTriangleMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numTriangles, mesh->numVertices, mesh->positions2 ? 2 : 1);
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa      ));
+  if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
+  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
-      
-  /* set vertices */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-  for (int j=0; j<mesh->numVertices; j++) {
-    vertices[j].x = mesh->positions[j].x;
-    vertices[j].y = mesh->positions[j].y;
-    vertices[j].z = mesh->positions[j].z;
-  }
-  rtcUnmapBuffer(scene_out,geomID,RTC_VERTEX_BUFFER); 
-  
-  /* set triangles */
-  Triangle* triangles = (Triangle*) rtcMapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
-  for (int j=0; j<mesh->numTriangles; j++) {
-    triangles[j].v0 = mesh->triangles[j].v0;
-    triangles[j].v1 = mesh->triangles[j].v1;
-    triangles[j].v2 = mesh->triangles[j].v2;
-  }
-  rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
   
   /* test if all materials maybe transparent */
   bool allOpaque = true;
