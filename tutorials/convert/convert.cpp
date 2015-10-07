@@ -56,7 +56,7 @@ namespace embree
 
     Ref<SceneGraph::Node> geometry()
     {
-      OBJMaterial material(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),1.0f);
+      OBJMaterial material(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
       Ref<SceneGraph::MaterialNode> mnode = new SceneGraph::MaterialNode((Material&)material);
       Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode);
 
