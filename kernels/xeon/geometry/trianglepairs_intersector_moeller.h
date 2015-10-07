@@ -362,7 +362,7 @@ namespace embree
       struct TrianglePairsMIntersectorKMoellerTrumbore
       {
         typedef TrianglePairsMv<M> Primitive;
-        typedef MoellerTrumboreIntersectorPairK<M,K> Precalculations;
+        typedef MoellerTrumboreIntersectorPairK<2*M,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TrianglePairsMv<M>& tri, Scene* scene)
@@ -409,8 +409,21 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TrianglePairsMv<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          vint8   flags(tri.flags);
 #if defined(__AVX__)
+          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
+                       vfloat8(tri.v1.y,tri.v3.y),
+                       vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf8 vtx1(vfloat8(tri.v0.x),
+                       vfloat8(tri.v0.y),
+                       vfloat8(tri.v0.z));
+          Vec3vf8 vtx2(vfloat8(tri.v2.x),
+                       vfloat8(tri.v2.y),
+                       vfloat8(tri.v2.z));
+          vint8   geomIDs(tri.geomIDs); 
+          vint8   primIDs(tri.primIDs,tri.primIDs+1);
+          vint8   flags(tri.flags);
+          //pre.intersect(ray,k,vtx0,vtx1,vtx2,flags,IntersectKEpilog<2*M,K,filter>(ray,geomIDs,primIDs,scene));
+          // FIXME: CAN'T GET THIS TO WORK!
 #else
           FATAL("SSE mode not supported");
 #endif
