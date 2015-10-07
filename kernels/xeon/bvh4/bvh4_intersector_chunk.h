@@ -21,22 +21,23 @@
 
 namespace embree
 {
-  namespace isa 
+  namespace isa
   {
     /*! BVH4 packet traversal implementation. */
-    template<int types, bool robust, typename PrimitiveIntersector>
-      class BVH4Intersector4Chunk
+    template<int K, int types, bool robust, typename PrimitiveIntersector>
+      class BVH4IntersectorKChunk
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;
+      typedef Vec3<vfloat<K>> Vec3vfK;
       static const size_t stackSize = 4*BVH4::maxDepth+1;
       
     public:
-      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
     };
   }
 }
