@@ -25,7 +25,7 @@
 #include "../geometry/triangle.h"
 #include "../geometry/trianglepairsv.h"
 
-#define PROFILE 0
+#define PROFILE 1
 
 namespace embree
 {

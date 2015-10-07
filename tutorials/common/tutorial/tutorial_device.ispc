@@ -639,8 +639,8 @@ Vec3f getTextureTexel3f(void *uniform _texture, float s, float t)
   
   if (texture && texture->format == RGBA8)
     {
-      //u = max(min(u,1.0f),0.0f);
-      //v = max(min(v,1.0f),0.0f);
+      s = max(s,0.0f);
+      t = max(t,0.0f);
      
       int iu = (int)(s * (float)(texture->width));
       if (texture->width_mask) 
