@@ -61,7 +61,8 @@ struct RTCRay
 inline RTCRay make_Ray(const Vec3f org, 
                        const Vec3f dir, 
                        const float tnear, 
-                       const float tfar)
+                       const float tfar,
+                       const float time = 0.0f)
 {
   RTCRay ray;
   ray.org = org;
@@ -71,7 +72,7 @@ inline RTCRay make_Ray(const Vec3f org,
   ray.geomID = -1;
   ray.primID = -1;
   ray.mask = -1;
-  ray.time = 0;
+  ray.time = time;
   ray.instID = -1;
   return ray;
 }
@@ -79,7 +80,7 @@ inline RTCRay make_Ray(const Vec3f org,
 /*! Constructs a ray from origin, direction, and ray segment. Near
  *  has to be smaller than far. */
 inline RTCRay make_Ray(const Vec3f org, 
-                    const Vec3f dir)
+                       const Vec3f dir)
 {
   RTCRay ray;
   ray.org  = org;

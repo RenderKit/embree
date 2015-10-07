@@ -1157,9 +1157,10 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
   Vec3f L = make_Vec3f(0.0f);
   Vec3f Lw = make_Vec3f(1.0f);
   Medium medium = make_Medium_Vacuum();
+  float time = frand(state);
 
   /* initialize ray */
-  RTCRay ray = make_Ray(p,normalize(x*vx + y*vy + vz),0.0f,inf);
+  RTCRay ray = make_Ray(p,normalize(x*vx + y*vy + vz),0.0f,inf,time);
 
   /* iterative path tracer loop */
   for (uniform int i=0; i<MAX_PATH_LENGTH; i++)
@@ -1238,7 +1239,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
 
       if (wi0.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0);
+        RTCRay shadow = make_Ray(dg.P,wi0.v,0.001f,tMax0,time);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
@@ -1252,7 +1253,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       Vec3f L1 = make_Vec3f(0.0f);
       Vec3f Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
-        RTCRay shadow = make_Ray(dg.P,wi1.v,0.001f,inf);
+        RTCRay shadow = make_Ray(dg.P,wi1.v,0.001f,inf,time);
         rtcOccluded(g_scene,shadow);
         if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
           L1 = Ll1/wi1.pdf*c;
@@ -1268,7 +1269,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     {
       Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax,time);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
@@ -1279,7 +1280,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     {
       Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax,time);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
@@ -1291,7 +1292,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
       Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
 
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax);
+      RTCRay shadow = make_Ray(dg.P,wi.v,0.001f,tMax,time);
       rtcOccluded(g_scene,shadow);
       if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
       L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v); // FIXME: +=
@@ -1300,7 +1301,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     Lw = Lw*c/wi1.pdf; // FIXME: *=
 
     /* setup secondary ray */
-    ray = make_Ray(dg.P,normalize(wi1.v),0.001f,inf);
+    ray = make_Ray(dg.P,normalize(wi1.v),0.001f,inf,time);
   }
   return L;
 }
