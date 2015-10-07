@@ -803,7 +803,6 @@ extern "C" ISPCScene* g_ispc_scene;
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
 ISPCGeometry** geomID_to_mesh = nullptr;
-int* meshID_to_geomID = nullptr;
 RTCScene* meshID_to_scene = nullptr;
 
 /* render function to use */
@@ -1021,18 +1020,16 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
   if (g_instancing_mode == 1) {
-    unsigned int geom_inst = meshID_to_geomID[instance->geomID];
+    unsigned int geom_inst = instance->geomID;
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
-    meshID_to_geomID[meshID] = geomID;
     return geomID;
   } else if (g_instancing_mode == 2) {
     RTCScene scene_inst = meshID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     geomID_to_mesh[geomID] = (ISPCGeometry*) instance;
-    meshID_to_geomID[meshID] = geomID;
     return geomID;
   } else {
     return 0;
@@ -1054,7 +1051,6 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   size_t numGeometries = scene_in->numGeometries;
   
   geomID_to_mesh = new ISPCGeometry_ptr[numGeometries];
-  meshID_to_geomID = new int[numGeometries];
   meshID_to_scene = new RTCScene[numGeometries];
 
   /* create scene */
@@ -1077,13 +1073,11 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       if (geometry->type == SUBDIV_MESH) {
         unsigned int geomID = convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
         geomID_to_mesh[geomID] = geometry;
-        meshID_to_geomID[i] = geomID;
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
         geomID_to_mesh[geomID] = geometry;
-        meshID_to_geomID[i] = geomID;
         rtcDisable(scene_out,geomID);
       }
       else if (geometry->type == INSTANCE)
@@ -1091,7 +1085,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
     }
   }
 
-  /* use scene isntancing feature */
+  /* use scene instancing feature */
   else if (g_instancing_mode == 2)
   {
     for (size_t i=0; i<scene_in->numGeometries; i++)
