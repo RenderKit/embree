@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_intersector4_hybrid.h"
-#include "bvh4_intersector4_single.h"
+#include "bvh4_intersector_single.h"
 #include "bvh4_intersector_node.h"
 
 #include "../geometry/triangle.h"
@@ -99,7 +99,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            BVH4IntersectorKSingle<4,types,robust,PrimitiveIntersector4>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = min(ray_tfar,ray.tfar);
           continue;
@@ -313,7 +313,7 @@ namespace embree
         size_t bits = movemask(active);
         if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (BVH4Intersector4Single<types,robust,PrimitiveIntersector4>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            if (BVH4IntersectorKSingle<4,types,robust,PrimitiveIntersector4>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
               terminated[i] = -1;
           }
           if (all(terminated)) break;

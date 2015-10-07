@@ -27,31 +27,33 @@ namespace embree
   namespace isa 
   {
     /*! Converts single ray traversal into packet traversal. */
-    template<typename Intersector1>
-    class BVH4Intersector4FromIntersector1
+    template<int K, typename Intersector1>
+    class BVH4IntersectorKFromIntersector1
     {
     public:
-      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
     };
 
     /*! Single ray traversal for packets. */
-    template<int types, bool robust, typename PrimitiveIntersector4>
-      class BVH4Intersector4Single 
+    template<int K, int types, bool robust, typename PrimitiveIntersectorK>
+    class BVH4IntersectorKSingle
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector4::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector4::Primitive Primitive;
+      typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
+      typedef typename PrimitiveIntersectorK::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef Vec3<vint<K>> Vec3viK;
       static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
 
     public:
 
       static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					   Ray4& ray, const Vec3vf4 &ray_org, const Vec3vf4 &ray_dir, const Vec3vf4 &ray_rdir, const vfloat4 &ray_tnear, const vfloat4 &ray_tfar, 
-					   const Vec3vi4& nearXYZ)
+                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
+                                           const Vec3viK& nearXYZ)
       {
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -168,7 +170,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
-	  PrimitiveIntersector4::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
+          PrimitiveIntersectorK::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
 	  ray_far = ray.tfar[k];
 
           if (unlikely(lazy_node)) {
@@ -180,8 +182,8 @@ namespace embree
       }
       
       static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
-					  Ray4& ray,const Vec3vf4 &ray_org, const Vec3vf4 &ray_dir, const Vec3vf4 &ray_rdir, const vfloat4 &ray_tnear, const vfloat4 &ray_tfar, 
-					  const Vec3vi4& nearXYZ)
+                                          RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
+                                          const Vec3viK& nearXYZ)
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -283,7 +285,7 @@ namespace embree
 	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 
           size_t lazy_node = 0;
-	  if (PrimitiveIntersector4::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
+          if (PrimitiveIntersectorK::occluded(pre,ray,k,prim,num,bvh->scene,lazy_node)) {
 	    ray.geomID[k] = 0;
 	    return true;
 	  }
@@ -296,8 +298,8 @@ namespace embree
 	return false;
       }
       
-      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
     };
   }
 }
