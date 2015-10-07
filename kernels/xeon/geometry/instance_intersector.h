@@ -23,10 +23,15 @@ namespace embree
 {
   namespace isa
   {
-    struct FastInstanceIntersector4
+    template<int K>
+    struct FastInstanceIntersectorK
     {
-      static void intersect(vbool4* valid, const Instance* instance, Ray4& ray, size_t item);
-      static void occluded (vbool4* valid, const Instance* instance, Ray4& ray, size_t item);
+      static void intersect(vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
+      static void occluded (vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
     };
+
+    typedef FastInstanceIntersectorK<4>  FastInstanceIntersector4;
+    typedef FastInstanceIntersectorK<8>  FastInstanceIntersector8;
+    typedef FastInstanceIntersectorK<16> FastInstanceIntersector16;
   }
 }
