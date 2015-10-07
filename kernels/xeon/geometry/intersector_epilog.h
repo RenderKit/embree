@@ -51,8 +51,8 @@ namespace embree
         {
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
-          std::tie(u,v,t,Ng) = hit();
           vbool<M> valid = valid_i;
+          std::tie(u,v,t,Ng) = hit(valid);
           
           size_t i = select_min(valid,t);
           int geomID = geomIDs[i];
@@ -124,10 +124,11 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          vbool<M> valid = valid_i;
           size_t m=movemask(valid);
           goto entry;
           while (true)
@@ -153,7 +154,7 @@ namespace embree
               if (unlikely(geometry->hasOcclusionFilter1())) 
               {
                 Vec3<vfloat<M>> Ng;
-                vfloat<M> u,v,t; std::tie(u,v,t,Ng) = hit();
+                vfloat<M> u,v,t; std::tie(u,v,t,Ng) = hit(valid);
                 const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
                 if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ngi,instID,primIDs[i])) return true;
                 m=__btc(m,i);
@@ -196,8 +197,9 @@ namespace embree
           
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
-          std::tie(u,v,t,Ng) = hit();
           vbool<M> valid = valid_i;
+
+          std::tie(u,v,t,Ng) = hit(valid);
           
           size_t i = select_min(valid,t);
           
@@ -264,7 +266,7 @@ namespace embree
           {
             vfloat<M> u, v, t; 
             Vec3<vfloat<M>> Ng;
-            std::tie(u,v,t,Ng) = hit();
+            std::tie(u,v,t,Ng) = hit(valid);
             
             for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) {  
               const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
@@ -298,8 +300,9 @@ namespace embree
         {
           vfloat<K> u, v, t; 
           Vec3<vfloat<K>> Ng;
-          std::tie(u,v,t,Ng) = hit();
           vbool<K> valid = valid_i;
+
+          std::tie(u,v,t,Ng) = hit(valid);
           
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
@@ -372,7 +375,7 @@ namespace embree
             {
               vfloat<K> u, v, t; 
               Vec3<vfloat<K>> Ng;
-              std::tie(u,v,t,Ng) = hit();
+              std::tie(u,v,t,Ng) = hit(valid);
               valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
           }
@@ -403,7 +406,7 @@ namespace embree
         {
           vfloat<K> u, v, t; 
           Vec3<vfloat<K>> Ng;
-          std::tie(u,v,t,Ng) = hit();
+          std::tie(u,v,t,Ng) = hit(valid);
           
           Geometry* geometry = scene->get(geomID);
           
@@ -469,7 +472,7 @@ namespace embree
             {
               vfloat<K> u, v, t; 
               Vec3<vfloat<K>> Ng;
-              std::tie(u,v,t,Ng) = hit();
+              std::tie(u,v,t,Ng) = hit(valid);
               valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
           }
@@ -503,8 +506,8 @@ namespace embree
         {
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
-          std::tie(u,v,t,Ng) = hit();
           vbool<M> valid = valid_i;
+          std::tie(u,v,t,Ng) = hit(valid);
           
           size_t i = select_min(valid,t);
           int geomID = geomIDs[i];
@@ -600,7 +603,7 @@ namespace embree
               if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
               {
                 Vec3<vfloat<M>> Ng;
-                vfloat<M> u,v,t; std::tie(u,v,t,Ng) = hit();
+                vfloat<M> u,v,t; std::tie(u,v,t,Ng) = hit(valid);
                 const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
                 if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primIDs[i])) return true;
                 m=__btc(m,i);
@@ -644,8 +647,8 @@ namespace embree
           /* finalize hit calculation */
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
-          std::tie(u,v,t,Ng) = hit();
           vbool<M> valid = valid_i;
+          std::tie(u,v,t,Ng) = hit(valid);
           size_t i = select_min(valid,t);
           
           /* intersection filter test */
@@ -713,7 +716,7 @@ namespace embree
               {  
                 vfloat<M> u, v, t; 
                 Vec3<vfloat<M>> Ng;
-                std::tie(u,v,t,Ng) = hit();
+                std::tie(u,v,t,Ng) = hit(valid);
                 const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
                 if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primID)) return true;
               }

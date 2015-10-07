@@ -216,7 +216,8 @@ namespace embree
         {
           vfloat<K> uwv[3], t; /* u,w,v */
           Vec3<vfloat<K>> Ng;
-          std::tie(uwv[0],uwv[2],t,Ng) = hit();
+          vbool<K> valid = valid_i;
+          std::tie(uwv[0],uwv[2],t,Ng) = hit(valid);
           uwv[1] = 1.0f - uwv[0] - uwv[2];
           const unsigned int indexU = (rotation >>  0) & 0xff;
           const unsigned int indexV = (rotation >> 16) & 0xff;
@@ -225,7 +226,6 @@ namespace embree
           const vfloat<K> u = uwv[indexU];
           const vfloat<K> v = uwv[indexV];
 
-          vbool<K> valid = valid_i;
           
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
