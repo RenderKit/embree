@@ -27,7 +27,7 @@
 
 #define FIXED_SAMPLING 0
 #define SAMPLES_PER_PIXEL 1
-#define ENABLE_OCCLUSION_FILTER 0
+#define ENABLE_OCCLUSION_FILTER 1
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
@@ -805,11 +805,7 @@ ISPCInstance** geomID_to_inst = nullptr;
 renderPixelFunc renderPixel;
 
 /* occlusion filter function */
-#if ENABLE_OCCLUSION_FILTER == 1
-void occlusionFilterReject(void* ptr, RTCRay& ray) {
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-}
-#endif
+void occlusionFilterReject(void* ptr, RTCRay& ray);
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -900,11 +896,13 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   }
   rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER);
   
+  /* test if all materials maybe transparent */
   bool allOpaque = true;
   bool allTransparent = true;
   for (size_t j=0; j<mesh->numTriangles; j++) {
     ISPCTriangle triangle = mesh->triangles[j];
-    if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
+    if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_OBJ ||
+        g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
         g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
       allOpaque = false;
     else 
@@ -1140,6 +1138,32 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   }
 
   return materialID;
+}
+
+void occlusionFilterReject(void* ptr, RTCRay& ray) 
+{
+  /* compute differential geometry */
+  DifferentialGeometry dg;
+  dg.geomID = ray.geomID;
+  dg.primID = ray.primID;
+  dg.u = ray.u;
+  dg.v = ray.v;
+  dg.P  = ray.org+ray.tfar*ray.dir;
+  dg.Ng = ray.Ng;
+  dg.Ns = ray.Ng;
+  int materialID = postIntersect(ray,dg);
+  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+  const Vec3fa wo = neg(ray.dir);
+  
+  /* calculate BRDF */ // FIXME: avoid gathers
+  BRDF brdf; brdf.Kt = Vec3fa(0,0,0);
+  int numMaterials = g_ispc_scene->numMaterials;
+  ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+  Medium medium = make_Medium_Vacuum();
+  Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+  if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.5f)
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
