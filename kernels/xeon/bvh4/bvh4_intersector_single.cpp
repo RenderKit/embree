@@ -127,7 +127,7 @@ namespace embree
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Intersector4 Definitions
+    /// BVH4Intersector4Single Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVH4IntersectorKSingle<4 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
@@ -140,7 +140,7 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Intersector8 Definitions
+    /// BVH4Intersector8Single Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
@@ -155,7 +155,7 @@ namespace embree
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// Intersector16 Definitions
+    /// BVH4Intersector16Single Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
