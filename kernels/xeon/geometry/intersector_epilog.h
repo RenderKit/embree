@@ -58,6 +58,7 @@ namespace embree
           //size_t i = select_min(valid,t);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
+          //int instID = geomID_to_instID ? (int)(size_t)geomID_to_instID : geomID;
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
