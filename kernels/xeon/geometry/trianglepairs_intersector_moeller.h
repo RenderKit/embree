@@ -263,7 +263,7 @@ namespace embree
             const size_t i = select_min(valid,t);
             const vfloat<M> uu = U * rcpAbsDen;
             const vfloat<M> vv = V * rcpAbsDen;
-            const vfloat<M> ww = 1.0f - u - v;
+            const vfloat<M> ww = 1.0f - uu - vv;
             const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
             const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
             const vfloat<M> uwv[3] = { uu,ww,vv };
@@ -422,7 +422,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          //pre.intersect(ray,k,vtx0,vtx1,vtx2,flags,IntersectKEpilog<2*M,K,filter>(ray,geomIDs,primIDs,scene));
+          pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));
           // FIXME: CAN'T GET THIS TO WORK!
 #else
           FATAL("SSE mode not supported");
