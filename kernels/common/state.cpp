@@ -62,8 +62,9 @@ namespace embree
     subdiv_accel = "default";
 
     instancing_open_min = 0;
-    instancing_block_size = 100;
-    instancing_open_max = 0x10000000; // will require at most 4GB of memory for building opened tree
+    instancing_block_size = 0;
+    instancing_open_factor = 10.0f; 
+    instancing_open_max = 50000000;
 
     float_exceptions = false;
     scene_flags = -1;
@@ -185,8 +186,14 @@ namespace embree
 
       else if (tok == Token::Id("instancing_open_min") && cin->trySymbol("="))
         instancing_open_min = cin->get().Int();
-      else if (tok == Token::Id("instancing_block_size") && cin->trySymbol("="))
+      else if (tok == Token::Id("instancing_block_size") && cin->trySymbol("=")) {
         instancing_block_size = cin->get().Int();
+        instancing_open_factor = 0.0f;
+      }
+      else if (tok == Token::Id("instancing_open_factor") && cin->trySymbol("=")) {
+        instancing_block_size = 0;
+        instancing_open_factor = cin->get().Float();
+      }
       else if (tok == Token::Id("instancing_open_max") && cin->trySymbol("="))
         instancing_open_max = cin->get().Int();
 

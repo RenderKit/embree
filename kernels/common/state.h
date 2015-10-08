@@ -49,16 +49,8 @@ namespace embree
     /*! checks if verbosity level is at least N */
     bool verbosity(int N);
 
-    /*! returns single state instance */
-    /*static __forceinline State* instance() {
-      return &state;
-      }*/
-
     /*! returns thread local error code */
     RTCError* error();
-
-  private:
-    //static State state;                      //!< single state object
 
   public:
     std::string tri_accel;                 //!< acceleration structure to use for triangles
@@ -85,6 +77,7 @@ namespace embree
   public:
     size_t instancing_open_min;            //!< instancing opens tree to minimally that number of subtrees
     size_t instancing_block_size;          //!< instancing opens tree up to average block size of primitives
+    float  instancing_open_factor;         //!< instancing opens tree up to x times the number of instances
     size_t instancing_open_max;            //!< instancing opens tree to maximally that number of subtrees
 
   public:

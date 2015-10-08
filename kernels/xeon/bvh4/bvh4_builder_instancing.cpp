@@ -319,7 +319,9 @@ namespace embree
       if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCED_PRIMITIVES " << numInstancedPrimitives << std::endl; }
       
       /* calculate opening size */
-      size_t N = numInstancedPrimitives/scene->device->instancing_block_size;
+      size_t N = 0;
+      if      (scene->device->instancing_block_size ) N = numInstancedPrimitives/scene->device->instancing_block_size;
+      else if (scene->device->instancing_open_factor) N = scene->device->instancing_open_factor*refs.size();
       N = max(N,scene->device->instancing_open_min);
       N = min(N,scene->device->instancing_open_max);
       refs.reserve(N);
