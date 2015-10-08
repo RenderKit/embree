@@ -150,7 +150,7 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* update hit information */
-        return epilog(valid,[&] (const vbool<M> &valid) {
+        return epilog(valid,[&] () {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
@@ -258,7 +258,7 @@ namespace embree
 #endif
         
         /* calculate hit information */
-        return epilog(valid,[&] (const vbool<M> &valid) {
+        return epilog(valid,[&] () {
             const vfloat<K> rcpAbsDen = rcp(absDen);
             const unsigned int indexU = (rotation >>  0) & 0xff;
             const unsigned int indexV = (rotation >> 16) & 0xff;
@@ -329,7 +329,7 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
-        return epilog(valid,[&] (const vbool<M> &valid) {
+        return epilog(valid,[&] () {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
