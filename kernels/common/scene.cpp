@@ -185,7 +185,11 @@ namespace embree
       {
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
+#if defined(RTCORE_TRIANGLE_PAIRS)
+        case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4TrianglePairs4ObjectSplit(this)); break;
+#else
         case /*0b00*/ 0: accels.add(BVH4::BVH4BVH4Triangle4ObjectSplit(this)); break;
+#endif
         case /*0b01*/ 1: accels.add(BVH4::BVH4BVH4Triangle4vObjectSplit(this)); break;
         case /*0b10*/ 2: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;
         case /*0b11*/ 3: accels.add(BVH4::BVH4BVH4Triangle4iObjectSplit(this)); break;

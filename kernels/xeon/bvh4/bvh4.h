@@ -749,6 +749,7 @@ namespace embree
     static Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
     static Accel* BVH4BVH4Triangle4iObjectSplit(Scene* scene);
+    static Accel* BVH4BVH4TrianglePairs4ObjectSplit(Scene* scene);
 
     static Accel* BVH4Triangle4SpatialSplit(Scene* scene);
     static Accel* BVH4Triangle8SpatialSplit(Scene* scene);

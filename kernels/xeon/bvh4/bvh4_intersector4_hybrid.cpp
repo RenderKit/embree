@@ -20,9 +20,11 @@
 
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
+#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 #define SWITCH_THRESHOLD 3
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
@@ -475,6 +477,11 @@ namespace embree
 #if defined (__AVX__)
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  false> > >);
+
+    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4HybridMoeller, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA  true> > >);
+    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4HybridMoellerNoFilter, BVH4Intersector4Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA  false> > >);
+
+
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4Intersector4Hybrid<0x1 COMMA true COMMA ArrayIntersectorK_1<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
 
