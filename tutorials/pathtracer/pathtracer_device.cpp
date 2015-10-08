@@ -880,23 +880,11 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
   
-  /* test if all materials maybe transparent */
-  bool allOpaque = true;
-  bool allTransparent = true;
-  for (size_t j=0; j<mesh->numTriangles; j++) {
-    ISPCTriangle triangle = mesh->triangles[j];
-    if (g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_OBJ ||
-        g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_DIELECTRIC ||
-        g_ispc_scene->materials[triangle.materialID].ty == MATERIAL_THIN_DIELECTRIC)
-      allOpaque = false;
-    else 
-      allTransparent = false;
-  }
-  
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
-  if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-    rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterReject);
-  else if (material.ty == MATERIAL_OBJ) 
+  //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterReject);
+  //else 
+  if (material.ty == MATERIAL_OBJ) 
   {
     OBJMaterial& obj = (OBJMaterial&) material;
     if (obj.d != 1.0f || obj.map_d) {
