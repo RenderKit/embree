@@ -50,7 +50,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           vbool<M> valid = valid_i;
-          auto hit = getHit(valid);
+          auto hit = getHit();
           
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
@@ -137,7 +137,7 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            auto hit = getHit(valid); // FIXME: executed too often
+            auto hit = getHit(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
@@ -200,7 +200,7 @@ namespace embree
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          auto hit = getHit(valid);
+          auto hit = getHit();
           
           size_t i = select_min(valid,hit.vt);
           
@@ -211,7 +211,6 @@ namespace embree
             while (true) 
             {
               /* call intersection filter function */
-              //Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
               Vec2f uv = hit.uv(i);
               if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) {
                 return true;
@@ -267,7 +266,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasOcclusionFilter1())) 
           {
-            auto hit = getHit(valid);
+            auto hit = getHit();
             for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
             {  
               const Vec2f uv = hit.uv(i);
@@ -303,7 +302,7 @@ namespace embree
           Vec3<vfloat<K>> Ng;
           vbool<K> valid = valid_i;
 
-          std::tie(u,v,t,Ng) = hit(valid);
+          std::tie(u,v,t,Ng) = hit();
           
           const int geomID = geomIDs[i];
           const int primID = primIDs[i];
@@ -376,7 +375,7 @@ namespace embree
             {
               vfloat<K> u, v, t; 
               Vec3<vfloat<K>> Ng;
-              std::tie(u,v,t,Ng) = hit(valid);
+              std::tie(u,v,t,Ng) = hit();
               valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
           }
@@ -407,7 +406,7 @@ namespace embree
         {
           vfloat<K> u, v, t; 
           Vec3<vfloat<K>> Ng;
-          std::tie(u,v,t,Ng) = hit(valid);
+          std::tie(u,v,t,Ng) = hit();
           
           Geometry* geometry = scene->get(geomID);
           
@@ -473,7 +472,7 @@ namespace embree
             {
               vfloat<K> u, v, t; 
               Vec3<vfloat<K>> Ng;
-              std::tie(u,v,t,Ng) = hit(valid);
+              std::tie(u,v,t,Ng) = hit();
               valid = runOcclusionFilter(valid,geometry,ray,u,v,t,Ng,geomID,primID);
             }
           }
@@ -506,7 +505,7 @@ namespace embree
         __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           vbool<M> valid = valid_i;
-          auto hit = getHit(valid);
+          auto hit = getHit();
           
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
@@ -587,7 +586,7 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            auto hit = getHit(valid); // FIXME: executed too often
+            auto hit = getHit(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             Geometry* geometry = scene->get(geomID);
@@ -647,7 +646,7 @@ namespace embree
 
           /* finalize hit calculation */
           vbool<M> valid = valid_i;
-          auto hit = getHit(valid);
+          auto hit = getHit();
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
@@ -712,7 +711,7 @@ namespace embree
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
             {
-              auto hit = getHit(valid_i);
+              auto hit = getHit();
               for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
               {  
                 const Vec2f uv = hit.uv(i);
