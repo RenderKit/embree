@@ -267,21 +267,13 @@ namespace embree
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vint<M> vgeomID = -1, vprimID = -1;
-      vint<2*M> vflags = 0;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-	
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;
 
         const unsigned int geomId = geomID(i);
         const unsigned int primId = primID(i);
-        const unsigned int gflag  = flag(i);
-
-        vgeomID[i] = geomId;
-        vprimID[i] = primId;
-        vflags[i]  = gflag;
 
         /* single triangle, degenerate second triangle */
         if (flag(i) & ((unsigned int)1 << 31))
@@ -319,7 +311,7 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
         }
       }
-      new (this) TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID);
+      new (this) TrianglePairsMv(v0,v1,v2,v3,geomIDs,primIDs,flags);
       return bounds;
     }
    

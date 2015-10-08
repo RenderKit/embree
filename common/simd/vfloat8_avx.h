@@ -164,6 +164,7 @@ namespace embree
   __forceinline const vfloat8 sign    ( const vfloat8& a ) { return _mm256_blendv_ps(vfloat8(one), -vfloat8(one), _mm256_cmp_ps(a, vfloat8(zero), _CMP_NGE_UQ )); }
   __forceinline const vfloat8 signmsk ( const vfloat8& a ) { return _mm256_and_ps(a.m256,_mm256_castsi256_ps(_mm256_set1_epi32(0x80000000))); }
 
+
   __forceinline const vfloat8 rcp  ( const vfloat8& a ) {
     const vfloat8 r   = _mm256_rcp_ps(a.m256);
 #if defined(__AVX2__)

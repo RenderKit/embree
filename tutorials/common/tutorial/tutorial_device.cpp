@@ -149,9 +149,9 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
 
 Vec3fa randomColor(const int ID) 
 {
-  int r = ((ID+13)*17*23) & 255;
-  int g = ((ID+15)*11*13) & 255;
-  int b = ((ID+17)* 7*19) & 255;
+  int r = ((ID+13)*17*23) >> 8 & 255;
+  int g = ((ID+15)*11*13) >> 8 & 255;
+  int b = ((ID+17)* 7*19) >> 8 & 255;
   const float oneOver255f = 1.f/255.f;
   return Vec3fa(r*oneOver255f,g*oneOver255f,b*oneOver255f);
 }
@@ -175,7 +175,7 @@ Vec3fa renderPixelGeomID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return randomColor(ray.geomID);
+  else return embree::abs(dot(ray.dir,normalize(ray.Ng)))*randomColor(ray.geomID);
 }
 
 /* geometry ID and primitive ID shading */

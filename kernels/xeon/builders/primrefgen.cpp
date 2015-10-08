@@ -262,15 +262,16 @@ namespace embree
                                                         if (j+1 < r.end())
                                                         {
                                                           BBox3fa bounds_second = empty;
-                                                          if (!mesh->valid(j+1,&bounds_second)) continue;
+                                                          if (mesh->valid(j+1,&bounds_second)) {
 
-                                                          TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                          if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                       trimesh->triangle(j+1)) != -1)
-                                                          {
-                                                            bounds = bounds.extend(bounds_second);
-                                                            flag = 0;
-                                                            j++;
+                                                            TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                            if (TriangleMesh::sharedEdge(trimesh->triangle(j),
+                                                                                         trimesh->triangle(j+1)) != -1)
+                                                            {
+                                                              bounds = bounds.extend(bounds_second);
+                                                              flag = 0;
+                                                              j++;
+                                                            }
                                                           }
                                                         }
                                                         pinfo.add(bounds,bounds.center2());
@@ -315,7 +316,6 @@ namespace embree
                                                          return pinfo;
                                                        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       numPrimitives = pairInfo.size();
-
       prims.resize(numPrimitives);
 
       PrimInfo pinfo = parallel_for_for_prefix_sum( pstate, iter, PrimInfo(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo
@@ -334,15 +334,16 @@ namespace embree
                                                         if (j+1 < r.end())
                                                         {
                                                           BBox3fa bounds_second = empty;
-                                                          if (!mesh->valid(j+1,&bounds_second)) continue;
+                                                          if (mesh->valid(j+1,&bounds_second)) {
 
-                                                          TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                          if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                       trimesh->triangle(j+1)) != -1)
-                                                          {
-                                                            bounds = bounds.extend(bounds_second);
-                                                            flag = 0;
-                                                            j++;
+                                                            TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                            if (TriangleMesh::sharedEdge(trimesh->triangle(j),
+                                                                                         trimesh->triangle(j+1)) != -1)
+                                                            {
+                                                              bounds = bounds.extend(bounds_second);
+                                                              flag = 0;
+                                                              j++;
+                                                            }
                                                           }
                                                         }
                                                         pinfo.add(bounds,bounds.center2());
@@ -351,7 +352,6 @@ namespace embree
                                                       }
                                                       return pinfo;
                                                     }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-
       assert(pinfo.size() == numPrimitives);
       return pinfo;
     }

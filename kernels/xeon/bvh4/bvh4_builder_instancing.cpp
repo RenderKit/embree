@@ -314,43 +314,57 @@ namespace embree
     {
       if (refs.size() == 0)
 	return;
+     
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCES " << refs.size() << std::endl; }
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCED_PRIMITIVES " << numInstancedPrimitives << std::endl; }
       
       /* calculate opening size */
-      size_t N = numInstancedPrimitives/scene->device->instancing_block_size;
+      size_t N = 0;
+      if      (scene->device->instancing_block_size ) N = numInstancedPrimitives/scene->device->instancing_block_size;
+      else if (scene->device->instancing_open_factor) N = scene->device->instancing_open_factor*refs.size();
       N = max(N,scene->device->instancing_open_min);
       N = min(N,scene->device->instancing_open_max);
       refs.reserve(N);
-      
+
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+BVH4::N-1 <= N)
       {
         std::pop_heap (refs.begin(),refs.end()); 
         BuildRef ref = refs.back();
         refs.pop_back();    
+
+        if (ref.depth >= scene->device->instancing_open_max_depth) {
+          ref.clearArea();
+          refs.push_back(ref);
+          std::push_heap (refs.begin(),refs.end()); 
+          continue;
+        }
         
         if (ref.node.isNode()) 
         {
           BVH4::Node* node = ref.node.node();
           for (size_t i=0; i<BVH4::N; i++) {
             if (node->child(i) == BVH4::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
         } 
-        else if (ref.node.isNodeMB()) 
+        /*else if (ref.node.isNodeMB()) 
         {
           BVH4::NodeMB* node = ref.node.nodeMB();
           for (size_t i=0; i<BVH4::N; i++) {
             if (node->child(i) == BVH4::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
-        } 
+        }*/
         else {
           refs.push_back(ref);
           break;
         }
       }
+
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_OPENED_INSTANCES " << refs.size() << std::endl; }
     }
     
     BVH4::NodeRef BVH4BuilderInstancing::collapse(BVH4::NodeRef& node)
