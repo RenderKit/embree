@@ -191,8 +191,8 @@ namespace embree
       depth = 0;
       const BBox3fa worldBounds = xfmBounds(n->local2world,n->localBounds);
       const float Ai = max(0.0f,halfArea(worldBounds));
-      size_t cdepth; statistics(n->child,Ai,cdepth); 
-      depth=max(depth,cdepth)+1;
+      //size_t cdepth; statistics(n->child,Ai,cdepth); 
+      //depth=max(depth,cdepth)+1;
     }
     else
     {
