@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_intersector8_hybrid.h"
+#include "bvh4_intersector_hybrid.h"
 #include "bvh4_intersector_single.h"
 #include "bvh4_intersector_node.h"
 
@@ -25,23 +25,17 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
-//#define SWITCH_THRESHOLD 16
-#define SWITCH_THRESHOLD 5
-#if SWITCH_THRESHOLD >= 8
-#warning "switch threshold too large"
-#endif
-
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 
 namespace embree
 {
   namespace isa
   {
-    template<int types, bool robust, typename PrimitiveIntersector8>
-    void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::intersect(vbool8* valid_i, BVH4* bvh, Ray8& ray)
+    template<int K, int types, bool robust, typename PrimitiveIntersectorK>
+    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
     {
       /* verify correct input */
-      vbool8 valid0 = *valid_i;
+      vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
@@ -49,24 +43,24 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
       
       /* load ray */
-      Vec3vf8 ray_org = ray.org;
-      Vec3vf8 ray_dir = ray.dir;
-      vfloat8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3vf8 rdir = rcp_safe(ray_dir);
-      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid0,ray_tnear,vfloat8(pos_inf));
-      ray_tfar  = select(valid0,ray_tfar ,vfloat8(neg_inf));
-      const vfloat8 inf = vfloat8(pos_inf);
+      Vec3vfK ray_org = ray.org;
+      Vec3vfK ray_dir = ray.dir;
+      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3vfK rdir = rcp_safe(ray_dir);
+      const Vec3vfK org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid0,ray_tnear,vfloat<K>(pos_inf));
+      ray_tfar  = select(valid0,ray_tfar ,vfloat<K>(neg_inf));
+      const vfloat<K> inf = vfloat<K>(pos_inf);
       Precalculations pre(valid0,ray);
 
       /* compute near/far per ray */
-      Vec3vi8 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,vint8(0*(int)sizeof(vfloat4)),vint8(1*(int)sizeof(vfloat4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,vint8(2*(int)sizeof(vfloat4)),vint8(3*(int)sizeof(vfloat4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,vint8(4*(int)sizeof(vfloat4)),vint8(5*(int)sizeof(vfloat4)));
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat4)),vint<K>(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat4)),vint<K>(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat4)),vint<K>(5*(int)sizeof(vfloat4)));
 
       /* allocate stack and push root node */
-      vfloat8    stack_near[stackSizeChunk];
+      vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH4::invalidNode;
       stack_near[0] = inf;
@@ -74,7 +68,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      vfloat8*    __restrict__ sptr_near = stack_near + 2;
+      vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       
       while (1) pop:
       {
@@ -89,17 +83,17 @@ namespace embree
         }
         
         /* cull node if behind closest hit point */
-        vfloat8 curDist = *sptr_near;
-        const vbool8 active = curDist < ray_tfar;
+        vfloat<K> curDist = *sptr_near;
+        const vbool<K> active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
         
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
-        if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
+        if (unlikely(__popcnt(bits) <= switchThreshold)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            BVH4IntersectorKSingle<8,types,robust,PrimitiveIntersector8>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+            BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
           }
           ray_tfar = min(ray_tfar,ray.tfar);
           continue;
@@ -111,8 +105,8 @@ namespace embree
 	  /* process normal nodes */
           if (likely((types & 0x1) && cur.isNode()))
           {
-	    const vbool8 valid_node = ray_tfar > curDist;
-	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+            const vbool<K> valid_node = ray_tfar > curDist;
+            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const Node* __restrict__ const node = cur.node();
 	    
 	    /* set cur to invalid */
@@ -125,7 +119,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat8 lnearP; const vbool8 lhit = intersect_node<8,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -133,7 +127,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const vfloat8 childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = select(lhit,lnearP,inf);
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
@@ -158,7 +152,7 @@ namespace embree
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+          if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
               *sptr_node++ = cur;
               *sptr_near++ = curDist;
@@ -170,8 +164,8 @@ namespace embree
 	  /* process motion blur nodes */
           else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
-	    const vbool8 valid_node = ray_tfar > curDist;
-	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+            const vbool<K> valid_node = ray_tfar > curDist;
+            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
             /* set cur to invalid */
@@ -183,7 +177,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat8 lnearP; const vbool8 lhit = intersect_node<8>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
               /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -191,7 +185,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const vfloat8 childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = select(lhit,lnearP,inf);
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
@@ -216,7 +210,7 @@ namespace embree
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+          if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
               *sptr_node++ = cur;
               *sptr_near++ = curDist;
@@ -236,12 +230,12 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH4::emptyNode);
-        const vbool8 valid_leaf = ray_tfar > curDist;
-        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),8);
+        const vbool<K> valid_leaf = ray_tfar > curDist;
+        STAT3(normal.trav_leaves,1,popcnt(valid_leaf),K);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        PrimitiveIntersector8::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
+        PrimitiveIntersectorK::intersect(valid_leaf,pre,ray,prim,items,bvh->scene,lazy_node);
         ray_tfar = select(valid_leaf,ray.tfar,ray_tfar);
 
         if (unlikely(lazy_node)) {
@@ -253,11 +247,11 @@ namespace embree
     }
 
     
-    template<int types, bool robust, typename PrimitiveIntersector8>
-    void BVH4Intersector8Hybrid<types,robust,PrimitiveIntersector8>::occluded(vbool8* valid_i, BVH4* bvh, Ray8& ray)
+    template<int K, int types, bool robust, typename PrimitiveIntersectorK>
+    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
     {
       /* verify correct input */
-      vbool8 valid = *valid_i;
+      vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
@@ -265,24 +259,24 @@ namespace embree
       assert(!(types & BVH4::FLAG_NODE_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
-      vbool8 terminated = !valid;
-      Vec3vf8 ray_org = ray.org, ray_dir = ray.dir;
-      vfloat8 ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3vf8 rdir = rcp_safe(ray_dir);
-      const Vec3vf8 org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,vfloat8(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,vfloat8(neg_inf));
-      const vfloat8 inf = vfloat8(pos_inf);
+      vbool<K> terminated = !valid;
+      Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
+      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      const Vec3vfK rdir = rcp_safe(ray_dir);
+      const Vec3vfK org(ray_org), org_rdir = org * rdir;
+      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
+      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+      const vfloat<K> inf = vfloat<K>(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
-      Vec3vi8 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,vint8(0*(int)sizeof(vfloat4)),vint8(1*(int)sizeof(vfloat4)));
-      nearXYZ.y = select(rdir.y >= 0.0f,vint8(2*(int)sizeof(vfloat4)),vint8(3*(int)sizeof(vfloat4)));
-      nearXYZ.z = select(rdir.z >= 0.0f,vint8(4*(int)sizeof(vfloat4)),vint8(5*(int)sizeof(vfloat4)));
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat4)),vint<K>(1*(int)sizeof(vfloat4)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat4)),vint<K>(3*(int)sizeof(vfloat4)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat4)),vint<K>(5*(int)sizeof(vfloat4)));
 
       /* allocate stack and push root node */
-      vfloat8    stack_near[stackSizeChunk];
+      vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH4::invalidNode;
       stack_near[0] = inf;
@@ -290,7 +284,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      vfloat8*    __restrict__ sptr_near = stack_near + 2;
+      vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       
       while (1) pop:
       {
@@ -305,21 +299,21 @@ namespace embree
         }
 
         /* cull node if behind closest hit point */
-        vfloat8 curDist = *sptr_near;
-        const vbool8 active = curDist < ray_tfar;
+        vfloat<K> curDist = *sptr_near;
+        const vbool<K> active = curDist < ray_tfar;
         if (unlikely(none(active))) 
           continue;
         
         /* switch to single ray traversal */
 #if !defined(__WIN32__) || defined(__X86_64__)
         size_t bits = movemask(active);
-        if (unlikely(__popcnt(bits) <= SWITCH_THRESHOLD)) {
+        if (unlikely(__popcnt(bits) <= switchThreshold)) {
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-            if (BVH4IntersectorKSingle<8,types,robust,PrimitiveIntersector8>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
-              terminated[i] = -1;
+            if (BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+              set(terminated, i);
           }
           if (all(terminated)) break;
-          ray_tfar = select(terminated,vfloat8(neg_inf),ray_tfar);
+          ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
           continue;
         }
 #endif
@@ -329,8 +323,8 @@ namespace embree
 	  /* process normal nodes */
           if (likely((types & 0x1) && cur.isNode()))
           {
-	    const vbool8 valid_node = ray_tfar > curDist;
-	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+            const vbool<K> valid_node = ray_tfar > curDist;
+            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const Node* __restrict__ const node = cur.node();
 
             /* set cur to invalid */
@@ -342,7 +336,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat8 lnearP; const vbool8 lhit = intersect_node<8,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -350,7 +344,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const vfloat8 childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = select(lhit,lnearP,inf);
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
@@ -375,7 +369,7 @@ namespace embree
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+          if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
               *sptr_node++ = cur;
               *sptr_near++ = curDist;
@@ -387,8 +381,8 @@ namespace embree
 	  /* process motion blur nodes */
           else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
-	    const vbool8 valid_node = ray_tfar > curDist;
-	    STAT3(normal.trav_nodes,1,popcnt(valid_node),8);
+            const vbool<K> valid_node = ray_tfar > curDist;
+            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
             /* set cur to invalid */
@@ -400,7 +394,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-	      vfloat8 lnearP; const vbool8 lhit = intersect_node<8>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
               /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -408,7 +402,7 @@ namespace embree
 	      {
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
-		const vfloat8 childDist = select(lhit,lnearP,inf);
+                const vfloat<K> childDist = select(lhit,lnearP,inf);
 		
 		/* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
@@ -433,7 +427,7 @@ namespace embree
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
           // seems to be the best place for testing utilization
-          if (unlikely(popcnt(ray_tfar > curDist) <= SWITCH_THRESHOLD))
+          if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
               *sptr_node++ = cur;
               *sptr_near++ = curDist;
@@ -454,34 +448,69 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH4::emptyNode);
-        const vbool8 valid_leaf = ray_tfar > curDist;
-        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),8);
+        const vbool<K> valid_leaf = ray_tfar > curDist;
+        STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),K);
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        terminated |= PrimitiveIntersector8::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
+        terminated |= PrimitiveIntersectorK::occluded(!terminated,pre,ray,prim,items,bvh->scene,lazy_node);
         if (all(terminated)) break;
-        ray_tfar = select(terminated,vfloat8(neg_inf),ray_tfar);
+        ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
 
         if (unlikely(lazy_node)) {
           *sptr_node = lazy_node; sptr_node++;
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
-      vint8::store(valid & terminated,&ray.geomID,0);
+      vint<K>::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
     }
     
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4Intersector8Hybrid<0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4Intersector8Hybrid<0x1 COMMA true COMMA ArrayIntersectorK_1<8 COMMA TriangleMvIntersectorKPluecker<4 COMMA 8 COMMA true> > >);
-    
-    DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8, BVH4Intersector8Hybrid<0x1 COMMA true COMMA SubdivPatch1CachedIntersector8>);
-               
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector4 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
+#if defined (__AVX__)
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoeller, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  true> > >);
+    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4HybridMoellerNoFilter, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA  false> > >);
+#endif
+    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
 
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector8 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX__)
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoellerNoFilter, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
+    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8HybridPluecker, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<8 COMMA TriangleMvIntersectorKPluecker<4 COMMA 8 COMMA true> > >);
+    
+    DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8, BVH4IntersectorKHybrid<8 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector8>);
+               
+    // FIXME: add Triangle4vMB intersector
+    // FIXME: add Triangle4i intersector
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// Intersector16 Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX512F__)
+    DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoeller, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoellerNoFilter, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoeller, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoellerNoFilter, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
+    DEFINE_INTERSECTOR16(BVH4Triangle4vIntersector16HybridPluecker, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TriangleMvIntersectorKPluecker<4 COMMA 16 COMMA true> > >);
+
+    // FIXME: add Triangle4vMB intersector
+    // FIXME: add Triangle4i intersector
+#endif
   }
 }

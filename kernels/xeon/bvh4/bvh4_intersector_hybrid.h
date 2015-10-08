@@ -25,20 +25,28 @@ namespace embree
   namespace isa 
   {
     /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal. */
-    template<int types, bool robust, typename PrimitiveIntersector>
-      class BVH4Intersector4Hybrid 
+    template<int K, int types, bool robust, typename PrimitiveIntersector>
+    class BVH4IntersectorKHybrid
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
       typedef typename BVH4::NodeRef NodeRef;
       typedef typename BVH4::Node Node;
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef Vec3<vint<K>> Vec3viK;
+
       static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
       static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
 
+      static const size_t switchThreshold = (K==4)  ? 3 :
+                                            (K==8)  ? 5 :
+                                            (K==16) ? 7 :
+                                                      0;
+
     public:
-      static void intersect(vbool4* valid, BVH4* bvh, Ray4& ray);
-      static void occluded (vbool4* valid, BVH4* bvh, Ray4& ray);
+      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
     };
   }
 }

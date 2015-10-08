@@ -120,7 +120,7 @@ SET(EMBREE_LIBRARY_FILES_SSE42)
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-   bvh4/bvh4_intersector4_hybrid.cpp)
+   bvh4/bvh4_intersector_hybrid.cpp)
 ENDIF()
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
@@ -163,8 +163,7 @@ IF (RTCORE_RAY_PACKETS)
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector_chunk.cpp
-    bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_hybrid.cpp
+    bvh4/bvh4_intersector_hybrid.cpp
 
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
@@ -191,8 +190,7 @@ IF (RTCORE_RAY_PACKETS)
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector_chunk.cpp
-    bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_hybrid.cpp
+    bvh4/bvh4_intersector_hybrid.cpp
 
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
@@ -229,9 +227,7 @@ IF (RTCORE_RAY_PACKETS)
 
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector_chunk.cpp
-    bvh4/bvh4_intersector4_hybrid.cpp
-    bvh4/bvh4_intersector8_hybrid.cpp
-    bvh4/bvh4_intersector16_hybrid.cpp
+    bvh4/bvh4_intersector_hybrid.cpp
 
     bvh8/bvh8_intersector4_hybrid.cpp
     bvh8/bvh8_intersector8_chunk.cpp
