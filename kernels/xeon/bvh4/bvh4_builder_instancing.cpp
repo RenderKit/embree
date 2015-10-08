@@ -340,7 +340,7 @@ namespace embree
             std::push_heap (refs.begin(),refs.end()); 
           }
         } 
-        else if (ref.node.isNodeMB()) 
+        /*else if (ref.node.isNodeMB()) 
         {
           BVH4::NodeMB* node = ref.node.nodeMB();
           for (size_t i=0; i<BVH4::N; i++) {
@@ -348,7 +348,7 @@ namespace embree
             refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
             std::push_heap (refs.begin(),refs.end()); 
           }
-        } 
+        }*/
         else {
           refs.push_back(ref);
           break;
