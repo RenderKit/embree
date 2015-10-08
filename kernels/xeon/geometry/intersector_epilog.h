@@ -135,8 +135,8 @@ namespace embree
           goto entry;
           while (true)
           {  
-            size_t m=movemask(valid);
-            if (unlikely(m == 0)) return false;
+            //size_t m=movemask(valid);
+            if (unlikely(none(valid))) return false;
           entry:
             //size_t i=__bsf(m);
             Vec3<vfloat<M>> Ng;
@@ -601,8 +601,8 @@ namespace embree
           goto entry;
           while (true)
           {  
-            size_t m=movemask(valid);
-            if (unlikely(m == 0)) return false;
+            //size_t m=movemask(valid);
+            if (unlikely(none(valid))) return false;
           entry:
             //size_t i=__bsf(m);
             Vec3<vfloat<M>> Ng;
