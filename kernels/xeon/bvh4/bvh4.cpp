@@ -162,6 +162,7 @@ namespace embree
   DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle8MeshRefitSAH);
   DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
   DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4Triangle4iMeshRefitSAH);
+  DECLARE_BUILDER(void,TriangleMesh,size_t,BVH4TrianglePairs4MeshRefitSAH);
 
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle4SceneBuilderMortonGeneral);
   DECLARE_BUILDER(void,Scene,size_t,BVH4Triangle8SceneBuilderMortonGeneral);
@@ -646,7 +647,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1  = BVH4TrianglePairs4Intersector1Moeller;
+    intersectors.intersector1           = BVH4TrianglePairs4Intersector1Moeller;
     intersectors.intersector4           = BVH4TrianglePairs4Intersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4TrianglePairs4Intersector4HybridMoellerNoFilter;
     intersectors.intersector8           = BVH4TrianglePairs4Intersector8HybridMoeller;
@@ -823,7 +824,7 @@ namespace embree
     accel = new BVH4(TrianglePairs4v::type,mesh->parent);
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0) /* BVH4TrianglePairs4MeshRefitSAH(accel,mesh,0) */ ; break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = BVH4TrianglePairs4MeshRefitSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DYNAMIC:    builder = BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0); break;
     default: THROW_RUNTIME_ERROR("internal error"); 
     }
