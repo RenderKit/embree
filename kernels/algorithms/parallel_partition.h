@@ -597,7 +597,7 @@ namespace embree
   };
 
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t parallel_in_place_partitioning(T *array, 
+    __forceinline size_t parallel_in_place_partitioning_dynamic(T *array, 
                                                         size_t N, 
                                                         const V &init,
                                                         V &leftReduction,
@@ -1310,15 +1310,15 @@ namespace embree
 
 
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
-    __forceinline size_t parallel_in_place_partitioning_task(T *array, 
-                                                             const size_t N, 
-                                                             const V &init,
-                                                             V &leftReduction,
-                                                             V &rightReduction,
-                                                             const Compare& cmp, 
-                                                             const Reduction_T& reduction_t,
-                                                             const Reduction_V& reduction_v,
-                                                             const size_t numThreads = TaskSchedulerTBB::threadCount())
+    __forceinline size_t parallel_in_place_partitioning_static(T *array, 
+                                                               const size_t N, 
+                                                               const V &init,
+                                                               V &leftReduction,
+                                                               V &rightReduction,
+                                                               const Compare& cmp, 
+                                                               const Reduction_T& reduction_t,
+                                                               const Reduction_V& reduction_v,
+                                                               const size_t numThreads = TaskSchedulerTBB::threadCount())
   {
 #if defined(__X86_64__) // FIXME: enable parallel partition also in 32 bit mode
     parallel_partition_static_task<BLOCK_SIZE, T,V,Compare,Reduction_T,Reduction_V> p(array,N,numThreads,init,cmp,reduction_t,reduction_v);
