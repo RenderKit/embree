@@ -35,26 +35,52 @@ namespace embree
   namespace isa
   {
 #if 0
-    intersect (ray,p0,p1,p2,p3,swizlle,epilog)
+     template<int M>
+        struct MoellerTrumboreIntersectorPairs1 : MoellerTrumboreIntersector1<M>
     {
-      v0 = convert(...);
-      e1 = convert(...);
-      e2 = convert(...);
-      Ng = convert(...);
+      __forceinline MoellerTrumboreIntersectorPairs1(const Ray& ray, const void* ptr)
+        : MoellerTrumboreIntersector1<M>(ray,ptr) {}
+
+      template<typename Epilog>
+        struct GetHit
+        {
+          const vint<M>& flags;
+          const Epilog& epilog; 
+          
+          __forceinline GetHit(const vint<M>& flags, const Epilog& epilog) 
+            : flags(flags), epilog(epilog) {}
+          
+          template<typename Hit>
+          __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const 
+          {
+            return epilog(valid_i,[&] (const vbool<M>& valid) {
+                vfloat<M> u, v, t; Vec3<vfloat<M>> Ng; size_t i; std::tie(u,v,t,Ng,i) = hit(valid);
+                const vfloat<M> w = 1.0f - u - v;
+                const vfloat<M> uwv[3] = { u,w,v };
+                const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
+                const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
+                
+                /* update hit information */
+                const vfloat<M> uu = uwv[indexU];
+                const vfloat<M> vv = uwv[indexV];
+                return std::make_tuple(uu,vv,t,Ng,i);
+              });
+          }
+        };
       
-      return standard_moeller_trumbore.intersect(ray,
-                                                 v0,e1,e2,Ng,
-                                                 [&] (valid, getHit)
-                                                 {
-                                                   (u,v,Ng) = getHit(valid);
-                                                   swizzle(u,v,Ng);
-                                                   return (u,v,Ng);
-                                                 };
-                                                 
-    }
+      template<typename Epilog>
+        __forceinline bool intersect(Ray& ray, 
+                                     const Vec3<vfloat<M>>& v0, 
+                                     const Vec3<vfloat<M>>& v1, 
+                                     const Vec3<vfloat<M>>& v2, 
+                                     const vint<M>& flags,
+                                     const Epilog& epilog) const
+      {
+        return MoellerTrumboreIntersector1<M>::intersect(ray,v0,v1,v2,GetHit<Epilog>(flags,epilog));
+      }
+    };
 #endif
 
-#if 1
     template<int M>
       struct MoellerTrumboreIntersectorPairs1
     {
@@ -129,53 +155,6 @@ namespace embree
         return intersect(ray,v0,e1,e2,Ng,flags,epilog);
       }
     };
-#else
-
-      template<int M>
-        struct MoellerTrumboreIntersectorPairs1 : MoellerTrumboreIntersector1<M>
-    {
-      __forceinline MoellerTrumboreIntersectorPairs1(const Ray& ray, const void* ptr)
-        : MoellerTrumboreIntersector1<M>(ray,ptr) {}
-
-      template<typename Epilog>
-        struct GetHit
-        {
-          const vint<M>& flags;
-          const Epilog& epilog; 
-          
-          __forceinline GetHit(const vint<M>& flags, const Epilog& epilog) 
-            : flags(flags), epilog(epilog) {}
-          
-          template<typename Hit>
-          __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const 
-          {
-            return epilog(valid_i,[&] (const vbool<M>& valid) {
-                vfloat<M> u, v, t; Vec3<vfloat<M>> Ng; size_t i; std::tie(u,v,t,Ng,i) = hit(valid);
-                const vfloat<M> w = 1.0f - u - v;
-                const vfloat<M> uwv[3] = { u,w,v };
-                const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-                const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-                
-                /* update hit information */
-                const vfloat<M> uu = uwv[indexU];
-                const vfloat<M> vv = uwv[indexV];
-                return std::make_tuple(uu,vv,t,Ng,i);
-              });
-          }
-        };
-      
-      template<typename Epilog>
-        __forceinline bool intersect(Ray& ray, 
-                                     const Vec3<vfloat<M>>& v0, 
-                                     const Vec3<vfloat<M>>& v1, 
-                                     const Vec3<vfloat<M>>& v2, 
-                                     const vint<M>& flags,
-                                     const Epilog& epilog) const
-      {
-        return MoellerTrumboreIntersector1<M>::intersect(ray,v0,v1,v2,GetHit<Epilog>(flags,epilog));
-      }
-    };
-#endif
       
     template<int M, int K>
     struct MoellerTrumboreIntersectorPairK
