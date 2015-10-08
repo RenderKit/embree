@@ -47,15 +47,12 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
-          vfloat<M> u, v, t; 
-          Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid);
+          auto hit = getHit(valid);
           
-          //size_t i = select_min(valid,t);
+          size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
           //int instID = geomID_to_instID ? (int)(size_t)geomID_to_instID : geomID;
@@ -66,8 +63,7 @@ namespace embree
           while (true) 
           {
             if (unlikely(none(valid))) return false;
-            //i = select_min(valid,t);
-            std::tie(u,v,t,Ng,i) = hit(valid);
+            i = select_min(valid,hit.vt);
 
             geomID = geomIDs[i];
             instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
@@ -86,8 +82,8 @@ namespace embree
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter1())) {
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ngi,instID,primIDs[i])) return true;
+                const Vec2f uv = hit.uv(i);
+                if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
                 valid[i] = 0;
                 continue;
               }
@@ -98,12 +94,13 @@ namespace embree
 #endif
           
           /* update hit information */
-          ray.u = u[i];
-          ray.v = v[i];
-          ray.tfar = t[i];
-          ray.Ng.x = Ng.x[i];
-          ray.Ng.y = Ng.y[i];
-          ray.Ng.z = Ng.z[i];
+          const Vec2f uv = hit.uv(i);
+          ray.u = uv.x;
+          ray.v = uv.y;
+          ray.tfar = hit.vt[i];
+          ray.Ng.x = hit.vNg.x[i];
+          ray.Ng.y = hit.vNg.y[i];
+          ray.Ng.z = hit.vNg.z[i];
           ray.geomID = instID;
           ray.primID = primIDs[i];
           return true;
@@ -128,23 +125,19 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
           vbool<M> valid = valid_i;
+          size_t m=movemask(valid);
           goto entry;
           while (true)
           {  
-            //size_t m=movemask(valid);
-            if (unlikely(none(valid))) return false;
+            if (unlikely(m == 0)) return false;
           entry:
-            //size_t i=__bsf(m);
-            Vec3<vfloat<M>> Ng;
-            vfloat<M> u,v,t; 
-            size_t i;
-            std::tie(u,v,t,Ng,i) = hit(valid);
-
+            size_t i=__bsf(m);
+            auto hit = getHit(valid); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
@@ -153,8 +146,7 @@ namespace embree
 #if defined(RTCORE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask) == 0) {
-              //m=__btc(m,i);
-              valid[i] = 0;
+              m=__btc(m,i);
               continue;
             }
 #endif
@@ -164,10 +156,10 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasOcclusionFilter1())) 
               {
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ngi,instID,primIDs[i])) return true;
-                //m=__btc(m,i);
-                valid[i] = 0;
+                //const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+                const Vec2f uv = hit.uv(i);
+                if (runOcclusionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
+                m=__btc(m,i);
                 continue;
               }
             }
@@ -197,7 +189,7 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
@@ -208,10 +200,9 @@ namespace embree
           vfloat<M> u, v, t; 
           Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid);
+          auto hit = getHit(valid);
           
-          //size_t i = select_min(valid,t);
+          size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
@@ -220,28 +211,29 @@ namespace embree
             while (true) 
             {
               /* call intersection filter function */
-              Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-              if (runIntersectionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) {
+              //Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
+              Vec2f uv = hit.uv(i);
+              if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) {
                 return true;
               }
               valid[i] = 0;
               if (unlikely(none(valid))) break;
-              //i = select_min(valid,t);
-              std::tie(u,v,t,Ng,i) = hit(valid);
+              i = select_min(valid,hit.vt);
             }
             return false;
           }
 #endif
           
           /* update hit information */
-          ray.u         = u[i];
-          ray.v         = v[i];
-          ray.tfar      = t[i];
-          ray.geomID    = geomID;
-          ray.primID    = primID;
-          ray.Ng.x      = Ng.x[i];
-          ray.Ng.y      = Ng.y[i];
-          ray.Ng.z      = Ng.z[i];
+          const Vec2f uv = hit.uv(i);
+          ray.u = uv.x;
+          ray.v = uv.y;
+          ray.tfar = hit.vt[i];
+          ray.Ng.x = hit.vNg.x[i];
+          ray.Ng.y = hit.vNg.y[i];
+          ray.Ng.z = hit.vNg.z[i];
+          ray.geomID = geomID;
+          ray.primID = primID;
           return true;
         }
       };
@@ -263,7 +255,7 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid, const Hit& getHit) const
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
@@ -273,20 +265,13 @@ namespace embree
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
-          vbool<M> valid = valid_i;
           if (unlikely(geometry->hasOcclusionFilter1())) 
           {
-            vfloat<M> u, v, t; 
-            Vec3<vfloat<M>> Ng;
-            
-            //for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
-            while(any(valid))
+            auto hit = getHit(valid);
+            for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
             {  
-              size_t i;
-              std::tie(u,v,t,Ng,i) = hit(valid);
-              const Vec3fa Ng_i = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-              if (runOcclusionFilter1(geometry,ray,u[i],v[i],t[i],Ng_i,geomID,primID)) return true;
-              valid[i] = 0;
+              const Vec2f uv = hit.uv(i);
+              if (runOcclusionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
             }
             return false;
           }
@@ -518,15 +503,12 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
-          vfloat<M> u, v, t; 
-          Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid);
+          auto hit = getHit(valid);
           
-          //size_t i = select_min(valid,t);
+          size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           
           /* intersection filter test */
@@ -535,9 +517,8 @@ namespace embree
           while (true) 
           {
             if (unlikely(none(valid))) return false;
-            //i = select_min(valid,t);
-            std::tie(u,v,t,Ng,i) = hit(valid);
-
+            i = select_min(valid,hit.vt);
+            
             geomID = geomIDs[i];
           entry:
             Geometry* geometry = scene->get(geomID);
@@ -554,8 +535,8 @@ namespace embree
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primIDs[i])) return true;
+                const Vec2f uv = hit.uv(i);
+                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
                 valid[i] = 0;
                 continue;
               }
@@ -566,12 +547,13 @@ namespace embree
 #endif
           
           /* update hit information */
-          ray.u[k] = u[i];
-          ray.v[k] = v[i];
-          ray.tfar[k] = t[i];
-          ray.Ng.x[k] = Ng.x[i];
-          ray.Ng.y[k] = Ng.y[i];
-          ray.Ng.z[k] = Ng.z[i];
+          const Vec2f uv = hit.uv(i);
+          ray.u[k] = uv.x;
+          ray.v[k] = uv.y;
+          ray.tfar[k] = hit.vt[i];
+          ray.Ng.x[k] = hit.vNg.x[i];
+          ray.Ng.y[k] = hit.vNg.y[i];
+          ray.Ng.z[k] = hit.vNg.z[i];
           ray.geomID[k] = geomID;
           ray.primID[k] = primIDs[i];
           return true;
@@ -594,22 +576,18 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid, const Hit& getHit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-          vbool<M> valid = valid_i;
+          size_t m=movemask(valid);
           goto entry;
           while (true)
           {  
-            //size_t m=movemask(valid);
-            if (unlikely(none(valid))) return false;
+            if (unlikely(m == 0)) return false;
           entry:
-            //size_t i=__bsf(m);
-            Vec3<vfloat<M>> Ng;
-            vfloat<M> u,v,t; 
-            size_t i;
-            std::tie(u,v,t,Ng,i) = hit(valid);
+            size_t i=__bsf(m);
+            auto hit = getHit(valid); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             Geometry* geometry = scene->get(geomID);
@@ -617,8 +595,7 @@ namespace embree
 #if defined(RTCORE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask[k]) == 0) {
-              //m=__btc(m,i);
-              valid[i] = 0;
+              m=__btc(m,i);
               continue;
             }
 #endif
@@ -628,10 +605,9 @@ namespace embree
             if (filter) {
               if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
               {
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primIDs[i])) return true;
-                //m=__btc(m,i);
-                valid[i] = 0;
+                const Vec2f uv = hit.uv(i);
+                if (runOcclusionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
+                m=__btc(m,i);
                 continue;
               }
             }
@@ -660,7 +636,7 @@ namespace embree
           : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
@@ -670,12 +646,9 @@ namespace embree
 #endif
 
           /* finalize hit calculation */
-          vfloat<M> u, v, t; 
-          Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          size_t i;
-          std::tie(u,v,t,Ng,i) = hit(valid);
-          //size_t i = select_min(valid,t);
+          auto hit = getHit(valid);
+          size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
@@ -684,12 +657,11 @@ namespace embree
             {
               while (true) 
               {
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runIntersectionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primID)) return true;
+                const Vec2f uv = hit.uv(i);
+                if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
                 valid[i] = 0;
                 if (unlikely(none(valid))) break;
-                //i = select_min(valid,t);
-                std::tie(u,v,t,Ng,i) = hit(valid);
+                i = select_min(valid,hit.vt);
               }
               return false;
             }
@@ -697,12 +669,13 @@ namespace embree
 #endif
           
           /* update hit information */
-          ray.u[k] = u[i];
-          ray.v[k] = v[i];
-          ray.tfar[k] = t[i];
-          ray.Ng.x[k] = Ng.x[i];
-          ray.Ng.y[k] = Ng.y[i];
-          ray.Ng.z[k] = Ng.z[i];
+          const Vec2f uv = hit.uv(i);
+          ray.u[k] = uv.x;
+          ray.v[k] = uv.y;
+          ray.tfar[k] = hit.vt[i];
+          ray.Ng.x[k] = hit.vNg.x[i];
+          ray.Ng.y[k] = hit.vNg.y[i];
+          ray.Ng.z[k] = hit.vNg.z[i];
           ray.geomID[k] = geomID;
           ray.primID[k] = primID;
           return true;
@@ -725,7 +698,7 @@ namespace embree
           : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
         {
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
@@ -739,17 +712,11 @@ namespace embree
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
             {
-              vbool<M> valid = valid_i;
-              //for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
-              while(any(valid))
+              auto hit = getHit(valid_i);
+              for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
               {  
-                vfloat<M> u, v, t; 
-                Vec3<vfloat<M>> Ng;
-                size_t i;
-                std::tie(u,v,t,Ng,i) = hit(valid);
-                const Vec3fa Ngi = Vec3fa(Ng.x[i],Ng.y[i],Ng.z[i]);
-                if (runOcclusionFilter(geometry,ray,k,u[i],v[i],t[i],Ngi,geomID,primID)) return true;
-                valid[i] = 0;
+                const Vec2f uv = hit.uv(i);
+                if (runOcclusionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
               }
               return false;
             }

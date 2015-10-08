@@ -84,6 +84,33 @@ namespace embree
     template<int M>
       struct MoellerTrumboreIntersectorPairs1
     {
+      struct Hit
+      {
+        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng, const vint<M>& flags)
+          : vu(u), vv(v), vt(t), vNg(Ng), flags(flags) {}
+
+        __forceinline Vec2f uv (const size_t i) 
+        { 
+          const vfloat<M> vw = 1.0f - vu - vv;
+          const vfloat<M> uwv[3] = { vu,vw,vv };
+          const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
+          const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
+          const float uu = uwv[indexU][i];
+          const float vv = uwv[indexV][i];
+          return Vec2f(uu,vv);
+        }
+
+        __forceinline float t  (const size_t i) { return vt[i]; }
+        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+
+      public:
+        const vfloat<M> vu;
+        const vfloat<M> vv;
+        const vfloat<M> vt;
+        const Vec3<vfloat<M>> vNg;
+        const vint<M> flags;
+      };
+
       __forceinline MoellerTrumboreIntersectorPairs1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
@@ -126,18 +153,9 @@ namespace embree
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
-            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> w = 1.0f - u - v;
-            const vfloat<M> uwv[3] = { u,w,v };
-            const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-            const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-          
-          /* update hit information */
-            const vfloat<M> uu = uwv[indexU];
-            const vfloat<M> vv = uwv[indexV];
-            return std::make_tuple(uu,vv,t,tri_Ng,i);
+            return Hit(u,v,t,tri_Ng,flags);
           });
       }
       
@@ -159,6 +177,33 @@ namespace embree
     template<int M, int K>
     struct MoellerTrumboreIntersectorPairK
     {
+       struct Hit
+      {
+        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng, const vint<M>& flags)
+          : vu(u), vv(v), vt(t), vNg(Ng), flags(flags) {}
+
+        __forceinline Vec2f uv (const size_t i) 
+        { 
+          const vfloat<M> vw = 1.0f - vu - vv;
+          const vfloat<M> uwv[3] = { vu,vw,vv };
+          const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
+          const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
+          const float uu = uwv[indexU][i];
+          const float vv = uwv[indexV][i];
+          return Vec2f(uu,vv);
+        }
+
+        __forceinline float t  (const size_t i) { return vt[i]; }
+        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+
+      public:
+        const vfloat<M> vu;
+        const vfloat<M> vv;
+        const vfloat<M> vt;
+        const Vec3<vfloat<M>> vNg;
+        const vint<M> flags;
+      };
+
       __forceinline MoellerTrumboreIntersectorPairK(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
@@ -213,7 +258,7 @@ namespace embree
 #endif
         
         /* calculate hit information */
-        return epilog(valid,[&] (const vbool<K> &valid) {
+        return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<K> rcpAbsDen = rcp(absDen);
             const unsigned int indexU = (rotation >>  0) & 0xff;
             const unsigned int indexV = (rotation >> 16) & 0xff;
@@ -287,16 +332,9 @@ namespace embree
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
-            const size_t i = select_min(valid,t);
-            const vfloat<M> uu = U * rcpAbsDen;
-            const vfloat<M> vv = V * rcpAbsDen;
-            const vfloat<M> ww = 1.0f - uu - vv;
-            const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-            const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-            const vfloat<M> uwv[3] = { uu,ww,vv };
-            const vfloat<M> u = uwv[indexU];
-            const vfloat<M> v = uwv[indexV];
-            return std::make_tuple(u,v,t,tri_Ng,i);
+            const vfloat<M> u = U * rcpAbsDen;
+            const vfloat<M> v = V * rcpAbsDen;
+            return Hit(u,v,t,tri_Ng,flags);
           });
       }
       
