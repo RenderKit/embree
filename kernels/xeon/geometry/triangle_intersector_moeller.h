@@ -35,6 +35,22 @@ namespace embree
     template<int M>
       struct MoellerTrumboreIntersector1
     {
+      struct Hit
+      {
+        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
+          : vu(u), vv(v), vt(t), vNg(Ng) {}
+
+        __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
+        __forceinline float t  (const size_t i) const { return vt[i]; }
+        __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+
+      public:
+        const vfloat<M> vu;
+        const vfloat<M> vv;
+        const vfloat<M> vt;
+        const Vec3<vfloat<M>> vNg;
+      };
+
       __forceinline MoellerTrumboreIntersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
@@ -76,10 +92,9 @@ namespace embree
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
-            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            return std::make_tuple(u,v,t,tri_Ng,i);
+            return Hit(u,v,t,tri_Ng);
           });
       }
       
@@ -100,6 +115,22 @@ namespace embree
     template<int M, int K>
     struct MoellerTrumboreIntersectorK
     {
+      struct Hit
+      {
+        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
+          : vu(u), vv(v), vt(t), vNg(Ng) {}
+
+        __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
+        __forceinline float t  (const size_t i) const { return vt[i]; }
+        __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+
+      public:
+        const vfloat<M> vu;
+        const vfloat<M> vv;
+        const vfloat<M> vt;
+        const Vec3<vfloat<M>> vNg;
+      };
+
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
@@ -218,10 +249,9 @@ namespace embree
         return epilog(valid,[&] (const vbool<M> &valid) {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
-            const size_t i = select_min(valid,t);
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            return std::make_tuple(u,v,t,tri_Ng,i);
+            return Hit(u,v,t,tri_Ng);
           });
       }
       
