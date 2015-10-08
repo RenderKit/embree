@@ -33,8 +33,8 @@ namespace embree
     public:
       __forceinline BuildRef () {}
       
-      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, unsigned mask, int instID, int xfmID, int type) 
-        : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type)
+      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0) 
+        : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth)
       {
         if (node.isNode()) {
         //if (node.isNode() || node.isNodeMB()) {
@@ -45,6 +45,10 @@ namespace embree
         }
       }
       
+      __forceinline void clearArea() {
+        localBounds.lower.w = 0.0f;
+      }
+
       __forceinline BBox3fa worldBounds() const {
         return xfmBounds(local2world,localBounds);
       }
@@ -61,6 +65,7 @@ namespace embree
       int instID;
       int xfmID;
       int type;
+      int depth;
     };
       
       /*! Constructor. */

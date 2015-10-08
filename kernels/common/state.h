@@ -78,6 +78,7 @@ namespace embree
     size_t instancing_open_min;            //!< instancing opens tree to minimally that number of subtrees
     size_t instancing_block_size;          //!< instancing opens tree up to average block size of primitives
     float  instancing_open_factor;         //!< instancing opens tree up to x times the number of instances
+    size_t instancing_open_max_depth;      //!< maximal open depth for geometries
     size_t instancing_open_max;            //!< instancing opens tree to maximally that number of subtrees
 
   public:

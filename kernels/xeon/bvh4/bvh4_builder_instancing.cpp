@@ -332,13 +332,20 @@ namespace embree
         std::pop_heap (refs.begin(),refs.end()); 
         BuildRef ref = refs.back();
         refs.pop_back();    
+
+        if (ref.depth >= scene->device->instancing_open_max_depth) {
+          ref.clearArea();
+          refs.push_back(ref);
+          std::push_heap (refs.begin(),refs.end()); 
+          continue;
+        }
         
         if (ref.node.isNode()) 
         {
           BVH4::Node* node = ref.node.node();
           for (size_t i=0; i<BVH4::N; i++) {
             if (node->child(i) == BVH4::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
         } 
@@ -347,7 +354,7 @@ namespace embree
           BVH4::NodeMB* node = ref.node.nodeMB();
           for (size_t i=0; i<BVH4::N; i++) {
             if (node->child(i) == BVH4::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type));
+            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
         }*/

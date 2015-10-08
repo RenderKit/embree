@@ -64,6 +64,7 @@ namespace embree
     instancing_open_min = 0;
     instancing_block_size = 0;
     instancing_open_factor = 10.0f; 
+    instancing_open_max_depth = 32;
     instancing_open_max = 50000000;
 
     float_exceptions = false;
@@ -190,6 +191,8 @@ namespace embree
         instancing_block_size = cin->get().Int();
         instancing_open_factor = 0.0f;
       }
+      else if (tok == Token::Id("instancing_open_max_depth") && cin->trySymbol("="))
+        instancing_open_max_depth = cin->get().Int();
       else if (tok == Token::Id("instancing_open_factor") && cin->trySymbol("=")) {
         instancing_block_size = 0;
         instancing_open_factor = cin->get().Float();
