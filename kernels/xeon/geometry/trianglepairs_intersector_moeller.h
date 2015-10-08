@@ -101,7 +101,9 @@ namespace embree
         }
 
         __forceinline float t  (const size_t i) { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+        __forceinline Vec3fa Ng(const size_t i) { 
+          return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); 
+        }
 
       public:
         const vfloat<M> vu;
@@ -155,7 +157,9 @@ namespace embree
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            return Hit(u,v,t,tri_Ng,flags);
+            const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+            const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
+            return Hit(u,v,t,Ng,flags);
           });
       }
       
@@ -215,6 +219,7 @@ namespace embree
                                           const Vec3<vfloat<K>>& tri_e2, 
                                           const Vec3<vfloat<K>>& tri_Ng, 
                                           const unsigned int rotation,
+                                          const float flipNg,
                                           const Epilog& epilog) const
       {
         /* ray SIMD type shortcuts */
@@ -269,7 +274,9 @@ namespace embree
             const vfloat<K> uwv[3] { uu,ww,vv };
             const vfloat<K> u = uwv[indexU];
             const vfloat<K> v = uwv[indexV];
-            return std::make_tuple(u,v,t,tri_Ng);
+            const vfloat<K> flip(flipNg); 
+            const Vec3vfK Ng(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
+            return std::make_tuple(u,v,t,Ng);
           });
       }
       
@@ -281,13 +288,14 @@ namespace embree
                                         const Vec3<vfloat<K>>& tri_v1, 
                                         const Vec3<vfloat<K>>& tri_v2, 
                                         const unsigned int rotation,
+                                        const float flipNg,
                                         const Epilog& epilog) const
       {
         typedef Vec3<vfloat<K>> Vec3vfK;
         const Vec3vfK e1 = tri_v0-tri_v1;
         const Vec3vfK e2 = tri_v2-tri_v0;
         const Vec3vfK Ng = cross(e1,e2);
-        return intersectK(valid0,ray,tri_v0,e1,e2,Ng,rotation,epilog);
+        return intersectK(valid0,ray,tri_v0,e1,e2,Ng,rotation,flipNg,epilog);
       }
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
@@ -334,7 +342,9 @@ namespace embree
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            return Hit(u,v,t,tri_Ng,flags);
+            const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+            const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
+            return Hit(u,v,t,Ng,flags);
           });
       }
       
@@ -440,10 +450,10 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
             const unsigned int rotation0 = tri.flags[i];
-            pre.intersectK(valid_i,ray,p1,p0,p2,rotation0,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs  ,i,scene));
+            pre.intersectK(valid_i,ray,p1,p0,p2,rotation0,-1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs  ,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
             const unsigned int rotation1 = tri.flags[4+i];
-            pre.intersectK(valid_i,ray,p3,p0,p2,rotation1,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,i,scene));
+            pre.intersectK(valid_i,ray,p3,p0,p2,rotation1,1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,i,scene));
           }
         }
         
@@ -460,11 +470,11 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
             const unsigned int rotation0 = tri.flags[i];
-            pre.intersectK(valid0,ray,p0,p1,p2,rotation0,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,p0,p1,p2,rotation0,-1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
             const unsigned int rotation1 = tri.flags[4+i];
-            pre.intersectK(valid0,ray,p0,p2,p3,rotation1,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,p0,p2,p3,rotation1,1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
