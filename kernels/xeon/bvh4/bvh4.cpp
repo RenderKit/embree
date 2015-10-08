@@ -215,6 +215,7 @@ namespace embree
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8MeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitSAH);
+    SELECT_SYMBOL_AVX(features,BVH4TrianglePairs4MeshRefitSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderMortonGeneral);
     SELECT_SYMBOL_AVX        (features,BVH4Triangle8SceneBuilderMortonGeneral);

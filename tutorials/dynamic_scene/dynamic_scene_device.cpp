@@ -146,7 +146,7 @@ extern "C" void device_init (char* cfg)
   rtcDeviceSetErrorFunction(g_device,error_handler);
 
   /* create scene */
-  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC | RTC_SCENE_ROBUST, RTC_INTERSECT1);
+  g_scene = rtcDeviceNewScene(g_device,RTC_SCENE_DYNAMIC /*| RTC_SCENE_ROBUST*/, RTC_INTERSECT1);
 
   /* create some triangulated spheres */
   for (int i=0; i<numSpheres; i++)

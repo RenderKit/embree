@@ -407,8 +407,6 @@ namespace embree
         std::cout << BVH4Statistics(bvh).str();
       }
     }
-
-#if !defined (__AVX512F__)
     
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
@@ -426,7 +424,6 @@ namespace embree
     Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
     Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 
-#endif
   }
 }
 
