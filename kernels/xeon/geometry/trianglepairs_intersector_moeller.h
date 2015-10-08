@@ -423,12 +423,11 @@ namespace embree
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));
-          // FIXME: CAN'T GET THIS TO WORK!
 #else
           FATAL("SSE mode not supported");
-#endif
           //pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
           //pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+#endif
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
@@ -436,11 +435,24 @@ namespace embree
         {
           STAT3(shadow.trav_prims,1,1,1);
 #if defined(__AVX__)
+          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
+                       vfloat8(tri.v1.y,tri.v3.y),
+                       vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf8 vtx1(vfloat8(tri.v0.x),
+                       vfloat8(tri.v0.y),
+                       vfloat8(tri.v0.z));
+          Vec3vf8 vtx2(vfloat8(tri.v2.x),
+                       vfloat8(tri.v2.y),
+                       vfloat8(tri.v2.z));
+          vint8   geomIDs(tri.geomIDs); 
+          vint8   primIDs(tri.primIDs,tri.primIDs+1);
+          vint8   flags(tri.flags);
+          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));          
 #else
           FATAL("SSE mode not supported");
-#endif
           //if (pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
           //if (pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
+#endif
           return false;
         }
       };
