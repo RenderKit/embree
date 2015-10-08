@@ -63,7 +63,7 @@ namespace embree
 
     instancing_open_min = 0;
     instancing_block_size = 0;
-    instancing_open_factor = 10.0f; 
+    instancing_open_factor = 8.0f; 
     instancing_open_max_depth = 32;
     instancing_open_max = 50000000;
 
