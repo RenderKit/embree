@@ -262,15 +262,16 @@ namespace embree
                                                         if (j+1 < r.end())
                                                         {
                                                           BBox3fa bounds_second = empty;
-                                                          if (!mesh->valid(j+1,&bounds_second)) continue;
+                                                          if (mesh->valid(j+1,&bounds_second)) {
 
-                                                          TriangleMesh* trimesh = (TriangleMesh*)mesh;
-                                                          if (TriangleMesh::sharedEdge(trimesh->triangle(j),
-                                                                                       trimesh->triangle(j+1)) != -1)
-                                                          {
-                                                            bounds = bounds.extend(bounds_second);
-                                                            flag = 0;
-                                                            j++;
+                                                            TriangleMesh* trimesh = (TriangleMesh*)mesh;
+                                                            if (TriangleMesh::sharedEdge(trimesh->triangle(j),
+                                                                                         trimesh->triangle(j+1)) != -1)
+                                                            {
+                                                              bounds = bounds.extend(bounds_second);
+                                                              flag = 0;
+                                                              j++;
+                                                            }
                                                           }
                                                         }
                                                         pinfo.add(bounds,bounds.center2());
