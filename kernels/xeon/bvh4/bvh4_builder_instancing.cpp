@@ -314,13 +314,16 @@ namespace embree
     {
       if (refs.size() == 0)
 	return;
+     
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCES " << refs.size() << std::endl; }
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCED_PRIMITIVES " << numInstancedPrimitives << std::endl; }
       
       /* calculate opening size */
       size_t N = numInstancedPrimitives/scene->device->instancing_block_size;
       N = max(N,scene->device->instancing_open_min);
       N = min(N,scene->device->instancing_open_max);
       refs.reserve(N);
-      
+
       std::make_heap(refs.begin(),refs.end());
       while (refs.size()+BVH4::N-1 <= N)
       {
@@ -351,6 +354,8 @@ namespace embree
           break;
         }
       }
+
+      if (scene->device->benchmark) { std::cout << "BENCHMARK_OPENED_INSTANCES " << refs.size() << std::endl; }
     }
     
     BVH4::NodeRef BVH4BuilderInstancing::collapse(BVH4::NodeRef& node)
