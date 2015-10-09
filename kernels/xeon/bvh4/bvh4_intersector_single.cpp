@@ -162,10 +162,6 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVH4IntersectorKSingle<16 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >);
 
     DEFINE_INTERSECTOR16(BVH4Subdivpatch1Intersector16, BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-
-    // FIXME: replace with BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector16>
-    DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16,BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
-
     DEFINE_INTERSECTOR16(BVH4GridAOSIntersector16, BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
   }

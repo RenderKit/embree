@@ -556,9 +556,7 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoeller, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoellerNoFilter, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
 
-//FIXME: does not compile
-//DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector16>);
-    
+    DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector16>);
 
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
