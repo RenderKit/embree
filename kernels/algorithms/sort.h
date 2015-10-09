@@ -549,11 +549,7 @@ namespace embree
   class ParallelRadixSortCopy
   {
   public:
-#if defined(__MIC__)
-    static const size_t MAX_TASKS = MAX_THREADS;
-#else
     static const size_t MAX_TASKS = 32; // FIXME: increase
-#endif
     static const size_t BITS = 11;
     static const size_t BUCKETS = (1 << BITS);
     typedef unsigned int TyRadixCount[MAX_TASKS][BUCKETS];
@@ -688,7 +684,6 @@ namespace embree
     
   private:
     TyRadixCount radixCount;
-    LinearBarrierActive barrier; // FIXME: should be able to speficy number of threads here
   };
   
   /*! parallel radix sort */
