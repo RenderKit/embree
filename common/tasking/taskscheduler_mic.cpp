@@ -376,7 +376,7 @@ namespace embree
 #endif
       }
 
-    barrier.waitForThreads(threadIndex,threadCount);
+    barrier.wait(threadIndex,threadCount);
 
     DBG(std::cout << "END WORK task " << task << " threadIndex " << threadIndex << std::endl << std::flush);
   }

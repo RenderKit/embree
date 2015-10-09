@@ -128,14 +128,6 @@ namespace embree
     }
     
     void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
-    void waitForThreads(const size_t threadIndex, const size_t threadCount);
-    
-    void syncWithReduction(const size_t threadIndex, 
-                           const size_t threadCount,
-                           void (* reductionFct)(const size_t currentThreadID,
-                                                 const size_t childThreadID,
-                                                 void *ptr),
-                           void *ptr);
   };
   
   

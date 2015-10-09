@@ -178,19 +178,14 @@ namespace embree
 
   void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)
   {
-    waitForThreads(threadIndex,numThreads);
-  }
-
-  void LinearBarrierActive::waitForThreads(const size_t threadIndex, const size_t threadCount)
-  {
     if (mode == 0)
     {			
       if (threadIndex == 0)
       {	
-        for (size_t i=0; i<threadCount; i++)
+        for (size_t i=0; i<numThreads; i++)
           count1[i] = 0;
         
-        for (size_t i=1; i<threadCount; i++)
+        for (size_t i=1; i<numThreads; i++)
         {
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count0[i] == 0)) 
@@ -220,10 +215,10 @@ namespace embree
     {
       if (threadIndex == 0)
       {	
-        for (size_t i=0; i<threadCount; i++)
+        for (size_t i=0; i<numThreads; i++)
           count0[i] = 0;
         
-        for (size_t i=1; i<threadCount; i++)
+        for (size_t i=1; i<numThreads; i++)
         {		
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count1[i] == 0))
@@ -251,84 +246,7 @@ namespace embree
     }					
   }
 
-  
-  void LinearBarrierActive::syncWithReduction(const size_t threadIndex, 
-                                              const size_t threadCount,
-                                              void (* reductionFct)(const size_t currentThreadID,
-                                                                    const size_t childThreadID,
-                                                                    void *ptr),
-                                              void *ptr)
-  {
-    if (mode == 0)
-    {			
-      if (threadIndex == 0)
-      {	
-        for (size_t i=0; i<threadCount; i++)
-          count1[i] = 0;
-        
-        for (size_t i=1; i<threadCount; i++)
-        {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
-          while (likely(count0[i] == 0)) 
-          {
-            pause(wait_cycles);
-          }
-          (*reductionFct)(threadIndex,i,ptr);
-        }
-        mode  = 1;
-        flag1 = 0;
-        __memory_barrier();
-        flag0 = 1;
-      }			
-      else
-      {					
-        count0[threadIndex] = 1;
-        {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
-          while (likely(flag0 == 0))
-          {
-            pause(wait_cycles);
-          }
-        }
-      }		
-    }					
-    else						
-    {
-      if (threadIndex == 0)
-      {	
-        for (size_t i=0; i<threadCount; i++)
-          count0[i] = 0;
-        
-        for (size_t i=1; i<threadCount; i++)
-        {		
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
-          while (likely(count1[i] == 0))
-          {
-            pause(wait_cycles);
-          }
-          (*reductionFct)(threadIndex,i,ptr);
-        }
-        
-        mode  = 0;
-        flag0 = 0;
-        __memory_barrier();
-        flag1 = 1;
-      }			
-      else
-      {					
-        count1[threadIndex] = 1;
-        {
-          unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
-          while (likely(flag1 == 0))
-          {
-            pause(wait_cycles);
-          }
-        }
-      }		
-    }				             	
-  }
-
-  void QuadTreeBarrier::CoreSyncData::init() 
+    void QuadTreeBarrier::CoreSyncData::init() 
   {
     *(volatile unsigned int*)&threadState[0][0] = 0; 
     *(volatile unsigned int*)&threadState[1][0] = 0; 

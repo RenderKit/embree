@@ -480,7 +480,7 @@ namespace embree
   private:
     __aligned(64) AlignedAtomicCounter32 head_task_list; /*! next index in the task queue where we'll insert a live task */
     __aligned(64) Task* volatile tasks[NUM_TASKS]; //!< queue of tasks
-    //__aligned(64) QuadTreeBarrier barrier;
-    __aligned(64) LinearBarrierActive barrier;
+    __aligned(64) QuadTreeBarrier barrier;
+    //__aligned(64) LinearBarrierActive barrier;
   };
 }
