@@ -44,8 +44,6 @@ namespace embree
     _aligned_free((void*)ptr);
   }
 
-  // FIXME: implement large pages under Windows
-  
   void* os_malloc(size_t bytes, const int additional_flags) 
   {
     int flags = MEM_COMMIT|MEM_RESERVE|additional_flags;
