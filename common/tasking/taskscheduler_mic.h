@@ -291,7 +291,6 @@ namespace embree
     __aligned(64) void* volatile data;
 
     __aligned(64) QuadTreeBarrier taskBarrier;
-//    __aligned(64) LinearBarrierActive taskBarrier;
 
     __dllexport bool enter(size_t threadIndex, size_t threadCount);
     __dllexport void leave(size_t threadIndex, size_t threadCount);
@@ -481,6 +480,5 @@ namespace embree
     __aligned(64) AlignedAtomicCounter32 head_task_list; /*! next index in the task queue where we'll insert a live task */
     __aligned(64) Task* volatile tasks[NUM_TASKS]; //!< queue of tasks
     __aligned(64) QuadTreeBarrier barrier;
-    //__aligned(64) LinearBarrierActive barrier;
   };
 }
