@@ -724,7 +724,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
 {
   foreach_unique (id in materialID)
   {
-    //if (id < 0 || id >= numMaterials) continue;
+    if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* uniform material = &materials[id];
 
   switch (material->ty) {
@@ -747,7 +747,7 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uni
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    //if (id < 0 || id >= numMaterials) continue;
+    if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* uniform material = &materials[id];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform OBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
@@ -770,7 +770,7 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    //if (id < 0 || id >= numMaterials) continue;
+    if (id < 0 || id >= numMaterials) continue;
   ISPCMaterial* uniform material = &materials[id];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform OBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;

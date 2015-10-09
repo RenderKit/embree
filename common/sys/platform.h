@@ -16,6 +16,8 @@
 
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <cstddef>
 #include <cassert>
 #include <cstdlib>
@@ -178,8 +180,9 @@
 #ifdef __WIN32__
 #undef __noinline
 #define __noinline             __declspec(noinline)
-//#define __forceinline          __forceinline
-//#define __restrict             __restrict
+//#define __forceinline        __forceinline
+//#define __restrict           __restrict
+#define __restrict__           __restrict
 #define __thread               __declspec(thread)
 #define __aligned(...)           __declspec(align(__VA_ARGS__))
 //#define __FUNCTION__           __FUNCTION__
@@ -201,10 +204,6 @@
   #define MAYBE_UNUSED __attribute__((used))
 #else
   #define MAYBE_UNUSED
-#endif
-
-#if defined(_MSC_VER)
-#define __restrict__ // FIXME: should be supported on ICC?
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
@@ -281,7 +280,6 @@ typedef int32_t ssize_t;
 #pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
 #pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
 #pragma warning(disable:4355) // 'this' : used in base member initializer list
-#pragma warning(disable:4996) // 'std::copy': Function call with parameters that may be unsafe 
 #pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
 #pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'

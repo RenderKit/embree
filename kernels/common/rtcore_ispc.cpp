@@ -18,10 +18,10 @@
 #include "scene.h"
 
 #if defined(_MSC_VER)
-#pragma warning disable 4996 // warning: function was declared deprecated
+#pragma warning (disable: 4996) // warning: function was declared deprecated
 #endif
 #if defined(__INTEL_COMPILER)
-#pragma warning disable 1478 // warning: function was declared deprecated
+#pragma warning (disable: 1478) // warning: function was declared deprecated
 #endif
 #if defined(__clang__)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
