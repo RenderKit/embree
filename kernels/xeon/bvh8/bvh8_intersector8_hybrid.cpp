@@ -115,14 +115,17 @@ namespace embree
           
           /*! one child is hit, continue with that child */
           size_t r = __bscf(mask);
+          cur = node->child(r); cur.prefetch();
+
           if (likely(mask == 0)) {
-            cur = node->child(r); cur.prefetch();
             assert(cur != BVH8::emptyNode);
             continue;
           }
           
           /*! two children are hit, push far child, and continue with closer child */
-          NodeRef c0 = node->child(r); c0.prefetch(); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+          //NodeRef c0 = node->child(r); c0.prefetch(); 
+          NodeRef c0 = cur;
+          const unsigned int d0 = ((unsigned int*)&tNear)[r];
           r = __bscf(mask);
           NodeRef c1 = node->child(r); c1.prefetch(); const unsigned int d1 = ((unsigned int*)&tNear)[r];
           assert(c0 != BVH8::emptyNode);
