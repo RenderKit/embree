@@ -244,7 +244,15 @@ namespace embree
       }		
     }					
   }
+}
 
+
+
+
+#if defined (__MIC__)
+
+namespace embree
+{
   void QuadTreeBarrier::CoreSyncData::init() 
   {
     *(volatile unsigned int*)&threadState[0][0] = 0; 
@@ -493,3 +501,5 @@ namespace embree
     }        
   }
 }
+#endif
+
