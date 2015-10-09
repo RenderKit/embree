@@ -27,7 +27,7 @@
  #include "../../common/simd/avx512.h"
 #endif
 
-#define RADIX_SORT_NUM_THREADS_BLOCK_SIZE 4096
+#define RADIX_SORT_MIN_BLOCK_SIZE 4096
 
 namespace embree
 {
@@ -510,7 +510,7 @@ namespace embree
       : state(state) {} 
       
       template<typename Ty>
-      void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+      void operator() (Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
         ParallelRadixSort::Task<Ty,Key>(&state,src,tmp,N,blockSize);
       }
       
@@ -518,7 +518,7 @@ namespace embree
     };
   
   template<typename Ty>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Ty> sort(radix_sort_state);
@@ -526,7 +526,7 @@ namespace embree
   }
   
   template<typename Ty, typename Key>
-    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
+    void radix_sort(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
     ParallelRadixSort radix_sort_state;
     ParallelRadixSortT<Key> sort(radix_sort_state);
@@ -534,12 +534,12 @@ namespace embree
   }
   
   template<typename Ty>
-    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+    void radix_sort_u32(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
     radix_sort<Ty,uint32_t>(src,tmp,N,blockSize);
   }
   
   template<typename Ty>
-    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+    void radix_sort_u64(Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
     radix_sort<Ty,uint64_t>(src,tmp,N,blockSize);
   }
   
@@ -699,7 +699,7 @@ namespace embree
       : state(state) {} 
       
       template<typename Ty>
-      void operator() (Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+      void operator() (Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
         ParallelRadixSortCopy::Task<Ty,Key>(&state,src,dst,N,blockSize);
       }
       
@@ -707,7 +707,7 @@ namespace embree
     };
   
   template<typename Ty>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Ty> sort(radix_sort_state);
@@ -715,7 +715,7 @@ namespace embree
   }
   
   template<typename Ty, typename Key>
-    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE)
+    void radix_sort_copy(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE)
   {
     ParallelRadixSortCopy radix_sort_state;
     ParallelRadixSortCopyT<Key> sort(radix_sort_state);
@@ -723,12 +723,12 @@ namespace embree
   }
   
   template<typename Ty>
-    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+    void radix_sort_copy_u32(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
     radix_sort_copy<Ty,uint32_t>(src,dst,N,blockSize);
   }
   
   template<typename Ty>
-    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_NUM_THREADS_BLOCK_SIZE) {
+    void radix_sort_copy_u64(Ty* const src, Ty* const dst, const size_t N, const size_t blockSize = RADIX_SORT_MIN_BLOCK_SIZE) {
     radix_sort_copy<Ty,uint64_t>(src,dst,N,blockSize);
   } 
 }
