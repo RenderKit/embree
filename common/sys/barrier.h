@@ -73,7 +73,6 @@ namespace embree
 
   private:
     volatile atomic_t cntr;
-    //char align[64-sizeof(atomic_t)];
   };
 
   struct __aligned(64) BarrierActiveAutoReset
@@ -99,38 +98,28 @@ namespace embree
     volatile atomic_t cntr1;
   };
 
-
-  // =================================================
-  // === fast memory barrier with linear reduction ===
-  // =================================================
-
-#define MIN_MIC_BARRIER_WAIT_CYCLES 8
-#define MAX_MIC_BARRIER_WAIT_CYCLES 256
-
-
   class __aligned(64) LinearBarrierActive
   {
   public:
+
+    /*! construction and destruction */
+    LinearBarrierActive (size_t threadCount = 0);
+    ~LinearBarrierActive();
+    
+    /*! intializes the barrier with some number of threads */
+    void init(size_t threadCount);
+    
+    /*! thread with threadIndex waits in the barrier */
+    void wait (const size_t threadIndex);
+    
+  private:
     volatile unsigned char* count0;
     volatile unsigned char* count1; 
     volatile unsigned int mode;
     volatile unsigned int flag0;
     volatile unsigned int flag1;
-    volatile unsigned int numThreads;
-    
-    LinearBarrierActive (size_t numThreads = 0);
-    ~LinearBarrierActive();
-    
-    void init(size_t numThreads);
-    
-    __forceinline void pause(unsigned int& cycles) {
-      __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
-    }
-    
-    void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
+    volatile unsigned int threadCount;
   };
-  
-  
   
   class __aligned(64) QuadTreeBarrier
   {

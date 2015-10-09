@@ -149,8 +149,15 @@ namespace embree
     ((BarrierSysImplementation*) opaque)->wait();
   }
 
+#define MIN_MIC_BARRIER_WAIT_CYCLES 8
+#define MAX_MIC_BARRIER_WAIT_CYCLES 256
+
+  __forceinline void barrier_pause(unsigned int& cycles) {
+    __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
+  }
+
   LinearBarrierActive::LinearBarrierActive (size_t N) 
-    : count0(nullptr), count1(nullptr), mode(0), flag0(0), flag1(0), numThreads(0)
+    : count0(nullptr), count1(nullptr), mode(0), flag0(0), flag1(0), threadCount(0)
   { 
     if (N == 0) N = getNumberOfLogicalThreads();
     init(N);
@@ -164,8 +171,8 @@ namespace embree
 
   void LinearBarrierActive::init(size_t N) 
   {
-    if (numThreads != N) {
-      numThreads = N;
+    if (threadCount != N) {
+      threadCount = N;
       if (count0) delete[] count0; count0 = new unsigned char[N];
       if (count1) delete[] count1; count1 = new unsigned char[N];
     }
@@ -176,22 +183,20 @@ namespace embree
     for (size_t i=0; i<N; i++) count1[i] = 0;
   }
 
-  void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)
+  void LinearBarrierActive::wait (const size_t threadIndex)
   {
     if (mode == 0)
     {			
       if (threadIndex == 0)
       {	
-        for (size_t i=0; i<numThreads; i++)
+        for (size_t i=0; i<threadCount; i++)
           count1[i] = 0;
         
-        for (size_t i=1; i<numThreads; i++)
+        for (size_t i=1; i<threadCount; i++)
         {
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count0[i] == 0)) 
-          {
-            pause(wait_cycles);
-          }
+            barrier_pause(wait_cycles);
         }
         mode  = 1;
         flag1 = 0;
@@ -204,9 +209,7 @@ namespace embree
         {
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(flag0 == 0))
-          {
-            pause(wait_cycles);
-          }
+            barrier_pause(wait_cycles);
         }
         
       }		
@@ -215,16 +218,14 @@ namespace embree
     {
       if (threadIndex == 0)
       {	
-        for (size_t i=0; i<numThreads; i++)
+        for (size_t i=0; i<threadCount; i++)
           count0[i] = 0;
         
-        for (size_t i=1; i<numThreads; i++)
+        for (size_t i=1; i<threadCount; i++)
         {		
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(count1[i] == 0))
-          {
-            pause(wait_cycles);
-          }
+            barrier_pause(wait_cycles);
         }
         
         mode  = 0;
@@ -238,25 +239,19 @@ namespace embree
         {
           unsigned int wait_cycles = MIN_MIC_BARRIER_WAIT_CYCLES;
           while (likely(flag1 == 0))
-          {
-            pause(wait_cycles);
-          }
+            barrier_pause(wait_cycles);
         }
       }		
     }					
   }
 
-    void QuadTreeBarrier::CoreSyncData::init() 
+  void QuadTreeBarrier::CoreSyncData::init() 
   {
     *(volatile unsigned int*)&threadState[0][0] = 0; 
     *(volatile unsigned int*)&threadState[1][0] = 0; 
     mode = 0;
     data[0] = 0;
     __memory_barrier();
-  }
-  
-  void QuadTreeBarrier::CoreSyncData::pause(unsigned int &cycles) {
-    __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
   }
   
   void QuadTreeBarrier::CoreSyncData::switchModeAndSendRunSignal(const unsigned int m)
@@ -287,7 +282,7 @@ namespace embree
   {
     unsigned int count = MIN_MIC_BARRIER_WAIT_CYCLES;
     while(likely(allThreadsDone(m) == false)) 
-      pause(count);
+      barrier_pause(count);
   }
 
   void QuadTreeBarrier::CoreSyncData::waitForAllOtherThreadsOnCore(const unsigned int m, const unsigned int threadID)
@@ -295,7 +290,7 @@ namespace embree
     unsigned int count = MIN_MIC_BARRIER_WAIT_CYCLES;
     const unsigned int orMask = (unsigned int)1 << ((threadID % 4) * 8);
     while(likely(allThreadsDone(m,orMask) == false)) 
-      pause(count);
+      barrier_pause(count);
   }
 
   QuadTreeBarrier::QuadTreeBarrier()
@@ -314,7 +309,7 @@ namespace embree
   {
     unsigned int count = MIN_MIC_BARRIER_WAIT_CYCLES;
     while(likely(threadDone(m,threadID) == true)) 
-      pause(count);
+      barrier_pause(count);
   }
   
   void QuadTreeBarrier::wait(const size_t threadID, const size_t MAX_THREADS_SYNC)
