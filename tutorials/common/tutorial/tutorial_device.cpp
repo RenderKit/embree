@@ -709,7 +709,7 @@ float getTextureTexel1f(const Texture* texture, float s, float t)
   s = max(s,0.0f);
   t = max(t,0.0f);
 
-  if (likely(texture && texture->format == FLOAT32))
+  if (likely(texture && texture->format == Texture::FLOAT32))
   {
     const float u = min(max(s,0.0f),1.0f);
     const float v = min(max(t,0.0f),1.0f);
@@ -718,7 +718,7 @@ float getTextureTexel1f(const Texture* texture, float s, float t)
     float *data   = (float *)texture->data;
     return data[vi*texture->width + ui];
   } 
-  else if (likely(texture && texture->format == RGBA8))
+  else if (likely(texture && texture->format == Texture::RGBA8))
   {
     int iu = (int)(s * (float)(texture->width));
     if (texture->width_mask) iu &= texture->width_mask;
@@ -737,7 +737,7 @@ Vec3f getTextureTexel3f(const Texture* texture, float s, float t)
    s = max(s,0.0f);
    t = max(t,0.0f);
       
-  if (likely(texture && texture->format == RGBA8))
+   if (likely(texture && texture->format == Texture::RGBA8))
     {
       int iu = (int)(s * (float)(texture->width));
       if (texture->width_mask) 
