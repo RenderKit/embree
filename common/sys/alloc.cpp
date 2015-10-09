@@ -29,21 +29,6 @@
 
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align) 
-  {
-    assert((align & (align-1)) == 0);
-    if (size == 0) return nullptr;
-    void* ptr = _aligned_malloc(size,align);
-    if (ptr == nullptr) throw std::bad_alloc();
-    return ptr;
-  }
-  
-  void alignedFree(const void* ptr) 
-  {
-    if (ptr == nullptr) return;
-    _aligned_free((void*)ptr);
-  }
-
   void* os_malloc(size_t bytes, const int additional_flags) 
   {
     int flags = MEM_COMMIT|MEM_RESERVE|additional_flags;
@@ -99,20 +84,6 @@ namespace embree
 
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align)
-  {
-    assert((align & (align-1)) == 0);
-    void* ptr = NULL;
-    align = std::max(align,sizeof(void*));
-    size = (size+align-1)&~(align-1);
-    if (posix_memalign(&ptr,align,size) != 0) throw std::bad_alloc();
-    return ptr;
-  }
-  
-  void alignedFree(const void* ptr) {
-    free((void*)ptr);
-  }
-
   void* os_malloc(size_t bytes, const int additional_flags)
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
@@ -188,3 +159,22 @@ namespace embree
 }
 
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// All Platforms
+////////////////////////////////////////////////////////////////////////////////
+  
+namespace embree
+{
+  void* alignedMalloc(size_t size, size_t align) 
+  {
+    assert((align & (align-1)) == 0);
+    return _mm_malloc(size,align);
+  }
+  
+  void alignedFree(void* ptr) 
+  {
+    if (ptr == nullptr) return;
+    _mm_free(ptr);
+  }
+}
