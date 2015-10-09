@@ -49,10 +49,9 @@ namespace embree
       }
     };
 
-    template<int KK>
+    template<int K>
       struct Bezier1iIntersectorK
     {
-      enum { K = KK };
       typedef Bezier1i Primitive;
       typedef typename Bezier1IntersectorK<K>::Precalculations Precalculations;
       
@@ -143,10 +142,9 @@ namespace embree
       }
     };
 
-    template<int KK>
+    template<int K>
     struct Bezier1iIntersectorKMB
     {
-      enum { K = KK };
       typedef Bezier1i Primitive;
       typedef typename Bezier1IntersectorK<K>::Precalculations Precalculations;
       

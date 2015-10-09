@@ -21,10 +21,9 @@
 namespace embree
 {
   /* Stores the vertices of M triangles in struct of array layout */
-  template<int MM>
+  template<int M>
   struct TriangleMvMB
   {
-    enum { M = MM };
     typedef vbool<M> simdb;
     typedef vfloat<M> simdf;
     typedef vint<M> simdi;
@@ -196,8 +195,8 @@ namespace embree
     vint<M> primIDs; // primitive ID
   };
 
-  template<int MM>
-  typename TriangleMvMB<MM>::Type TriangleMvMB<MM>::type;
+  template<int M>
+  typename TriangleMvMB<M>::Type TriangleMvMB<M>::type;
 
   typedef TriangleMvMB<4> Triangle4vMB;
 }

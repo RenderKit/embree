@@ -24,11 +24,10 @@ namespace embree
 {
   namespace isa
   {
-    template<int KK>
+    template<int K>
     class GridSOAIntersectorK
     {
     public:
-      enum { K = KK };
       typedef SubdivPatch1Cached Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
       

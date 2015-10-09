@@ -21,10 +21,9 @@
 namespace embree
 {
   /* Stores M triangles from an indexed face set */
-  template <int MM>
+  template <int M>
   struct TriangleMi
   {
-    enum { M = MM };
     typedef Vec3<vfloat<M>> Vec3vfM;
 
     /* Virtual interface to query information about the triangle type */
@@ -185,8 +184,8 @@ namespace embree
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
-  template<int MM>
-  typename TriangleMi<MM>::Type TriangleMi<MM>::type;
+  template<int M>
+  typename TriangleMi<M>::Type TriangleMi<M>::type;
 
   typedef TriangleMi<4> Triangle4i;
 }

@@ -26,11 +26,11 @@ namespace embree
 {
   namespace isa
   {
-    /*! Intersector1 for triangle4i */
+    /*! Intersector1 for Triangle4i */
     template<bool filter>
     struct Triangle4iIntersector1Pluecker
       {
-        enum { M = Triangle4i::M };
+        enum { M = 4 };
         typedef Triangle4i Primitive;
         typedef PlueckerIntersector1<M> Precalculations;
         
@@ -69,12 +69,12 @@ namespace embree
         }
       };
 
-    /*! triangle4i intersector for K rays */
+    /*! Triangle4i intersector for K rays */
     template<int K, bool filter>
       struct Triangle4iIntersectorKPluecker
       {
         typedef Triangle4i Primitive;
-        enum { M = Triangle4i::M };
+        enum { M = 4 };
         typedef PlueckerIntersectorK<M,K> Precalculations;
  
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)

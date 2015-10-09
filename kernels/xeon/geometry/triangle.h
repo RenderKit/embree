@@ -23,10 +23,9 @@ namespace embree
   /* Precalculated representation for M triangles. Stores for each
      triangle a base vertex, two edges, and the geometry normal to
      speed up intersection calculations */
-  template<int MM>
+  template<int M>
   struct TriangleM
   {
-    enum { M = MM };
     typedef vbool<M> simdb;
     typedef vfloat<M> simdf;
     typedef vint<M> simdi;
@@ -199,8 +198,8 @@ namespace embree
     vint<M> primIDs; // primitive IDs
   };
 
-  template<int MM>
-  typename TriangleM<MM>::Type TriangleM<MM>::type;
+  template<int M>
+  typename TriangleM<M>::Type TriangleM<M>::type;
 
   typedef TriangleM<4> Triangle4;
   typedef TriangleM<8> Triangle8;

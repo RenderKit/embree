@@ -21,10 +21,9 @@
 namespace embree
 {
   /* Ray structure for K rays */
-  template<int KK>
+  template<int K>
   struct RayK
   {
-    enum { K = KK };
     typedef vbool<K>  simdb;
     typedef vfloat<K> simdf;
     typedef vint<K>   simdi;
@@ -208,8 +207,8 @@ namespace embree
   };
 
   /* Converts ray packet to single rays */
-  template<int KK>
-  __forceinline void RayK<KK>::get(RayK<1> ray[K]) const
+  template<int K>
+  __forceinline void RayK<K>::get(RayK<1> ray[K]) const
   {
     for (size_t i=0; i<K; i++) // FIXME: use SIMD transpose
     {
@@ -223,8 +222,8 @@ namespace embree
   }
 
   /* Converts single rays to ray packet */
-  template<int KK>
-  __forceinline void RayK<KK>::set(const RayK<1> ray[K])
+  template<int K>
+  __forceinline void RayK<K>::set(const RayK<1> ray[K])
   {
     for (size_t i=0; i<K; i++)
     {
