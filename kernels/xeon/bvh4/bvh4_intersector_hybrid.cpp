@@ -41,7 +41,7 @@ namespace embree
   namespace isa
   {
     template<int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
@@ -127,7 +127,6 @@ namespace embree
 	    /* set cur to invalid */
             cur = BVH4::emptyNode;
             curDist = pos_inf;
-
 
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -269,7 +268,7 @@ namespace embree
 
     
     template<int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
-    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid = *valid_i == -1;
@@ -515,6 +514,9 @@ namespace embree
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
 
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
+    
+
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
 #endif
@@ -553,6 +555,9 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoeller, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoellerNoFilter, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
 
+    DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector16>);
+    
+
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
 #endif
@@ -577,6 +582,10 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4IntersectorKChunk<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA ObjectIntersector4> >);
 
     DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4IntersectorKChunk<4 COMMA 0x10 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+
+#if !defined(__SSE4_2__)
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVH4IntersectorKChunk<4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector8Chunk Definitions

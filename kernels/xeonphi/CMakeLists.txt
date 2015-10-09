@@ -52,6 +52,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
   ../common/subdiv/subdivpatch1base.cpp
+  ../common/subdiv/subdivpatch1base_eval.cpp
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/catmullclark_coefficients.cpp
 

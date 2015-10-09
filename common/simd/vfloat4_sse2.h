@@ -109,14 +109,6 @@ namespace embree
       _mm_storeu_ps((float*)ptr,v);
     }
 
-    static __forceinline void storeu ( float* ptr, const vfloat4& v, size_t n) // FIXME: is there a better way of implementing this
-    { 
-      if (n >= 1) ptr[0] = v[0];
-      if (n >= 2) ptr[1] = v[1];
-      if (n >= 3) ptr[2] = v[2];
-      if (n >= 4) ptr[3] = v[3];
-    }
-
     static __forceinline void store_nt ( void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)

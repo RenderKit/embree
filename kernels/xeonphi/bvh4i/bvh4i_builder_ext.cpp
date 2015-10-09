@@ -977,7 +977,7 @@ PRINT(CORRECT_numPrims);
     if (numPrimitivesOld != numPrimitives)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
+	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_THREADS; // (threadCount+1) 
 	const size_t numNodes = (size_t)((float)(numPrims+2)/2) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1),1.0f);
       }

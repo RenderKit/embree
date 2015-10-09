@@ -114,7 +114,7 @@ namespace embree
     __aligned(64) SharedBinningPartitionData global_sharedData;
 
     /* one 16-bins structure per thread */
-    __aligned(64) Bin16 global_bin16[MAX_MIC_THREADS];
+    __aligned(64) Bin16 global_bin16[MAX_THREADS];
 
     /* one shared binning/partitoning structure per core */
     __aligned(64) SharedBinningPartitionData local_sharedData[MAX_MIC_CORES];

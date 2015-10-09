@@ -74,7 +74,8 @@ SET(EMBREE_LIBRARY_FILES
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
   geometry/subdivpatch1_intersector1.cpp
-  geometry/grid_soa.cpp		
+  geometry/grid_soa.cpp	
+  ../common/subdiv/subdivpatch1base_eval.cpp	
   builders/primrefgen.cpp
 
   bvh4/bvh4.cpp
@@ -101,26 +102,16 @@ IF (RTCORE_RAY_PACKETS)
   bvh4/bvh4_intersector_hybrid.cpp)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_SSE41
+SET(EMBREE_LIBRARY_FILES_SSE42
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
+    ../common/subdiv/subdivpatch1base_eval.cpp
     bvh4/bvh4_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
-    SET(EMBREE_LIBRARY_FILES_SSE41 ${EMBREE_LIBRARY_FILES_SSE41}
+    SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
     bvh4/bvh4_intersector_single.cpp
     bvh4/bvh4_intersector_hybrid.cpp)
-ENDIF()
-
-IF (TARGET_SSE41 AND EMBREE_LIBRARY_FILES_SSE41)
- ADD_DEFINITIONS(-D__TARGET_SSE41__)
-ENDIF()
-
-SET(EMBREE_LIBRARY_FILES_SSE42)
-
-IF (RTCORE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-   bvh4/bvh4_intersector_hybrid.cpp)
 ENDIF()
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
@@ -136,6 +127,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
+    ../common/subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.avx.cpp
 
     bvh4/bvh4_rotate.cpp
@@ -178,6 +170,7 @@ SET(EMBREE_LIBRARY_FILES_AVX2
     geometry/instance_intersector1.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
+    ../common/subdiv/subdivpatch1base_eval.cpp
 
     bvh4/bvh4_intersector1.cpp
     
@@ -204,6 +197,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     geometry/instance_intersector1.cpp
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
+    ../common/subdiv/subdivpatch1base_eval.cpp
 
     builders/primrefgen.avx512.cpp
     bvh4/bvh4_builder.avx512.cpp
@@ -239,13 +233,6 @@ ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
-
-IF (TARGET_SSE41 AND EMBREE_LIBRARY_FILES_SSE41)
-  ADD_LIBRARY(embree_sse41 STATIC ${EMBREE_LIBRARY_FILES_SSE41})
-  SET_TARGET_PROPERTIES(embree_sse41 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE41}")
-  SET_PROPERTY(TARGET embree_sse41 PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse41)
-ENDIF ()
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})

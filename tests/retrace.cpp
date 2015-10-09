@@ -213,12 +213,7 @@ namespace embree
   static AlignedAtomicCounter32 g_rays_traced = 0;
   static AlignedAtomicCounter32 g_rays_traced_diff = 0;
   static std::vector<thread_t> g_threads;
-#if !defined(__MIC__)
-  static BarrierSys g_barrier;
-#else
   static LinearBarrierActive g_barrier;
-#endif
-
   static bool g_exitThreads = false;
   static RetraceTask g_retraceTask;
   static MutexSys g_mutex;
@@ -605,13 +600,13 @@ namespace embree
 
     while(1)
       {
-        g_barrier.wait(id,g_threadCount);
+        g_barrier.wait(id);
     
         if (g_exitThreads) break;
 
         renderMainLoop(id);
 
-        g_barrier.wait(id,g_threadCount);
+        g_barrier.wait(id);
       }
   }
 
@@ -792,7 +787,7 @@ namespace embree
 #endif
 	  }
 
-        g_barrier.wait(0,g_threadCount);
+        g_barrier.wait(0);
         renderMainLoop(0);
 
 	dt = getSeconds()-dt;
@@ -801,7 +796,7 @@ namespace embree
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << g_rays_traced / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
 
-        g_barrier.wait(0,g_threadCount);
+        g_barrier.wait(0);
 
 	if (g_sde)
 	  {
@@ -818,7 +813,7 @@ namespace embree
 
     std::cout << "freeing threads..." << std::flush;
     g_exitThreads = true;
-    g_barrier.wait(0,g_threadCount);
+    g_barrier.wait(0);
     std::cout << "done" << std::endl << std::flush;
 
 

@@ -25,37 +25,22 @@ namespace embree
   class BarrierSys
   {
   public:
+
+    /*! construction / destruction */
     BarrierSys ();
     ~BarrierSys ();
 
-  public:
+    /*! intializes the barrier with some number of threads */
     void init(size_t count);
+
+    /*! lets calling thread wait in barrier */
     void wait();
 
-  public:
-
-    void wait (const unsigned int threadIndex, const unsigned int threadCount) {  
-      wait();   
-    }
-
-    void syncWithReduction(const size_t threadIndex, 
-                           const size_t threadCount,
-                           void (* reductionFct)(const size_t currentThreadID,
-                                                 const size_t childThreadID,
-                                                 void *ptr),
-                           void *ptr)
-    {
-      wait();
-    }
-
-  protected:
+  private:
     void* opaque;
   };
 
-  // =================================================
-  // === fast memory barrier ===
-  // =================================================
-
+  /*! fast active barrier using atomitc counter */
   struct __aligned(64) BarrierActive 
   {
   public:
@@ -73,21 +58,21 @@ namespace embree
 
   private:
     volatile atomic_t cntr;
-    //char align[64-sizeof(atomic_t)];
   };
 
+  /*! fast active barrier that does not require initialization to some number of threads */
   struct __aligned(64) BarrierActiveAutoReset
   {
   public:
     BarrierActiveAutoReset () 
       : cntr0(0), cntr1(0) {}
 
-    void wait (size_t numThreads) 
+    void wait (size_t threadCount) 
     {
       atomic_add((atomic_t*)&cntr0,1);
-      while (cntr0 != numThreads) __pause_cpu();
+      while (cntr0 != threadCount) __pause_cpu();
       atomic_add((atomic_t*)&cntr1,1);
-      while (cntr1 != numThreads) __pause_cpu();
+      while (cntr1 != threadCount) __pause_cpu();
       atomic_add((atomic_t*)&cntr0,-1);
       while (cntr0 != 0) __pause_cpu();
       atomic_add((atomic_t*)&cntr1,-1);
@@ -99,46 +84,33 @@ namespace embree
     volatile atomic_t cntr1;
   };
 
-  // =================================================
-  // === fast memory barrier with linear reduction ===
-  // =================================================
-
-#define MIN_MIC_BARRIER_WAIT_CYCLES 8
-#define MAX_MIC_BARRIER_WAIT_CYCLES 256
-
-
   class __aligned(64) LinearBarrierActive
   {
-    public:
-      volatile unsigned char count0[MAX_MIC_THREADS]; 
-      volatile unsigned char count1[MAX_MIC_THREADS]; 
+  public:
 
-      volatile unsigned int mode;
-      volatile unsigned int flag0;
-      volatile unsigned int flag1;
-      volatile unsigned int fill[16-3];
-      volatile unsigned int numThreads;
-      
-      LinearBarrierActive (size_t numThreads = 0);
-
-      void init(size_t numThreads);
-
-      __forceinline void pause(unsigned int &cycles) {
-	__pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
-      }
-
-      void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
-      void waitForThreads(const size_t threadIndex, const size_t threadCount);
-
-      void syncWithReduction(const size_t threadIndex, 
-                             const size_t threadCount,
-                             void (* reductionFct)(const size_t currentThreadID,
-                                                   const size_t childThreadID,
-                                                   void *ptr),
-                             void *ptr);
+    /*! construction and destruction */
+    LinearBarrierActive (size_t threadCount = 0);
+    ~LinearBarrierActive();
+    
+    /*! intializes the barrier with some number of threads */
+    void init(size_t threadCount);
+    
+    /*! thread with threadIndex waits in the barrier */
+    void wait (const size_t threadIndex);
+    
+  private:
+    volatile unsigned char* count0;
+    volatile unsigned char* count1; 
+    volatile unsigned int mode;
+    volatile unsigned int flag0;
+    volatile unsigned int flag1;
+    volatile unsigned int threadCount;
   };
+  
 
 
+
+#if defined (__MIC__)
 
   class __aligned(64) QuadTreeBarrier
   {
@@ -195,4 +167,5 @@ namespace embree
   public:  
     __aligned(64) CoreSyncData data[MAX_MIC_CORES]; // == one cacheline per core ==
   };
+#endif
 }

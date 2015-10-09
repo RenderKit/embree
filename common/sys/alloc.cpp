@@ -16,6 +16,9 @@
 
 #include "alloc.h"
 #include "intrinsics.h"
+#if defined(TASKING_TBB)
+#  include "tbb/scalable_allocator.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
@@ -29,23 +32,6 @@
 
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align) 
-  {
-    assert((align & (align-1)) == 0);
-    if (size == 0) return nullptr;
-    void* ptr = _aligned_malloc(size,align);
-    if (ptr == nullptr) throw std::bad_alloc();
-    return ptr;
-  }
-  
-  void alignedFree(const void* ptr) 
-  {
-    if (ptr == nullptr) return;
-    _aligned_free((void*)ptr);
-  }
-
-  // FIXME: implement large pages under Windows
-  
   void* os_malloc(size_t bytes, const int additional_flags) 
   {
     int flags = MEM_COMMIT|MEM_RESERVE|additional_flags;
@@ -79,10 +65,6 @@ namespace embree
     if (bytes == 0) return;
     VirtualFree(ptr,0,MEM_RELEASE);
   }
-
-  void* os_realloc (void* ptr, size_t bytesNew, size_t bytesOld) {
-    NOT_IMPLEMENTED;
-  }
 }
 #endif
 
@@ -105,20 +87,6 @@ namespace embree
 
 namespace embree
 {
-  void* alignedMalloc(size_t size, size_t align)
-  {
-    assert((align & (align-1)) == 0);
-    void* ptr = NULL;
-    align = std::max(align,sizeof(void*));
-    size = (size+align-1)&~(align-1);
-    if (posix_memalign(&ptr,align,size) != 0) throw std::bad_alloc();
-    return ptr;
-  }
-  
-  void alignedFree(const void* ptr) {
-    free((void*)ptr);
-  }
-
   void* os_malloc(size_t bytes, const int additional_flags)
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
@@ -149,7 +117,7 @@ namespace embree
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 #endif
-#if __MIC__ // || 1
+#if __MIC__
     flags |= MAP_POPULATE;
 #endif
 
@@ -191,33 +159,32 @@ namespace embree
     if (munmap(ptr,bytes) == -1)
       throw std::bad_alloc();
   }
-
-  void* os_realloc (void* old_ptr, size_t bytesNew, size_t bytesOld)
-  {
-#if defined(__MIC__)
-    if (bytesOld > 16*4096)
-      bytesOld = (bytesOld+2*1024*1024-1)&ssize_t(-2*1024*1024);
-    else
-      bytesOld = (bytesOld+4095)&ssize_t(-4096);
-
-    if (bytesNew > 16*4096)
-      bytesNew = (bytesNew+2*1024*1024-1)&ssize_t(-2*1024*1024);
-    else
-      bytesNew = (bytesNew+4095)&ssize_t(-4096);
-
-    char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
-
-    if (ptr == nullptr || ptr == MAP_FAILED) {
-      perror("os_realloc ");
-      throw std::bad_alloc();
-    }
-    return ptr;
-#else
-    NOT_IMPLEMENTED;
-    return nullptr;
-#endif
-
-  }
 }
 
 #endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// All Platforms
+////////////////////////////////////////////////////////////////////////////////
+  
+namespace embree
+{
+  void* alignedMalloc(size_t size, size_t align) 
+  {
+    assert((align & (align-1)) == 0);
+#if defined(TASKING_TBB)
+    return scalable_aligned_malloc(size,align);
+#else
+    return _mm_malloc(size,align);
+#endif
+  }
+  
+  void alignedFree(void* ptr) 
+  {
+#if defined(TASKING_TBB)
+    scalable_aligned_free(ptr);
+#else
+    _mm_free(ptr);
+#endif
+  }
+}

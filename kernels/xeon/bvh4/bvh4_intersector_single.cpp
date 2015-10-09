@@ -28,7 +28,7 @@ namespace embree
   namespace isa
   {
     template<int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid = *valid_i == -1;
@@ -64,7 +64,7 @@ namespace embree
 
     
     template<int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKSingle<K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid = *valid_i == -1;
@@ -101,7 +101,7 @@ namespace embree
     }
 
     template<int K, typename Intersector1>
-    void BVH4IntersectorKFromIntersector1<K,Intersector1>::intersect(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKFromIntersector1<K,Intersector1>::intersect(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       Ray rays[K];
       ray.get(rays);
@@ -114,7 +114,7 @@ namespace embree
     }
     
     template<int K, typename Intersector1>
-    void BVH4IntersectorKFromIntersector1<K,Intersector1>::occluded(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKFromIntersector1<K,Intersector1>::occluded(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       Ray rays[K];
       ray.get(rays);
@@ -135,7 +135,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVH4IntersectorKSingle<4 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
 
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4,BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
     DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVH4IntersectorKFromIntersector1<4 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 
@@ -149,7 +148,6 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVH4IntersectorKSingle<8 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >);
 
     DEFINE_INTERSECTOR8(BVH4Subdivpatch1Intersector8, BVH4IntersectorKFromIntersector1<8 COMMA BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-    //DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8,BVH4IntersectorKFromIntersector1<8 COMMA BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
     DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVH4IntersectorKFromIntersector1<8 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
@@ -164,7 +162,6 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVH4IntersectorKSingle<16 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >);
 
     DEFINE_INTERSECTOR16(BVH4Subdivpatch1Intersector16, BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-    DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16,BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA SubdivPatch1CachedIntersector1> >);
 
     DEFINE_INTERSECTOR16(BVH4GridAOSIntersector16, BVH4IntersectorKFromIntersector1<16 COMMA BVH4Intersector1<0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif

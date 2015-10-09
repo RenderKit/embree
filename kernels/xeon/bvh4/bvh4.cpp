@@ -69,8 +69,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4GridAOSIntersector4);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector4,BVH4TrianglePairs4Intersector4HybridMoellerNoFilter);
 
@@ -95,8 +93,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4GridAOSIntersector8);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4TrianglePairs4Intersector8ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH4TrianglePairs4Intersector8ChunkMoellerNoFilter);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4TrianglePairs4Intersector8HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector8,BVH4TrianglePairs4Intersector8HybridMoellerNoFilter);
 
@@ -121,8 +117,6 @@ namespace embree
   DECLARE_SYMBOL(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4GridAOSIntersector16);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16HybridMoeller);
   DECLARE_SYMBOL(Accel::Intersector16,BVH4TrianglePairs4Intersector16HybridMoellerNoFilter);
 
@@ -258,8 +252,6 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4Triangle8Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT2              (features,BVH4Triangle4Intersector4HybridMoeller,BVH4Triangle4Intersector4ChunkMoeller); // hybrid not supported below SSE4.2
 
-    SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4ChunkMoeller);
-    SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2              (features,BVH4TrianglePairs4Intersector4HybridMoellerNoFilter);
 
@@ -275,7 +267,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Subdivpatch1Intersector4);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Subdivpatch1CachedIntersector4);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector4);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4GridAOSIntersector4);
     SELECT_SYMBOL_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
    
@@ -303,9 +295,7 @@ namespace embree
     SELECT_SYMBOL_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4TrianglePairs4Intersector8HybridMoeller);
     SELECT_SYMBOL_AVX_AVX2(features,BVH4TrianglePairs4Intersector8HybridMoellerNoFilter);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4TrianglePairs4Intersector8ChunkMoeller);
-    SELECT_SYMBOL_AVX_AVX2(features,BVH4TrianglePairs4Intersector8ChunkMoellerNoFilter);
-
+    
     /* select intersectors16 */
     SELECT_SYMBOL_AVX512(features,BVH4Bezier1vIntersector16Chunk);
     SELECT_SYMBOL_AVX512(features,BVH4Bezier1iIntersector16Chunk);
@@ -328,8 +318,6 @@ namespace embree
     SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4GridAOSIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4VirtualIntersector16Chunk);
-    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoeller);
-    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter);
     SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoeller);
     SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoellerNoFilter);
 

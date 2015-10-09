@@ -239,7 +239,7 @@ namespace embree
     }
   
     template<int types, bool robust, typename PrimitiveIntersector>
-    void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* bvh, Ray& ray)
+    void BVH4Intersector1<types,robust,PrimitiveIntersector>::intersect(const BVH4* __restrict__ bvh, Ray& __restrict__ ray)
     {
       enum { N = BVH4::N };
       /*! perform per ray precalculations required by the primitive intersector */
@@ -372,7 +372,7 @@ namespace embree
     }
     
     template<int types, bool robust, typename PrimitiveIntersector>
-    void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* bvh, Ray& ray)
+    void BVH4Intersector1<types,robust,PrimitiveIntersector>::occluded(const BVH4* __restrict__ bvh, Ray& __restrict__ ray)
     {
       enum { N = BVH4::N };
       /*! perform per ray precalculations required by the primitive intersector */

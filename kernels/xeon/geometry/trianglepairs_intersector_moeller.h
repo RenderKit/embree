@@ -150,14 +150,14 @@ namespace embree
         const vfloat<M> T = dot(Vec3vfM(tri_Ng),C) ^ sgnDen;
         valid &= (T > absDen*vfloat<M>(ray.tnear)) & (T < absDen*vfloat<M>(ray.tfar));
         if (likely(none(valid))) return false;
-        
+
         /* update hit information */
         return epilog(valid,[&] () {
             const vfloat<M> rcpAbsDen = rcp(absDen);
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+            const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
             const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
             return Hit(u,v,t,Ng,flags);
           });
@@ -271,7 +271,7 @@ namespace embree
             const vfloat<K> uu = U*rcpAbsDen;
             const vfloat<K> vv = V*rcpAbsDen;
             const vfloat<K> ww = 1.0f-uu-vv;
-            const vfloat<K> uwv[3] { uu,ww,vv };
+            const vfloat<K> uwv[3] = { uu,ww,vv };
             const vfloat<K> u = uwv[indexU];
             const vfloat<K> v = uwv[indexV];
             const vfloat<K> flip(flipNg); 
@@ -342,7 +342,7 @@ namespace embree
             const vfloat<M> t = T * rcpAbsDen;
             const vfloat<M> u = U * rcpAbsDen;
             const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+            const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
             const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
             return Hit(u,v,t,Ng,flags);
           });
