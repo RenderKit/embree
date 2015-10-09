@@ -77,10 +77,6 @@ namespace embree
     if (bytes == 0) return;
     VirtualFree(ptr,0,MEM_RELEASE);
   }
-
-  void* os_realloc (void* ptr, size_t bytesNew, size_t bytesOld) {
-    NOT_IMPLEMENTED;
-  }
 }
 #endif
 
@@ -188,33 +184,6 @@ namespace embree
 #endif
     if (munmap(ptr,bytes) == -1)
       throw std::bad_alloc();
-  }
-
-  void* os_realloc (void* old_ptr, size_t bytesNew, size_t bytesOld)
-  {
-#if defined(__MIC__)
-    if (bytesOld > 16*4096)
-      bytesOld = (bytesOld+2*1024*1024-1)&ssize_t(-2*1024*1024);
-    else
-      bytesOld = (bytesOld+4095)&ssize_t(-4096);
-
-    if (bytesNew > 16*4096)
-      bytesNew = (bytesNew+2*1024*1024-1)&ssize_t(-2*1024*1024);
-    else
-      bytesNew = (bytesNew+4095)&ssize_t(-4096);
-
-    char *ptr = (char*)mremap(old_ptr,bytesOld,bytesNew,MREMAP_MAYMOVE);
-
-    if (ptr == nullptr || ptr == MAP_FAILED) {
-      perror("os_realloc ");
-      throw std::bad_alloc();
-    }
-    return ptr;
-#else
-    NOT_IMPLEMENTED;
-    return nullptr;
-#endif
-
   }
 }
 
