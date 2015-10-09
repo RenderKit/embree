@@ -23,8 +23,8 @@
 #endif
 
 #define MAX_THREADS 512
-#define MAX_MIC_THREADS MAX_THREADS // FIXME: remove MAX_MIC_THREADS
-#define MAX_MIC_CORES (MAX_MIC_THREADS/4)
+//#define MAX_MIC_THREADS MAX_THREADS // FIXME: remove MAX_MIC_THREADS
+#define MAX_MIC_CORES (MAX_THREADS/4)
 
 #include "platform.h"
 

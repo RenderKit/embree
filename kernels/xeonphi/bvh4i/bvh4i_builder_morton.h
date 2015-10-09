@@ -193,8 +193,8 @@ namespace embree
     unsigned int encodeMask;
 
     __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
-    __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
-    __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
+    __aligned(64) unsigned int thread_startGroup[MAX_THREADS];      
+    __aligned(64) unsigned int thread_startGroupOffset[MAX_THREADS];
 
 
     /*! state for radix sort */
@@ -202,7 +202,7 @@ namespace embree
     static const size_t RADIX_BITS = 8;
     static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
     static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+    __aligned(64) unsigned int radixCount[MAX_THREADS][RADIX_BUCKETS];
 
   protected:
     MortonID32Bit * __restrict__ morton;
@@ -376,8 +376,8 @@ namespace embree
     Scene      * scene;
 
     __aligned(64) SmallBuildRecord buildRecords[MAX_TOP_LEVEL_BINS];    
-    __aligned(64) unsigned int thread_startGroup[MAX_MIC_THREADS];      
-    __aligned(64) unsigned int thread_startGroupOffset[MAX_MIC_THREADS];
+    __aligned(64) unsigned int thread_startGroup[MAX_THREADS];      
+    __aligned(64) unsigned int thread_startGroupOffset[MAX_THREADS];
 
 
     /*! state for radix sort */
@@ -385,7 +385,7 @@ namespace embree
     static const size_t RADIX_BITS = 8;
     static const size_t RADIX_BUCKETS = (1 << RADIX_BITS);
     static const size_t RADIX_BUCKETS_MASK = (RADIX_BUCKETS-1);
-    __aligned(64) unsigned int radixCount[MAX_MIC_THREADS][RADIX_BUCKETS];
+    __aligned(64) unsigned int radixCount[MAX_THREADS][RADIX_BUCKETS];
 
   protected:
     MortonID64Bit * __restrict__ morton;

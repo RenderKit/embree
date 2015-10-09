@@ -92,11 +92,11 @@ namespace embree
     AlignedAtomicCounter32 maxLeftBlockID;
     AlignedAtomicCounter32 maxRightBlockID;
       
-    unsigned int  leftRemainderBlockIDs[MAX_MIC_THREADS];
-    unsigned int rightRemainderBlockIDs[MAX_MIC_THREADS];
+    unsigned int  leftRemainderBlockIDs[MAX_THREADS]; // FIXME: maximal number of threads
+    unsigned int rightRemainderBlockIDs[MAX_THREADS];
 
-    V leftReductions[MAX_MIC_THREADS];
-    V rightReductions[MAX_MIC_THREADS];
+    V leftReductions[MAX_THREADS]; // FIXME: maximal number of threads
+    V rightReductions[MAX_THREADS];
 
 
     enum {
@@ -658,10 +658,10 @@ namespace embree
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
-    __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
-    __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+    __aligned(64) unsigned int counter_start[MAX_THREADS]; // FIXME: maximal number of threads
+    __aligned(64) unsigned int counter_left[MAX_THREADS];  // FIXME: maximal number of threads
+    __aligned(64) Range leftMisplacedRanges[MAX_THREADS];  // FIXME: maximal number of threads
+    __aligned(64) Range rightMisplacedRanges[MAX_THREADS]; // FIXME: maximal number of threads
 
 
       
@@ -1074,12 +1074,12 @@ namespace embree
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
-    __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
-    __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) V leftReductions[MAX_MIC_THREADS];
-    __aligned(64) V rightReductions[MAX_MIC_THREADS];
+    __aligned(64) unsigned int counter_start[MAX_THREADS]; // FIXME: maximal number of threads
+    __aligned(64) unsigned int counter_left[MAX_THREADS];  // FIXME: maximal number of threads
+    __aligned(64) Range leftMisplacedRanges[MAX_THREADS];  // FIXME: maximal number of threads
+    __aligned(64) Range rightMisplacedRanges[MAX_THREADS]; // FIXME: maximal number of threads
+    __aligned(64) V leftReductions[MAX_THREADS];           // FIXME: maximal number of threads
+    __aligned(64) V rightReductions[MAX_THREADS];          // FIXME: maximal number of threads
 
 
      

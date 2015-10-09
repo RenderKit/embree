@@ -290,13 +290,11 @@ namespace embree
     size_t threadCount;
     __aligned(64) void* volatile data;
 
-#if defined(__MIC__)
+//#if defined(__MIC__)
     __aligned(64) QuadTreeBarrier taskBarrier;
-    //__aligned(64) LinearBarrierActive taskBarrier; //FIXME
-
-#else
-    __aligned(64) LinearBarrierActive taskBarrier;
-#endif
+//#else
+//    __aligned(64) LinearBarrierActive taskBarrier;
+//#endif
 
     __dllexport bool enter(size_t threadIndex, size_t threadCount);
     __dllexport void leave(size_t threadIndex, size_t threadCount);

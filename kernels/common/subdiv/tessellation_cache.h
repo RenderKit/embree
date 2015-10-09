@@ -108,7 +108,7 @@ namespace embree
 #else
    static const size_t NUM_CACHE_SEGMENTS              = 8;
 #endif
-   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
 #if defined(__X86_64__)
    static const size_t REF_TAG_MASK                    = 0xffffffffff;

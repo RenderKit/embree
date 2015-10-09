@@ -117,7 +117,7 @@ namespace embree
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 #endif
-#if __MIC__ // || 1
+#if __MIC__
     flags |= MAP_POPULATE;
 #endif
 

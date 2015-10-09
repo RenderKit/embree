@@ -110,8 +110,8 @@ namespace embree
   class __aligned(64) LinearBarrierActive
   {
     public:
-      volatile unsigned char count0[MAX_MIC_THREADS]; 
-      volatile unsigned char count1[MAX_MIC_THREADS]; 
+      volatile unsigned char count0[MAX_THREADS];  // FIXME: static number of threads!
+      volatile unsigned char count1[MAX_THREADS]; 
 
       volatile unsigned int mode;
       volatile unsigned int flag0;

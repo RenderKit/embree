@@ -155,8 +155,8 @@ namespace embree
     mode      = 0;
     flag0     = 0;
     flag1     = 0;
-    for (size_t i=0; i<MAX_MIC_THREADS; i++) count0[i] = 0;
-    for (size_t i=0; i<MAX_MIC_THREADS; i++) count1[i] = 0;
+    for (size_t i=0; i<MAX_THREADS; i++) count0[i] = 0;
+    for (size_t i=0; i<MAX_THREADS; i++) count1[i] = 0;
   }
 
   void LinearBarrierActive::init(size_t cntr) 

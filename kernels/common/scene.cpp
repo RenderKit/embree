@@ -51,7 +51,7 @@ namespace embree
       progressInterface(this)
   {
 #if defined(TASKING_LOCKSTEP) 
-    lockstep_scheduler.taskBarrier.init(MAX_MIC_THREADS);
+    lockstep_scheduler.taskBarrier.init(MAX_THREADS);
 #elif defined(TASKING_TBB_INTERNAL)
     scheduler = nullptr;
 #else
