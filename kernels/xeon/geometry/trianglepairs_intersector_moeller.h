@@ -271,7 +271,7 @@ namespace embree
             const vfloat<K> uu = U*rcpAbsDen;
             const vfloat<K> vv = V*rcpAbsDen;
             const vfloat<K> ww = 1.0f-uu-vv;
-            const vfloat<K> uwv[3] { uu,ww,vv };
+            const vfloat<K> uwv[3] = { uu,ww,vv };
             const vfloat<K> u = uwv[indexU];
             const vfloat<K> v = uwv[indexV];
             const vfloat<K> flip(flipNg); 
