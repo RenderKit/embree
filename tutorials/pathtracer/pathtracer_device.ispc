@@ -724,7 +724,8 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
 {
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials){
+    //if (id >= 0 && id < numMaterials)
+    {
       ISPCMaterial* uniform material = &materials[id];
 
       switch (material->ty) {
@@ -745,10 +746,13 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
 
 inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
+  print("materialID %\n",materialID);
+  print("numMaterials %\n",numMaterials);
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials){
+    //if (id >= 0 && id < numMaterials)
+    {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {
       case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform OBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
@@ -772,7 +776,8 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id >= 0 && id < numMaterials) {
+    //if (id >= 0 && id < numMaterials) 
+    {
       ISPCMaterial* uniform material = &materials[id];
       switch (material->ty) {
       case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform OBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
