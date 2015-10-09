@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
-
 #include "../../../common/sys/platform.h"
 #include "../../../common/sys/ref.h"
 #include "../../../common/sys/filename.h"
 #include "../../../common/math/color.h"
+
+#include <vector>
+#include <string>
 
 namespace embree
 {

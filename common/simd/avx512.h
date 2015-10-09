@@ -20,7 +20,6 @@
 #include "../sys/intrinsics.h"
 #include "../math/constants.h"
 #include "varying.h"
-//#include "sse_mic.h"
 
 #include <zmmintrin.h>
 
