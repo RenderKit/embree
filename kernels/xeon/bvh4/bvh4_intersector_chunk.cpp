@@ -36,7 +36,7 @@ namespace embree
   namespace isa
   {
     template<int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVH4IntersectorKChunk<K, types, robust, PrimitiveIntersectorK>::intersect(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKChunk<K, types, robust, PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
@@ -209,7 +209,7 @@ namespace embree
     }
     
     template<int K, int types, bool robust, typename PrimitiveIntersectorK>
-    void BVH4IntersectorKChunk<K, types, robust, PrimitiveIntersectorK>::occluded(vint<K>* valid_i, BVH4* bvh, RayK<K>& ray)
+    void BVH4IntersectorKChunk<K, types, robust, PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH4* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
       /* verify correct input */
       vbool<K> valid = *valid_i == -1;
