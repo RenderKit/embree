@@ -724,7 +724,7 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
 {
   foreach_unique (id in materialID)
   {
-    if (id < 0 || id >= numMaterials) continue;
+    if (id >= 0 && id < numMaterials){
   ISPCMaterial* uniform material = &materials[id];
 
   switch (material->ty) {
@@ -741,13 +741,14 @@ inline void Material__preprocess(ISPCMaterial* uniform materials, int materialID
   }
   }
 }
+}
 
 inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uniform int numMaterials, const BRDF& brdf, const Vec3f& wo, const DifferentialGeometry& dg, const Vec3f& wi)
 {
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id < 0 || id >= numMaterials) continue;
+    if (id >= 0 && id < numMaterials){
   ISPCMaterial* uniform material = &materials[id];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__eval  ((uniform OBJMaterial* uniform)  material, brdf, wo, dg, wi); break;
@@ -762,6 +763,7 @@ inline Vec3f Material__eval(ISPCMaterial* uniform materials, int materialID, uni
   default: c = make_Vec3f(0.0f); 
   }
   }
+  }
   return c;
 }
 
@@ -770,7 +772,7 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
   Vec3f c = make_Vec3f(0.0f);
   foreach_unique (id in materialID)
   {
-    if (id < 0 || id >= numMaterials) continue;
+    if (id >= 0 && id < numMaterials) {
   ISPCMaterial* uniform material = &materials[id];
   switch (material->ty) {
   case MATERIAL_OBJ  : c = OBJMaterial__sample  ((uniform OBJMaterial* uniform)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
@@ -783,6 +785,7 @@ inline Vec3f Material__sample(ISPCMaterial* uniform uniform materials, int mater
   case MATERIAL_MIRROR: c = MirrorMaterial__sample((uniform MirrorMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((uniform ThinDielectricMaterial* uniform)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
   default: c = make_Vec3f(0.0f); 
+  }
   }
   }
   return c;
