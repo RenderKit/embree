@@ -180,8 +180,9 @@
 #ifdef __WIN32__
 #undef __noinline
 #define __noinline             __declspec(noinline)
-//#define __forceinline          __forceinline
-//#define __restrict             __restrict
+//#define __forceinline        __forceinline
+//#define __restrict           __restrict
+#define __restrict__           __restrict
 #define __thread               __declspec(thread)
 #define __aligned(...)           __declspec(align(__VA_ARGS__))
 //#define __FUNCTION__           __FUNCTION__
@@ -203,10 +204,6 @@
   #define MAYBE_UNUSED __attribute__((used))
 #else
   #define MAYBE_UNUSED
-#endif
-
-#if defined(_MSC_VER)
-#define __restrict__ // FIXME: should be supported on ICC?
 #endif
 
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
