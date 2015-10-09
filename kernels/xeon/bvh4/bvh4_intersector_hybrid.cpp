@@ -115,7 +115,6 @@ namespace embree
             cur = BVH4::emptyNode;
             curDist = pos_inf;
 
-
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
 	    {
@@ -483,6 +482,9 @@ namespace embree
 #endif
     DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4HybridPluecker, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
 
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVH4IntersectorKHybrid<4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
+    
+
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector
 
@@ -519,6 +521,9 @@ namespace embree
 
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoeller, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16HybridMoellerNoFilter, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
+
+    DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16, BVH4IntersectorKHybrid<16 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector16>);
+    
 
     // FIXME: add Triangle4vMB intersector
     // FIXME: add Triangle4i intersector

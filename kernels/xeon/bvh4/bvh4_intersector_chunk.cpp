@@ -30,6 +30,7 @@
 #include "../geometry/triangle4i_intersector_pluecker.h"
 #include "../geometry/object_intersector.h"
 #include "../geometry/trianglepairs_intersector_moeller.h"
+#include "../geometry/subdivpatch1cached_intersector1.h"
 
 namespace embree
 {
@@ -64,7 +65,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -81,7 +82,7 @@ namespace embree
         if (unlikely(none(ray_tfar > curDist))) 
           continue;
         
-        while (1)
+        while (1) 
         {
           /* process normal nodes */
           if (likely((types & 0x1) && cur.isNode()))
@@ -89,13 +90,10 @@ namespace embree
             const vbool<K> valid_node = ray_tfar > curDist;
             STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const Node* __restrict__ const node = cur.node();
-	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -111,25 +109,27 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
-		/* push cur node onto stack and continue with hit child */
+                /* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
 	  }
 	  
 	  /* process motion blur nodes */
@@ -139,12 +139,9 @@ namespace embree
             STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+             /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -160,25 +157,27 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 		
-		/* push cur node onto stack and continue with hit child */
+                /* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }	      
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
 	  }
 	  else 
 	    break;
@@ -239,7 +238,7 @@ namespace embree
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
       
-      while (1)
+      while (1) pop:
       {
         /* pop next node from stack */
         assert(sptr_node > stack_node);
@@ -265,12 +264,9 @@ namespace embree
             STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const Node* __restrict__ const node = cur.node();
 	    
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -286,25 +282,27 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 
-		/* push cur node onto stack and continue with hit child */
+                /* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }     
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
 	  }
 	  
 	  /* process motion blur nodes */
@@ -314,12 +312,9 @@ namespace embree
             STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
 	    const BVH4::NodeMB* __restrict__ const node = cur.nodeMB();
           
-	    /* pop of next node */
-	    assert(sptr_node > stack_node);
-	    sptr_node--;
-	    sptr_near--;
-	    cur = *sptr_node; 
-	    curDist = *sptr_near;
+            /* set cur to invalid */
+            cur = BVH4::emptyNode;
+            curDist = pos_inf;
 	    
 #pragma unroll(4)
 	    for (unsigned i=0; i<BVH4::N; i++)
@@ -335,25 +330,27 @@ namespace embree
 		assert(sptr_node < stackEnd);
 		assert(child != BVH4::emptyNode);
                 const vfloat<K> childDist = select(lhit,lnearP,inf);
-		sptr_node++;
-		sptr_near++;
 
-		/* push cur node onto stack and continue with hit child */
+                /* push cur node onto stack and continue with hit child */
 		if (any(childDist < curDist))
 		{
-		  *(sptr_node-1) = cur;
-		  *(sptr_near-1) = curDist; 
+                  if (likely(cur != BVH4::emptyNode)) {
+                    *sptr_node = cur; sptr_node++;
+                    *sptr_near = curDist; sptr_near++;
+                  }
 		  curDist = childDist;
 		  cur = child;
 		}
 		
 		/* push hit child onto stack */
 		else {
-		  *(sptr_node-1) = child;
-		  *(sptr_near-1) = childDist; 
+		  *sptr_node = child; sptr_node++;
+		  *sptr_near = childDist; sptr_near++;
 		}
 	      }	      
 	    }
+            if (unlikely(cur == BVH4::emptyNode)) 
+              goto pop;
 	  }
 	  else 
 	    break;
@@ -405,6 +402,10 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVH4IntersectorKChunk<4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA ObjectIntersector4> >);
 
     DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVH4IntersectorKChunk<4 COMMA 0x10 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+
+#if !defined(__SSE4_2__)
+    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVH4IntersectorKChunk<4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Intersector8 Definitions
