@@ -148,39 +148,32 @@ namespace embree
   void BarrierSys::wait() {
     ((BarrierSysImplementation*) opaque)->wait();
   }
-}
 
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-namespace embree
-{
-  LinearBarrierActive::LinearBarrierActive (size_t numThreads_i) 
-  {    
-    numThreads = numThreads_i;
-    mode      = 0;
-    flag0     = 0;
-    flag1     = 0;
-    for (size_t i=0; i<MAX_THREADS; i++) count0[i] = 0;
-    for (size_t i=0; i<MAX_THREADS; i++) count1[i] = 0;
+  LinearBarrierActive::LinearBarrierActive (size_t N) 
+    : count0(nullptr), count1(nullptr), mode(0), flag0(0), flag1(0), numThreads(0)
+  { 
+    if (N == 0) N = getNumberOfLogicalThreads();
+    init(N);
   }
 
-  void LinearBarrierActive::init(size_t cntr) 
+  LinearBarrierActive::~LinearBarrierActive() 
   {
-    numThreads = cntr;
+    delete[] count0;
+    delete[] count1;
+  }
+
+  void LinearBarrierActive::init(size_t N) 
+  {
+    if (numThreads != N) {
+      numThreads = N;
+      if (count0) delete[] count0; count0 = new unsigned char[N];
+      if (count1) delete[] count1; count1 = new unsigned char[N];
+    }
     mode      = 0;
     flag0     = 0;
     flag1     = 0;
-    for (size_t i=0; i<cntr; i++) count0[i] = 0;
-    for (size_t i=0; i<cntr; i++) count1[i] = 0;
+    for (size_t i=0; i<N; i++) count0[i] = 0;
+    for (size_t i=0; i<N; i++) count1[i] = 0;
   }
 
   void LinearBarrierActive::wait (const size_t threadIndex, const size_t __threadCount)

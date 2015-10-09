@@ -100,15 +100,6 @@ namespace embree
   };
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-
   // =================================================
   // === fast memory barrier with linear reduction ===
   // =================================================
@@ -119,37 +110,36 @@ namespace embree
 
   class __aligned(64) LinearBarrierActive
   {
-    public:
-      volatile unsigned char count0[MAX_THREADS];  // FIXME: static number of threads!
-      volatile unsigned char count1[MAX_THREADS]; 
-
-      volatile unsigned int mode;
-      volatile unsigned int flag0;
-      volatile unsigned int flag1;
-      volatile unsigned int fill[16-3];
-      volatile unsigned int numThreads;
-      
-      LinearBarrierActive (size_t numThreads = 0);
-
-      void init(size_t numThreads);
-
-      __forceinline void pause(unsigned int &cycles) {
-	__pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
-      }
-
-      void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
-      void waitForThreads(const size_t threadIndex, const size_t threadCount);
-
-      void syncWithReduction(const size_t threadIndex, 
-                             const size_t threadCount,
-                             void (* reductionFct)(const size_t currentThreadID,
-                                                   const size_t childThreadID,
-                                                   void *ptr),
-                             void *ptr);
+  public:
+    volatile unsigned char* count0;
+    volatile unsigned char* count1; 
+    volatile unsigned int mode;
+    volatile unsigned int flag0;
+    volatile unsigned int flag1;
+    volatile unsigned int numThreads;
+    
+    LinearBarrierActive (size_t numThreads = 0);
+    ~LinearBarrierActive();
+    
+    void init(size_t numThreads);
+    
+    __forceinline void pause(unsigned int& cycles) {
+      __pause_cpu_expfalloff(cycles,MAX_MIC_BARRIER_WAIT_CYCLES);
+    }
+    
+    void wait (const size_t threadIndex, const size_t threadCount); // FIXME: remove second parameter
+    void waitForThreads(const size_t threadIndex, const size_t threadCount);
+    
+    void syncWithReduction(const size_t threadIndex, 
+                           const size_t threadCount,
+                           void (* reductionFct)(const size_t currentThreadID,
+                                                 const size_t childThreadID,
+                                                 void *ptr),
+                           void *ptr);
   };
-
-
-
+  
+  
+  
   class __aligned(64) QuadTreeBarrier
   {
   public:
