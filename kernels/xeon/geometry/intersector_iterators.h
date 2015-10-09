@@ -118,6 +118,10 @@ namespace embree
           }
           return !valid0;
         }
+
+        /* Dummy functions for templates */
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) {}
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t num, Scene* scene, size_t& lazy_node) { return false; }
       };
     
     template<int K, typename Intersector>
