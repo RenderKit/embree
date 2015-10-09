@@ -58,7 +58,8 @@ namespace embree
     
     __forceinline explicit vfloat(const __m512i& a) {
 #if defined(__AVX512F__)
-      v = _mm512_cvt_roundepi32_ps(a,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); // FIXME: round down as default?
+      // round to nearest is standard
+      v = _mm512_cvt_roundepi32_ps(a,_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); 
 #else
       v = _mm512_cvtfxpnt_round_adjustepi32_ps(a, _MM_FROUND_NO_EXC,_MM_EXPADJ_NONE);
 #endif
