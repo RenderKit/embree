@@ -16,6 +16,9 @@
 
 #include "alloc.h"
 #include "intrinsics.h"
+#if defined(TASKING_TBB)
+#  include "tbb/scalable_allocator.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Windows Platform
@@ -169,12 +172,19 @@ namespace embree
   void* alignedMalloc(size_t size, size_t align) 
   {
     assert((align & (align-1)) == 0);
+#if defined(TASKING_TBB)
+    return scalable_aligned_malloc(size,align);
+#else
     return _mm_malloc(size,align);
+#endif
   }
   
   void alignedFree(void* ptr) 
   {
-    if (ptr == nullptr) return;
+#if defined(TASKING_TBB)
+    scalable_aligned_free(ptr);
+#else
     _mm_free(ptr);
+#endif
   }
 }
