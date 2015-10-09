@@ -318,8 +318,6 @@ namespace embree
     SELECT_SYMBOL_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4GridAOSIntersector16);
     SELECT_SYMBOL_AVX512(features,BVH4VirtualIntersector16Chunk);
-    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoeller);
-    SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter);
     SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoeller);
     SELECT_SYMBOL_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoellerNoFilter);
 
