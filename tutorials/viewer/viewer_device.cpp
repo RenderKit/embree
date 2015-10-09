@@ -19,7 +19,7 @@
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
-extern "C" bool g_instancing_mode;
+extern "C" int g_instancing_mode;
 
 /* scene data */
 RTCDevice g_device = nullptr;
