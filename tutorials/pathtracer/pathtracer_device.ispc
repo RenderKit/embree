@@ -838,7 +838,7 @@ uniform Vec3f g_accu_vy;
 uniform Vec3f g_accu_vz;
 uniform Vec3f g_accu_p;
 extern uniform bool g_changed;
-extern uniform bool g_instancing_mode;
+extern uniform int g_instancing_mode;
 
 
 uniform bool g_animation = true;
