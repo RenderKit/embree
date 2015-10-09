@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../../common/sys/platform.h"
+#include "../../../common/sys/platform.h"
 
 /* size of screen tiles */
 #define TILE_SIZE_X 8
