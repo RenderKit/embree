@@ -21,15 +21,42 @@
 namespace embree
 {
   /* Varying numeric types */
-  template<int N> struct vfloat  { float   v[N]; };
-  template<int N> struct vdouble { double  v[N]; };
-  template<int N> struct vint    { int     v[N]; };
-  template<int N> struct vlong   { int64_t v[N]; };
+  template<int N>
+  struct vfloat
+  {
+    union { float f[N]; int i[N]; };
+    __forceinline const float& operator [](const size_t index) const { assert(index < N); return f[index]; }
+    __forceinline       float& operator [](const size_t index)       { assert(index < N); return f[index]; }
+  };
+
+  template<int N>
+  struct vdouble
+  {
+    union { double f[N]; int64_t i[N]; };
+    __forceinline const double& operator [](const size_t index) const { assert(index < N); return f[index]; }
+    __forceinline       double& operator [](const size_t index)       { assert(index < N); return f[index]; }
+  };
+
+  template<int N>
+  struct vint
+  {
+    int i[N];
+    __forceinline const int& operator [](const size_t index) const { assert(index < N); return i[index]; }
+    __forceinline       int& operator [](const size_t index)       { assert(index < N); return i[index]; }
+  };
+
+  template<int N>
+  struct vlong
+  {
+    int64_t i[N];
+    __forceinline const int64_t& operator [](const size_t index) const { assert(index < N); return i[index]; }
+    __forceinline       int64_t& operator [](const size_t index)       { assert(index < N); return i[index]; }
+  };
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1800
   /* Varying bool types */
-  template<int N> struct vboolf { int     v[N]; }; // for float/int
-  template<int N> struct vboold { int64_t v[N]; }; // for double/long
+  template<int N> struct vboolf { int     i[N]; }; // for float/int
+  template<int N> struct vboold { int64_t i[N]; }; // for double/long
 
   /* Aliases to default types */
   template<int N> using vreal = vfloat<N>;
@@ -39,8 +66,8 @@ namespace embree
   #define vreal  vfloat
   #define vboolf vbool
 
-  template<int N> struct vboolf { int     v[N]; };
-  template<int N> struct vboold { int64_t v[N]; };
+  template<int N> struct vboolf { int     i[N]; };
+  template<int N> struct vboold { int64_t i[N]; };
 #endif
 
   /* Maximum supported varying size */

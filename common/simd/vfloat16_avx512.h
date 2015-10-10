@@ -29,7 +29,8 @@ namespace embree
     enum  { size = 16 }; // number of SIMD elements
     union {              // data
       __m512 v; 
-      float f[16]; 
+      float f[16];
+      int i[16];
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -209,8 +210,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline float&       operator[](const size_t index)       { return f[index]; }
-    __forceinline const float& operator[](const size_t index) const { return f[index]; }
+    __forceinline       float& operator [](const size_t index)       { assert(index < 16); return f[index]; }
+    __forceinline const float& operator [](const size_t index) const { assert(index < 16); return f[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
