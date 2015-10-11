@@ -73,7 +73,7 @@ namespace embree
   }
 
   template<int NN>
-  void BVHN<NN>::layoutLargeNodes(size_t n)
+  void BVHN<NN>::layoutLargeNodes(size_t num)
   {
     struct NodeArea 
     {
@@ -90,10 +90,10 @@ namespace embree
       float A;
     };
     std::vector<NodeArea> lst;
-    lst.reserve(n);
+    lst.reserve(num);
     lst.push_back(NodeArea(root,empty));
 
-    while (lst.size() < n)
+    while (lst.size() < num)
     {
       std::pop_heap(lst.begin(), lst.end());
       NodeArea n = lst.back(); lst.pop_back();

@@ -769,8 +769,8 @@ namespace embree
     /*! Clears the barrier bits of a subtree. */
     void clearBarrier(NodeRef& node);
 
-    /*! lays out N large nodes of the BVH */
-    void layoutLargeNodes(size_t n);
+    /*! lays out num large nodes of the BVH */
+    void layoutLargeNodes(size_t num);
     NodeRef layoutLargeNodesRecursion(NodeRef& node);
 
     /*! calculates the amount of bytes allocated */
