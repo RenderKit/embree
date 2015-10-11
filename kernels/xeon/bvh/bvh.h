@@ -389,7 +389,7 @@ namespace embree
       }
 
       /*! Returns bounds of all children */
-      void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const; // N = 4
+      __forceinline void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {} // N = 4
 
       /*! swap two children of the node */
       __forceinline void swap(size_t i, size_t j)
