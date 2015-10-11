@@ -389,10 +389,7 @@ namespace embree
       }
 
       /*! Returns bounds of all children */
-      __forceinline void bounds(BBox<vfloat<N>>& bounds0, BBox<vfloat<N>>& bounds1, BBox<vfloat<N>>& bounds2, BBox<vfloat<N>>& bounds3) const {
-        transpose(lower_x,lower_y,lower_z,vfloat<N>(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
-        transpose(upper_x,upper_y,upper_z,vfloat<N>(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
-      }
+      void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const; // N = 4
 
       /*! swap two children of the node */
       __forceinline void swap(size_t i, size_t j)
@@ -863,6 +860,12 @@ namespace embree
     void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
     size_t size_data_mem;
   };
+
+  template<>
+  __forceinline void BVHN<4>::Node::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+    transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
+    transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
+  }
 
   template<int N>
   __forceinline std::ostream &operator<<(std::ostream &o, const typename BVHN<N>::Node &n)
