@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_builder_instancing.h"
-#include "bvh4_statistics.h"
+#include "../bvh/bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev_mb.h"

@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh8.h"
-#include "bvh8_statistics.h"
+#include "../bvh/bvh.h"
+#include "../bvh/bvh_statistics.h"
 #include "bvh8_builder.h"
 
 #include "../builders/primrefgen.h"
@@ -108,7 +108,7 @@ namespace embree
                   auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
                   auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-                  bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
+                  bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
                   prims.resize(numSplitPrimitives);
                   PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
                   if (presplitFactor > 1.0f)
@@ -128,13 +128,13 @@ namespace embree
                   bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
                   if (staticGeom) {
                   prims.clear();
-                  bvh->alloc2.shrink();
+                  bvh->alloc.shrink();
                 }
-                  bvh->alloc2.cleanup();
+                  bvh->alloc.cleanup();
 
                   /* verbose mode */
                   if (bvh->device->verbosity(1) && mesh == nullptr) {
-                  const size_t usedBytes = bvh->alloc2.getUsedBytes();
+                  const size_t usedBytes = bvh->alloc.getUsedBytes();
                   std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
                 }
                   if (bvh->device->verbosity(2) && mesh == nullptr)
@@ -214,7 +214,7 @@ namespace embree
                               createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
 
                             const size_t numPrimitives = pinfo.size();
-                            bvh->alloc2.init_estimate(numPrimitives*sizeof(PrimRef));
+                            bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 
 #if 0
                             PRINT(numPrimitives);
@@ -240,13 +240,13 @@ namespace embree
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
           prims.clear();
-          bvh->alloc2.shrink();
+          bvh->alloc.shrink();
         }
-	bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 
 	/* verbose mode */
 	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+          const size_t usedBytes = bvh->alloc.getUsedBytes();
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numOriginalPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
         }
 	if (bvh->device->verbosity(2) && mesh == nullptr)
@@ -376,7 +376,7 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         
-        bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
+        bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
         //prims.resize(numSplitPrimitives);
         //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
         PrimRefList prims;
@@ -435,13 +435,13 @@ namespace embree
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
-          bvh->alloc2.shrink();
+          bvh->alloc.shrink();
         }
-	bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 
         /* verbose mode */
 	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+          const size_t usedBytes = bvh->alloc.getUsedBytes();
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
         }
 	if (bvh->device->verbosity(2) && mesh == nullptr)

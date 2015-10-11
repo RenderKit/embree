@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_builder_twolevel.h"
-#include "bvh4_statistics.h"
+#include "../bvh/bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 
 #define PROFILE 0

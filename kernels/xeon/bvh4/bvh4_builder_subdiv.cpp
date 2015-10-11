@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "bvh4_refit.h"
 #include "bvh4_builder.h"
 

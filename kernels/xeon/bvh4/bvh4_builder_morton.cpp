@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
+#include "../bvh/bvh_statistics.h"
 #include "bvh4_rotate.h"
-#include "bvh4_statistics.h"
 #include "../../common/profile.h"
 #include "../../algorithms/parallel_prefix_sum.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"

@@ -16,40 +16,24 @@
 
 #pragma once
 
-#include "bvh8.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
-  class BVH8Statistics 
+  /*! BVH8 instantiations */
+  struct BVH8Factory
   {
-    typedef BVH8::Node Node;
-    typedef BVH8::NodeRef NodeRef;
+    static Accel* BVH8Triangle4(Scene* scene);
+    static Accel* BVH8Triangle4ObjectSplit(Scene* scene);
+    static Accel* BVH8Triangle4SpatialSplit(Scene* scene);
 
-  public:
-
-    /* Constructor gathers statistics. */
-    BVH8Statistics (BVH8* bvh);
-
-    /*! Convert statistics into a string */
-    std::string str();
-
-    /*! memory required to store BVH8 */
-    size_t bytesUsed();
-
-    /*! returns sah cost */
-    float sah() const { return bvhSAH; }
-
-  private:
-    void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
-
-  private:
-    BVH8* bvh;
-    float bvhSAH;                      //!< SAH cost of the BVH8.
-    float leafSAH;                      //!< SAH cost of the BVH8.
-    size_t numNodes;                   //!< Number of internal nodes.
-    size_t numLeaves;                  //!< Number of leaf nodes.
-    size_t numPrimBlocks;              //!< Number of primitive blocks.
-    size_t numPrims;                   //!< Number of primitives.
-    size_t depth;                      //!< Depth of the tree.
+    static Accel* BVH8Triangle8(Scene* scene);
+    //static Accel* BVH8Triangle8v(Scene* scene);
+    static Accel* BVH8TrianglePairs4ObjectSplit(Scene* scene);
+    static Accel* BVH8Triangle8ObjectSplit(Scene* scene);
+    static Accel* BVH8Triangle8SpatialSplit(Scene* scene);
+    //static Accel* BVH8Triangle8vObjectSplit(Scene* scene);
+    //static Accel* BVH8Triangle8vSpatialSplit(Scene* scene);
   };
 }
