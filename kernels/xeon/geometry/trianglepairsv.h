@@ -25,9 +25,6 @@ namespace embree
   template <int M>
   struct TrianglePairsMv
   { 
-    typedef vbool<M> simdb;
-    typedef vfloat<M> simdf;
-    typedef vint<M> simdi;
     typedef Vec3<vfloat<M>> Vec3vfM;
 
   public:
