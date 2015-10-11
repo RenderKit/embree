@@ -388,7 +388,7 @@ namespace embree
         return bounds(i).size();
       }
 
-      /*! Returns bounds of all children */
+      /*! Returns bounds of all children (implemented later as specializations) */
       __forceinline void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {} // N = 4
 
       /*! swap two children of the node */
