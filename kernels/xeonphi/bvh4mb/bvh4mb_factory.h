@@ -14,8 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4mb.h"
+#pragma once
+
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
+  /*! BVH4mb instantiations */
+  struct BVH4mbFactory
+  {
+    static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
+  };
 }

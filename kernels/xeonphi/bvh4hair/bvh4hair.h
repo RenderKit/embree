@@ -402,12 +402,6 @@ namespace embree
 	assert( sizeof(UnalignedNode) == 192 );
 	unaligned_nodes = nullptr;
       }
-
-    
-    static Accel* BVH4HairBinnedSAH(Scene* scene);
-    
-
-
   };
 
   __forceinline std::ostream& operator<<(std::ostream &o, const BVH4Hair::AlignedNode &n)

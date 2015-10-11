@@ -453,16 +453,6 @@ namespace embree
 
     void clear() {}
 
-    /*! BVH4i instantiations */
-    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
-    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
-
     /*! Calculates the SAH of the BVH */
     float sah ();
 

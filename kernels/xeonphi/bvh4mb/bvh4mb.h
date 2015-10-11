@@ -91,9 +91,6 @@ namespace embree
     }
 
     void clear() {}
-
-    static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
-
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const BVH4mb::Node &v)

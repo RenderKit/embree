@@ -14,8 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4mb.h"
+#pragma once
+
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
+  /*! BVH4i instantiations */
+  struct BVH4iFactory
+  {
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
+    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
+  };
 }

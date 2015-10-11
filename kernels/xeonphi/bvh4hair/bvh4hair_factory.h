@@ -14,8 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4mb.h"
+#pragma once
+
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
+  /*! BVH4Hair instantiations */
+  struct BVH4HairFactory
+  {
+    static Accel* BVH4HairBinnedSAH(Scene* scene);
+  };
 }

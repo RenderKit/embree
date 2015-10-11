@@ -20,9 +20,9 @@
 #include "../xeon/bvh4/bvh4_factory.h"
 #include "../xeon/bvh8/bvh8_factory.h"
 #else
-#include "../xeonphi/bvh4i/bvh4i.h"
-#include "../xeonphi/bvh4mb/bvh4mb.h"
-#include "../xeonphi/bvh4hair/bvh4hair.h"
+#include "../xeonphi/bvh4i/bvh4i_factory.h"
+#include "../xeonphi/bvh4mb/bvh4mb_factory.h"
+#include "../xeonphi/bvh4hair/bvh4hair_factory.h"
 #endif
  
 namespace embree
@@ -76,10 +76,10 @@ namespace embree
     needBezierVertices = true;
     needSubdivVertices = true;
 
-    accels.add( BVH4mb::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
-    accels.add( BVH4i::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
-    accels.add( BVH4Hair::BVH4HairBinnedSAH(this));
-    accels.add( BVH4i::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
+    accels.add( BVH4mbFactory::BVH4mbTriangle1ObjectSplitBinnedSAH(this) );
+    accels.add( BVH4iFactory::BVH4iVirtualGeometryBinnedSAH(this, isRobust()));
+    accels.add( BVH4HairFactory::BVH4HairBinnedSAH(this));
+    accels.add( BVH4iFactory::BVH4iSubdivMeshBinnedSAH(this, isRobust() ));
 
     if (device->verbosity(1))
     {
@@ -94,38 +94,38 @@ namespace embree
         {
           if (device->verbosity(1)) std::cout << "STATIC BUILDER MODE" << std::endl;
           if ( isCompact() )
-            accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));		    
+            accels.add(BVH4iFactory::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
           else if ( isHighQuality() )
-            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+            accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
           else
-            accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+            accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
         }
         else
         {
           if (device->verbosity(1)) std::cout << "DYNAMIC BUILDER MODE" << std::endl;
-          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
       }
       else
       {
         if (device->tri_builder == "sah" || device->tri_builder == "bvh4i" || device->tri_builder == "bvh4i.sah") {
-          accels.add(BVH4i::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitBinnedSAH(this,isRobust()));
         }
         else if (device->tri_builder == "fast" || device->tri_builder == "morton") {
-          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton(this,isRobust()));
         }
         else if (device->tri_builder == "fast_enhanced" || device->tri_builder == "morton.enhanced") {
-          accels.add(BVH4i::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitEnhancedMorton(this,isRobust()));
         }
         else if (device->tri_builder == "high_quality" || device->tri_builder == "presplits") {
-          accels.add(BVH4i::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1PreSplitsBinnedSAH(this,isRobust()));
         }
         else if (device->tri_builder == "compact" ||
                  device->tri_builder == "memory_conservative") {
-          accels.add(BVH4i::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1MemoryConservativeBinnedSAH(this,isRobust()));
         }
         else if (device->tri_builder == "morton64") {
-          accels.add(BVH4i::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
+          accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
         }
         
         else THROW_RUNTIME_ERROR("unknown builder "+device->tri_builder+" for BVH4i<Triangle1>");
