@@ -139,7 +139,7 @@ namespace embree
 
     struct NoRotate
     {
-      __forceinline size_t operator() (BVHN::Node* node, const size_t* counts, const size_t n) {
+      __forceinline size_t operator() (Node* node, const size_t* counts, const size_t n) {
         return 0;
       }
     };
