@@ -46,8 +46,8 @@ namespace embree
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
       static const size_t travCostAligned = 1;
-      static const size_t travCostUnaligned = 3; // FIXME: find best cost
-      static const size_t intCost = 1; // FIXME: was 6
+      static const size_t travCostUnaligned = 5;
+      static const size_t intCost = 6;
 
     public:
       
