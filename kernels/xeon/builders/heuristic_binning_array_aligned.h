@@ -41,7 +41,7 @@ namespace embree
         
         static const size_t PARALLEL_THRESHOLD = 10000;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 4096;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
+        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
         __forceinline HeuristicArrayBinningSAH ()
           : prims(nullptr) {}
