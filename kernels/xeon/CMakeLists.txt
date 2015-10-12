@@ -91,7 +91,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh4/bvh4_builder_instancing.cpp
   bvh4/bvh4_builder_subdiv.cpp
 
-  bvh4/bvh4_intersector1.cpp)
+  bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
@@ -107,7 +107,7 @@ SET(EMBREE_LIBRARY_FILES_SSE42
     geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
-    bvh4/bvh4_intersector1.cpp)
+    bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
@@ -140,14 +140,13 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
-    bvh4/bvh4_intersector1.cpp
+    bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
     bvh/bvh_statistics.cpp
     bvh8/bvh8_factory.cpp
     bvh8/bvh8_builder.avx.cpp
     bvh8/bvh8_builder_sah.avx.cpp
-    bvh8/bvh8_intersector1.cpp
     )
 
 IF (RTCORE_RAY_PACKETS)
@@ -174,9 +173,7 @@ SET(EMBREE_LIBRARY_FILES_AVX2
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
 
-    bvh4/bvh4_intersector1.cpp
-    
-    bvh8/bvh8_intersector1.cpp)
+    bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
@@ -210,9 +207,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     bvh4/bvh4_refit.cpp
     bvh4/bvh4_builder.avx512.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp
-    bvh4/bvh4_intersector1.cpp
-
-    bvh8/bvh8_intersector1.cpp)
+    bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}

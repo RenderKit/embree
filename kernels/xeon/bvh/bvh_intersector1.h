@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
 
@@ -24,24 +24,23 @@ namespace embree
 {
   namespace isa
   {
-    /*! BVH8 single ray traversal implementation. */
-    template<bool robust, typename PrimitiveIntersector>
-      class BVH8Intersector1 
+    /*! BVHN single ray traversal implementation. */
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
+      class BVHNIntersector1
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersector::Precalculations Precalculations;
       typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH8::NodeRef NodeRef;
-      typedef typename BVH8::Node Node;
-      static const size_t stackSize = 1+3*BVH8::maxDepth;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::TransformNode TransformNode;
 
-      static void intersect_XY(const BVH8* This, Ray& ray);
-      static void intersect_XZ(const BVH8* This, Ray& ray);
-      static void intersect_YZ(const BVH8* This, Ray& ray);
-      
+      static const size_t stackSize = 1+(N-1)*BVH::maxDepth;
+
     public:
-      static void intersect(const BVH8* This, Ray& ray);
-      static void occluded (const BVH8* This, Ray& ray);
+      static void intersect(const BVH* This, Ray& ray);
+      static void occluded (const BVH* This, Ray& ray);
     };
   }
 }
