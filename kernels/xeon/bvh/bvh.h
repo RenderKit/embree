@@ -839,7 +839,6 @@ namespace embree
     /*! bvh type information */
   public:
     const PrimitiveType& primTy;       //!< primitive type stored in the BVH
-    bool listMode;                     //!< true if number of leaf items not encoded in NodeRef
 
     /*! bvh data */
   public:
