@@ -32,36 +32,47 @@
 #if defined(__MIC__)
 #  define isa knc
 #  define ISA KNC
+#  define ISA_STR "KNC"
 #elif defined (__AVX512F__)
 #  define isa avx512
 #  define ISA AVX512KNL
+#  define ISA_STR "AVX512KNL"
 #elif defined (__AVX2__)
 #  define isa avx2
 #  define ISA AVX2
+#  define ISA_STR "AVX2"
 #elif defined(__AVXI__)
 #  define isa avxi
 #  define ISA AVXI
+#  define ISA_STR "AVXI"
 #elif defined(__AVX__)
 #  define isa avx
 #  define ISA AVX
+#  define ISA_STR "AVX"
 #elif defined (__SSE4_2__)
 #  define isa sse42
 #  define ISA SSE42
+#  define ISA_STR "SSE4.2"
 #elif defined (__SSE4_1__)
 #  define isa sse41
 #  define ISA SSE41
+#  define ISA_STR "SSE4.1"
 #elif defined(__SSSE3__)
 #  define isa ssse3
 #  define ISA SSSE3
+#  define ISA_STR "SSSE3"
 #elif defined(__SSE3__)
 #  define isa sse3
 #  define ISA SSE3
+#  define ISA_STR "SSE3"
 #elif defined(__SSE2__)
 #  define isa sse2
 #  define ISA SSE2
+#  define ISA_STR "SSE2"
 #elif defined(__SSE__)
 #  define isa sse
 #  define ISA SSE
+#  define ISA_STR "SSE"
 #else 
 #error Unknown ISA
 #endif
