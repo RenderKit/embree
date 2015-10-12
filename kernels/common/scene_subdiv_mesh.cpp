@@ -447,7 +447,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
-      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,std::plus<int>());
 
     /* create set with all holes */
     if (holes.isModified())
