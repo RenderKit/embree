@@ -45,17 +45,17 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = NN;
 
-    /*! Number of address bits the Node and primitives are aligned
-        to. Maximally 2^alignment-1 many primitive blocks per leaf are
+    /*! Number of bytes the Node and primitives are aligned
+        to. Maximally byteAlignment-1 many primitive blocks per leaf are
         supported. */
-    static const size_t alignment = 4;
+    static const size_t byteAlignment = 4*NN;
 
     /*! highest address bit is used as barrier for some algorithms */
     static const size_t barrier_mask = (1LL << (8*sizeof(size_t)-1));
 
     /*! Masks the bits that store the number of items per leaf. */
-    static const size_t align_mask = (1 << alignment)-1;
-    static const size_t items_mask = (1 << alignment)-1;
+    static const size_t align_mask = byteAlignment-1;
+    static const size_t items_mask = byteAlignment-1;
 
     /*! different supported node types */
     static const size_t tyNode = 0;

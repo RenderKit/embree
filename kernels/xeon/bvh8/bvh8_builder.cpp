@@ -38,7 +38,7 @@ namespace embree
         BVH8::Node* node = nullptr;
         //if (current.pinfo.size() > 4096) node = (BVH8::Node*)   bvh->alloc.malloc(sizeof(BVH8::Node),sizeof(BVH8::Node));
         //else
-        node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), 1 << BVH8::alignment); 
+        node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), BVH8::byteAlignment); 
         node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].pinfo.geomBounds);
