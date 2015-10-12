@@ -16,7 +16,7 @@
 
 #include "bvh4_intersector_hybrid.h"
 #include "bvh4_intersector_single.h"
-#include "bvh4_intersector_node.h"
+#include "../bvh/bvh_intersector_node.h"
 
 #include "../geometry/triangle.h"
 #include "../geometry/trianglei.h"
@@ -134,7 +134,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<BVH4::N,K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -195,7 +195,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<BVH4::N,K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
               /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -363,7 +363,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->children[i];
 	      if (unlikely(child == BVH4::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<BVH4::N,K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
 	      	      
 	      /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */
@@ -424,7 +424,7 @@ namespace embree
 	    {
 	      const NodeRef child = node->child(i);
 	      if (unlikely(child == BVH4::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
+              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<BVH4::N,K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
 	      	      
               /* if we hit the child we choose to continue with that child if it 
 		 is closer than the current next child, or we push it onto the stack */

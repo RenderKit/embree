@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../bvh/bvh.h"
-#include "bvh4_intersector_node.h"
+#include "../bvh/bvh_intersector_node.h"
 
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
