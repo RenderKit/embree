@@ -45,6 +45,10 @@ namespace embree
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
+      static const size_t travCostAligned = 1;
+      static const size_t travCostUnaligned = 3; // FIXME: find best cost
+      static const size_t intCost = 1; // FIXME: was 6
+
     public:
       
       BVH4BuilderHair (BezierPrim* prims, 
@@ -132,13 +136,13 @@ namespace embree
       {
         /* variable to track the SAH of the best splitting approach */
         float bestSAH = inf;
-        const float leafSAH = BVH4::intCost*float(pinfo.size())*halfArea(pinfo.geomBounds);
+        const float leafSAH = intCost*float(pinfo.size())*halfArea(pinfo.geomBounds);
         
         /* perform standard binning in aligned space */
         float alignedObjectSAH = inf;
         HeuristicArrayBinningSAH<BezierPrim>::Split alignedObjectSplit;
         alignedObjectSplit = alignedHeuristic.find(pinfo,0);
-        alignedObjectSAH = BVH4::travCostAligned*halfArea(pinfo.geomBounds) + BVH4::intCost*alignedObjectSplit.splitSAH();
+        alignedObjectSAH = travCostAligned*halfArea(pinfo.geomBounds) + intCost*alignedObjectSplit.splitSAH();
         bestSAH = min(alignedObjectSAH,bestSAH);
         
         /* perform standard binning in unaligned space */
@@ -149,7 +153,7 @@ namespace embree
           uspace = unalignedHeuristic.computeAlignedSpace(pinfo); 
           const PrimInfo       sinfo = unalignedHeuristic.computePrimInfo(pinfo,uspace);
           unalignedObjectSplit = unalignedHeuristic.find(sinfo,0,uspace);    	
-          unalignedObjectSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*unalignedObjectSplit.splitSAH();
+          unalignedObjectSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*unalignedObjectSplit.splitSAH();
           bestSAH = min(unalignedObjectSAH,bestSAH);
         }
 
@@ -159,7 +163,7 @@ namespace embree
         float strandSAH = inf;
         if (alignedObjectSAH > 0.6f*leafSAH) {
           strandSplit = strandHeuristic.find(pinfo);
-          strandSAH = BVH4::travCostUnaligned*halfArea(pinfo.geomBounds) + BVH4::intCost*strandSplit.splitSAH();
+          strandSAH = travCostUnaligned*halfArea(pinfo.geomBounds) + intCost*strandSplit.splitSAH();
           bestSAH = min(strandSAH,bestSAH);
         }
 #endif
