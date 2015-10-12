@@ -49,6 +49,7 @@ namespace embree
         to. Maximally byteAlignment-1 many primitive blocks per leaf are
         supported. */
     static const size_t byteAlignment = 16;
+    static const size_t byteNodeAlignment = 4*NN;
 
     /*! highest address bit is used as barrier for some algorithms */
     static const size_t barrier_mask = (1LL << (8*sizeof(size_t)-1));
