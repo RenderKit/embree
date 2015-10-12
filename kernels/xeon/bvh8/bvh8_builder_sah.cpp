@@ -42,7 +42,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive), BVH8::byteAlignment);
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive), sizeof(BVH8::Node));
         BVH8::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -281,7 +281,7 @@ namespace embree
       
       __forceinline BVH8::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
-        BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), BVH8::byteAlignment); node->clear();
+        BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), sizeof(BVH8::Node)); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].pinfo.geomBounds);
           children[i].parent = (size_t*) &node->child(i);
@@ -302,7 +302,7 @@ namespace embree
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
-        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive), BVH8::byteAlignment);
+        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive), sizeof(BVH8::Node));
         BVH8::NodeRef node = bvh->encodeLeaf((char*)leaf,N);
 
         /*PrimRefList::block_iterator_unsafe iter1(current.prims);
