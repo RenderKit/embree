@@ -16,32 +16,21 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../../common/ray.h"
-#include "../../common/stack_item.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
-  namespace isa
+  /*! BVH4i instantiations */
+  struct BVH4iFactory
   {
-    /*! BVH8 single ray traversal implementation. */
-    template<bool robust, typename PrimitiveIntersector>
-      class BVH8Intersector1 
-    {
-      /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH8::NodeRef NodeRef;
-      typedef typename BVH8::Node Node;
-      static const size_t stackSize = 1+3*BVH8::maxDepth;
-
-      static void intersect_XY(const BVH8* This, Ray& ray);
-      static void intersect_XZ(const BVH8* This, Ray& ray);
-      static void intersect_YZ(const BVH8* This, Ray& ray);
-      
-    public:
-      static void intersect(const BVH8* This, Ray& ray);
-      static void occluded (const BVH8* This, Ray& ray);
-    };
-  }
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
+    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
+  };
 }

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh8.h"
+#include "../bvh/bvh.h"
 #include "../../common/stack_item.h"
 #include "../../common/ray.h"
 

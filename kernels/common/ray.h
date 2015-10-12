@@ -24,10 +24,6 @@ namespace embree
   template<int K>
   struct RayK
   {
-    typedef vbool<K>  simdb;
-    typedef vfloat<K> simdf;
-    typedef vint<K>   simdi;
-
     /* Default construction does nothing */
     __forceinline RayK() {}
 

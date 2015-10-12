@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "../builders/bvh_builder_sah.h"
 
 namespace embree

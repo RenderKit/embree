@@ -215,7 +215,7 @@ namespace embree
     render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
     msec = getSeconds() - msec;
     std::cout << "render time " << 1.0/msec << " fps" << std::endl;
-    
+
     void* ptr = map();
     Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
     storeImage(image, fileName);

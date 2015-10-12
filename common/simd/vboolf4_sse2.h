@@ -26,46 +26,46 @@ namespace embree
     typedef vint4   Int;
     typedef vfloat4 Float;
 
-    enum  { size = 4 };               // number of SIMD elements
-    union { __m128 m128; int v[4]; }; // data
+    enum  { size = 4 };            // number of SIMD elements
+    union { __m128 v; int i[4]; }; // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline vboolf            ( ) {}
-    __forceinline vboolf            ( const vboolf4& other ) { m128 = other.m128; }
-    __forceinline vboolf4& operator=( const vboolf4& other ) { m128 = other.m128; return *this; }
+    __forceinline vboolf            ( const vboolf4& other ) { v = other.v; }
+    __forceinline vboolf4& operator=( const vboolf4& other ) { v = other.v; return *this; }
 
-    __forceinline vboolf( const __m128  input ) : m128(input) {}
-    __forceinline operator const __m128&( void ) const { return m128; }
-    __forceinline operator const __m128i( void ) const { return _mm_castps_si128(m128); }
-    __forceinline operator const __m128d( void ) const { return _mm_castps_pd(m128); }
+    __forceinline vboolf( const __m128  input ) : v(input) {}
+    __forceinline operator const __m128&( void ) const { return v; }
+    __forceinline operator const __m128i( void ) const { return _mm_castps_si128(v); }
+    __forceinline operator const __m128d( void ) const { return _mm_castps_pd(v); }
     
     __forceinline vboolf( bool a )
-      : m128(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
+      : v(_mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
     __forceinline vboolf( bool a, bool b )
-      : m128(_mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
+      : v(_mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
     __forceinline vboolf( bool a, bool b, bool c, bool d )
-      : m128(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
+      : v(_mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
     __forceinline vboolf( int mask ) {
       assert(mask >= 0 && mask < 16);
-      m128 = _mm_lookupmask_ps[mask];
+      v = _mm_lookupmask_ps[mask];
     }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboolf( FalseTy ) : m128(_mm_setzero_ps()) {}
-    __forceinline vboolf( TrueTy  ) : m128(_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()))) {}
+    __forceinline vboolf( FalseTy ) : v(_mm_setzero_ps()) {}
+    __forceinline vboolf( TrueTy  ) : v(_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()))) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool operator []( const size_t i ) const { assert(i < 4); return (_mm_movemask_ps(m128) >> i) & 1; }
-    __forceinline int& operator []( const size_t i )       { assert(i < 4); return v[i]; }
+    __forceinline bool operator []( const size_t index ) const { assert(index < 4); return (_mm_movemask_ps(v) >> index) & 1; }
+    __forceinline int& operator []( const size_t index )       { assert(index < 4); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -158,9 +158,9 @@ namespace embree
   /// Get/Set Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool get(const vboolf4& a, size_t i) { return a[i]; }
-  __forceinline void set(vboolf4& a, size_t i)       { a[i] = -1; }
-  __forceinline void clear(vboolf4& a, size_t i)     { a[i] =  0; }
+  __forceinline bool get(const vboolf4& a, size_t index) { return a[index]; }
+  __forceinline void set(vboolf4& a, size_t index)       { a[index] = -1; }
+  __forceinline void clear(vboolf4& a, size_t index)     { a[index] =  0; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

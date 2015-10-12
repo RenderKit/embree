@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "../geometry/primitive.h"
 #include "../builders/heuristic_binning_array_aligned.h"
 #include "../builders/heuristic_binning_array_unaligned.h"

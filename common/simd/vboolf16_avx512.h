@@ -115,14 +115,14 @@ namespace embree
   /// Get/Set Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool get(const vboolf16& a, size_t i) { assert(i < 16); return (toInt(a) >> i) & 1; }
-  __forceinline void set(vboolf16& a, size_t i)       { assert(i < 16); a |= 1 << i; }
-  __forceinline void clear(vboolf16& a, size_t i)     { assert(i < 16); a = andn(a, 1 << i); }
+  __forceinline bool get(const vboolf16& a, size_t index) { assert(index < 16); return (toInt(a) >> index) & 1; }
+  __forceinline void set(vboolf16& a, size_t index)       { assert(index < 16); a |= 1 << index; }
+  __forceinline void clear(vboolf16& a, size_t index)     { assert(index < 16); a = andn(a, 1 << index); }
 
   /*
-  __forceinline bool get(const vboolf16& a, size_t i) { assert(i < 16); return toInt(a) & vboolf16::shift1[i]; }
-  __forceinline void set(vboolf16& a, size_t i)       { assert(i < 16); a |= vboolf16::shift1[i]; }
-  __forceinline void clear(vboolf16& a, size_t i)     { assert(i < 16); a = andn(a, vboolf16::shift1[i]); }
+  __forceinline bool get(const vboolf16& a, size_t index) { assert(index < 16); return toInt(a) & vboolf16::shift1[index]; }
+  __forceinline void set(vboolf16& a, size_t index)       { assert(index < 16); a |= vboolf16::shift1[index]; }
+  __forceinline void clear(vboolf16& a, size_t index)     { assert(index < 16); a = andn(a, vboolf16::shift1[index]); }
   */
 
   ////////////////////////////////////////////////////////////////////////////////
