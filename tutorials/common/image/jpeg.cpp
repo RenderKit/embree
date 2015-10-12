@@ -172,7 +172,7 @@ namespace embree
         jpeg_stdio_dest(&cinfo, file);
 
         /*! Allocate storage for the uncompressed packed image. */
-        unsigned char *rgb = (unsigned char *) malloc(image->height * image->width);
+        unsigned char *rgb = (unsigned char *) malloc(3 * image->height * image->width);
 
         /*! Convert the image to unsigned char RGB. */
         for (size_t y=0, i=0 ; y < image->height ; y++) {
