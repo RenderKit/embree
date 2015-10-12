@@ -71,7 +71,7 @@ namespace embree
       return _mm256_broadcast_ss((float*)a); 
     }
 
-    static __forceinline const vfloat8 broadcast4f(const void* ptr) { // FIXME: vfloat4 input type?
+    static __forceinline const vfloat8 broadcast4f(const vfloat4* ptr) { 
       return _mm256_broadcast_ps((__m128*)ptr); 
     }
 
