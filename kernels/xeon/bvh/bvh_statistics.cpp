@@ -19,6 +19,11 @@
 
 namespace embree
 {
+  static const int travCostAligned = 1;
+  static const int travCostUnaligned = 1;
+  static const int travCostTransform = 1;
+  static const int intCost = 1;
+
   template<int N>
   BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
@@ -127,7 +132,7 @@ namespace embree
     {
       numAlignedNodes++;
       AlignedNode* n = node.node();
-      bvhSAH += A*BVH::travCostAligned;
+      bvhSAH += A*travCostAligned;
       depth = 0;
       for (size_t i=0; i<N; i++) {
         if (n->child(i) == BVH::emptyNode) continue;
@@ -142,7 +147,7 @@ namespace embree
     {
       numUnalignedNodes++;
       UnalignedNode* n = node.unalignedNode();
-      bvhSAH += A*BVH::travCostUnaligned;
+      bvhSAH += A*travCostUnaligned;
       
       depth = 0;
       for (size_t i=0; i<N; i++) {
@@ -158,7 +163,7 @@ namespace embree
     {
       numAlignedNodesMB++;
       AlignedNodeMB* n = node.nodeMB();
-      bvhSAH += A*BVH::travCostAligned;
+      bvhSAH += A*travCostAligned;
       
       depth = 0;
       for (size_t i=0; i<N; i++) {
@@ -174,7 +179,7 @@ namespace embree
     {
       numUnalignedNodesMB++;
       UnalignedNodeMB* n = node.unalignedNodeMB();
-      bvhSAH += A*BVH::travCostUnaligned;
+      bvhSAH += A*travCostUnaligned;
       
       depth = 0;
       for (size_t i=0; i<N; i++) {
@@ -190,7 +195,7 @@ namespace embree
     {
       numTransformNodes++;
       TransformNode* n = node.transformNode();
-      bvhSAH += A*BVH::travCostTransform;
+      bvhSAH += A*travCostTransform;
 
       depth = 0;
       const BBox3fa worldBounds = xfmBounds(n->local2world,n->localBounds);
@@ -209,7 +214,7 @@ namespace embree
       for (size_t i=0; i<num; i++)
         numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       
-      float sah = A * BVH::intCost * num;
+      float sah = A * intCost * num;
       leafSAH += sah;
     }
   } 
