@@ -103,7 +103,7 @@ namespace embree
       return (__m512)shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,(float*)a));
     }
 
-    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  // FIXME: implement fast version
+    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  
     {
       ((float*)ptr)[0] = ((float*)&v)[0];
       ((float*)ptr)[1] = ((float*)&v)[1];
