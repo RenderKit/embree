@@ -365,7 +365,7 @@ namespace embree
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
-          if (unlikely(none(valid))) return;
+          if (unlikely(none(valid))) return valid;
 #endif
           
           /* intersection filter test */
@@ -402,8 +402,9 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline vbool<K> operator() (const vbool<K>& valid, const Hit& hit) const
+        __forceinline vbool<K> operator() (const vbool<K>& valid_org, const Hit& hit) const
         {
+          vbool<K> valid = valid_org;
           vfloat<K> u, v, t; 
           Vec3<vfloat<K>> Ng;
           std::tie(u,v,t,Ng) = hit();

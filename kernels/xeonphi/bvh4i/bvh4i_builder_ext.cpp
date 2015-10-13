@@ -35,8 +35,6 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-//FIXME: use 8-bytes compact prim ref is used
-
 namespace embree
 {
 #if defined(__MIC__)
@@ -614,7 +612,6 @@ PRINT(CORRECT_numPrims);
 	  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
 	  const vfloat16 area_box = box_sah(bmin,bmax);
 
-	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
 	  Vec3fa vtxB = *(Vec3fa*)&v[1];
 	  Vec3fa vtxC = *(Vec3fa*)&v[2];
@@ -901,7 +898,7 @@ PRINT(CORRECT_numPrims);
           fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
           fastUpdateMode &= !iter[i]->faceVertices.isModified();
           fastUpdateMode &= !iter[i]->holes.isModified();
-          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
+          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); 
           //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
           //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
           //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
