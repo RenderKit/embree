@@ -45,4 +45,22 @@ namespace embree
                         const int simd_width) 
       : SubdivPatch1Base(gID,pID,subPatch,mesh,uv,edge_level,subdiv,simd_width) {}
   };
+
+
+  struct SubdivPatch1Eager 
+  {
+    struct Type : public PrimitiveType 
+    {
+      Type ();
+      size_t size(const char* This) const;
+      size_t blocks(size_t x) const { return x; }
+    };
+    
+    static Type type;
+
+  public:
+    SubdivPatch1Eager() {}
+  };
+
+
 }

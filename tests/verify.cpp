@@ -3752,7 +3752,19 @@ namespace embree
     POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
 #endif
 
+    /* test creation of multiple devices */
+#if !defined(__MIC__)
+    RTCDevice device1 = rtcNewDevice("threads=4");
     rtcDeleteDevice(g_device);
+    RTCDevice device2 = rtcNewDevice("threads=8");
+    RTCDevice device3 = rtcNewDevice("threads=12");
+    rtcDeleteDevice(device1);
+    rtcDeleteDevice(device3);
+    rtcDeleteDevice(device2);
+#else
+    rtcDeleteDevice(g_device);
+#endif
+    
     return numFailedTests;
   }
 }

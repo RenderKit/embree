@@ -277,7 +277,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       Ng = cross(dPdv,dPdu);
     }
 
-    color = color + diffuse*0.5f; // FIXME: +=
+    color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
@@ -296,7 +296,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
   }
   return color;
 }

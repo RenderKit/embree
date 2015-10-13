@@ -27,7 +27,7 @@ namespace embree
   public:
 
     /*! construction / destruction */
-    BarrierSys ();
+    BarrierSys (size_t N = 0);
     ~BarrierSys ();
 
     /*! intializes the barrier with some number of threads */

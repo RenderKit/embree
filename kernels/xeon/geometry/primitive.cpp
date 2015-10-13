@@ -28,9 +28,6 @@
 
 namespace embree
 {
-#if !defined(__AVX__)
-  PrimitiveType2 PrimitiveType2::type; 
-#endif
 
   /********************** Bezier1v **************************/
 
@@ -157,7 +154,7 @@ namespace embree
 
 #if !defined(__AVX__)
   SubdivPatch1Cached::Type::Type () 
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1Cached),1) {} 
+    : PrimitiveType("subdivpatch1cached",sizeof(SubdivPatch1Cached),1) {} 
   
   size_t SubdivPatch1Cached::Type::size(const char* This) const {
     return 1;
@@ -178,4 +175,21 @@ namespace embree
 
   Object::Type Object::type;
 #endif
+
+
+  /********************** SubdivPatch1Eager **************************/
+
+#if !defined(__AVX__)
+  SubdivPatch1Eager::Type::Type () 
+    : PrimitiveType("subdivpatch1eager",sizeof(SubdivPatch1Eager),1) {} 
+  
+  size_t SubdivPatch1Eager::Type::size(const char* This) const {
+    return 1;
+  }
+
+  SubdivPatch1Eager::Type SubdivPatch1Eager::type;
+#endif
+
 }
+
+
