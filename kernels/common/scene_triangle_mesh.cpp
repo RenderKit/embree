@@ -223,7 +223,5 @@ namespace embree
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
     for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
 
-    while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));   // FIXME: why is this written twice?
   }
 }
