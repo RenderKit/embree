@@ -79,39 +79,10 @@ namespace embree
 #endif
   }
 
-#if defined(TASKING_LOCKSTEP)
-
-  LockStepTaskScheduler regression_task_scheduler;
-
-  void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
-  {
-    LockStepTaskScheduler::setInstance(&regression_task_scheduler);
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
-    if (threadIndex != 0) return;
-    runRegressionTests();
-  }
-#endif
-
 #if defined(TASKING_TBB)
 
-  template <typename R, typename S>
-  R tbb_pi( S num_steps )
-  {
-    const R step = R(1) / num_steps;
-    return step * tbb::parallel_reduce( tbb::blocked_range<S>( 0, num_steps ), R(0),
-                                        [step] ( const tbb::blocked_range<S> r, R local_sum ) -> R {
-                                          for ( S i = r.begin(); i < r.end(); ++i ) {
-                                            R x = (i + R(0.5)) * step;
-                                            local_sum += R(4) / (R(1) + x*x);
-                                          }
-                                          return local_sum;
-                                        },
-                                        std::plus<R>()
-      );
-  }
-
   bool g_tbb_threads_initialized = false;
-  tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
+  tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
@@ -120,14 +91,10 @@ namespace embree
     void on_scheduler_entry( bool ) {
       ++num_threads;
       setAffinity(TaskSchedulerTBB::threadIndex());
-      //PING;
-      //PRINT(num_threads);
     }
 
     void on_scheduler_exit( bool ) { 
       --num_threads; 
-      //PING;
-      //PRINT(num_threads);
     }
   public:
     
@@ -151,6 +118,7 @@ namespace embree
     State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    State::verify();
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -168,45 +136,11 @@ namespace embree
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
 
-#if defined(__MIC__) // FIXME: put into State::verify function
-    if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
-      throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
-#endif
-
     /* print info header */
     if (State::verbosity(1))
       print();
-
-    /* CPU has to support at least SSE2 */
-#if !defined (__MIC__)
-    if (!hasISA(SSE2)) 
-      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
-#endif
-
-    /* verify that calculations stay in range */
-    assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
-
-    /* here we verify that CPP files compiled for a specific ISA only
-     * call that same or lower ISA version of non-inlined class member
-     * functions */
-#if !defined (__MIC__) && defined(DEBUG)
-    assert(isa::getISA() == ISA);
-#if defined(__TARGET_SSE41__)
-    assert(sse41::getISA() <= SSE41);
-#endif
-#if defined(__TARGET_SSE42__)
-    assert(sse42::getISA() <= SSE42);
-#endif
-#if defined(__TARGET_AVX__)
-    assert(avx::getISA() <= AVX);
-#endif
-#if defined(__TARGET_AVX2__)
-    assert(avx2::getISA() <= AVX2);
-#endif
-#if defined (__TARGET_AVX512__)
-    assert(avx512::getISA() <= AVX512KNL);
-#endif
-#endif
+    if (State::verbosity(2)) 
+      State::print();
 
 #if !defined(__MIC__)
     BVH4Register();
@@ -214,7 +148,6 @@ namespace embree
     BVH4iRegister();
     BVH4MBRegister();
     BVH4HairRegister();
-
 #endif 
 #if defined(__TARGET_AVX__)
     if (hasISA(AVX)) {
@@ -223,9 +156,6 @@ namespace embree
 #endif
     
     InstanceIntersectorsRegister();
-
-    if (State::verbosity(2)) 
-      State::print();
 
 #if defined(TASKING_LOCKSTEP)
     TaskScheduler::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
@@ -237,7 +167,7 @@ namespace embree
 
 #if defined(TASKING_TBB)
 
-    /* only set affinity of requested by the user */
+    /* only set affinity if requested by the user */
     if (State::set_affinity) {
       tbb_affinity.set_concurrency(0);
       tbb_affinity.observe(true); 
@@ -248,15 +178,7 @@ namespace embree
       g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
-      tbb_threads.initialize(g_numThreads);
-
-#if 0
-      const size_t N = 1024*1024;
-      //PRINT(g_numThreads );
-      while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
-        tbb_pi<double> (N);
-      PRINT( tbb_affinity.get_concurrency() );
-#endif
+      g_tbb_threads.initialize(g_numThreads);
     }
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(g_numThreads);
@@ -264,17 +186,10 @@ namespace embree
 #endif
 
     /* execute regression tests */
+#if !defined(__MIC__)
     if (State::regression_testing) 
-    {
-#if defined(TASKING_LOCKSTEP)
-      TaskScheduler::EventSync event;
-      TaskScheduler::Task task(&event,task_regression_testing,nullptr,TaskScheduler::getNumThreads(),nullptr,nullptr,"regression_testing");
-      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-      event.sync();
-#else
       runRegressionTests();
 #endif
-    }
   }
 
   Device::~Device ()
@@ -294,7 +209,7 @@ namespace embree
     delete arena; arena = nullptr;
 #endif
     if (g_tbb_threads_initialized)
-      tbb_threads.terminate();
+      g_tbb_threads.terminate();
 #endif
   }
 

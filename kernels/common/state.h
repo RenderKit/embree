@@ -34,6 +34,9 @@ namespace embree
     /*! clears the state to its defaults */
     void clear(bool singledevice);
 
+    /*! verifies that state is correct */
+    void verify();
+
     /*! parses state from a configuration file */
     bool parseFile(const FileName& fileName);
 
