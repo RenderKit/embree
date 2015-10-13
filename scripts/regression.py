@@ -82,20 +82,18 @@ builds_unix = ['RelWithDebInfo']
 builds = []
 
 #ISAs_win  = ['AVX2']
-ISAs_win  = ['SSE2', 'AVX', 'AVX512']
-#ISAs_unix = ['SSE2']
+ISAs_win  = ['SSE2', 'AVX', 'AVX2']
+ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
 supported_configurations = [
-  'V100_Win32_RelWithDebInfo_SSE2', 'V100_Win32_RelWithDebInfo_SSE4.2',
-  'V100_x64_RelWithDebInfo_SSE2',   'V100_x64_RelWithDebInfo_SSE4.2',
   'V110_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX',
   'V110_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',  
   'V120_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX', 'V120_Win32_RelWithDebInfo_AVX2', 
   'V120_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',   'V120_x64_RelWithDebInfo_AVX2', 
   'ICC_Win32_RelWithDebInfo_SSE2',  'ICC_Win32_RelWithDebInfo_SSE4.2',  'ICC_Win32_RelWithDebInfo_AVX',  'ICC_Win32_RelWithDebInfo_AVX2', 
-  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 
+  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 'ICC_x64_RelWithDebInfo_AVX512', 
   'GCC_x64_RelWithDebInfo_SSE2',    'GCC_x64_RelWithDebInfo_SSE4.2',    'GCC_x64_RelWithDebInfo_AVX',    'GCC_x64_RelWithDebInfo_AVX2', 
   'CLANG_x64_RelWithDebInfo_SSE2',  'CLANG_x64_RelWithDebInfo_SSE4.2',  'CLANG_x64_RelWithDebInfo_AVX',  'CLANG_x64_RelWithDebInfo_AVX2',  
   ]
@@ -128,12 +126,13 @@ def compile(OS,compiler,platform,build,isa,tasking):
 
   if OS == 'windows':
 
-    # generate CMake generator name
-    full_compiler = compiler
+    # set CMake generator and compiler
     if (compiler == 'V110'):
-	  generator = 'Visual Studio 11 2012'
+      generator = 'Visual Studio 11 2012'
+      full_compiler = 'V110'
     elif (compiler == 'V120'):
       generator = 'Visual Studio 12 2013'
+      full_compiler = 'V120'
     elif (compiler == 'ICC'):
       generator = 'Visual Studio 12 2013'
       full_compiler = '"Intel C++ Compiler XE 15.0" '
@@ -141,6 +140,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
       sys.stderr.write('unknown compiler: ' + compiler + '\n')
       sys.exit(1)
 
+	# set platform
     if (platform == 'Win32'):
       generator += ''
     elif (platform == 'x64'):
@@ -163,7 +163,6 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command += ' -G "' + generator + '"'
     command += ' -T ' + full_compiler
     command += ' -A ' + platform
-    command += ' -D COMPILER=' + compiler
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
