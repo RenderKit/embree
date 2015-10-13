@@ -365,7 +365,7 @@ namespace embree
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
           valid &= (geometry->mask & ray.mask) != 0;
-          if (unlikely(none(valid))) return;
+          if (unlikely(none(valid))) return valid;
 #endif
           
           /* intersection filter test */

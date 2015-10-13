@@ -188,7 +188,7 @@ namespace embree
     const size_t size_node     = (double)(numNodes * sizeNodeInBytes + additional_size) * scene->device->memory_preallocation_factor;
     const size_t size_accel    = numPrims * sizeAccelInBytes   + additional_size;
 
-    numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode); // FIXME: do memory handling in 64 byte blocks
+    numAllocated64BytesBlocks = size_node / sizeof(BVH4Hair::UnalignedNode);
 
     DBG(
 	PRINT(numAllocated64BytesBlocks);

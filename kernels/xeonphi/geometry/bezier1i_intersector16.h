@@ -26,9 +26,6 @@ namespace embree
 
   struct __aligned(64) Precalculations 
   {
-     /* __forceinline Precalculations (const Ray16& ray, const size_t k)  */
-     /*   : ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction  */
-
     __forceinline Precalculations (const LinearSpace3vf16& ls16, const vfloat16 &rcp_length, const size_t k)
       : ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
 		  ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
