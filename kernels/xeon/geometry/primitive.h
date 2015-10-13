@@ -36,16 +36,4 @@ namespace embree
     size_t bytes;           //!< number of bytes of the triangle data
     size_t blockSize;       //!< block size
   };
-
-  //template<typename Primitive1, typename Primitive2>
-  struct PrimitiveType2 : public PrimitiveType // FIXME: remove
-  {
-    PrimitiveType2 () 
-      : PrimitiveType("unknown", 0, 0) {}
-
-    size_t blocks(size_t x) const { return x; }
-    size_t size(const char* This) const { return 0; } // FIXME
-
-    static PrimitiveType2 type;
-  };
 }
