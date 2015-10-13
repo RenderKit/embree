@@ -90,7 +90,7 @@ namespace embree
 
     void on_scheduler_entry( bool ) {
       ++num_threads;
-      setAffinity(TaskSchedulerTBB::threadIndex());
+      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use num_threads?
     }
 
     void on_scheduler_exit( bool ) { 
@@ -106,8 +106,9 @@ namespace embree
   } tbb_affinity;
 #endif
 
-  static MutexSys g_cache_size_mutex;
+  static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
+  static std::map<Device*,size_t> g_num_threads_map;
 
   Device::Device (const char* cfg, bool singledevice)
   {
@@ -142,6 +143,7 @@ namespace embree
     if (State::verbosity(2)) 
       State::print();
 
+    /* register all algorithms */
 #if !defined(__MIC__)
     BVH4Register();
 #else
@@ -154,36 +156,10 @@ namespace embree
       BVH8Register();
     }
 #endif
-    
     InstanceIntersectorsRegister();
 
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB)
-
-    /* only set affinity if requested by the user */
-    if (State::set_affinity) {
-      tbb_affinity.set_concurrency(0);
-      tbb_affinity.observe(true); 
-    }
-    
-    if (g_numThreads == 0) {
-      g_tbb_threads_initialized = false;
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
-    } else {
-      g_tbb_threads_initialized = true;
-      g_tbb_threads.initialize(g_numThreads);
-    }
-#if USE_TASK_ARENA
-    arena = new tbb::task_arena(g_numThreads);
-#endif
-#endif
+    /* setup tasking system */
+    initTaskingSystem(g_numThreads);
 
     /* execute regression tests */
 #if !defined(__MIC__)
@@ -195,22 +171,7 @@ namespace embree
   Device::~Device ()
   {
     setCacheSize(0);
-   
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::destroy(); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::destroy(); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB)
-#if USE_TASK_ARENA
-    delete arena; arena = nullptr;
-#endif
-    if (g_tbb_threads_initialized)
-      g_tbb_threads.terminate();
-#endif
+    exitTaskingSystem();
   }
 
   void Device::print()
@@ -346,19 +307,100 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
-    Lock<MutexSys> lock(g_cache_size_mutex);
+    Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
-    updateCacheSize();
-  }
-
-  void Device::updateCacheSize()
-  {
+    
     size_t maxCacheSize = 0;
     for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
       maxCacheSize = max(maxCacheSize, (*i).second);
     
     resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
+  }
+
+  void Device::initTaskingSystem(size_t numThreads) 
+  {
+    Lock<MutexSys> lock(g_mutex);
+    if (numThreads == 0) g_num_threads_map[this] = -1;
+    else                 g_num_threads_map[this] = numThreads;
+    configureTaskingSystem();
+  }
+
+  void Device::configureTaskingSystem() 
+  {
+    /* terminate tasking system */
+    if (g_num_threads_map.size() == 0)
+    {
+#if defined(TASKING_LOCKSTEP)
+      TaskScheduler::destroy();
+#endif
+      
+#if defined(TASKING_TBB_INTERNAL)
+      TaskSchedulerTBB::destroy();
+#endif
+      
+#if defined(TASKING_TBB)
+      if (g_tbb_threads_initialized) {
+        g_tbb_threads.terminate();
+        g_tbb_threads_initialized = false;
+      }
+#endif
+      return;
+    }
+
+    /*! get maximal configured number of threads */
+    size_t maxNumThreads = 0;
+    for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
+      maxNumThreads = max(maxNumThreads, (*i).second);
+    if (maxNumThreads == -1) 
+      maxNumThreads = 0;
+
+#if defined(TASKING_LOCKSTEP)
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+    TaskSchedulerTBB::create(maxNumThreads,State::set_affinity);
+#endif
+
+#if defined(TASKING_TBB)
+
+    /* first terminate threads in case we configured them */
+    if (g_tbb_threads_initialized) {
+      g_tbb_threads.terminate();
+      g_tbb_threads_initialized = false;
+    }
+
+    /* only set affinity if requested by the user */
+    if (State::set_affinity) {
+      tbb_affinity.set_concurrency(0);
+      tbb_affinity.observe(true); 
+    }
+
+    /* now either keep default settings are configure number of threads */
+    if (maxNumThreads == 0) 
+    {
+      g_tbb_threads_initialized = false;
+      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+    } else {
+      g_tbb_threads_initialized = true;
+      g_tbb_threads.initialize(maxNumThreads);
+      g_numThreads = maxNumThreads;
+    }
+#if USE_TASK_ARENA
+    arena = new tbb::task_arena(maxNumThreads);
+#endif
+#endif
+  }
+
+  void Device::exitTaskingSystem() 
+  {
+    Lock<MutexSys> lock(g_mutex);
+    g_num_threads_map.erase(this);
+    configureTaskingSystem();
+#if USE_TASK_ARENA
+    delete arena; arena = nullptr;
+#endif
   }
 
   void Device::setParameter1i(const RTCParameter parm, ssize_t val)
