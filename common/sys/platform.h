@@ -182,7 +182,9 @@
 #define __noinline             __declspec(noinline)
 //#define __forceinline        __forceinline
 //#define __restrict           __restrict
-#define __restrict__           __restrict
+#if !defined(__INTEL_COMPILER)
+#define __restrict__           //__restrict // causes issues with MSVC
+#endif
 #define __thread               __declspec(thread)
 #define __aligned(...)           __declspec(align(__VA_ARGS__))
 //#define __FUNCTION__           __FUNCTION__
