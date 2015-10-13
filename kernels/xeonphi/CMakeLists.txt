@@ -28,6 +28,7 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
+  ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/taskscheduler_mic.cpp
   ../../common/tasking/tasksys.cpp
 
