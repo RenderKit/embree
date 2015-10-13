@@ -402,8 +402,9 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline vbool<K> operator() (const vbool<K>& valid, const Hit& hit) const
+        __forceinline vbool<K> operator() (const vbool<K>& valid_org, const Hit& hit) const
         {
+          vbool<K> valid = valid_org;
           vfloat<K> u, v, t; 
           Vec3<vfloat<K>> Ng;
           std::tie(u,v,t,Ng) = hit();
