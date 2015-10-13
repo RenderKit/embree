@@ -429,7 +429,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     Vec3f diffuse = make_Vec3f(0.0f);
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
     else                 diffuse = colors[ray.instID][ray.geomID];
-    color = color + diffuse*0.5; // FIXME: +=
+    color = color + diffuse*0.5;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
@@ -448,7 +448,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;
 }
