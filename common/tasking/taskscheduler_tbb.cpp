@@ -200,9 +200,10 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB()
-    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) /* , cancellingException(nullptr) */
+    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) 
   {
-    for (size_t i=0; i<MAX_THREADS; i++)
+    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the join mode the worker threads also join
+    for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i] = nullptr;
   }
   
@@ -265,7 +266,7 @@ namespace embree
   __dllexport ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
-    assert(threadIndex < MAX_THREADS);
+    assert(threadIndex < threadLocal.size());
     return threadIndex;
   }
 

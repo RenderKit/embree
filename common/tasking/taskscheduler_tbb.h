@@ -386,7 +386,7 @@ namespace embree
     __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
 
   private:
-    Thread* threadLocal[MAX_THREADS]; // FIXME: there should be no maximal number of threads
+    std::vector<Thread*> threadLocal;
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;

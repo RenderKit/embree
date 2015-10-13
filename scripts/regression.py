@@ -82,20 +82,18 @@ builds_unix = ['RelWithDebInfo']
 builds = []
 
 #ISAs_win  = ['AVX2']
-ISAs_win  = ['SSE2', 'AVX', 'AVX512']
-#ISAs_unix = ['AVX2']
+ISAs_win  = ['SSE2', 'AVX', 'AVX2']
+ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
 supported_configurations = [
-  'V100_Win32_RelWithDebInfo_SSE2', 'V100_Win32_RelWithDebInfo_SSE4.2',
-  'V100_x64_RelWithDebInfo_SSE2',   'V100_x64_RelWithDebInfo_SSE4.2',
   'V110_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX',
   'V110_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',  
   'V120_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX', 'V120_Win32_RelWithDebInfo_AVX2', 
   'V120_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',   'V120_x64_RelWithDebInfo_AVX2', 
   'ICC_Win32_RelWithDebInfo_SSE2',  'ICC_Win32_RelWithDebInfo_SSE4.2',  'ICC_Win32_RelWithDebInfo_AVX',  'ICC_Win32_RelWithDebInfo_AVX2', 
-  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 
+  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 'ICC_x64_RelWithDebInfo_AVX512', 
   'GCC_x64_RelWithDebInfo_SSE2',    'GCC_x64_RelWithDebInfo_SSE4.2',    'GCC_x64_RelWithDebInfo_AVX',    'GCC_x64_RelWithDebInfo_AVX2', 
   'CLANG_x64_RelWithDebInfo_SSE2',  'CLANG_x64_RelWithDebInfo_SSE4.2',  'CLANG_x64_RelWithDebInfo_AVX',  'CLANG_x64_RelWithDebInfo_AVX2',  
   ]
@@ -128,12 +126,13 @@ def compile(OS,compiler,platform,build,isa,tasking):
 
   if OS == 'windows':
 
-    # generate CMake generator name
-    full_compiler = compiler
+    # set CMake generator and compiler
     if (compiler == 'V110'):
-	  generator = 'Visual Studio 11 2012'
+      generator = 'Visual Studio 11 2012'
+      full_compiler = 'V110'
     elif (compiler == 'V120'):
       generator = 'Visual Studio 12 2013'
+      full_compiler = 'V120'
     elif (compiler == 'ICC'):
       generator = 'Visual Studio 12 2013'
       full_compiler = '"Intel C++ Compiler XE 15.0" '
@@ -141,6 +140,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
       sys.stderr.write('unknown compiler: ' + compiler + '\n')
       sys.exit(1)
 
+	# set platform
     if (platform == 'Win32'):
       generator += ''
     elif (platform == 'x64'):
@@ -163,7 +163,6 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command += ' -G "' + generator + '"'
     command += ' -T ' + full_compiler
     command += ' -A ' + platform
-    command += ' -D COMPILER=' + compiler
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
@@ -188,25 +187,34 @@ def compile(OS,compiler,platform,build,isa,tasking):
     return os.system(command + ' >> ' + logFile)
   
   else:
-
+ 
+    # set platform
     if (platform != 'x64'):
       sys.stderr.write('unknown platform: ' + platform + '\n')
       sys.exit(1)
 
-    c_compiler_bin   = 'gcc'
-    cpp_compiler_bin = 'g++'
-
-    if (complier == 'CLANG'):
+    # set compiler
+    if (compiler == 'CLANG'):
       c_compiler_bin = 'clang'
       cpp_compiler_bin = 'clang++'
     elif (compiler == 'ICC'):
       c_compiler_bin = 'icc'
       cpp_compiler_bin = 'icpc'
+    elif (compiler == 'GCC'):
+      c_compiler_bin   = 'gcc'
+      cpp_compiler_bin = 'g++'
+    else:
+      sys.stdout.write("invalid compiler: "+compiler)
+      return 1
+      
+    # first we need to configure the compiler
+    command = 'mkdir -p build && cd build && rm -f CMakeCache.txt && '
+    command += 'cmake 2>/dev/null > /dev/null'
+    command += ' -D CMAKE_C_COMPILER:STRING=' + c_compiler_bin
+    command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin + ' .. && ' 
 
-    # compile Embree
-    command = 'mkdir -p build && cd build && cmake > /dev/null'
-    command += ' -D CMAKE_C_COMPILER=' + c_compiler_bin
-    command += ' -D CMAKE_CXX_COMPILER=' + cpp_compiler_bin
+    # now we can set all other settings
+    command += 'cmake &>> ../' + logFile
     command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
@@ -216,13 +224,15 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command += ' -D RTCORE_STAT_COUNTERS=OFF'
     if tasking == 'tbb':
       command += ' -D RTCORE_TASKING_SYSTEM=TBB'
+      command += ' -D TBB_ROOT=../tbb'
     elif tasking == 'internal':
       command += ' -D RTCORE_TASKING_SYSTEM=INTERNAL'
     else:
       sys.stdout.write("invalid tasking system: " + tasking)
       return 1
-    command += ' .. && make clean && make -j 8'
-    command += ' &> ../' + logFile
+    command += ' .. '
+    command += '&& make clean && make -j 8'
+    command += ' &>> ../' + logFile
     return os.system(command)
 
 def compileLoop(OS):

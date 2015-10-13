@@ -395,7 +395,7 @@ namespace embree
       }
 
       else {
-	THROW_RUNTIME_ERROR("unknown geometry type");
+        std::cout << "unknown geometry type..ignoring" << std::endl;
       }
     }
 

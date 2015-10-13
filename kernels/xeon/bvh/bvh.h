@@ -49,7 +49,7 @@ namespace embree
         to. Maximally byteAlignment-1 many primitive blocks per leaf are
         supported. */
     static const size_t byteAlignment = 16;
-    static const size_t byteNodeAlignment = 4*NN;
+    static const size_t byteNodeAlignment = 4*N;
 
     /*! highest address bit is used as barrier for some algorithms */
     static const size_t barrier_mask = (1LL << (8*sizeof(size_t)-1));
@@ -80,13 +80,6 @@ namespace embree
 
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
-
-    /*! Cost of one traversal step. */
-    static const int travCost = 1;
-    static const int travCostAligned = 1;
-    static const int travCostUnaligned = 3; // FIXME: find best cost
-    static const int travCostTransform = 1;
-    static const int intCost = 1; // set to 1 for statistics // FIXME: is this used? was 6;
 
     /*! flags used to enable specific node types in intersectors */
     enum NodeFlags {  // FIXME: use these flags also in intersector implementations, currently hardcoded constants are used

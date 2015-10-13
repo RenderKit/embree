@@ -31,6 +31,8 @@ namespace embree
 {
   namespace isa
   {
+    static const float travCost = 1.0f;
+
     typedef FastAllocator::ThreadLocal2 Allocator;
 
     template<typename Primitive>
@@ -115,7 +117,7 @@ namespace embree
                     pinfo = presplit<Mesh>(scene, pinfo, prims);
 
                   BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                    prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                    prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
                   if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 
@@ -227,7 +229,7 @@ namespace embree
                             // ============================================
 
                             BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                                               prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                                               prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
                             if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 
@@ -428,7 +430,7 @@ namespace embree
           };
         
         BVH8BuilderSpatial::build(bvh,splitPrimitive,CreateBVH8ListLeaf<Primitive>(bvh),
-                                  virtualprogress,prims,pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                                  virtualprogress,prims,pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
             

@@ -321,7 +321,7 @@ namespace embree
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-    // FIXME: should also print SSE2, SSSE3, MIC
+    std::cout << ISA_STR << " ";
 #if defined(__TARGET_SSE41__)
     std::cout << "SSE4.1 ";
 #endif

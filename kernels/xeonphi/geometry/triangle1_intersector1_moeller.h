@@ -656,11 +656,11 @@ namespace embree
 
 	vbool16 m_final  = lt(lt(m_valid,min_dist_xyz,t),t,max_dist_xyz);
 
-#if defined(RTCORE_RAY_MASK) // FIXME: this is broken
-	//const vint16 rayMask(ray16.mask[rayIndex]);
-	//const vint16 triMask = getTriMasks(tptr); 
-	//const vbool16 m_ray_mask = (rayMask & triMask) != vint16::zero();
-	//m_final &= m_ray_mask;	      
+#if defined(RTCORE_RAY_MASK) 
+	const vint16 rayMask(ray.mask);
+	const vint16 triMask = getTriMasks(tptr);
+	const vbool16 m_ray_mask = (rayMask & triMask) != vint16::zero();
+	m_final &= m_ray_mask;	      
 #endif
 
 	if (ENABLE_INTERSECTION_FILTER)

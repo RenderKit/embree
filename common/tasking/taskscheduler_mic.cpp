@@ -61,7 +61,6 @@ namespace embree
   size_t TaskScheduler::enableThreads(size_t N)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
-    // if (!instance->defaultNumThreads) return; // FIXME: enable
     N = min(N,instance->numThreads);
     //TaskScheduler::init(N);
     return instance->numEnabledThreads = N;
