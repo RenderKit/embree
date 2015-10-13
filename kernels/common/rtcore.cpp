@@ -26,10 +26,14 @@
 
 namespace embree
 {  
+  /* mutex to make API thread safe */
+  static MutexSys g_mutex;
+
   RTCORE_API RTCDevice rtcNewDevice(const char* cfg)
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewDevice);
+    Lock<MutexSys> lock(g_mutex);
     return (RTCDevice) new Device(cfg,false);
     RTCORE_CATCH_END_NOREPORT;
     return (RTCDevice) nullptr;
@@ -40,12 +44,10 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeleteDevice);
     RTCORE_VERIFY_HANDLE(device);
+    Lock<MutexSys> lock(g_mutex);
     delete (Device*) device;
     RTCORE_CATCH_END_NOREPORT;
   }
-
-  /* mutex to make API thread safe */
-  static MutexSys g_mutex;
 
   /* global device for compatibility with old rtcInit / rtcExit scheme */
   Device* g_device = nullptr;
@@ -74,6 +76,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetParameter1i);
+    Lock<MutexSys> lock(g_mutex);
     if (g_device) g_device->setParameter1i(parm,val);
     RTCORE_CATCH_END(g_device);
   }
@@ -84,6 +87,7 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceSetParameter1i);
     RTCORE_VERIFY_HANDLE(hdevice);
+    Lock<MutexSys> lock(g_mutex);
     device->setParameter1i(parm,val);
     RTCORE_CATCH_END(device);
   }

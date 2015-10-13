@@ -390,7 +390,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa Nf = faceforward(Ns,neg(ray.dir),Ns);
   //Vec3fa Ng = normalize(ray.Ng);
   //Vec3fa Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = color*dot(ray.dir,Nf);   // FIXME: *=
+  color = color*dot(ray.dir,Nf);
   return color;
 }
 

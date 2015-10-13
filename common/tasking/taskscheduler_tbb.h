@@ -216,11 +216,14 @@ namespace embree
     /*! pool of worker threads */
     struct ThreadPool
     {
-      ThreadPool (size_t numThreads = 0, bool set_affinity = false);
+      ThreadPool (bool set_affinity);
       ~ThreadPool ();
 
       /*! starts the threads */
       __dllexport void startThreads();
+
+      /*! sets number of threads to use */
+      void setNumThreads(size_t numThreads, bool startThreads = false);
 
       /*! adds a task scheduler object for scheduling */
       __dllexport void add(const Ref<TaskSchedulerTBB>& scheduler);
@@ -232,13 +235,13 @@ namespace embree
       size_t size() const { return numThreads; }
 
       /*! main loop for all threads */
-      void thread_loop();
+      void thread_loop(size_t threadIndex);
       
     private:
-      size_t numThreads;
+      volatile size_t numThreads;
+      volatile size_t numThreadsRunning;
       bool set_affinity;
       bool running;
-      volatile bool terminate;
       std::vector<thread_t> threads;
 
     private:

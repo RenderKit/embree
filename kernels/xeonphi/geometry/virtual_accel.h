@@ -20,12 +20,12 @@
 
 namespace embree
 {
-  struct AccelSetItem // FIXME: rename to Object
+  struct AccelSetItem 
   {
   public:
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) // FIXME: use nontemporal stores
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene) 
     {
       const PrimRef& prim = prims[i];
 

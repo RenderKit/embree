@@ -85,12 +85,6 @@ inline varying Vec3f xfmVector(const varying AffineSpace3f a, const varying Vec3
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-//inline uniform bool operator==(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return eq(a.l,b.l) & eq(a.p,b.p); } // FIXME: enable
-//inline varying bool operator==(const varying AffineSpace3f a, const varying AffineSpace3f b) { return eq(a.l,b.l) & eq(a.p,b.p); }
-
-//inline uniform bool operator!=(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
-//inline varying bool operator!=(const varying AffineSpace3f a, const varying AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
-
 inline uniform bool eq(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return eq(a.l,b.l) & eq(a.p,b.p); }
 inline varying bool eq(const varying AffineSpace3f a, const varying AffineSpace3f b) { return eq(a.l,b.l) & eq(a.p,b.p); }
 
