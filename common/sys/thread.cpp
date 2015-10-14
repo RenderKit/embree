@@ -176,10 +176,11 @@ namespace embree
 {
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if 1
+#if 0
+#warning special affinity settings active    
 #define THREADS_PER_CORE 4
-#define CORES 52
-#define OFFSET 34
+#define CORES 54
+#define OFFSET 49
     ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
 #else
     ssize_t ID = threadID;

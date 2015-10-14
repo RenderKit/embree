@@ -1300,7 +1300,6 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
 
     create_benchmarks();
 
@@ -1310,7 +1309,8 @@ namespace embree
     if (!executed_benchmarks) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
-
+      printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
+      
 #if defined (__MIC__)
       numThreads -= 4;
 #endif
