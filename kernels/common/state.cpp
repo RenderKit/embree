@@ -19,20 +19,8 @@
 
 namespace embree
 {
-  State::State () {
-    clear(false);
-  }
-
-  State::~State() 
-  {
-    Lock<MutexSys> lock(errors_mutex);
-    for (size_t i=0; i<thread_errors.size(); i++)
-      delete thread_errors[i];
-    destroyTls(thread_error);
-    thread_errors.clear();
-  }
-
-  void State::clear(bool singledevice)
+  State::State (bool singledevice) 
+    : thread_error(createTls()) 
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -80,9 +68,17 @@ namespace embree
     set_affinity = false;
 #endif
 
-    thread_error = createTls();
     error_function = nullptr;
     memory_monitor_function = nullptr;
+  }
+
+  State::~State() 
+  {
+    Lock<MutexSys> lock(errors_mutex);
+    for (size_t i=0; i<thread_errors.size(); i++)
+      delete thread_errors[i];
+    destroyTls(thread_error);
+    thread_errors.clear();
   }
 
   void State::verify()

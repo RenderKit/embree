@@ -26,13 +26,10 @@ namespace embree
   {
   public:
     /*! state construction */
-    State ();
+    State (bool singledevice);
 
     /*! state destruction */
     ~State();
-
-    /*! clears the state to its defaults */
-    void clear(bool singledevice);
 
     /*! verifies that state is correct */
     void verify();

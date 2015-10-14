@@ -111,10 +111,10 @@ namespace embree
   static std::map<Device*,size_t> g_num_threads_map;
 
   Device::Device (const char* cfg, bool singledevice)
+    : State(singledevice)
   {
     /* initialize global state */
     init_globals();
-    State::clear(singledevice);
     State::parseString(cfg);
     State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
