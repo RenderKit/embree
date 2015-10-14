@@ -26,7 +26,6 @@ namespace embree
     ConditionSys();
     ~ConditionSys();
     void wait( class MutexSys& mutex );
-    void broadcast(); // FIXME: remove this
     void notify_all();
 
     template<typename Predicate>
