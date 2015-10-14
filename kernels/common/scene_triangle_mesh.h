@@ -247,7 +247,6 @@ namespace embree
 	const vfloat16 v0 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr0_64));
 	const vfloat16 v1 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr1_64));
 	const vfloat16 v2 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr2_64));
-	 //FIXME: there should be no need to zero the last component
 
 	return Vec3vf16(select(0x7777,v0,vfloat16::zero()),select(0x7777,v1,vfloat16::zero()),select(0x7777,v2,vfloat16::zero()));
 #endif	

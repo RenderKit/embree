@@ -837,7 +837,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4SubdivGridEager(Scene* scene)
   {
-    BVH4* accel = new BVH4(PrimitiveType2::type,scene); // FIXME: type
+    BVH4* accel = new BVH4(SubdivPatch1Eager::type,scene);
     Accel::Intersectors intersectors;
     intersectors.ptr = accel;
     intersectors.intersector1  = BVH4GridAOSIntersector1;

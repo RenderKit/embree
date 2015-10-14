@@ -312,7 +312,7 @@ namespace embree
       __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
 
       /*! verifies the node */
-      __forceinline bool verify() const  // FIXME: implement tree verify
+      __forceinline bool verify() const
       {
         for (size_t i=0; i<N; i++) {
           if (child(i) == BVHN::emptyNode) {

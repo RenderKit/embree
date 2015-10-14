@@ -19,20 +19,8 @@
 
 namespace embree
 {
-  State::State () {
-    clear(false);
-  }
-
-  State::~State() 
-  {
-    Lock<MutexSys> lock(errors_mutex);
-    for (size_t i=0; i<thread_errors.size(); i++)
-      delete thread_errors[i];
-    destroyTls(thread_error);
-    thread_errors.clear();
-  }
-
-  void State::clear(bool singledevice)
+  State::State (bool singledevice) 
+    : thread_error(createTls()) 
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -73,16 +61,63 @@ namespace embree
     benchmark = 0;
     regression_testing = 0;
 
-    g_numThreads = 0;
+    numThreads = 0;
 #if TASKING_TBB_INTERNAL || defined(__MIC__)
     set_affinity = true;
 #else
     set_affinity = false;
 #endif
 
-    thread_error = createTls();
     error_function = nullptr;
     memory_monitor_function = nullptr;
+  }
+
+  State::~State() 
+  {
+    Lock<MutexSys> lock(errors_mutex);
+    for (size_t i=0; i<thread_errors.size(); i++)
+      delete thread_errors[i];
+    destroyTls(thread_error);
+    thread_errors.clear();
+  }
+
+  void State::verify()
+  {
+    /* CPU has to support at least SSE2 */
+#if !defined (__MIC__)
+    if (!hasISA(SSE2)) 
+      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
+#endif
+
+#if defined(__MIC__) // FIXME: put into State::verify function
+    if (!(numThreads == 1 || (numThreads % 4) == 0))
+      throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
+#endif
+
+    /* verify that calculations stay in range */
+    assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
+
+    /* here we verify that CPP files compiled for a specific ISA only
+     * call that same or lower ISA version of non-inlined class member
+     * functions */
+#if !defined (__MIC__) && defined(DEBUG)
+    assert(isa::getISA() == ISA);
+#if defined(__TARGET_SSE41__)
+    assert(sse41::getISA() <= SSE41);
+#endif
+#if defined(__TARGET_SSE42__)
+    assert(sse42::getISA() <= SSE42);
+#endif
+#if defined(__TARGET_AVX__)
+    assert(avx::getISA() <= AVX);
+#endif
+#if defined(__TARGET_AVX2__)
+    assert(avx2::getISA() <= AVX2);
+#endif
+#if defined (__TARGET_AVX512__)
+    assert(avx512::getISA() <= AVX512KNL);
+#endif
+#endif
   }
 
   const char* symbols[3] = { "=", ",", "|" };
@@ -142,7 +177,7 @@ namespace embree
       const Token tok = cin->get();
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
-        g_numThreads = cin->get().Int();
+        numThreads = cin->get().Int();
       
       else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
@@ -255,7 +290,7 @@ namespace embree
   void State::print()
   {
     std::cout << "general:" << std::endl;
-    std::cout << "  build threads = " << g_numThreads << std::endl;
+    std::cout << "  build threads = " << numThreads << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
     
     std::cout << "triangles:" << std::endl;

@@ -26,11 +26,12 @@ namespace embree
 {
   struct BarrierSysImplementation
   {
-    __forceinline BarrierSysImplementation () 
+    __forceinline BarrierSysImplementation (size_t N) 
       : i(0), enterCount(0), exitCount(0), barrierSize(0) 
     {
       events[0] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
       events[1] = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+      init(N);
     }
     
     __forceinline ~BarrierSysImplementation ()
@@ -95,8 +96,11 @@ namespace embree
 {
   struct BarrierSysImplementation
   {
-    __forceinline BarrierSysImplementation () 
-      : count(0), barrierSize(0) {}
+    __forceinline BarrierSysImplementation (size_t N) 
+      : count(0), barrierSize(0) 
+    {
+      init(N);
+    }
     
     __forceinline void init(size_t N) 
     {
@@ -111,7 +115,7 @@ namespace embree
       
       if (count == barrierSize) {
         count = 0;
-        cond.broadcast();
+        cond.notify_all();
         mutex.unlock();
         return;
       }
@@ -133,8 +137,8 @@ namespace embree
 
 namespace embree
 {
-  BarrierSys::BarrierSys () {
-    opaque = new BarrierSysImplementation;
+  BarrierSys::BarrierSys (size_t N) {
+    opaque = new BarrierSysImplementation(N);
   }
 
   BarrierSys::~BarrierSys () {

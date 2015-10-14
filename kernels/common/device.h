@@ -45,11 +45,19 @@ namespace embree
     /*! sets the size of the software cache. */
     void setCacheSize(size_t bytes);
 
-    /*! sets the cache size to the maximum requested by any device */
-    void updateCacheSize();
-    
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
+
+  private:
+    
+    /*! initializes the tasking system */
+    void initTaskingSystem(size_t numThreads);
+
+    /*! configures tasking system with maximal number of thread set by any device */
+    void configureTaskingSystem();
+
+    /*! shuts down the tasking system */
+    void exitTaskingSystem();
 
   public:
 

@@ -68,16 +68,8 @@ namespace embree
 	stack[0].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
-        const Vec3vfN org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-        const Vec3vfN dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-        const Vec3vfN rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-        const Vec3vfN org_rdir(org*rdir);
+        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
-	
-	/*! offsets to select the side that becomes the lower or upper bound */
-	const size_t nearX = nearXYZ.x[k];
-	const size_t nearY = nearXYZ.y[k];
-	const size_t nearZ = nearXYZ.z[k];
 	
 	/* pop loop */
 	while (true) pop:
@@ -103,19 +95,19 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-              mask = intersect_node<N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear);
+              mask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-              mask = intersect_node<N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-              mask = intersect_node<N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+              mask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-              mask = intersect_node<N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
             const BaseNode* node = cur.baseNode(types);
@@ -210,16 +202,8 @@ namespace embree
 	NodeRef* stackEnd = stack+stackSizeSingle;
 	stack[0]  = root;
       
-	/*! offsets to select the side that becomes the lower or upper bound */
-	const size_t nearX = nearXYZ.x[k];
-	const size_t nearY = nearXYZ.y[k];
-	const size_t nearZ = nearXYZ.z[k];
-	
 	/*! load the ray into SIMD registers */
-        const Vec3vfN org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-        const Vec3vfN dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-        const Vec3vfN rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-        const Vec3vfN norg = -org, org_rdir(org*rdir);
+        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         const vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/* pop loop */
@@ -242,19 +226,19 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-              mask = intersect_node<N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear);
+              mask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-              mask = intersect_node<N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
 
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-              mask = intersect_node<N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+              mask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-              mask = intersect_node<N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
             const BaseNode* node = cur.baseNode(types);
