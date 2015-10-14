@@ -2828,6 +2828,8 @@ namespace embree
       for (size_t i=0; i<spheres.size(); i++)
 	delete spheres[i];
     }
+
+    delete thread; thread = nullptr;
     return;
   }
 
@@ -3037,8 +3039,8 @@ namespace embree
 	  RegressionTask* task = new RegressionTask(sceneIndex++,5,N);
 	  tasks.push_back(task);
 
-	  for (size_t i=0; i<N; i++) 
-	    g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),DEFAULT_STACK_SIZE,numThreads+i));
+ 	  for (size_t i=0; i<N; i++) 
+            g_threads.push_back(createThread(func,new ThreadRegressionTask(i,N,task),DEFAULT_STACK_SIZE,numThreads+i));
 	}
 	
 	for (size_t i=0; i<g_threads.size(); i++)
@@ -3051,7 +3053,8 @@ namespace embree
       else
       {
         ClearBuffers clear_before_return;
-	func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex++,5,0)));
+        RegressionTask task(sceneIndex++,5,0);
+	func(new ThreadRegressionTask(0,0,&task));
       }	
     }
     return errorCounter == 0;
