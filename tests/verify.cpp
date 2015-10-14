@@ -328,7 +328,7 @@ namespace embree
     }
 #if HAS_INTERSECT4
     case 4: {
-      RTCRay4 ray4;
+      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
       __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcIntersect4(valid,scene,ray4);
@@ -338,7 +338,7 @@ namespace embree
 #endif
 #if HAS_INTERSECT8
     case 8: {
-      RTCRay8 ray8;
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
       __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid,scene,ray8);
@@ -348,7 +348,7 @@ namespace embree
 #endif
 #if HAS_INTERSECT16
     case 16: {
-      RTCRay16 ray16;
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
       __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect16(valid,scene,ray16);
@@ -369,7 +369,7 @@ namespace embree
     }
 #if HAS_INTERSECT4
     case 4: {
-      RTCRay4 ray4;
+      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t i=0; i<4; i++) setRay(ray4,i,ray);
       __aligned(16) int valid[4] = { -1,-1,-1,-1 };
       rtcOccluded4(valid,scene,ray4);
@@ -379,7 +379,7 @@ namespace embree
 #endif
 #if HAS_INTERSECT8
     case 8: {
-      RTCRay8 ray8;
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t i=0; i<8; i++) setRay(ray8,i,ray);
       __aligned(32) int valid[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded8(valid,scene,ray8);
@@ -389,7 +389,7 @@ namespace embree
 #endif
 #if HAS_INTERSECT16
     case 16: {
-      RTCRay16 ray16;
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t i=0; i<16; i++) setRay(ray16,i,ray);
       __aligned(64) int valid[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
       rtcOccluded16(valid,scene,ray16);
@@ -1398,7 +1398,7 @@ namespace embree
             ray3.geomID != 3) return false;
 
 #if HAS_INTERSECT4
-        RTCRay4 ray4; 
+        RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
         setRay(ray4,0,ray0);
         setRay(ray4,1,ray1);
         setRay(ray4,2,ray2);
@@ -1414,7 +1414,7 @@ namespace embree
 #if HAS_INTERSECT8
         if (hasISA(AVX)) 
         {
-          RTCRay8 ray8; 
+          RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
           setRay(ray8,0,ray0);
           setRay(ray8,1,ray1);
           setRay(ray8,2,ray2);
@@ -1431,7 +1431,7 @@ namespace embree
 #if HAS_INTERSECT16
         if (hasISA(AVX512F) || hasISA(KNC)) 
         {
-          RTCRay16 ray16; 
+          RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
           setRay(ray16,0,ray0);
           setRay(ray16,1,ray1);
           setRay(ray16,2,ray2);
@@ -1504,7 +1504,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay4 ray4;
+	RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
 	setRay(ray4,0,ray0);
 	setRay(ray4,1,ray1);
 	setRay(ray4,2,ray2);
@@ -1526,7 +1526,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay8 ray8;
+	RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
 	setRay(ray8,0,ray0);
 	setRay(ray8,1,ray1);
 	setRay(ray8,2,ray2);
@@ -1551,7 +1551,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay16 ray16;
+	RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
 	setRay(ray16,0,ray0);
 	setRay(ray16,1,ray1);
 	setRay(ray16,2,ray2);
@@ -1623,7 +1623,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay4 ray4;
+	RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
 	setRay(ray4,0,ray0);
 	setRay(ray4,1,ray1);
 	setRay(ray4,2,ray2);
@@ -1645,7 +1645,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay8 ray8;
+	RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
 	setRay(ray8,0,ray0);
 	setRay(ray8,1,ray1);
 	setRay(ray8,2,ray2);
@@ -1670,7 +1670,7 @@ namespace embree
 	RTCRay ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray2.mask = mask2;
 	RTCRay ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.mask = mask3;
 
-	RTCRay16 ray16;
+	RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
 	setRay(ray16,0,ray0);
 	setRay(ray16,1,ray1);
 	setRay(ray16,2,ray2);
@@ -1823,7 +1823,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay4 ray4;
+	RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
 	setRay(ray4,0,ray0);
 	__aligned(16) int valid4[4] = { -1,0,0,0 };
 	rtcIntersect4(valid4,scene,ray4);
@@ -1836,7 +1836,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay8 ray8;
+	RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
 	setRay(ray8,0,ray0);
 	__aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
 	rtcIntersect8(valid8,scene,ray8);
@@ -1852,7 +1852,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay16 ray16;
+	RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
 	setRay(ray16,0,ray0);
 	__aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	rtcIntersect16(valid16,scene,ray16);
@@ -1906,7 +1906,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay4 ray4;
+	RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
 	setRay(ray4,0,ray0);
 	__aligned(16) int valid4[4] = { -1,0,0,0 };
 	rtcOccluded4(valid4,scene,ray4);
@@ -1919,7 +1919,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay8 ray8;
+	RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
 	setRay(ray8,0,ray0);
 	__aligned(32) int valid8[8] = { -1,0,0,0,0,0,0,0 };
 	rtcOccluded8(valid8,scene,ray8);
@@ -1935,7 +1935,7 @@ namespace embree
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
-	RTCRay16 ray16;
+	RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
 	setRay(ray16,0,ray0);
 	__aligned(64) int valid16[16] = { -1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 	rtcOccluded16(valid16,scene,ray16);
@@ -1988,8 +1988,7 @@ namespace embree
       RTCRay ray = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
 
 #if HAS_INTERSECT4
-      RTCRay4 ray4; 
-      memset(&ray4,-1,sizeof(RTCRay4));
+      RTCRay4 ray4; memset(&ray4,-1,sizeof(RTCRay4));
       setRay(ray4,i,ray);
       __aligned(16) int valid4[4] = { 0,0,0,0 };
       valid4[i] = -1;
@@ -2004,8 +2003,7 @@ namespace embree
 
 #if HAS_INTERSECT8
       if (hasISA(AVX)) {
-        RTCRay8 ray8; 
-        memset(&ray8,-1,sizeof(RTCRay8));
+        RTCRay8 ray8; memset(&ray8,-1,sizeof(RTCRay8));
         setRay(ray8,i,ray);
         __aligned(32) int valid8[8] = { 0,0,0,0,0,0,0,0 };
         valid8[i] = -1;
@@ -2022,8 +2020,7 @@ namespace embree
 #if HAS_INTERSECT16
       if (hasISA(AVX512F) || hasISA(KNC))
       {
-      __aligned(64) RTCRay16 ray16; 
-      memset(&ray16,-1,sizeof(RTCRay16));
+      __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
       __aligned(64) int valid16[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
       valid16[i] = -1;
@@ -2095,7 +2092,7 @@ namespace embree
 
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
-      RTCRay4 ray4;
+      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t j=0; j<4; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2128,7 +2125,7 @@ namespace embree
 
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
-      RTCRay8 ray8;
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t j=0; j<8; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2161,7 +2158,7 @@ namespace embree
 
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
-      RTCRay16 ray16;
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2215,7 +2212,7 @@ namespace embree
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=4) {
-      RTCRay4 ray4;
+      RTCRay4 ray4; memset(&ray4,0,sizeof(ray4));
       for (size_t j=0; j<4; j++) {
         Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
         Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2246,7 +2243,7 @@ namespace embree
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=8) {
-      RTCRay8 ray8;
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t j=0; j<8; j++) {
         Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
         Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2277,7 +2274,7 @@ namespace embree
     rtcCommit (scene);
     size_t numFailures = 0;
     for (size_t i=0; i<testN; i+=16) {
-      RTCRay16 ray16;
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
         Vec3fa org(drand48()-0.5f,drand48()-0.5f,drand48()-0.5f);
         Vec3fa dir(1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2599,7 +2596,7 @@ namespace embree
     rtcIntersect(scene,ray);
 
 #if HAS_INTERSECT4
-    RTCRay4 ray4;
+    RTCRay4 ray4; memset(&ray4,0,sizeof(ray4)); 
     for (size_t j=0; j<4; j++) {
       Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
       Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2613,7 +2610,7 @@ namespace embree
 
 #if HAS_INTERSECT8
     if (hasISA(AVX)) {
-      RTCRay8 ray8;
+      RTCRay8 ray8; memset(&ray8,0,sizeof(ray8));
       for (size_t j=0; j<8; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
@@ -2629,7 +2626,7 @@ namespace embree
 #if HAS_INTERSECT16
     if (hasISA(AVX512F) || hasISA(KNC))
     {
-      RTCRay16 ray16;
+      RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
         Vec3fa org(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
         Vec3fa dir(2.0f*drand48()-1.0f,2.0f*drand48()-1.0f,2.0f*drand48()-1.0f);
