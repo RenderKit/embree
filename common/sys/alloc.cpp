@@ -172,19 +172,19 @@ namespace embree
   void* alignedMalloc(size_t size, size_t align) 
   {
     assert((align & (align-1)) == 0);
-#if defined(TASKING_TBB)
-    return scalable_aligned_malloc(size,align);
-#else
+//#if defined(TASKING_TBB) // FIXME: have to disable this for now as the TBB allocator itself seems to access some uninitialized value when using valgrind
+//    return scalable_aligned_malloc(size,align);
+//#else
     return _mm_malloc(size,align);
-#endif
+//#endif
   }
   
   void alignedFree(void* ptr) 
   {
-#if defined(TASKING_TBB)
-    scalable_aligned_free(ptr);
-#else
+//#if defined(TASKING_TBB)
+//    scalable_aligned_free(ptr);
+//#else
     _mm_free(ptr);
-#endif
+//#endif
   }
 }
