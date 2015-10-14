@@ -45,6 +45,22 @@ namespace embree
         farY  = nearY ^ sizeof(vfloat<N>);
         farZ  = nearZ ^ sizeof(vfloat<N>);
       }
+
+      template<int K>
+      __forceinline TravRay (size_t k, const Vec3<vfloat<K>> &ray_org, const Vec3<vfloat<K>> &ray_dir, const Vec3<vfloat<K>> &ray_rdir, const Vec3<vint<K>>& nearXYZ)
+      {
+        org = Vec3<vfloat<N>>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+	dir = Vec3<vfloat<N>>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+	rdir = Vec3<vfloat<N>>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+	org_rdir = org*rdir;
+	nearX = nearXYZ.x[k];
+	nearY = nearXYZ.y[k];
+	nearZ = nearXYZ.z[k];
+        farX  = nearX ^ sizeof(vfloat<N>);
+        farY  = nearY ^ sizeof(vfloat<N>);
+        farZ  = nearZ ^ sizeof(vfloat<N>);
+      }
+
       Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
       Vec3<vfloat<N>> org, dir, rdir;
 //#if defined(__AVX2__)
