@@ -25,7 +25,7 @@
 
 namespace embree
 {
-  size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  size_t TaskSchedulerTBB::g_numThreads = 0;
   __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
   __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
   TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
@@ -257,8 +257,7 @@ namespace embree
 #endif
    }
   __dllexport size_t TaskSchedulerTBB::threadCount() {
-    return g_numThreads; // FIXME: possible to return number of thread through TBB call?
-    //return tbb::task_scheduler_init::default_num_threads();
+    return g_numThreads;
   }
 #endif
 

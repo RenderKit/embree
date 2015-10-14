@@ -195,15 +195,15 @@ namespace embree
         
         /* process motion blur nodes */
         else if (likely(cur.isNodeMB(types)))
-          mask = intersect_node<N>(cur.nodeMB(),vray.nearX,vray.nearY,vray.nearZ,vray.org,vray.rdir,vray.org_rdir,ray_near,ray_far,ray.time,tNear); 
+          mask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time,tNear); 
         
         /*! process nodes with unaligned bounds */
         else if (unlikely(cur.isUnalignedNode(types)))
-          mask = intersect_node<N>(cur.unalignedNode(),vray.org,vray.dir,ray_near,ray_far,tNear);
+          mask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
         
         /*! process nodes with unaligned bounds and motion blur */
         else if (unlikely(cur.isUnalignedNodeMB(types)))
-          mask = intersect_node<N>(cur.unalignedNodeMB(),vray.org,vray.dir,ray_near,ray_far,ray.time,tNear);
+          mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
 
         else break;
         

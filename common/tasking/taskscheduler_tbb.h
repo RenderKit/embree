@@ -52,6 +52,7 @@ namespace embree
   struct TaskSchedulerTBB : public RefCount
   {
     ALIGNED_STRUCT;
+    friend class Device;
 
     static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
     static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
@@ -398,6 +399,7 @@ namespace embree
     ConditionSys condition;
 
   private:
+    static size_t g_numThreads;
     static __thread TaskSchedulerTBB* g_instance;
     static __thread Thread* thread_local_thread;
     static ThreadPool* threadPool;

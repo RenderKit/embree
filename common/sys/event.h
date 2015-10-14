@@ -38,7 +38,7 @@ namespace embree
     {
       mutex.lock();
       event = true;
-      condition.broadcast(); // this broadcast has to be protected!
+      condition.notify_all(); // this broadcast has to be protected!
       mutex.unlock();
     }
 

@@ -20,19 +20,14 @@
 
 namespace embree
 {
-  extern size_t g_numThreads; // FIXME: move into state?
-
   struct State
   {
   public:
     /*! state construction */
-    State ();
+    State (bool singledevice);
 
     /*! state destruction */
     ~State();
-
-    /*! clears the state to its defaults */
-    void clear(bool singledevice);
 
     /*! verifies that state is correct */
     void verify();
@@ -92,7 +87,7 @@ namespace embree
     size_t regression_testing;             //!< enables regression tests at startup
 
   public:
-    //size_t numThreads;                   //!< number of threads to use in builders
+    size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
 
   public:

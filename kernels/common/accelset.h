@@ -140,11 +140,6 @@ namespace embree
       /*! build accel */
       virtual void build (size_t threadIndex, size_t threadCount) = 0;
 
-      /*! return number of items in set */
-      __forceinline size_t size() const {
-        return numItems;
-      }
-
       /*! Calculates the bounds of an item */
       __forceinline BBox3fa bounds (size_t item) const
       {
@@ -258,7 +253,6 @@ namespace embree
 #endif
       
     public:
-      size_t numItems; // FIXME: remove
       RTCBoundsFunc boundsFunc;
 
       struct Intersectors 

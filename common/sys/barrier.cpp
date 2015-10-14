@@ -115,7 +115,7 @@ namespace embree
       
       if (count == barrierSize) {
         count = 0;
-        cond.broadcast();
+        cond.notify_all();
         mutex.unlock();
         return;
       }
