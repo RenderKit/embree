@@ -2759,7 +2759,7 @@ namespace embree
       for (size_t j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*Vec3fa(drand48(),drand48(),drand48());
-	int type = random<int>()%6; // FIXME: enable all types
+	int type = random<int>()%6;
 #if !defined(__MIC__) 
         switch (random<int>()%16) {
         case 0: pos = Vec3fa(nan); break;
@@ -3617,20 +3617,20 @@ namespace embree
     /* print Embree version */
     rtcInit("verbose=1");
     rtcExit();
-
+    
     /* perform tests */
     g_device = rtcNewDevice(g_rtcore.c_str());
+    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
+    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
+    //POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
+    //POSITIVE("regression_dynamic_user_threads", rtcore_regression(rtcore_regression_dynamic_thread,1));
+    //POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
+    //POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
     //POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,false));
-    //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,false));
+    //POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    //POSITIVE("regression_static_memory_monitor",         rtcore_regression_memory_monitor(rtcore_regression_static_thread));
-    //POSITIVE("regression_dynamic_memory_monitor",        rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
-    //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
-    //POSITIVE("interpolate_subdiv4",                rtcore_interpolate_subdiv(4));
     //exit(1);
 
-#if 1
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
@@ -3680,7 +3680,6 @@ namespace embree
     POSITIVE("interpolate_hair15",               rtcore_interpolate_hair(15));
 
     rtcore_build();
-#endif
 
 #if defined(RTCORE_RAY_MASK)
     rtcore_ray_masks_all();
@@ -3752,7 +3751,6 @@ namespace embree
     }
 #endif
 #endif
-
 
     POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
