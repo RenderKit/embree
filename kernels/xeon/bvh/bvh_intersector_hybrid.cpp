@@ -351,7 +351,7 @@ namespace embree
           if (likely((types & 0x1) && cur.isNode()))
           {
             const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
 	    const Node* __restrict__ const node = cur.node();
 
             /* set cur to invalid */
@@ -412,7 +412,7 @@ namespace embree
           else if (likely((types & 0x10) && cur.isNodeMB()))
 	  {
             const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+            STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
             const NodeMB* __restrict__ const node = cur.nodeMB();
           
             /* set cur to invalid */
