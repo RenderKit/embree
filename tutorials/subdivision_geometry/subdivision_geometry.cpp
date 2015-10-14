@@ -15,8 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/xml_loader.h"
+#include "../common/scenegraph/obj_loader.h"
+#include "../common/scenegraph/xml_loader.h"
+#include "../common/tutorial/scene.h"
 #include "../common/image/image.h"
 
 namespace embree 
@@ -37,7 +38,7 @@ namespace embree
   static bool g_interactive = true;
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
   static FileName filename = "";
 
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {

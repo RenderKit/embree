@@ -42,6 +42,11 @@ namespace embree
       bounds = accel->bounds;
     }
 
+    void deleteGeometry(size_t geomID) {
+      if (accel  ) accel->deleteGeometry(geomID);
+      if (builder) builder->deleteGeometry(geomID);
+    }
+    
     void clear() {
       accel->clear();
       builder->clear();

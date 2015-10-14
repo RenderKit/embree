@@ -35,8 +35,10 @@ namespace embree
   {
     while (true)
     {
+      /*! some rounds that yield */
       for (size_t i=0; i<32; i++)
       {
+        /*! some spinning rounds */
         const size_t threadCount = thread.threadCount();
         for (size_t j=0; j<1024; j+=threadCount)
         {
@@ -66,7 +68,7 @@ namespace embree
     
     /* steal until all dependencies have completed */
     steal_loop(thread,
-               [&] () { return dependencies > 0; },
+               [&] () { return thread.scheduler->cancellingException == 0 && dependencies>0; },
                [&] () { while (thread.tasks.execute_local(thread,this)); });
    
     /* now signal our parent task that we are finished */
@@ -76,6 +78,10 @@ namespace embree
 
   __dllexport bool TaskSchedulerTBB::TaskQueue::execute_local(Thread& thread, Task* parent)
   {
+    /* stop if task should get cancelled */
+    if (thread.scheduler->cancellingException != 0)
+      return false;
+
     /* stop if we run out of local tasks or reach the waiting task */
     if (right == 0 || &tasks[right-1] == parent)
       return false;
@@ -120,31 +126,57 @@ namespace embree
     return tasks[left].N;
   }
 
-  void threadPoolFunction(void* ptr) try 
+  static MutexSys g_mutex;
+  static BarrierSys g_barrier(2);
+
+  void threadPoolFunction(std::pair<TaskSchedulerTBB::ThreadPool*,size_t>* pair)
   {
-    TaskSchedulerTBB::ThreadPool* pool = (TaskSchedulerTBB::ThreadPool*) ptr;
-    pool->thread_loop();
-  }
-  catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl; // FIXME: propagate to main thread
-    exit(1);
+    TaskSchedulerTBB::ThreadPool* pool = pair->first;
+    size_t threadIndex = pair->second;
+    g_barrier.wait();
+    pool->thread_loop(threadIndex);
   }
 
-  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads, bool set_affinity)
-    : numThreads(numThreads), set_affinity(set_affinity), running(false), terminate(false) 
-  {
-    if (this->numThreads == 0)
-      this->numThreads = getNumberOfLogicalThreads();
-  }
+  TaskSchedulerTBB::ThreadPool::ThreadPool(bool set_affinity)
+    : numThreads(0), numThreadsRunning(0), set_affinity(set_affinity), running(false) {}
 
   __dllexport void TaskSchedulerTBB::ThreadPool::startThreads()
   {
-    if (!running) 
+    if (running) return;
+    setNumThreads(numThreads,true);
+  }
+
+  void TaskSchedulerTBB::ThreadPool::setNumThreads(size_t newNumThreads, bool startThreads)
+  {
+    Lock<MutexSys> lock(g_mutex);
+    
+    if (newNumThreads == 0)
+      newNumThreads = getNumberOfLogicalThreads();
+
+    numThreads = newNumThreads;
+    if (!startThreads && !running) return;
+    running = true;
+    size_t numThreadsActive = numThreadsRunning;
+
+    mutex.lock();
+    numThreadsRunning = newNumThreads;
+    mutex.unlock();
+    condition.notify_all();
+
+    /* start new threads */
+    for (size_t t=numThreadsActive; t<numThreads; t++) 
     {
-      running = true;
-      for (size_t t=1; t<numThreads; t++) {
-        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,set_affinity ? t : -1));
-      }
+      if (t == 0) continue;
+      auto pair = std::make_pair(this,t);
+      threads.push_back(createThread((thread_func)threadPoolFunction,&pair,4*1024*1024,set_affinity ? t : -1));
+      g_barrier.wait();
+    }
+
+    /* stop some threads if we reduce the number of threads */
+    for (ssize_t t=numThreadsActive-1; t>=ssize_t(numThreadsRunning); t--) {
+      if (t == 0) continue;
+      embree::join(threads.back());
+      threads.pop_back();
     }
   }
 
@@ -152,7 +184,7 @@ namespace embree
   {
     /* leave all taskschedulers */
     mutex.lock();
-    terminate = true;
+    numThreadsRunning = 0;
     mutex.unlock();
     condition.notify_all();
 
@@ -180,16 +212,16 @@ namespace embree
     }
   }
 
-  void TaskSchedulerTBB::ThreadPool::thread_loop()
+  void TaskSchedulerTBB::ThreadPool::thread_loop(size_t globalThreadIndex)
   {
-    while (!terminate)
+    while (globalThreadIndex < numThreadsRunning)
     {
       Ref<TaskSchedulerTBB> scheduler = NULL;
       ssize_t threadIndex = -1;
       {
         Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, [&] () { return terminate || !schedulers.empty(); });
-        if (terminate) break;
+        condition.wait(mutex, [&] () { return globalThreadIndex >= numThreadsRunning || !schedulers.empty(); });
+        if (globalThreadIndex >= numThreadsRunning) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
       }
@@ -198,9 +230,10 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB()
-    : threadCounter(0), anyTasksRunning(0), hasRootTask(false)
+    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) 
   {
-    for (size_t i=0; i<MAX_THREADS; i++)
+    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the join mode the worker threads also join
+    for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i] = nullptr;
   }
   
@@ -252,8 +285,8 @@ namespace embree
 
   void TaskSchedulerTBB::create(size_t numThreads, bool set_affinity)
   {
-    if (threadPool) THROW_RUNTIME_ERROR("Embree threads already running.");
-    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads,set_affinity);
+    if (!threadPool) threadPool = new TaskSchedulerTBB::ThreadPool(set_affinity);
+    threadPool->setNumThreads(numThreads,false);
   }
 
   void TaskSchedulerTBB::destroy() {
@@ -263,18 +296,18 @@ namespace embree
   __dllexport ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
-    assert(threadIndex < MAX_THREADS);
+    assert(threadIndex < threadLocal.size());
     return threadIndex;
   }
 
   void TaskSchedulerTBB::join()
   {
     mutex.lock();
-    size_t threadIndex = atomic_add(&threadCounter,1);
-    assert(threadIndex < MAX_THREADS);
+    size_t threadIndex = allocThreadIndex();
     condition.wait(mutex, [&] () { return hasRootTask; });
     mutex.unlock();
-    thread_loop(threadIndex);
+    std::exception_ptr except = thread_loop(threadIndex);
+    if (except != 0) std::rethrow_exception(except);
   }
 
   void TaskSchedulerTBB::reset() {
@@ -298,14 +331,15 @@ namespace embree
     return old;
   }
 
-  __dllexport void TaskSchedulerTBB::wait() 
+  __dllexport bool TaskSchedulerTBB::wait() 
   {
     Thread* thread = TaskSchedulerTBB::thread();
-    if (thread == nullptr) return;
+    if (thread == nullptr) return true;
     while (thread->tasks.execute_local(*thread,thread->task)) {};
+    return thread->scheduler->cancellingException == 0;
   }
 
-  void TaskSchedulerTBB::thread_loop(size_t threadIndex)
+  std::exception_ptr TaskSchedulerTBB::thread_loop(size_t threadIndex)
   {
     /* allocate thread structure */
     Thread thread(threadIndex,this);
@@ -313,24 +347,35 @@ namespace embree
     Thread* oldThread = swapThread(&thread);
 
     /* main thread loop */
-    while (anyTasksRunning > 0)
+    try 
     {
-      steal_loop(thread,
-                 [&] () { return anyTasksRunning > 0; },
-                 [&] () { 
-                   atomic_add(&anyTasksRunning,+1);
-                   while (thread.tasks.execute_local(thread,nullptr));
-                   atomic_add(&anyTasksRunning,-1);
-                 });
+      while (anyTasksRunning > 0 && cancellingException == 0)
+      {
+        steal_loop(thread,
+                   [&] () { return cancellingException == 0 && anyTasksRunning > 0; },
+                   [&] () { 
+                     atomic_add(&anyTasksRunning,+1);
+                     while (thread.tasks.execute_local(thread,nullptr));
+                     atomic_add(&anyTasksRunning,-1);
+                   });
+      }
     }
-
+    catch (...) 
+    {
+      if (cancellingException == nullptr)
+        cancellingException = std::current_exception();
+    }
     threadLocal[threadIndex] = nullptr;
     swapThread(oldThread);
 
+    /* remember exception to throw */
+    std::exception_ptr except = nullptr;
+    if (cancellingException != 0) except = cancellingException;
+
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);
-    while (threadCounter > 0)
-      yield();
+    while (threadCounter > 0) yield();
+    return except;
   }
 
   bool TaskSchedulerTBB::steal_from_other_threads(Thread& thread)

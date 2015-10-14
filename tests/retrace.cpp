@@ -22,6 +22,24 @@
 #include <iostream>
 #include <fstream>
 
+#if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
+#  define HAS_INTERSECT4 1
+#else
+#  define HAS_INTERSECT4 0
+#endif
+
+#if defined(RTCORE_RAY_PACKETS) && (defined(__TARGET_AVX__) || defined(__TARGET_AVX2__))
+#  define HAS_INTERSECT8 1
+#else
+#  define HAS_INTERSECT8 0
+#endif
+
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512F__))
+#  define HAS_INTERSECT16 1
+#else
+#  define HAS_INTERSECT16 0
+#endif
+
 #define DBG(x) 
 
 #define SSC_MARK(mark_value)     \
@@ -195,12 +213,7 @@ namespace embree
   static AlignedAtomicCounter32 g_rays_traced = 0;
   static AlignedAtomicCounter32 g_rays_traced_diff = 0;
   static std::vector<thread_t> g_threads;
-#if !defined(__MIC__)
-  static BarrierSys g_barrier;
-#else
   static LinearBarrierActive g_barrier;
-#endif
-
   static bool g_exitThreads = false;
   static RetraceTask g_retraceTask;
   static MutexSys g_mutex;
@@ -382,7 +395,7 @@ namespace embree
       }
 
       else {
-	THROW_RUNTIME_ERROR("unknown geometry type");
+        std::cout << "unknown geometry type..ignoring" << std::endl;
       }
     }
 
@@ -482,14 +495,14 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray1_packets(ray, raydata_verify[index].ray);                    
               }
-#if !defined(__MIC__)
+#if HAS_INTERSECT4
             else if (SIMD_WIDTH == 4)
               {
                 RayStreamLogger::LogRay4 *raydata        = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata;
                 RayStreamLogger::LogRay4 *raydata_verify = (RayStreamLogger::LogRay4 *)g_retraceTask.raydata_verify;
 
                 RTCRay4 &ray4 = raydata[index].ray4;
-                bool4 valid((int)raydata[index].m_valid);
+                vbool4 valid((int)raydata[index].m_valid);
                 rays += raydata[index].numRays;
                 if (raydata[index].type == RayStreamLogger::RAY_INTERSECT)
                   rtcIntersect4(&valid,g_retraceTask.scene,ray4);
@@ -499,16 +512,18 @@ namespace embree
                 if (unlikely(g_check))
                   diff += check_ray_packets<RTCRay4>(raydata[index].m_valid,  raydata[index].ray4, raydata_verify[index].ray4);
               }
+#endif
+#if HAS_INTERSECT8
             else if (SIMD_WIDTH == 8)
               {
                 RayStreamLogger::LogRay8 *raydata        = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata;
                 RayStreamLogger::LogRay8 *raydata_verify = (RayStreamLogger::LogRay8 *)g_retraceTask.raydata_verify;
 
                 RTCRay8 &ray8 = raydata[index].ray8;
-                __aligned(64) bool4 valid[2];
+                __aligned(64) vbool4 valid[2];
 
-                valid[0] = bool4((int)(raydata[index].m_valid & 0xf));
-                valid[1] = bool4((int)(raydata[index].m_valid>>4));
+                valid[0] = vbool4((int)(raydata[index].m_valid & 0xf));
+                valid[1] = vbool4((int)(raydata[index].m_valid>>4));
 
                 rays += raydata[index].numRays;
 
@@ -521,13 +536,14 @@ namespace embree
                   diff += check_ray_packets<RTCRay8>(raydata[index].m_valid,  raydata[index].ray8, raydata_verify[index].ray8);
               }
 #endif
+#if HAS_INTERSECT16
             else if (SIMD_WIDTH == 16)
               {
                 RayStreamLogger::LogRay16 *raydata        = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata;
                 RayStreamLogger::LogRay16 *raydata_verify = (RayStreamLogger::LogRay16 *)g_retraceTask.raydata_verify;
-#if defined(__MIC__)
+
                 RTCRay16 &ray16 = raydata[index].ray16;
-                int16 valid = select((bool16)raydata[index].m_valid,int16(-1),int16(0));
+                vint16 valid = select((vbool16)raydata[index].m_valid,vint16(-1),vint16(0));
                 rays += raydata[index].numRays;
 
                 //raydata[index+1].prefetchL2();
@@ -536,10 +552,11 @@ namespace embree
                   rtcIntersect16(&valid,g_retraceTask.scene,ray16);
                 else 
                   rtcOccluded16(&valid,g_retraceTask.scene,ray16);
-#endif
+
                 if (unlikely(g_check))
                   diff += check_ray_packets<RTCRay16>(raydata[index].m_valid,  raydata[index].ray16, raydata_verify[index].ray16);
               }
+#endif
 
 
 	  }
@@ -583,13 +600,13 @@ namespace embree
 
     while(1)
       {
-        g_barrier.wait(id,g_threadCount);
+        g_barrier.wait(id);
     
         if (g_exitThreads) break;
 
         renderMainLoop(id);
 
-        g_barrier.wait(id,g_threadCount);
+        g_barrier.wait(id);
       }
   }
 
@@ -770,7 +787,7 @@ namespace embree
 #endif
 	  }
 
-        g_barrier.wait(0,g_threadCount);
+        g_barrier.wait(0);
         renderMainLoop(0);
 
 	dt = getSeconds()-dt;
@@ -779,7 +796,7 @@ namespace embree
 	std::cout << "frame " << i << " => time " << 1000. * dt << " " << 1. / dt << " fps " << "ms " << g_rays_traced / dt / 1000000. << " mrays/sec" << std::endl;
 #endif
 
-        g_barrier.wait(0,g_threadCount);
+        g_barrier.wait(0);
 
 	if (g_sde)
 	  {
@@ -796,7 +813,7 @@ namespace embree
 
     std::cout << "freeing threads..." << std::flush;
     g_exitThreads = true;
-    g_barrier.wait(0,g_threadCount);
+    g_barrier.wait(0);
     std::cout << "done" << std::endl << std::flush;
 
 

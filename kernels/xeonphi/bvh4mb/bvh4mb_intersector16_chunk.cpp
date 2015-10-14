@@ -25,20 +25,20 @@ namespace embree
     static unsigned int BVH4I_LEAF_MASK = BVH4i::leaf_mask; // needed due to compiler efficiency bug
 
     template<typename LeafIntersector>
-    void BVH4mbIntersector16Chunk<LeafIntersector>::intersect(int16* valid_i, BVH4mb* bvh, Ray16& ray)
+    void BVH4mbIntersector16Chunk<LeafIntersector>::intersect(vint16* valid_i, BVH4mb* bvh, Ray16& ray)
     {
       /* near and node stack */
-      __aligned(64) float16   stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) vfloat16   stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* load ray */
-      const bool16 valid0   = *(int16*)valid_i != int16(0);
-      const Vec3f16 rdir     = rcp_safe(ray.dir);
+      const vbool16 valid0   = *(vint16*)valid_i != vint16(0);
+      const Vec3vf16 rdir     = rcp_safe(ray.dir);
  
-      const Vec3f16 org_rdir = ray.org * rdir;
-      float16 ray_tnear      = select(valid0,ray.tnear,pos_inf);
-      float16 ray_tfar       = select(valid0,ray.tfar ,neg_inf);
-      const float16 inf      = float16(pos_inf);
+      const Vec3vf16 org_rdir = ray.org * rdir;
+      vfloat16 ray_tnear      = select(valid0,ray.tnear,pos_inf);
+      vfloat16 ray_tfar       = select(valid0,ray.tfar ,neg_inf);
+      const vfloat16 inf      = vfloat16(pos_inf);
 
       /* allocate stack and push root node */
       stack_node[0] = BVH4i::invalidNode;
@@ -46,7 +46,7 @@ namespace embree
       stack_node[1] = bvh->root;
       stack_dist[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float16*   __restrict__ sptr_dist = stack_dist + 2;
+      vfloat16*   __restrict__ sptr_dist = stack_dist + 2;
       
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
@@ -55,10 +55,10 @@ namespace embree
       {
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
-        float16 curDist   = *(sptr_dist-1);
+        vfloat16 curDist   = *(sptr_dist-1);
         sptr_node--;
         sptr_dist--;
-	const bool16 m_stackDist = ray_tfar > curDist;
+	const vbool16 m_stackDist = ray_tfar > curDist;
 
 	/* stack emppty ? */
         if (unlikely(curNode == BVH4i::invalidNode))  break;
@@ -84,7 +84,7 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        const bool16 m_valid_leaf = ray_tfar > curDist;
+        const vbool16 m_valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(m_valid_leaf),16);
  
 	LeafIntersector::intersect16(curNode,
@@ -100,20 +100,20 @@ namespace embree
     }
 
     template<typename LeafIntersector>
-    void BVH4mbIntersector16Chunk<LeafIntersector>::occluded(int16* valid_i, BVH4mb* bvh, Ray16& ray)
+    void BVH4mbIntersector16Chunk<LeafIntersector>::occluded(vint16* valid_i, BVH4mb* bvh, Ray16& ray)
     {
       /* allocate stack */
-      __aligned(64) float16    stack_dist[3*BVH4i::maxDepth+1];
+      __aligned(64) vfloat16    stack_dist[3*BVH4i::maxDepth+1];
       __aligned(64) NodeRef stack_node[3*BVH4i::maxDepth+1];
 
       /* load ray */
-      const bool16 valid = *(int16*)valid_i != int16(0);
-      bool16 m_terminated = !valid;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
-      float16 ray_tnear = select(valid,ray.tnear,pos_inf);
-      float16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
-      const float16 inf = float16(pos_inf);
+      const vbool16 valid = *(vint16*)valid_i != vint16(0);
+      vbool16 m_terminated = !valid;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
+      vfloat16 ray_tnear = select(valid,ray.tnear,pos_inf);
+      vfloat16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
+      const vfloat16 inf = vfloat16(pos_inf);
       
       /* push root node */
       stack_node[0] = BVH4i::invalidNode;
@@ -121,21 +121,21 @@ namespace embree
       stack_node[1] = bvh->root;
       stack_dist[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float16*   __restrict__ sptr_dist = stack_dist + 2;
+      vfloat16*   __restrict__ sptr_dist = stack_dist + 2;
       
       const Node               * __restrict__ nodes = (Node     *)bvh->nodePtr();
       const BVH4mb::Triangle01 * __restrict__ accel = (BVH4mb::Triangle01 *)bvh->triPtr();
 
       while (1)
       {
-	const bool16 m_active = !m_terminated;
+	const vbool16 m_active = !m_terminated;
 
         /* pop next node from stack */
         NodeRef curNode = *(sptr_node-1);
-        float16 curDist   = *(sptr_dist-1);
+        vfloat16 curDist   = *(sptr_dist-1);
         sptr_node--;
         sptr_dist--;
-	const bool16 m_stackDist = gt(m_active,ray_tfar,curDist);
+	const vbool16 m_stackDist = gt(m_active,ray_tfar,curDist);
 
 	/* stack emppty ? */
         if (unlikely(curNode == BVH4i::invalidNode))  break;
@@ -163,7 +163,7 @@ namespace embree
         if (unlikely(curNode == BVH4i::invalidNode)) break;
         
         /* intersect leaf */
-        bool16 m_valid_leaf = gt(m_active,ray_tfar,curDist);
+        vbool16 m_valid_leaf = gt(m_active,ray_tfar,curDist);
         STAT3(shadow.trav_leaves,1,popcnt(m_valid_leaf),16);
 
 	LeafIntersector::occluded16(curNode,
@@ -179,7 +179,7 @@ namespace embree
         if (unlikely(all(m_terminated))) break;
         ray_tfar = select(m_terminated,neg_inf,ray_tfar);
       }
-      store16i(valid & m_terminated,&ray.geomID,0);
+      vint16::store(valid & m_terminated,&ray.geomID,0);
     }
 
     DEFINE_INTERSECTOR16    (BVH4mbTriangle1Intersector16ChunkMoeller, BVH4mbIntersector16Chunk<Triangle1mbLeafIntersector>);

@@ -63,66 +63,66 @@ namespace embree
   };
 
   struct BinMapping {
-    float16 centroidDiagonal_2;
-    float16 centroidBoundsMin_2;
-    float16 scale;
+    vfloat16 centroidDiagonal_2;
+    vfloat16 centroidBoundsMin_2;
+    vfloat16 scale;
     __forceinline BinMapping(const Centroid_Scene_AABB &bounds) 
     {
-      const float16 centroidMin = broadcast4to16f(&bounds.centroid2.lower);
-      const float16 centroidMax = broadcast4to16f(&bounds.centroid2.upper);
+      const vfloat16 centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const vfloat16 centroidMax = broadcast4to16f(&bounds.centroid2.upper);
       centroidDiagonal_2  = centroidMax-centroidMin;
       centroidBoundsMin_2 = centroidMin;
-      scale               = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * float16(16.0f * 0.99f),float16::zero());      
+      scale               = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * vfloat16(16.0f * 0.99f),vfloat16::zero());      
     }
 
-    __forceinline int16 getBinID(const float16 &centroid_2) const
+    __forceinline vint16 getBinID(const vfloat16 &centroid_2) const
     {
       return convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
     }
 
-    __forceinline bool16 getValidDimMask() const
+    __forceinline vbool16 getValidDimMask() const
     {
-      return (centroidDiagonal_2 > 0.0f) & (bool16)0x7;
+      return (centroidDiagonal_2 > 0.0f) & (vbool16)0x7;
     }
     
   };
 
   struct BinPartitionMapping {
 
-    float16 c;
-    float16 s;
-    float16 bestSplit_f;
-    bool16 dim_mask;
+    vfloat16 c;
+    vfloat16 s;
+    vfloat16 bestSplit_f;
+    vbool16 dim_mask;
 
      __forceinline BinPartitionMapping(const Split &split, const Centroid_Scene_AABB &bounds) 
     {
       const unsigned int bestSplitDim     = split.dim;
       const unsigned int bestSplit        = split.pos;
       const unsigned int bestSplitNumLeft = split.numLeft;
-      const float16 centroidMin = broadcast4to16f(&bounds.centroid2.lower);
-      const float16 centroidMax = broadcast4to16f(&bounds.centroid2.upper);      
-      const float16 centroidBoundsMin_2 = centroidMin;
-      const float16 centroidDiagonal_2  = centroidMax-centroidMin;
-      const float16 scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * float16(16.0f * 0.99f),float16::zero());
-      c = float16(centroidBoundsMin_2[bestSplitDim]);
-      s = float16(scale[bestSplitDim]);
-      bestSplit_f = float16(bestSplit);
-      dim_mask = bool16::shift1[bestSplitDim];      
+      const vfloat16 centroidMin = broadcast4to16f(&bounds.centroid2.lower);
+      const vfloat16 centroidMax = broadcast4to16f(&bounds.centroid2.upper);      
+      const vfloat16 centroidBoundsMin_2 = centroidMin;
+      const vfloat16 centroidDiagonal_2  = centroidMax-centroidMin;
+      const vfloat16 scale = select(centroidDiagonal_2 != 0.0f,rcp(centroidDiagonal_2) * vfloat16(16.0f * 0.99f),vfloat16::zero());
+      c = vfloat16(centroidBoundsMin_2[bestSplitDim]);
+      s = vfloat16(scale[bestSplitDim]);
+      bestSplit_f = vfloat16(bestSplit);
+      dim_mask = vbool16::shift1[bestSplitDim];      
     }
 
-    __forceinline bool16 lt_split(const float16 &b_min,
-				 const float16 &b_max) const
+    __forceinline vbool16 lt_split(const vfloat16 &b_min,
+				 const vfloat16 &b_max) const
     {
-      const float16 centroid_2 = b_min + b_max;
-      const float16 binID = (centroid_2 - c)*s;
+      const vfloat16 centroid_2 = b_min + b_max;
+      const vfloat16 binID = (centroid_2 - c)*s;
       return lt(dim_mask,binID,bestSplit_f);    
     }
 
-    __forceinline bool16 ge_split(const float16 &b_min,
-				 const float16 &b_max) const
+    __forceinline vbool16 ge_split(const vfloat16 &b_min,
+				 const vfloat16 &b_max) const
     {
-      const float16 centroid_2 = b_min + b_max;
-      const float16 binID = (centroid_2 - c)*s;
+      const vfloat16 centroid_2 = b_min + b_max;
+      const vfloat16 binID = (centroid_2 - c)*s;
       return ge(dim_mask,binID,bestSplit_f);    
     }
     
@@ -131,75 +131,75 @@ namespace embree
   
 
   __aligned(64) static const int identity[16]         = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
-  __aligned(64) static const int reverse_identity[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
+  /* __aligned(64) static const int reverse_identity[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 }; */
 
-  __forceinline float16 reverse(const float16 &a) 
-  {
-    return _mm512_permutev_ps(load16i(reverse_identity),a);
-  }
+  /* __forceinline vfloat16 reverse(const vfloat16 &a)  */
+  /* { */
+  /*   return _mm512_permutev_ps(vint16::load(reverse_identity),a); */
+  /* } */
   
-  __forceinline float16 prefix_area_rl(const float16 min_x,
-				     const float16 min_y,
-				     const float16 min_z,
-				     const float16 max_x,
-				     const float16 max_y,
-				     const float16 max_z)
+  __forceinline vfloat16 prefix_area_rl(const vfloat16 min_x,
+				     const vfloat16 min_y,
+				     const vfloat16 min_z,
+				     const vfloat16 max_x,
+				     const vfloat16 max_y,
+				     const vfloat16 max_z)
   {
-    const float16 r_min_x = prefix_min(reverse(min_x));
-    const float16 r_min_y = prefix_min(reverse(min_y));
-    const float16 r_min_z = prefix_min(reverse(min_z));
-    const float16 r_max_x = prefix_max(reverse(max_x));
-    const float16 r_max_y = prefix_max(reverse(max_y));
-    const float16 r_max_z = prefix_max(reverse(max_z));
+    const vfloat16 r_min_x = prefix_min(reverse(min_x));
+    const vfloat16 r_min_y = prefix_min(reverse(min_y));
+    const vfloat16 r_min_z = prefix_min(reverse(min_z));
+    const vfloat16 r_max_x = prefix_max(reverse(max_x));
+    const vfloat16 r_max_y = prefix_max(reverse(max_y));
+    const vfloat16 r_max_z = prefix_max(reverse(max_z));
     
-    const float16 dx = r_max_x - r_min_x;
-    const float16 dy = r_max_y - r_min_y;
-    const float16 dz = r_max_z - r_min_z;
+    const vfloat16 dx = r_max_x - r_min_x;
+    const vfloat16 dy = r_max_y - r_min_y;
+    const vfloat16 dz = r_max_z - r_min_z;
     
-    const float16 area_rl = (dx*dy+dx*dz+dy*dz) * float16(2.0f);
+    const vfloat16 area_rl = (dx*dy+dx*dz+dy*dz) * vfloat16(2.0f);
     return reverse(shl1_zero_extend(area_rl));
   }
 
-  __forceinline float16 prefix_area_lr(const float16 min_x,
-				     const float16 min_y,
-				     const float16 min_z,
-				     const float16 max_x,
-				     const float16 max_y,
-				     const float16 max_z)
+  __forceinline vfloat16 prefix_area_lr(const vfloat16 min_x,
+				     const vfloat16 min_y,
+				     const vfloat16 min_z,
+				     const vfloat16 max_x,
+				     const vfloat16 max_y,
+				     const vfloat16 max_z)
   {
-    const float16 r_min_x = prefix_min(min_x);
-    const float16 r_min_y = prefix_min(min_y);
-    const float16 r_min_z = prefix_min(min_z);
-    const float16 r_max_x = prefix_max(max_x);
-    const float16 r_max_y = prefix_max(max_y);
-    const float16 r_max_z = prefix_max(max_z);
+    const vfloat16 r_min_x = prefix_min(min_x);
+    const vfloat16 r_min_y = prefix_min(min_y);
+    const vfloat16 r_min_z = prefix_min(min_z);
+    const vfloat16 r_max_x = prefix_max(max_x);
+    const vfloat16 r_max_y = prefix_max(max_y);
+    const vfloat16 r_max_z = prefix_max(max_z);
     
-    const float16 dx = r_max_x - r_min_x;
-    const float16 dy = r_max_y - r_min_y;
-    const float16 dz = r_max_z - r_min_z;
+    const vfloat16 dx = r_max_x - r_min_x;
+    const vfloat16 dy = r_max_y - r_min_y;
+    const vfloat16 dz = r_max_z - r_min_z;
   
-    const float16 area_lr = (dx*dy+dx*dz+dy*dz) * float16(2.0f);
+    const vfloat16 area_lr = (dx*dy+dx*dz+dy*dz) * vfloat16(2.0f);
     return area_lr;
   }
 
 
-  __forceinline int16 prefix_count(const int16 c)
+  __forceinline vint16 prefix_count(const vint16 c)
   {
     return prefix_sum(c);
   }
 
 
   __forceinline Split getBestSplit(const BuildRecord& current,
-				   const float16 leftArea[3],
-				   const float16 rightArea[3],
-				   const int16 leftNum[3],
-				   const bool16 &m_dim)
+				   const vfloat16 leftArea[3],
+				   const vfloat16 rightArea[3],
+				   const vint16 leftNum[3],
+				   const vbool16 &m_dim)
   {
     const unsigned int items        = current.items();
     const float voxelArea           = area(current.bounds.geometry);
-    //const float16 centroidMin         = broadcast4to16f(&current.bounds.centroid2.lower);
-    //const float16 centroidMax         = broadcast4to16f(&current.bounds.centroid2.upper);
-    //const float16 centroidDiagonal_2  = centroidMax-centroidMin;
+    //const vfloat16 centroidMin         = broadcast4to16f(&current.bounds.centroid2.lower);
+    //const vfloat16 centroidMax         = broadcast4to16f(&current.bounds.centroid2.upper);
+    //const vfloat16 centroidDiagonal_2  = centroidMax-centroidMin;
 
     Split split( items * voxelArea );
  
@@ -208,22 +208,22 @@ namespace embree
       {	    
 	//assert(centroidDiagonal_2[dim] > 0.0f);
 
-	const float16 rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
-	const float16 lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
-	const int16 lnum    = leftNum[dim];   // bin16.prefix_count(dim);
+	const vfloat16 rArea   = rightArea[dim]; // bin16.prefix_area_rl(dim);
+	const vfloat16 lArea   = leftArea[dim];  // bin16.prefix_area_lr(dim);      
+	const vint16 lnum    = leftNum[dim];   // bin16.prefix_count(dim);
 
-	const int16 rnum    = int16(items) - lnum;
-	const int16 lblocks = (lnum + int16(3)) >> 2;
-	const int16 rblocks = (rnum + int16(3)) >> 2;
-	const bool16 m_lnum  = lnum == 0;
-	const bool16 m_rnum  = rnum == 0;
-	const float16 cost    = select(m_lnum|m_rnum,float16::inf(),lArea * float16(lblocks) + rArea * float16(rblocks) + voxelArea );
+	const vint16 rnum    = vint16(items) - lnum;
+	const vint16 lblocks = (lnum + vint16(3)) >> 2;
+	const vint16 rblocks = (rnum + vint16(3)) >> 2;
+	const vbool16 m_lnum  = lnum == 0;
+	const vbool16 m_rnum  = rnum == 0;
+	const vfloat16 cost    = select(m_lnum|m_rnum,vfloat16::inf(),lArea * vfloat16(lblocks) + rArea * vfloat16(rblocks) + voxelArea );
 
-	if (lt(cost,float16(split.cost)))
+	if (lt(cost,vfloat16(split.cost)))
 	  {
 
-	    const float16 min_cost    = vreduce_min(cost); 
-	    const bool16 m_pos       = min_cost == cost;
+	    const vfloat16 min_cost    = vreduce_min(cost); 
+	    const vbool16 m_pos       = min_cost == cost;
 	    const unsigned long pos = bitscan64(m_pos);	    
 
 	    assert(pos < 15);
@@ -246,22 +246,22 @@ namespace embree
 			     const unsigned int thread_start,
 			     const unsigned int thread_end,
 			     const BinMapping &mapping,
-			     float16 lArea[3],
-			     float16 rArea[3],
-			     int16 lNum[3])
+			     vfloat16 lArea[3],
+			     vfloat16 rArea[3],
+			     vint16 lNum[3])
   {
 
-    const float16 init_min = float16::inf();
-    const float16 init_max = float16::minus_inf();
-    const int16 zero     = int16::zero();
+    const vfloat16 init_min = vfloat16::inf();
+    const vfloat16 init_max = vfloat16::minus_inf();
+    const vint16 zero     = vint16::zero();
 
-    float16 min_x0,min_x1,min_x2;
-    float16 min_y0,min_y1,min_y2;
-    float16 min_z0,min_z1,min_z2;
-    float16 max_x0,max_x1,max_x2;
-    float16 max_y0,max_y1,max_y2;
-    float16 max_z0,max_z1,max_z2;
-    int16 count0,count1,count2;
+    vfloat16 min_x0,min_x1,min_x2;
+    vfloat16 min_y0,min_y1,min_y2;
+    vfloat16 min_z0,min_z1,min_z2;
+    vfloat16 max_x0,max_x1,max_x2;
+    vfloat16 max_y0,max_y1,max_y2;
+    vfloat16 max_z0,max_z1,max_z2;
+    vint16 count0,count1,count2;
 
     min_x0 = init_min;
     min_x1 = init_min;
@@ -292,21 +292,21 @@ namespace embree
 
     if (unlikely(start % 2 != 0))
       {
-	const Vec2f16 bounds = aabb[start].getBounds();
-	const float16 b_min = bounds.x;
-	const float16 b_max = bounds.y;
+	const Vec2vf16 bounds = aabb[start].getBounds();
+	const vfloat16 b_min = bounds.x;
+	const vfloat16 b_max = bounds.y;
 
-	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
+	const vfloat16 centroid_2 = b_min + b_max; 
+	const vint16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 	// ------------------------------------------------------------------------      
-	const int16 id = load16i(identity);
-	const bool16 m_update_x = eq(id,swAAAA(binID));
-	const bool16 m_update_y = eq(id,swBBBB(binID));
-	const bool16 m_update_z = eq(id,swCCCC(binID));
+	const vint16 id = vint16::load(identity);
+	const vbool16 m_update_x = eq(id,swAAAA(binID));
+	const vbool16 m_update_y = eq(id,swBBBB(binID));
+	const vbool16 m_update_z = eq(id,swCCCC(binID));
 	// ------------------------------------------------------------------------      
 	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
@@ -332,30 +332,30 @@ namespace embree
 	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
 	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
 	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,int16::one());
-	count1 = mask_add(m_update_y,count1,count1,int16::one());
-	count2 = mask_add(m_update_z,count2,count2,int16::one());      
+	count0 = mask_add(m_update_x,count0,count0,vint16::one());
+	count1 = mask_add(m_update_y,count1,count1,vint16::one());
+	count2 = mask_add(m_update_z,count2,count2,vint16::one());      
 	start++;	
       }
     assert(start % 2 == 0);
 
     if (unlikely(end % 2 != 0))
       {
-	const Vec2f16 bounds = aabb[end-1].getBounds();
-	const float16 b_min = bounds.x;
-	const float16 b_max = bounds.y;
+	const Vec2vf16 bounds = aabb[end-1].getBounds();
+	const vfloat16 b_min = bounds.x;
+	const vfloat16 b_max = bounds.y;
 
-	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
+	const vfloat16 centroid_2 = b_min + b_max; 
+	const vint16 binID = mapping.getBinID(centroid_2); // const vint16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 	// ------------------------------------------------------------------------      
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 	// ------------------------------------------------------------------------      
-	const int16 id = load16i(identity);
-	const bool16 m_update_x = eq(id,swAAAA(binID));
-	const bool16 m_update_y = eq(id,swBBBB(binID));
-	const bool16 m_update_z = eq(id,swCCCC(binID));
+	const vint16 id = vint16::load(identity);
+	const vbool16 m_update_x = eq(id,swAAAA(binID));
+	const vbool16 m_update_y = eq(id,swBBBB(binID));
+	const vbool16 m_update_z = eq(id,swCCCC(binID));
 	// ------------------------------------------------------------------------      
 	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
@@ -381,9 +381,9 @@ namespace embree
 	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
 	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
 	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,int16::one());
-	count1 = mask_add(m_update_y,count1,count1,int16::one());
-	count2 = mask_add(m_update_z,count2,count2,int16::one());      
+	count0 = mask_add(m_update_x,count0,count0,vint16::one());
+	count1 = mask_add(m_update_y,count1,count1,vint16::one());
+	count2 = mask_add(m_update_z,count2,count2,vint16::one());      
 	end--;	
       }
     assert(end % 2 == 0);
@@ -405,21 +405,21 @@ namespace embree
 	for (size_t i=0;i<2;i++)
 	  {
 
-	    const Vec2f16 bounds = aptr[i].getBounds();
-	    const float16 b_min  = bounds.x;
-	    const float16 b_max  = bounds.y;
+	    const Vec2vf16 bounds = aptr[i].getBounds();
+	    const vfloat16 b_min  = bounds.x;
+	    const vfloat16 b_max  = bounds.y;
 
-	    const float16 centroid_2 = b_min + b_max;
-	    const int16 binID = mapping.getBinID(centroid_2); // const int16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
+	    const vfloat16 centroid_2 = b_min + b_max;
+	    const vint16 binID = mapping.getBinID(centroid_2); // const vint16 binID = convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 
 	    assert(0 <= binID[0] && binID[0] < 16);
 	    assert(0 <= binID[1] && binID[1] < 16);
 	    assert(0 <= binID[2] && binID[2] < 16);
 
-	    const int16 id = load16i(identity);
-	    const bool16 m_update_x = eq(id,swAAAA(binID));
-	    const bool16 m_update_y = eq(id,swBBBB(binID));
-	    const bool16 m_update_z = eq(id,swCCCC(binID));
+	    const vint16 id = vint16::load(identity);
+	    const vbool16 m_update_x = eq(id,swAAAA(binID));
+	    const vbool16 m_update_y = eq(id,swBBBB(binID));
+	    const vbool16 m_update_z = eq(id,swCCCC(binID));
 
 	    min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	    min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
@@ -445,9 +445,9 @@ namespace embree
 	    max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
 	    max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
 	    // ------------------------------------------------------------------------
-	    count0 = mask_add(m_update_x,count0,count0,int16::one());
-	    count1 = mask_add(m_update_y,count1,count1,int16::one());
-	    count2 = mask_add(m_update_z,count2,count2,int16::one());      
+	    count0 = mask_add(m_update_x,count0,count0,vint16::one());
+	    count1 = mask_add(m_update_y,count1,count1,vint16::one());
+	    count2 = mask_add(m_update_z,count2,count2,vint16::one());      
 	  }
       }
 
@@ -477,26 +477,26 @@ namespace embree
 
   template<class Primitive>
   __forceinline void fastbin_xfm(const Primitive * __restrict__ const aabb,
-				 const Vec3f16 &cmat,
+				 const Vec3vf16 &cmat,
 				 const unsigned int thread_start,
 				 const unsigned int thread_end,
 				 const BinMapping &mapping,
-				 float16 lArea[3],
-				 float16 rArea[3],
-				 int16 lNum[3])
+				 vfloat16 lArea[3],
+				 vfloat16 rArea[3],
+				 vint16 lNum[3])
   {
 
-    const float16 init_min = float16::inf();
-    const float16 init_max = float16::minus_inf();
-    const int16 zero     = int16::zero();
+    const vfloat16 init_min = vfloat16::inf();
+    const vfloat16 init_max = vfloat16::minus_inf();
+    const vint16 zero     = vint16::zero();
 
-    float16 min_x0,min_x1,min_x2;
-    float16 min_y0,min_y1,min_y2;
-    float16 min_z0,min_z1,min_z2;
-    float16 max_x0,max_x1,max_x2;
-    float16 max_y0,max_y1,max_y2;
-    float16 max_z0,max_z1,max_z2;
-    int16 count0,count1,count2;
+    vfloat16 min_x0,min_x1,min_x2;
+    vfloat16 min_y0,min_y1,min_y2;
+    vfloat16 min_z0,min_z1,min_z2;
+    vfloat16 max_x0,max_x1,max_x2;
+    vfloat16 max_y0,max_y1,max_y2;
+    vfloat16 max_z0,max_z1,max_z2;
+    vint16 count0,count1,count2;
 
     min_x0 = init_min;
     min_x1 = init_min;
@@ -533,31 +533,31 @@ namespace embree
     prefetch<PFHINT_L2>(aptr+6);
     prefetch<PFHINT_L2>(aptr+8);
 
-    const float16 c0 = cmat.x;
-    const float16 c1 = cmat.y;
-    const float16 c2 = cmat.z;
+    const vfloat16 c0 = cmat.x;
+    const vfloat16 c1 = cmat.y;
+    const vfloat16 c2 = cmat.z;
 
     for (size_t j = start;j < end;j++,aptr++)
       {
 	prefetch<PFHINT_L1>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 	
-	const Vec2f16 bounds = aptr->getBounds(c0,c1,c2);
+	const Vec2vf16 bounds = aptr->getBounds(c0,c1,c2);
 
-	const float16 b_min  = bounds.x;
-	const float16 b_max  = bounds.y;
+	const vfloat16 b_min  = bounds.x;
+	const vfloat16 b_max  = bounds.y;
 
-	const float16 centroid_2 = b_min + b_max;
-	const int16 binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
-	const int16 binID = min(max(binID_noclamp,int16::zero()),int16(15));
+	const vfloat16 centroid_2 = b_min + b_max;
+	const vint16 binID_noclamp = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
+	const vint16 binID = min(max(binID_noclamp,vint16::zero()),vint16(15));
 	assert(0 <= binID[0] && binID[0] < 16);
 	assert(0 <= binID[1] && binID[1] < 16);
 	assert(0 <= binID[2] && binID[2] < 16);
 
-	const int16 id = load16i(identity);
-	const bool16 m_update_x = eq(id,swAAAA(binID));
-	const bool16 m_update_y = eq(id,swBBBB(binID));
-	const bool16 m_update_z = eq(id,swCCCC(binID));
+	const vint16 id = vint16::load(identity);
+	const vbool16 m_update_x = eq(id,swAAAA(binID));
+	const vbool16 m_update_y = eq(id,swBBBB(binID));
+	const vbool16 m_update_z = eq(id,swCCCC(binID));
 
 	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
@@ -583,9 +583,9 @@ namespace embree
 	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
 	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
 	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,int16::one());
-	count1 = mask_add(m_update_y,count1,count1,int16::one());
-	count2 = mask_add(m_update_z,count2,count2,int16::one());      
+	count0 = mask_add(m_update_x,count0,count0,vint16::one());
+	count1 = mask_add(m_update_y,count1,count1,vint16::one());
+	count2 = mask_add(m_update_z,count2,count2,vint16::one());      
       }
 
     prefetch<PFHINT_L1EX>(&rArea[0]);
@@ -613,7 +613,7 @@ namespace embree
 
   template<unsigned int DISTANCE, class Primitive>
     __forceinline unsigned int partitionPrimitives_xfm(Primitive *__restrict__ aabb,
-						       const Vec3f16 &cmat,
+						       const Vec3vf16 &cmat,
 						       const unsigned int begin,
 						       const unsigned int end,
 						       const BinPartitionMapping &mapping,
@@ -630,18 +630,18 @@ namespace embree
       leftReduction.reset();
       rightReduction.reset();
 
-      const float16 c0 = cmat.x;
-      const float16 c1 = cmat.y;
-      const float16 c2 = cmat.z;
+      const vfloat16 c0 = cmat.x;
+      const vfloat16 c1 = cmat.y;
+      const vfloat16 c2 = cmat.z;
 
       while(1)
 	{
 	  while (likely(l <= r)) 
 	    {
 	      
-	      const Vec2f16 bounds = l->getBounds(c0,c1,c2);
-	      const float16 b_min  = bounds.x;
-	      const float16 b_max  = bounds.y;
+	      const Vec2vf16 bounds = l->getBounds(c0,c1,c2);
+	      const vfloat16 b_min  = bounds.x;
+	      const vfloat16 b_max  = bounds.y;
 
 	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
 	      if (unlikely(mapping.ge_split(b_min,b_max))) break;
@@ -652,9 +652,9 @@ namespace embree
 	    }
 	  while (likely(l <= r)) 
 	    {
-	      const Vec2f16 bounds = r->getBounds(c0,c1,c2);
-	      const float16 b_min  = bounds.x;
-	      const float16 b_max  = bounds.y;
+	      const Vec2vf16 bounds = r->getBounds(c0,c1,c2);
+	      const vfloat16 b_min  = bounds.x;
+	      const vfloat16 b_max  = bounds.y;
 
 	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
 	      if (unlikely(mapping.lt_split(b_min,b_max))) break;
@@ -687,14 +687,14 @@ namespace embree
   class __aligned(64) Bin16
   {
   public:
-    float16 min_x[3];
-    float16 min_y[3];
-    float16 min_z[3];
-    float16 max_x[3];
-    float16 max_y[3];
-    float16 max_z[3];
-    int16 count[3];
-    int16 thread_count[3];
+    vfloat16 min_x[3];
+    vfloat16 min_y[3];
+    vfloat16 min_z[3];
+    vfloat16 max_x[3];
+    vfloat16 max_y[3];
+    vfloat16 max_z[3];
+    vint16 count[3];
+    vint16 thread_count[3];
 
     Bin16() {}
 
@@ -744,9 +744,9 @@ namespace embree
 
     __forceinline void reset()
     {
-      const float16 init_min = float16::inf();
-      const float16 init_max = float16::minus_inf();
-      const int16 zero     = int16::zero();
+      const vfloat16 init_min = vfloat16::inf();
+      const vfloat16 init_max = vfloat16::minus_inf();
+      const vint16 zero     = vint16::zero();
 
       min_x[0] = init_min;
       min_x[1] = init_min;
@@ -796,11 +796,11 @@ namespace embree
     } 
 
 
-    __forceinline Split bestSplit(const BuildRecord& current,const bool16 &m_dim) const
+    __forceinline Split bestSplit(const BuildRecord& current,const vbool16 &m_dim) const
     {
-      float16 lArea[3];
-      float16 rArea[3];
-      int16 leftNum[3];
+      vfloat16 lArea[3];
+      vfloat16 rArea[3];
+      vint16 leftNum[3];
 
       long dim = -1;
       while((dim = bitscan64(dim,m_dim)) != BITSCAN_NO_BIT_SET_64) 
@@ -820,7 +820,7 @@ namespace embree
   };
 
   __forceinline bool operator==(const Bin16 &a, const Bin16 &b) { 
-    bool16 mask = 0xffff;
+    vbool16 mask = 0xffff;
 #pragma unroll(3)
     for (unsigned int i=0;i<3;i++)
       {
@@ -834,7 +834,7 @@ namespace embree
 
 	mask &= eq(a.count[i],b.count[i]);
       }
-    return mask == (bool16)0xffff;
+    return mask == (vbool16)0xffff;
   };
 
   __forceinline bool operator!=(const Bin16 &a, const Bin16 &b) { 
@@ -868,17 +868,17 @@ namespace embree
 			     const BinMapping &mapping,
 			     Bin16 &bin16)
   {
-    const float16 init_min = float16::inf();
-    const float16 init_max = float16::minus_inf();
-    const int16 zero     = int16::zero();
+    const vfloat16 init_min = vfloat16::inf();
+    const vfloat16 init_max = vfloat16::minus_inf();
+    const vint16 zero     = vint16::zero();
 
-    float16 min_x0,min_x1,min_x2;
-    float16 min_y0,min_y1,min_y2;
-    float16 min_z0,min_z1,min_z2;
-    float16 max_x0,max_x1,max_x2;
-    float16 max_y0,max_y1,max_y2;
-    float16 max_z0,max_z1,max_z2;
-    int16 count0,count1,count2;
+    vfloat16 min_x0,min_x1,min_x2;
+    vfloat16 min_y0,min_y1,min_y2;
+    vfloat16 min_z0,min_z1,min_z2;
+    vfloat16 max_x0,max_x1,max_x2;
+    vfloat16 max_y0,max_y1,max_y2;
+    vfloat16 max_z0,max_z1,max_z2;
+    vint16 count0,count1,count2;
 
     min_x0 = init_min;
     min_x1 = init_min;
@@ -920,21 +920,21 @@ namespace embree
 	prefetch<PFHINT_NT>(aptr+2);
 	prefetch<PFHINT_L2>(aptr+12);
 
-	const Vec2f16 bounds = aptr->getBounds();
-	const float16 b_min  = bounds.x;
-	const float16 b_max  = bounds.y;
+	const Vec2vf16 bounds = aptr->getBounds();
+	const vfloat16 b_min  = bounds.x;
+	const vfloat16 b_max  = bounds.y;
 
-	const float16 centroid_2 = b_min + b_max; 
-	const int16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
+	const vfloat16 centroid_2 = b_min + b_max; 
+	const vint16 binID = mapping.getBinID(centroid_2); // convert_uint32_t((centroid_2 - centroidBoundsMin_2)*scale);
 
 	assert(0 <= binID[0] && binID[0] < 16); 
 	assert(0 <= binID[1] && binID[1] < 16); 
 	assert(0 <= binID[2] && binID[2] < 16); 
 
-	const int16 id = load16i(identity);
-	const bool16 m_update_x = eq(id,swAAAA(binID));
-	const bool16 m_update_y = eq(id,swBBBB(binID));
-	const bool16 m_update_z = eq(id,swCCCC(binID));
+	const vint16 id = vint16::load(identity);
+	const vbool16 m_update_x = eq(id,swAAAA(binID));
+	const vbool16 m_update_y = eq(id,swBBBB(binID));
+	const vbool16 m_update_z = eq(id,swCCCC(binID));
 
 	min_x0 = mask_min(m_update_x,min_x0,min_x0,swAAAA(b_min));
 	min_y0 = mask_min(m_update_x,min_y0,min_y0,swBBBB(b_min));
@@ -960,9 +960,9 @@ namespace embree
 	max_y2 = mask_max(m_update_z,max_y2,max_y2,swBBBB(b_max));
 	max_z2 = mask_max(m_update_z,max_z2,max_z2,swCCCC(b_max));
 	// ------------------------------------------------------------------------
-	count0 = mask_add(m_update_x,count0,count0,int16::one());
-	count1 = mask_add(m_update_y,count1,count1,int16::one());
-	count2 = mask_add(m_update_z,count2,count2,int16::one());      
+	count0 = mask_add(m_update_x,count0,count0,vint16::one());
+	count1 = mask_add(m_update_y,count1,count1,vint16::one());
+	count2 = mask_add(m_update_z,count2,count2,vint16::one());      
       }
 
     bin16.prefetchL2EX();
@@ -1017,9 +1017,9 @@ namespace embree
 	  /* *l < pivot */
 	  while (likely(l <= r)) 
 	    {
-	      const Vec2f16 bounds = l->getBounds();
-	      const float16 b_min  = bounds.x;
-	      const float16 b_max  = bounds.y;
+	      const Vec2vf16 bounds = l->getBounds();
+	      const vfloat16 b_min  = bounds.x;
+	      const vfloat16 b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)l)+4*64);
 
 	      if (unlikely(mapping.ge_split(b_min,b_max))) break;
@@ -1032,9 +1032,9 @@ namespace embree
 	  /* *r >= pivot) */
 	  while (likely(l <= r))
 	    {
-	      const Vec2f16 bounds = r->getBounds();
-	      const float16 b_min  = bounds.x;
-	      const float16 b_max  = bounds.y;
+	      const Vec2vf16 bounds = r->getBounds();
+	      const vfloat16 b_min  = bounds.x;
+	      const vfloat16 b_max  = bounds.y;
 	      prefetch<PFHINT_L1EX>(((char*)r)-4*64);	  
 
 	      if (unlikely(mapping.lt_split(b_min,b_max))) break;

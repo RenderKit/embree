@@ -100,6 +100,10 @@ namespace embree
 	CentGeomBBox3fa::extend(geomBounds_,center2(geomBounds_));
 	end++;
       }
+
+      __forceinline void add(const size_t i=1) {
+	end+=i;
+      }
       
       __forceinline void add(const BBox3fa& geomBounds_, const BBox3fa& centBounds_, size_t num_ = 1) {
 	CentGeomBBox3fa::extend(geomBounds_,centBounds_);

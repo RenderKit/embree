@@ -85,7 +85,7 @@ struct Sample3f
   float pdf;
 };
 
-inline Sample3f make_Sample3f(const Vec3f v, const float pdf) { // FIXME: &
+inline Sample3f make_Sample3f(const Vec3f v, const float pdf) {
   Sample3f s; s.v = v; s.pdf = pdf; return s;
 }
 
@@ -99,9 +99,6 @@ uniform bool progressMonitor(void* uniform ptr, const uniform double n);
 void progressEnd();
 
 Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
-
-float  getPtexTexel1f(void* uniform ptex, int faceId, float u, float v);
-Vec3f  getPtexTexel3f(void* uniform ptex, int faceId, float u, float v);
 
 float  getTextureTexel1f(void * uniform texture, float u, float v);
 Vec3f  getTextureTexel3f(void * uniform texture, float u, float v);

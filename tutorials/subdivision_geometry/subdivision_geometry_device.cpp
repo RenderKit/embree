@@ -271,13 +271,13 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa Ng = ray.Ng;
     if (ray.geomID > 0) {
       Vec3fa dPdu,dPdv;
-      int geomID = ray.geomID;  {
+      int geomID = ray.geomID; {
         rtcInterpolate(g_scene,geomID,ray.primID,ray.u,ray.v,RTC_VERTEX_BUFFER,nullptr,&dPdu.x,&dPdv.x,3);
       }
       Ng = cross(dPdv,dPdu);
     }
 
-    color = color + diffuse*0.5f; // FIXME: +=
+    color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
@@ -296,7 +296,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
              
     /* add light contribution */
     if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(Ng)),0.0f,1.0f);
   }
   return color;
 }

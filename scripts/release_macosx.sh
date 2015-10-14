@@ -28,7 +28,8 @@ rm version.h
 
 # set release settings
 cmake \
--D COMPILER=ICC \
+-D CMAKE_C_COMPILER=icc \
+-D CMAKE_CXX_COMPILER=icpc \
 -D CMAKE_INSTALL_PREFIX=/opt/local \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \

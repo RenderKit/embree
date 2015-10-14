@@ -14,14 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-#OPTION(TUTORIAL_USE_PTEX "Enables ptex texture support for tutorials.") # FIXME: remove Ptex support
-
-IF (TUTORIAL_USE_PTEX)
-  FIND_PACKAGE(Ptex REQUIRED)
-  ADD_DEFINITIONS(-DUSE_PTEX)
-  INCLUDE_DIRECTORIES(${PTEX_INCLUDE_DIRS})
-ENDIF()
-
 ADD_SUBDIRECTORY(common)
 
 SET (__XEON__ 1)
@@ -40,8 +32,9 @@ ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
+ADD_SUBDIRECTORY(convert)
 
-IF (ENABLE_XEON_PHI_SUPPORT)
+IF (ENABLE_XEON_PHI_SUPPORT AND RTCORE_RAY_PACKETS)
   SET (__XEON__ 0)
   SET (__HOST__ 1)
   ADD_SUBDIRECTORY(triangle_geometry triangle_geometry_host)

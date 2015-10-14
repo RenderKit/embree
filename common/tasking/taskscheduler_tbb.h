@@ -45,7 +45,8 @@ namespace embree
 #else
 #  define SPAWN_BEGIN 
 #  define SPAWN(closure) TaskSchedulerTBB::spawn(closure)
-#  define SPAWN_END TaskSchedulerTBB::wait();
+#  define SPAWN_END if (!TaskSchedulerTBB::wait())      \
+      throw std::runtime_error("task cancelled");
 #endif
 
   struct TaskSchedulerTBB : public RefCount
@@ -215,11 +216,14 @@ namespace embree
     /*! pool of worker threads */
     struct ThreadPool
     {
-      ThreadPool (size_t numThreads = 0, bool set_affinity = false);
+      ThreadPool (bool set_affinity);
       ~ThreadPool ();
 
       /*! starts the threads */
       __dllexport void startThreads();
+
+      /*! sets number of threads to use */
+      void setNumThreads(size_t numThreads, bool startThreads = false);
 
       /*! adds a task scheduler object for scheduling */
       __dllexport void add(const Ref<TaskSchedulerTBB>& scheduler);
@@ -231,13 +235,13 @@ namespace embree
       size_t size() const { return numThreads; }
 
       /*! main loop for all threads */
-      void thread_loop();
+      void thread_loop(size_t threadIndex);
       
     private:
-      size_t numThreads;
+      volatile size_t numThreads;
+      volatile size_t numThreadsRunning;
       bool set_affinity;
       bool running;
-      volatile bool terminate;
       std::vector<thread_t> threads;
 
     private:
@@ -266,7 +270,7 @@ namespace embree
     void wait_for_threads(size_t threadCount);
 
     /*! thread loop for all worker threads */
-    void thread_loop(size_t threadIndex);
+    std::exception_ptr thread_loop(size_t threadIndex);
 
     /*! steals a task from a different thread */
     bool steal_from_other_threads(Thread& thread);
@@ -276,7 +280,8 @@ namespace embree
 
     /* spawn a new task at the top of the threads task stack */
     template<typename Closure>
-    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) // important: has to be noinline as it allocates thread structure on stack
+    __noinline void spawn_root(const Closure& closure, size_t size = 1, bool useThreadPool = true) 
+    // important: has to be noinline as it allocates large thread structure on stack
     {
       if (useThreadPool) startThreads();
       
@@ -295,21 +300,32 @@ namespace embree
       
       if (useThreadPool) addScheduler(this);
 
-      while (thread.tasks.execute_local(thread,nullptr));
+      try {
+        while (thread.tasks.execute_local(thread,nullptr));
+      } 
+      catch (...) 
+      {
+        if (!cancellingException)
+          cancellingException = std::current_exception();
+      }
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
       
       threadLocal[threadIndex] = nullptr;
       swapThread(oldThread);
 
+      /* remember exception to throw */
+      std::exception_ptr except = nullptr;
+      if (cancellingException) except = cancellingException;
+
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
-      while (threadCounter > 0) {
-        yield();
-      }
+      while (threadCounter > 0) yield();
+      cancellingException = nullptr;
 
-      //assert(anyTasksRunning == -1);
-      //anyTasksRunning = 0;
+      /* re-throw proper exception */
+      if (except) 
+        std::rethrow_exception(except);
     }
 
     /* spawn a new task at the top of the threads task stack */
@@ -344,7 +360,7 @@ namespace embree
     }
 
     /* work on spawned subtasks and wait until all have finished */
-    __dllexport static void wait();
+    __dllexport static bool wait();
 
     /* returns the index of the current thread */
     __dllexport static size_t threadIndex();
@@ -373,10 +389,11 @@ namespace embree
     __dllexport static void removeScheduler(const Ref<TaskSchedulerTBB>& scheduler);
 
   private:
-    Thread* threadLocal[MAX_THREADS]; // FIXME: thread should be no maximal number of threads
+    std::vector<Thread*> threadLocal;
     volatile atomic_t threadCounter;
     volatile atomic_t anyTasksRunning;
     volatile bool hasRootTask;
+    std::exception_ptr cancellingException;
     MutexSys mutex;
     ConditionSys condition;
 

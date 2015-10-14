@@ -37,6 +37,72 @@ namespace embree
         return cout << "{ tri " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
       }
     };
+
+    /*! triangle edge based on two indices */
+    struct Edge 
+    {
+      uint64_t e;
+
+      __forceinline Edge() {}
+
+      __forceinline Edge(const uint32_t &v0,
+                         const uint32_t &v1)
+      {
+        e = v0 < v1 ? (((uint64_t)v1 << 32) | (uint64_t)v0) : (((uint64_t)v0 << 32) | (uint64_t)v1);
+      }
+
+      __forceinline friend bool operator==( const Edge& a, const Edge& b ) 
+      { return a.e == b.e; };
+
+    };
+
+
+
+
+    /* last edge of triangle 0 is shared */
+    static __forceinline unsigned int pair_order(const unsigned int tri0_vtx_index0,
+                                                 const unsigned int tri0_vtx_index1,
+                                                 const unsigned int tri0_vtx_index2,
+                                                 const unsigned int tri1_vtx_index)
+    {
+      return \
+        (tri0_vtx_index0  <<  0) |
+        (tri0_vtx_index1  <<  8) |
+        (tri0_vtx_index2  << 16) |
+        (tri1_vtx_index   << 24);
+    }
+
+    /*! tests if a shared exists between two triangles, returns -1 if no shared edge exists and the opposite vertex index of the second triangle if a shared edge exists */
+    static __forceinline int sharedEdge(const Triangle &tri0,
+                                        const Triangle &tri1)
+    {
+      const Edge tri0_edge0(tri0.v[0],tri0.v[1]);
+      const Edge tri0_edge1(tri0.v[1],tri0.v[2]);
+      const Edge tri0_edge2(tri0.v[2],tri0.v[0]);
+
+      const Edge tri1_edge0(tri1.v[0],tri1.v[1]);
+      const Edge tri1_edge1(tri1.v[1],tri1.v[2]);
+      const Edge tri1_edge2(tri1.v[2],tri1.v[0]);
+
+      int opp_vtx = -1;
+
+      /* rotate triangle 0 to force shared edge between the first and last vertex */
+
+      if (unlikely(tri0_edge0 == tri1_edge0)) return pair_order(1,2,0, 2); 
+      if (unlikely(tri0_edge1 == tri1_edge0)) return pair_order(2,0,1, 2); 
+      if (unlikely(tri0_edge2 == tri1_edge0)) return pair_order(0,1,2, 2);
+
+      if (unlikely(tri0_edge0 == tri1_edge1)) return pair_order(1,2,0, 0); 
+      if (unlikely(tri0_edge1 == tri1_edge1)) return pair_order(2,0,1, 0); 
+      if (unlikely(tri0_edge2 == tri1_edge1)) return pair_order(0,1,2, 0); 
+
+      if (unlikely(tri0_edge0 == tri1_edge2)) return pair_order(1,2,0, 1); 
+      if (unlikely(tri0_edge1 == tri1_edge2)) return pair_order(2,0,1, 1); 
+      if (unlikely(tri0_edge2 == tri1_edge2)) return pair_order(0,1,2, 1); 
+
+      return -1;
+    }
+
     
   public:
 
@@ -135,7 +201,7 @@ namespace embree
 
 
     template<unsigned int HINT=0>
-      __forceinline Vec3f16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
+      __forceinline Vec3vf16 getTriangleVertices(const Triangle &tri,const size_t dim=0) const 
       {
 	assert( tri.v[0] < numVertices() );
 	assert( tri.v[1] < numVertices() );
@@ -147,16 +213,16 @@ namespace embree
 	const float *__restrict__ const vptr1 = (float*) vertices[dim].getPtr(tri.v[1]);
 	const float *__restrict__ const vptr2 = (float*) vertices[dim].getPtr(tri.v[2]);
 
-	const float16 v0 = broadcast4to16f(vptr0); 
-	const float16 v1 = broadcast4to16f(vptr1); 
-	const float16 v2 = broadcast4to16f(vptr2); 
-	return Vec3f16(v0,v1,v2);
+	const vfloat16 v0 = broadcast4to16f(vptr0); 
+	const vfloat16 v1 = broadcast4to16f(vptr1); 
+	const vfloat16 v2 = broadcast4to16f(vptr2); 
+	return Vec3vf16(v0,v1,v2);
 #else
-	const int16 stride = vertices[dim].getBufferStride();
+	const vint16 stride = vertices[dim].getBufferStride();
 
-	const int16 offset0_64 = mul_uint64_t(stride,int16(tri.v[0]));
-	const int16 offset1_64 = mul_uint64_t(stride,int16(tri.v[1]));
-	const int16 offset2_64 = mul_uint64_t(stride,int16(tri.v[2]));
+	const vint16 offset0_64 = mul_uint64_t(stride,vint16(tri.v[0]));
+	const vint16 offset1_64 = mul_uint64_t(stride,vint16(tri.v[1]));
+	const vint16 offset2_64 = mul_uint64_t(stride,vint16(tri.v[2]));
 
 	const char  *__restrict__ const base  = vertices[dim].getPtr();
 	const size_t off0 = offset0_64.uint64_t(0);
@@ -177,13 +243,13 @@ namespace embree
 	assert( vptr1_64 == (float*)vertexPtr(tri.v[1],dim) );
 	assert( vptr2_64 == (float*)vertexPtr(tri.v[2],dim) );
 	
-	const bool16 m_3f = 0x7;
-	const float16 v0 = permute<0,0,0,0>(uload16f(m_3f,vptr0_64));
-	const float16 v1 = permute<0,0,0,0>(uload16f(m_3f,vptr1_64));
-	const float16 v2 = permute<0,0,0,0>(uload16f(m_3f,vptr2_64));
+	const vbool16 m_3f = 0x7;
+	const vfloat16 v0 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr0_64));
+	const vfloat16 v1 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr1_64));
+	const vfloat16 v2 = shuffle128<0,0,0,0>(vfloat16::loadu(m_3f,vptr2_64));
 	 //FIXME: there should be no need to zero the last component
 
-	return Vec3f16(select(0x7777,v0,float16::zero()),select(0x7777,v1,float16::zero()),select(0x7777,v2,float16::zero()));
+	return Vec3vf16(select(0x7777,v0,vfloat16::zero()),select(0x7777,v1,vfloat16::zero()),select(0x7777,v2,vfloat16::zero()));
 #endif	
       }
     

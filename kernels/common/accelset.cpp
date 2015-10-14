@@ -27,10 +27,10 @@ namespace embree
   }
 
   void AccelSet::enabling () { 
-    atomic_add(&parent->numUserGeometries1,numItems); 
+    atomic_add(&parent->world1.numUserGeometries,+(ssize_t)numItems); 
   }
   
   void AccelSet::disabling() { 
-    atomic_add(&parent->numUserGeometries1,-(ssize_t)numItems); 
+    atomic_add(&parent->world1.numUserGeometries,-(ssize_t)numItems); 
   }
 }

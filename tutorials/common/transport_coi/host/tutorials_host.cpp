@@ -16,7 +16,7 @@
 
 #include "../../transport/transport_host.h"
 #include "../common.h"
-#include "../../../common/tutorial/obj_loader.h"
+#include "../../../common/tutorial/scene.h"
 #include "../../../../common/sys/string.h"
 
 #include <source/COIProcess_source.h>
@@ -122,7 +122,7 @@ namespace embree
       THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
-  void send_hairset (OBJScene::HairSet* hairset)
+  void send_hairset (Ref<TutorialScene::HairSet> hairset)
   {
     COIRESULT result;
     struct {
@@ -135,7 +135,7 @@ namespace embree
     result = COIBufferCreate(positionBytes,COI_BUFFER_NORMAL,0,positionPtr,1,&process,&buffers.position);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
-    size_t hairsBytes = max(size_t(16),hairset->hairs.size()*sizeof(OBJScene::Hair));
+    size_t hairsBytes = max(size_t(16),hairset->hairs.size()*sizeof(TutorialScene::Hair));
     void* hairsPtr = hairset->hairs.size() ? &hairset->hairs.front() : nullptr;
     result = COIBufferCreate(hairsBytes,COI_BUFFER_NORMAL,0,hairsPtr,1,&process,&buffers.hairs);
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
@@ -163,7 +163,7 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
-  void send_mesh (OBJScene::Mesh* mesh)
+  void send_mesh (Ref<TutorialScene::TriangleMesh> mesh)
   {
     COIRESULT result;
     struct {
@@ -178,7 +178,7 @@ namespace embree
 
     if (mesh->triangles.size() == 0)
       {
-	OBJScene::Triangle dummy(0,0,0,0);
+	TutorialScene::Triangle dummy(0,0,0,0);
 	mesh->triangles.push_back(dummy);
       }
 
@@ -192,7 +192,7 @@ namespace embree
 
     if (mesh->quads.size() == 0)
       {
-	OBJScene::Quad dummy(0,0,0,0);
+	TutorialScene::Quad dummy(0,0,0,0);
 	mesh->quads.push_back(dummy);
       }
     
@@ -223,14 +223,14 @@ namespace embree
 
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
-    size_t triangleBytes = max(size_t(16),mesh->triangles.size()*sizeof(OBJScene::Triangle));
+    size_t triangleBytes = max(size_t(16),mesh->triangles.size()*sizeof(TutorialScene::Triangle));
     void* trianglePtr = mesh->triangles.size() ? &mesh->triangles.front() : nullptr;
     //result = COIBufferCreate(triangleBytes,COI_BUFFER_STREAMING_TO_SINK,0,trianglePtr,1,&process,&buffers.triangle);
     result = COIBufferCreateFromMemory(triangleBytes,COI_BUFFER_NORMAL,0,trianglePtr,1,&process,&buffers.triangle);
 
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
 
-    size_t quadBytes = max(size_t(16),mesh->quads.size()*sizeof(OBJScene::Quad));
+    size_t quadBytes = max(size_t(16),mesh->quads.size()*sizeof(TutorialScene::Quad));
     void* quadPtr = mesh->quads.size() ? &mesh->quads.front() : nullptr;
     //result = COIBufferCreate(quadBytes,COI_BUFFER_STREAMING_TO_SINK,0,quadPtr,1,&process,&buffers.quad);
     result = COIBufferCreateFromMemory(quadBytes,COI_BUFFER_NORMAL,0,quadPtr,1,&process,&buffers.quad);
@@ -269,7 +269,7 @@ namespace embree
   }
 
 
-  void send_subdiv_mesh (OBJScene::SubdivMesh* mesh)
+  void send_subdiv_mesh (Ref<TutorialScene::SubdivMesh> mesh)
   {
     COIRESULT result;
     struct {
@@ -416,9 +416,20 @@ namespace embree
     if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
   }
 
+  void send_geometry (Ref<TutorialScene::Geometry> geometry)
+  {
+    if (geometry->type == TutorialScene::Geometry::TRIANGLE_MESH)
+      send_mesh(geometry.dynamicCast<TutorialScene::TriangleMesh>());
+    else if (geometry->type == TutorialScene::Geometry::SUBDIV_MESH)
+      send_subdiv_mesh(geometry.dynamicCast<TutorialScene::SubdivMesh>());
+    else if (geometry->type == TutorialScene::Geometry::HAIR_SET)
+      send_hairset(geometry.dynamicCast<TutorialScene::HairSet>());
+    else 
+      THROW_RUNTIME_ERROR("unknown geometry type");
+  }
 
   /* set scene to use */
-  void set_scene (OBJScene* scene)
+  void set_scene (TutorialScene* scene)
   {
     COIRESULT result;
     COIBUFFER buffers[5];
@@ -460,13 +471,11 @@ namespace embree
     
     CreateSceneData parms;
     parms.numMaterials = scene->materials.size();
-    parms.numMeshes    = scene->meshes.size();
-    parms.numHairSets  = scene->hairsets.size();
+    parms.numGeometries = scene->geometries.size();
     parms.numAmbientLights = scene->ambientLights.size();
     parms.numPointLights = scene->pointLights.size();
     parms.numDirectionalLights = scene->directionalLights.size();
     parms.numDistantLights = scene->distantLights.size();
-    parms.numSubdivMeshes  = scene->subdiv.size();
 
     COIEVENT event;
     memset(&event,0,sizeof(event));
@@ -482,18 +491,9 @@ namespace embree
     // result = COIBufferDestroy(materialBuffer);
     // if (result != COI_SUCCESS) THROW_RUNTIME_ERROR("COIPipelineRunFunction failed: "+std::string(COIResultGetName(result)));
 
-    /* send all meshes */
-    for (size_t i=0; i<scene->meshes.size(); i++) 
-      send_mesh(scene->meshes[i]);
-
-    /* send all hairsets */
-    for (size_t i=0; i<scene->hairsets.size(); i++) 
-      send_hairset(scene->hairsets[i]);
-
-    /* send all subdiv meshes */
-    for (size_t i=0; i<scene->subdiv.size(); i++) 
-      send_subdiv_mesh(scene->subdiv[i]);
-
+    /* send all geometries */
+    for (size_t i=0; i<scene->geometries.size(); i++) 
+      send_geometry(scene->geometries[i]);
   }
 
   void resize(int width, int height)
@@ -518,7 +518,7 @@ namespace embree
       THROW_RUNTIME_ERROR("COIBufferCreate failed: " + std::string(COIResultGetName(result)));
   }
 
-  void set_scene_keyframes(OBJScene** in, size_t numKeyFrames)
+  void set_scene_keyframes(TutorialScene** in, size_t numKeyFrames)
   {
     NOT_IMPLEMENTED;
   }

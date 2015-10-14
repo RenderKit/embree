@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "../../../common/sys/platform.h"
+
 /* size of screen tiles */
 #define TILE_SIZE_X 8
 #define TILE_SIZE_Y 8
@@ -29,8 +31,7 @@ struct Triangle { int v0, v1, v2; };
 #include "../../../include/embree2/rtcore.h"
 #include "ray.h"
 
-//FIXME:
-#include "texture_loader.h" 
+#include "scene.h"
 using namespace embree;
 
 /* returns time stamp counter */
@@ -125,8 +126,5 @@ void progressEnd();
 
 Vec2f getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
 
-float  getPtexTexel1f(void* ptex, const int faceId, const float u, const float v);
-Vec3f  getPtexTexel3f(void* ptex, const int faceId, const float u, const float v);
-
-float  getTextureTexel1f(void *texture,const float u, const float v);
-Vec3f  getTextureTexel3f(void *texture,const float u, const float v);
+float  getTextureTexel1f(const Texture* texture,const float u, const float v);
+Vec3f  getTextureTexel3f(const Texture* texture,const float u, const float v);

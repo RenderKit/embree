@@ -21,6 +21,7 @@
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
+#include "scene_geometry_instance.h"
 #include "scene_bezier_curves.h"
 #include "scene_subdiv_mesh.h"
 
@@ -116,6 +117,9 @@ namespace embree
     /*! Creates a new scene instance. */
     unsigned int newInstance (Scene* scene);
 
+    /*! Creates a new geometry instance. */
+    unsigned int newGeometryInstance (Geometry* geom);
+
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
 
@@ -124,6 +128,9 @@ namespace embree
 
     /*! Creates a new subdivision mesh. */
     unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
+
+    /*! deletes some geometry */
+    void deleteGeometry(size_t geomID);
 
     /*! Builds acceleration structure for the scene. */
     void build (size_t threadIndex, size_t threadCount);
@@ -146,9 +153,6 @@ namespace embree
     /* add user geometry to scene */
     unsigned int add (Geometry* geometry);
     
-    /* removes user geometry from scene again */
-    void remove(Geometry* geometry);
-
     /* determines of the scene is ready to get build */
     bool ready() { return numMappedBuffers == 0; }
 
@@ -267,6 +271,14 @@ namespace embree
 #endif
     
   public:
+    struct BuildProgressMonitorInterface : public BuildProgressMonitor {
+      BuildProgressMonitorInterface(Scene* scene) 
+      : scene(scene) {}
+      void operator() (size_t dn) { scene->progressMonitor(dn); }
+    private:
+      Scene* scene;
+    };
+    BuildProgressMonitorInterface progressInterface;
     RTCProgressMonitorFunc progress_monitor_function;
     void* progress_monitor_ptr;
     atomic_t progress_monitor_counter;
@@ -274,18 +286,31 @@ namespace embree
     void setProgressMonitorFunction(RTCProgressMonitorFunc func, void* ptr);
 
   public:
-    atomic_t numTriangles;             //!< number of enabled triangles
-    atomic_t numTriangles2;            //!< number of enabled motion blur triangles
-    atomic_t numBezierCurves;          //!< number of enabled curves
-    atomic_t numBezierCurves2;         //!< number of enabled motion blur curves
-    atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
-    atomic_t numSubdivPatches2;        //!< number of enabled motion blur subdivision patches
-    atomic_t numUserGeometries1;       //!< number of enabled user geometries
+    struct GeometryCounts 
+    {
+      __forceinline GeometryCounts()
+        : numTriangles(0), numBezierCurves(0), numSubdivPatches(0), numUserGeometries(0) {}
+
+      __forceinline size_t size() const {
+        return numTriangles + numBezierCurves + numSubdivPatches + numUserGeometries;
+      }
+
+      atomic_t numTriangles;             //!< number of enabled triangles
+      atomic_t numBezierCurves;          //!< number of enabled curves
+      atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
+      atomic_t numUserGeometries;        //!< number of enabled user geometries
+    };
+    
+    GeometryCounts world1;               //!< counts for non-motion blurred geometry
+    GeometryCounts world2;               //!< counts for motion blurred geometry
+    GeometryCounts instanced1;           //!< instance counts for non-motion blurred geometry
+    GeometryCounts instanced2;           //!< instance counts for motion blurred geometry
+
     atomic_t numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
 
     __forceinline size_t numPrimitives() const {
-    return numTriangles + numTriangles2 + numBezierCurves + numBezierCurves2 + numSubdivPatches + numSubdivPatches2 + numUserGeometries1;
-   }
+      return world1.size() + world2.size();
+    }
 
     template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives                    () const { THROW_RUNTIME_ERROR("NOT IMPLEMENTED"); }
    
@@ -294,11 +319,11 @@ namespace embree
     atomic_t numIntersectionFilters16;  //!< number of enabled intersection/occlusion filters for 16-wide ray packets
   };
 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return numTriangles; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return numTriangles2; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return numBezierCurves; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return numBezierCurves2; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return numSubdivPatches; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return numSubdivPatches2; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return numUserGeometries1; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return world2.numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return world1.numBezierCurves; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return world2.numBezierCurves; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return world2.numSubdivPatches; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return world1.numUserGeometries; } 
 }

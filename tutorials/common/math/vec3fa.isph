@@ -128,12 +128,6 @@ inline uniform Vec3fa __reduce_max(const varying Vec3fa a) { return make_Vec3fa(
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-//inline uniform bool operator==(const uniform Vec3fa a, const uniform Vec3fa b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); } // FIXME: enable
-//inline varying bool operator==(const varying Vec3fa a, const varying Vec3fa b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
-
-//inline uniform bool operator!=(const uniform Vec3fa a, const uniform Vec3fa b) { return (a.x != b.x) | (a.y != b.y) | (a.z != b.z); }
-//inline varying bool operator!=(const varying Vec3fa a, const varying Vec3fa b) { return (a.x != b.x) | (a.y != b.y) | (a.z != b.z); }
-
 inline uniform bool eq(const uniform Vec3fa a, const uniform Vec3fa b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
 inline varying bool eq(const varying Vec3fa a, const varying Vec3fa b) { return (a.x == b.x) & (a.y == b.y) & (a.z == b.z); }
 

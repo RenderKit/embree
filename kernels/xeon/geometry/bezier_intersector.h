@@ -37,7 +37,7 @@ namespace embree
       
       static __forceinline void intersect(Ray& ray, const Precalculations& pre, 
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                          Scene* scene)
+                                          Scene* scene, const unsigned* geomID_to_instID)
       {
         /* transform control points into ray space */
         STAT3(normal.trav_prims,1,1,1);
@@ -50,47 +50,47 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
-        //const avx4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        //const Vec4vf8 p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale;
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray.tnear) < t & t < float8(ray.tfar);
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
+        const Vec4vf8 p = p0 + u*v;
+        const vfloat8 t = p.z*pre.depth_scale;
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray.tnear) < t & t < vfloat8(ray.tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
-        //const sse4f p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        //const Vec4vf4 p1(shift_left1(p0.x,w3.x),shift_left1(p0.y,w3.y),shift_left1(p0.z,w3.z),shift_left1(p0.w,w3.w));
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale;
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray.tnear) < t & t < float4(ray.tfar);
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
+        const Vec4vf4 p = p0 + u*v;
+        const vfloat4 t = p.z*pre.depth_scale;
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray.tnear) < t & t < vfloat4(ray.tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
-        
+        int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
       retry:
         if (unlikely(none(valid))) return;
         STAT3(normal.trav_prim_hits,1,1,1);
@@ -117,7 +117,7 @@ namespace embree
           ray.v = 0.0f;
           ray.tfar = t[i];
           ray.Ng = T;
-          ray.geomID = geomID;
+          ray.geomID = instID;
           ray.primID = primID;
 #if defined(RTCORE_INTERSECTION_FILTER)
           return;
@@ -129,7 +129,7 @@ namespace embree
           const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
           Vec3fa P,T; curve3D.eval(uu,P,T);
           if (T != Vec3fa(zero))
-            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,geomID,primID)) return;
+            if (runIntersectionFilter1(geometry,ray,uu,0.0f,t[i],T,instID,primID)) return;
           valid[i] = 0;
           if (none(valid)) return;
           i = select_min(valid,t);
@@ -140,7 +140,7 @@ namespace embree
       
       static __forceinline bool occluded(Ray& ray, const Precalculations& pre,
                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                         Scene* scene) 
+                                         Scene* scene, const unsigned* geomID_to_instID) 
       {
         /* transform control points into ray space */
         STAT3(shadow.trav_prims,1,1,1);
@@ -153,41 +153,41 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale;
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray.tnear) < t & t < float8(ray.tfar);
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
+        const Vec4vf8 p = p0 + u*v;
+        const vfloat8 t = p.z*pre.depth_scale;
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray.tnear) < t & t < vfloat8(ray.tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale;
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray.tnear) < t & t < float4(ray.tfar);
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
+        const Vec4vf4 p = p0 + u*v;
+        const vfloat4 t = p.z*pre.depth_scale;
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray.tnear) < t & t < vfloat4(ray.tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -208,6 +208,7 @@ namespace embree
         Geometry* geometry = scene->get(geomID);
         if (likely(!geometry->hasOcclusionFilter1())) return true;
         
+        const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
         while (true) 
         {
           /* calculate hit information */
@@ -228,18 +229,14 @@ namespace embree
 
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
-    template<typename RayN>
-    struct Bezier1IntersectorN
+    template<int K>
+    struct Bezier1IntersectorK
     {
-      /* ray SIMD type shortcuts */
-      typedef typename RayN::simdb rsimdb;
-      typedef typename RayN::simdf rsimdf;
-      typedef typename RayN::simdi rsimdi;
-      typedef Vec3<rsimdf> rsimd3f;
+      typedef Vec3<vfloat<K>> Vec3vfK;
       
       struct Precalculations 
       {
-        __forceinline Precalculations (const rsimdb& valid, const RayN& ray) 
+        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
         {
           int mask = movemask(valid);
           depth_scale = rsqrt(dot(ray.dir,ray.dir));
@@ -249,18 +246,18 @@ namespace embree
           }
         }
         
-        __forceinline Precalculations (const RayN& ray, size_t k) 
+        __forceinline Precalculations (const RayK<K>& ray, size_t k)
         {
           Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
           depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
           ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
         }
         
-        rsimdf depth_scale;
-        LinearSpace3fa ray_space[rsimdf::size];
+        vfloat<K> depth_scale;
+        LinearSpace3fa ray_space[vfloat<K>::size];
       };
       
-      static __forceinline void intersect(const Precalculations& pre, RayN& ray, size_t k, 
+      static __forceinline void intersect(const Precalculations& pre, RayK<K>& ray, size_t k,
                                           const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
                                           Scene* scene)
       {
@@ -282,41 +279,41 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale[k];
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray_tnear) < t & t < float8(ray_tfar);
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
+        const Vec4vf8 p = p0 + u*v;
+        const vfloat8 t = p.z*pre.depth_scale[k];
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale[k];
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray_tnear) < t & t < float4(ray_tfar);
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
+        const Vec4vf4 p = p0 + u*v;
+        const vfloat4 t = p.z*pre.depth_scale[k];
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -335,7 +332,7 @@ namespace embree
         /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER)
         const Geometry* geometry = scene->get(geomID);
-        if (!likely(geometry->hasIntersectionFilter<rsimdf>())) 
+        if (!likely(geometry->hasIntersectionFilter<vfloat<K>>()))
         {
 #endif
           /* update hit information */
@@ -371,7 +368,7 @@ namespace embree
 #endif
       }
       
-      static __forceinline bool occluded(const Precalculations& pre, RayN& ray, const size_t k, 
+      static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, const size_t k,
                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
                                          Scene* scene) 
       {
@@ -393,41 +390,41 @@ namespace embree
 #if defined (__AVX__)
         
         /* subdivide 3 levels at once */ 
-        const avx4f p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const avx4f p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
+        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
+        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
         
         /* approximative intersection with cone */
-        const avx4f v = p1-p0;
-        const avx4f w = -p0;
-        const float8 d0 = w.x*v.x + w.y*v.y;
-        const float8 d1 = v.x*v.x + v.y*v.y;
-        const float8 u = clamp(d0*rcp(d1),float8(zero),float8(one));
-        const avx4f p = p0 + u*v;
-        const float8 t = p.z*pre.depth_scale[k];
-        const float8 d2 = p.x*p.x + p.y*p.y; 
-        const float8 r = p.w;
-        const float8 r2 = r*r;
-        bool8 valid = d2 <= r2 & float8(ray_tnear) < t & t < float8(ray_tfar);
+        const Vec4vf8 v = p1-p0;
+        const Vec4vf8 w = -p0;
+        const vfloat8 d0 = w.x*v.x + w.y*v.y;
+        const vfloat8 d1 = v.x*v.x + v.y*v.y;
+        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
+        const Vec4vf8 p = p0 + u*v;
+        const vfloat8 t = p.z*pre.depth_scale[k];
+        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat8 r = p.w;
+        const vfloat8 r2 = r*r;
+        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
         const float one_over_width = 1.0f/8.0f;
         
 #else
         
         /* subdivide 2 levels at once */ 
-        const sse4f p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const sse4f p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
+        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
+        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
         
         /* approximative intersection with cone */
-        const sse4f v = p1-p0;
-        const sse4f w = -p0;
-        const float4 d0 = w.x*v.x + w.y*v.y;
-        const float4 d1 = v.x*v.x + v.y*v.y;
-        const float4 u = clamp(d0*rcp(d1),float4(zero),float4(one));
-        const sse4f p = p0 + u*v;
-        const float4 t = p.z*pre.depth_scale[k];
-        const float4 d2 = p.x*p.x + p.y*p.y; 
-        const float4 r = p.w;
-        const float4 r2 = r*r;
-        bool4 valid = d2 <= r2 & float4(ray_tnear) < t & t < float4(ray_tfar);
+        const Vec4vf4 v = p1-p0;
+        const Vec4vf4 w = -p0;
+        const vfloat4 d0 = w.x*v.x + w.y*v.y;
+        const vfloat4 d1 = v.x*v.x + v.y*v.y;
+        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
+        const Vec4vf4 p = p0 + u*v;
+        const vfloat4 t = p.z*pre.depth_scale[k];
+        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
+        const vfloat4 r = p.w;
+        const vfloat4 r2 = r*r;
+        vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
         const float one_over_width = 1.0f/4.0f;
         
 #endif
@@ -445,7 +442,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
         size_t i = select_min(valid,t);
         const Geometry* geometry = scene->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter<rsimdf>())) return true;
+        if (likely(!geometry->hasOcclusionFilter<vfloat<K>>())) return true;
         
         while (true) 
         {

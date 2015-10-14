@@ -28,7 +28,7 @@ ADD_DEFINITIONS(-D__TARGET_XEON_PHI__)
 
 ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
-  ../../common/tasking/taskscheduler_tbb.cpp # FIXME: remove
+  ../../common/tasking/taskscheduler_tbb.cpp
   ../../common/tasking/taskscheduler_mic.cpp
   ../../common/tasking/tasksys.cpp
 
@@ -46,11 +46,13 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   ../common/geometry.cpp
   ../common/scene_user_geometry.cpp
   ../common/scene_instance.cpp
+  ../common/scene_geometry_instance.cpp
   ../common/scene_triangle_mesh.cpp
   ../common/scene_bezier_curves.cpp
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
   ../common/subdiv/subdivpatch1base.cpp
+  ../common/subdiv/subdivpatch1base_eval.cpp
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/catmullclark_coefficients.cpp
 
@@ -71,6 +73,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   builders/parallel_builder.cpp
 
   bvh4i/bvh4i.cpp
+  bvh4i/bvh4i_factory.cpp
   bvh4i/bvh4i_builder.cpp
   bvh4i/bvh4i_builder_ext.cpp
   bvh4i/bvh4i_builder_morton.cpp
@@ -78,7 +81,6 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4i/bvh4i_intersector16_chunk.cpp
   bvh4i/bvh4i_intersector16_single.cpp
   bvh4i/bvh4i_intersector16_hybrid.cpp
-  bvh4i/bvh4i_intersector16_test.cpp
   bvh4i/bvh4i_intersector16_subdiv.cpp
   bvh4i/bvh4i_intersector1.cpp
   bvh4i/bvh4i_statistics.cpp
@@ -86,6 +88,7 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
 
 
   bvh4mb/bvh4mb.cpp
+  bvh4mb/bvh4mb_factory.cpp
   bvh4mb/bvh4mb_builder.cpp
   bvh4mb/bvh4mb_intersector16_chunk.cpp
   bvh4mb/bvh4mb_intersector16_single.cpp  
@@ -93,7 +96,8 @@ ADD_ISPC_LIBRARY(embree_xeonphi ${EMBREE_LIB_TYPE}
   bvh4mb/bvh4mb_intersector1.cpp
 
   bvh4hair/bvh4hair_builder.cpp
-  bvh4hair/bvh4hair.cpp	
+  bvh4hair/bvh4hair.cpp
+  bvh4hair/bvh4hair_factory.cpp
   bvh4hair/bvh4hair_intersector16_single.cpp
 )
 

@@ -23,16 +23,25 @@ namespace embree
   namespace isa
   { 
     /*! Performs standard object binning */
+#if defined(__AVX512F__)
+    template<typename PrimRef, size_t BINS = 16>
+#else
     template<typename PrimRef, size_t BINS = 32>
+#endif
       struct HeuristicArrayBinningSAH
       {
         typedef BinSplit<BINS> Split;
         typedef BinInfo<BINS,PrimRef> Binner;
+
+#if defined(__AVX512F__)
+        typedef Bin16Info<PrimRef> Binner16;
+#endif
+
         typedef range<size_t> Set;
         
         static const size_t PARALLEL_THRESHOLD = 10000;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 4096;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
+        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
         __forceinline HeuristicArrayBinningSAH ()
           : prims(nullptr) {}
@@ -74,15 +83,29 @@ namespace embree
         /*! finds the best split */
         const Split sequential_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+#if defined(__AVX512F__)
+          const BinMapping<16> mapping(pinfo);
+          Binner16 binner;          
+#else
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
+#endif
           binner.bin(prims,set.begin(),set.end(),mapping);
+
           return binner.best(mapping,logBlockSize);
         }
         
         /*! finds the best split */
         const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
+#if defined(__AVX512F__)
+          const BinMapping<16> mapping(pinfo);
+          Binner16 binner( empty );          
+          binner = parallel_reduce(set.begin(),set.end(),PARALLEL_FIND_BLOCK_SIZE,binner,
+                                   [&] (const range<size_t>& r) -> Binner16 { Binner16 binner(empty); binner.bin(prims+r.begin(),r.size(),mapping); return binner; },
+                                   [&] (const Binner16& b0, const Binner16& b1) -> Binner16 { Binner16 r = b0; r.merge(b1,mapping.size()); return r; });
+          return binner.best(mapping,logBlockSize);
+#else
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
           const BinMapping<BINS>& _mapping = mapping; // CLANG 3.4 parser bug workaround
@@ -90,6 +113,7 @@ namespace embree
                                    [&] (const range<size_t>& r) -> Binner { Binner binner(empty); binner.bin(prims+r.begin(),r.size(),_mapping); return binner; },
                                    [&] (const Binner& b0, const Binner& b1) -> Binner { Binner r = b0; r.merge(b1,_mapping.size()); return r; });
           return binner.best(mapping,logBlockSize);
+#endif
         }
         
         /*! array partitioning */
@@ -126,11 +150,19 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; // FIXME: also use in unaligned and spatial binner
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
+#if defined(__AVX512F__)
+          const vint4 vSplitPos(splitPos);
+          const vbool4 vSplitMask( (int)splitDimMask );
+          size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
+                                              [&] (const PrimRef& ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); },
+                                              [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });          
+#else
           size_t center = serial_partitioning(prims,begin,end,local_left,local_right,
                                               [&] (const PrimRef& ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
                                               [] (CentGeomBBox3fa& pinfo,const PrimRef& ref) { pinfo.extend(ref.bounds()); });
+#endif
           
           new (&left ) PrimInfo(begin,center,local_left.geomBounds,local_left.centBounds);
           new (&right) PrimInfo(center,end,local_right.geomBounds,local_right.centBounds);
@@ -155,15 +187,37 @@ namespace embree
           PrimInfo init; init.reset();
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          
-          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>
-	  (&prims[begin],end-begin,init,left,right,
-	   [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
-	   [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
-	   [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim;
+
+#if defined(__AVX512F__)
+          const vint4 vSplitPos(splitPos);
+          const vbool4 vSplitMask( (int)splitDimMask );
+
+          //const size_t threadCount = TaskSchedulerTBB::threadCount();
+          const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+                                                                                                           [&] (const PrimRef &ref) { return any(((vint4)split.mapping.bin_unsafe(center2(ref.bounds())) < vSplitPos) & vSplitMask); },
+                                                                                                           [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                                                           [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+
+#else
+
+          /* new static partition code */
+#if 1
+          const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+                                                                                                           [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                                                           [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                                                           [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+
+#else
+          const size_t mid = parallel_in_place_partitioning<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
+                                                                                                           [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
+                                                                                                           [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
+                                                                                                           [] (PrimInfo &pinfo0,const PrimInfo &pinfo1) { pinfo0.merge(pinfo1); });
+#endif
+#endif
           
           const size_t center = begin+mid;
-          left.begin  = begin;  left.end  = center; // FIXME: remove?
+          left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
           new (&lset) range<size_t>(begin,center);

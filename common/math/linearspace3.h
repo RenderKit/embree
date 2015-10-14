@@ -35,7 +35,7 @@ namespace embree
     __forceinline LinearSpace3           ( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; }
     __forceinline LinearSpace3& operator=( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; return *this; }
 
-    template<typename L1> __forceinline explicit LinearSpace3( const LinearSpace3<L1>& s ) : vx(s.vx), vy(s.vy), vz(s.vz) {}
+    template<typename L1> __forceinline LinearSpace3( const LinearSpace3<L1>& s ) : vx(s.vx), vy(s.vy), vz(s.vz) {}
 
     /*! matrix construction from column vectors */
     __forceinline LinearSpace3(const Vector& vx, const Vector& vy, const Vector& vz)
@@ -106,7 +106,7 @@ namespace embree
   /*! compute transposed matrix */
 #if !defined(__MIC__)
   template<> __forceinline const LinearSpace3<Vec3fa> LinearSpace3<Vec3fa>::transposed() const { 
-    float4 rx,ry,rz; transpose((float4&)vx,(float4&)vy,(float4&)vz,float4(zero),rx,ry,rz);
+    vfloat4 rx,ry,rz; transpose((vfloat4&)vx,(vfloat4&)vy,(vfloat4&)vz,vfloat4(zero),rx,ry,rz);
     return LinearSpace3<Vec3fa>(Vec3fa(rx),Vec3fa(ry),Vec3fa(rz)); 
   }
 #endif
@@ -184,5 +184,4 @@ namespace embree
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3f> LinearSpace3f;
   typedef LinearSpace3<Vec3fa> LinearSpace3fa;
-
 }

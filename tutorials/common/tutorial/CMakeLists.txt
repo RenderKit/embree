@@ -44,17 +44,8 @@ ENDIF (WIN32)
 FIND_PACKAGE(OpenGL REQUIRED)
 
 INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR})
-ADD_LIBRARY(tutorial STATIC
-    glutdisplay.cpp
-    xml_parser.cpp
-    xml_loader.cpp
-    obj_loader.cpp
-    hair_loader.cpp
-    texture_loader.cpp
-    cy_hair_loader.cpp
-    scene.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys lexers ${OPENGL_LIBRARIES}
-${GLUT_LIBRARIES} ${PTEX_LIBRARIES})
+ADD_LIBRARY(tutorial STATIC glutdisplay.cpp scene.cpp)
+TARGET_LINK_LIBRARIES(tutorial sys lexers scenegraph ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 
 IF (WIN32)

@@ -131,12 +131,12 @@ namespace embree
 
       char xfm[4][16];
 
-      __forceinline int16 getChildren() const
+      __forceinline vint16 getChildren() const
       {
-	return load16i((int*)lower);
+	return vint16::load((int*)lower);
       }
 
-      __forceinline float16 getRow(size_t i) const
+      __forceinline vfloat16 getRow(size_t i) const
       {
 	return load16f_int8(xfm[i]);
       }
@@ -247,9 +247,9 @@ namespace embree
 	    c_matrix(2,i,m) = (char)(127.0f * mat.vz[i]);
 	  }
 #else
-	const float16 vx = broadcast4to16f(&mat.vx) * 127.0f;
-	const float16 vy = broadcast4to16f(&mat.vy) * 127.0f;
-	const float16 vz = broadcast4to16f(&mat.vz) * 127.0f;
+	const vfloat16 vx = broadcast4to16f(&mat.vx) * 127.0f;
+	const vfloat16 vy = broadcast4to16f(&mat.vy) * 127.0f;
+	const vfloat16 vz = broadcast4to16f(&mat.vz) * 127.0f;
 	store4f_int8(&c_matrix(0,0,m),vx);
 	store4f_int8(&c_matrix(1,0,m),vy);
 	store4f_int8(&c_matrix(2,0,m),vz);
@@ -286,7 +286,7 @@ namespace embree
         NodeRef data;          
       } lower[4], upper[4];    
 
-      int16 dummy;
+      vint16 dummy;
 
       template<int PFHINT>
 	__forceinline void prefetchNode() const
@@ -303,17 +303,17 @@ namespace embree
         return BBox3fa(l,u);
       }
 
-      __forceinline float16 lowerXYZ(size_t i) const {
+      __forceinline vfloat16 lowerXYZ(size_t i) const {
 	return broadcast4to16f(&lower[i]);
       }
 
-      __forceinline float16 upperXYZ(size_t i) const {
+      __forceinline vfloat16 upperXYZ(size_t i) const {
 	return broadcast4to16f(&upper[i]);
       }
 
-      __forceinline int16 getChildren() const
+      __forceinline vint16 getChildren() const
       {
-	return load16i((int*)lower);
+	return vint16::load((int*)lower);
       }
 
       __forceinline void setInvalid(size_t i)
@@ -402,12 +402,6 @@ namespace embree
 	assert( sizeof(UnalignedNode) == 192 );
 	unaligned_nodes = nullptr;
       }
-
-    
-    static Accel* BVH4HairBinnedSAH(Scene* scene);
-    
-
-
   };
 
   __forceinline std::ostream& operator<<(std::ostream &o, const BVH4Hair::AlignedNode &n)

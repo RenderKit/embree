@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
+#include "../bvh/bvh_statistics.h"
 #include "bvh4_rotate.h"
-#include "bvh4_statistics.h"
 #include "../../common/profile.h"
 #include "../../algorithms/parallel_prefix_sum.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
@@ -24,10 +24,9 @@
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_morton.h"
 
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
-#include "../geometry/triangle4v.h"
-#include "../geometry/triangle4i.h"
+#include "../geometry/triangle.h"
+#include "../geometry/trianglev.h"
+#include "../geometry/trianglei.h"
 
 #define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
 #define PROFILE 0
@@ -72,7 +71,7 @@ namespace embree
           for (size_t i=0; i<N; i++) {
             if (bounds[i].lower.a < 4096) {
               for (int j=0; j<ROTATE_TREE; j++) 
-                BVH4Rotate::rotate(bvh,node->child(i)); 
+                BVH4Rotate::rotate(node->child(i)); 
               node->child(i).setBarrier();
             }
           }
@@ -94,8 +93,8 @@ namespace embree
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
-        float4 lower(pos_inf);
-        float4 upper(neg_inf);
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
         size_t items = current.size();
         size_t start = current.begin;
         assert(items<=4);
@@ -104,8 +103,8 @@ namespace embree
         Triangle4* accel = (Triangle4*) alloc->alloc1.malloc(sizeof(Triangle4));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        int4 vgeomID = -1, vprimID = -1;
-        Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+        vint4 vgeomID = -1, vprimID = -1;
+        Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
         {
@@ -117,8 +116,8 @@ namespace embree
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          lower = min(lower,(float4)p0,(float4)p1,(float4)p2);
-          upper = max(upper,(float4)p0,(float4)p1,(float4)p2);
+          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
+          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -152,8 +151,8 @@ namespace embree
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
-        float4 lower(pos_inf);
-        float4 upper(neg_inf);
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
         size_t items = current.size();
         size_t start = current.begin;
         assert(items<=8);
@@ -162,8 +161,8 @@ namespace embree
         Triangle8* accel = (Triangle8*) alloc->alloc1.malloc(sizeof(Triangle8));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        int8 vgeomID = -1, vprimID = -1;
-        Vec3f8 v0 = zero, v1 = zero, v2 = zero;
+        vint8 vgeomID = -1, vprimID = -1;
+        Vec3vf8 v0 = zero, v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
         {
@@ -175,8 +174,8 @@ namespace embree
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          lower = min(lower,(float4)p0,(float4)p1,(float4)p2);
-          upper = max(upper,(float4)p0,(float4)p1,(float4)p2);
+          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
+          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -209,8 +208,8 @@ namespace embree
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
-        float4 lower(pos_inf);
-        float4 upper(neg_inf);
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
         size_t items = current.size();
         size_t start = current.begin;
         assert(items<=4);
@@ -219,8 +218,8 @@ namespace embree
         Triangle4v* accel = (Triangle4v*) alloc->alloc1.malloc(sizeof(Triangle4v));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        int4 vgeomID = -1, vprimID = -1;
-        Vec3f4 v0 = zero, v1 = zero, v2 = zero;
+        vint4 vgeomID = -1, vprimID = -1;
+        Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
 
         for (size_t i=0; i<items; i++)
         {
@@ -232,8 +231,8 @@ namespace embree
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          lower = min(lower,(float4)p0,(float4)p1,(float4)p2);
-          upper = max(upper,(float4)p0,(float4)p1,(float4)p2);
+          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
+          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID [i] = geomID;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -264,8 +263,8 @@ namespace embree
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
-        float4 lower(pos_inf);
-        float4 upper(neg_inf);
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
         size_t items = current.size();
         size_t start = current.begin;
         assert(items<=4);
@@ -274,9 +273,9 @@ namespace embree
         Triangle4i* accel = (Triangle4i*) alloc->alloc1.malloc(sizeof(Triangle4i));
         *current.parent = BVH4::encodeLeaf((char*)accel,1);
         
-        int4 vgeomID = -1, vprimID = -1;
+        vint4 vgeomID = -1, vprimID = -1;
         Vec3f* v0[4] = { nullptr, nullptr, nullptr, nullptr };
-        int4 v1 = zero, v2 = zero;
+        vint4 v1 = zero, v2 = zero;
         
         for (size_t i=0; i<items; i++)
         {
@@ -288,8 +287,8 @@ namespace embree
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          lower = min(lower,(float4)p0,(float4)p1,(float4)p2);
-          upper = max(upper,(float4)p0,(float4)p1,(float4)p2);
+          lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
+          upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID;
           vprimID[i] = primID;
           v0[i] = (Vec3f*) mesh->vertexPtr(tri.v[0]); 
@@ -430,7 +429,8 @@ namespace embree
             size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
             {
               size_t N = 0;
-              MortonCodeGenerator generator(mapping,&dest[r.begin()]);
+              //MortonCodeGenerator generator(mapping,&dest[r.begin()]);
+              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -448,7 +448,9 @@ namespace embree
               numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
               {
                 size_t N = 0;
-                MortonCodeGenerator generator(mapping,&dest[base]);
+                //MortonCodeGenerator generator(mapping,&dest[base]);
+                MortonCodeGenerator generator(mapping,&morton.data()[base]);
+
                 for (ssize_t j=r.begin(); j<r.end(); j++)
                 {
                   BBox3fa bounds = empty;
@@ -470,12 +472,14 @@ namespace embree
               [&] () { return bvh->alloc.threadLocal2(); },
               BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
-              dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh,bvh->root);
+              BVH4Rotate::rotate(bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
             
@@ -586,7 +590,6 @@ namespace embree
             size_t numPrimitivesGen = numPrimitives;
 
 #else 
-
             /* compute scene bounds */
             Scene::Iterator<Mesh,1> iter1(scene);
             const BBox3fa centBounds = parallel_for_for_reduce 
@@ -607,7 +610,9 @@ namespace embree
             {
               size_t N = 0;
               PrimInfo pinfo(empty);
-              MortonCodeGenerator generator(mapping,&dest[k]);
+              //MortonCodeGenerator generator(mapping,&dest[k]);
+              MortonCodeGenerator generator(mapping,&morton.data()[k]);
+
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -626,7 +631,9 @@ namespace embree
               {
                 size_t N = 0;
                 PrimInfo pinfo(empty);
-                MortonCodeGenerator generator(mapping,&dest[base]);
+                //MortonCodeGenerator generator(mapping,&dest[base]);
+                MortonCodeGenerator generator(mapping,&morton.data()[base]);
+
                 for (ssize_t j=r.begin(); j<r.end(); j++)
                 {
                   BBox3fa bounds = empty;
@@ -651,12 +658,14 @@ namespace embree
               [&] () { return bvh->alloc.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
-                dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
 
 #if ROTATE_TREE
             for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh,bvh->root);
+              BVH4Rotate::rotate(bvh->root);
             bvh->clearBarrier(bvh->root);
 #endif
 

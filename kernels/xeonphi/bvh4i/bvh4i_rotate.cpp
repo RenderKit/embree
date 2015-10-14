@@ -58,7 +58,7 @@ namespace embree
     float childArea[4];
 
 #if defined(FAST_ROTATE)
-    const float16 _childArea = parent->halfAreaBounds();
+    const vfloat16 _childArea = parent->halfAreaBounds();
     compactustore16f_low(0x1111,childArea,_childArea);
 #else
     for (size_t i=0;i<4;i++)
@@ -111,7 +111,7 @@ namespace embree
 	cost0[2] = halfArea(merge(child2c0,child2c1,child1_0,child2c3));
 	cost0[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_0));
 	const float min0 = min(cost0[0],cost0[1],cost0[2],cost0[3]);
-	int pos0 = (int)__bsf(float16(min0) == broadcast4to16f(cost0));
+	int pos0 = (int)__bsf(vfloat16(min0) == broadcast4to16f(cost0));
 	assert(0 <= pos0 && pos0 < 4);
 
 	float test_cost;
@@ -130,7 +130,7 @@ namespace embree
 	cost1[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_1));
 
 	const float min1 = min(cost1[0],cost1[1],cost1[2],cost1[3]);
-	int pos1 = (int)__bsf(float16(min1) == broadcast4to16f(cost1));
+	int pos1 = (int)__bsf(vfloat16(min1) == broadcast4to16f(cost1));
 	assert(0 <= pos1 && pos1 < 4);
 
 	mergedHalfArea(parent,child2,1,test_cost,test_pos);
@@ -144,7 +144,7 @@ namespace embree
 	cost2[2] = halfArea(merge(child2c0,child2c1,child1_2,child2c3));
 	cost2[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_2));
 	const float min2 = min(cost2[0],cost2[1],cost2[2],cost2[3]);
-	int pos2 = (int)__bsf(float16(min2) == broadcast4to16f(cost2));
+	int pos2 = (int)__bsf(vfloat16(min2) == broadcast4to16f(cost2));
 	assert(0 <= pos2 && pos2 < 4);
 
 	mergedHalfArea(parent,child2,2,test_cost,test_pos);
@@ -158,7 +158,7 @@ namespace embree
 	cost3[2] = halfArea(merge(child2c0,child2c1,child1_3,child2c3));
 	cost3[3] = halfArea(merge(child2c0,child2c1,child2c2,child1_3));
 	const float min3 = min(cost3[0],cost3[1],cost3[2],cost3[3]);
-	int pos3 = (int)__bsf(float16(min3) == broadcast4to16f(cost3));
+	int pos3 = (int)__bsf(vfloat16(min3) == broadcast4to16f(cost3));
 	assert(0 <= pos3 && pos3 < 4);
 
 	mergedHalfArea(parent,child2,3,test_cost,test_pos);

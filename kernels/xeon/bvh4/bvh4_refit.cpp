@@ -15,12 +15,12 @@
 // ======================================================================== //
 
 #include "bvh4_refit.h"
-#include "bvh4_statistics.h"
+#include "../bvh/bvh_statistics.h"
 
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
-#include "../geometry/triangle4v.h"
-#include "../geometry/triangle4i.h"
+#include "../geometry/triangle.h"
+#include "../geometry/trianglev.h"
+#include "../geometry/trianglei.h"
+#include "../geometry/trianglepairsv.h"
 
 #include <algorithm>
 
@@ -192,20 +192,20 @@ namespace embree
             bounds[i] = refit_toplevel(child,subtrees,depth+1); 
         }
         
-        BBox<Vec3f4> dest;
+        BBox<Vec3vf4> dest;
 
-        transpose((float4&)bounds[0].lower,
-                  (float4&)bounds[1].lower,
-                  (float4&)bounds[2].lower,
-                  (float4&)bounds[3].lower,
+        transpose((vfloat4&)bounds[0].lower,
+                  (vfloat4&)bounds[1].lower,
+                  (vfloat4&)bounds[2].lower,
+                  (vfloat4&)bounds[3].lower,
                   dest.lower.x,
                   dest.lower.y,
                   dest.lower.z);
         
-        transpose((float4&)bounds[0].upper,
-                  (float4&)bounds[1].upper,
-                  (float4&)bounds[2].upper,
-                  (float4&)bounds[3].upper,
+        transpose((vfloat4&)bounds[0].upper,
+                  (vfloat4&)bounds[1].upper,
+                  (vfloat4&)bounds[2].upper,
+                  (vfloat4&)bounds[3].upper,
                   dest.upper.x,
                   dest.upper.y,
                   dest.upper.z);
@@ -282,9 +282,9 @@ namespace embree
       const BBox3fa bounds3 = recurse_bottom(node->child(3));
       
       /* AOS to SOA transform */
-      BBox<Vec3f4> bounds;
-      transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-      transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+      BBox<Vec3vf4> bounds;
+      transpose((vfloat4&)bounds0.lower,(vfloat4&)bounds1.lower,(vfloat4&)bounds2.lower,(vfloat4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+      transpose((vfloat4&)bounds0.upper,(vfloat4&)bounds1.upper,(vfloat4&)bounds2.upper,(vfloat4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       
       /* set new bounds */
       node->lower_x = bounds.lower.x;
@@ -333,9 +333,9 @@ namespace embree
       const BBox3fa bounds3 = recurse_top(node->child(3));
       
       /* AOS to SOA transform */
-      BBox<Vec3f4> bounds;
-      transpose((float4&)bounds0.lower,(float4&)bounds1.lower,(float4&)bounds2.lower,(float4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
-      transpose((float4&)bounds0.upper,(float4&)bounds1.upper,(float4&)bounds2.upper,(float4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
+      BBox<Vec3vf4> bounds;
+      transpose((vfloat4&)bounds0.lower,(vfloat4&)bounds1.lower,(vfloat4&)bounds2.lower,(vfloat4&)bounds3.lower,bounds.lower.x,bounds.lower.y,bounds.lower.z);
+      transpose((vfloat4&)bounds0.upper,(vfloat4&)bounds1.upper,(vfloat4&)bounds2.upper,(vfloat4&)bounds3.upper,bounds.upper.x,bounds.upper.y,bounds.upper.z);
       
       /* set new bounds */
       node->lower_x = bounds.lower.x;
@@ -407,24 +407,23 @@ namespace embree
         std::cout << BVH4Statistics(bvh).str();
       }
     }
-
-#if !defined (__AVX512F__)
     
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
     Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #endif
     Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
     Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
 
     Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4>((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle8>((BVH4*)accel,BVH4Triangle8MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle8MeshRefitSAH      (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle8>((BVH4*)accel,BVH4Triangle8MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4TrianglePairs4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<TrianglePairs4v>((BVH4*)accel,BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 #endif
     Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
     Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVH4RefitT<Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 
-#endif
   }
 }
 

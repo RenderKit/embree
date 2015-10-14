@@ -33,13 +33,11 @@ namespace embree
   struct CreateSceneData 
   {
     int numMaterials;
-    int numMeshes;
-    int numHairSets;
+    int numGeometries;
     int numAmbientLights;
     int numPointLights;
     int numDirectionalLights;
     int numDistantLights;
-    int numSubdivMeshes;
   };
 
   struct CreateMeshData

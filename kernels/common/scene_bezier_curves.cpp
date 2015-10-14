@@ -32,14 +32,14 @@ namespace embree
 
   void BezierCurves::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,numPrimitives); 
-    else                   atomic_add(&parent->numBezierCurves2,numPrimitives); 
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numBezierCurves,numPrimitives); 
+    else                   atomic_add(&parent->world2.numBezierCurves,numPrimitives); 
   }
   
   void BezierCurves::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numBezierCurves ,-(ssize_t)numPrimitives); 
-    else                   atomic_add(&parent->numBezierCurves2,-(ssize_t)numPrimitives);
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numBezierCurves,-(ssize_t)numPrimitives); 
+    else                   atomic_add(&parent->world2.numBezierCurves,-(ssize_t)numPrimitives);
   }
   
   void BezierCurves::setMask (unsigned mask) 
@@ -155,7 +155,8 @@ namespace embree
 
   void BezierCurves::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    /* test if interpolation is enabled */
+#if defined(DEBUG) 
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
@@ -180,15 +181,15 @@ namespace embree
     {
       size_t ofs = i*sizeof(float);
       const size_t curve = curves[primID];
-      const float4 p0 = float4::loadu((float*)&src[(curve+0)*stride+ofs]);
-      const float4 p1 = float4::loadu((float*)&src[(curve+1)*stride+ofs]);
-      const float4 p2 = float4::loadu((float*)&src[(curve+2)*stride+ofs]);
-      const float4 p3 = float4::loadu((float*)&src[(curve+3)*stride+ofs]);
-      const bool4 valid = int4(i)+int4(step) < int4(numFloats);
-      const BezierCurveT<float4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-      float4 Q, dQdu; bezier.eval(u,Q,dQdu);
-      if (P   ) float4::storeu(valid,P+i,Q);
-      if (dPdu) float4::storeu(valid,dPdu+i,dQdu);
+      const vfloat4 p0 = vfloat4::loadu((float*)&src[(curve+0)*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu((float*)&src[(curve+1)*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu((float*)&src[(curve+2)*stride+ofs]);
+      const vfloat4 p3 = vfloat4::loadu((float*)&src[(curve+3)*stride+ofs]);
+      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
+      const BezierCurveT<vfloat4> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      vfloat4 Q, dQdu; bezier.eval(u,Q,dQdu);
+      if (P   ) vfloat4::storeu(valid,P+i,Q);
+      if (dPdu) vfloat4::storeu(valid,dPdu+i,dQdu);
     }
 
 #else
@@ -196,16 +197,16 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=16) 
     {
       size_t ofs = i*sizeof(float);
-      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const size_t curve = curves[primID];
-      const float16 p0 = uload16f(mask,(float*)&src[(curve+0)*stride+ofs]);
-      const float16 p1 = uload16f(mask,(float*)&src[(curve+1)*stride+ofs]);
-      const float16 p2 = uload16f(mask,(float*)&src[(curve+2)*stride+ofs]);
-      const float16 p3 = uload16f(mask,(float*)&src[(curve+3)*stride+ofs]);
-      const BezierCurveT<float16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
-      float16 Q, dQdu; bezier.eval(u,Q,dQdu);
-      if (P   ) compactustore16f(mask,P+i,Q);
-      if (dPdu) compactustore16f(mask,dPdu+i,dQdu);
+      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[(curve+0)*stride+ofs]);
+      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[(curve+1)*stride+ofs]);
+      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[(curve+2)*stride+ofs]);
+      const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[(curve+3)*stride+ofs]);
+      const BezierCurveT<vfloat16> bezier(p0,p1,p2,p3,0.0f,1.0f,0);
+      vfloat16 Q, dQdu; bezier.eval(u,Q,dQdu);
+      if (P   ) vfloat16::storeu_compact(mask,P+i,Q);
+      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,dQdu);
     }
 
 

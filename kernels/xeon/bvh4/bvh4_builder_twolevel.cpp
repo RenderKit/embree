@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_builder_twolevel.h"
-#include "bvh4_statistics.h"
+#include "../bvh/bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 
 #define PROFILE 0
@@ -82,13 +82,6 @@ namespace embree
           if (mesh == nullptr || mesh->numTimeSteps != 1) {
             assert(objectID < objects.size () && objects[objectID] == nullptr);
             assert(objectID < builders.size() && builders[objectID] == nullptr);
-            continue;
-          }
-          
-          /* delete BVH and builder for meshes that are scheduled for deletion */
-          if (mesh->isErasing()) {
-            delete builders[objectID]; builders[objectID] = nullptr;
-            delete objects [objectID]; objects [objectID] = nullptr;
             continue;
           }
           
@@ -179,7 +172,7 @@ namespace embree
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
@@ -190,6 +183,13 @@ namespace embree
 
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
+    }
+
+    void BVH4BuilderTwoLevel::deleteGeometry(size_t geomID)
+    {
+      if (geomID >= objects.size()) return;
+      delete builders[geomID]; builders[geomID] = nullptr;
+      delete objects [geomID]; objects [geomID] = nullptr;
     }
 
     void BVH4BuilderTwoLevel::clear()

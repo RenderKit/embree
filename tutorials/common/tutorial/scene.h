@@ -16,34 +16,17 @@
 
 #pragma once
 
-#include "../../../common/sys/ref.h"
-#include "../../../common/sys/vector.h"
-#include "../../../common/math/vec2.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/affinespace.h"
-#include "scenegraph.h"
-
-#include <vector>
-#include <memory>
-#include <map>
+#include "../default.h"
+#include "../scenegraph/scenegraph.h"
 
 namespace embree
 {
   /*! Scene representing the OBJ file */
-  struct OBJScene  // FIXME: name Scene
+  struct TutorialScene
   {
-    OBJScene () {}
+    TutorialScene () {}
 
-    void add (Ref<SceneGraph::Node> node);
-
-    ~OBJScene () 
-    {
-      for (size_t i=0; i<meshes.size(); i++)
-        delete meshes[i];
-
-      for (size_t i=0; i<hairsets.size(); i++)
-        delete hairsets[i];
-    }
+    void add (Ref<SceneGraph::Node> node, bool instancing = false);
 
     /*! OBJ Triangle */
     struct Triangle 
@@ -72,11 +55,18 @@ namespace embree
       int v0, v1, v2, v3;
     };
 
-    /*! Mesh. */
-    struct Mesh 
+    struct Geometry : public RefCount
     {
-      void set_motion_blur(const Mesh* other);
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+      Type type;
 
+      Geometry (Type type) : type(type) {}
+    };
+
+    /*! Triangle Mesh. */
+    struct TriangleMesh : public Geometry
+    {
+      TriangleMesh () : Geometry(TRIANGLE_MESH) {}
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
@@ -88,8 +78,9 @@ namespace embree
     };
 
     /*! Subdivision Mesh. */
-    struct SubdivMesh 
+    struct SubdivMesh : public Geometry
     {
+      SubdivMesh () : Geometry(SUBDIV_MESH) {}
       avector<Vec3fa> positions;            //!< vertex positions
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
@@ -105,7 +96,7 @@ namespace embree
       int materialID;
     };
 
-    struct Hair
+    struct Hair 
     {
     public:
       Hair () {}
@@ -116,54 +107,33 @@ namespace embree
     };
 
     /*! Hair Set. */
-    struct HairSet
+    struct HairSet : public Geometry
     {
-      void set_motion_blur(const HairSet* other);
-
+      HairSet () : Geometry(HAIR_SET) {}
       avector<Vec3fa> v;       //!< hair control points (x,y,z,r)
       avector<Vec3fa> v2;       //!< hair control points (x,y,z,r)
       std::vector<Hair> hairs;  //!< list of hairs
     };
 
-    bool empty() const {
-      return meshes.size() == 0 && hairsets.size() == 0;
-    }
-
-    void set_motion_blur(OBJScene& other);
-
-    void convert_to_subdiv()
+    struct Instance : public Geometry
     {
-      for (size_t i=0; i<meshes.size(); i++)
-      {
-	Mesh* mesh = meshes[i];
-	SubdivMesh* smesh = new SubdivMesh;
-	smesh->positions = mesh->v;
-	smesh->normals = mesh->vn;
-	smesh->texcoords = mesh->vt;
-	const size_t numTriangles = mesh->triangles.size();
-	smesh->verticesPerFace.resize(numTriangles);
-	smesh->position_indices.resize(3*numTriangles);
-	int materialID = 0;
-	for (size_t j=0; j<numTriangles; j++) {
-	  smesh->verticesPerFace[j] = 3;
-	  smesh->position_indices[3*j+0] = mesh->triangles[j].v0;
-	  smesh->position_indices[3*j+1] = mesh->triangles[j].v1;
-	  smesh->position_indices[3*j+2] = mesh->triangles[j].v2;
-	  materialID                     = mesh->triangles[j].materialID;
-	}
-	smesh->materialID = materialID;
+      ALIGNED_STRUCT;
 
-	delete mesh;
-	subdiv.push_back(smesh);
-      }
-      meshes.clear();
+      Instance(const AffineSpace3fa& space, int geomID)
+        : Geometry(INSTANCE), space(space), geomID(geomID) {}
+
+    public:
+      AffineSpace3fa space;
+      int geomID;
+    };
+
+    bool empty() const {
+      return geometries.size() == 0;
     }
 
   public:
-    avector<Material> materials;                      //!< material list
-    std::vector<Mesh*> meshes;                         //!< list of meshes
-    std::vector<HairSet*> hairsets;                    //!< list of hair sets
-    std::vector<SubdivMesh*> subdiv;                  //!< list of subdivision meshes
+    avector<Material> materials;                   //!< material list
+    std::vector<Ref<Geometry> > geometries;        //!< list of geometries
     avector<AmbientLight> ambientLights;           //!< list of ambient lights
     avector<PointLight> pointLights;               //!< list of point lights
     avector<DirectionalLight> directionalLights;   //!< list of directional lights

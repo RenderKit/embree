@@ -14,8 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "bvh4_refit.h"
+#include "bvh4_builder.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
@@ -97,11 +98,8 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+
+        BVH4Builder::build(bvh,CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -197,7 +195,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+              SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
               size_t N = GridAOS::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
               assert(N == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
               for (size_t i=0; i<N; i++)
@@ -210,17 +208,13 @@ namespace embree
 
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-          (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-           [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-             if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
-             *current.parent = (size_t) prims[current.prims.begin()].ID();
-             return 0;
-           },
-           progress,
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
-        bvh->set(root,pinfo.geomBounds,pinfo.size());
+        auto createLeaf =  [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+          if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+          *current.parent = (size_t) prims[current.prims.begin()].ID();
+          return 0;
+        };
+       
+        BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -376,7 +370,7 @@ namespace embree
               BBox3fa bound = empty;
               
               if (likely(fastUpdateMode)) {
-                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,vfloat::size);
+                bool grid_changed = patch.updateEdgeLevels(edge_level,subdiv,mesh,VSIZEX);
                 //grid_changed = true;
                 //if (grid_changed) atomic_add(&numChanged,1); else atomic_add(&numUnchanged,1);
                 if (grid_changed) {
@@ -388,7 +382,7 @@ namespace embree
                 }
               }
               else {
-                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,vfloat::size);
+                new (&patch) SubdivPatch1Cached(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
                 bound = evalGridBounds(patch,0,patch.grid_u_res-1,0,patch.grid_v_res-1,patch.grid_u_res,patch.grid_v_res,mesh);
                 //patch.root_ref.data = (int64_t) GridSOA::create(&patch,scene,[&](size_t bytes) { return (*bvh->alloc.threadLocal())(bytes); });
               }
@@ -411,21 +405,17 @@ namespace embree
         }
         else
         {
-          BVH4::NodeRef root;
-          BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-            (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),BVH4::NoRotate(),
-             [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-              size_t items = current.pinfo.size();
-              assert(items == 1);
-              const unsigned int patchIndex = prims[current.prims.begin()].ID();
-              SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
-              *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
-              return 0;
-            },
-             progress,
-             prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,1,1,1,1.0f,1.0f);
+          auto createLeaf = [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
+            size_t items = current.pinfo.size();
+            assert(items == 1);
+            const unsigned int patchIndex = prims[current.prims.begin()].ID();
+            SubdivPatch1Cached *const subdiv_patches = (SubdivPatch1Cached *)this->bvh->data_mem;
+            *current.parent = bvh->encodeLeaf((char*)&subdiv_patches[patchIndex],1);
+            return 0;
+          };
+          
+          BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
 
-          bvh->set(root,pinfo.geomBounds,pinfo.size());
           delete refitter; refitter = nullptr;
         }
         

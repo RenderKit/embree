@@ -78,14 +78,14 @@ namespace embree
       
       struct MortonCodeMapping
       {
-        float4 base;
-        float4 scale;
+        vfloat4 base;
+        vfloat4 scale;
         
         __forceinline MortonCodeMapping(const BBox3fa& bounds)
         {
-          base  = (float4)bounds.lower;
-          const float4 diag  = (float4)bounds.upper - (float4)bounds.lower;
-          scale = select(diag > float4(1E-19f), rcp(diag) * float4(LATTICE_SIZE_PER_DIM * 0.99f),float4(0.0f));
+          base  = (vfloat4)bounds.lower;
+          const vfloat4 diag  = (vfloat4)bounds.upper - (vfloat4)bounds.lower;
+          scale = select(diag > vfloat4(1E-19f), rcp(diag) * vfloat4(LATTICE_SIZE_PER_DIM * 0.99f),vfloat4(0.0f));
         }
       };
       
@@ -99,7 +99,7 @@ namespace embree
       {
         if (slots != 0)
         {
-          const int4 code = bitInterleave(ax,ay,az);
+          const vint4 code = bitInterleave(ax,ay,az);
           for (size_t i=0; i<slots; i++) {
             dest[currentID-slots+i].index = ai[i];
             dest[currentID-slots+i].code = code[i];
@@ -109,10 +109,10 @@ namespace embree
       
       __forceinline void operator() (const BBox3fa& b, const size_t index)
       {
-        const float4 lower = (float4)b.lower;
-        const float4 upper = (float4)b.upper;
-        const float4 centroid = lower+upper;
-        const int4 binID = int4((centroid-mapping.base)*mapping.scale);
+        const vfloat4 lower = (vfloat4)b.lower;
+        const vfloat4 upper = (vfloat4)b.upper;
+        const vfloat4 centroid = lower+upper;
+        const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
         
         ax[slots] = extract<0>(binID);
         ay[slots] = extract<1>(binID);
@@ -123,9 +123,9 @@ namespace embree
         
         if (slots == 4)
         {
-          const int4 code = bitInterleave(ax,ay,az);
-          storeu4i(&dest[currentID-4],unpacklo(code,ai));
-          storeu4i(&dest[currentID-2],unpackhi(code,ai));
+          const vint4 code = bitInterleave(ax,ay,az);
+          vint4::storeu(&dest[currentID-4],unpacklo(code,ai));
+          vint4::storeu(&dest[currentID-2],unpackhi(code,ai));
           slots = 0;
         }
       }
@@ -133,11 +133,11 @@ namespace embree
     public:
       const MortonCodeMapping mapping;
       MortonID32Bit* dest;
-      const float4 base;
-      const float4 scale;
+      const vfloat4 base;
+      const vfloat4 scale;
       size_t currentID;
       size_t slots;
-      int4 ax, ay, az, ai;
+      vint4 ax, ay, az, ai;
     };
     
     template<
@@ -261,10 +261,10 @@ namespace embree
         for (size_t i=current.begin; i<current.end; i++)
         {
           const BBox3fa b = calculateBounds(morton[i]);
-          const float4 lower = (float4)b.lower;
-          const float4 upper = (float4)b.upper;
-          const float4 centroid = lower+upper;
-          const int4 binID = int4((centroid-mapping.base)*mapping.scale);
+          const vfloat4 lower = (vfloat4)b.lower;
+          const vfloat4 upper = (vfloat4)b.upper;
+          const vfloat4 centroid = lower+upper;
+          const vint4 binID = vint4((centroid-mapping.base)*mapping.scale);
           const unsigned int bx = extract<0>(binID);
           const unsigned int by = extract<1>(binID);
           const unsigned int bz = extract<2>(binID);
@@ -405,11 +405,18 @@ namespace embree
       /* build function */
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
-        /* sort morton codes */
+        //double t0 = getSeconds();
+
+        /* using 4 phases radix sort */
+#if 0
         morton = tmp;
         radix_sort_copy_u32(src,morton,numPrimitives);
-        //memcpy(morton,src,numPrimitives*sizeof(MortonID32Bit));
-        //std::sort(&morton[0],&morton[numPrimitives]);
+#else
+        morton = src;
+        radix_sort_u32(src,tmp,numPrimitives);
+#endif
+        //double t1 = getSeconds();
+        //PRINT(t1-t0);
 
         /* build BVH */
         NodeRef root;
@@ -454,9 +461,13 @@ namespace embree
                                                              CreateLeafFunc createLeaf, 
                                                              CalculateBoundsFunc calculateBounds,
                                                              ProgressMonitor progressMonitor,
-                                                             MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives,
-                                                             const size_t branchingFactor, const size_t maxDepth, 
-                                                             const size_t minLeafSize, const size_t maxLeafSize)
+                                                             MortonID32Bit* src, 
+                                                             MortonID32Bit* tmp, 
+                                                             size_t numPrimitives,
+                                                             const size_t branchingFactor, 
+                                                             const size_t maxDepth, 
+                                                             const size_t minLeafSize, 
+                                                             const size_t maxLeafSize)
     {
       typedef GeneralBVHBuilderMorton<
         NodeRef,
@@ -501,9 +512,13 @@ namespace embree
                                                     CreateLeafFunc createLeaf, 
                                                     CalculateBoundsFunc calculateBounds,
                                                     ProgressMonitor progressMonitor,
-                                                    MortonID32Bit* src, MortonID32Bit* temp, size_t numPrimitives,
-                                                    const size_t branchingFactor, const size_t maxDepth, 
-                                                    const size_t minLeafSize, const size_t maxLeafSize)
+                                                    MortonID32Bit* src, 
+                                                    MortonID32Bit* temp, 
+                                                    size_t numPrimitives,
+                                                    const size_t branchingFactor, 
+                                                    const size_t maxDepth, 
+                                                    const size_t minLeafSize, 
+                                                    const size_t maxLeafSize)
     {
       std::pair<NodeRef,BBox3fa> ret;
 
@@ -520,7 +535,9 @@ namespace embree
       MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
       parallel_for ( size_t(0), numPrimitives, [&](const range<size_t>& r) 
       {
-        MortonCodeGenerator generator(mapping,&temp[r.begin()]);
+        //MortonCodeGenerator generator(mapping,&temp[r.begin()]);
+        MortonCodeGenerator generator(mapping,&src[r.begin()]);
+
         for (size_t i=r.begin(); i<r.end(); i++) {
           generator(calculateBounds(src[i]),src[i].index);
         }
@@ -528,7 +545,9 @@ namespace embree
       
       return bvh_builder_morton_internal<NodeRef>(
         createAllocator,identity,allocNode,setBounds,createLeaf,calculateBounds,progressMonitor,
-        temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+        //temp,src,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+        src,temp,numPrimitives,branchingFactor,maxDepth,minLeafSize,maxLeafSize);
+
     }
   }
 }

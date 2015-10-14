@@ -84,5 +84,6 @@ namespace embree
     static CatmullClarkPrecomputedCoefficients table;
  
     CatmullClarkPrecomputedCoefficients();    
+    ~CatmullClarkPrecomputedCoefficients();    
   };
 }

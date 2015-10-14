@@ -34,6 +34,10 @@ namespace embree
     if (ext == "png" ) return loadPNG(fileName);
 #endif
 
+#ifdef USE_LIBJPEG
+    if (ext == "jpg" ) return loadJPEG(fileName);
+#endif
+
 #ifdef USE_IMAGEMAGICK
     if (ext == "bmp" ) return loadMagick(fileName);
     if (ext == "gif" ) return loadMagick(fileName);
@@ -41,10 +45,9 @@ namespace embree
     if (ext == "tif" ) return loadMagick(fileName);
     if (ext == "tiff") return loadMagick(fileName);
     if (ext == "png" ) return loadMagick(fileName);
+    if (ext == "jpg" ) return loadMagick(fileName);
 #endif
-#ifdef USE_LIBJPEG
-    if (ext == "jpg" ) return loadJPEG(fileName);
-#endif
+    
     if (ext == "pfm" ) return loadPFM(fileName);
     if (ext == "ppm" ) return loadPPM(fileName);
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
@@ -68,19 +71,25 @@ namespace embree
   void storeImage(const Ref<Image>& img, const FileName& fileName)
   {
     std::string ext = strlwr(fileName.ext());
+
 #ifdef USE_OPENEXR
     if (ext == "exr" ) { storeExr(img, fileName);  return; }
 #endif
-#ifdef USE_IMAGEMAGICK
-    if (ext == "bmp" ) { storeMagick(img, fileName);  return; }
-    if (ext == "gif" ) { storeMagick(img, fileName);  return; }
-    if (ext == "png" ) { storeMagick(img, fileName);  return; }
-    if (ext == "tif" ) { storeMagick(img, fileName);  return; }
-    if (ext == "tiff") { storeMagick(img, fileName);  return; }
-#endif
+
 #ifdef USE_LIBJPEG
     if (ext == "jpg" ) { storeJPEG(img, fileName);  return; }
 #endif
+
+#ifdef USE_IMAGEMAGICK
+    if (ext == "bmp" ) { storeMagick(img, fileName);  return; }
+    if (ext == "gif" ) { storeMagick(img, fileName);  return; }
+    if (ext == "tga" ) { storeMagick(img, fileName);  return; }
+    if (ext == "tif" ) { storeMagick(img, fileName);  return; }
+    if (ext == "tiff") { storeMagick(img, fileName);  return; }
+    if (ext == "png" ) { storeMagick(img, fileName);  return; }
+    if (ext == "jpg" ) { storeMagick(img, fileName);  return; }
+#endif
+
     if (ext == "pfm" ) { storePFM(img, fileName);  return; }
     if (ext == "ppm" ) { storePPM(img, fileName);  return; }
     if (ext == "tga" ) { storeTga(img, fileName);  return; }

@@ -29,7 +29,7 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8 };
+    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8, INSTANCE = 16 };
 
   public:
     
@@ -53,14 +53,17 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
+    /*! tests if geomery is used by any instance (including world space instance) */
+    __forceinline bool isUsed() const { return used; }
+
+     /*! tests if geometry is used by any non-world space instance */
+    __forceinline bool isInstanced() const { return used-enabled; }
+
     /*! tests if geometry is modified */
     __forceinline bool isModified() const { return numPrimitives && modified; }
 
     /*! clears modified flag */
     __forceinline void clearModified() { modified = false; }
-
-    /*! tests if geometry is tagged for deletion */
-    __forceinline bool isErasing() const { return erasing; }
 
     /*! test if this is a static geometry */
     __forceinline bool isStatic() const { return flags == RTC_GEOMETRY_STATIC; }
@@ -93,9 +96,6 @@ namespace embree
     
     /*! Disable geometry. */
     virtual void disable ();
-
-    /*! Deletes the geometry again. */
-    virtual void erase ();
 
     /*! Free buffers that are unused */
     virtual void immutable () {}
@@ -256,9 +256,9 @@ namespace embree
     RTCGeometryFlags flags;    //!< flags of geometry
     bool enabled;              //!< true if geometry is enabled
     bool modified;             //!< true if geometry is modified
-    bool erasing;              //!< true if geometry is tagged for deletion
     void* userPtr;             //!< user pointer
     unsigned mask;             //!< for masking out geometry
+    atomic_t used;             //!< counts by how many enabled instances this geometry is used
     
   public:
     RTCFilterFunc intersectionFilter1;
@@ -284,17 +284,17 @@ namespace embree
   };
 
 #if defined(__SSE__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float4>() const { return intersectionFilter4 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float4>() const { return occlusionFilter4    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat4>() const { return intersectionFilter4 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat4>() const { return occlusionFilter4    != nullptr; }
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float8>() const { return intersectionFilter8 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float8>() const { return occlusionFilter8    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat8>() const { return intersectionFilter8 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat8>() const { return occlusionFilter8    != nullptr; }
 #endif
 
 #if defined(__MIC__) || defined(__AVX512F__)
-  template<> __forceinline bool Geometry::hasIntersectionFilter<float16>() const { return intersectionFilter16 != nullptr; }
-  template<> __forceinline bool Geometry::hasOcclusionFilter   <float16>() const { return occlusionFilter16    != nullptr; }
+  template<> __forceinline bool Geometry::hasIntersectionFilter<vfloat16>() const { return intersectionFilter16 != nullptr; }
+  template<> __forceinline bool Geometry::hasOcclusionFilter   <vfloat16>() const { return occlusionFilter16    != nullptr; }
 #endif
 }

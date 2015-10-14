@@ -82,12 +82,19 @@ namespace embree
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
 
- struct __aligned(64) ThreadWorkState {
-   AtomicCounter counter;
-   ThreadWorkState *prev;
+ struct __aligned(64) ThreadWorkState 
+ {
+   ALIGNED_STRUCT;
 
-   __forceinline void reset() { counter = 0; prev = NULL; }   
-   ThreadWorkState() { assert( ((size_t)this % 64) == 0 ); reset(); }
+   AtomicCounter counter;
+   ThreadWorkState* next;
+   bool allocated;
+
+   __forceinline ThreadWorkState(bool allocated = false) 
+     : counter(0), next(nullptr), allocated(allocated) 
+   {
+     assert( ((size_t)this % 64) == 0 ); 
+   }   
  };
 
 
@@ -101,9 +108,13 @@ namespace embree
 #else
    static const size_t NUM_CACHE_SEGMENTS              = 8;
 #endif
-   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_MIC_THREADS;
+   static const size_t NUM_PREALLOC_THREAD_WORK_STATES = MAX_THREADS;
    static const size_t COMMIT_INDEX_SHIFT              = 32+8;
+#if defined(__X86_64__)
    static const size_t REF_TAG_MASK                    = 0xffffffffff;
+#else
+   static const size_t REF_TAG_MASK                    = 0x7FFFFFFF;
+#endif
    static const size_t MAX_TESSELLATION_CACHE_SIZE     = REF_TAG_MASK+1;
    
 
@@ -174,6 +185,7 @@ namespace embree
 
       
    SharedLazyTessellationCache();
+   ~SharedLazyTessellationCache();
 
    void getNextRenderThreadWorkState();
 

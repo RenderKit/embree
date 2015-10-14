@@ -21,7 +21,7 @@
 
 #if defined(TASKING_LOCKSTEP)
 #include "../../common/tasking/taskscheduler_mic.h"
-#endif // if defined(TASKING_TBB_INTERNAL) // FIXME
+#endif
 #include "../../common/tasking/taskscheduler_tbb.h"
 
 namespace embree
@@ -34,14 +34,9 @@ namespace embree
     __forceinline ParallelForTask (const Index taskCount, const Func& func)
       : func(func)
     {
-#if 0
-      for (size_t taskIndex=0; taskIndex<taskCount; taskIndex++)
-	func(taskIndex);
-#else
       if (taskCount == 0) return;
       else if (taskCount == 1) func(0);
       else LockStepTaskScheduler::instance()->dispatchTaskSet(task_set,this,taskCount);
-#endif
     }
 
     static void task_set(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {
@@ -66,7 +61,8 @@ namespace embree
           assert(r.size() == 1);
           func(r.begin());
         });
-      TaskSchedulerTBB::wait();
+      if (!TaskSchedulerTBB::wait())
+        throw std::runtime_error("task cancelled");
     }
 
 #else 
@@ -74,7 +70,7 @@ namespace embree
 	func(i);
       });
     if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task group cancelled");
+      throw std::runtime_error("task cancelled");
 #endif
   }
 
@@ -111,14 +107,14 @@ namespace embree
 
 #elif defined(TASKING_TBB_INTERNAL)
     TaskSchedulerTBB::spawn(first,last,minStepSize,func);
-    TaskSchedulerTBB::wait();
-
+    if (!TaskSchedulerTBB::wait())
+        throw std::runtime_error("task cancelled");
 #else
     tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
       func(range<Index>(r.begin(),r.end()));
     });
     if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task group cancelled");
+      throw std::runtime_error("task cancelled");
 #endif
   }
 

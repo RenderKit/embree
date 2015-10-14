@@ -27,24 +27,24 @@ namespace embree
 
 #if defined(__AVX__)
     __forceinline PrimRef(const PrimRef& v) { 
-      store8f((float*)this,load8f((float*)&v));
+      vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
     __forceinline void operator=(const PrimRef& v) { 
-      store8f((float*)this,load8f((float*)&v));
+      vfloat8::store((float*)this,vfloat8::load((float*)&v));
     }
 #endif
 
 #if defined(__MIC__)
-      __forceinline PrimRef(const PrimRef& v) { 
-        compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
-      }
+    __forceinline PrimRef(const PrimRef& v) { 
+      compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
+    }
     
     __forceinline void operator=(const PrimRef& v) { 
       compactustore16f_low(0xff,(float*)this,uload16f_low((float*)&v.lower));
     }
 #endif
 
-    __forceinline PrimRef (const BBox3fa& bounds, unsigned geomID, unsigned primID) 
+    __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
       lower = bounds.lower; lower.a = geomID;
       upper = bounds.upper; upper.a = primID;
@@ -72,8 +72,8 @@ namespace embree
     }
 
 #if defined(__MIC__)
-    __forceinline Vec2f16 getBounds() const { 
-      return Vec2f16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
+    __forceinline Vec2vf16 getBounds() const { 
+      return Vec2vf16(broadcast4to16f((float*)&lower),broadcast4to16f((float*)&upper)); 
     }
 #endif
 
@@ -120,13 +120,13 @@ namespace embree
   __forceinline void xchg(PrimRef& a, PrimRef& b)
   {
 #if defined(__AVX__)
-    const float8 aa = load8f((float*)&a);
-    const float8 bb = load8f((float*)&b);
-    store8f((float*)&a,bb);
-    store8f((float*)&b,aa);
+    const vfloat8 aa = vfloat8::load((float*)&a);
+    const vfloat8 bb = vfloat8::load((float*)&b);
+    vfloat8::store((float*)&a,bb);
+    vfloat8::store((float*)&b,aa);
 #elif defined(__MIC__)
-    const float16 aa = uload16f_low((float*)&a.lower);
-    const float16 bb = uload16f_low((float*)&b.lower);
+    const vfloat16 aa = uload16f_low((float*)&a.lower);
+    const vfloat16 bb = uload16f_low((float*)&b.lower);
     compactustore16f_low(0xff,(float*)&b.lower,aa);
     compactustore16f_low(0xff,(float*)&a.lower,bb);
 #else

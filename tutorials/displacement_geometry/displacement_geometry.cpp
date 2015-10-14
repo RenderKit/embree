@@ -15,8 +15,6 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/xml_loader.h"
 #include "../common/image/image.h"
 
 namespace embree 
@@ -37,7 +35,6 @@ namespace embree
   static bool g_interactive = true;
 
   /* scene */
-  OBJScene g_obj_scene;
   static FileName filename = "";
 
   static std::string getParameterString(Ref<ParseStream> &cin, std::string &term) {
@@ -60,11 +57,6 @@ namespace embree
 
       /*! Command line parameters from a file. */
       if (term == "-c") { FileName file = path + cin->getFileName();  parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path()); }
-
-      /* load OBJ model*/
-      else if (term == "-i") {
-        filename = path + cin->getFileName();
-      }
 
       /*! Camera field of view. */
       else if (term == "-fov") g_camera.fov = cin->getFloat();

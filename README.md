@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.6.2
+% Embree: High Performance Ray Tracing Kernels 2.7.0
 % Intel Corporation
 
 Embree Overview
@@ -81,14 +81,14 @@ Windows Installer
 
 You can install the 64\ bit version of the Embree library using the
 Windows installer application
-[embree-2.6.2-x64.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.exe). This
+[embree-2.7.0-x64.exe](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.6.2 x64`. To install the 32\ bit
+Files\Intel\Embree v2.7.0 x64`. To install the 32\ bit
 Embree library use the
-[embree-2.6.2-win32.exe](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.exe)
+[embree-2.7.0-win32.exe](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.win32.exe)
 installer. This will install the 32\ bit Embree version by default in
-`Program Files\Intel\Embree v2.6.2 win32` on 32\ bit
-systems and `Program Files (x86)\Intel\Embree v2.6.2 win32`
+`Program Files\Intel\Embree v2.7.0 win32` on 32\ bit
+systems and `Program Files (x86)\Intel\Embree v2.7.0 win32`
 on 64\ bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -100,15 +100,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.6.2` and uninstall it.
+2.7.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.6.2.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x64.windows.zip)
+[embree-2.7.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x64.windows.zip)
 and 32 bit
-[embree-2.6.2.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.win32.windows.zip). After
+[embree-2.7.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -122,24 +122,24 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.6.2.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.rpm.tar.gz)
+[embree-2.7.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.6.2.x86_64.rpm.tar.gz
+    tar xzf embree-2.7.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.6.2-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.6.2-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.6.2-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.7.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.7.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.7.0-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install --nodeps embree-lib_xeonphi-2.6.2-1.x86_64.rpm
-    sudo rpm --install --nodeps embree-examples_xeonphi-2.6.2-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.7.0-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.7.0-1.x86_64.rpm
 
 To use the Xeon Phi™ version of Embree you additionally have configure your
 `SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
@@ -169,32 +169,32 @@ install using the tar.gz files, which always ship with the latest TBB version.
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.6.2` folder. Specify the full path to
+`/usr/bin/embree-2.7.0` folder. Specify the full path to
 the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.6.2-1.x86_64
-    sudo rpm --erase embree-devel-2.6.2-1.x86_64
-    sudo rpm --erase embree-examples-2.6.2-1.x86_64
+    sudo rpm --erase embree-lib-2.7.0-1.x86_64
+    sudo rpm --erase embree-devel-2.7.0-1.x86_64
+    sudo rpm --erase embree-examples-2.7.0-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-lib_xeonphi-2.6.2-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.6.2-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.7.0-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.7.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.6.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.linux.tar.gz). Unpack
+[embree-2.7.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.6.2.x64.linux.tar.gz
-    source embree-2.6.2.x64.linux/embree-vars.sh
+    tar xzf embree-2.7.0.x64.linux.tar.gz
+    source embree-2.7.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -204,7 +204,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-[embree-2.6.2.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.dmg). This
+[embree-2.7.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -220,19 +220,19 @@ and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
 To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.6.2/uninstall.command`.
+`/Applications/embree-2.7.0/uninstall.command`.
 
 Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-[embree-2.6.2.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.macosx.tar.gz). Unpack
+[embree-2.7.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.7.0/embree-2.7.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.6.2.x64.macosx.tar.gz
-    source embree-2.6.2.x64.macosx/embree-vars.sh
+    tar xzf embree-2.7.0.x64.macosx.tar.gz
+    source embree-2.7.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -481,7 +481,13 @@ parameters that can be configured in CMake:
   ENABLE_ISPC_SUPPORT          Enables ISPC support of Embree.  ON
 
   ENABLE_STATIC_LIB            Builds Embree as a static        OFF
-                               library.
+                               library. When using the
+                               statically compiled Embree
+                               library, you have to define
+                               ENABLE_STATIC_LIB before
+                               including rtcore.h in your
+                               application.
+  
 
   ENABLE_TUTORIALS             Enables build of Embree          ON
                                tutorials.
@@ -501,6 +507,8 @@ parameters that can be configured in CMake:
 
   RTCORE_RAY_MASK              Enables the ray masking feature. OFF
 
+  RTCORE_RAY_PACKETS           Enables ray packet support.      ON
+
   RTCORE_IGNORE_INVALID_RAYS   Makes code robust against the    OFF
                                risk of full-tree traversals
                                caused by invalid rays (e.g.
@@ -518,6 +526,7 @@ parameters that can be configured in CMake:
                                AVX-I, AVX2, or AVX512).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
+
 Embree API
 ==========
 
@@ -547,14 +556,17 @@ using the ISPC version of the API, the user should include
     #include <embree2/rtcore_ray.h>
 
 All API calls carry the prefix `rtc` which stands for **r**ay
-**t**racing **c**ore. Before invoking any API call, the Embree ray
-tracing core has to get initialized through the `rtcInit` call. Before
-the application exits it should call `rtcExit`. Initializing Embree
-again after an `rtcExit` is allowed.
+**t**racing **c**ore. Embree supports a device concept, which allows
+different components of the application to use the API without
+interfering with each other. You have to create at least one Embree
+device through the `rtcNewDevice` call. Before the application exits
+it should delete all devices by invoking
+`rtcDeleteDevice`. An application typically creates a single device
+only, and should create only a small number of devices.
 
-    rtcInit(NULL);
+    RTCDevice device = rtcNewDevice(NULL);
     ...
-    rtcExit();
+    rtcDeleteDevice(device);
 
 It is strongly recommended to have the `Flush to Zero` and `Denormals
 are Zero` mode of the MXCSR control and status register enabled for
@@ -575,12 +587,12 @@ the creation of the tbb::task_scheduler_init object):
 Embree processes some implementation specific configuration from the
 following locations in the specified order:
 
-1) configuration string passed to the `rtcInit` function
+1) configuration string passed to the `rtcNewDevice` function
 2) `.embree2` file in the application folder
 3) `.embree2` file in the home folder
 
 This way the configuration for the application can be changed globally
-(either through the `rtcInit` call or through the `.embree2` file in
+(either through the `rtcNewDevice` call or through the `.embree2` file in
 the application folder) and each user has the option to modify the
 configuration to fit its needs.
 
@@ -595,12 +607,12 @@ get sequenced by the application. All other API calls are thread
 safe. The API calls are re-entrant, it is thus safe to trace new rays
 and create new geometry when intersecting a user defined object.
 
-Each user thread has its own error flag in the API. If an error occurs
+Each user thread has its own error flag per device. If an error occurs
 when invoking some API function, this flag is set to an error code if it
-stores no previous error. The `rtcGetError` function reads and returns
+stores no previous error. The `rtcDeviceGetError` function reads and returns
 the currently stored error and clears the error flag again.
 
-Possible error codes returned by `rtcGetError` are:
+Possible error codes returned by `rtcDeviceGetError` are:
 
   ----------------------- ---------------------------------------------
   Error Code              Description
@@ -624,20 +636,21 @@ Possible error codes returned by `rtcGetError` are:
                           by an Memory Monitor Callback or
                           Progress Monitor Callback function.
   ----------------------- ---------------------------------------------
-  : Return values of `rtcGetError`.
+  : Return values of `rtcDeviceGetError`.
 
-Using the `rtcSetErrorFunction` call, it is also possible to set a
-callback function that is called whenever an error occurs. The callback
-function gets passed the error code, as well as some string that
-describes the error further. Passing `NULL` to `rtcSetErrorFunction`
-disables the set callback function again. The previously described error
-flags are also set if an error callback function is present.
+Using the `rtcDeviceSetErrorFunction` call, it is also possible to set
+a callback function that is called whenever an error occurs for a
+device. The callback function gets passed the error code, as well as
+some string that describes the error further. Passing `NULL` to
+`rtcDeviceSetErrorFunction` disables the set callback function again. The
+previously described error flags are also set if an error callback
+function is present.
 
 Scene
 -----
 
 A scene is a container for a set of geometries of potentially different
-types. A scene is created using the `rtcNewScene` function call, and
+types. A scene is created using the `rtcDeviceNewScene` function call, and
 destroyed using the `rtcDeleteScene` function call. Two types of scenes
 are supported, dynamic and static scenes. Different flags specify the
 type of scene to create and the type of ray query operations that can
@@ -645,21 +658,21 @@ later be performed on the scene. The following example creates a scene
 that supports dynamic updates and the single ray `rtcIntersect` and
 `rtcOccluded` calls.
 
-    RTCScene scene = rtcNewScene(RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
+    RTCScene scene = rtcDeviceNewScene(device, RTC_SCENE_DYNAMIC, RTC_INTERSECT1);
     ...
     rtcDeleteScene(scene);
 
 Using the following scene flags the user can select between creating a
-static and dynamic scene.
+static or dynamic scene.
 
   Scene Flag          Description
   ------------------- ------------------------------------------
   RTC_SCENE_STATIC    Scene is optimized for static geometry.
   RTC_SCENE_DYNAMIC   Scene is optimized for dynamic geometry.
   ------------------- ------------------------------------------
-  : Dynamic type flags for `rtcNewScene`.
+  : Dynamic type flags for `rtcDeviceNewScene`.
 
-A dynamic scene is created by invoking `rtcNewScene` with the
+A dynamic scene is created by invoking `rtcDeviceNewScene` with the
 `RTC_SCENE_DYNAMIC` flag. Different geometries can now be created
 inside that scene. Geometries are enabled by default. Once the scene
 geometry is specified, an `rtcCommit` call will finish the scene
@@ -679,7 +692,7 @@ performing any ray queries for the scene, otherwise the effect of the
 ray query is undefined. During in `rtcCommit` call modifications to
 the scene are not allowed.
 
-A static scene is created by the `rtcNewScene` call with the
+A static scene is created by the `rtcDeviceNewScene` call with the
 `RTC_SCENE_STATIC` flag. Geometries can only get created, enabled,
 disabled and modified until the first `rtcCommit` call. After the
 `rtcCommit` call, each access to any geometry of that static scene is
@@ -711,7 +724,7 @@ These flags are only hints and may be ignored by the implementation.
 
   RTC_SCENE_HIGH_QUALITY   Build higher quality spatial data structures.
   ------------------------ ---------------------------------------------
-  : Acceleration structure flags for `rtcNewScene`.
+  : Acceleration structure flags for `rtcDeviceNewScene`.
 
 The following flags can be used to tune the traversal algorithm that is
 used by Embree. These flags are only hints and may be ignored by the
@@ -721,9 +734,9 @@ implementation.
   ------------------ ----------------------------------------------------
   RTC_SCENE_ROBUST   Avoid optimizations that reduce arithmetic accuracy.
   ------------------ ----------------------------------------------------
-  : Traversal algorithm flags for `rtcNewScene`.
+  : Traversal algorithm flags for `rtcDeviceNewScene`.
 
-The second argument of the `rtcNewScene` function are algorithm flags,
+The second argument of the `rtcDeviceNewScene` function are algorithm flags,
 that allow to specify which ray queries are required by the application.
 Calling for a scene a ray query API function that is different to the
 ones specified at scene creation time is not allowed. Further, the
@@ -753,7 +766,7 @@ if the user enables any ray packet query.
                     interpolation functions.
 
   ----------------- ----------------------------------------------------
-  : Enabled algorithm flags for `rtcNewScene`.
+  : Enabled algorithm flags for `rtcDeviceNewScene`.
 
 Geometries
 ----------
@@ -1130,12 +1143,13 @@ the following way:
     unsigned instID = rtcNewInstance(sceneA, sceneB);
     rtcSetTransform(sceneA, instID, RTC_MATRIX_COLUMN_MAJOR, &column_matrix_3x4);
 
-One has to call `rtcCommit` on scene B before one calls `rtcCommit` on
-scene A. When modifying scene B one has to call `rtcUpdate` for all
-instances of that scene. If a ray hits the instance, then the `geomID`
-and `primID` members of the ray are set to the geometry ID and primitive
-ID of the primitive hit in scene B, and the `instID` member of the ray
-is set to the instance ID returned from the `rtcNewInstance` function.
+Both scenes have to belong to the same device. One has to call
+`rtcCommit` on scene B before one calls `rtcCommit` on scene A. When
+modifying scene B one has to call `rtcUpdate` for all instances of
+that scene. If a ray hits the instance, then the `geomID` and `primID`
+members of the ray are set to the geometry ID and primitive ID of the
+primitive hit in scene B, and the `instID` member of the ray is set to
+the instance ID returned from the `rtcNewInstance` function.
 
 The `rtcSetTransform` call can be passed an affine transformation matrix
 with different data layouts:
@@ -1627,25 +1641,25 @@ Memory Monitor Callback
 ---------------------------
 
 Using the memory monitor callback mechanism, the application can track
-the memory consumption of Embree, and optionally terminate API calls
-that consume too much memory.
+the memory consumption of an Embree device, and optionally terminate
+API calls that consume too much memory.
 
 The user provided memory monitor callback function has to have the
 following signature:
 
     bool (*RTCMemoryMonitorFunc)(const ssize_t bytes, const bool post);
 
-A single such callback function can be registered by calling
+A single such callback function per device can be registered by calling
 
-    rtcSetMemoryMonitorFunction(RTCMemoryMonitorFunc func);
+    rtcDeviceSetMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunc func);
 
-and deregistered again by calling it with `NULL`. Once registered Embree
-will invoke the callback function before or after it allocates or frees
-important memory blocks. The callback function might get called from
-multiple threads concurrently.
+and deregistered again by calling it with `NULL`. Once registered the
+Embree device will invoke the callback function before or after it
+allocates or frees important memory blocks. The callback function
+might get called from multiple threads concurrently.
 
 The application can track the current memory usage of the Embree
-library by atomically accumulating the provided `bytes` input
+device by atomically accumulating the provided `bytes` input
 parameter. This parameter will be >0 for allocations and <0 for
 deallocations. The `post` input parameter is true if the callback
 function was invoked after the allocation or deallocation, otherwise
@@ -1697,15 +1711,15 @@ multiple cancel requests for the same build operation is allowed.
 Configuring Embree
 ------------------
 
-Some internal parameters can get configured using the
-`rtcSetParameter1i` API call. 
+Some internal device parameters can get configured using the
+`rtcDeviceSetParameter1i` API call. 
 
 Currently we support to configure the size of the internal software
 cache that is used to handle subdivision surfaces by setting the
 `RTC_SOFTWARE_CACHE_SIZE` parameter to the desired size of the cache
 in bytes:
 
-    rtcSetParameter1i(RTC_SOFTWARE_CACHE_SIZE, bytes);
+    rtcDeviceSetParameter1i(device, RTC_SOFTWARE_CACHE_SIZE, bytes);
 
 The software cache cannot get configured while any Embree API call is
 executed. Best configure the size of the cache only once at

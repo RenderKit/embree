@@ -74,7 +74,7 @@ namespace embree
       [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
       reduction);
     if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task group cancelled");
+      throw std::runtime_error("task cancelled");
 #endif
   }
 

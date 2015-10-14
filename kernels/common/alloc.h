@@ -75,24 +75,6 @@ namespace embree
           return alloc->malloc(bytes,maxAlignment);
 	}
 
-#if 0 // FIXME: this optimization is broken
-
-        /* get new partial block if allocation failed */
-	if (alloc->usedBlocks) 
-	{
-	  size_t blockSize = allocBlockSize;
-	  ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
-	  bytesWasted += end-cur;
-	  cur = 0; end = blockSize;
-	  
-	  /* retry allocation */
-	  size_t ofs = (align - cur) & (align-1); 
-	  cur += bytes + ofs;
-	  if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
-	  cur -= bytes + ofs;
-	}
-#endif
-
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
 	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
@@ -130,7 +112,7 @@ namespace embree
       size_t allocBlockSize; //!< block size for allocations
     private:
       size_t bytesWasted;    //!< number of bytes wasted
-      size_t bytesUsed; //!< bumber of total bytes allocated
+      size_t bytesUsed;      //!< number of total bytes allocated
     };
 
     /*! Two thread local structures. */
@@ -165,7 +147,7 @@ namespace embree
 
     FastAllocator (MemoryMonitorInterface* device) 
       : device(device), growSize(4096), usedBlocks(nullptr), freeBlocks(nullptr), slotMask(0),
-        thread_local_allocators(this), thread_local_allocators2(this) 
+      thread_local_allocators(this), thread_local_allocators2(this), bytesUsed(0)
     {
       for (size_t i=0; i<4; i++)
         threadUsedBlocks[i] = nullptr;
@@ -175,15 +157,7 @@ namespace embree
       clear();
     }
 
-    __forceinline void clear()
-    {
-      cleanup();
-      if (usedBlocks) usedBlocks->clear(device); usedBlocks = nullptr;
-      if (freeBlocks) freeBlocks->clear(device); freeBlocks = nullptr;
-      for (size_t i=0; i<4; i++) threadUsedBlocks[i] = nullptr;
-    }
-
-    /*! returns a fast thread local allocator */
+     /*! returns a fast thread local allocator */
     __forceinline ThreadLocal* threadLocal() {
       return thread_local_allocators.get();
     }
@@ -191,12 +165,6 @@ namespace embree
     /*! returns a fast thread local allocator */
     __forceinline ThreadLocal2* threadLocal2() {
       return thread_local_allocators2.get();
-    }
-
-    /*! frees state not required after build */
-    __forceinline void cleanup() {
-      thread_local_allocators.clear();
-      thread_local_allocators2.clear();
     }
 
     /*! initializes the allocator */
@@ -216,9 +184,30 @@ namespace embree
       if (bytesAllocate > 16*maxAllocationSize) slotMask = 0x3;
     }
 
+    /*! frees state not required after build */
+    __forceinline void cleanup() 
+    {
+      for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
+        bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
+
+      for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
+	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
+
+      thread_local_allocators.clear();
+      thread_local_allocators2.clear();
+    }
+
+    /*! shrinks all memory blocks to the actually used size */
+    void shrink () {
+      if (usedBlocks) usedBlocks->shrink(device);
+      if (freeBlocks) freeBlocks->clear(device); freeBlocks = nullptr;
+    }
+
     /*! resets the allocator, memory blocks get reused */
     void reset () 
     {
+      bytesUsed = 0;
+
       /* first reset all used blocks */
       if (usedBlocks) usedBlocks->reset();
 
@@ -237,10 +226,14 @@ namespace embree
       thread_local_allocators2.reset();
     }
 
-    /*! shrinks all memory blocks to the actually used size */
-    void shrink () {
-      if (usedBlocks) usedBlocks->shrink(device);
+    /*! frees all allocated memory */
+    __forceinline void clear()
+    {
+      cleanup();
+      bytesUsed = 0;
+      if (usedBlocks) usedBlocks->clear(device); usedBlocks = nullptr;
       if (freeBlocks) freeBlocks->clear(device); freeBlocks = nullptr;
+      for (size_t i=0; i<4; i++) threadUsedBlocks[i] = nullptr;
     }
 
     /*! thread safe allocation of memory */
@@ -311,15 +304,15 @@ namespace embree
 
     size_t getUsedBytes() const 
     {
-      size_t bytesUsed = 0;
+      size_t bytes = bytesUsed;
 
       for (size_t t=0; t<thread_local_allocators.threads.size(); t++)
-	bytesUsed += thread_local_allocators.threads[t]->getUsedBytes();
+	bytes += thread_local_allocators.threads[t]->getUsedBytes();
 
       for (size_t t=0; t<thread_local_allocators2.threads.size(); t++)
-	bytesUsed += thread_local_allocators2.threads[t]->getUsedBytes();
+	bytes += thread_local_allocators2.threads[t]->getUsedBytes();
 
-      return bytesUsed;
+      return bytes;
     }
 
     size_t getFreeBytes() const 
@@ -417,19 +410,6 @@ namespace embree
 	return &data[i];
       }
       
-      void* malloc_some(MemoryMonitorInterface* device, size_t& bytes, size_t align = 16) 
-      {
-        assert(align <= maxAlignment);
-        bytes = (bytes+(align-1)) & ~(align-1);
-	const size_t i = atomic_add(&cur,bytes);
-	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
-	if (i+bytes > allocEnd) {
-          if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
-          os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
-        }
-	return &data[i];
-      }
-
       void* ptr() {
         return &data[cur];
       }
@@ -438,7 +418,7 @@ namespace embree
       {
         allocEnd = max(allocEnd,(size_t)cur);
         cur = 0;
-        if (next) next->reset();
+        if (next) next->reset(); 
       }
 
       void shrink (MemoryMonitorInterface* device) 
@@ -455,11 +435,11 @@ namespace embree
       }
 
       size_t getBlockAllocatedBytes() const {
-	return max(allocEnd,size_t(cur));
+	return min(max(allocEnd,size_t(cur)),reserveEnd);
       }
 
       size_t getAllocatedBytes() const {
-	return max(allocEnd,size_t(cur)) + (next ? next->getAllocatedBytes() : 0);
+	return getBlockAllocatedBytes() + (next ? next->getAllocatedBytes() : 0);
       }
 
       size_t getReservedBytes() const {
@@ -492,12 +472,9 @@ namespace embree
     Block* volatile usedBlocks;
     Block* volatile freeBlocks;
     size_t growSize;
+    size_t bytesUsed;            //!< bumber of total bytes used
 
     ThreadLocalData<ThreadLocal> thread_local_allocators; //!< thread local allocators
     ThreadLocalData<ThreadLocal2> thread_local_allocators2; //!< thread local allocators
-
-  private:
-    size_t bytesWasted;    //!< number of bytes wasted
-    size_t bytesUsed;      //!< bumber of total bytes allocated
   };
 }

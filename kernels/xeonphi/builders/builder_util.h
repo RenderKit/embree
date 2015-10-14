@@ -25,14 +25,14 @@ namespace embree
   class CentroidGeometryAABB
   {
   public:
-    float16 centroid2_lower;
-    float16 centroid2_upper;
-    float16 geometry_lower;
-    float16 geometry_upper;
+    vfloat16 centroid2_lower;
+    vfloat16 centroid2_upper;
+    vfloat16 geometry_lower;
+    vfloat16 geometry_upper;
 
     __forceinline void reset() {
-      const float16 p_inf( pos_inf );
-      const float16 n_inf( neg_inf );
+      const vfloat16 p_inf( pos_inf );
+      const vfloat16 n_inf( neg_inf );
       centroid2_lower = p_inf;
       centroid2_upper = n_inf;
       geometry_lower  = p_inf;
@@ -41,29 +41,29 @@ namespace embree
 
 
     __forceinline void extend(const PrimRef& b) {
-      const Vec2f16 b2 = b.getBounds();
-      const float16 b_min = b2.x;
-      const float16 b_max = b2.y;
-      const float16 b_centroid2 = b_min + b_max;
+      const Vec2vf16 b2 = b.getBounds();
+      const vfloat16 b_min = b2.x;
+      const vfloat16 b_max = b2.y;
+      const vfloat16 b_centroid2 = b_min + b_max;
       centroid2_lower = min(centroid2_lower,b_centroid2);
       centroid2_upper = max(centroid2_upper,b_centroid2);
       geometry_lower  = min(geometry_lower,b_min);
       geometry_upper  = max(geometry_upper,b_max);
     }
 
-    __forceinline void extend(const float16 &b_min,
-			      const float16 &b_max) {
-      const float16 b_centroid2 = b_min + b_max;
+    __forceinline void extend(const vfloat16 &b_min,
+			      const vfloat16 &b_max) {
+      const vfloat16 b_centroid2 = b_min + b_max;
       centroid2_lower = min(centroid2_lower,b_centroid2);
       centroid2_upper = max(centroid2_upper,b_centroid2);
       geometry_lower  = min(geometry_lower,b_min);
       geometry_upper  = max(geometry_upper,b_max);
     }
 
-    __forceinline void extend(const Vec2f16 &b) {
-      const float16 &b_min = b.x;
-      const float16 &b_max = b.y;
-      const float16 b_centroid2 = b_min + b_max;
+    __forceinline void extend(const Vec2vf16 &b) {
+      const vfloat16 &b_min = b.x;
+      const vfloat16 &b_max = b.y;
+      const vfloat16 b_centroid2 = b_min + b_max;
       centroid2_lower = min(centroid2_lower,b_centroid2);
       centroid2_upper = max(centroid2_upper,b_centroid2);
       geometry_lower  = min(geometry_lower,b_min);
@@ -119,8 +119,8 @@ namespace embree
 #if !defined(__MIC__)
       centroid2 = geometry = empty;
 #else
-      const float16 p_inf( pos_inf );
-      const float16 n_inf( neg_inf );
+      const vfloat16 p_inf( pos_inf );
+      const vfloat16 n_inf( neg_inf );
       store4f(&centroid2.lower,p_inf);
       store4f(&centroid2.upper,n_inf);
       store4f(&geometry.lower,p_inf);
@@ -257,10 +257,10 @@ namespace embree
 #if defined(__MIC__)
     __forceinline void operator=(const BuildRecord& v) { 
       assert(sizeof(BuildRecord) == 128);
-      const float16 b0 = load16f((float*)&v);
-      const float16 b1 = load16f((float*)&v + 16);
-      store16f((float*)this +  0, b0);
-      store16f((float*)this + 16, b1);
+      const vfloat16 b0 = vfloat16::load((float*)&v);
+      const vfloat16 b1 = vfloat16::load((float*)&v + 16);
+      vfloat16::store((float*)this +  0, b0);
+      vfloat16::store((float*)this + 16, b1);
     };
 #endif
 

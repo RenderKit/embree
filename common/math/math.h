@@ -210,8 +210,8 @@ namespace embree
   template<> __forceinline int      random() { return int(rand()); }
   template<> __forceinline uint32_t random() { return uint32_t(rand()) ^ (uint32_t(rand()) << 16); }
 #endif
-  template<> __forceinline float  random() { return random<uint32_t>()/float(RAND_MAX); }
-  template<> __forceinline double random() { return random<uint32_t>()/double(RAND_MAX); }
+  template<> __forceinline float  random() { return rand()/float(RAND_MAX); }
+  template<> __forceinline double random() { return rand()/double(RAND_MAX); }
 
 #if _WIN32
   __forceinline double drand48() {

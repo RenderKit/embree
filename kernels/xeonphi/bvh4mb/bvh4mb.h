@@ -91,9 +91,6 @@ namespace embree
     }
 
     void clear() {}
-
-    static Accel* BVH4mbTriangle1ObjectSplitBinnedSAH(Scene* scene);
-
   };
 
   __forceinline std::ostream &operator<<(std::ostream &o, const BVH4mb::Node &v)
@@ -114,7 +111,7 @@ namespace embree
       return o;
     } 
 
-  __forceinline int16 getTriMasks(const BVH4mb::Triangle01 * __restrict__ const tptr)
+  __forceinline vint16 getTriMasks(const BVH4mb::Triangle01 * __restrict__ const tptr)
   {
     return swDDDD(gather16i_4i_align(&tptr[0].t0.v2,&tptr[1].t0.v2,&tptr[2].t0.v2,&tptr[3].t0.v2));
   }

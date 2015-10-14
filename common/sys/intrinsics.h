@@ -96,9 +96,6 @@ namespace embree
   }
   
 #if defined(__X86_64__)
-  __forceinline long long __popcnt(long long in) { // FIXME: remove?
-    return _mm_popcnt_u64(in);
-  }
   __forceinline size_t __popcnt(size_t in) {
     return _mm_popcnt_u64(in);
   }
@@ -443,11 +440,14 @@ namespace embree
 
   __forceinline size_t __blsr(size_t v) {
 #if defined(__AVX2__) 
+#if defined(__INTEL_COMPILER)
     return _blsr_u64(v);
+#else
+    return __blsr_u64(v);
+#endif
 #else
     return v & (v-1);
 #endif
-
   }
   
   __forceinline int __btc(int v, int i) {

@@ -133,7 +133,7 @@ namespace embree
 
     /* work record handling */
     PrimRef  *    prims;
-    int16    *    node;  // node array in 64 byte blocks
+    vint16    *    node;  // node array in 64 byte blocks
     Triangle1*    accel;
 
     /* threshold for leaf generation */
@@ -148,22 +148,22 @@ namespace embree
 				 BuildRecord *__restrict__ const br,
 				 const size_t numChildren)
     {
-      float16 lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
-      float16 upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
+      vfloat16 lower = broadcast4to16f(&BVH4i::Node::initQBVHNode[0]);
+      vfloat16 upper = broadcast4to16f(&BVH4i::Node::initQBVHNode[1]);
       BVH4i::Node &bvh = *(BVH4i::Node*)ptr;
 
-      bool16 m_lane = 0xf;
+      vbool16 m_lane = 0xf;
       for (size_t i=0;i<numChildren;i++)
 	{
-	  const float16 b_lower = broadcast4to16f(&br[i].bounds.geometry.lower);
-	  const float16 b_upper = broadcast4to16f(&br[i].bounds.geometry.upper);
+	  const vfloat16 b_lower = broadcast4to16f(&br[i].bounds.geometry.lower);
+	  const vfloat16 b_upper = broadcast4to16f(&br[i].bounds.geometry.upper);
 	  lower = select(m_lane,b_lower,lower);
 	  upper = select(m_lane,b_upper,upper);
 	  m_lane = (unsigned int)m_lane << 4;
 	}      
 
-      store16f_ngo((float16*)ptr+0,lower); 
-      store16f_ngo((float16*)ptr+1,upper);             
+      vfloat16::store_ngo((vfloat16*)ptr+0,lower); 
+      vfloat16::store_ngo((vfloat16*)ptr+1,upper);             
     }
 
 

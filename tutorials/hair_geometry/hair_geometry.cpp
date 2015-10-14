@@ -15,9 +15,11 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/hair_loader.h"
-#include "../common/tutorial/cy_hair_loader.h"
+#include "../common/tutorial/scene.h"
+#include "../common/scenegraph/obj_loader.h"
+#include "../common/scenegraph/xml_loader.h"
+#include "../common/scenegraph/hair_loader.h"
+#include "../common/scenegraph/cy_hair_loader.h"
 #include "../common/image/image.h"
 
 extern "C" embree::Vec3fa g_dirlight_direction = embree::normalize(embree::Vec3fa(1,-1,1));
@@ -38,20 +40,13 @@ namespace embree
   static size_t g_numThreads = 0;
 
   /* scene */
-  OBJScene g_obj_scene;
-  OBJScene g_obj_scene2;
-  static FileName objFilename = "";
-  static FileName objFilename2 = "";
-  static FileName hairFilename = "";
-  static FileName hairFilename2 = "";
-  static FileName cy_hairFilename = "";
+  TutorialScene g_obj_scene;
+  Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
+  static FileName sceneFilename = "";
   static FileName outFilename = "";
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
-
-  Vec3fa offset = zero;
-  Vec3fa offset_mb = zero;
 
   Vec3fa uniformSampleSphere(const float& u, const float& v) 
   {
@@ -215,11 +210,11 @@ float noise(float x, float y, float z)
     return p+0.2f*Vec3fa(x,y,z);
   }
 
-  void addHairySphere (OBJScene& scene, const Vec3fa& p, float r)
+  void addHairySphere (TutorialScene& scene, const Vec3fa& p, float r)
   {
     const size_t numPhi   = 20;
     const size_t numTheta = 2*numPhi;
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
+    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
     int materialID = scene.materials.size();
@@ -247,18 +242,18 @@ float noise(float x, float y, float z)
         int p11 = phi*numTheta+theta%numTheta;
 
         if (phi > 1)
-          mesh->triangles.push_back(OBJScene::Triangle(p10,p00,p01,materialID));
+          mesh->triangles.push_back(TutorialScene::Triangle(p10,p00,p01,materialID));
         
         if (phi < numPhi) 
-          mesh->triangles.push_back(OBJScene::Triangle(p11,p10,p01,materialID));
+          mesh->triangles.push_back(TutorialScene::Triangle(p11,p10,p01,materialID));
       }
     }
-    scene.meshes.push_back(mesh);
+    scene.geometries.push_back(mesh);
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
 #if 0
     const float thickness = 0.01f*r;
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
     srand48(123456789);
     for (size_t t=0; t<16; t++) 
       {
@@ -275,12 +270,12 @@ float noise(float x, float y, float z)
 	hairset->v.push_back(l2);
 	hairset->v.push_back(l3);
 
-	hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+	hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
       }
-    scene.hairsets.push_back(hairset);
+    scene.geometries.push_back(hairset);
 #else
     const float thickness = 0.001f*r;
-    OBJScene::HairSet* hairset = new OBJScene::HairSet;
+    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
 
     for (size_t t=0; t<100000; t++) 
     {
@@ -297,15 +292,15 @@ float noise(float x, float y, float z)
       hairset->v.push_back(l2);
       hairset->v.push_back(l3);
 	
-      hairset->hairs.push_back( OBJScene::Hair(v_index,hairset->hairs.size()) );
+      hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
     }
-    scene.hairsets.push_back(hairset);
+    scene.geometries.push_back(hairset);
 #endif
   }
 
-  void addGroundPlane (OBJScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
+  void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
   {
-    OBJScene::Mesh* mesh = new OBJScene::Mesh;
+    TutorialScene::TriangleMesh* mesh = new TutorialScene::TriangleMesh;
 
     Material material;
     int materialID = scene.materials.size();
@@ -316,10 +311,10 @@ float noise(float x, float y, float z)
     mesh->v.push_back(p10);
     mesh->v.push_back(p11);
 
-    mesh->triangles.push_back(OBJScene::Triangle(0,1,2,materialID));
-    mesh->triangles.push_back(OBJScene::Triangle(2,1,3,materialID));
+    mesh->triangles.push_back(TutorialScene::Triangle(0,1,2,materialID));
+    mesh->triangles.push_back(TutorialScene::Triangle(2,1,3,materialID));
 
-    scene.meshes.push_back(mesh);
+    scene.geometries.push_back(mesh);
   }
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
@@ -337,39 +332,7 @@ float noise(float x, float y, float z)
 
       /* load OBJ model */
       else if (tag == "-i") {
-        objFilename = path + cin->getFileName();
-      }
-
-      /* load motion blur OBJ model */
-      else if (tag == "-i_mb") {
-        objFilename = path + cin->getFileName();
-        objFilename2 = path + cin->getFileName();
-      }
-
-      /* load hair model */
-      else if (tag == "--hair") {
-        hairFilename = path + cin->getFileName();
-      }
-
-      /* motion blur hair model */
-      else if (tag == "--hair_mb") {
-        hairFilename = path + cin->getFileName();
-        hairFilename2 = path + cin->getFileName();
-      }
-
-      /* load hair model */
-      else if (tag == "--cy_hair") {
-        cy_hairFilename = path + cin->getFileName();
-      }
-
-      /* scene offset */
-      else if (tag == "--offset") {
-        offset = cin->getVec3fa();
-      }
-
-      /* scene offset */
-      else if (tag == "--offset_mb") {
-        offset_mb = cin->getVec3fa();
+        sceneFilename = path + cin->getFileName();
       }
 
       /* directional light */
@@ -499,37 +462,15 @@ float noise(float x, float y, float z)
     init(g_rtcore.c_str());
 
     /* load scene */
-    if (objFilename.str() != "" && objFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = loadOBJ(objFilename,false);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
-      if (objFilename2.str() != "") {
-        Ref<SceneGraph::Node> node = loadOBJ(objFilename2,false);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node));
-      }
-    }
-
-    /* load hair */
-    if (hairFilename.str() != "" && hairFilename.str() != "none") {
-      Ref<SceneGraph::Node> node = loadHair(hairFilename);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
-      if (hairFilename2.str() != "") {
-        Ref<SceneGraph::Node> node2 = loadHair(hairFilename2);
-        g_obj_scene2.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset_mb),node2));
-      }
-    }
-
-    /* load cy_hair */
-    if (cy_hairFilename.str() != "") {
-      Ref<SceneGraph::Node> node = loadCYHair(cy_hairFilename);
-      g_obj_scene.add(new SceneGraph::TransformNode(AffineSpace3fa::translate(-offset),node));
-    }
-
-    if (!g_obj_scene2.empty()) {
-      g_obj_scene.set_motion_blur(g_obj_scene2);
-    }
-
+    if (sceneFilename.str() != "" && sceneFilename.str() != "none")
+      g_scene->add(SceneGraph::load(sceneFilename));
+    
+    /* convert scene graph to OBJ scene */
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>());
+    g_scene = nullptr;
+    
     /* if scene is empty, create default scene */
-    if (g_obj_scene.meshes.size() + g_obj_scene.hairsets.size() == 0) {
+    if (g_obj_scene.geometries.size() == 0) {
       addHairySphere(g_obj_scene,Vec3fa(0,1.5f,0),1.5f);
       addGroundPlane(g_obj_scene,Vec3fa(-10,0,-10),Vec3fa(-10,0,+10),Vec3fa(+10,0,-10),Vec3fa(+10,0,+10));
     }

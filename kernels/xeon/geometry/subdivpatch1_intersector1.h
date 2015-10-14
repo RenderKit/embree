@@ -83,7 +83,7 @@ namespace embree
       
       
       /*! Intersect a ray with the primitive. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
         GeneralCatmullClarkPatch3fa irregular_patch;
@@ -92,7 +92,7 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& subdiv_patch, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
         GeneralCatmullClarkPatch3fa irregular_patch;

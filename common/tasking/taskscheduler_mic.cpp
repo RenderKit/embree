@@ -61,7 +61,6 @@ namespace embree
   size_t TaskScheduler::enableThreads(size_t N)
   {
     if (!instance) THROW_RUNTIME_ERROR("Embree threads not running.");
-    // if (!instance->defaultNumThreads) return; // FIXME: enable
     N = min(N,instance->numThreads);
     //TaskScheduler::init(N);
     return instance->numEnabledThreads = N;
@@ -376,7 +375,7 @@ namespace embree
 #endif
       }
 
-    barrier.waitForThreads(threadIndex,threadCount);
+    barrier.wait(threadIndex,threadCount);
 
     DBG(std::cout << "END WORK task " << task << " threadIndex " << threadIndex << std::endl << std::flush);
   }

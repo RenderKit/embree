@@ -19,6 +19,7 @@
 
 namespace embree
 {
+
   TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
     : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
   {
@@ -31,14 +32,14 @@ namespace embree
   
   void TriangleMesh::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,triangles.size());
-    else                   atomic_add(&parent->numTriangles2,triangles.size());
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numTriangles,triangles.size());
+    else                   atomic_add(&parent->world2.numTriangles,triangles.size());
   }
   
   void TriangleMesh::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->numTriangles ,-(ssize_t)triangles.size());
-    else                   atomic_add(&parent->numTriangles2,-(ssize_t)triangles.size());
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numTriangles,-(ssize_t)triangles.size());
+    else                   atomic_add(&parent->world2.numTriangles,-(ssize_t)triangles.size());
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -150,7 +151,8 @@ namespace embree
 
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    /* test if interpolation is enabled */
+#if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
@@ -175,13 +177,13 @@ namespace embree
       size_t ofs = i*sizeof(float);
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const float4 p0 = float4::loadu((float*)&src[tri.v[0]*stride+ofs]);
-      const float4 p1 = float4::loadu((float*)&src[tri.v[1]*stride+ofs]);
-      const float4 p2 = float4::loadu((float*)&src[tri.v[2]*stride+ofs]);
-      const bool4 valid = int4(i)+int4(step) < int4(numFloats);
-      if (P   ) float4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) float4::storeu(valid,dPdu+i,p1-p0);
-      if (dPdv) float4::storeu(valid,dPdv+i,p2-p0);
+      const vfloat4 p0 = vfloat4::loadu((float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat4 p1 = vfloat4::loadu((float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
+      const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
+      if (P   ) vfloat4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) vfloat4::storeu(valid,dPdu+i,p1-p0);
+      if (dPdv) vfloat4::storeu(valid,dPdv+i,p2-p0);
     }
 
 #else
@@ -189,15 +191,15 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=16) 
     {
       size_t ofs = i*sizeof(float);
-      bool16 mask = (i+16 > numFloats) ? (bool16)(((unsigned int)1 << (numFloats-i))-1) : bool16( true );
+      vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const float w = 1.0f-u-v;
       const Triangle& tri = triangle(primID);
-      const float16 p0 = uload16f(mask,(float*)&src[tri.v[0]*stride+ofs]);
-      const float16 p1 = uload16f(mask,(float*)&src[tri.v[1]*stride+ofs]);
-      const float16 p2 = uload16f(mask,(float*)&src[tri.v[2]*stride+ofs]);
-      if (P   ) compactustore16f(mask,P+i,w*p0 + u*p1 + v*p2);
-      if (dPdu) compactustore16f(mask,dPdu+i,p1-p0);
-      if (dPdv) compactustore16f(mask,dPdv+i,p2-p0);
+      const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
+      const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
+      const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
+      if (P   ) vfloat16::storeu_compact(mask,P+i,w*p0 + u*p1 + v*p2);
+      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,p1-p0);
+      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,p2-p0);
     }
 
 #endif
@@ -221,7 +223,5 @@ namespace embree
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
     for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
 
-    while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));   // FIXME: why is this written twice?
   }
 }

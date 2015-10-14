@@ -15,8 +15,9 @@
 // ======================================================================== //
 
 #include "../common/tutorial/tutorial.h"
-#include "../common/tutorial/obj_loader.h"
-#include "../common/tutorial/xml_loader.h"
+#include "../common/scenegraph/obj_loader.h"
+#include "../common/scenegraph/xml_loader.h"
+#include "../common/tutorial/scene.h"
 #include "../common/image/image.h"
 #include "../common/tutorial/tutorial_device.h"
 
@@ -38,16 +39,17 @@ namespace embree
   static int g_skipBenchmarkFrames = 0;
   static int g_numBenchmarkFrames = 0;
   static bool g_interactive = true;
-  static bool g_only_subdivs = false;
   static bool g_anim_mode = false;
-  static bool g_loop_mode = false;
+  extern "C" int g_instancing_mode = 0;
   static Shader g_shader = SHADER_DEFAULT;
 
   /* scene */
-  OBJScene g_obj_scene;
+  TutorialScene g_obj_scene;
+  Ref<SceneGraph::GroupNode> g_scene = new SceneGraph::GroupNode;
   static FileName filename = "";
+
   std::vector<FileName> keyframeList;
-  std::vector<OBJScene*> g_keyframes;
+  std::vector<TutorialScene*> g_keyframes;
 
   static void parseCommandLine(Ref<ParseStream> cin, const FileName& path)
   {
@@ -102,11 +104,16 @@ namespace embree
       else if (tag == "-pregenerate") 
 	g_subdiv_mode = ",subdiv_accel=bvh4.grid.eager";
       
-      else if (tag == "-loop") 
-	g_loop_mode = true;
-
       else if (tag == "-anim") 
 	g_anim_mode = true;
+
+      else if (tag == "-instancing") {
+        std::string mode = cin->getString();
+        if      (mode == "none"    ) g_instancing_mode = 0;
+        else if (mode == "geometry") g_instancing_mode = 1;
+        else if (mode == "scene"   ) g_instancing_mode = 2;
+        else throw std::runtime_error("unknown instancing mode: "+mode);
+      }
 
       else if (tag == "-shader") {
         std::string mode = cin->getString();
@@ -138,7 +145,7 @@ namespace embree
       else if (tag == "-ambientlight") 
       {
         const Vec3fa L = cin->getVec3fa();
-        g_obj_scene.ambientLights.push_back(AmbientLight(L));
+        g_scene->add(new SceneGraph::LightNode<AmbientLight>(AmbientLight(L)));
       }
 
       /* point light source */
@@ -146,7 +153,7 @@ namespace embree
       {
         const Vec3fa P = cin->getVec3fa();
         const Vec3fa I = cin->getVec3fa();
-        g_obj_scene.pointLights.push_back(PointLight(P,I));
+        g_scene->add(new SceneGraph::LightNode<PointLight>(PointLight(P,I)));
       }
 
       /* directional light source */
@@ -154,7 +161,7 @@ namespace embree
       {
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa E = cin->getVec3fa();
-        g_obj_scene.directionalLights.push_back(DirectionalLight(D,E));
+        g_scene->add(new SceneGraph::LightNode<DirectionalLight>(DirectionalLight(D,E)));
       }
 
       /* distant light source */
@@ -163,12 +170,7 @@ namespace embree
         const Vec3fa D = cin->getVec3fa();
         const Vec3fa L = cin->getVec3fa();
         const float halfAngle = cin->getFloat();
-        g_obj_scene.distantLights.push_back(DistantLight(D,L,halfAngle));
-      }
-
-      /* converts triangle meshes into subdiv meshes */
-      else if (tag == "-subdiv") {
-	g_only_subdivs = true;
+        g_scene->add(new SceneGraph::LightNode<DistantLight>(DistantLight(D,L,halfAngle)));
       }
 
       /* skip unknown command line parameter */
@@ -208,14 +210,11 @@ namespace embree
     resize(g_width,g_height);
     if (g_anim_mode) g_camera.anim = true;
 
-    do {
-      double msec = getSeconds();
-      AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
-      render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
-      msec = getSeconds() - msec;
-      std::cout << "render time " << 1.0/msec << " fps" << std::endl;
-
-    } while(g_loop_mode);
+    double msec = getSeconds();
+    AffineSpace3fa pixel2world = g_camera.pixel2world(g_width,g_height);
+    render(0.0f,pixel2world.l.vx,pixel2world.l.vy,pixel2world.l.vz,pixel2world.p);
+    msec = getSeconds() - msec;
+    std::cout << "render time " << 1.0/msec << " fps" << std::endl;
 
     void* ptr = map();
     Ref<Image> image = new Image4uc(g_width, g_height, (Col4uc*)ptr);
@@ -228,20 +227,13 @@ namespace embree
   {
     for (size_t i=0; i<fileName.size(); i++)
     {
-      PRINT(fileName[i].str());
-      OBJScene *scene = new OBJScene;
+      std::cout << "." << std::flush;
+      TutorialScene *scene = new TutorialScene;
       FileName keyframe = fileName[i];
-
-      Ref<SceneGraph::Node> node = loadOBJ(keyframe,true);	
-      scene->add(node);
-      if (g_obj_scene.subdiv.size() != scene->subdiv.size())
-        FATAL("#subdiv meshes differ");
-      for (size_t i=0;i<g_obj_scene.subdiv.size();i++)
-	if (g_obj_scene.subdiv[i]->positions.size() != scene->subdiv[i]->positions.size())
-	  FATAL("#positions differ");
-
+      scene->add(loadOBJ(keyframe,true));
       g_keyframes.push_back(scene);
     }
+    std::cout << std::endl;
   }
 
 
@@ -273,27 +265,27 @@ namespace embree
     g_rtcore += g_subdiv_mode;
 
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj"))
-    {
-      Ref<SceneGraph::Node> node = loadOBJ(filename,g_subdiv_mode != "");	
-      g_obj_scene.add(node);
+    if (strlwr(filename.ext()) == std::string("obj")) {
+      g_scene->add(loadOBJ(filename,g_subdiv_mode != ""));
     }
     else if (strlwr(filename.ext()) == std::string("xml")) {
-      Ref<SceneGraph::Node> node = loadXML(filename,one);
-      g_obj_scene.add(node);
+      g_scene->add(loadXML(filename,one));
     }
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
-    
+
     /* load keyframes */
     if (keyframeList.size())
       loadKeyFrameAnimation(keyframeList);
     
     /* initialize ray tracing core */
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),g_instancing_mode); 
+    g_scene = nullptr;
     init(g_rtcore.c_str());
 
     /* set shader mode */
     switch (g_shader) {
+    case SHADER_DEFAULT : break;
     case SHADER_EYELIGHT: key_pressed(GLUT_KEY_F2); break;
     case SHADER_UV      : key_pressed(GLUT_KEY_F4); break;
     case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
@@ -301,10 +293,6 @@ namespace embree
     case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
     };
     
-    /* convert triangle meshes to subdiv meshes */
-    if (g_only_subdivs)
-      g_obj_scene.convert_to_subdiv();
-
     /* send model */
     set_scene(&g_obj_scene);
     

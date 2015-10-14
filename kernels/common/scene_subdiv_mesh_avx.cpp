@@ -55,8 +55,8 @@ namespace embree
     {
       if (i+4 >= numFloats)
       {
-        float4 Pt, dPdut, dPdvt; 
-        isa::PatchEval<float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        vfloat4 Pt, dPdut, dPdvt; 
+        isa::PatchEval<vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                           getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
 
         if (P   ) for (size_t j=i; j<min(i+4,numFloats); j++) P[j] = Pt[j-i];
@@ -66,8 +66,8 @@ namespace embree
       }
       else
       {
-        float8 Pt, dPdut, dPdvt; 
-        isa::PatchEval<float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+        vfloat8 Pt, dPdut, dPdvt; 
+        isa::PatchEval<vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                getHalfEdge(primID),src+i*sizeof(float),stride,u,v,P ? &Pt : nullptr, dPdu ? &dPdut : nullptr, dPdv ? &dPdvt : nullptr);
                                      
         if (P   ) for (size_t j=i; j<i+8; j++) P[j] = Pt[j-i];
@@ -107,7 +107,7 @@ namespace embree
         if (j+4 >= numFloats)
         {
           const size_t M = min(size_t(4),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool,vint,vfloat,vfloat4>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=4;
@@ -115,7 +115,7 @@ namespace embree
         else
         {
           const size_t M = min(size_t(8),numFloats-j);
-          isa::PatchEvalSimd<vbool,vint,vfloat,float8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
+          isa::PatchEvalSimd<vbool,vint,vfloat,vfloat8>(baseEntry->at(interpolationSlot(primID,slot,stride)),parent->commitCounterSubdiv,
                                                        getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
                                                        P ? P+j*numUVs : nullptr,dPdu ? dPdu+j*numUVs : nullptr,dPdv ? dPdv+j*numUVs : nullptr,numUVs,M);
           j+=8;
@@ -138,18 +138,18 @@ namespace embree
     {
       if (i+4 >= numUVs)
       {
-        bool4 valid1 = int4(i)+int4(step) < int4(numUVs);
-        if (valid) valid1 &= int4::loadu(&valid[i]) == int4(-1);
+        vbool4 valid1 = vint4(i)+vint4(step) < vint4(numUVs);
+        if (valid) valid1 &= vint4::loadu(&valid[i]) == vint4(-1);
         if (none(valid1)) continue;
-        interpolateHelper(valid1,int4::loadu(&primIDs[i]),float4::loadu(&u[i]),float4::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
+        interpolateHelper(valid1,vint4::loadu(&primIDs[i]),vfloat4::loadu(&u[i]),vfloat4::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
         i+=4;
       }
       else
       {
-        bool8 valid1 = int8(i)+int8(step) < int8(numUVs);
-        if (valid) valid1 &= int8::loadu(&valid[i]) == int8(-1);
+        vbool8 valid1 = vint8(i)+vint8(step) < vint8(numUVs);
+        if (valid) valid1 &= vint8::loadu(&valid[i]) == vint8(-1);
         if (none(valid1)) continue;
-        interpolateHelper(valid1,int8::loadu(&primIDs[i]),float8::loadu(&u[i]),float8::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
+        interpolateHelper(valid1,vint8::loadu(&primIDs[i]),vfloat8::loadu(&u[i]),vfloat8::loadu(&v[i]),numUVs,buffer, P ? P+i : nullptr, dPdu ? dPdu+i : nullptr, dPdv ? dPdv+i : nullptr,numFloats);
         i+=8;
       }
     }

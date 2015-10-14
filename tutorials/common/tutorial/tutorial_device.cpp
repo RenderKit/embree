@@ -16,6 +16,7 @@
 
 #include "tutorial_device.h"
 #include "../../../kernels/algorithms/parallel_for.h"
+#include "../scenegraph/texture.h"
 #include "scene_device.h"
 
 /* the scene to render */
@@ -148,9 +149,9 @@ Vec3fa renderPixelNg(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const
 
 Vec3fa randomColor(const int ID) 
 {
-  int r = ((ID+13)*17*23) & 255;
-  int g = ((ID+15)*11*13) & 255;
-  int b = ((ID+17)* 7*19) & 255;
+  int r = ((ID+13)*17*23) >> 8 & 255;
+  int g = ((ID+15)*11*13) >> 8 & 255;
+  int b = ((ID+17)* 7*19) >> 8 & 255;
   const float oneOver255f = 1.f/255.f;
   return Vec3fa(r*oneOver255f,g*oneOver255f,b*oneOver255f);
 }
@@ -174,7 +175,7 @@ Vec3fa renderPixelGeomID(float x, float y, const Vec3fa& vx, const Vec3fa& vy, c
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
-  else return randomColor(ray.geomID);
+  else return embree::abs(dot(ray.dir,normalize(ray.Ng)))*randomColor(ray.geomID);
 }
 
 /* geometry ID and primitive ID shading */
@@ -658,30 +659,6 @@ void progressEnd() {
   std::cout << "]" << std::endl;
 }
 
-Vec3f getPtexTexel3f(void* _texture, const int faceId, const float u, const float v)
-{
-  Texture *texture = (Texture*)_texture;
-  if (texture->format == PTEX_RGBA8)
-    {
-      assert(faceId < texture->faceTextures);
-      Texture **face_texture = (Texture **)texture->data;
-      return getTextureTexel3f(face_texture[faceId],u,v);
-    }
-  return zero;
-}
-
-float getPtexTexel1f(void* _texture, const int faceId, const float u, const float v)
-{
-  Texture *texture = (Texture*)_texture;
-  if (texture->format == PTEX_FLOAT32)
-    {
-      assert(faceId < texture->faceTextures);
-      Texture **face_texture = (Texture **)texture->data;
-      return getTextureTexel1f(face_texture[faceId],u,v);
-    }
-  return 0.0f;
-}
-
 Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
 {
   ISPCSubdivMesh *mesh = (ISPCSubdivMesh *)_mesh;
@@ -727,29 +704,41 @@ Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, co
   return st;
 }
 
-float getTextureTexel1f(void *_texture, const float s, const float t)
+float getTextureTexel1f(const Texture* texture, float s, float t)
 {
-  Texture *texture = (Texture*)_texture;
-  if (likely(texture && texture->format == FLOAT32))
-    {
-      const float u = min(max(s,0.0f),1.0f);
-      const float v = min(max(t,0.0f),1.0f);
-      const int ui  = min((int)floorf((texture->width-1)*u),texture->width-1);
-      const int vi  = min((int)floorf((texture->height-1)*v),texture->height-1);
-      float *data   = (float *)texture->data;
-      return data[vi*texture->width + ui];
-    }
+  s = max(s,0.0f);
+  t = max(t,0.0f);
+
+  if (likely(texture && texture->format == Texture::FLOAT32))
+  {
+    const float u = min(max(s,0.0f),1.0f);
+    const float v = min(max(t,0.0f),1.0f);
+    const int ui  = min((int)floorf((texture->width-1)*u),texture->width-1);
+    const int vi  = min((int)floorf((texture->height-1)*v),texture->height-1);
+    float *data   = (float *)texture->data;
+    return data[vi*texture->width + ui];
+  } 
+  else if (likely(texture && texture->format == Texture::RGBA8))
+  {
+    int iu = (int)(s * (float)(texture->width));
+    if (texture->width_mask) iu &= texture->width_mask;
+    else                     iu = min(iu,texture->width-1);
+    int iv = (int)(t * (float)(texture->height));
+    if (texture->height_mask)  iv &= texture->height_mask;
+    else                       iv = min(iv,texture->height-1);
+    unsigned char* t = (unsigned char*)texture->data + (iv * texture->width + iu) * 4;
+    return (float)t[0] * (1.0f/255.0f);
+  }  
   return 0.0f;
 }
 
-Vec3f  getTextureTexel3f(void *_texture,const float s, const float t)
+Vec3f getTextureTexel3f(const Texture* texture, float s, float t)
 {
-  Texture *texture = (Texture*)_texture;
-  if (likely(texture && texture->format == RGBA8))
+   s = max(s,0.0f);
+   t = max(t,0.0f);
+      
+   if (likely(texture && texture->format == Texture::RGBA8))
     {
-      //u = max(min(u,1.0f),0.0f);
-      //v = max(min(v,1.0f),0.0f);
-     
       int iu = (int)(s * (float)(texture->width));
       if (texture->width_mask) 
 	iu &= texture->width_mask;

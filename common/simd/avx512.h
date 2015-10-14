@@ -19,7 +19,7 @@
 #include "../sys/platform.h"
 #include "../sys/intrinsics.h"
 #include "../math/constants.h"
-//#include "sse_mic.h"
+#include "varying.h"
 
 #include <zmmintrin.h>
 
@@ -28,16 +28,9 @@
 
 #define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)
 
-namespace embree 
-{
-  class bool16; 
-  class int16; 
-  class float16; 
-}
-
-#include "bool16_avx512.h"
-#include "int16_avx512.h"
-#include "float16_avx512.h"
+#include "vboolf16_avx512.h"
+#include "vint16_avx512.h"
+#include "vfloat16_avx512.h"
 
 namespace embree
 {
@@ -69,9 +62,9 @@ namespace embree
       _mm_prefetch((const char*)m,_MM_HINT_ENTA); 
   }
   
-  __forceinline void gather_prefetch(const bool16 &m_active,
+  __forceinline void gather_prefetch(const vboolf16 &m_active,
                                      const void *const ptr, 			     
-                                     const int16 index, 
+                                     const vint16 index,
                                      const int mode = _MM_HINT_T2,
                                      const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                      const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
@@ -79,9 +72,9 @@ namespace embree
     _mm512_mask_prefetch_i32extgather_ps(index,m_active,ptr,up,scale,mode);
   }
   
-  __forceinline void scatter_prefetch(const bool16 &m_active,
+  __forceinline void scatter_prefetch(const vboolf16 &m_active,
                                       void *const ptr, 			     
-                                      const int16 index, 
+                                      const vint16 index,
                                       const int mode = _MM_HINT_ET2,
                                       const _MM_INDEX_SCALE_ENUM scale = _MM_SCALE_4,
                                       const _MM_UPCONV_PS_ENUM up = _MM_UPCONV_PS_NONE) 
@@ -96,36 +89,36 @@ namespace embree
 #endif
 
   template<const int D, const int C, const int B, const int A> 
-    __forceinline float16 lshuf(const float16 &in)
+    __forceinline vfloat16 lshuf(const vfloat16 &in)
   { 
     return _mm512_permute4f128_ps(in,(_MM_PERM_ENUM)_MM_SHUF_PERM(D,C,B,A));
   }
 
 
   template<const int D, const int C, const int B, const int A> 
-    __forceinline float16 lshuf(const bool16 &mask, float16 &dest, const float16 &in)
+    __forceinline vfloat16 lshuf(const vboolf16 &mask, vfloat16 &dest, const vfloat16 &in)
   { 
     return _mm512_mask_permute4f128_ps(dest,mask,in,(_MM_PERM_ENUM) _MM_SHUF_PERM(D,C,B,A));
   }
 
   template<const int lane> 
-    __forceinline float16 lane_shuffle_gather(const float16 &v0,const float16 &v1,const float16 &v2,const float16 &v3)
+    __forceinline vfloat16 lane_shuffle_gather(const vfloat16 &v0,const vfloat16 &v1,const vfloat16 &v2,const vfloat16 &v3)
     {
-      float16 t = lshuf<lane,lane,lane,lane>(v0);
+      vfloat16 t = lshuf<lane,lane,lane,lane>(v0);
       t = lshuf<lane,lane,lane,lane>(0xf0,t,v1);
       t = lshuf<lane,lane,lane,lane>(0xf00,t,v2);
       t = lshuf<lane,lane,lane,lane>(0xf000,t,v3);
       return t;
     }
 
-  /* __forceinline float16 convert(const float4 &v) */
+  /* __forceinline vfloat16 convert(const vfloat4 &v) */
   /* { */
   /*   return broadcast4to16f(&v); */
   /* } */
 
-  __forceinline int16 mul_uint64_t( const int16& a, const int16& b) { 
-    const int16 low  = _mm512_mullo_epi32(a, b);
-    const int16 high = _mm512_mulhi_epu32(a, b);
+  __forceinline vint16 mul_uint64_t( const vint16& a, const vint16& b) {
+    const vint16 low  = _mm512_mullo_epi32(a, b);
+    const vint16 high = _mm512_mulhi_epu32(a, b);
     return select(0x5555,low,high);
   }
 

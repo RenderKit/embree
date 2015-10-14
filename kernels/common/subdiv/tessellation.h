@@ -123,79 +123,79 @@ namespace embree
     
 #if defined(__MIC__)
 
-    const int16 grid_u_segments = int16(swidth)-1;
-    const int16 grid_v_segments = int16(sheight)-1;
+    const vint16 grid_u_segments = vint16(swidth)-1;
+    const vint16 grid_v_segments = vint16(sheight)-1;
     
-    const float16 inv_grid_u_segments = rcp(float16(grid_u_segments));
-    const float16 inv_grid_v_segments = rcp(float16(grid_v_segments));
+    const vfloat16 inv_grid_u_segments = rcp(vfloat16(grid_u_segments));
+    const vfloat16 inv_grid_v_segments = rcp(vfloat16(grid_v_segments));
     
     unsigned int index = 0;
-    int16 v_i( zero );
+    vint16 v_i( zero );
     for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
     {
-      int16 u_i ( step );
+      vint16 u_i ( step );
       
-      const bool16 m_v = v_i < grid_v_segments;
+      const vbool16 m_v = v_i < grid_v_segments;
       
       for (unsigned int x=0;x<grid_u_res;x+=16, u_i += 16)
       {
-        const bool16 m_u = u_i < grid_u_segments;
+        const vbool16 m_u = u_i < grid_u_segments;
 
-	const float16 u = select(m_u, float16(x0+u_i) * inv_grid_u_segments, 1.0f);
-	const float16 v = select(m_v, float16(y0+v_i) * inv_grid_v_segments, 1.0f);
-	ustore16f(&u_array[index + x],u);
-	ustore16f(&v_array[index + x],v);	   
+	const vfloat16 u = select(m_u, vfloat16(x0+u_i) * inv_grid_u_segments, 1.0f);
+	const vfloat16 v = select(m_v, vfloat16(y0+v_i) * inv_grid_v_segments, 1.0f);
+	vfloat16::storeu(&u_array[index + x],u);
+	vfloat16::storeu(&v_array[index + x],v);	   
       }
     }       
 
 #else
  
 #if defined(__AVX__)
-    const int8 grid_u_segments = int8(swidth)-1;
-    const int8 grid_v_segments = int8(sheight)-1;
+    const vint8 grid_u_segments = vint8(swidth)-1;
+    const vint8 grid_v_segments = vint8(sheight)-1;
     
-    const float8 inv_grid_u_segments = rcp(float8(grid_u_segments));
-    const float8 inv_grid_v_segments = rcp(float8(grid_v_segments));
+    const vfloat8 inv_grid_u_segments = rcp(vfloat8(grid_u_segments));
+    const vfloat8 inv_grid_v_segments = rcp(vfloat8(grid_v_segments));
     
     unsigned int index = 0;
-    int8 v_i( zero );
+    vint8 v_i( zero );
     for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
     {
-      int8 u_i ( step );
+      vint8 u_i ( step );
       
-      const bool8 m_v = v_i < grid_v_segments;
+      const vbool8 m_v = v_i < grid_v_segments;
       
       for (unsigned int x=0;x<grid_u_res;x+=8, u_i += 8)
       {
-        const bool8 m_u = u_i < grid_u_segments;
-	const float8 u = select(m_u, float8(x0+u_i) * inv_grid_u_segments, 1.0f);
-	const float8 v = select(m_v, float8(y0+v_i) * inv_grid_v_segments, 1.0f);
-	storeu8f(&u_array[index + x],u);
-	storeu8f(&v_array[index + x],v);	   
+        const vbool8 m_u = u_i < grid_u_segments;
+	const vfloat8 u = select(m_u, vfloat8(x0+u_i) * inv_grid_u_segments, 1.0f);
+	const vfloat8 v = select(m_v, vfloat8(y0+v_i) * inv_grid_v_segments, 1.0f);
+	vfloat8::storeu(&u_array[index + x],u);
+	vfloat8::storeu(&v_array[index + x],v);	   
       }
     }       
  #else   
-    const int4 grid_u_segments = int4(swidth)-1;
-    const int4 grid_v_segments = int4(sheight)-1;
+    const vint4 grid_u_segments = vint4(swidth)-1;
+    const vint4 grid_v_segments = vint4(sheight)-1;
     
-    const float4 inv_grid_u_segments = rcp(float4(grid_u_segments));
-    const float4 inv_grid_v_segments = rcp(float4(grid_v_segments));
+    const vfloat4 inv_grid_u_segments = rcp(vfloat4(grid_u_segments));
+    const vfloat4 inv_grid_v_segments = rcp(vfloat4(grid_v_segments));
     
     unsigned int index = 0;
-    int4 v_i( zero );
+    vint4 v_i( zero );
     for (unsigned int y=0;y<grid_v_res;y++,index+=grid_u_res,v_i += 1)
     {
-      int4 u_i ( step );
+      vint4 u_i ( step );
       
-      const bool4 m_v = v_i < grid_v_segments;
+      const vbool4 m_v = v_i < grid_v_segments;
       
       for (unsigned int x=0;x<grid_u_res;x+=4, u_i += 4)
       {
-        const bool4 m_u = u_i < grid_u_segments;
-	const float4 u = select(m_u, float4(x0+u_i) * inv_grid_u_segments, 1.0f);
-	const float4 v = select(m_v, float4(y0+v_i) * inv_grid_v_segments, 1.0f);
-	storeu4f(&u_array[index + x],u);
-	storeu4f(&v_array[index + x],v);	   
+        const vbool4 m_u = u_i < grid_u_segments;
+	const vfloat4 u = select(m_u, vfloat4(x0+u_i) * inv_grid_u_segments, 1.0f);
+	const vfloat4 v = select(m_v, vfloat4(y0+v_i) * inv_grid_v_segments, 1.0f);
+        vfloat4::storeu(&u_array[index + x],u);
+	vfloat4::storeu(&v_array[index + x],v);	   
       }
     }       
  #endif

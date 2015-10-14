@@ -22,13 +22,15 @@
 namespace embree
 {
 #define MODE_HIGH_QUALITY (1<<8)
-#define LeafMode 0 // FIXME: remove
 
   /*! virtual interface for all hierarchy builders */
   class Builder : public RefCount {
   public:
     /*! initiates the hierarchy builder */
     virtual void build(size_t threadIndex = 0, size_t threadCount = 0) = 0;
+
+    /*! notifies the builder about the deletion of some geometry */
+    virtual void deleteGeometry(size_t geomID) {};
 
     /*! clears internal builder state */
     virtual void clear() = 0;

@@ -27,6 +27,9 @@ struct Vec2f
 /// Constructors
 ////////////////////////////////////////////////////////////////////////////////
 
+inline varying Vec2f make_Vec2f(const uniform Vec2f a) { varying Vec2f v; v.x = a.x; v.y = a.y; return v; }
+inline varying Vec2f make_Vec2f(const varying Vec2f a) { varying Vec2f v; v.x = a.x; v.y = a.y; return v; }
+
 inline uniform Vec2f make_Vec2f(const uniform float a) { uniform Vec2f v; v.x = a; v.y = a; return v; }
 inline varying Vec2f make_Vec2f(const varying float a) { varying Vec2f v; v.x = a; v.y = a; return v; }
 
@@ -102,12 +105,6 @@ inline varying float reduce_max(const varying Vec2f a) { return max(a.x,a.y); }
 ////////////////////////////////////////////////////////////////////////////////
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
-
-//inline uniform bool operator==(const uniform Vec2f a, const uniform Vec2f b) { return (a.x == b.x) & (a.y == b.y); } // FIXME: enable
-//inline varying bool operator==(const varying Vec2f a, const varying Vec2f b) { return (a.x == b.x) & (a.y == b.y); }
-
-//inline uniform bool operator!=(const uniform Vec2f a, const uniform Vec2f b) { return (a.x != b.x) | (a.y != b.y); }
-//inline varying bool operator!=(const varying Vec2f a, const varying Vec2f b) { return (a.x != b.x) | (a.y != b.y); }
 
 inline uniform bool eq(const uniform Vec2f a, const uniform Vec2f b) { return (a.x == b.x) & (a.y == b.y); }
 inline varying bool eq(const varying Vec2f a, const varying Vec2f b) { return (a.x == b.x) & (a.y == b.y); }

@@ -54,10 +54,10 @@ namespace embree
     __forceinline void extract_f_m(Vec3fa f_m[2][2]) const
     {
 #if defined(__MIC__)
-      const float16 row0 = load16f(&matrix[0][0]);
-      const float16 row1 = load16f(&matrix[1][0]);
-      const float16 row2 = load16f(&matrix[2][0]);
-      const float16 row3 = load16f(&matrix[3][0]);
+      const vfloat16 row0 = vfloat16::load((float*)&matrix[0][0]);
+      const vfloat16 row1 = vfloat16::load((float*)&matrix[1][0]);
+      const vfloat16 row2 = vfloat16::load((float*)&matrix[2][0]);
+      const vfloat16 row3 = vfloat16::load((float*)&matrix[3][0]);
       
       compactustore16f_low(0x8888,(float*)&f_m[0][0],row0);
       compactustore16f_low(0x8888,(float*)&f_m[0][1],row1);

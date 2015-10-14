@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 
 namespace embree
 {
@@ -30,7 +30,7 @@ namespace embree
       typedef BVH4::NodeRef NodeRef;
       
     public:
-      static size_t rotate     (BVH4* bvh, NodeRef parentRef, size_t depth = 1);
+      static size_t rotate(NodeRef parentRef, size_t depth = 1);
       
 #if defined(__AVX__)
       static void   restructure(NodeRef ref, size_t depth = 1);

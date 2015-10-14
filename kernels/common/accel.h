@@ -30,6 +30,9 @@ namespace embree
     AccelData (const Type type) 
       : bounds(empty), type(type) {}
 
+    /*! notifies the acceleration structure about the deletion of some geometry */
+    virtual void deleteGeometry(size_t geomID) {};
+   
     /*! clears the acceleration structure data */
     virtual void clear() = 0;
 
@@ -229,7 +232,7 @@ namespace embree
     
     /*! build acceleration structure */
     virtual void build (size_t threadIndex, size_t threadCount) = 0;
-    
+
     /*! Intersects a single ray with the scene. */
     __forceinline void intersect (RTCRay& ray) {
       assert(intersectors.intersector1.intersect);

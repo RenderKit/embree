@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "../../common/scene_triangle_mesh.h"
 
 namespace embree
@@ -64,7 +64,7 @@ namespace embree
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
-
+      void deleteGeometry(size_t geomID);
       void clear();
 
       void open_sequential(size_t numPrimitives);

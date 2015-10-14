@@ -42,4 +42,13 @@ namespace embree
     for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
       table_limittangent_c[n] = set_limittangent_c(n);
   }
+
+  CatmullClarkPrecomputedCoefficients::~CatmullClarkPrecomputedCoefficients()
+  {
+    for (size_t n=0; n<=MAX_RING_FACE_VALENCE; n++)
+    {
+      delete [] table_limittangent_a[n];
+      delete [] table_limittangent_b[n];
+    }
+  }
 }

@@ -37,58 +37,58 @@ namespace embree
           /*! load the ray into SIMD registers */
           const Vec3fa ray_rdir = rcp_safe(ray.dir);
           const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-          org = Vec3f8(ray.org.x,ray.org.y,ray.org.z);
-          const Vec3f8 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-          rdir = Vec3f8(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-          org_rdir = Vec3f8(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+          org = Vec3vf8(ray.org.x,ray.org.y,ray.org.z);
+          const Vec3vf8 dir(ray.dir.x,ray.dir.y,ray.dir.z);
+          rdir = Vec3vf8(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+          org_rdir = Vec3vf8(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
           ray_tnear = ray.tnear;
-          //const float8  ray_tfar(ray.tfar);
+          //const vfloat8  ray_tfar(ray.tfar);
           
           /*! offsets to select the side that becomes the lower or upper bound */
-          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
-          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
-          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat4) : 1*sizeof(vfloat4);
+          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat4) : 3*sizeof(vfloat4);
+          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat4) : 5*sizeof(vfloat4);
           
 #else
           
           /*! load the ray into SIMD registers */
           const Vec3fa ray_rdir = rcp_safe(ray.dir);
           const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-          org = Vec3f4(ray.org.x,ray.org.y,ray.org.z);
-          const Vec3f4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-          rdir = Vec3f4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-          org_rdir = Vec3f4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+          org = Vec3vf4(ray.org.x,ray.org.y,ray.org.z);
+          const Vec3vf4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
+          rdir = Vec3vf4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+          org_rdir = Vec3vf4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
           ray_tnear = ray.tnear;
-          //const float4  ray_tfar(ray.tfar);
+          //const vfloat4  ray_tfar(ray.tfar);
           
           /*! offsets to select the side that becomes the lower or upper bound */
-          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(float4) : 1*sizeof(float4);
-          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(float4) : 3*sizeof(float4);
-          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(float4) : 5*sizeof(float4);
+          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat4) : 1*sizeof(vfloat4);
+          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat4) : 3*sizeof(vfloat4);
+          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat4) : 5*sizeof(vfloat4);
           
 #endif
         }
         
 #if defined (__AVX__)
-        Vec3f8 org;
-        Vec3f8 rdir;
-        Vec3f8 org_rdir;
-        float8 ray_tnear;
+        Vec3vf8 org;
+        Vec3vf8 rdir;
+        Vec3vf8 org_rdir;
+        vfloat8 ray_tnear;
         size_t nearX;
         size_t nearY;
         size_t nearZ;
 #else
-        Vec3f4 org;
-        Vec3f4 rdir;
-        Vec3f4 org_rdir;
-        float4 ray_tnear;
+        Vec3vf4 org;
+        Vec3vf4 rdir;
+        Vec3vf4 org_rdir;
+        vfloat4 ray_tnear;
         size_t nearX;
         size_t nearY;
         size_t nearZ;
 #endif
       };
       
-      static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const float4& uvw, const Primitive& prim, Scene* scene)
+      static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
       {
         const Vec3fa Ng0 = cross(p1-p0,p2-p0);
         const Vec3fa Ng = Ng0+Ng0;
@@ -135,20 +135,20 @@ namespace embree
                                               const Vec3fa& q10, const Vec3fa& q11,
                                               const Primitive& prim, Scene* scene)
       {
-        const Vec3f4 DDDD(D.x,D.y,D.z);
-        Vec3f4 p00; transpose((float4)q00,(float4)q01,(float4)q11,(float4)q10,p00.x,p00.y,p00.z);
+        const Vec3vf4 DDDD(D.x,D.y,D.z);
+        Vec3vf4 p00; transpose((vfloat4)q00,(vfloat4)q01,(vfloat4)q11,(vfloat4)q10,p00.x,p00.y,p00.z);
         
-        const Vec3f4 t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
-        const Vec3f4 e000 = t000_end - t000_start;
-        const Vec3f4 s000 = t000_end + t000_start;
-        const float4  u000 = dot(cross(s000,e000),DDDD);
+        const Vec3vf4 t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
+        const Vec3vf4 e000 = t000_end - t000_start;
+        const Vec3vf4 s000 = t000_end + t000_start;
+        const vfloat4  u000 = dot(cross(s000,e000),DDDD);
         if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
           intersectFinish(ray, q00,q01,q10,u000,prim,scene);
         
-        const Vec3f4 t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
-        const Vec3f4 e001 = t001_end - t001_start;
-        const Vec3f4 s001 = t001_end + t001_start;
-        const float4  u001 = dot(cross(s001,e001),DDDD);
+        const Vec3vf4 t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
+        const Vec3vf4 e001 = t001_end - t001_start;
+        const Vec3vf4 s001 = t001_end + t001_start;
+        const vfloat4  u001 = dot(cross(s001,e001),DDDD);
         if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
           intersectFinish(ray,q11,q10,q01,u001,prim,scene);
       }
@@ -161,27 +161,27 @@ namespace embree
                                                   const Vec3fa& q20, const Vec3fa& q21,
                                                   const Primitive& prim, Scene* scene)
       {
-        const Vec3f8 D8(D.x,D.y,D.z);
+        const Vec3vf8 D8(D.x,D.y,D.z);
         
-        const float8 q00_q10((float4)q00,(float4)q10);
-        const float8 q01_q11((float4)q01,(float4)q11);
-        const float8 q11_q21((float4)q11,(float4)q21);
-        const float8 q10_q20((float4)q10,(float4)q20);
-        Vec3f8 p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
+        const vfloat8 q00_q10((vfloat4)q00,(vfloat4)q10);
+        const vfloat8 q01_q11((vfloat4)q01,(vfloat4)q11);
+        const vfloat8 q11_q21((vfloat4)q11,(vfloat4)q21);
+        const vfloat8 q10_q20((vfloat4)q10,(vfloat4)q20);
+        Vec3vf8 p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
         
-        const Vec3f8 t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
-        const Vec3f8 e000_e100 = t000_t100_end - t000_t100_start;
-        const Vec3f8 s000_s100 = t000_t100_end + t000_t100_start;
-        const float8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
+        const Vec3vf8 t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
+        const Vec3vf8 e000_e100 = t000_t100_end - t000_t100_start;
+        const Vec3vf8 s000_s100 = t000_t100_end + t000_t100_start;
+        const vfloat8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
           intersectFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim,scene);
         if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
           intersectFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim,scene);
         
-        const Vec3f8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
-        const Vec3f8 e001_e101 = t001_t101_end - t001_t101_start;
-        const Vec3f8 s001_s101 = t001_t101_end + t001_t101_start;
-        const float8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
+        const Vec3vf8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
+        const Vec3vf8 e001_e101 = t001_t101_end - t001_t101_start;
+        const Vec3vf8 s001_s101 = t001_t101_end + t001_t101_start;
+        const vfloat8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
           intersectFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim,scene);
         if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
@@ -247,13 +247,13 @@ namespace embree
 #if defined (__AVX__)
         
         /* perform box tests */
-        const float8 ray_tfar(ray.tfar);
+        const vfloat8 ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
         
 #else
         
         /* perform box tests */
-        const float4 ray_tfar(ray.tfar);
+        const vfloat4 ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
         
 #endif
@@ -296,11 +296,14 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         intersect(pre,ray,prim[0],scene,lazy_node);
-      }    
+      }  
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        intersect(pre,ray,prim[0],scene,lazy_node);
+      }  
       
-      static __forceinline bool occludedFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const float4& uvw, const Primitive& prim, Scene* scene)
+      static __forceinline bool occludedFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
       {
         const Vec3fa Ng0 = cross(p2-p0,p1-p0);
         const Vec3fa Ng = Ng0+Ng0;
@@ -339,20 +342,20 @@ namespace embree
                                              const Vec3fa& q10, const Vec3fa& q11,
                                              const Primitive& prim, Scene* scene)
       {
-        const Vec3f4 DDDD(D.x,D.y,D.z);
-        Vec3f4 p00; transpose((float4)q00,(float4)q01,(float4)q11,(float4)q10,p00.x,p00.y,p00.z);
+        const Vec3vf4 DDDD(D.x,D.y,D.z);
+        Vec3vf4 p00; transpose((vfloat4)q00,(vfloat4)q01,(vfloat4)q11,(vfloat4)q10,p00.x,p00.y,p00.z);
         
-        const Vec3f4 t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
-        const Vec3f4 e000 = t000_end - t000_start;
-        const Vec3f4 s000 = t000_end + t000_start;
-        const float4  u000 = dot(cross(s000,e000),DDDD);
+        const Vec3vf4 t000_start = shuffle<0,1,3,0>(p00), t000_end = shuffle<1,3,0,0>(p00);
+        const Vec3vf4 e000 = t000_end - t000_start;
+        const Vec3vf4 s000 = t000_end + t000_start;
+        const vfloat4  u000 = dot(cross(s000,e000),DDDD);
         if (all(ge_mask(Vec3fa(u000),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u000),Vec3fa(0.0f)))) 
           if (occludedFinish(ray, q00,q01,q10,u000,prim,scene)) return true;
         
-        const Vec3f4 t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
-        const Vec3f4 e001 = t001_end - t001_start;
-        const Vec3f4 s001 = t001_end + t001_start;
-        const float4  u001 = dot(cross(s001,e001),DDDD);
+        const Vec3vf4 t001_start = shuffle<2,3,1,0>(p00), t001_end = shuffle<3,1,2,0>(p00);
+        const Vec3vf4 e001 = t001_end - t001_start;
+        const Vec3vf4 s001 = t001_end + t001_start;
+        const vfloat4  u001 = dot(cross(s001,e001),DDDD);
         if (all(ge_mask(Vec3fa(u001),Vec3fa(0.0f))) || all(le_mask(Vec3fa(u001),Vec3fa(0.0f))))
           if (occludedFinish(ray,q11,q10,q01,u001,prim,scene)) return true;
         
@@ -367,27 +370,27 @@ namespace embree
                                                  const Vec3fa& q20, const Vec3fa& q21,
                                                  const Primitive& prim, Scene* scene)
       {
-        const Vec3f8 D8(D.x,D.y,D.z);
+        const Vec3vf8 D8(D.x,D.y,D.z);
         
-        const float8 q00_q10((float4)q00,(float4)q10);
-        const float8 q01_q11((float4)q01,(float4)q11);
-        const float8 q11_q21((float4)q11,(float4)q21);
-        const float8 q10_q20((float4)q10,(float4)q20);
-        Vec3f8 p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
+        const vfloat8 q00_q10((vfloat4)q00,(vfloat4)q10);
+        const vfloat8 q01_q11((vfloat4)q01,(vfloat4)q11);
+        const vfloat8 q11_q21((vfloat4)q11,(vfloat4)q21);
+        const vfloat8 q10_q20((vfloat4)q10,(vfloat4)q20);
+        Vec3vf8 p00_p10; transpose(q00_q10,q01_q11,q11_q21,q10_q20,p00_p10.x,p00_p10.y,p00_p10.z);
         
-        const Vec3f8 t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
-        const Vec3f8 e000_e100 = t000_t100_end - t000_t100_start;
-        const Vec3f8 s000_s100 = t000_t100_end + t000_t100_start;
-        const float8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
+        const Vec3vf8 t000_t100_start = shuffle<0,1,3,0>(p00_p10), t000_t100_end = shuffle<1,3,0,0>(p00_p10);
+        const Vec3vf8 e000_e100 = t000_t100_end - t000_t100_start;
+        const Vec3vf8 s000_s100 = t000_t100_end + t000_t100_start;
+        const vfloat8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
           if (occludedFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim,scene)) return true;
         if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
           if (occludedFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim,scene)) return true;
         
-        const Vec3f8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
-        const Vec3f8 e001_e101 = t001_t101_end - t001_t101_start;
-        const Vec3f8 s001_s101 = t001_t101_end + t001_t101_start;
-        const float8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
+        const Vec3vf8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
+        const Vec3vf8 e001_e101 = t001_t101_end - t001_t101_start;
+        const Vec3vf8 s001_s101 = t001_t101_end + t001_t101_start;
+        const vfloat8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
         if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
           if (occludedFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim,scene)) return true;
         if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
@@ -457,13 +460,13 @@ namespace embree
 #if defined (__AVX__)
         
         /* perform box tests */
-        const float8 ray_tfar(ray.tfar);
+        const vfloat8 ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
         
 #else
         
         /* perform box tests */
-        const float4 ray_tfar(ray.tfar);
+        const vfloat4 ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
         
 #endif
@@ -508,7 +511,10 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) {
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        return occluded(pre,ray,prim[0],scene,lazy_node);
+      }
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
         return occluded(pre,ray,prim[0],scene,lazy_node);
       }
     };

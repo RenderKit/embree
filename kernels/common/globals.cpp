@@ -26,53 +26,54 @@ namespace embree
 {
 #if !defined(__MIC__)
 
-  struct __aligned(32) float8 
+  template<>
+  struct __aligned(32) vfloat<8>
   {
-    __forceinline float8() { }
-    __forceinline float8(float a) { for (size_t i=0; i<8; i++) v[i] = a; }
-    __forceinline float8(StepTy ) { for (size_t i=0; i<8; i++) v[i] = i; }
+    __forceinline vfloat() { }
+    __forceinline vfloat(float a) { for (size_t i=0; i<8; i++) v[i] = a; }
+    __forceinline vfloat(StepTy ) { for (size_t i=0; i<8; i++) v[i] = i; }
 
-    friend __forceinline const float8 operator-(const float8& a) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = -a.v[i]; return r; }
+    friend __forceinline const vfloat8 operator-(const vfloat8& a) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = -a.v[i]; return r; }
 
-    friend __forceinline const float8 operator+(const float8& a, const float8& b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] + b.v[i]; return r; }
-    friend __forceinline const float8 operator-(const float8& a, const float8& b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] - b.v[i]; return r; }
+    friend __forceinline const vfloat8 operator+(const vfloat8& a, const vfloat8& b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] + b.v[i]; return r; }
+    friend __forceinline const vfloat8 operator-(const vfloat8& a, const vfloat8& b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] - b.v[i]; return r; }
 
-    friend __forceinline const float8 operator*(const float8& a, const float8& b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] * b.v[i]; return r; }
-    friend __forceinline const float8 operator*(const float a, const float8& b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a      * b.v[i]; return r; }
-    friend __forceinline const float8 operator*(const float8& a, const float b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] * b     ; return r; }
+    friend __forceinline const vfloat8 operator*(const vfloat8& a, const vfloat8& b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] * b.v[i]; return r; }
+    friend __forceinline const vfloat8 operator*(const float a, const vfloat8& b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a      * b.v[i]; return r; }
+    friend __forceinline const vfloat8 operator*(const vfloat8& a, const float b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] * b     ; return r; }
 
-    friend __forceinline const float8 operator/(const float8& a, const float8& b) { float8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] / b.v[i]; return r; }
+    friend __forceinline const vfloat8 operator/(const vfloat8& a, const vfloat8& b) { vfloat8 r; for (size_t i=0; i<8; i++) r.v[i] = a.v[i] / b.v[i]; return r; }
 
-    float v[8];
+   float v[8];
   };
 
-  float8 coeff0[4];
-  float8 coeff1[4];
+  vfloat8 coeff0[4];
+  vfloat8 coeff1[4];
 
-  float8 coeff_P0[4];
-  float8 coeff_P1[4];
-  float8 coeff_P2[4];
-  float8 coeff_P3[4];
+  vfloat8 coeff_P0[4];
+  vfloat8 coeff_P1[4];
+  vfloat8 coeff_P2[4];
+  vfloat8 coeff_P3[4];
 
-  float4 sse_coeff0[4];
-  float4 sse_coeff1[4];
+  vfloat4 sse_coeff0[4];
+  vfloat4 sse_coeff1[4];
 
-  float4 sse_coeff_P0[4];
-  float4 sse_coeff_P1[4];
-  float4 sse_coeff_P2[4];
-  float4 sse_coeff_P3[4];
+  vfloat4 sse_coeff_P0[4];
+  vfloat4 sse_coeff_P1[4];
+  vfloat4 sse_coeff_P2[4];
+  vfloat4 sse_coeff_P3[4];
 
 #else
 
-  float16 coeff0[4];
-  float16 coeff1[4];
+  vfloat16 coeff0[4];
+  vfloat16 coeff1[4];
 
-  float16 coeff01[4]; 
+  vfloat16 coeff01[4];
 
-  float16 coeff_P0[4];
-  float16 coeff_P1[4];
-  float16 coeff_P2[4];
-  float16 coeff_P3[4];
+  vfloat16 coeff_P0[4];
+  vfloat16 coeff_P1[4];
+  vfloat16 coeff_P2[4];
+  vfloat16 coeff_P3[4];
 
 #endif
 
@@ -83,27 +84,27 @@ namespace embree
 
     {
       __aligned(64) float STEP[16] = {0/16.0f,1/16.0f,2/16.0f,3/16.0f,4/16.0f,5/16.0f,6/16.0f,7/16.0f,8/16.0f,9/16.0f,10/16.0f,11/16.0f,12/16.0f,13/16.0f,14/16.0f,15/16.0f};
-      float16 step16 = load16f(STEP); 
-      const float16 t1 = step16;
-      const float16 t0 = 1.0f-t1;
+      vfloat16 step16 = vfloat16::load(STEP);
+      const vfloat16 t1 = step16;
+      const vfloat16 t0 = 1.0f-t1;
       coeff01[0] = t0 * t0 * t0;
       coeff01[1] = 3.0f * t1 * t0 * t0;
       coeff01[2] = 3.0f * t1 * t1 * t0;
       coeff01[3] = t1 * t1 * t1;
     }
-    float16 step16 = float16(step); 
-    float16 dt   = 1.0f/16.0f;
+    vfloat16 step16 = vfloat16(step);
+    vfloat16 dt   = 1.0f/16.0f;
     {
-      const float16 t1 = step16*dt;
-      const float16 t0 = 1.0f-t1;
+      const vfloat16 t1 = step16*dt;
+      const vfloat16 t0 = 1.0f-t1;
       coeff0[0] = t0 * t0 * t0;
       coeff0[1] = 3.0f * t1 * t0 * t0;
       coeff0[2] = 3.0f * t1 * t1 * t0;
       coeff0[3] = t1 * t1 * t1;
     }
     {
-      const float16 t1 = step16*dt+float16(dt);
-      const float16 t0 = 1.0f-t1;
+      const vfloat16 t1 = step16*dt+vfloat16(dt);
+      const vfloat16 t0 = 1.0f-t1;
       coeff1[0] = t0 * t0 * t0;
       coeff1[1] = 3.0f * t1 * t0 * t0;
       coeff1[2] = 3.0f * t1 * t1 * t0;
@@ -111,8 +112,8 @@ namespace embree
     }
 
     {
-      const float16 t1 = step16*dt;
-      const float16 t0 = 1.0f-t1;
+      const vfloat16 t1 = step16*dt;
+      const vfloat16 t0 = 1.0f-t1;
       coeff_P0[0] = t0 * t0 * t0;
       coeff_P0[1] = 3.0f * t1 * t0 * t0;
       coeff_P0[2] = 3.0f * t1 * t1 * t0;
@@ -120,12 +121,12 @@ namespace embree
     }
 
     {
-      const float16 t1 = step16*dt;
-      const float16 t0 = 1.0f-t1;
-      const float16 d0 = -t0*t0;
-      const float16 d1 = t0*t0 - 2.0f*t0*t1;
-      const float16 d2 = 2.0f*t1*t0 - t1*t1;
-      const float16 d3 = t1*t1;
+      const vfloat16 t1 = step16*dt;
+      const vfloat16 t0 = 1.0f-t1;
+      const vfloat16 d0 = -t0*t0;
+      const vfloat16 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat16 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat16 d3 = t1*t1;
       coeff_P1[0] = coeff_P0[0] + dt*d0;
       coeff_P1[1] = coeff_P0[1] + dt*d1;
       coeff_P1[2] = coeff_P0[2] + dt*d2;
@@ -133,8 +134,8 @@ namespace embree
     }
 
     {
-      const float16 t1 = step16*dt+float16(dt);
-      const float16 t0 = 1.0f-t1;
+      const vfloat16 t1 = step16*dt+vfloat16(dt);
+      const vfloat16 t0 = 1.0f-t1;
       coeff_P3[0] = t0 * t0 * t0;
       coeff_P3[1] = 3.0f * t1 * t0 * t0;
       coeff_P3[2] = 3.0f * t1 * t1 * t0;
@@ -142,12 +143,12 @@ namespace embree
     }
 
     {
-      const float16 t1 = step16*dt+float16(dt);
-      const float16 t0 = 1.0f-t1;
-      const float16 d0 = -t0*t0;
-      const float16 d1 = t0*t0 - 2.0f*t0*t1;
-      const float16 d2 = 2.0f*t1*t0 - t1*t1;
-      const float16 d3 = t1*t1;
+      const vfloat16 t1 = step16*dt+vfloat16(dt);
+      const vfloat16 t0 = 1.0f-t1;
+      const vfloat16 d0 = -t0*t0;
+      const vfloat16 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat16 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat16 d3 = t1*t1;
       coeff_P2[0] = coeff_P3[0] - dt*d0;
       coeff_P2[1] = coeff_P3[1] - dt*d1;
       coeff_P2[2] = coeff_P3[2] - dt*d2;
@@ -158,8 +159,8 @@ namespace embree
 
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt;
-      const float8 t0 = 1.0f-t1;
+      const vfloat8 t1 = vfloat8(step)*dt;
+      const vfloat8 t0 = 1.0f-t1;
       coeff0[0] = t0 * t0 * t0;
       coeff0[1] = 3.0f * t1 * t0 * t0;
       coeff0[2] = 3.0f * t1 * t1 * t0;
@@ -167,8 +168,8 @@ namespace embree
     }
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt+float8(dt);
-      const float8 t0 = 1.0f-t1;
+      const vfloat8 t1 = vfloat8(step)*dt+vfloat8(dt);
+      const vfloat8 t0 = 1.0f-t1;
       coeff1[0] = t0 * t0 * t0;
       coeff1[1] = 3.0f * t1 * t0 * t0;
       coeff1[2] = 3.0f * t1 * t1 * t0;
@@ -177,8 +178,8 @@ namespace embree
 
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt;
-      const float8 t0 = 1.0f-t1;
+      const vfloat8 t1 = vfloat8(step)*dt;
+      const vfloat8 t0 = 1.0f-t1;
       coeff_P0[0] = t0 * t0 * t0;
       coeff_P0[1] = 3.0f * t1 * t0 * t0;
       coeff_P0[2] = 3.0f * t1 * t1 * t0;
@@ -187,12 +188,12 @@ namespace embree
 
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt;
-      const float8 t0 = 1.0f-t1;
-      const float8 d0 = -t0*t0;
-      const float8 d1 = t0*t0 - 2.0f*t0*t1;
-      const float8 d2 = 2.0f*t1*t0 - t1*t1;
-      const float8 d3 = t1*t1;
+      const vfloat8 t1 = vfloat8(step)*dt;
+      const vfloat8 t0 = 1.0f-t1;
+      const vfloat8 d0 = -t0*t0;
+      const vfloat8 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat8 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat8 d3 = t1*t1;
       coeff_P1[0] = coeff_P0[0] + dt*d0;
       coeff_P1[1] = coeff_P0[1] + dt*d1;
       coeff_P1[2] = coeff_P0[2] + dt*d2;
@@ -201,8 +202,8 @@ namespace embree
 
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt+float8(dt);
-      const float8 t0 = 1.0f-t1;
+      const vfloat8 t1 = vfloat8(step)*dt+vfloat8(dt);
+      const vfloat8 t0 = 1.0f-t1;
       coeff_P3[0] = t0 * t0 * t0;
       coeff_P3[1] = 3.0f * t1 * t0 * t0;
       coeff_P3[2] = 3.0f * t1 * t1 * t0;
@@ -211,12 +212,12 @@ namespace embree
 
     {
       const float dt = 1.0f/8.0f;
-      const float8 t1 = float8(step)*dt+float8(dt);
-      const float8 t0 = 1.0f-t1;
-      const float8 d0 = -t0*t0;
-      const float8 d1 = t0*t0 - 2.0f*t0*t1;
-      const float8 d2 = 2.0f*t1*t0 - t1*t1;
-      const float8 d3 = t1*t1;
+      const vfloat8 t1 = vfloat8(step)*dt+vfloat8(dt);
+      const vfloat8 t0 = 1.0f-t1;
+      const vfloat8 d0 = -t0*t0;
+      const vfloat8 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat8 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat8 d3 = t1*t1;
       coeff_P2[0] = coeff_P3[0] - dt*d0;
       coeff_P2[1] = coeff_P3[1] - dt*d1;
       coeff_P2[2] = coeff_P3[2] - dt*d2;
@@ -227,8 +228,8 @@ namespace embree
 
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt;
-      const float4 t0 = 1.0f-t1;
+      const vfloat4 t1 = vfloat4(step)*dt;
+      const vfloat4 t0 = 1.0f-t1;
       sse_coeff0[0] = t0 * t0 * t0;
       sse_coeff0[1] = 3.0f * t1 * t0 * t0;
       sse_coeff0[2] = 3.0f * t1 * t1 * t0;
@@ -236,8 +237,8 @@ namespace embree
     }
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt+float4(dt);
-      const float4 t0 = 1.0f-t1;
+      const vfloat4 t1 = vfloat4(step)*dt+vfloat4(dt);
+      const vfloat4 t0 = 1.0f-t1;
       sse_coeff1[0] = t0 * t0 * t0;
       sse_coeff1[1] = 3.0f * t1 * t0 * t0;
       sse_coeff1[2] = 3.0f * t1 * t1 * t0;
@@ -246,8 +247,8 @@ namespace embree
 
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt;
-      const float4 t0 = 1.0f-t1;
+      const vfloat4 t1 = vfloat4(step)*dt;
+      const vfloat4 t0 = 1.0f-t1;
       sse_coeff_P0[0] = t0 * t0 * t0;
       sse_coeff_P0[1] = 3.0f * t1 * t0 * t0;
       sse_coeff_P0[2] = 3.0f * t1 * t1 * t0;
@@ -256,12 +257,12 @@ namespace embree
 
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt;
-      const float4 t0 = 1.0f-t1;
-      const float4 d0 = -t0*t0;
-      const float4 d1 = t0*t0 - 2.0f*t0*t1;
-      const float4 d2 = 2.0f*t1*t0 - t1*t1;
-      const float4 d3 = t1*t1;
+      const vfloat4 t1 = vfloat4(step)*dt;
+      const vfloat4 t0 = 1.0f-t1;
+      const vfloat4 d0 = -t0*t0;
+      const vfloat4 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat4 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat4 d3 = t1*t1;
       sse_coeff_P1[0] = sse_coeff_P0[0] + dt*d0;
       sse_coeff_P1[1] = sse_coeff_P0[1] + dt*d1;
       sse_coeff_P1[2] = sse_coeff_P0[2] + dt*d2;
@@ -270,8 +271,8 @@ namespace embree
 
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt+float4(dt);
-      const float4 t0 = 1.0f-t1;
+      const vfloat4 t1 = vfloat4(step)*dt+vfloat4(dt);
+      const vfloat4 t0 = 1.0f-t1;
       sse_coeff_P3[0] = t0 * t0 * t0;
       sse_coeff_P3[1] = 3.0f * t1 * t0 * t0;
       sse_coeff_P3[2] = 3.0f * t1 * t1 * t0;
@@ -280,12 +281,12 @@ namespace embree
 
     {
       const float dt = 1.0f/4.0f;
-      const float4 t1 = float4(step)*dt+float4(dt);
-      const float4 t0 = 1.0f-t1;
-      const float4 d0 = -t0*t0;
-      const float4 d1 = t0*t0 - 2.0f*t0*t1;
-      const float4 d2 = 2.0f*t1*t0 - t1*t1;
-      const float4 d3 = t1*t1;
+      const vfloat4 t1 = vfloat4(step)*dt+vfloat4(dt);
+      const vfloat4 t0 = 1.0f-t1;
+      const vfloat4 d0 = -t0*t0;
+      const vfloat4 d1 = t0*t0 - 2.0f*t0*t1;
+      const vfloat4 d2 = 2.0f*t1*t0 - t1*t1;
+      const vfloat4 d3 = t1*t1;
       sse_coeff_P2[0] = sse_coeff_P3[0] - dt*d0;
       sse_coeff_P2[1] = sse_coeff_P3[1] - dt*d1;
       sse_coeff_P2[2] = sse_coeff_P3[2] - dt*d2;

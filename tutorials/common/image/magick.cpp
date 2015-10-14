@@ -32,16 +32,39 @@ namespace embree
     float rcpMaxRGB = 1.0f/float(MaxRGB);
     Magick::Pixels pixel_cache(image);
     Magick::PixelPacket* pixels = pixel_cache.get(0,0,out->width,out->height);
-    
-    for (size_t y=0; y<out->height; y++) {
-      for (size_t x=0; x<out->width; x++) {
-        Color4 c;
-        c.r = float(pixels[y*out->width+x].red    )*rcpMaxRGB;
-        c.g = float(pixels[y*out->width+x].green  )*rcpMaxRGB;
-        c.b = float(pixels[y*out->width+x].blue   )*rcpMaxRGB;
-        c.a = float(pixels[y*out->width+x].opacity)*rcpMaxRGB;
-        out->set(x,y,c);
+
+    switch (image.orientation()) 
+    {
+    case UndefinedOrientation:
+    case TopLeftOrientation: {
+      for (size_t y=0; y<out->height; y++) {
+        for (size_t x=0; x<out->width; x++) {
+          Color4 c;
+          c.r = float(pixels[y*out->width+x].red)*rcpMaxRGB;
+          c.g = float(pixels[y*out->width+x].green)*rcpMaxRGB;
+          c.b = float(pixels[y*out->width+x].blue)*rcpMaxRGB;
+          c.a = float(pixels[y*out->width+x].opacity)*rcpMaxRGB;
+          out->set(x,out->height-y-1,c);
+        }
       }
+      break;
+    }
+    case BottomLeftOrientation: {
+      for (size_t y=0; y<out->height; y++) {
+        for (size_t x=0; x<out->width; x++) {
+          Color4 c;
+          c.r = float(pixels[y*out->width+x].red)*rcpMaxRGB;
+          c.g = float(pixels[y*out->width+x].green)*rcpMaxRGB;
+          c.b = float(pixels[y*out->width+x].blue)*rcpMaxRGB;
+          c.a = float(pixels[y*out->width+x].opacity)*rcpMaxRGB;
+          out->set(x,y,c);
+        }
+      }
+      break;
+    }
+    default: {
+      throw std::runtime_error("not supported image orientation");
+    }
     }
 
     return out;

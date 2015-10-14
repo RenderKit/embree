@@ -241,7 +241,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     if (ray.geomID == 0) diffuse = face_colors[ray.primID];
     else if (ray.geomID == 1) diffuse = make_Vec3f(0.0f,1.0f,0.0f);
     else diffuse = make_Vec3f(0.5f,0.5f,0.5f);
-    color = color + diffuse*0.5f; // FIXME: +=
+    color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-4,-1));
     
     /* initialize shadow ray */
@@ -260,7 +260,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f); // FIXME: +=
+      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;
 }
@@ -291,7 +291,7 @@ task void renderTile(uniform int* uniform pixels,
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
-    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f);
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
@@ -323,10 +323,10 @@ export void device_render (uniform int* uniform pixels,
 
   /* reset accumulator */
   uniform bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
-  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx;
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy;
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;
   //camera_changed = true;
   if (camera_changed) {
     g_accu_count=0;

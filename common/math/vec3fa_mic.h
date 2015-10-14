@@ -39,7 +39,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline Vec3fa () {}
-    __forceinline Vec3fa ( float x                   ) : x(x), y(x), z(x), a(0) {}
+    __forceinline explicit Vec3fa ( float x ) : x(x), y(x), z(x), a(0) {}
     __forceinline Vec3fa ( float x, float y, float z ) : x(x), y(y), z(z), a(0) {}
     __forceinline Vec3fa ( float x, float y, float z, float w ) : x(x), y(y), z(z), w(w) {}
     __forceinline Vec3fa ( const Vec3f & o           ) : x(o.x), y(o.y), z(o.z), a(0) {}
@@ -83,8 +83,8 @@ namespace embree
     __forceinline operator const __m512&( void ) const { return m512; }
     __forceinline operator       __m512&( void )       { return m512; }
 
-    __forceinline operator const float16( void ) const { return float16(m512); }
-    __forceinline operator       float16( void )       { return float16(m512); }
+    __forceinline operator const vfloat16( void ) const { return vfloat16(m512); }
+    __forceinline operator       vfloat16( void )       { return vfloat16(m512); }
 
   public:
     __forceinline explicit Vec3fa_t ( float a ) 
@@ -99,11 +99,11 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline Vec3fa_t loadu( const void* const a ) { 
-      const bool16 m_4f = 0xf;
-      return (__m512)permute<0,0,0,0>(uload16f(m_4f,(float*)a));
+      const vbool16 m_4f = 0xf;
+      return (__m512)shuffle128<0,0,0,0>(vfloat16::loadu(m_4f,(float*)a));
     }
 
-    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  // FIXME: implement fast version
+    static __forceinline void storeu( void* const ptr, const Vec3fa_t& v )  
     {
       ((float*)ptr)[0] = ((float*)&v)[0];
       ((float*)ptr)[1] = ((float*)&v)[1];

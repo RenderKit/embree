@@ -24,13 +24,14 @@ sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/[^_]two_pi/float(two_pi)/g' $2
 sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
+sed -i.backup  's/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16_ALIGNED16/RTC_MATRIX_COLUMN_MAJOR_ALIGNED16/g' $2
 sed -i.backup  's/sync;//g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/abort()/exit(1)/g' $2
-sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
+#sed -i.backup  's/\#if 0 \/\/ FIXME: pointer gather/\#if 1 \/\/ FIXME: pointer gather/g' $2
 sed -i.backup  's/foreach (i=0 ... N)/for (size_t i = 0; i<N; i++)/g' $2
 sed -i.backup  's/foreach (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
 sed -i.backup  's/foreach_tiled (y = y0 ... y1, x = x0 ... x1)/for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)/g' $2
@@ -54,10 +55,11 @@ sed -i.backup  's/delete\[\] vertex_colors/alignedFree(vertex_colors)/g' $2
 sed -i.backup  's/new Vec3fa\[width\*height\]/(Vec3fa\*) alignedMalloc(width\*height\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/delete\[\] g_accu/alignedFree(g_accu)/g' $2
 
-sed -i.backup  's/if (id < 0 || id >= numMaterials) continue;//g' $2
-sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2
+#sed -i.backup  's/if (id < 0 || id >= numMaterials) continue;//g' $2
 
-sed -i.backup  's/foreach_unique (id in materialID)//g' $2
+sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/int \1 = \2;/g' $2
+#sed -i.backup  's/foreach_unique (geomID in ray.geomID)/int geomID = ray.geomID; /g' $2
+#sed -i.backup  's/foreach_unique (id in materialID)//g' $2
 sed -i.backup  's/ISPCMaterial\* material = \&materials\[id\];/ISPCMaterial\* material = \&materials\[materialID\];/g' $2
 sed -i.backup  's/\#define __device__//g' $2
 sed -i.backup  's/__device__//g' $2

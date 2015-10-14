@@ -64,14 +64,14 @@ namespace embree
     __forceinline void set(Col4f& d) const { d.r = r; d.g = g; d.b = b; d.a = a; }
     __forceinline void set(Col3uc& d) const 
     {
-      float4 s = clamp(float4(m128))*255.0f; 
+      vfloat4 s = clamp(vfloat4(m128))*255.0f;
       d.r = (unsigned char)(s[0]); 
       d.g = (unsigned char)(s[1]); 
       d.b = (unsigned char)(s[2]); 
     }
     __forceinline void set(Col4uc& d) const 
     {
-      float4 s = clamp(float4(m128))*255.0f; 
+      vfloat4 s = clamp(vfloat4(m128))*255.0f;
       d.r = (unsigned char)(s[0]); 
       d.g = (unsigned char)(s[1]); 
       d.b = (unsigned char)(s[2]); 
@@ -126,14 +126,14 @@ namespace embree
     __forceinline void set(Col4f& d) const { d.r = r; d.g = g; d.b = b; d.a = 1.0f; }
     __forceinline void set(Col3uc& d) const 
     { 
-      float4 s = clamp(float4(m128))*255.0f; 
+      vfloat4 s = clamp(vfloat4(m128))*255.0f;
       d.r = (unsigned char)(s[0]); 
       d.g = (unsigned char)(s[1]); 
       d.b = (unsigned char)(s[2]); 
     }
     __forceinline void set(Col4uc& d) const 
     { 
-      float4 s = clamp(float4(m128))*255.0f; 
+      vfloat4 s = clamp(vfloat4(m128))*255.0f;
       d.r = (unsigned char)(s[0]); 
       d.g = (unsigned char)(s[1]); 
       d.b = (unsigned char)(s[2]); 
@@ -239,7 +239,7 @@ namespace embree
 
   __forceinline Color exp (const Color& a) { return Color(exp_ps(a.m128)); }
   __forceinline Color log (const Color& a) { return Color(log_ps(a.m128)); }
-  __forceinline Color pow (const Color& a, const float& b) { return Color(select(float4(a)<=float4(zero),float4(zero),float4(exp_ps(log(a)*b)))); }
+  __forceinline Color pow (const Color& a, const float& b) { return Color(select(vfloat4(a)<=vfloat4(zero),vfloat4(zero),vfloat4(exp_ps(log(a)*b)))); }
 
   /*! output operator */
   inline std::ostream& operator<<(std::ostream& cout, const Color& a) {

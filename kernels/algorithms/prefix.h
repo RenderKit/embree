@@ -55,8 +55,8 @@ namespace embree
 	/* perform parallel prefix operation for large N */
 	else 
 	{
-	  const size_t threadCount = min(MAX_TASKS, TaskSchedulerTBB::threadCount()); // FIXME: dont use all threads for medium sized jobs
-	  
+	  const size_t threadCount = min(MAX_TASKS, TaskSchedulerTBB::threadCount());
+          
 	  /* first calculate range for each block */
 	  parallel_for(threadCount, [&] (const size_t threadIndex) 
 	  {
@@ -113,16 +113,11 @@ namespace embree
     Ty value;
   };
 
-  template<typename Ty>
-  struct my_add { // FIXME: use lambda expressions
-    Ty operator()(const Ty& a, const Ty& b) const { return a+b; }
-  };
-
   /*! parallel calculation of prefix sums */
-  template<typename SrcArray, typename DstArray>
-    __forceinline typename SrcArray::value_type parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N) 
+  template<typename SrcArray, typename DstArray, typename Add>
+    __forceinline typename SrcArray::value_type parallel_prefix_sum(const SrcArray& src, DstArray& dst, size_t N, const Add& add) 
   {
     typedef typename SrcArray::value_type Value;
-    ParallelPrefixOp<SrcArray,DstArray,Value,my_add<Value> > op; op(src,dst,N,my_add<Value>(),0); return op.value;
+    ParallelPrefixOp<SrcArray,DstArray,Value,Add> op; op(src,dst,N,add,0); return op.value;
   }
 }

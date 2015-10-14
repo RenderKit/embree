@@ -15,13 +15,12 @@
 // ======================================================================== //
 
 #include "bvh8_intersector16_hybrid.h"
-#include "../geometry/triangle4.h"
-#include "../geometry/triangle8.h"
-#include "../geometry/triangle8v.h"
+#include "../geometry/triangle.h"
+#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
-//#include "../geometry/triangle_intersector_pluecker2.h"
+#include "../geometry/trianglepairs_intersector_moeller.h"
 
 #define DBG(x) 
 
@@ -34,7 +33,7 @@ namespace embree
   {    
 
     template<bool robust, typename PrimitiveIntersector16>
-    __forceinline void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    __forceinline void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const vfloat16 &ray_tnear, const vfloat16 &ray_tfar, const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
@@ -49,10 +48,10 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
 
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
-      float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
+      vfloat8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]);
      
 /* pop loop */
       while (true) pop:
@@ -75,30 +74,31 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
+          const size_t farX  = nearX ^ sizeof(vfloat8), farY  = nearY ^ sizeof(vfloat8), farZ  = nearZ ^ sizeof(vfloat8);
+
 #if defined (__AVX2__)
-          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearX)), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearY)), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearZ)), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farX )), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farY )), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farZ )), rdir.z, org_rdir.z);
 #else
-          const float8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
-          const float8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
-          const float8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
-          const float8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
-          const float8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
-          const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
+          const vfloat8 tNearX = (norg.x + vfloat8::load((const float*)((const char*)&node->lower_x+nearX))) * rdir.x;
+          const vfloat8 tNearY = (norg.y + vfloat8::load((const float*)((const char*)&node->lower_x+nearY))) * rdir.y;
+          const vfloat8 tNearZ = (norg.z + vfloat8::load((const float*)((const char*)&node->lower_x+nearZ))) * rdir.z;
+          const vfloat8 tFarX  = (norg.x + vfloat8::load((const float*)((const char*)&node->lower_x+farX ))) * rdir.x;
+          const vfloat8 tFarY  = (norg.y + vfloat8::load((const float*)((const char*)&node->lower_x+farY ))) * rdir.y;
+          const vfloat8 tFarZ  = (norg.z + vfloat8::load((const float*)((const char*)&node->lower_x+farZ ))) * rdir.z;
 #endif
 
           const float round_down = 1.0f-2.0f*float(ulp);
           const float round_up   = 1.0f+2.0f*float(ulp);
 
-          const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
-          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
-          //const bool8 vmask = tNear <= tFar;
-          const bool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
+          const vfloat8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
+          const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+          //const vbool8 vmask = tNear <= tFar;
+          const vbool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
 
           size_t mask = movemask(vmask);
           
@@ -125,7 +125,7 @@ namespace embree
             if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
             else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
           }
-          
+
           /*! Here starts the slow path for 3 or 4 hit children. We push
            *  all nodes onto the stack to sort them there. */
           assert(stackPtr < stackEnd); 
@@ -144,6 +144,30 @@ namespace embree
             continue;
           }
           
+          /*! use 8-wide sorting network in the AVX2 */
+#if defined(__AVX2__) && 0
+          const vbool8 mask8 = !vmask;
+          const size_t hits = __popcnt(movemask(mask8));
+          const vint8 tNear_i = cast(tNear);
+          const vint8 dist    = select(mask8,(tNear_i & (~7)) | vint8(step),vint8( True ));
+          const vint8 order   = sortNetwork(dist) & 7;
+          const unsigned int cur_index = extract<0>(extract<0>(order));
+          cur = node->child(cur_index);
+          cur.prefetch();
+
+          for (size_t i=0;i<hits-1;i++) 
+          {
+            r = order[hits-1-i];
+            assert( ((unsigned int)1 << r) & movemask(mask8));
+            const NodeRef c = node->child(r); 
+            assert(c != BVH8::emptyNode);
+            c.prefetch(); 
+            const unsigned int d = *(unsigned int*)&tNear[r]; 
+            stackPtr->ptr = c; 
+            stackPtr->dist = d; 
+            stackPtr++;            
+          }
+#else          
 	  /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           r = __bscf(mask);
           c = node->child(r); c.prefetch(); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
@@ -163,6 +187,7 @@ namespace embree
 	  }
 	  
 	  cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+#endif
 	}
         
         /*! this is a leaf node */
@@ -183,34 +208,34 @@ namespace embree
 
     
     template<bool robust, typename PrimitiveIntersector16>    
-    void BVH8Intersector16Hybrid<robust,PrimitiveIntersector16>::intersect(int16* valid_i, BVH8* bvh, Ray16& ray)
+    void BVH8Intersector16Hybrid<robust,PrimitiveIntersector16>::intersect(vint16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512F__)      
       /* load ray */
-      bool16 valid0 = *valid_i == -1;
+      vbool16 valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
       assert(all(valid0,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
-      const Vec3f16 ray_org = ray.org;
-      const Vec3f16 ray_dir = ray.dir;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
-      float16 ray_tnear = select(valid0,ray.tnear,pos_inf);
-      float16 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
-      const float16 inf = float16(pos_inf);
+      const Vec3vf16 ray_org = ray.org;
+      const Vec3vf16 ray_dir = ray.dir;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
+      vfloat16 ray_tnear = select(valid0,ray.tnear,pos_inf);
+      vfloat16 ray_tfar  = select(valid0,ray.tfar ,neg_inf);
+      const vfloat16 inf = vfloat16(pos_inf);
       Precalculations pre(valid0,ray);
       
       /* compute near/far per ray */
-      Vec3i16 nearXYZ;
-      nearXYZ.x = select(rdir.x >= 0.0f,int16(0*(int)sizeof(float8)),int16(1*(int)sizeof(float8)));
-      nearXYZ.y = select(rdir.y >= 0.0f,int16(2*(int)sizeof(float8)),int16(3*(int)sizeof(float8)));
-      nearXYZ.z = select(rdir.z >= 0.0f,int16(4*(int)sizeof(float8)),int16(5*(int)sizeof(float8)));
+      Vec3vi16 nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint16(0*(int)sizeof(vfloat8)),vint16(1*(int)sizeof(vfloat8)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint16(2*(int)sizeof(vfloat8)),vint16(3*(int)sizeof(vfloat8)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint16(4*(int)sizeof(vfloat8)),vint16(5*(int)sizeof(vfloat8)));
 
       /* allocate stack and push root node */
-      float16 stack_near[stackSizeChunk];
+      vfloat16 stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
@@ -218,7 +243,7 @@ namespace embree
       stack_near[1] = ray_tnear; 
       NodeRef* stackEnd = stack_node+stackSizeChunk;
       NodeRef*  __restrict__ sptr_node = stack_node + 2;
-      float16*  __restrict__ sptr_near = stack_near + 2;
+      vfloat16*  __restrict__ sptr_near = stack_near + 2;
 
       while (1) pop:
       {
@@ -230,8 +255,8 @@ namespace embree
           break;
         
         /* cull node if behind closest hit point */
-        float16 curDist = *sptr_near;
-        const bool16 active = curDist < ray_tfar;
+        vfloat16 curDist = *sptr_near;
+        const vbool16 active = curDist < ray_tfar;
         if (unlikely(none(active)))
           continue;
 
@@ -252,7 +277,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const bool16 valid_node = ray_tfar > curDist;
+          const vbool16 valid_node = ray_tfar > curDist;
           STAT3(normal.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (BVH8::Node*)cur.node();
           
@@ -267,26 +292,26 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
             
-            const float16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const float16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const float16 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const float16 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const float16 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const float16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-            //const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const vfloat16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const vfloat16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const vfloat16 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const vfloat16 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const vfloat16 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const vfloat16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const vfloat16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const vfloat16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            //const vbool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
 
             const float round_down = 1.0f-2.0f*float(ulp);
             const float round_up   = 1.0f+2.0f*float(ulp);
 
-            const bool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
+            const vbool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
             {
-              const float16 childDist = select(lhit,lnearP,inf);
+              const vfloat16 childDist = select(lhit,lnearP,inf);
               const NodeRef child = node->children[i];
               
               /* push cur node onto stack and continue with hit child */
@@ -331,7 +356,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const bool16 valid_leaf = ray_tfar > curDist;
+        const vbool16 valid_leaf = ray_tfar > curDist;
         STAT3(normal.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
         
@@ -354,7 +379,7 @@ namespace embree
 
 
     template<bool robust, typename PrimitiveIntersector16>
-    __forceinline bool BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3f16 &ray_org, const Vec3f16 &ray_dir, const Vec3f16 &ray_rdir, const float16 &ray_tnear, const float16 &ray_tfar, const Vec3i16& nearXYZ)
+    __forceinline bool BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray16& ray,const Vec3vf16 &ray_org, const Vec3vf16 &ray_dir, const Vec3vf16 &ray_rdir, const vfloat16 &ray_tnear, const vfloat16 &ray_tfar, const Vec3vi16& nearXYZ)
     {
       /*! stack state */
       NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
@@ -368,10 +393,10 @@ namespace embree
       const size_t nearZ = nearXYZ.z[k];
       
       /*! load the ray into SIMD registers */
-      const Vec3f8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-      const Vec3f8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-      const Vec3f8 norg = -org, org_rdir(org*rdir);
-      const float8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
+      const Vec3vf8 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+      const Vec3vf8 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+      const Vec3vf8 norg = -org, org_rdir(org*rdir);
+      const vfloat8 rayNear(ray_tnear[k]), rayFar(ray_tfar[k]); 
 
       /* pop loop */
       while (true) pop:
@@ -390,30 +415,30 @@ namespace embree
           
           /*! single ray intersection with 4 boxes */
           const Node* node = cur.node();
-          const size_t farX  = nearX ^ sizeof(float8), farY  = nearY ^ sizeof(float8), farZ  = nearZ ^ sizeof(float8);
+          const size_t farX  = nearX ^ sizeof(vfloat8), farY  = nearY ^ sizeof(vfloat8), farZ  = nearZ ^ sizeof(vfloat8);
 #if defined (__AVX2__)
-          const float8 tNearX = msub(load8f((const char*)node+nearX), rdir.x, org_rdir.x);
-          const float8 tNearY = msub(load8f((const char*)node+nearY), rdir.y, org_rdir.y);
-          const float8 tNearZ = msub(load8f((const char*)node+nearZ), rdir.z, org_rdir.z);
-          const float8 tFarX  = msub(load8f((const char*)node+farX ), rdir.x, org_rdir.x);
-          const float8 tFarY  = msub(load8f((const char*)node+farY ), rdir.y, org_rdir.y);
-          const float8 tFarZ  = msub(load8f((const char*)node+farZ ), rdir.z, org_rdir.z);
+          const vfloat8 tNearX = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearX)), rdir.x, org_rdir.x);
+          const vfloat8 tNearY = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearY)), rdir.y, org_rdir.y);
+          const vfloat8 tNearZ = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+nearZ)), rdir.z, org_rdir.z);
+          const vfloat8 tFarX  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farX )), rdir.x, org_rdir.x);
+          const vfloat8 tFarY  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farY )), rdir.y, org_rdir.y);
+          const vfloat8 tFarZ  = msub(vfloat8::load( (const float*)((const char*)&node->lower_x+farZ )), rdir.z, org_rdir.z);
 #else
-          const float8 tNearX = (norg.x + load8f((const char*)node+nearX)) * rdir.x;
-          const float8 tNearY = (norg.y + load8f((const char*)node+nearY)) * rdir.y;
-          const float8 tNearZ = (norg.z + load8f((const char*)node+nearZ)) * rdir.z;
-          const float8 tFarX  = (norg.x + load8f((const char*)node+farX )) * rdir.x;
-          const float8 tFarY  = (norg.y + load8f((const char*)node+farY )) * rdir.y;
-          const float8 tFarZ  = (norg.z + load8f((const char*)node+farZ )) * rdir.z;
+          const vfloat8 tNearX = (norg.x + vfloat8::load((const float*)((const char*)&node->lower_x+nearX))) * rdir.x;
+          const vfloat8 tNearY = (norg.y + vfloat8::load((const float*)((const char*)&node->lower_x+nearY))) * rdir.y;
+          const vfloat8 tNearZ = (norg.z + vfloat8::load((const float*)((const char*)&node->lower_x+nearZ))) * rdir.z;
+          const vfloat8 tFarX  = (norg.x + vfloat8::load((const float*)((const char*)&node->lower_x+farX ))) * rdir.x;
+          const vfloat8 tFarY  = (norg.y + vfloat8::load((const float*)((const char*)&node->lower_x+farY ))) * rdir.y;
+          const vfloat8 tFarZ  = (norg.z + vfloat8::load((const float*)((const char*)&node->lower_x+farZ ))) * rdir.z;
 #endif
           
-          const float8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
-          const float8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
+          const vfloat8 tNear = max(tNearX,tNearY,tNearZ,rayNear);
+          const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,rayFar);
           const float round_down = 1.0f-2.0f*float(ulp);
           const float round_up   = 1.0f+2.0f*float(ulp);
 
-          //const bool8 vmask = tNear <= tFar;
-          const bool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
+          //const vbool8 vmask = tNear <= tFar;
+          const vbool8 vmask = robust ?  (round_down*tNear <= round_up*tFar) : tNear <= tFar;
 
           size_t mask = movemask(vmask);
           
@@ -486,35 +511,35 @@ namespace embree
 
     
      template<bool robust, typename PrimitiveIntersector16>
-     void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded(int16* valid_i, BVH8* bvh, Ray16& ray)
+     void BVH8Intersector16Hybrid<robust, PrimitiveIntersector16>::occluded(vint16* valid_i, BVH8* bvh, Ray16& ray)
     {
 #if defined(__AVX512F__)
       
       /* load ray */
-      const bool16 valid = *valid_i == -1;
+      const vbool16 valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
       assert(all(valid,ray.tnear > -FLT_MIN));
       //assert(!(types & BVH4::FLAG_NODE_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
-      bool16 terminated = !valid;
-      const Vec3f16 rdir = rcp_safe(ray.dir);
-      const Vec3f16 org_rdir = ray.org * rdir;
-      float16 ray_tnear = select(valid,ray.tnear,pos_inf);
-      float16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
-      const float16 inf = float16(pos_inf);
+      vbool16 terminated = !valid;
+      const Vec3vf16 rdir = rcp_safe(ray.dir);
+      const Vec3vf16 org_rdir = ray.org * rdir;
+      vfloat16 ray_tnear = select(valid,ray.tnear,pos_inf);
+      vfloat16 ray_tfar  = select(valid,ray.tfar ,neg_inf);
+      const vfloat16 inf = vfloat16(pos_inf);
       Precalculations pre(valid,ray);
 
       /* allocate stack and push root node */
-      float16    stack_near[3*BVH8::maxDepth+1];
+      vfloat16    stack_near[3*BVH8::maxDepth+1];
       NodeRef stack_node[3*BVH8::maxDepth+1];
       stack_node[0] = BVH8::invalidNode;
       stack_near[0] = inf;
       stack_node[1] = bvh->root;
       stack_near[1] = ray_tnear; 
       NodeRef* __restrict__ sptr_node = stack_node + 2;
-      float16*    __restrict__ sptr_near = stack_near + 2;
+      vfloat16*    __restrict__ sptr_near = stack_near + 2;
       
       while (1) pop:
       {
@@ -526,7 +551,7 @@ namespace embree
           break;
         
         /* cull node if behind closest hit point */
-        float16 curDist = *sptr_near;
+        vfloat16 curDist = *sptr_near;
         if (unlikely(none(ray_tfar > curDist))) 
           continue;
         
@@ -536,7 +561,7 @@ namespace embree
           if (unlikely(cur.isLeaf()))
             break;
           
-          const bool16 valid_node = ray_tfar > curDist;
+          const vbool16 valid_node = ray_tfar > curDist;
           STAT3(shadow.trav_nodes,1,popcnt(valid_node),16);
           const Node* __restrict__ const node = (Node*)cur.node();
           
@@ -551,26 +576,26 @@ namespace embree
             const NodeRef child = node->children[i];
             if (unlikely(child == BVH8::emptyNode)) break;
             
-            const float16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
-            const float16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
-            const float16 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
-            const float16 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
-            const float16 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
-            const float16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
-            const float16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-            const float16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+            const vfloat16 lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
+            const vfloat16 lclipMinY = msub(node->lower_y[i],rdir.y,org_rdir.y);
+            const vfloat16 lclipMinZ = msub(node->lower_z[i],rdir.z,org_rdir.z);
+            const vfloat16 lclipMaxX = msub(node->upper_x[i],rdir.x,org_rdir.x);
+            const vfloat16 lclipMaxY = msub(node->upper_y[i],rdir.y,org_rdir.y);
+            const vfloat16 lclipMaxZ = msub(node->upper_z[i],rdir.z,org_rdir.z);
+            const vfloat16 lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+            const vfloat16 lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
 
             const float round_down = 1.0f-2.0f*float(ulp);
             const float round_up   = 1.0f+2.0f*float(ulp);
 
-            //const bool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
-            const bool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
+            //const vbool16 lhit   = max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);      
+            const vbool16 lhit = robust ?  (round_down*max(lnearP,ray_tnear) <= round_up*min(lfarP,ray_tfar)) : max(lnearP,ray_tnear) <= min(lfarP,ray_tfar);
             
             /* if we hit the child we choose to continue with that child if it 
                is closer than the current next child, or we push it onto the stack */
             if (likely(any(lhit)))
             {
-              const float16 childDist = select(lhit,lnearP,inf);
+              const vfloat16 childDist = select(lhit,lnearP,inf);
               sptr_node++;
               sptr_near++;
               
@@ -609,7 +634,7 @@ namespace embree
         
         /* intersect leaf */
 	assert(cur != BVH8::emptyNode);
-        const bool16 valid_leaf = ray_tfar > curDist;
+        const vbool16 valid_leaf = ray_tfar > curDist;
         STAT3(shadow.trav_leaves,1,popcnt(valid_leaf),16);
         size_t items; const Triangle* tri  = (Triangle*) cur.leaf(items);
 
@@ -623,21 +648,19 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
-      store16i(valid & terminated,&ray.geomID,0);
+      vint16::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
 #endif      
     }
     
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle4 COMMA false> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
 
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA true> > >);
-
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersector16<TriangleNIntersectorMMoellerTrumbore<Ray16 COMMA Triangle8 COMMA false> > >);
-
-    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPluecker, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA true> > >);
-    //DEFINE_INTERSECTOR8(BVH8Triangle8vIntersector16HybridPlueckerNoFilter, BVH8Intersector16Hybrid<true COMMA ArrayIntersector16_1<TriangleNvIntersectorMPluecker2<Ray16 COMMA Triangle8v COMMA false> > >);
+    DEFINE_INTERSECTOR16(BVH8TrianglePairs4Intersector16HybridMoeller,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8TrianglePairs4Intersector16HybridMoellerNoFilter,BVH8Intersector16Hybrid<false COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
 
   }
 }  

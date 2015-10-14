@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../../common/accel.h"
-#include "../../common/ray16.h"
+#include "../../common/ray.h"
 
 namespace embree
 {
@@ -25,28 +25,28 @@ namespace embree
   {
     typedef AccelSetItem Primitive;
 
-    static __forceinline void intersect(const bool16& valid_i, Ray16& ray, const Primitive& prim, const void* geom) 
+    static __forceinline void intersect(const vbool16& valid_i, Ray16& ray, const Primitive& prim, const void* geom) 
     {
-      int16 maski = select(valid_i,int16(-1),int16(0));
+      vint16 maski = select(valid_i,vint16(-1),vint16(0));
       prim.accel->intersect16(&maski,(RTCRay16&)ray,prim.item);
     }
 
-    static __forceinline void intersect(const bool16& valid, Ray16& ray, const Primitive* tri, size_t num, const void* geom)
+    static __forceinline void intersect(const vbool16& valid, Ray16& ray, const Primitive* tri, size_t num, const void* geom)
     {
       for (size_t i=0; i<num; i++)
         intersect(valid,ray,tri[i],geom);
     }
 
-    static __forceinline bool16 occluded(const bool16& valid_i, const Ray16& ray, const Primitive& prim, const void* geom) 
+    static __forceinline vbool16 occluded(const vbool16& valid_i, const Ray16& ray, const Primitive& prim, const void* geom) 
     {
-      int16 maski = select(valid_i,int16(-1),int16(0));
+      vint16 maski = select(valid_i,vint16(-1),vint16(0));
       prim.accel->occluded16(&maski,(RTCRay16&)ray,prim.item);
       return ray.geomID == 0;
     }
 
-    static __forceinline bool16 occluded(const bool16& valid, const Ray16& ray, const Primitive* tri, size_t num, const void* geom)
+    static __forceinline vbool16 occluded(const vbool16& valid, const Ray16& ray, const Primitive* tri, size_t num, const void* geom)
     {
-      bool16 terminated = !valid;
+      vbool16 terminated = !valid;
       for (size_t i=0; i<num; i++) {
         terminated |= occluded(!terminated,ray,tri[i],geom);
         if (all(terminated)) return terminated;
