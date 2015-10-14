@@ -27,31 +27,36 @@ namespace embree
   namespace isa 
   {
     /*! Converts single ray traversal into packet traversal. */
-    template<int K, typename Intersector1>
-    class BVH4IntersectorKFromIntersector1
+    template<int N, int K, typename Intersector1>
+    class BVHNIntersectorKFromIntersector1
     {
+      typedef BVHN<N> BVH;
+
     public:
-      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
     };
 
     /*! Single ray traversal for packets. */
-    template<int K, int types, bool robust, typename PrimitiveIntersectorK>
-    class BVH4IntersectorKSingle
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
+    class BVHNIntersectorKSingle
     {
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
       typedef typename PrimitiveIntersectorK::Primitive Primitive;
-      typedef typename BVH4::NodeRef NodeRef;
-      typedef typename BVH4::Node Node;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::BaseNode BaseNode;
+      typedef Vec3<vfloat<N>> Vec3vfN;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
-      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+
+      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
 
     public:
 
-      static __forceinline void intersect1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
+      static __forceinline void intersect1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
                                            RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
                                            const Vec3viK& nearXYZ)
       {
@@ -63,11 +68,11 @@ namespace embree
 	stack[0].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
-	const Vec3vf4 org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
-	const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-	const Vec3vf4 rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-	const Vec3vf4 org_rdir(org*rdir);
-	vfloat4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+        const Vec3vfN org(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+        const Vec3vfN dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        const Vec3vfN rdir(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        const Vec3vfN org_rdir(org*rdir);
+        vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/*! offsets to select the side that becomes the lower or upper bound */
 	const size_t nearX = nearXYZ.x[k];
@@ -90,7 +95,7 @@ namespace embree
 	  while (true)
 	  {
 	    size_t mask; 
-	    vfloat4 tNear;
+            vfloat<N> tNear;
 	    
 	    /*! stop if we found a leaf node */
 	    if (unlikely(cur.isLeaf(types))) break;
@@ -98,22 +103,22 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-	      mask = intersect_node<BVH4::N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+              mask = intersect_node<N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear);
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-	      mask = intersect_node<BVH4::N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
+              mask = intersect_node<N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-	      mask = intersect_node<BVH4::N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+              mask = intersect_node<N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-	      mask = intersect_node<BVH4::N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
-	    const BVH4::BaseNode* node = cur.baseNode(types);
+            const BaseNode* node = cur.baseNode(types);
 	    if (unlikely(mask == 0))
 	      goto pop;
 	    
@@ -121,7 +126,7 @@ namespace embree
 	    size_t r = __bscf(mask);
 	    if (likely(mask == 0)) {
 	      cur = node->child(r); cur.prefetch(types);
-	      assert(cur != BVH4::emptyNode);
+              assert(cur != BVH::emptyNode);
 	      continue;
 	    }
 	    
@@ -129,8 +134,8 @@ namespace embree
 	    NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
 	    r = __bscf(mask);
 	    NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-	    assert(c0 != BVH4::emptyNode);
-	    assert(c1 != BVH4::emptyNode);
+            assert(c0 != BVH::emptyNode);
+            assert(c1 != BVH::emptyNode);
 	    if (likely(mask == 0)) {
 	      assert(stackPtr < stackEnd); 
 	      if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
@@ -148,7 +153,7 @@ namespace embree
 	    assert(stackPtr < stackEnd); 
 	    r = __bscf(mask);
 	    NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-	    assert(c != BVH4::emptyNode);
+            assert(c != BVH::emptyNode);
 	    if (likely(mask == 0)) {
 	      sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
 	      cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
@@ -159,13 +164,27 @@ namespace embree
 	    assert(stackPtr < stackEnd); 
 	    r = __bscf(mask);
 	    c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-	    assert(c != BVH4::emptyNode);
-	    sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-	    cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+            assert(c != BVH::emptyNode);
+            if (likely(N == 4 || mask == 0)) {
+              sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+              cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+              continue;
+            }
+
+            /*! fallback case if more than 4 children are hit */
+            while (1)
+            {
+              assert(stackPtr < stackEnd);
+              r = __bscf(mask);
+              c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+              assert(c != BVH::emptyNode);
+              if (unlikely(mask == 0)) break;
+            }
+            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
 	  }
 	  
 	  /*! this is a leaf node */
-	  assert(cur != BVH4::emptyNode);
+          assert(cur != BVH::emptyNode);
 	  STAT3(normal.trav_leaves, 1, 1, 1);
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
@@ -181,7 +200,7 @@ namespace embree
 	}
       }
       
-      static __forceinline bool occluded1(const BVH4* bvh, NodeRef root, const size_t k, Precalculations& pre, 
+      static __forceinline bool occluded1(const BVH* bvh, NodeRef root, const size_t k, Precalculations& pre,
                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
                                           const Vec3viK& nearXYZ)
       {
@@ -197,11 +216,11 @@ namespace embree
 	const size_t nearZ = nearXYZ.z[k];
 	
 	/*! load the ray into SIMD registers */
-	const Vec3vf4 org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
-	const Vec3vf4 dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-	const Vec3vf4 rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
-	const Vec3vf4 norg = -org, org_rdir(org*rdir);
-	const vfloat4 ray_near(ray_tnear[k]), ray_far(ray_tfar[k]); 
+        const Vec3vfN org (ray_org .x[k],ray_org .y[k],ray_org .z[k]);
+        const Vec3vfN dir(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+        const Vec3vfN rdir(ray_rdir.x[k],ray_rdir.y[k],ray_rdir.z[k]);
+        const Vec3vfN norg = -org, org_rdir(org*rdir);
+        const vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/* pop loop */
 	while (true) pop:
@@ -215,7 +234,7 @@ namespace embree
 	  while (true)
 	  {
 	    size_t mask; 
-	    vfloat4 tNear;
+            vfloat<N> tNear;
 	    
 	    /*! stop if we found a leaf node */
 	    if (unlikely(cur.isLeaf(types))) break;
@@ -223,22 +242,22 @@ namespace embree
 	    
 	    /* process standard nodes */
 	    if (likely(cur.isNode(types)))
-	      mask = intersect_node<BVH4::N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear); 
+              mask = intersect_node<N,robust>(cur.node(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,tNear);
 	    
 	    /* process motion blur nodes */
 	    else if (likely(cur.isNodeMB(types)))
-	      mask = intersect_node<BVH4::N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear); 
+              mask = intersect_node<N>(cur.nodeMB(),nearX,nearY,nearZ,org,rdir,org_rdir,ray_near,ray_far,ray.time[k],tNear);
 
 	    /*! process nodes with unaligned bounds */
 	    else if (unlikely(cur.isUnalignedNode(types)))
-	      mask = intersect_node<BVH4::N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
+              mask = intersect_node<N>(cur.unalignedNode(),org,dir,ray_near,ray_far,tNear);
 	    
 	    /*! process nodes with unaligned bounds and motion blur */
 	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-	      mask = intersect_node<BVH4::N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
+              mask = intersect_node<N>(cur.unalignedNodeMB(),org,dir,ray_near,ray_far,ray.time[k],tNear);
 	    
 	    /*! if no child is hit, pop next node */
-	    const BVH4::BaseNode* node = cur.baseNode(types);
+            const BaseNode* node = cur.baseNode(types);
 	    if (unlikely(mask == 0))
 	      goto pop;
 	  
@@ -246,7 +265,7 @@ namespace embree
 	    size_t r = __bscf(mask);
 	    if (likely(mask == 0)) {
 	      cur = node->child(r); cur.prefetch(types); 
-	      assert(cur != BVH4::emptyNode);
+              assert(cur != BVH::emptyNode);
 	      continue;
 	    }
 	    
@@ -254,8 +273,8 @@ namespace embree
 	    NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
 	    r = __bscf(mask);
 	    NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-	    assert(c0 != BVH4::emptyNode);
-	    assert(c1 != BVH4::emptyNode);
+            assert(c0 != BVH::emptyNode);
+            assert(c1 != BVH::emptyNode);
 	    if (likely(mask == 0)) {
 	      assert(stackPtr < stackEnd);
 	      if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
@@ -269,18 +288,35 @@ namespace embree
 	    /*! three children are hit */
 	    r = __bscf(mask);
 	    cur = node->child(r); cur.prefetch(types);
-	    assert(cur != BVH4::emptyNode);
+            assert(cur != BVH::emptyNode);
 	    if (likely(mask == 0)) continue;
 	    assert(stackPtr < stackEnd);
 	    *stackPtr = cur; stackPtr++;
 	    
-	    /*! four children are hit */
-	    cur = node->child(3); cur.prefetch(types);
-	    assert(cur != BVH4::emptyNode);
+            /*! four or more children are hit */
+            if (N == 4)
+            {
+              /*! four children are hit */
+              cur = node->child(3); cur.prefetch(types);
+              assert(cur != BVH::emptyNode);
+            }
+            else
+            {
+              /*! fallback case if more than 3 children are hit */
+              while (1)
+              {
+                assert(stackPtr < stackEnd);
+                r = __bscf(mask);
+                NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
+                assert(c != BVH::emptyNode);
+                if (unlikely(mask == 0)) break;
+              }
+              cur = (NodeRef) stackPtr[-1]; stackPtr--;
+            }
 	  }
 	
 	  /*! this is a leaf node */
-	  assert(cur != BVH4::emptyNode);
+          assert(cur != BVH::emptyNode);
 	  STAT3(shadow.trav_leaves,1,1,1);
 	  size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
 
@@ -298,8 +334,8 @@ namespace embree
 	return false;
       }
       
-      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
     };
   }
 }
