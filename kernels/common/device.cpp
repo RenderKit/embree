@@ -159,7 +159,7 @@ namespace embree
     InstanceIntersectorsRegister();
 
     /* setup tasking system */
-    initTaskingSystem(g_numThreads);
+    initTaskingSystem(numThreads);
 
     /* execute regression tests */
 #if !defined(__MIC__)
@@ -381,11 +381,11 @@ namespace embree
     if (maxNumThreads == 0) 
     {
       g_tbb_threads_initialized = false;
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
+      TaskSchedulerTBB::g_numThreads = tbb::task_scheduler_init::default_num_threads();
     } else {
       g_tbb_threads_initialized = true;
       g_tbb_threads.initialize(maxNumThreads);
-      g_numThreads = maxNumThreads;
+      TaskSchedulerTBB::g_numThreads = maxNumThreads;
     }
 #if USE_TASK_ARENA
     arena = new tbb::task_arena(maxNumThreads);

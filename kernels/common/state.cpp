@@ -61,7 +61,7 @@ namespace embree
     benchmark = 0;
     regression_testing = 0;
 
-    g_numThreads = 0;
+    numThreads = 0;
 #if TASKING_TBB_INTERNAL || defined(__MIC__)
     set_affinity = true;
 #else
@@ -90,7 +90,7 @@ namespace embree
 #endif
 
 #if defined(__MIC__) // FIXME: put into State::verify function
-    if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
+    if (!(numThreads == 1 || (numThreads % 4) == 0))
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
 
@@ -177,7 +177,7 @@ namespace embree
       const Token tok = cin->get();
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
-        g_numThreads = cin->get().Int();
+        numThreads = cin->get().Int();
       
       else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
@@ -290,7 +290,7 @@ namespace embree
   void State::print()
   {
     std::cout << "general:" << std::endl;
-    std::cout << "  build threads = " << g_numThreads << std::endl;
+    std::cout << "  build threads = " << numThreads << std::endl;
     std::cout << "  verbosity     = " << verbose << std::endl;
     
     std::cout << "triangles:" << std::endl;
