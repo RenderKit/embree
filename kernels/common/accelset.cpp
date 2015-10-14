@@ -20,17 +20,17 @@
 namespace embree
 {
   AccelSet::AccelSet (Scene* parent, size_t numItems) 
-    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC), numItems(numItems) 
+    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC)
   {
     intersectors.ptr = nullptr; 
     enabling();
   }
 
   void AccelSet::enabling () { 
-    atomic_add(&parent->world1.numUserGeometries,+(ssize_t)numItems); 
+    atomic_add(&parent->world1.numUserGeometries,+(ssize_t)numPrimitives); 
   }
   
   void AccelSet::disabling() { 
-    atomic_add(&parent->world1.numUserGeometries,-(ssize_t)numItems); 
+    atomic_add(&parent->world1.numUserGeometries,-(ssize_t)numPrimitives); 
   }
 }
