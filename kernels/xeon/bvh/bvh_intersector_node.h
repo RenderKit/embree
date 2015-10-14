@@ -35,9 +35,9 @@ namespace embree
         org = Vec3<vfloat<N>>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3<vfloat<N>>(ray_dir.x,ray_dir.y,ray_dir.z);
         rdir = Vec3<vfloat<N>>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-//#if defined(__AVX2__) // FIXME: enable this optimization
+#if defined(__AVX2__)
         org_rdir = Vec3<vfloat<N>>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-//#endif
+#endif
         nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat<N>) : 1*sizeof(vfloat<N>);
         nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat<N>) : 3*sizeof(vfloat<N>);
         nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat<N>) : 5*sizeof(vfloat<N>);
@@ -52,7 +52,9 @@ namespace embree
         org = Vec3<vfloat<N>>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
 	dir = Vec3<vfloat<N>>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
 	rdir = Vec3<vfloat<N>>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+#if defined(__AVX2__)
 	org_rdir = org*rdir;
+#endif
 	nearX = nearXYZ.x[k];
 	nearY = nearXYZ.y[k];
 	nearZ = nearXYZ.z[k];
@@ -63,9 +65,9 @@ namespace embree
 
       Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
       Vec3<vfloat<N>> org, dir, rdir;
-//#if defined(__AVX2__)
+#if defined(__AVX2__)
       Vec3<vfloat<N>> org_rdir;
-//#endif
+#endif
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
     };
