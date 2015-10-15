@@ -403,6 +403,8 @@ namespace embree
   template<size_t dst>             __forceinline const vfloat4 insert( const vfloat4& a, const float b ) { vfloat4 c = a; c[dst] = b; return c; }
 #endif
 
+  __forceinline float toScalar(const vfloat4& a) { return _mm_cvtss_f32(a); }
+
   __forceinline vfloat4 broadcast4f( const vfloat4& a, const size_t k ) {
     return vfloat4::broadcast(&a[k]);
   }

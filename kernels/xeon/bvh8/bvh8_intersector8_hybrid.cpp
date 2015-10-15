@@ -144,7 +144,7 @@ namespace embree
           const vint8 tNear_i = cast(tNear);
           const vint8 dist    = select(mask8,(tNear_i & (~7)) | vint8(step),vint8( True ));
           const vint8 order   = sortNetwork(dist) & 7;
-          const unsigned int cur_index = extract<0>(extract<0>(order));
+          const unsigned int cur_index = toScalar(order);
           cur = node->child(cur_index);
           cur.prefetch();
 

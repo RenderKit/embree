@@ -173,19 +173,19 @@ namespace embree
         const Vec3vf8 e000_e100 = t000_t100_end - t000_t100_start;
         const Vec3vf8 s000_s100 = t000_t100_end + t000_t100_start;
         const vfloat8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
-        if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
-          intersectFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim,scene);
-        if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
-          intersectFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim,scene);
+        if (all(ge_mask(Vec3fa(extract4<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<0>(u000_u100)),Vec3fa(0.0f))))
+          intersectFinish(ray,q00,q01,q10,extract4<0>(u000_u100),prim,scene);
+        if (all(ge_mask(Vec3fa(extract4<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<1>(u000_u100)),Vec3fa(0.0f))))
+          intersectFinish(ray,q10,q11,q20,extract4<1>(u000_u100),prim,scene);
         
         const Vec3vf8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
         const Vec3vf8 e001_e101 = t001_t101_end - t001_t101_start;
         const Vec3vf8 s001_s101 = t001_t101_end + t001_t101_start;
         const vfloat8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
-        if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
-          intersectFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim,scene);
-        if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
-          intersectFinish(ray,q21,q20,q11,extract<1>(u001_u101),prim,scene);
+        if (all(ge_mask(Vec3fa(extract4<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<0>(u001_u101)),Vec3fa(0.0f))))
+          intersectFinish(ray,q11,q10,q01,extract4<0>(u001_u101),prim,scene);
+        if (all(ge_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))))
+          intersectFinish(ray,q21,q20,q11,extract4<1>(u001_u101),prim,scene);
       }
       
 #else
@@ -382,19 +382,19 @@ namespace embree
         const Vec3vf8 e000_e100 = t000_t100_end - t000_t100_start;
         const Vec3vf8 s000_s100 = t000_t100_end + t000_t100_start;
         const vfloat8  u000_u100 = dot(cross(s000_s100,e000_e100),D8);
-        if (all(ge_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u000_u100)),Vec3fa(0.0f)))) 
-          if (occludedFinish(ray,q00,q01,q10,extract<0>(u000_u100),prim,scene)) return true;
-        if (all(ge_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u000_u100)),Vec3fa(0.0f)))) 
-          if (occludedFinish(ray,q10,q11,q20,extract<1>(u000_u100),prim,scene)) return true;
+        if (all(ge_mask(Vec3fa(extract4<0>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<0>(u000_u100)),Vec3fa(0.0f))))
+          if (occludedFinish(ray,q00,q01,q10,extract4<0>(u000_u100),prim,scene)) return true;
+        if (all(ge_mask(Vec3fa(extract4<1>(u000_u100)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<1>(u000_u100)),Vec3fa(0.0f))))
+          if (occludedFinish(ray,q10,q11,q20,extract4<1>(u000_u100),prim,scene)) return true;
         
         const Vec3vf8 t001_t101_start = shuffle<2,3,1,0>(p00_p10), t001_t101_end = shuffle<3,1,2,0>(p00_p10);
         const Vec3vf8 e001_e101 = t001_t101_end - t001_t101_start;
         const Vec3vf8 s001_s101 = t001_t101_end + t001_t101_start;
         const vfloat8  u001_u101 = dot(cross(s001_s101,e001_e101),D8);
-        if (all(ge_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<0>(u001_u101)),Vec3fa(0.0f)))) 
-          if (occludedFinish(ray,q11,q10,q01,extract<0>(u001_u101),prim,scene)) return true;
-        if (all(ge_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract<1>(u001_u101)),Vec3fa(0.0f)))) 
-          if (occludedFinish(ray,q21,q20,q11,extract<1>(u001_u101),prim,scene)) return true;
+        if (all(ge_mask(Vec3fa(extract4<0>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<0>(u001_u101)),Vec3fa(0.0f))))
+          if (occludedFinish(ray,q11,q10,q01,extract4<0>(u001_u101),prim,scene)) return true;
+        if (all(ge_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))))
+          if (occludedFinish(ray,q21,q20,q11,extract4<1>(u001_u101),prim,scene)) return true;
         
         return false;
       }

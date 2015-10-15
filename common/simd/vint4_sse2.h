@@ -306,6 +306,10 @@ namespace embree
   template<size_t dst> __forceinline const vint4 insert( const vint4& a, const int b ) { vint4 c = a; c[dst] = b; return c; }
 #endif
 
+  template<> __forceinline int extract<0>( const vint4& b ) { return _mm_cvtsi128_si32(b); }
+
+  __forceinline int toScalar(const vint4& a) { return _mm_cvtsi128_si32(a); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
@@ -315,9 +319,9 @@ namespace embree
   __forceinline const vint4 vreduce_max(const vint4& v) { vint4 h = max(shuffle<1,0,3,2>(v),v); return max(shuffle<2,3,0,1>(h),h); }
   __forceinline const vint4 vreduce_add(const vint4& v) { vint4 h = shuffle<1,0,3,2>(v)   + v ; return shuffle<2,3,0,1>(h)   + h ; }
 
-  __forceinline int reduce_min(const vint4& v) { return extract<0>(vreduce_min(v)); }
-  __forceinline int reduce_max(const vint4& v) { return extract<0>(vreduce_max(v)); }
-  __forceinline int reduce_add(const vint4& v) { return extract<0>(vreduce_add(v)); }
+  __forceinline int reduce_min(const vint4& v) { return toScalar(vreduce_min(v)); }
+  __forceinline int reduce_max(const vint4& v) { return toScalar(vreduce_max(v)); }
+  __forceinline int reduce_add(const vint4& v) { return toScalar(vreduce_add(v)); }
 
   __forceinline size_t select_min(const vint4& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vint4& v) { return __bsf(movemask(v == vreduce_max(v))); }
