@@ -129,7 +129,6 @@ namespace embree
             cur = BVH::emptyNode;
             curDist = pos_inf;
 
-#pragma unroll(4)
             for (unsigned i=0; i<N; i++)
 	    {
 	      const NodeRef child = node->children[i];
@@ -190,7 +189,6 @@ namespace embree
             cur = BVH::emptyNode;
             curDist = pos_inf;
 	    
-#pragma unroll(4)
             for (unsigned i=0; i<N; i++)
 	    {
 	      const NodeRef child = node->child(i);
@@ -358,7 +356,6 @@ namespace embree
             cur = BVH::emptyNode;
             curDist = pos_inf;
 	    
-#pragma unroll(4)
             for (unsigned i=0; i<N; i++)
 	    {
 	      const NodeRef child = node->children[i];
@@ -419,7 +416,6 @@ namespace embree
             cur = BVH::emptyNode;
             curDist = pos_inf;
 	    
-#pragma unroll(4)
             for (unsigned i=0; i<N; i++)
 	    {
 	      const NodeRef child = node->child(i);
