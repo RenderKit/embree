@@ -74,7 +74,7 @@ namespace embree
 
     /*! intersection with single rays */
     template<int N, bool robust>
-      __forceinline size_t intersect_node(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
+      __forceinline vbool<N> intersect_node(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
 #if defined (__AVX2__)
       const vfloat<N> tNearX = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
@@ -98,24 +98,20 @@ namespace embree
         const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
         const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
         const vbool<N> vmask = (round_down*tNear <= round_up*tFar);
-        const size_t mask = movemask(vmask);
         dist = tNear;
-        return mask;
+        return vmask;
       }
       
 #if defined(__SSE4_1__)
       const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
       const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-      const vbool<N> vmask = cast(tNear) > cast(tFar);
-      const size_t mask = movemask(vmask) ^ ((1<<N)-1);
 #else
       const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-      const vbool<N> vmask = tNear <= tFar;
-      const size_t mask = movemask(vmask);
 #endif
+      const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return mask;
+      return vmask;
     }
     
     /*! intersection with ray packet of size K */
@@ -158,7 +154,7 @@ namespace embree
     
     /*! intersection with single rays */
     template<int N>
-    __forceinline size_t intersect_node(const typename BVHN<N>::NodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist) 
+    __forceinline vbool<N> intersect_node(const typename BVHN<N>::NodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
       const vfloat<N>* pNearX = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearX);
       const vfloat<N>* pNearY = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearY);
@@ -174,9 +170,9 @@ namespace embree
       const vfloat<N> tFarY = (vfloat<N>(pFarY[0]) + time*pFarY[6] - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ = (vfloat<N>(pFarZ[0]) + time*pFarZ[6] - ray.org.z) * ray.rdir.z;
       const vfloat<N> tFar = min(tfar,tFarX,tFarY,tFarZ);
-      const size_t mask = movemask(tNear <= tFar);
+      const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return mask;
+      return vmask;
     }
     
     /*! intersection with ray packet of size K */
@@ -216,7 +212,7 @@ namespace embree
     
     /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersect_node(const typename BVHN<N>::UnalignedNode* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist) 
+      __forceinline vbool<N> intersect_node(const typename BVHN<N>::UnalignedNode* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
       const Vec3<vfloat<N>> dir = xfmVector(node->naabb,ray.dir);
       //const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))/dir;
@@ -235,12 +231,12 @@ namespace embree
       const vfloat<N> tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return movemask(vmask);
+      return vmask;
     }
     
      /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersect_node(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist) 
+      __forceinline vbool<N> intersect_node(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
       const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
       
@@ -268,7 +264,7 @@ namespace embree
       const vfloat<N> tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return movemask(vmask);
+      return vmask;
     }
   }
 }

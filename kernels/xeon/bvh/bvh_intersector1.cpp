@@ -59,7 +59,7 @@ namespace embree
       /* downtraversal loop */
       while (true) cont2:
       {
-        size_t mask; 
+        vbool<N> vmask;
         vfloat<N> tNear;
         
         /*! stop if we found a leaf node */
@@ -68,22 +68,24 @@ namespace embree
         
         /* process standard nodes */
         if (likely(cur.isNode(types)))
-          mask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear); 
+          vmask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
         
         /* process motion blur nodes */
         else if (likely(cur.isNodeMB(types)))
-          mask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time,tNear);
+          vmask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time,tNear);
         
         /*! process nodes with unaligned bounds */
         else if (unlikely(cur.isUnalignedNode(types)))
-          mask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
+          vmask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
         
         /*! process nodes with unaligned bounds and motion blur */
         else if (unlikely(cur.isUnalignedNodeMB(types)))
-          mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
+          vmask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
         
         else break;
         
+        size_t mask = movemask(vmask);
+
         /*! if no child is hit, pop next node */
         const BaseNode* node = cur.baseNode(types);
         if (unlikely(mask == 0)) 
@@ -182,7 +184,7 @@ namespace embree
       /* downtraversal loop */
       while (true)
       {
-        size_t mask; 
+        vbool<N> vmask;
         vfloat<N> tNear;
         
         /*! stop if we found a leaf node */
@@ -191,22 +193,24 @@ namespace embree
         
         /* process standard nodes */
         if (likely(cur.isNode(types)))
-          mask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear); 
+          vmask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
         
         /* process motion blur nodes */
         else if (likely(cur.isNodeMB(types)))
-          mask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time,tNear); 
+          vmask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time,tNear);
         
         /*! process nodes with unaligned bounds */
         else if (unlikely(cur.isUnalignedNode(types)))
-          mask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
+          vmask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
         
         /*! process nodes with unaligned bounds and motion blur */
         else if (unlikely(cur.isUnalignedNodeMB(types)))
-          mask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
+          vmask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time,tNear);
 
         else break;
         
+        size_t mask = movemask(vmask);
+
         /*! if no child is hit, pop next node */
         const BaseNode* node = cur.baseNode(types);
         if (unlikely(mask == 0))
