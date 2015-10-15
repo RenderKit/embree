@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "../../common/alloc.h"
 #include "../../common/accel.h"
 #include "../../common/device.h"
 #include "../../common/scene.h"

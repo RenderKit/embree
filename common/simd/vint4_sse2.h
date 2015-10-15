@@ -306,6 +306,10 @@ namespace embree
   template<size_t dst> __forceinline const vint4 insert( const vint4& a, const int b ) { vint4 c = a; c[dst] = b; return c; }
 #endif
 
+  template<> __forceinline int extract<0>( const vint4& b ) { return _mm_cvtsi128_si32(b); }
+
+  __forceinline int toScalar(const vint4& a) { return _mm_cvtsi128_si32(a); }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
@@ -315,9 +319,9 @@ namespace embree
   __forceinline const vint4 vreduce_max(const vint4& v) { vint4 h = max(shuffle<1,0,3,2>(v),v); return max(shuffle<2,3,0,1>(h),h); }
   __forceinline const vint4 vreduce_add(const vint4& v) { vint4 h = shuffle<1,0,3,2>(v)   + v ; return shuffle<2,3,0,1>(h)   + h ; }
 
-  __forceinline int reduce_min(const vint4& v) { return extract<0>(vreduce_min(v)); }
-  __forceinline int reduce_max(const vint4& v) { return extract<0>(vreduce_max(v)); }
-  __forceinline int reduce_add(const vint4& v) { return extract<0>(vreduce_add(v)); }
+  __forceinline int reduce_min(const vint4& v) { return toScalar(vreduce_min(v)); }
+  __forceinline int reduce_max(const vint4& v) { return toScalar(vreduce_max(v)); }
+  __forceinline int reduce_add(const vint4& v) { return toScalar(vreduce_add(v)); }
 
   __forceinline size_t select_min(const vint4& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vint4& v) { return __bsf(movemask(v == vreduce_max(v))); }
@@ -333,6 +337,29 @@ namespace embree
 
 #endif
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Sorting networks
+  ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__SSE4_1__)
+  __forceinline vint4 sortNetwork(const vint4& v)
+  {
+    const vint4 a0 = v;
+    const vint4 b0 = shuffle<1,0,3,2>(a0);
+    const vint4 c0 = umin(a0,b0);
+    const vint4 d0 = umax(a0,b0);
+    const vint4 a1 = select(0x55 /* 0b01010101 */,c0,d0);
+    const vint4 b1 = shuffle<2,3,0,1>(a1);
+    const vint4 c1 = umin(a1,b1);
+    const vint4 d1 = umax(a1,b1);
+    const vint4 a2 = select(0x33 /* 0b00110011 */,c1,d1);
+    const vint4 b2 = shuffle<0,2,1,3>(a2);
+    const vint4 c2 = umin(a2,b2);
+    const vint4 d2 = umax(a2,b2);
+    const vint4 a3 = select(0x22 /* 0b00100010 */,c2,d2);
+    return a3;
+  }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

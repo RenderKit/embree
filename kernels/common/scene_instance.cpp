@@ -44,4 +44,13 @@ namespace embree
     local2world = xfm;
     world2local = rcp(xfm);
   }
+
+  void Instance::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  }
 }

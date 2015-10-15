@@ -360,6 +360,7 @@ namespace embree
 	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
 	int old_primID = ray.primID;
+        if (!accel) return false;
 	VirtualAccelIntersector1::intersect(ray,accel_ptr,items,geometry);
 	return old_primID != ray.primID;
       }
@@ -377,7 +378,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
-
+        if (!accel) return false;
 	return VirtualAccelIntersector1::occluded((Ray&)ray,accel_ptr,items,(Scene*)geometry);
       }
 
@@ -395,6 +396,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive*)accel + index;
+        if (!accel) return;
         VirtualAccelIntersector16::intersect(m_valid_leaf,ray16,accel_ptr,items,geometry);
       }
 
@@ -410,7 +412,7 @@ namespace embree
 	unsigned int items = curNode.items();
 	unsigned int index = curNode.offsetIndex(); /* array of AccelSetItems */
 	Primitive *accel_ptr = (Primitive *)accel + index;
-
+        if (!accel) return;
         m_terminated |= m_valid_leaf & VirtualAccelIntersector16::occluded(m_valid_leaf,ray16,accel_ptr,items,geometry);
       }      
     };
