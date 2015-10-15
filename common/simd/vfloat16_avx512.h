@@ -218,7 +218,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vfloat16 cast      (const __m512i& a) { return _mm512_castsi512_ps(a); }
+  __forceinline const vfloat16 asFloat   ( const __m512i&  a ) { return _mm512_castsi512_ps(a); }
   __forceinline const vfloat16 operator +( const vfloat16& a ) { return a; }
   __forceinline const vfloat16 operator -( const vfloat16& a ) { return _mm512_mul_ps(a,vfloat16(-1)); }
   __forceinline const vfloat16 abs       ( const vfloat16& a ) {
@@ -533,7 +533,7 @@ namespace embree
 #if defined(__AVX512F__)
     return _mm512_permute_ps(v,_MM_SHUF_PERM(D,C,B,A)); 
 #else
-    return cast(_mm512_shuffle_epi32(cast(v),_MM_SHUF_PERM(D,C,B,A)));
+    return asFloat(_mm512_shuffle_epi32(asInt(v),_MM_SHUF_PERM(D,C,B,A)));
 #endif
   }
   template<int A>                      __forceinline vfloat16 shuffle   (const vfloat16& x) { return shuffle<A,A,A,A>(v); }
@@ -788,7 +788,7 @@ namespace embree
     v = mask_and(m_00f0,v,v_mask, broadcast4to16i((const int*)ptr1));
     v = mask_and(m_0f00,v,v_mask, broadcast4to16i((const int*)ptr2));
     v = mask_and(m_f000,v,v_mask, broadcast4to16i((const int*)ptr3));
-    return cast(v);
+    return asFloat(v);
   }
 
   __forceinline vfloat16 gather_2f_zlc(const vint16 &v_mask,
@@ -798,7 +798,7 @@ namespace embree
   {
     vint16 v = v_mask &  broadcast4to16i((const int*)ptr0);
     v = mask_and(mask,v,v_mask, broadcast4to16i((const int*)ptr1));
-    return cast(v);
+    return asFloat(v);
   }
 
 
@@ -834,7 +834,7 @@ namespace embree
                                              const void *__restrict__ const ptr3)
   {
     vfloat16 v = gather16f_4f_align(ptr0,ptr1,ptr2,ptr3);
-    return cast(cast(v) & v_mask);
+    return asFloat(asInt(v) & v_mask);
   }
 
   __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {

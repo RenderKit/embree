@@ -103,7 +103,7 @@ namespace embree
 #if defined(__SSE4_1__)
           const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
           const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-          const vbool4 vmask = cast(tNear) > cast(tFar);
+          const vbool4 vmask = asInt(tNear) > asInt(tFar);
           const size_t mask = movemask(vmask)^0xf;
 #else
           const vfloat4 tNear = max(tNearX,tNearY,tNearZ,tnear);
@@ -163,7 +163,7 @@ namespace embree
 /*#if defined(__AVX2__) // FIXME: not working for cube
   const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
   const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-  const vbool8 vmask = cast(tNear) > cast(tFar);
+  const vbool8 vmask = asInt(tNear) > asInt(tFar);
   const size_t mask = movemask(vmask)^0xf;
   #else*/
           const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
@@ -270,7 +270,7 @@ namespace embree
 #if defined(__SSE4_1__)
           const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
           const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-          const vbool4 vmask = cast(tNear) > cast(tFar);
+          const vbool4 vmask = asInt(tNear) > asInt(tFar);
           const size_t mask = movemask(vmask)^0xf;
 #else
           const vfloat4 tNear = max(tNearX,tNearY,tNearZ,tnear);
@@ -340,7 +340,7 @@ namespace embree
 /*#if defined(__AVX2__) // FIXME: not working for cube
   const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
   const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-  const vbool8 vmask = cast(tNear) > cast(tFar);
+  const vbool8 vmask = asInt(tNear) > asInt(tFar);
   const size_t mask = movemask(vmask)^0xf;
   #else*/
           const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
@@ -520,7 +520,7 @@ namespace embree
           const vfloat4 zi = vfloat4::load(&grid_z[i]);
           const vint4   ui = (vint4)clamp(vfloat4::load(&grid_u[i]) * 0xFFFF, vfloat4(0.0f), vfloat4(0xFFFF)); 
           const vint4   vi = (vint4)clamp(vfloat4::load(&grid_v[i]) * 0xFFFF, vfloat4(0.0f), vfloat4(0xFFFF)); 
-          const vfloat4 uv = cast((vi << 16) | ui);
+          const vfloat4 uv = asFloat((vi << 16) | ui);
           vfloat4 xyzuv0, xyzuv1, xyzuv2, xyzuv3;
           transpose(xi,yi,zi,uv,xyzuv0, xyzuv1, xyzuv2, xyzuv3);
           P[i+0] = Vec3fa(xyzuv0); 

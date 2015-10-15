@@ -145,11 +145,11 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint4 cast      ( const __m128& a ) { return _mm_castps_si128(a); }
-  __forceinline const vint4 operator +( const vint4& a ) { return a; }
-  __forceinline const vint4 operator -( const vint4& a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.v); }
+  __forceinline const vint4 asInt     ( const __m128& a ) { return _mm_castps_si128(a); }
+  __forceinline const vint4 operator +( const vint4&  a ) { return a; }
+  __forceinline const vint4 operator -( const vint4&  a ) { return _mm_sub_epi32(_mm_setzero_si128(), a.v); }
 #if defined(__SSSE3__)
-  __forceinline const vint4 abs       ( const vint4& a ) { return _mm_abs_epi32(a.v); }
+  __forceinline const vint4 abs       ( const vint4&  a ) { return _mm_abs_epi32(a.v); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////

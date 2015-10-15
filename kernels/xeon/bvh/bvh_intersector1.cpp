@@ -130,7 +130,7 @@ namespace embree
         {
           /*! use 8-wide sorting network */
           const size_t hits = __popcnt(movemask(vmask));
-          const vint<N> tNear_i = cast(tNear);
+          const vint<N> tNear_i = asInt(tNear);
           const int orderMask = N-1;
           const vint<N> dist = select(vmask, (tNear_i & (~orderMask)) | vint<N>(step), vint<N>(True));
           const vint<N> order = sortNetwork(dist) & orderMask;

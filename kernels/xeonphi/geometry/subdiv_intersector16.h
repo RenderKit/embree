@@ -55,13 +55,13 @@ namespace embree
     
     __forceinline vfloat16 getU() const
     {
-      const vint16 u = cast(uv) & 0xffff;
+      const vint16 u = asInt(uv) & 0xffff;
       return vfloat16(u) * 2.0f/65535.0f;
     }
 
     __forceinline vfloat16 getV() const
     {
-      const vint16 v = cast(uv) >> 16;
+      const vint16 v = asInt(uv) >> 16;
       return vfloat16(v) * 2.0f/65535.0f;
     }
 

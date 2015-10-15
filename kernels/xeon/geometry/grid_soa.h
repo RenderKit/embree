@@ -151,8 +151,8 @@ namespace embree
       static __forceinline Vec2<vfloat> decodeUV(const vfloat& uv)
       {
         typedef typename vfloat::Int vint;
-	const vint iu  = cast(uv) & 0xffff;
-	const vint iv  = srl(cast(uv),16);
+        const vint iu  = asInt(uv) & 0xffff;
+        const vint iv  = srl(asInt(uv),16);
 	const vfloat u = (vfloat)iu * vfloat(1.0f/0xFFFF);
 	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
 	return Vec2<vfloat>(u,v);

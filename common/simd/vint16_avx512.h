@@ -175,7 +175,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint16 cast      ( const __m512& a ) { return _mm512_castps_si512(a); }
+  __forceinline const vint16 asInt     ( const __m512& a ) { return _mm512_castps_si512(a); }
   __forceinline const vint16 operator +( const vint16& a ) { return a; }
   __forceinline const vint16 operator -( const vint16& a ) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
 
