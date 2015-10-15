@@ -52,8 +52,8 @@ namespace embree
 #endif
 
 #if defined(__AVX512F__)
-    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __m512i valid);
-    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __m512i valid);
+    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __m128i valid); // mask gets passed as 16 bytes
+    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __m128i valid); // mask gets passed as 16 bytes
 #endif
 
 #if defined(__MIC__)
@@ -204,10 +204,10 @@ namespace embree
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-    	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask());
+    	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
 	}
         else {
-          vint16 mask = valid.mask();
+          vint16 mask = valid.mask32();
 	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
         }
       }
@@ -223,7 +223,7 @@ namespace embree
          ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid);
 	}
         else {
-          vint16 mask = valid.mask();
+          vint16 mask = valid.mask32();
 	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
         }
       }
@@ -264,10 +264,10 @@ namespace embree
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid.mask());
+	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid.mask8());
 	}
 	else {
-          vint16 mask = valid.mask();
+          vint16 mask = valid.mask32();
 	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
         }
       }
@@ -283,7 +283,7 @@ namespace embree
 	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid);
 	}
 	else {
-          vint16 mask = valid.mask();
+          vint16 mask = valid.mask32();
 	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
         }
       }

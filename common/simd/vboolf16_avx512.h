@@ -44,7 +44,16 @@ namespace embree
     __forceinline vboolf(int t ) { v = (__mmask)t; }
     __forceinline vboolf(unsigned int t ) { v = (__mmask)t; }
 
-    __forceinline __m512i mask() const { 
+    /* return int8 mask */
+    __forceinline __m128i mask8() const { 
+      const __m512i f = _mm512_set_1to16_epi32(0);
+      const __m512i t = _mm512_set_1to16_epi32(-1);
+      const __m512i m =  _mm512_mask_or_epi32(f,v,t,t); 
+      return _mm512_cvtepi32_epi8(m);
+    }
+
+    /* return int32 mask */
+    __forceinline __m512i mask32() const { 
       const __m512i f = _mm512_set_1to16_epi32(0);
       const __m512i t = _mm512_set_1to16_epi32(-1);
       return _mm512_mask_or_epi32(f,v,t,t); 
