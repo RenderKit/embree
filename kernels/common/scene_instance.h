@@ -26,6 +26,7 @@ namespace embree
   public:
     Instance (Scene* parent, Accel* object); 
     virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void setMask (unsigned mask);
     virtual void build(size_t threadIndex, size_t threadCount) {}
     
   public:
