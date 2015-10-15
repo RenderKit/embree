@@ -124,46 +124,76 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
         }
-        
-        /*! Here starts the slow path for 3 or 4 hit children. We push
-         *  all nodes onto the stack to sort them there. */
-        assert(stackPtr < stackEnd); 
-        stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-        assert(stackPtr < stackEnd); 
-        stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
-        
-        /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-        assert(stackPtr < stackEnd); 
-        r = __bscf(mask);
-        NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-        assert(c != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-          continue;
-        }
-        
-        /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-        assert(stackPtr < stackEnd); 
-        r = __bscf(mask);
-        c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-        assert(c != BVH::emptyNode);
-        if (likely(N == 4 || mask == 0)) {
-          sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-          continue;
-        }
 
-        /*! fallback case if more than 4 children are hit */
-        while (1)
+#if defined(__AVX2__)
+        if (N == 8)
         {
+          /*! use 8-wide sorting network */
+          const size_t hits = __popcnt(movemask(vmask));
+          const vint<N> tNear_i = cast(tNear);
+          const int orderMask = N-1;
+          const vint<N> dist = select(vmask, (tNear_i & (~orderMask)) | vint<N>(step), vint<N>(True));
+          const vint<N> order = sortNetwork(dist) & orderMask;
+          const unsigned int cur_index = toScalar(order);
+          cur = node->child(cur_index);
+          cur.prefetch();
+
+          for (size_t i=0; i<hits-1; i++)
+          {
+            r = order[hits-1-i];
+            assert(((unsigned int)1 << r) & movemask(vmask));
+            const NodeRef c = node->child(r);
+            assert(c != BVH::emptyNode);
+            c.prefetch();
+            const unsigned int d = *(unsigned int*)&tNear[r];
+            stackPtr->ptr = c;
+            stackPtr->dist = d;
+            stackPtr++;
+          }
+        }
+        else
+#endif
+        {
+          /*! Here starts the slow path for 3 or 4 hit children. We push
+           *  all nodes onto the stack to sort them there. */
+          assert(stackPtr < stackEnd);
+          stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
+          assert(stackPtr < stackEnd);
+          stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
+
+          /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+          assert(c != BVH::emptyNode);
+          if (likely(mask == 0)) {
+            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
+            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+            continue;
+          }
+
+          /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
           assert(stackPtr < stackEnd);
           r = __bscf(mask);
           c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
           assert(c != BVH::emptyNode);
-          if (unlikely(mask == 0)) break;
+          if (likely(N == 4 || mask == 0)) {
+            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
+            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+            continue;
+          }
+
+          /*! fallback case if more than 4 children are hit */
+          while (1)
+          {
+            assert(stackPtr < stackEnd);
+            r = __bscf(mask);
+            c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
+            assert(c != BVH::emptyNode);
+            if (unlikely(mask == 0)) break;
+          }
+          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
         }
-        cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
       }
     }
 
