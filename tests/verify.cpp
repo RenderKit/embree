@@ -3091,7 +3091,8 @@ namespace embree
       monitorMemoryInvokations = 0;
       monitorProgressBreak = -1;
       monitorProgressInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      RegressionTask task1(sceneIndex,1,0);
+      func(new ThreadRegressionTask(0,0,&task1));
       if (monitorMemoryBytesUsed) {
         rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
         //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
@@ -3102,7 +3103,8 @@ namespace embree
       monitorMemoryInvokations = 0;
       monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
       monitorProgressInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      RegressionTask task2(sceneIndex,1,0);
+      func(new ThreadRegressionTask(0,0,&task2));
       if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
         rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
         //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
