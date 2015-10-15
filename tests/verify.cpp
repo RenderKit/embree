@@ -18,6 +18,7 @@
 #include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include <vector>
+#include <cstddef>
 
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE)
 #define _MM_DENORMALS_ZERO_ON   (0x0040)
@@ -147,10 +148,16 @@ namespace embree
     ~ClearBuffers() { clearBuffers(); }
   };
 
+
+  typedef decltype(nullptr) nullptr_t; 
+
+
   struct RTCSceneRef
   {
   public:
-    RTCSceneRef(std::nullptr_t) 
+    RTCScene scene;
+
+    RTCSceneRef(nullptr_t) 
       : scene(nullptr) {}
 
     RTCSceneRef(RTCScene scene) 
@@ -178,14 +185,12 @@ namespace embree
       return *this;
     }
 
-    __forceinline RTCSceneRef& operator= (std::nullptr_t) 
+    __forceinline RTCSceneRef& operator= (nullptr_t) 
     {
       if (scene) rtcDeleteScene(scene);
       scene = nullptr;
       return *this;
     }
-  public:
-    RTCScene scene;
   };
 
   RTCSceneFlags getSceneFlag(size_t i) 
