@@ -337,6 +337,29 @@ namespace embree
 
 #endif
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Sorting networks
+  ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__SSE4_1__)
+  __forceinline vint4 sortNetwork(const vint4& v)
+  {
+    const vint4 a0 = v;
+    const vint4 b0 = shuffle<1,0,3,2>(a0);
+    const vint4 c0 = umin(a0,b0);
+    const vint4 d0 = umax(a0,b0);
+    const vint4 a1 = select(0x55 /* 0b01010101 */,c0,d0);
+    const vint4 b1 = shuffle<2,3,0,1>(a1);
+    const vint4 c1 = umin(a1,b1);
+    const vint4 d1 = umax(a1,b1);
+    const vint4 a2 = select(0x33 /* 0b00110011 */,c1,d1);
+    const vint4 b2 = shuffle<0,2,1,3>(a2);
+    const vint4 c2 = umin(a2,b2);
+    const vint4 d2 = umax(a2,b2);
+    const vint4 a3 = select(0x22 /* 0b00100010 */,c2,d2);
+    return a3;
+  }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
