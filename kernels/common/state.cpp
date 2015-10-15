@@ -89,7 +89,7 @@ namespace embree
       throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
 #endif
 
-#if defined(__MIC__) // FIXME: put into State::verify function
+#if defined(__MIC__)
     if (!(numThreads == 1 || (numThreads % 4) == 0))
       throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
 #endif
