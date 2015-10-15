@@ -215,7 +215,7 @@ namespace embree
     DBG(PING);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = numPrimitives+BVH4i::N;
 	const size_t minAllocNodes = (threadCount+1) * ALLOCATOR_NODE_BLOCK_SIZE; 

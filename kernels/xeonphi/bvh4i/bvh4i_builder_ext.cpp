@@ -95,7 +95,7 @@ namespace embree
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 PRINT(numPrims);
@@ -782,7 +782,7 @@ PRINT(CORRECT_numPrims);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = numPrimitives;
 	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
@@ -971,7 +971,7 @@ PRINT(CORRECT_numPrims);
   {
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = numPrimitives+4;
 	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_THREADS; // (threadCount+1) 
