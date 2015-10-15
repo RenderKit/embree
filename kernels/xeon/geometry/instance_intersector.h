@@ -26,8 +26,8 @@ namespace embree
     template<int K>
     struct FastInstanceIntersectorK
     {
-      static void intersect(vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
-      static void occluded (vbool<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
+      static void intersect(vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
+      static void occluded (vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item);
     };
 
     typedef FastInstanceIntersectorK<4>  FastInstanceIntersector4;
