@@ -181,7 +181,11 @@ namespace embree
 #define THREADS_PER_CORE 4
 #define CORES 54
 #define OFFSET 49
+#define CORES2 12
+#define OFFSET2 1    
     ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
+    if (threadID >= CORES*THREADS_PER_CORE)
+      ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
 #else
     ssize_t ID = threadID;
 #endif
