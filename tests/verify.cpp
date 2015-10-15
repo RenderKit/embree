@@ -555,7 +555,7 @@ namespace embree
     if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     /* create sphere geometry */
     size_t tri = 0;
@@ -698,10 +698,10 @@ namespace embree
     size_t numVertexCreases = 10;
     size_t numHoles = 0; // do not test holes as this causes some tests that assume a closed sphere to fail
     unsigned int mesh = rtcNewSubdivisionMesh(scene, flags, numFaces, numEdges, numVertices, numEdgeCreases, numVertexCreases, numHoles);
-    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (g_enable_build_cancel && vertexBuffer == nullptr) return mesh;
-    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (g_enable_build_cancel && indexBuffer == nullptr) return mesh;
-    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (g_enable_build_cancel && facesBuffer == nullptr) return mesh;
-    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (g_enable_build_cancel && levelBuffer == nullptr) return mesh;
+    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
     memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
@@ -713,9 +713,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
     
     int* edgeCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseIndices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
     float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseWeights == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
@@ -735,9 +735,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER); 
     
     int* vertexCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseIndices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
     float* vertexCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseWeights == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     for (size_t i=0; i<numVertexCreases; i++) 
     {
@@ -764,7 +764,7 @@ namespace embree
     
     /* set vertices */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-    if (g_enable_build_cancel && vertices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
     vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
     vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
     vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
@@ -778,7 +778,7 @@ namespace embree
     /* set triangles and colors */
     int tri = 0;
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -819,14 +819,14 @@ namespace embree
     Vec3fa* vertices1 = nullptr;
     if (numTimeSteps >= 1) {
       vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
-      if (g_enable_build_cancel && vertices0 == nullptr) return geomID;
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
     }
     if (numTimeSteps >= 2) {
       vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
-      if (g_enable_build_cancel && vertices1 == nullptr) return geomID;
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
     }
     int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && indices == nullptr) return geomID;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
 
     for (size_t i=0; i<numHairs; i++) 
     {
