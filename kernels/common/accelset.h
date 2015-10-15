@@ -51,7 +51,12 @@ namespace embree
     typedef void (*ISPCOccludedFunc8 )(void* ptr, RTCRay8& ray, size_t item, __m256 valid);
 #endif
 
-#if defined(__MIC__) || defined(__AVX512F__)
+#if defined(__AVX512F__)
+    typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __m128i valid); // mask gets passed as 16 bytes
+    typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __m128i valid); // mask gets passed as 16 bytes
+#endif
+
+#if defined(__MIC__)
     typedef void (*ISPCIntersectFunc16)(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
     typedef void (*ISPCOccludedFunc16 )(void* ptr, RTCRay16& ray, size_t item, __mmask16 valid);
 #endif
@@ -169,44 +174,60 @@ namespace embree
         assert(intersectors.intersector1.intersect);
         intersectors.intersector1.intersect(intersectors.ptr,ray,item);
       }
-      
+   
       /*! Intersects a packet of 4 rays with the scene. */
-      __forceinline void intersect4 (const void* valid, RTCRay4& ray, size_t item) 
+#if defined(__SSE__)   
+      __forceinline void intersect4 (const vbool4& valid, RTCRay4& ray, size_t item) 
       {
-#if defined(__SSE__)
         assert(item < size());
         assert(intersectors.intersector4.intersect);
-	if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,*(__m128*)valid);
-        else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(valid,intersectors.ptr,ray,item);
-#endif
+	if (intersectors.intersector4.ispc) ((ISPCIntersectFunc4)intersectors.intersector4.intersect)(intersectors.ptr,ray,item,valid);
+        else                                ((    IntersectFunc4)intersectors.intersector4.intersect)(&valid,intersectors.ptr,ray,item);
       }
+#endif
       
-      /*! Intersects a packet of 8 rays with the scene. */
-      __forceinline void intersect8 (const void* valid, RTCRay8& ray, size_t item) 
-      {
 #if defined(__AVX__)
+      /*! Intersects a packet of 8 rays with the scene. */
+      __forceinline void intersect8 (const vbool8& valid, RTCRay8& ray, size_t item) 
+      {
         assert(item < size());
         assert(intersectors.intersector8.intersect);
-	if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,*(__m256*)valid);
-        else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(valid,intersectors.ptr,ray,item);
-#endif
+	if (intersectors.intersector8.ispc) ((ISPCIntersectFunc8)intersectors.intersector8.intersect)(intersectors.ptr,ray,item,valid);
+        else                                ((    IntersectFunc8)intersectors.intersector8.intersect)(&valid,intersectors.ptr,ray,item);
       }
+#endif
 
       /*! Intersects a packet of 16 rays with the scene. */
-      __forceinline void intersect16 (const void* valid, RTCRay16& ray, size_t item) 
+#if defined(__AVX512F__)
+      __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item) 
       {
-#if defined(__MIC__) || defined(__AVX512F__)
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-	  const vint16 maski = *(vint16*)valid;
-	  const __mmask16 mask = maski != vint16(0);
-	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,mask);
+    	  ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid.mask8());
 	}
-        else
-	  ((IntersectFunc16)intersectors.intersector16.intersect)(valid,intersectors.ptr,ray,item);
-#endif
+        else {
+          vint16 mask = valid.mask32();
+	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
+        }
       }
+#endif
+
+      /*! Intersects a packet of 16 rays with the scene. */
+#if defined(__MIC__) 
+      __forceinline void intersect16 (const vbool16& valid, RTCRay16& ray, size_t item) 
+      {
+        assert(item < size());
+        assert(intersectors.intersector16.occluded);
+	if (intersectors.intersector16.ispc) {
+         ((ISPCIntersectFunc16)intersectors.intersector16.intersect)(intersectors.ptr,ray,item,valid);
+	}
+        else {
+          vint16 mask = valid.mask32();
+	  ((IntersectFunc16)intersectors.intersector16.intersect)(&mask,intersectors.ptr,ray,item);
+        }
+      }
+#endif
       
       /*! Tests if single ray is occluded by the scene. */
       __forceinline void occluded (RTCRay& ray, size_t item) {
@@ -216,39 +237,55 @@ namespace embree
       
       /*! Tests if a packet of 4 rays is occluded by the scene. */
 #if defined(__SSE__)
-      __forceinline void occluded4 (const void* valid, RTCRay4& ray, size_t item) 
+      __forceinline void occluded4 (const vbool4& valid, RTCRay4& ray, size_t item) 
       {
         assert(item < size());
 	assert(intersectors.intersector4.occluded);
-	if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,*(__m128*)valid);
-        else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(valid,intersectors.ptr,ray,item);
+	if (intersectors.intersector4.ispc) ((ISPCOccludedFunc4)intersectors.intersector4.occluded)(intersectors.ptr,ray,item,valid);
+        else                                ((    OccludedFunc4)intersectors.intersector4.occluded)(&valid,intersectors.ptr,ray,item);
       }
 #endif
       
       /*! Tests if a packet of 8 rays is occluded by the scene. */
 #if defined(__AVX__)
-      __forceinline void occluded8 (const void* valid, RTCRay8& ray, size_t item) 
+      __forceinline void occluded8 (const vbool8& valid, RTCRay8& ray, size_t item) 
       {
         assert(item < size());
 	assert(intersectors.intersector8.occluded);
-	if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,*(__m256*)valid);
-        else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(valid,intersectors.ptr,ray,item);
+	if (intersectors.intersector8.ispc) ((ISPCOccludedFunc8)intersectors.intersector8.occluded)(intersectors.ptr,ray,item,valid);
+        else                                ((    OccludedFunc8)intersectors.intersector8.occluded)(&valid,intersectors.ptr,ray,item);
       }
 #endif
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
-#if defined(__MIC__) || defined(__AVX512F__)
-      __forceinline void occluded16 (const void* valid, RTCRay16& ray, size_t item) 
+#if defined(__AVX512F__)
+      __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item) 
       {
         assert(item < size());
         assert(intersectors.intersector16.occluded);
 	if (intersectors.intersector16.ispc) {
-	  const vint16 maski = *(vint16*)valid;
-	  const __mmask16 mask = maski != vint16(0);
-	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,mask);
+	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid.mask8());
 	}
-	else
-	  ((OccludedFunc16)intersectors.intersector16.occluded)(valid,intersectors.ptr,ray,item);
+	else {
+          vint16 mask = valid.mask32();
+	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
+        }
+      }
+#endif
+
+      /*! Tests if a packet of 16 rays is occluded by the scene. */
+#if defined(__MIC__)
+      __forceinline void occluded16 (const vbool16& valid, RTCRay16& ray, size_t item) 
+      {
+        assert(item < size());
+        assert(intersectors.intersector16.occluded);
+	if (intersectors.intersector16.ispc) {
+	  ((ISPCOccludedFunc16)intersectors.intersector16.occluded)(intersectors.ptr,ray,item,valid);
+	}
+	else {
+          vint16 mask = valid.mask32();
+	  ((OccludedFunc16)intersectors.intersector16.occluded)(&mask,intersectors.ptr,ray,item);
+        }
       }
 #endif
       

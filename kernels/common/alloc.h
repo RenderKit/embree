@@ -244,12 +244,7 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-	// FIXME: MIC
-#if defined(__MIC__)
-        size_t threadIndex = 0;
-#else
         size_t threadIndex = TaskSchedulerTBB::threadIndex();
-#endif
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
