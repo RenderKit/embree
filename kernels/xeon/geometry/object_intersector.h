@@ -45,7 +45,7 @@ namespace embree
     {
       AVX_ZERO_UPPER();
       // FIXME: add ray mask test
-      prim.accel->intersect4(&valid_i,(RTCRay4&)ray,prim.item);
+      prim.accel->intersect4(valid_i,(RTCRay4&)ray,prim.item);
     }
 
     template<>
@@ -53,7 +53,7 @@ namespace embree
     {
       AVX_ZERO_UPPER();
       // FIXME: add ray mask test
-      prim.accel->occluded4(&valid_i,(RTCRay4&)ray,prim.item);
+      prim.accel->occluded4(valid_i,(RTCRay4&)ray,prim.item);
       return ray.geomID == 0;
     }
 
@@ -62,14 +62,14 @@ namespace embree
     __forceinline void ObjectIntersector8::intersect(const vbool8& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, Scene* scene)
     {
       // FIXME: add ray mask test
-      prim.accel->intersect8(&valid_i,(RTCRay8&)ray,prim.item);
+      prim.accel->intersect8(valid_i,(RTCRay8&)ray,prim.item);
     }
 
     template<>
     __forceinline vbool8 ObjectIntersector8::occluded(const vbool8& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, Scene* scene)
     {
       // FIXME: add ray mask test
-      prim.accel->occluded8(&valid_i,(RTCRay8&)ray,prim.item);
+      prim.accel->occluded8(valid_i,(RTCRay8&)ray,prim.item);
       return ray.geomID == 0;
     }
 #endif
@@ -79,14 +79,14 @@ namespace embree
     __forceinline void ObjectIntersector16::intersect(const vbool16& valid_i, const Precalculations& pre, Ray16& ray, const Primitive& prim, Scene* scene)
     {
       // FIXME: add ray mask test
-      prim.accel->intersect16(&valid_i,(RTCRay16&)ray,prim.item);
+      prim.accel->intersect16(valid_i,(RTCRay16&)ray,prim.item);
     }
 
     template<>
     __forceinline vbool16 ObjectIntersector16::occluded(const vbool16& valid_i, const Precalculations& pre, const Ray16& ray, const Primitive& prim, Scene* scene)
     {
       // FIXME: add ray mask test
-      prim.accel->occluded16(&valid_i,(RTCRay16&)ray,prim.item);
+      prim.accel->occluded16(valid_i,(RTCRay16&)ray,prim.item);
       return ray.geomID == 0;
     }
 #endif
