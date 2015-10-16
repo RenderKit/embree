@@ -43,7 +43,6 @@ namespace embree
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
 #endif
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
-          //scale = select(diag > vfloat4(1E-19f),rcp(diag) * vfloat4(0.99f*num),vfloat4(0.0f));
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
         }

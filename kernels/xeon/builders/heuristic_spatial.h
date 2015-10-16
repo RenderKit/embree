@@ -37,7 +37,6 @@ namespace embree
           const vfloat4 upper = (vfloat4) pinfo.geomBounds.upper;
           const vbool4 ulpsized = upper - lower <= max(vfloat4(1E-19f),128.0f*vfloat4(ulp)*max(abs(lower),abs(upper)));
           const vfloat4 diag = (vfloat4) pinfo.geomBounds.size();
-          //scale = select(ulpsized,vfloat4(0.0f),rcp(diag) * vfloat4(BINS * 0.99f));
           scale = select(ulpsized,vfloat4(0.0f),vfloat4(BINS * 0.99f)/diag);
           ofs  = (vfloat4) pinfo.geomBounds.lower;
         }
@@ -121,8 +120,7 @@ namespace embree
         for (size_t i=0; i<N; i++)
         {
           const PrimRef prim = prims[i];
-          //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-          unsigned geomID = prim.geomID() & 0x00FFFFFF; // FIXME: hack !!
+          unsigned geomID = prim.geomID() & 0x00FFFFFF;
           unsigned splits = prim.geomID() >> 24;
 
           if (splits == 1)
@@ -138,11 +136,6 @@ namespace embree
           } 
           else
           {
-            //TriangleMesh* mesh = (TriangleMesh*) scene->get(geomID); 
-            //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-            //const Vec3fa v0 = mesh->vertex(tri.v[0]);
-            //const Vec3fa v1 = mesh->vertex(tri.v[1]);
-            //const Vec3fa v2 = mesh->vertex(tri.v[2]);
             const vint4 bin0 = mapping.bin(prim.bounds().lower);
             const vint4 bin1 = mapping.bin(prim.bounds().upper);
             
@@ -157,7 +150,6 @@ namespace embree
                 const float pos = mapping.pos(bin+1,dim);
                 
                 PrimRef left,right;
-                //splitTriangle(rest,dim,pos,v0,v1,v2,left,right);
                 splitPrimitive(rest,dim,pos,left,right);
                 if (left.bounds().empty()) l++;
                 
@@ -165,8 +157,6 @@ namespace embree
                 rest = right;
               }
               if (rest.bounds().empty()) r--;
-              //numBegin[bin0[dim]][dim]++;
-              //numEnd  [bin1[dim]][dim]++;
               numBegin[l][dim]++;
               numEnd  [r][dim]++;
               bounds  [bin][dim].extend(rest.bounds());
@@ -182,7 +172,7 @@ namespace embree
       }
       
       /*! merges in other binning information */
-      void merge (const SpatialBinInfo& other) // FIXME: dont iterate over all bin
+      void merge (const SpatialBinInfo& other)
       {
         for (size_t i=0; i<BINS; i++) 
         {
@@ -195,7 +185,7 @@ namespace embree
       }
 
       /*! merges in other binning information */
-      static __forceinline const SpatialBinInfo reduce (const SpatialBinInfo& a, const SpatialBinInfo& b) // FIXME: dont iterate over all bin
+      static __forceinline const SpatialBinInfo reduce (const SpatialBinInfo& a, const SpatialBinInfo& b)
       {
         SpatialBinInfo c;
         for (size_t i=0; i<BINS; i++) 
