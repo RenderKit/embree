@@ -135,12 +135,12 @@ namespace embree
     
 #else
     createTriangleAccel();
-    accels.add(BVH4Factory::BVH4Triangle4vMB(this));
+    accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
     createHairAccel();
-    accels.add(BVH4Factory::BVH4OBBBezier1iMB(this,false));
+    accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
     createSubdivAccel();
-    accels.add(BVH4Factory::BVH4InstancedBVH4Triangle4ObjectSplit(this));
-    accels.add(BVH4Factory::BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+    accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
+    accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
 
     /* increment number of scenes */
@@ -171,14 +171,14 @@ namespace embree
           else 
 #endif
           {
-            if (isHighQuality()) accels.add(BVH4Factory::BVH4Triangle4SpatialSplit(this));
-            else                 accels.add(BVH4Factory::BVH4Triangle4ObjectSplit(this));
+            if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
+            else                 accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));
           }
           break;
 
-        case /*0b01*/ 1: accels.add(BVH4Factory::BVH4Triangle4vObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4Factory::BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4Factory::BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4vObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iObjectSplit(this)); break;
         }
       }
       else 
@@ -188,29 +188,29 @@ namespace embree
         case /*0b00*/ 0: 
 #if defined(RTCORE_TRIANGLE_PAIRS) && defined (__TARGET_AVX__)
           if (hasISA(AVX)) 
-            accels.add(BVH4Factory::BVH4BVH4TrianglePairs4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4BVH4TrianglePairs4ObjectSplit(this));
           else
-            accels.add(BVH4Factory::BVH4BVH4Triangle4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
           break;          
 #else
-          accels.add(BVH4Factory::BVH4BVH4Triangle4ObjectSplit(this)); break;
+          accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
 #endif
-        case /*0b01*/ 1: accels.add(BVH4Factory::BVH4BVH4Triangle4ObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4Factory::BVH4BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4Factory::BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
         }
       }
     }
-    else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(BVH4Factory::BVH4BVH4Triangle4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(BVH4Factory::BVH4BVH4Triangle4vObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(BVH4Factory::BVH4BVH4Triangle4iObjectSplit(this));
-    else if (device->tri_accel == "bvh4.triangle4")         accels.add(BVH4Factory::BVH4Triangle4(this));
-    else if (device->tri_accel == "bvh4.triangle4v")        accels.add(BVH4Factory::BVH4Triangle4v(this));
-    else if (device->tri_accel == "bvh4.triangle4i")        accels.add(BVH4Factory::BVH4Triangle4i(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(device->bvh4_factory->BVH4BVH4Triangle4vObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this));
+    else if (device->tri_accel == "bvh4.triangle4")         accels.add(device->bvh4_factory->BVH4Triangle4(this));
+    else if (device->tri_accel == "bvh4.triangle4v")        accels.add(device->bvh4_factory->BVH4Triangle4v(this));
+    else if (device->tri_accel == "bvh4.triangle4i")        accels.add(device->bvh4_factory->BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(BVH4Factory::BVH4BVH4Triangle8ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(BVH4Factory::BVH4TrianglePairs4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.triangle8")         accels.add(BVH4Factory::BVH4Triangle8(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(device->bvh4_factory->BVH4BVH4Triangle8ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.triangle8")         accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")         accels.add(BVH8Factory::BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(BVH8Factory::BVH8Triangle8(this));
     else if (device->tri_accel == "bvh8.trianglepairs4")    accels.add(BVH8Factory::BVH8TrianglePairs4ObjectSplit(this));
@@ -225,27 +225,27 @@ namespace embree
       if (isStatic()) {
         int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
         switch (mode) {
-        case /*0b00*/ 0: accels.add(BVH4Factory::BVH4OBBBezier1v(this,isHighQuality())); break;
-        case /*0b01*/ 1: accels.add(BVH4Factory::BVH4OBBBezier1v(this,isHighQuality())); break;
-        case /*0b10*/ 2: accels.add(BVH4Factory::BVH4OBBBezier1i(this,isHighQuality())); break;
-        case /*0b11*/ 3: accels.add(BVH4Factory::BVH4OBBBezier1i(this,isHighQuality())); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
         }
       } 
       else 
       {
         int mode =  2*(int)isCompact() + 1*(int)isRobust();
         switch (mode) {
-        case /*0b00*/ 0: accels.add(BVH4Factory::BVH4Bezier1v(this)); break;
-        case /*0b01*/ 1: accels.add(BVH4Factory::BVH4Bezier1v(this)); break;
-        case /*0b10*/ 2: accels.add(BVH4Factory::BVH4Bezier1i(this)); break;
-        case /*0b11*/ 3: accels.add(BVH4Factory::BVH4Bezier1i(this)); break;
+        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
         }
       }   
     }
-    else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(BVH4Factory::BVH4Bezier1v(this));
-    else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(BVH4Factory::BVH4Bezier1i(this));
-    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(BVH4Factory::BVH4OBBBezier1v(this,false));
-    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(BVH4Factory::BVH4OBBBezier1i(this,false));
+    else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(device->bvh4_factory->BVH4Bezier1v(this));
+    else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
+    else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,false));
+    else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,false));
     else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+device->hair_accel);
   }
 
@@ -254,12 +254,12 @@ namespace embree
     if (device->subdiv_accel == "default") 
     {
       if (isIncoherent(flags) && isStatic())
-        accels.add(BVH4Factory::BVH4SubdivGridEager(this));
+        accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
       else
-        accels.add(BVH4Factory::BVH4SubdivPatch1Cached(this));
+        accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
     }
-    else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4Factory::BVH4SubdivPatch1Cached(this));
-    else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4Factory::BVH4SubdivGridEager(this));
+    else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
+    else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
     else THROW_RUNTIME_ERROR("unknown subdiv accel "+device->subdiv_accel);
   }
 

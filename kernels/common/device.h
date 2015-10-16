@@ -21,6 +21,8 @@
 
 namespace embree
 {
+  struct BVH4Factory;
+
   class Device : public State, public MemoryMonitorInterface
   {
     ALIGNED_CLASS;
@@ -60,6 +62,9 @@ namespace embree
     void exitTaskingSystem();
 
   public:
+#if !defined(__MIC__)
+    BVH4Factory* bvh4_factory;
+#endif
 
 #if USE_TASK_ARENA
   tbb::task_arena* arena;

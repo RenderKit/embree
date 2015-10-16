@@ -27,6 +27,10 @@
 #include "acceln.h"
 #include "geometry.h"
 
+#if !defined(__MIC__)
+#include "../xeon/bvh4/bvh4_factory.h"
+#endif
+
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE)
 #define _MM_DENORMALS_ZERO_ON   (0x0040)
 #define _MM_DENORMALS_ZERO_OFF  (0x0000)
@@ -46,7 +50,6 @@ namespace embree
   void init_globals();
 
   /* register functions for accels */
-  void BVH4Register();
   void BVH8Register();
 
 #if defined(__MIC__)
@@ -55,12 +58,18 @@ namespace embree
   void BVH4HairRegister();
 #endif
 
+  DEFINE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
+  DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
+  DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
+  DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
+  DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+
   /*! intersector registration functions */
-  DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
-  DECLARE_SYMBOL(AccelSet::Intersector1,InstanceIntersector1);
-  DECLARE_SYMBOL(AccelSet::Intersector4,InstanceIntersector4);
-  DECLARE_SYMBOL(AccelSet::Intersector8,InstanceIntersector8);
-  DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
+  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
+  DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
+  DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
+  DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
+  DECLARE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
   
   void InstanceIntersectorsRegister ()
   {
@@ -70,12 +79,12 @@ namespace embree
     SELECT_SYMBOL_KNC(features,InstanceIntersector1);
     SELECT_SYMBOL_KNC(features,InstanceIntersector16);
 #else
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
 #if defined (RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_SYMBOL_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_SYMBOL_AVX512(features,InstanceIntersector16);
+    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_SYMBOL_INIT_AVX512(features,InstanceIntersector16);
 #endif
 #endif
   }
@@ -146,8 +155,9 @@ namespace embree
 
     /* register all algorithms */
 #if !defined(__MIC__)
-    BVH4Register();
-#else
+    bvh4_factory = new BVH4Factory;
+#endif
+#if defined(__MIC__)
     BVH4iRegister();
     BVH4MBRegister();
     BVH4HairRegister();
@@ -171,6 +181,10 @@ namespace embree
 
   Device::~Device ()
   {
+#if !defined(__MIC__)
+    delete bvh4_factory;
+#endif
+
     setCacheSize(0);
     exitTaskingSystem();
   }

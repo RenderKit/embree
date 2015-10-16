@@ -264,7 +264,7 @@ namespace embree
     return cpu_features;
   }
 
-  void setCPUFeatures(int features) {
+  void setCPUFeatures(int features) { // FIXME: this state should go into Device
     cpu_features = features;
   }
 
