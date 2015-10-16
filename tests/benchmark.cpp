@@ -1010,7 +1010,7 @@ namespace embree
       for (size_t j=0; j<8; j++) {
         setRay(ray8,j,makeRay(zero,numbers[i+j]));
       }
-      __aligned(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid8,scene,ray8);
     }
     double t1 = getSeconds();
