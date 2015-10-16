@@ -109,7 +109,7 @@ namespace embree
       __forceinline void clear() 
       {
         for (size_t i=0; i<BINS; i++) { 
-          bounds[i][0] = bounds[i][1] = bounds[i][2] = bounds[i][3] = empty;
+          bounds[i][0] = bounds[i][1] = bounds[i][2] = empty;
           numBegin[i] = numEnd[i] = 0;
         }
       }
@@ -272,7 +272,7 @@ namespace embree
       }
       
     private:
-      BBox3fa bounds[BINS][4];  //!< geometry bounds for each bin in each dimension // FIXME: 4 -> 3
+      BBox3fa bounds[BINS][3];  //!< geometry bounds for each bin in each dimension
       vint4    numBegin[BINS];   //!< number of primitives starting in bin
       vint4    numEnd[BINS];     //!< number of primitives ending in bin
     };
