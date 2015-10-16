@@ -327,7 +327,7 @@ namespace embree
 #endif
 
       /* verify correct input */
-      assert(ray.tnear > -FLT_MIN);
+      assert(ray.tnear >= 0.0f);
       assert(!(types & BVH::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
@@ -458,7 +458,7 @@ namespace embree
 #endif
 
       /* verify correct input */
-      assert(ray.tnear > -FLT_MIN);
+      assert(ray.tnear >= 0.0f);
       assert(!(types & BVH::FLAG_NODE_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */

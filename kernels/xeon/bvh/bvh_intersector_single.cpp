@@ -34,7 +34,7 @@ namespace embree
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
-      assert(all(valid,ray.tnear > -FLT_MIN));
+      assert(all(valid,ray.tnear >= 0.0f));
 
       /* load ray */
       Vec3vfK ray_org = ray.org;
@@ -70,7 +70,7 @@ namespace embree
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
-      assert(all(valid,ray.tnear > -FLT_MIN));
+      assert(all(valid,ray.tnear >= 0.0f));
 
       /* load ray */
       vbool<K> terminated = !valid;
