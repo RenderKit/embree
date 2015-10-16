@@ -512,7 +512,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Bezier1v::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: enable high quality mode
+    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -520,7 +520,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: enable high quality mode
+    Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -529,7 +529,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Bezier1i::type,scene);
     Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,MODE_HIGH_QUALITY); // FIXME: support high quality mode
+    Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
     scene->needBezierVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
