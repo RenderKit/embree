@@ -28,7 +28,6 @@
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
-#include "../geometry/subdivpatch1_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 #include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
@@ -561,7 +560,6 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<4 COMMA true> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<true> > >);
 
-    DEFINE_INTERSECTOR1(BVH4Subdivpatch1Intersector1,BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > >);
     DEFINE_INTERSECTOR1(BVH4Subdivpatch1CachedIntersector1,BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector1>);
 
     DEFINE_INTERSECTOR1(BVH4GridAOSIntersector1,BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA GridAOSIntersector1>);

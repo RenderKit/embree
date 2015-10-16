@@ -27,9 +27,8 @@
 #include "../../common/subdiv/bezier_curve.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 
-#include "../geometry/grid_aos.h"
-#include "../geometry/subdivpatch1.h"
 #include "../geometry/subdivpatch1cached.h"
+#include "../geometry/grid_aos.h"
 #include "../geometry/grid_soa.h"
 
 namespace embree
@@ -38,83 +37,6 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    template<typename Primitive>
-    struct CreateBVH4SubdivLeaf
-    {
-      __forceinline CreateBVH4SubdivLeaf (BVH4* bvh, PrimRef* prims) 
-        : bvh(bvh), prims(prims) {}
-      
-      __forceinline int operator() (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc)
-      {
-        size_t items = Primitive::blocks(current.prims.size());
-        size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive));
-        BVH4::NodeRef node = bvh->encodeLeaf((char*)accel,items);
-        for (size_t i=0; i<items; i++) {
-          accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
-        }
-        *current.parent = node;
-	return 1;
-      }
-
-      BVH4* bvh;
-      PrimRef* prims;
-    };
-
-    struct BVH4SubdivPatch1BuilderBinnedSAHClass : public Builder
-    {
-      ALIGNED_STRUCT;
-
-      BVH4* bvh;
-      Scene* scene;
-      mvector<PrimRef> prims;
-      
-      BVH4SubdivPatch1BuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
-        : bvh(bvh), scene(scene), prims(scene->device) {}
-
-      void build(size_t, size_t) 
-      {
-        /* initialize all half edge structures */
-        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,1>();
-        if (numPrimitives > 0 || scene->isInterpolatable()) {
-          Scene::Iterator<SubdivMesh> iter(scene,scene->isInterpolatable());
-          parallel_for(size_t(0),iter.size(),[&](const range<size_t>& range) {
-              for (size_t i=range.begin(); i<range.end(); i++)
-                if (iter[i]) iter[i]->initializeHalfEdgeStructures();
-            });
-        }
-
-        /* skip build for empty scene */
-        if (numPrimitives == 0) {
-          prims.resize(numPrimitives);
-          bvh->set(BVH4::emptyNode,empty,0);
-          return;
-        }
-        bvh->alloc.reset();
-
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1BuilderBinnedSAH");
-
-        prims.resize(numPrimitives);
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-        const PrimInfo pinfo = createPrimRefArray<SubdivMesh,1>(scene,prims,virtualprogress);
-
-        BVH4Builder::build(bvh,CreateBVH4SubdivLeaf<SubdivPatch1>(bvh,prims.data()),virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
-        
-	/* clear temporary data for static geometry */
-	if (scene->isStatic()) {
-          prims.clear();
-          bvh->shrink();
-        }
-        bvh->cleanup();
-        bvh->postBuild(t0);
-      }
-
-      void clear() {
-        prims.clear();
-      }
-    };
-    
     struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
@@ -434,7 +356,6 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivPatch1BuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1BuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridEagerBuilderBinnedSAHClass((BVH4*)bvh,scene); }
     Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1CachedBuilderBinnedSAHClass((BVH4*)bvh,scene); }
   }

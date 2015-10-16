@@ -38,7 +38,6 @@ namespace embree
     static Accel* BVH4Triangle4v(Scene* scene);
     static Accel* BVH4Triangle4i(Scene* scene);
     static Accel* BVH4TrianglePairs4ObjectSplit(Scene* scene);
-    static Accel* BVH4SubdivPatch1(Scene* scene);
     static Accel* BVH4SubdivPatch1Cached(Scene* scene);
     static Accel* BVH4SubdivGridEager(Scene* scene);
     static Accel* BVH4UserGeometry(Scene* scene);

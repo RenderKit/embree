@@ -19,7 +19,6 @@
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
-#include "../geometry/subdivpatch1_intersector1.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
 #include "../geometry/grid_aos_intersector1.h"
 
@@ -54,7 +53,7 @@ namespace embree
       nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
       nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
-      /* we have no packet implementation for OBB nodes yet */
+      /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
 	intersect1(bvh, bvh->root, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
@@ -90,7 +89,7 @@ namespace embree
       nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
       nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
-      /* we have no packet implementation for OBB nodes yet */
+      /* iterates over all rays in the packet using single ray traversal */
       size_t bits = movemask(valid);
       for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
 	if (occluded1(bvh,bvh->root,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
@@ -133,9 +132,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVHNIntersectorKSingle<4 COMMA 4 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<4 COMMA 4 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<4 COMMA 4 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
-
-    DEFINE_INTERSECTOR4(BVH4Subdivpatch1Intersector4, BVHNIntersectorKFromIntersector1<4 COMMA 4 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-
     DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVHNIntersectorKFromIntersector1<4 COMMA 4 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA GridAOSIntersector1> >);
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -146,9 +142,6 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >);
-
-    DEFINE_INTERSECTOR8(BVH4Subdivpatch1Intersector8, BVHNIntersectorKFromIntersector1<4 COMMA 8 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
-
     DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVHNIntersectorKFromIntersector1<4 COMMA 8 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
 
@@ -160,8 +153,6 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single_OBB, BVHNIntersectorKSingle<4 COMMA 16 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<4 COMMA 16 COMMA 0x101 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<4 COMMA 16 COMMA 0x1010 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >);
-
-    DEFINE_INTERSECTOR16(BVH4Subdivpatch1Intersector16, BVHNIntersectorKFromIntersector1<4 COMMA 16 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA ArrayIntersector1<SubdivPatch1Intersector1 > > >);
     DEFINE_INTERSECTOR16(BVH4GridAOSIntersector16, BVHNIntersectorKFromIntersector1<4 COMMA 16 COMMA BVHNIntersector1<4 COMMA 0x1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
   }

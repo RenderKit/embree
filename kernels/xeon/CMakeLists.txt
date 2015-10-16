@@ -73,7 +73,6 @@ SET(EMBREE_LIBRARY_FILES
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
-  geometry/subdivpatch1_intersector1.cpp
   geometry/grid_soa.cpp	
   ../common/subdiv/subdivpatch1base_eval.cpp	
   builders/primrefgen.cpp
@@ -104,7 +103,6 @@ IF (RTCORE_RAY_PACKETS)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
     bvh/bvh_intersector1.cpp)
@@ -126,7 +124,6 @@ SET(EMBREE_LIBRARY_FILES_AVX
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
     
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.avx.cpp
@@ -165,7 +162,6 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
 
@@ -186,7 +182,6 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX512
 
     geometry/instance_intersector1.cpp
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
 

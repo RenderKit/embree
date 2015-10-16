@@ -258,7 +258,6 @@ namespace embree
       else
         accels.add(BVH4Factory::BVH4SubdivPatch1Cached(this));
     }
-    else if (device->subdiv_accel == "bvh4.subdivpatch1"      ) accels.add(BVH4Factory::BVH4SubdivPatch1(this));
     else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(BVH4Factory::BVH4SubdivPatch1Cached(this));
     else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(BVH4Factory::BVH4SubdivGridEager(this));
     else THROW_RUNTIME_ERROR("unknown subdiv accel "+device->subdiv_accel);
