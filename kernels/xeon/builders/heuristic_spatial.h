@@ -97,7 +97,6 @@ namespace embree
       struct __aligned(64) SpatialBinInfo
     {
       SpatialBinInfo() {
-        clear(); // FIXME: dont initialize in default constructor, performance issue !!!!
       }
 
       __forceinline SpatialBinInfo(EmptyTy) {
@@ -187,7 +186,7 @@ namespace embree
       /*! merges in other binning information */
       static __forceinline const SpatialBinInfo reduce (const SpatialBinInfo& a, const SpatialBinInfo& b)
       {
-        SpatialBinInfo c;
+        SpatialBinInfo c(empty);
         for (size_t i=0; i<BINS; i++) 
         {
           c.numBegin[i] += a.numBegin[i]+b.numBegin[i];
