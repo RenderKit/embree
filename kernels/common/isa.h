@@ -28,6 +28,17 @@ namespace embree
   void name##_error() { throw_RTCError(RTC_UNKNOWN_ERROR,"internal error in ISA selection for " TOSTRING(name)); } \
   type name((type)name##_error);
 
+// FIXME: simplify ISA selection
+#define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
+  typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
+  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  namespace avx512  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
+  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
+  symbol##Func symbol = (symbol##Func) symbol##_error;
+
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
   intersector = isa::intersector;
 
