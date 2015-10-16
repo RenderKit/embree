@@ -385,33 +385,6 @@ namespace embree
         size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
         bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data, not using fast allocation scheme !
 
-#if 0
-            /* compute scene bounds */
-            const BBox3fa centBounds = parallel_reduce 
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-           
-            //timer("compute_bounds");
-
-            /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            parallel_for
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), [&](const range<size_t>& r) 
-                {
-                  MortonCodeGenerator generator(mapping,&dest[r.begin()]);
-                  for (size_t i=r.begin(); i<r.end(); i++) {
-                    generator(mesh->bounds(i),i);
-                  }
-                });
-            size_t numPrimitivesGen = numPrimitives;
-
-#else 
-
             ParallelPrefixSumState<size_t> pstate;
       
             /* compute scene bounds */
@@ -429,7 +402,6 @@ namespace embree
             size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
             {
               size_t N = 0;
-              //MortonCodeGenerator generator(mapping,&dest[r.begin()]);
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
@@ -448,7 +420,6 @@ namespace embree
               numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
               {
                 size_t N = 0;
-                //MortonCodeGenerator generator(mapping,&dest[base]);
                 MortonCodeGenerator generator(mapping,&morton.data()[base]);
 
                 for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -462,7 +433,6 @@ namespace embree
               }, std::plus<size_t>());
             }
             
-#endif
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
