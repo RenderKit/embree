@@ -198,10 +198,9 @@ namespace embree
 #endif
   }
 
-  int cpu_features = 0;
-
   int getCPUFeatures()
   {
+    static int cpu_features = 0;
     if (cpu_features) 
       return cpu_features;
     
@@ -264,10 +263,6 @@ namespace embree
     return cpu_features;
   }
 
-  void setCPUFeatures(int features) { // FIXME: this state should go into Device
-    cpu_features = features;
-  }
-
   std::string stringOfCPUFeatures(int features)
   {
     std::string str;
@@ -296,12 +291,6 @@ namespace embree
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
     return str;
-  }
-
-  bool hasISA(const int isa) 
-  {
-    int cpu_features = getCPUFeatures();
-    return (cpu_features & isa) == isa;
   }
   
   std::string stringOfISA (int isa)

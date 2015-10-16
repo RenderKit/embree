@@ -146,9 +146,6 @@ namespace embree
   /*! get CPU features */
   int getCPUFeatures();
 
-  /*! set CPU features */
-  void setCPUFeatures(int features);
-
   /*! convert CPU features into a string */
   std::string stringOfCPUFeatures(int features);
 
@@ -165,9 +162,6 @@ namespace embree
   static const int KNC    = CPU_FEATURE_KNC;
   static const int AVX512F = AVX2 | CPU_FEATURE_AVX512F;
   static const int AVX512KNL = AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
-
-  /*! checks if the CPU has the specified ISA */
-  bool hasISA(const int feature);
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);

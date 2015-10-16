@@ -52,6 +52,12 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCDevice g_device = nullptr;
 
 #if !defined(__MIC__)

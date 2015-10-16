@@ -27,7 +27,7 @@ namespace embree
   struct BVH4Factory
   {
   public:
-    BVH4Factory();
+    BVH4Factory(int features);
 
   public:
     Accel* BVH4Triangle4vMB(Scene* scene);

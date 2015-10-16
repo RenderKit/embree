@@ -162,10 +162,8 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderMortonGeneral);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderMortonGeneral);
 
-  BVH4Factory::BVH4Factory ()
+  BVH4Factory::BVH4Factory (int features)
   {
-    int features = getCPUFeatures();
-
     /* select builders */
     SELECT_SYMBOL_INIT_DEFAULT_AVX(features,BVH4BuilderTwoLevelSAH);
     SELECT_SYMBOL_INIT_DEFAULT_AVX(features,BVH4BuilderInstancingSAH);

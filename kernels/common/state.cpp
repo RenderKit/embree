@@ -20,7 +20,7 @@
 namespace embree
 {
   State::State (bool singledevice) 
-    : thread_error(createTls()) 
+    : thread_error(createTls()), cpu_features(getCPUFeatures())
   {
     tri_accel = "default";
     tri_builder = "default";
@@ -79,6 +79,10 @@ namespace embree
       delete thread_errors[i];
     destroyTls(thread_error);
     thread_errors.clear();
+  }
+
+  bool State::hasISA(const int isa) {
+    return (cpu_features & isa) == isa;
   }
 
   void State::verify()
@@ -184,12 +188,12 @@ namespace embree
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
         std::string isa = strlwr(cin->get().Identifier());
-        setCPUFeatures(string_to_cpufeatures(isa));
+        cpu_features = string_to_cpufeatures(isa);
       }
 
       else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
         std::string isa = strlwr(cin->get().Identifier());
-        setCPUFeatures(getCPUFeatures() & string_to_cpufeatures(isa));
+        cpu_features &= string_to_cpufeatures(isa);
       }
 
       else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 
@@ -286,7 +290,7 @@ namespace embree
   bool State::verbosity(int N) {
     return N <= verbose;
   }
-  
+
   void State::print()
   {
     std::cout << "general:" << std::endl;

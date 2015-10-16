@@ -47,6 +47,12 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
 
   /* configuration */

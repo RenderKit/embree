@@ -25,9 +25,8 @@ namespace embree
   DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
   DECLARE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
 
-  InstanceFactory::InstanceFactory()
+  InstanceFactory::InstanceFactory(int features)
   {
-    int features = getCPUFeatures();
 #if defined(__MIC__)
     SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
     SELECT_SYMBOL_KNC(features,InstanceIntersector1);

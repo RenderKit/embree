@@ -158,7 +158,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined (__TARGET_AVX__)
-          if (hasISA(AVX))
+          if (device->hasISA(AVX))
 	  {
             if (isHighQuality()) accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this));
 #if defined(RTCORE_TRIANGLE_PAIRS)
@@ -187,7 +187,7 @@ namespace embree
         switch (mode) {
         case /*0b00*/ 0: 
 #if defined(RTCORE_TRIANGLE_PAIRS) && defined (__TARGET_AVX__)
-          if (hasISA(AVX)) 
+          if (device->hasISA(AVX)) 
             accels.add(device->bvh4_factory->BVH4BVH4TrianglePairs4ObjectSplit(this));
           else
             accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
@@ -327,7 +327,7 @@ namespace embree
 
     Geometry* geom = nullptr;
 #if defined(__TARGET_AVX__)
-    if (hasISA(AVX))
+    if (device->hasISA(AVX))
       geom = new SubdivMeshAVX(this,gflags,numFaces,numEdges,numVertices,numEdgeCreases,numVertexCreases,numHoles,numTimeSteps);
     else 
 #endif

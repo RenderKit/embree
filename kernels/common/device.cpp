@@ -121,14 +121,14 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory = new InstanceFactory;
+    instance_factory = new InstanceFactory(cpu_features);
 
 #if !defined(__MIC__)
-    bvh4_factory = new BVH4Factory;
+    bvh4_factory = new BVH4Factory(cpu_features);
 #endif
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory = new BVH8Factory();
+    bvh8_factory = new BVH8Factory(cpu_features);
 #endif
 
 #if defined(__MIC__)
@@ -164,7 +164,7 @@ namespace embree
     std::cout << "  Compiler : " << getCompilerName() << std::endl;
     std::cout << "  Platform : " << getPlatformName() << std::endl;
     std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << "(" << stringOfCPUFeatures(cpu_features) << ")" << std::endl;
     std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;

@@ -50,6 +50,9 @@ namespace embree
     /*! returns thread local error code */
     RTCError* error();
 
+    /*! checks if some particular ISA is enabled */
+    bool hasISA(const int isa);
+
   public:
     std::string tri_accel;                 //!< acceleration structure to use for triangles
     std::string tri_builder;               //!< builder to use for triangles
@@ -89,6 +92,7 @@ namespace embree
   public:
     size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
+    int cpu_features;                      //!< CPU ISA features to use
 
   public:
     tls_t thread_error;
