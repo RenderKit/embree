@@ -360,7 +360,7 @@ namespace embree
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device) {}
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), numPrimitives(0) {}
 
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
@@ -370,8 +370,12 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* calculate size of scene */
-        size_t numPrimitives = mesh->size();
+        /* We have to clear the allocator to guarantee that we can
+         * temporarily use the first allocation block for sorting the
+         * morton codes. */
+        const size_t numNewPrimitives = mesh->size();
+        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
+        numPrimitives = numNewPrimitives;
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -380,10 +384,12 @@ namespace embree
         }
       
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        
+
+        /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-        bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data, not using fast allocation scheme !
+        bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
+        bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
             ParallelPrefixSumState<size_t> pstate;
       
@@ -471,6 +477,7 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      size_t numPrimitives;
       mvector<MortonID32Bit> morton;
     };
     
@@ -488,7 +495,7 @@ namespace embree
     public:
       
       BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device) {}
+        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device), numPrimitives(0) {}
       
       /*! Destruction */
       ~BVH4SceneBuilderMorton () {
@@ -498,8 +505,12 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* calculate size of scene */
-        size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+         /* We have to clear the allocator to guarantee that we can
+         * temporarily use the first allocation block for sorting the
+         * morton codes. */
+        const size_t numNewPrimitives = scene->getNumPrimitives<Mesh,1>();
+        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
+        numPrimitives = numNewPrimitives;
         
         /* calculate groupID, primID encoding */ // FIXME: does not work for all scenes, use 64 bit IDs !!!
         Scene::Iterator<Mesh,1> iter2(scene);
@@ -510,10 +521,7 @@ namespace embree
         size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
           THROW_RUNTIME_ERROR("encoding error in morton builder");
-        
-        /* preallocate arrays */
-        morton.resize(numPrimitives);
-
+       
         /* skip build for empty scene */
         if (numPrimitives == 0) {
           bvh->set(BVH4::emptyNode,empty,0);
@@ -528,9 +536,11 @@ namespace embree
 #endif
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
 
-            //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+            /* preallocate arrays */
+            morton.resize(numPrimitives);
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data, not using fast allocation scheme!
+            bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
+            bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
             /* compute scene bounds */
             Scene::Iterator<Mesh,1> iter1(scene);
@@ -627,6 +637,7 @@ namespace embree
       Scene* scene;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      size_t numPrimitives;
       size_t encodeShift;
       size_t encodeMask;
       mvector<MortonID32Bit> morton;
