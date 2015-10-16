@@ -80,6 +80,8 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh.cpp
   bvh/bvh_statistics.cpp
   bvh4/bvh4_factory.cpp
+  bvh8/bvh8_factory.cpp
+
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
   bvh4/bvh4_builder.cpp
@@ -141,7 +143,6 @@ SET(EMBREE_LIBRARY_FILES_AVX
     
     bvh/bvh.cpp
     bvh/bvh_statistics.cpp
-    bvh8/bvh8_factory.cpp
     bvh8/bvh8_builder.avx.cpp
     bvh8/bvh8_builder_sah.avx.cpp
     )

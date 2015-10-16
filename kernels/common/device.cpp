@@ -159,9 +159,7 @@ namespace embree
 #endif
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory = nullptr;
-    if (hasISA(AVX)) 
-      bvh8_factory = new BVH8Factory();
+    bvh8_factory = new BVH8Factory();
 #endif
 
 #if defined(__MIC__)
