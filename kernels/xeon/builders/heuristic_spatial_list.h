@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! Performs standard object binning */
-    template<typename SplitPrimitive, typename PrimRef, size_t BINS = 16>
+    template<typename SplitPrimitive, typename PrimRef, size_t BINS = 32>
       struct HeuristicSpatialBlockListBinningSAH
       {
         typedef SpatialBinSplit<BINS> Split;
@@ -278,7 +278,7 @@ namespace embree
           rinfo_o.merge(info.right);
         }
         
-        void deterministic_order(const Set& set) // FIXME: implement me
+        void deterministic_order(const Set& set) // FIXME: implement deterministic_order
         {
           /* required as parallel partition destroys original primitive order */
           //std::sort(&prims[set.begin()],&prims[set.end()]);

@@ -376,8 +376,9 @@ namespace embree
     /* Spatial Split SAH builder that operates on lists of blocks of BuildRecords */
     struct BVHBuilderBinnedSpatialSAH
     {
+      enum { OBINS = 32, SBINS = 16 };
       typedef PrimRefList Set;
-      typedef Split2<BinSplit<32>,SpatialBinSplit<16> > Split;
+      typedef Split2<BinSplit<OBINS>,SpatialBinSplit<SBINS> > Split;
       typedef GeneralBuildRecord<Set,Split> BuildRecord;
       
       /*! standard spatial build without reduction */
@@ -447,7 +448,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
         
         /* instantiate spatial binning heuristic */
-        typedef HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> Heuristic;
+        typedef HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
         Heuristic heuristic(splitPrimitive);
         
         typedef GeneralBVHBuilder<
