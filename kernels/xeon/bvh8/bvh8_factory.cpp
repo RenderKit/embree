@@ -23,44 +23,44 @@
 
 namespace embree
 {
-  DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoellerNoFilter);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle4Intersector8ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8ChunkMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SYMBOL(Accel::Intersector1,BVH8Triangle8Intersector1Moeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoellerNoFilter);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle8Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SYMBOL(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle8Intersector16ChunkMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16ChunkMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16ChunkMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
 
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
-  DECLARE_SYMBOL(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
 
-  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
-  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
-  DECLARE_BUILDER(void,Scene,size_t,BVH8TrianglePairs4SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8TrianglePairs4SceneBuilderSAH);
 
-  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
-  DECLARE_BUILDER(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
 
-  void BVH8Register ()
+  BVH8Factory::BVH8Factory ()
   {
     int features = getCPUFeatures();
 
@@ -112,7 +112,7 @@ namespace embree
 #endif
   }
 
-  Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Triangle4Intersectors(BVH8* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -126,7 +126,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH8Triangle8Intersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8Triangle8Intersectors(BVH8* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
@@ -140,7 +140,7 @@ namespace embree
     return intersectors;
   }
 
-  Accel::Intersectors BVH8TrianglePairs4Intersectors(BVH8* bvh)
+  Accel::Intersectors BVH8Factory::BVH8TrianglePairs4Intersectors(BVH8* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;

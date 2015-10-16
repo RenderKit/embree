@@ -22,6 +22,7 @@
 namespace embree
 {
   struct BVH4Factory;
+  struct BVH8Factory;
 
   class Device : public State, public MemoryMonitorInterface
   {
@@ -62,14 +63,18 @@ namespace embree
     void exitTaskingSystem();
 
   public:
+    bool singledevice;      //!< true if this is the device created implicitely through rtcInit
+
 #if !defined(__MIC__)
     BVH4Factory* bvh4_factory;
+#endif
+
+#if defined(__TARGET_AVX__)
+    BVH8Factory* bvh8_factory;
 #endif
 
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif
-
-  bool singledevice;
   };
 }

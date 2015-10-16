@@ -29,6 +29,7 @@
 
 #if !defined(__MIC__)
 #include "../xeon/bvh4/bvh4_factory.h"
+#include "../xeon/bvh8/bvh8_factory.h"
 #endif
 
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE)
@@ -48,9 +49,6 @@ namespace embree
 {
   /* functions to initialize global state */
   void init_globals();
-
-  /* register functions for accels */
-  void BVH8Register();
 
 #if defined(__MIC__)
   void BVH4iRegister();
@@ -154,20 +152,23 @@ namespace embree
       State::print();
 
     /* register all algorithms */
+    InstanceIntersectorsRegister();
+
 #if !defined(__MIC__)
     bvh4_factory = new BVH4Factory;
 #endif
+
+#if defined(__TARGET_AVX__)
+    bvh8_factory = nullptr;
+    if (hasISA(AVX)) 
+      bvh8_factory = new BVH8Factory();
+#endif
+
 #if defined(__MIC__)
     BVH4iRegister();
     BVH4MBRegister();
     BVH4HairRegister();
 #endif 
-#if defined(__TARGET_AVX__)
-    if (hasISA(AVX)) {
-      BVH8Register();
-    }
-#endif
-    InstanceIntersectorsRegister();
 
     /* setup tasking system */
     initTaskingSystem(numThreads);
@@ -183,8 +184,8 @@ namespace embree
   {
 #if !defined(__MIC__)
     delete bvh4_factory;
+    delete bvh8_factory;
 #endif
-
     setCacheSize(0);
     exitTaskingSystem();
   }
