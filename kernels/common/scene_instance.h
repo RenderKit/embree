@@ -20,6 +20,15 @@
 
 namespace embree
 {
+  struct InstanceFactory
+  {
+    InstanceFactory();
+    DEFINE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+    DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
+    DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
+    DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
+    DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+  };
   /*! Instanced acceleration structure */
   struct Instance : public AccelSet
   {

@@ -23,6 +23,7 @@ namespace embree
 {
   struct BVH4Factory;
   struct BVH8Factory;
+  struct InstanceFactory;
 
   class Device : public State, public MemoryMonitorInterface
   {
@@ -64,6 +65,8 @@ namespace embree
 
   public:
     bool singledevice;      //!< true if this is the device created implicitely through rtcInit
+
+    InstanceFactory* instance_factory;
 
 #if !defined(__MIC__)
     BVH4Factory* bvh4_factory;

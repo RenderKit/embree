@@ -32,7 +32,7 @@
 #include "../xeon/bvh8/bvh8_factory.h"
 #endif
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE) // FIXME: move to intrinsics.h header
 #define _MM_DENORMALS_ZERO_ON   (0x0040)
 #define _MM_DENORMALS_ZERO_OFF  (0x0000)
 #define _MM_DENORMALS_ZERO_MASK (0x0040)
@@ -47,7 +47,7 @@
 
 namespace embree
 {
-  /* functions to initialize global state */
+  /* functions to initialize global constants */
   void init_globals();
 
 #if defined(__MIC__)
@@ -56,37 +56,6 @@ namespace embree
   void BVH4HairRegister();
 #endif
 
-  DEFINE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
-  DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
-  DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
-  DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
-  DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
-
-  /*! intersector registration functions */
-  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
-  DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
-  DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
-  DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
-  DECLARE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
-  
-  void InstanceIntersectorsRegister ()
-  {
-    int features = getCPUFeatures();
-#if defined(__MIC__)
-    SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector1);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector16);
-#else
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-#if defined (RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_SYMBOL_INIT_AVX512(features,InstanceIntersector16);
-#endif
-#endif
-  }
-
 #if defined(TASKING_TBB)
 
   bool g_tbb_threads_initialized = false;
@@ -94,22 +63,22 @@ namespace embree
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-    tbb::atomic<int> num_threads;
+    tbb::atomic<int> threadCount;
 
     void on_scheduler_entry( bool ) {
-      ++num_threads;
-      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use num_threads?
+      ++threadCount;
+      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use threadCount?
     }
 
     void on_scheduler_exit( bool ) { 
-      --num_threads; 
+      --threadCount; 
     }
   public:
     
-    TBBAffinity() { num_threads = 0; }
+    TBBAffinity() { threadCount = 0; }
 
-    int  get_concurrency()      { return num_threads; }
-    void set_concurrency(int i) { num_threads = i; }
+    int  get_concurrency()      { return threadCount; }
+    void set_concurrency(int i) { threadCount = i; }
 
   } tbb_affinity;
 #endif
@@ -152,7 +121,7 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    InstanceIntersectorsRegister();
+    instance_factory = new InstanceFactory;
 
 #if !defined(__MIC__)
     bvh4_factory = new BVH4Factory;
@@ -180,6 +149,7 @@ namespace embree
 
   Device::~Device ()
   {
+    delete instance_factory;
 #if !defined(__MIC__)
     delete bvh4_factory;
     delete bvh8_factory;
