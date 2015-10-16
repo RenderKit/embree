@@ -364,11 +364,14 @@ namespace embree
   class __aligned(64) ParallelRadixSort
   {
   public:
-    static const size_t MAX_TASKS = 64; // FIXME: increase
+    static const size_t MAX_TASKS = MAX_THREADS;
     static const size_t BITS = 8;
     static const size_t BUCKETS = (1 << BITS);
-    typedef unsigned int TyRadixCount[MAX_TASKS][BUCKETS];
+    typedef unsigned int TyRadixCount[BUCKETS];
     
+    ParallelRadixSort() 
+      : radixCount(nullptr) {}
+
     template<typename Ty, typename Key>
       class Task
     {
@@ -379,7 +382,7 @@ namespace embree
       
     public:
       Task (ParallelRadixSort* parent, Ty* const src, Ty* const tmp, const size_t N, const size_t blockSize)
-        : parent(parent), src(src), tmp(tmp), N(N) 
+        : parent(parent), src(src), tmp(tmp), N(N)
       {
         assert(blockSize > 0);
         
@@ -470,6 +473,9 @@ namespace embree
       
       void tbbRadixSort(const size_t numTasks)
       {
+        assert(parent->radixCount == nullptr);
+        parent->radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
+        
         if (sizeof(Key) == sizeof(uint32_t)) {
           tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
           tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
@@ -487,6 +493,8 @@ namespace embree
           tbbRadixIteration(6*BITS,0,src,tmp,numTasks);
           tbbRadixIteration(7*BITS,1,tmp,src,numTasks);
         }
+        alignedFree(parent->radixCount); 
+        parent->radixCount = nullptr;
       }
       
     private:
@@ -497,7 +505,7 @@ namespace embree
     };
 
   private:
-     __aligned(64) TyRadixCount radixCount;
+    TyRadixCount* radixCount;
   };
   
 #endif
