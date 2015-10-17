@@ -230,7 +230,7 @@ namespace embree
       {
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
-	NodeRef* stackPtr = stack+1;        //!< current stack pointer
+        NodeRef* stackPtr = stack+1;     //!< current stack pointer
 	NodeRef* stackEnd = stack+stackSizeSingle;
 	stack[0]  = root;
       

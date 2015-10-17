@@ -25,12 +25,12 @@ namespace embree
   namespace isa 
   {
     /*! BVHN Hybrid Packet traversal implementation. Switched between packet and single ray traversal (optional). */
-    template<int N, int K, int types, bool robust, typename PrimitiveIntersector, bool single = true>
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
     class BVHNIntersectorKHybrid
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
+      typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
+      typedef typename PrimitiveIntersectorK::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::Node Node;
@@ -51,7 +51,7 @@ namespace embree
     };
 
     /*! BVHN packet traversal implementation. */
-    template<int N, int K, int types, bool robust, typename PrimitiveIntersector>
-    class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersector,false> {};
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
+    class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
   }
 }
