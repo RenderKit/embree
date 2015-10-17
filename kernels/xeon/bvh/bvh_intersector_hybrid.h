@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
 
@@ -33,6 +33,7 @@ namespace embree
       typedef typename PrimitiveIntersectorK::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::BaseNode BaseNode;
       typedef typename BVH::Node Node;
       typedef typename BVH::NodeMB NodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;

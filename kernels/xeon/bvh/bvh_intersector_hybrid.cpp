@@ -116,129 +116,67 @@ namespace embree
         }
 #endif
 
-        while (1)
+        while (likely(!cur.isLeaf()))
         {
-	  /* process normal nodes */
-          if (likely((types & 0x1) && cur.isNode()))
+          /* process nodes */
+          const vbool<K> valid_node = ray_tfar > curDist;
+          STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
+          const NodeRef nodeRef = cur;
+          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+
+          /* set cur to invalid */
+          cur = BVH::emptyNode;
+          curDist = pos_inf;
+
+          for (unsigned i=0; i<N; i++)
           {
-            const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
-	    const Node* __restrict__ const node = cur.node();
-	    
-	    /* set cur to invalid */
-            cur = BVH::emptyNode;
-            curDist = pos_inf;
+            const NodeRef child = node->children[i];
+            if (unlikely(child == BVH::emptyNode)) break;
+            vfloat<K> lnearP;
+            vbool<K> lhit;
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
-            for (unsigned i=0; i<N; i++)
-	    {
-	      const NodeRef child = node->children[i];
-              if (unlikely(child == BVH::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<N,K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
-	      	      
-	      /* if we hit the child we choose to continue with that child if it 
-		 is closer than the current next child, or we push it onto the stack */
-	      if (likely(any(lhit)))
-	      {
-		assert(sptr_node < stackEnd);
-                assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
-		
-		/* push cur node onto stack and continue with hit child */
-		if (any(childDist < curDist))
-		{
-                  if (likely(cur != BVH::emptyNode)) {
-                    *sptr_node = cur; sptr_node++;
-                    *sptr_near = curDist; sptr_near++;
-                  }
-		  curDist = childDist;
-		  cur = child;
-		}
-		
-		/* push hit child onto stack */
-		else {
-		  *sptr_node = child; sptr_node++;
-		  *sptr_near = childDist; sptr_near++;
-		}
-	      }     
-	    }
-            if (unlikely(cur == BVH::emptyNode))
-              goto pop;
-
-#if SWITCH_DURING_DOWN_TRAVERSAL == 1
-            if (single)
+            /* if we hit the child we choose to continue with that child if it
+               is closer than the current next child, or we push it onto the stack */
+            if (likely(any(lhit)))
             {
-              // seems to be the best place for testing utilization
-              if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
+              assert(sptr_node < stackEnd);
+              assert(child != BVH::emptyNode);
+              const vfloat<K> childDist = select(lhit,lnearP,inf);
+
+              /* push cur node onto stack and continue with hit child */
+              if (any(childDist < curDist))
               {
-                *sptr_node++ = cur;
-                *sptr_near++ = curDist;
-                goto pop;
+                if (likely(cur != BVH::emptyNode)) {
+                  *sptr_node = cur; sptr_node++;
+                  *sptr_near = curDist; sptr_near++;
+                }
+                curDist = childDist;
+                cur = child;
+              }
+
+              /* push hit child onto stack */
+              else {
+                *sptr_node = child; sptr_node++;
+                *sptr_near = childDist; sptr_near++;
               }
             }
-#endif
-	  }
-	  
-	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && cur.isNodeMB()))
-	  {
-            const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(normal.trav_nodes,1,popcnt(valid_node),K);
-            const NodeMB* __restrict__ const node = cur.nodeMB();
-          
-            /* set cur to invalid */
-            cur = BVH::emptyNode;
-            curDist = pos_inf;
-	    
-            for (unsigned i=0; i<N; i++)
-	    {
-	      const NodeRef child = node->child(i);
-              if (unlikely(child == BVH::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<N,K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
-	      	      
-              /* if we hit the child we choose to continue with that child if it 
-		 is closer than the current next child, or we push it onto the stack */
-	      if (likely(any(lhit)))
-	      {
-		assert(sptr_node < stackEnd);
-                assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
-		
-		/* push cur node onto stack and continue with hit child */
-		if (any(childDist < curDist))
-		{
-                  if (likely(cur != BVH::emptyNode)) {
-                    *sptr_node = cur; sptr_node++;
-                    *sptr_near = curDist; sptr_near++;
-                  }
-		  curDist = childDist;
-		  cur = child;
-		}
-		
-		/* push hit child onto stack */
-		else {
-		  *sptr_node = child; sptr_node++;
-		  *sptr_near = childDist; sptr_near++;
-		}
-	      }     
-	    }
-            if (unlikely(cur == BVH::emptyNode))
-              goto pop;
+          }
+          if (unlikely(cur == BVH::emptyNode))
+            goto pop;
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
-            if (single)
+          if (single)
+          {
+            // seems to be the best place for testing utilization
+            if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
-              // seems to be the best place for testing utilization
-              if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
-              {
-                *sptr_node++ = cur;
-                *sptr_near++ = curDist;
-                goto pop;
-              }
+              *sptr_node++ = cur;
+              *sptr_near++ = curDist;
+              goto pop;
             }
+          }
 #endif
-	  }
-	  else 
-	    break;
 	}
         
         /* return if stack is empty */
@@ -343,129 +281,67 @@ namespace embree
         }
 #endif
                 
-        while (1)
+        while (likely(!cur.isLeaf()))
         {
-	  /* process normal nodes */
-          if (likely((types & 0x1) && cur.isNode()))
+          /* process nodes */
+          const vbool<K> valid_node = ray_tfar > curDist;
+          STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
+          const NodeRef nodeRef = cur;
+          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+
+          /* set cur to invalid */
+          cur = BVH::emptyNode;
+          curDist = pos_inf;
+
+          for (unsigned i=0; i<N; i++)
           {
-            const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
-	    const Node* __restrict__ const node = cur.node();
+            const NodeRef child = node->children[i];
+            if (unlikely(child == BVH::emptyNode)) break;
+            vfloat<K> lnearP;
+            vbool<K> lhit;
+            BVHNNodeIntersectorK<N,K,types,robust>::intersect(nodeRef,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP,lhit);
 
-            /* set cur to invalid */
-            cur = BVH::emptyNode;
-            curDist = pos_inf;
-	    
-            for (unsigned i=0; i<N; i++)
-	    {
-	      const NodeRef child = node->children[i];
-              if (unlikely(child == BVH::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<N,K,robust>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,lnearP);
-	      	      
-	      /* if we hit the child we choose to continue with that child if it 
-		 is closer than the current next child, or we push it onto the stack */
-	      if (likely(any(lhit)))
-	      {
-		assert(sptr_node < stackEnd);
-                assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
-		
-		/* push cur node onto stack and continue with hit child */
-		if (any(childDist < curDist))
-		{
-                  if (likely(cur != BVH::emptyNode)) {
-                    *sptr_node = cur; sptr_node++;
-                    *sptr_near = curDist; sptr_near++;
-                  }
-		  curDist = childDist;
-		  cur = child;
-		}
-		
-		/* push hit child onto stack */
-		else {
-		  *sptr_node = child; sptr_node++;
-		  *sptr_near = childDist; sptr_near++;
-		}
-	      }     
-	    }
-            if (unlikely(cur == BVH::emptyNode))
-              goto pop;
-
-#if SWITCH_DURING_DOWN_TRAVERSAL == 1
-            if (single)
+            /* if we hit the child we choose to continue with that child if it
+               is closer than the current next child, or we push it onto the stack */
+            if (likely(any(lhit)))
             {
-              // seems to be the best place for testing utilization
-              if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
+              assert(sptr_node < stackEnd);
+              assert(child != BVH::emptyNode);
+              const vfloat<K> childDist = select(lhit,lnearP,inf);
+
+              /* push cur node onto stack and continue with hit child */
+              if (any(childDist < curDist))
               {
-                *sptr_node++ = cur;
-                *sptr_near++ = curDist;
-                goto pop;
+                if (likely(cur != BVH::emptyNode)) {
+                  *sptr_node = cur; sptr_node++;
+                  *sptr_near = curDist; sptr_near++;
+                }
+                curDist = childDist;
+                cur = child;
+              }
+
+              /* push hit child onto stack */
+              else {
+                *sptr_node = child; sptr_node++;
+                *sptr_near = childDist; sptr_near++;
               }
             }
-#endif
-	  }
-	  
-	  /* process motion blur nodes */
-          else if (likely((types & 0x10) && cur.isNodeMB()))
-	  {
-            const vbool<K> valid_node = ray_tfar > curDist;
-            STAT3(shadow.trav_nodes,1,popcnt(valid_node),K);
-            const NodeMB* __restrict__ const node = cur.nodeMB();
-          
-            /* set cur to invalid */
-            cur = BVH::emptyNode;
-            curDist = pos_inf;
-	    
-            for (unsigned i=0; i<N; i++)
-	    {
-	      const NodeRef child = node->child(i);
-              if (unlikely(child == BVH::emptyNode)) break;
-              vfloat<K> lnearP; const vbool<K> lhit = intersect_node<N,K>(node,i,org,rdir,org_rdir,ray_tnear,ray_tfar,ray.time,lnearP);
-	      	      
-              /* if we hit the child we choose to continue with that child if it 
-		 is closer than the current next child, or we push it onto the stack */
-	      if (likely(any(lhit)))
-	      {
-		assert(sptr_node < stackEnd);
-                assert(child != BVH::emptyNode);
-                const vfloat<K> childDist = select(lhit,lnearP,inf);
-		
-		/* push cur node onto stack and continue with hit child */
-		if (any(childDist < curDist))
-		{
-                  if (likely(cur != BVH::emptyNode)) {
-                    *sptr_node = cur; sptr_node++;
-                    *sptr_near = curDist; sptr_near++;
-                  }
-		  curDist = childDist;
-		  cur = child;
-		}
-		
-		/* push hit child onto stack */
-		else {
-		  *sptr_node = child; sptr_node++;
-		  *sptr_near = childDist; sptr_near++;
-		}
-	      }     
-	    }
-            if (unlikely(cur == BVH::emptyNode))
-              goto pop;
+          }
+          if (unlikely(cur == BVH::emptyNode))
+            goto pop;
 
 #if SWITCH_DURING_DOWN_TRAVERSAL == 1
-            if (single)
+          if (single)
+          {
+            // seems to be the best place for testing utilization
+            if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
             {
-              // seems to be the best place for testing utilization
-              if (unlikely(popcnt(ray_tfar > curDist) <= switchThreshold))
-              {
-                *sptr_node++ = cur;
-                *sptr_near++ = curDist;
-                goto pop;
-              }
+              *sptr_node++ = cur;
+              *sptr_near++ = curDist;
+              goto pop;
             }
+          }
 #endif
-	  }
-	  else 
-	    break;
 	}
         
         /* return if stack is empty */

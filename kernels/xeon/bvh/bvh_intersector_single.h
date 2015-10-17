@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../bvh/bvh_intersector_node.h"
+#include "bvh.h"
+#include "bvh_intersector_node.h"
 
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
@@ -46,8 +46,8 @@ namespace embree
       typedef typename PrimitiveIntersectorK::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::Node Node;
       typedef typename BVH::BaseNode BaseNode;
+      typedef typename BVH::Node Node;
       typedef Vec3<vfloat<N>> Vec3vfN;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
@@ -93,22 +93,8 @@ namespace embree
 	    if (unlikely(cur.isLeaf(types))) break;
 	    STAT3(normal.trav_nodes,1,1,1);
 	    
-	    /* process standard nodes */
-	    if (likely(cur.isNode(types)))
-              vmask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
-	    
-	    /* process motion blur nodes */
-	    else if (likely(cur.isNodeMB(types)))
-              vmask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
-	    
-	    /*! process nodes with unaligned bounds */
-	    else if (unlikely(cur.isUnalignedNode(types)))
-              vmask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
-	    
-	    /*! process nodes with unaligned bounds and motion blur */
-	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-              vmask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
-	    
+            /* process nodes */
+            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,vmask);
             size_t mask = movemask(vmask);
 
 	    /*! if no child is hit, pop next node */
@@ -256,22 +242,8 @@ namespace embree
 	    if (unlikely(cur.isLeaf(types))) break;
 	    STAT3(shadow.trav_nodes,1,1,1);
 	    
-	    /* process standard nodes */
-	    if (likely(cur.isNode(types)))
-              vmask = intersect_node<N,robust>(cur.node(),vray,ray_near,ray_far,tNear);
-	    
-	    /* process motion blur nodes */
-	    else if (likely(cur.isNodeMB(types)))
-              vmask = intersect_node<N>(cur.nodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
-
-	    /*! process nodes with unaligned bounds */
-	    else if (unlikely(cur.isUnalignedNode(types)))
-              vmask = intersect_node<N>(cur.unalignedNode(),vray,ray_near,ray_far,tNear);
-	    
-	    /*! process nodes with unaligned bounds and motion blur */
-	    else if (unlikely(cur.isUnalignedNodeMB(types)))
-              vmask = intersect_node<N>(cur.unalignedNodeMB(),vray,ray_near,ray_far,ray.time[k],tNear);
-	    
+            /* process nodes */
+            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,vmask);
             size_t mask = movemask(vmask);
 
 	    /*! if no child is hit, pop next node */

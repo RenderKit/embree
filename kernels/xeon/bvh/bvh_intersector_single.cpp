@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_intersector_single.h"
-#include "../bvh/bvh_intersector1.h"
+#include "bvh_intersector1.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
