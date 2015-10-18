@@ -16,6 +16,7 @@
 
 #include "bvh_intersector1.h"
 #include "bvh_intersector_node.h"
+#include "bvh_traverser1.h"
 
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
@@ -39,243 +40,6 @@ namespace embree
   {
     int getISA() { 
       return VerifyMultiTargetLinking::getISA(); 
-    }
-
-    template<int N, int types, bool robust>
-    __forceinline void traverse_nodes_sort4(typename BVHN<N>::NodeRef& cur,
-                                            const Ray& ray,
-                                            const TravRay<N>& vray,
-                                            const vfloat<N>& ray_near,
-                                            const vfloat<N>& ray_far,
-                                            StackItemT<typename BVHN<N>::NodeRef>* stackBegin,
-                                            StackItemT<typename BVHN<N>::NodeRef>*& stackPtr,
-                                            StackItemT<typename BVHN<N>::NodeRef>* stackEnd)
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVHN<N>::NodeRef NodeRef;
-      typedef typename BVHN<N>::BaseNode BaseNode;
-
-      /* downtraversal loop */
-      while (true) cont2:
-      {
-        vbool<N> vmask;
-        vfloat<N> tNear;
-        
-        /*! stop if we found a leaf node */
-        if (unlikely(cur.isLeaf(types))) break;
-        STAT3(normal.trav_nodes,1,1,1);
-        
-        /* process nodes */
-        if (!BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask))
-          break;
-        size_t mask = movemask(vmask);
-
-        /*! if no child is hit, pop next node */
-        const BaseNode* node = cur.baseNode(types);
-        if (unlikely(mask == 0)) 
-        {
-          /*! pop next node */
-          while (true)
-          {
-            if (unlikely(stackPtr == stackBegin)) {
-              cur = BVH::invalidNode; return;
-            }
-            stackPtr--;
-            cur = NodeRef(stackPtr->ptr);
-            
-            /*! if popped node is too far, pop next one */
-            if (likely(*(float*)&stackPtr->dist <= ray.tfar))
-              goto cont2;
-          }
-        }
-        
-        /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
-        if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-          continue;
-        }
-        
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd); 
-          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; continue; }
-          else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; continue; }
-        }
-
-#if defined(__AVX2__)
-        if (N == 8)
-        {
-          /*! use 8-wide sorting network */
-          const size_t hits = __popcnt(movemask(vmask));
-          const vint<N> tNear_i = asInt(tNear);
-          const int orderMask = N-1;
-          const vint<N> dist = select(vmask, (tNear_i & (~orderMask)) | vint<N>(step), vint<N>(True));
-          const vint<N> order = sortNetwork(dist) & orderMask;
-          const unsigned int cur_index = toScalar(order);
-          cur = node->child(cur_index);
-          cur.prefetch();
-
-          for (size_t i=0; i<hits-1; i++)
-          {
-            r = order[hits-1-i];
-            assert(((unsigned int)1 << r) & movemask(vmask));
-            const NodeRef c = node->child(r);
-            assert(c != BVH::emptyNode);
-            c.prefetch();
-            const unsigned int d = *(unsigned int*)&tNear[r];
-            stackPtr->ptr = c;
-            stackPtr->dist = d;
-            stackPtr++;
-          }
-        }
-        else
-#endif
-        {
-          /*! Here starts the slow path for 3 or 4 hit children. We push
-           *  all nodes onto the stack to sort them there. */
-          assert(stackPtr < stackEnd);
-          stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++;
-          assert(stackPtr < stackEnd);
-          stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++;
-
-          /*! three children are hit, push all onto stack and sort 3 stack items, continue with closest child */
-          assert(stackPtr < stackEnd);
-          r = __bscf(mask);
-          NodeRef c = node->child(r); c.prefetch(types); unsigned int d = ((unsigned int*)&tNear)[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH::emptyNode);
-          if (likely(mask == 0)) {
-            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3]);
-            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-            continue;
-          }
-
-          /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
-          assert(stackPtr < stackEnd);
-          r = __bscf(mask);
-          c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-          assert(c != BVH::emptyNode);
-          if (likely(N == 4 || mask == 0)) {
-            sort(stackPtr[-1],stackPtr[-2],stackPtr[-3],stackPtr[-4]);
-            cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-            continue;
-          }
-
-          /*! fallback case if more than 4 children are hit */
-          while (1)
-          {
-            assert(stackPtr < stackEnd);
-            r = __bscf(mask);
-            c = node->child(r); c.prefetch(types); d = *(unsigned int*)&tNear[r]; stackPtr->ptr = c; stackPtr->dist = d; stackPtr++;
-            assert(c != BVH::emptyNode);
-            if (unlikely(mask == 0)) break;
-          }
-          cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-        }
-      }
-    }
-
-    template<int N, int types, bool robust>
-    __forceinline void traverse_nodes_sort2(typename BVHN<N>::NodeRef& cur,
-                                            const Ray& ray,
-                                            const TravRay<N>& vray,
-                                            const vfloat<N>& ray_near,
-                                            const vfloat<N>& ray_far,
-                                            typename BVHN<N>::NodeRef* stackBegin,
-                                            typename BVHN<N>::NodeRef*& stackPtr,
-                                            typename BVHN<N>::NodeRef* stackEnd)
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVHN<N>::NodeRef NodeRef;
-      typedef typename BVHN<N>::BaseNode BaseNode;
-
-      /* downtraversal loop */
-      while (true)
-      {
-        vbool<N> vmask;
-        vfloat<N> tNear;
-        
-        /*! stop if we found a leaf node */
-        if (unlikely(cur.isLeaf(types))) break;
-        STAT3(shadow.trav_nodes,1,1,1);
-        
-        /* process nodes */
-        if (!BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask))
-          break;
-        size_t mask = movemask(vmask);
-
-        /*! if no child is hit, pop next node */
-        const BaseNode* node = cur.baseNode(types);
-        if (unlikely(mask == 0))
-        {
-          /*! pop next node */
-          if (unlikely(stackPtr == stackBegin)) {
-            cur = BVH::invalidNode; return;
-          }
-          stackPtr--;
-          cur = NodeRef(*stackPtr);
-          continue;
-        }
-	
-        /*! one child is hit, continue with that child */
-        size_t r = __bscf(mask);
-        if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types); 
-          assert(cur != BVH::emptyNode);
-          continue;
-        }
-        
-        /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        assert(c0 != BVH::emptyNode);
-        assert(c1 != BVH::emptyNode);
-        if (likely(mask == 0)) {
-          assert(stackPtr < stackEnd);
-          if (d0 < d1) { *stackPtr = c1; stackPtr++; cur = c0; continue; }
-          else         { *stackPtr = c0; stackPtr++; cur = c1; continue; }
-        }
-        assert(stackPtr < stackEnd);
-        *stackPtr = c0; stackPtr++;
-        assert(stackPtr < stackEnd);
-        *stackPtr = c1; stackPtr++;
-        
-        /*! three children are hit */
-        r = __bscf(mask);
-        cur = node->child(r); cur.prefetch(types);
-        assert(cur != BVH::emptyNode);
-        if (likely(mask == 0)) continue;
-        assert(stackPtr < stackEnd);
-        *stackPtr = cur; stackPtr++;
-        
-        /*! four or more children are hit */
-        if (N == 4)
-        {
-          /*! four children are hit */
-          cur = node->child(3); cur.prefetch(types);
-          assert(cur != BVH::emptyNode);
-        }
-        else
-        {
-          /*! fallback case if more than 3 children are hit */
-          while (1)
-          {
-            assert(stackPtr < stackEnd);
-            r = __bscf(mask);
-            NodeRef c = node->child(r); c.prefetch(types); *stackPtr = c; stackPtr++;
-            assert(c != BVH::emptyNode);
-            if (unlikely(mask == 0)) break;
-          }
-          cur = (NodeRef) stackPtr[-1]; stackPtr--;
-        }
-      }
     }
   
     template<int N, int types, bool robust, typename PrimitiveIntersector>
@@ -310,7 +74,7 @@ namespace embree
       vfloat<N> ray_far (ray.tfar);
 
       /* pop loop */
-      while (true) 
+      while (true) pop:
       {
         /*! pop next node */
         if (unlikely(stackPtr == stack)) break;
@@ -321,36 +85,29 @@ namespace embree
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
           continue;
         
-        /*! traverse to next leaf node */
-#if 0
+        /* downtraversal loop */
         while (true)
         {
-          switch (cur.type())
-          {
-          case BVH::tyNode:
-            if (types & BVH::FLAG_ALIGNED_NODE) traverse_nodes_sort4<N,BVH::FLAG_ALIGNED_NODE,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-            break;
-          case BVH::tyNodeMB:
-            if (types & BVH::FLAG_ALIGNED_NODE_MB) traverse_nodes_sort4<N,BVH::FLAG_ALIGNED_NODE_MB,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-            break;
-          case BVH::tyUnalignedNode:
-            if (types & BVH::FLAG_UNALIGNED_NODE) traverse_nodes_sort4<N,BVH::FLAG_UNALIGNED_NODE,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-            break;
-          case BVH::tyUnalignedNodeMB:
-            if (types & BVH::FLAG_UNALIGNED_NODE_MB) traverse_nodes_sort4<N,BVH::FLAG_UNALIGNED_NODE_MB,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-            break;
-          default:
-            goto break1;
-          }
-        }
-      break1:
-#else
-        traverse_nodes_sort4<N,types,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-#endif
+          vbool<N> vmask;
+          vfloat<N> tNear;
 
-        /* return if stack is empty */
-        if (unlikely(cur == BVH::invalidNode)) break;
-        
+          /*! stop if we found a leaf node */
+          if (unlikely(cur.isLeaf(types))) break;
+          STAT3(normal.trav_nodes,1,1,1);
+
+          /* intersect node */
+          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask);
+          if (unlikely(!nodeIntersected)) break;
+          size_t mask = movemask(vmask);
+
+          /*! if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+
+          /* select next child and push other children */
+          BVHNTraverser1<N,types>::traverseClosestHit(cur,mask,vmask,tNear,stackPtr,stackEnd);
+        }
+
         /* ray transformation support */
         if (types & BVH::FLAG_TRANSFORM_NODE)
         {
@@ -448,11 +205,28 @@ namespace embree
         stackPtr--;
         NodeRef cur = (NodeRef) *stackPtr;
         
-        /*! traverse to next leaf node */
-        traverse_nodes_sort2<N,types,robust>(cur,ray,vray,ray_near,ray_far,stack,stackPtr,stackEnd);
-        
-        /* return if stack is empty */
-        if (unlikely(cur == BVH::invalidNode)) break;
+        /* downtraversal loop */
+        while (true)
+        {
+          vbool<N> vmask;
+          vfloat<N> tNear;
+
+          /*! stop if we found a leaf node */
+          if (unlikely(cur.isLeaf(types))) break;
+          STAT3(shadow.trav_nodes,1,1,1);
+
+          /* intersect node */
+          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask);
+          if (unlikely(!nodeIntersected)) break;
+          size_t mask = movemask(vmask);
+
+          /*! if no child is hit, pop next node */
+          if (unlikely(mask == 0))
+            goto pop;
+
+          /* select next child and push other children */
+          BVHNTraverser1<N,types>::traverseAnyHit(cur,mask,vmask,tNear,stackPtr,stackEnd);
+        }
         
         /* ray transformation support */
         if (types & 0x10000)

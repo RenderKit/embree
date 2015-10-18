@@ -18,13 +18,12 @@
 
 #include "bvh.h"
 #include "../../common/ray.h"
-#include "../../common/stack_item.h"
 
 namespace embree
 {
   namespace isa
   {
-    /*! BVHN single ray traversal implementation. */
+    /*! BVH single ray intersector. */
     template<int N, int types, bool robust, typename PrimitiveIntersector>
       class BVHNIntersector1
     {

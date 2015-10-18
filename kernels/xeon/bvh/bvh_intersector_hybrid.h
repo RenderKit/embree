@@ -24,7 +24,7 @@ namespace embree
 {
   namespace isa 
   {
-    /*! BVHN Hybrid Packet traversal implementation. Switched between packet and single ray traversal (optional). */
+    /*! BVH hybrid packet intersector. Switches between packet and single ray traversal (optional). */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
     class BVHNIntersectorKHybrid
     {
@@ -51,7 +51,7 @@ namespace embree
       static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
     };
 
-    /*! BVHN packet traversal implementation. */
+    /*! BVH packet intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
   }
