@@ -63,6 +63,24 @@ namespace embree
         farZ  = nearZ ^ sizeof(vfloat<N>);
       }
 
+      __forceinline TravRay (const TravRay& ray)
+      {
+        org_xyz = ray.org_xyz;
+        dir_xyz = ray.dir_xyz;
+        org = ray.org;
+        dir = ray.dir;
+        rdir = ray.rdir;
+#if defined(__AVX2__)
+        org_rdir = ray.org_rdir;
+#endif
+        nearX = ray.nearX;
+        nearY = ray.nearY;
+        nearZ = ray.nearZ;
+        farX = ray.farX;
+        farY = ray.farY;
+        farZ = ray.farZ;
+      }
+
       Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
       Vec3<vfloat<N>> org, dir, rdir;
 #if defined(__AVX2__)
