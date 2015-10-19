@@ -160,17 +160,17 @@ namespace embree
             return mask;
           }
           
-/*#if defined(__AVX2__) // FIXME: not working for cube
-  const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-  const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-  const vbool8 vmask = asInt(tNear) > asInt(tFar);
-  const size_t mask = movemask(vmask)^0xf;
-  #else*/
+#if defined(__AVX2__)
+          const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+          const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+          const vbool8 vmask = tNear <= tFar;
+          const size_t mask = movemask(vmask);
+#else
           const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
           const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
           const vbool8 vmask = tNear <= tFar;
           const size_t mask = movemask(vmask);
-//#endif
+#endif
           return mask;
         }
         
