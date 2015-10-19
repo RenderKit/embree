@@ -310,7 +310,6 @@ namespace embree
           const vfloat8 far_z  = madd(vfloat8::load(&this->lower_x[i]+farZ),vscale.z,voffset.z);
           
 #if defined (__AVX2__)
-          
           const vfloat8 tNearX = msub(near_x, rdir.x, org_rdir.x);
           const vfloat8 tNearY = msub(near_y, rdir.y, org_rdir.y);
           const vfloat8 tNearZ = msub(near_z, rdir.z, org_rdir.z);
@@ -318,7 +317,6 @@ namespace embree
           const vfloat8 tFarY  = msub(far_y , rdir.y, org_rdir.y);
           const vfloat8 tFarZ  = msub(far_z , rdir.z, org_rdir.z);
 #else
-          
           const vfloat8 tNearX = (near_x - org.x) * rdir.x;
           const vfloat8 tNearY = (near_y - org.y) * rdir.y;
           const vfloat8 tNearZ = (near_z - org.z) * rdir.z;
@@ -337,17 +335,17 @@ namespace embree
             return mask;
           }
           
-/*#if defined(__AVX2__) // FIXME: not working for cube
-  const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-  const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-  const vbool8 vmask = asInt(tNear) > asInt(tFar);
-  const size_t mask = movemask(vmask)^0xf;
-  #else*/
+#if defined(__AVX2__)
+          const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+          const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+          const vbool8 vmask = tNear <= tFar;
+          const size_t mask = movemask(vmask);
+#else
           const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
           const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
           const vbool8 vmask = tNear <= tFar;
           const size_t mask = movemask(vmask);
-//#endif
+#endif
           return mask;
         }
         
@@ -372,8 +370,6 @@ namespace embree
         unsigned char lower_z[16]; 
         unsigned char upper_z[16]; 
       };
-      
-//#endif
       
       struct EagerLeaf
       {
