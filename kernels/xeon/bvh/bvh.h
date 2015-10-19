@@ -584,7 +584,6 @@ namespace embree
 
       /*! Sets ID of child. */
       __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
         assert(i < N);
         children[i] = childID;
       }
@@ -646,30 +645,23 @@ namespace embree
 
       /*! Sets ID of child. */
       __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
         assert(i < N);
         children[i] = childID;
-      }
-
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds0(const size_t i) const {
-        assert(i < N);
-        /*const Vec3fa lower(b0.lower.x[i],b0.lower.y[i],b0.lower.z[i]);
-        const Vec3fa upper(b0.upper.x[i],b0.upper.y[i],b0.upper.z[i]);
-        return BBox3fa(lower,upper);*/
-        return empty; // FIXME: not yet implemented
       }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend0(size_t i) const {
         assert(i < N);
-        //return bounds0(i).size();
-        return zero; // FIXME: no yet implemented
+        const Vec3fa vx(space0.l.vx.x[i],space0.l.vx.y[i],space0.l.vx.z[i]);
+        const Vec3fa vy(space0.l.vy.x[i],space0.l.vy.y[i],space0.l.vy.z[i]);
+        const Vec3fa vz(space0.l.vz.x[i],space0.l.vz.y[i],space0.l.vz.z[i]);
+        const Vec3fa p (space0.p   .x[i],space0.p   .y[i],space0.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
     public:
       AffineSpace3vfN space0;
-      //BBox3vfN b0;
+      //BBox3vfN b0; // these are the unit bounds
       BBox3vfN b1;
     };
 
