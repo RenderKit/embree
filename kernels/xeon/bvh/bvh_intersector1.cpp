@@ -88,7 +88,7 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          vbool<N> vmask;
+          size_t mask;
           vfloat<N> tNear;
 
           /*! stop if we found a leaf node */
@@ -96,16 +96,15 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
-          size_t mask = movemask(vmask);
 
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
 
           /* select next child and push other children */
-          BVHNTraverser1<N,types>::traverseClosestHit(cur,mask,vmask,tNear,stackPtr,stackEnd);
+          BVHNTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
 
         /* ray transformation support */
@@ -208,7 +207,7 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          vbool<N> vmask;
+          size_t mask;
           vfloat<N> tNear;
 
           /*! stop if we found a leaf node */
@@ -216,16 +215,15 @@ namespace embree
           STAT3(shadow.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,vmask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
-          size_t mask = movemask(vmask);
 
           /*! if no child is hit, pop next node */
           if (unlikely(mask == 0))
             goto pop;
 
           /* select next child and push other children */
-          BVHNTraverser1<N,types>::traverseAnyHit(cur,mask,vmask,tNear,stackPtr,stackEnd);
+          BVHNTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
         }
         
         /* ray transformation support */

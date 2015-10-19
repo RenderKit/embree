@@ -38,7 +38,6 @@ namespace embree
     public:
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
-                                                   const vbool4& vmask,
                                                    const vfloat4& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
@@ -94,7 +93,6 @@ namespace embree
 
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
-                                               const vbool4& vmask,
                                                const vfloat4& tNear,
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
@@ -150,7 +148,6 @@ namespace embree
     public:
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
-                                                   const vbool8& vmask,
                                                    const vfloat8& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
@@ -222,7 +219,6 @@ namespace embree
 
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
-                                               const vbool8& vmask,
                                                const vfloat8& tNear,
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
