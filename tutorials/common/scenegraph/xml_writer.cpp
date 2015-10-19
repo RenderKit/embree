@@ -122,7 +122,7 @@ namespace embree
   void XMLWriter::store(const char* name, const std::vector<T>& vec)
   {
     const long int offset = ftell(bin);
-    tab(); fprintf(xml, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
+    tab(); fprintf(xml, "<%s ofs=\"%li\" size=\"%zu\"/>\n", name, offset, vec.size());
     if (vec.size()) fwrite(vec.data(),vec.size(),sizeof(T),bin);
   }
 

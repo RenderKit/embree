@@ -838,7 +838,7 @@ Vec3fa g_accu_vy;
 Vec3fa g_accu_vz;
 Vec3fa g_accu_p;
 extern "C" bool g_changed;
-extern "C" bool g_instancing_mode;
+extern "C" int g_instancing_mode;
 
 
 bool g_animation = true;

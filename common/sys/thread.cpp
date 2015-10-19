@@ -145,7 +145,7 @@ namespace embree
 
   /*! creates thread local storage */
   tls_t createTls() {
-    return tls_t(TlsAlloc());
+    return tls_t(size_t(TlsAlloc()));
   }
 
   /*! set the thread local storage pointer */
