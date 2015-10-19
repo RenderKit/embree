@@ -78,10 +78,12 @@ namespace embree
     Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh);
     Accel::Intersectors BVH4Triangle8IntersectorsChunk(BVH4* bvh);
     Accel::Intersectors BVH4Triangle8IntersectorsHybrid(BVH4* bvh);
-    Accel::Intersectors BVH4Triangle4vMBIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4vIntersectorsChunk(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4vIntersectorsHybrid(BVH4* bvh);
-    Accel::Intersectors BVH4Triangle4iIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4Triangle4iIntersectorsChunk(BVH4* bvh);
+    Accel::Intersectors BVH4Triangle4iIntersectorsHybrid(BVH4* bvh);
+    Accel::Intersectors BVH4Triangle4vMBIntersectorsChunk(BVH4* bvh);
+    Accel::Intersectors BVH4Triangle4vMBIntersectorsHybrid(BVH4* bvh);
     Accel::Intersectors BVH4TrianglePairs4Intersectors(BVH4* bvh);
 
     static void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
@@ -125,7 +127,9 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vIntersector4ChunkPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vIntersector4HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4iIntersector4ChunkPluecker);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4iIntersector4HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vMBIntersector4ChunkMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vMBIntersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4GridAOSIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
@@ -148,7 +152,9 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vIntersector8ChunkPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vIntersector8HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4iIntersector8ChunkPluecker);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4iIntersector8HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vMBIntersector8ChunkMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vMBIntersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4GridAOSIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
@@ -171,7 +177,9 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vIntersector16ChunkPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vIntersector16HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4iIntersector16ChunkPluecker);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4iIntersector16HybridPluecker);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vMBIntersector16ChunkMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vMBIntersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridAOSIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
