@@ -32,10 +32,10 @@ namespace embree
     SELECT_SYMBOL_KNC(features,InstanceIntersector1);
     SELECT_SYMBOL_KNC(features,InstanceIntersector16);
 #else
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
 #if defined (RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
     SELECT_SYMBOL_INIT_AVX512(features,InstanceIntersector16);
 #endif

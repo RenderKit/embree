@@ -375,7 +375,6 @@ namespace embree
     /// BVH4Intersector4Hybrid Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__SSE4_2__)
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
 #if defined(__AVX__)
@@ -391,8 +390,6 @@ namespace embree
 #endif
    
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVHNIntersectorKHybrid<4 COMMA 4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
-    
-#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector8Hybrid Definitions
@@ -454,10 +451,6 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA 0x1 COMMA false COMMA ArrayIntersectorK<4 COMMA ObjectIntersector4> >);
 
     DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 4 COMMA 0x10 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
-
-#if !defined(__SSE4_2__)
-    DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVHNIntersectorKChunk<4 COMMA 4 COMMA 0x1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
-#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector8Chunk Definitions
