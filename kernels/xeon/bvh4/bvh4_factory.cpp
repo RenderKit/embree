@@ -224,15 +224,15 @@ namespace embree
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB);
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4XfmTriangle4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2              (features,BVH4Triangle8Intersector1Moeller);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4GridAOSIntersector1);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector1);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector1Moeller);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_INIT_AVX_AVX2              (features,BVH4TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
@@ -243,8 +243,8 @@ namespace embree
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector4Single_OBB);
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector4Single_OBB);
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector4Single_OBB);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoeller); // FIXME: replace all SSE41 by SSE42
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoellerNoFilter);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoeller);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4Intersector4ChunkMoellerNoFilter);
     SELECT_SYMBOL_INIT_AVX_AVX2              (features,BVH4Triangle8Intersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT2                   (features,BVH4Triangle4Intersector4HybridMoeller,BVH4Triangle4Intersector4ChunkMoeller); // hybrid not supported below SSE4.2
 
@@ -258,21 +258,21 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2              (features,BVH4Triangle8Intersector4HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2              (features,BVH4Triangle8Intersector4HybridMoellerNoFilter);
 
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4vIntersector4ChunkPluecker);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector4ChunkPluecker);
     SELECT_SYMBOL_DEFAULT2                   (features,BVH4Triangle4vIntersector4HybridPluecker,BVH4Triangle4vIntersector4ChunkPluecker); // hybrid not supported below SSE4.2
     SELECT_SYMBOL_INIT_SSE42_AVX             (features,BVH4Triangle4vIntersector4HybridPluecker);
 
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector4ChunkPluecker);
     SELECT_SYMBOL_DEFAULT2                   (features,BVH4Triangle4iIntersector4HybridPluecker,BVH4Triangle4iIntersector4ChunkPluecker); // hybrid not supported below SSE4.2
     SELECT_SYMBOL_INIT_SSE42_AVX             (features,BVH4Triangle4iIntersector4HybridPluecker);
 
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4Triangle4vMBIntersector4ChunkMoeller);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector4ChunkMoeller);
     SELECT_SYMBOL_DEFAULT2                   (features,BVH4Triangle4vMBIntersector4HybridMoeller,BVH4Triangle4vMBIntersector4ChunkMoeller); // hybrid not supported below SSE4.2
     SELECT_SYMBOL_INIT_SSE42_AVX_AVX2        (features,BVH4Triangle4vMBIntersector4HybridMoeller);
 
     SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector4);
     SELECT_SYMBOL_INIT_DEFAULT_AVX_AVX2      (features,BVH4GridAOSIntersector4);
-    SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
+    SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
 
     /* select intersectors8 */
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Bezier1vIntersector8Chunk);

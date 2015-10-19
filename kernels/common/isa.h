@@ -78,13 +78,6 @@ namespace embree
 #endif
 #endif
 
-#if defined(__TARGET_SSE41__)
-#define SELECT_SYMBOL_SSE41(features,intersector) \
-  if ((features & SSE41) == SSE41) intersector = sse41::intersector;
-#else
-#define SELECT_SYMBOL_SSE41(features,intersector)
-#endif
-
 #if defined(__TARGET_SSE42__)
 #define SELECT_SYMBOL_SSE42(features,intersector) \
   if ((features & SSE42) == SSE42) intersector = sse42::intersector;
@@ -132,10 +125,10 @@ namespace embree
 #define SELECT_SYMBOL_KNC(features,intersector)
 #endif
 
-#define SELECT_SYMBOL_INIT_DEFAULT_SSE41(features,intersector)\
+#define SELECT_SYMBOL_INIT_DEFAULT_SSE42(features,intersector)\
   INIT_SYMBOL(intersector);                                             \
   SELECT_SYMBOL_DEFAULT(features,intersector);                                 \
-  SELECT_SYMBOL_SSE41(features,intersector);                                  
+  SELECT_SYMBOL_SSE42(features,intersector);                                  
 
 #define SELECT_SYMBOL_INIT_DEFAULT_AVX(features,intersector) \
   INIT_SYMBOL(intersector);                                        \
@@ -173,10 +166,10 @@ namespace embree
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                       
 
-#define SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX_AVX2(features,intersector) \
+#define SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX_AVX2(features,intersector) \
   INIT_SYMBOL(intersector);                                        \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
-  SELECT_SYMBOL_SSE41(features,intersector);                       \
+  SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                       
 
@@ -198,10 +191,10 @@ namespace embree
   SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
-#define SELECT_SYMBOL_INIT_DEFAULT_SSE41_AVX(features,intersector) \
+#define SELECT_SYMBOL_INIT_DEFAULT_SSE42_AVX(features,intersector) \
   INIT_SYMBOL(intersector);                                        \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
-  SELECT_SYMBOL_SSE41(features,intersector);                       \
+  SELECT_SYMBOL_SSE42(features,intersector);                       \
   SELECT_SYMBOL_AVX(features,intersector);                        
 
   struct VerifyMultiTargetLinking {
