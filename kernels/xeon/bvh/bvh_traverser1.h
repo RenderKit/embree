@@ -177,29 +177,6 @@ namespace embree
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
 
-#if defined(__AVX2__)
-        /*! use 8-wide sorting network */
-        const size_t hits = __popcnt(movemask(vmask));
-        const vint8 tNear_i = asInt(tNear);
-        const vint8 dist = select(vmask, (tNear_i & (~7)) | vint8(step), vint8(True));
-        const vint8 order = sortNetwork(dist) & 7;
-        const unsigned int cur_index = toScalar(order);
-        cur = node->child(cur_index);
-        cur.prefetch();
-
-        for (size_t i=0; i<hits-1; i++)
-        {
-          r = order[hits-1-i];
-          assert(((unsigned int)1 << r) & movemask(vmask));
-          const NodeRef c = node->child(r);
-          assert(c != BVH::emptyNode);
-          c.prefetch();
-          const unsigned int d = *(unsigned int*)&tNear[r];
-          stackPtr->ptr = c;
-          stackPtr->dist = d;
-          stackPtr++;
-        }
-#else
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
         assert(stackPtr < stackEnd);
@@ -230,6 +207,7 @@ namespace embree
         }
 
         /*! fallback case if more than 4 children are hit */
+        StackItemT<NodeRef>* stackFirst = stackPtr-4;
         while (1)
         {
           assert(stackPtr < stackEnd);
@@ -238,8 +216,8 @@ namespace embree
           assert(c != BVH::emptyNode);
           if (unlikely(mask == 0)) break;
         }
+        sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-#endif
       }
 
       static __forceinline void traverseAnyHit(NodeRef& cur,

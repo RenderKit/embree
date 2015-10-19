@@ -58,6 +58,25 @@ namespace embree
       if (s4.dist < s2.dist) xchg(s4,s2);
       if (s3.dist < s2.dist) xchg(s3,s2);
     }
+
+    /*! Sort N stack items. */
+    __forceinline friend void sort(StackItemT* begin, StackItemT* end)
+    {
+      for (StackItemT* i = begin+1; i != end; ++i)
+      {
+        const vfloat4 item = vfloat4::load((float*)i);
+        const unsigned dist = i->dist;
+        StackItemT* j = i;
+
+        while ((j != begin) && ((j-1)->dist < dist))
+        {
+          vfloat4::store(j, vfloat4::load((float*)(j-1)));
+          --j;
+        }
+
+        vfloat4::store(j, item);
+      }
+    }
     
   public:
     T ptr; 
