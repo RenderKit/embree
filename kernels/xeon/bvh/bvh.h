@@ -26,6 +26,27 @@
 
 namespace embree
 {
+  /*! flags used to enable specific node types in intersectors */
+  enum BVHNodeFlags
+  {
+    BVH_FLAG_ALIGNED_NODE = 0x00001,
+    BVH_FLAG_ALIGNED_NODE_MB = 0x00010,
+    BVH_FLAG_UNALIGNED_NODE = 0x00100,
+    BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
+    BVH_FLAG_TRANSFORM_NODE = 0x10000,
+
+    /* short versions */
+    BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
+    BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
+    BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
+    BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
+    BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
+  };
+
   /*! Multi BVH with N children. Each node stores the bounding box of
    * it's N children as well as N child pointers. */
   template<int NN>
@@ -80,27 +101,6 @@ namespace embree
 
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
-
-    /*! flags used to enable specific node types in intersectors */
-    enum NodeFlags 
-    {
-      FLAG_ALIGNED_NODE = 0x00001,
-      FLAG_ALIGNED_NODE_MB = 0x00010,
-      FLAG_UNALIGNED_NODE = 0x00100,
-      FLAG_UNALIGNED_NODE_MB = 0x01000,
-      FLAG_TRANSFORM_NODE = 0x10000,
-      
-      /* short versions */
-      AN1 = FLAG_ALIGNED_NODE,
-      AN2 = FLAG_ALIGNED_NODE_MB,
-      UN1 = FLAG_UNALIGNED_NODE,
-      UN2 = FLAG_UNALIGNED_NODE_MB,
-      MB = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB,
-      AN1_UN1 = FLAG_ALIGNED_NODE | FLAG_UNALIGNED_NODE,
-      AN2_UN2 = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB,
-      TN_AN1 = FLAG_TRANSFORM_NODE | FLAG_ALIGNED_NODE,
-      TN_AN1_AN2 = FLAG_TRANSFORM_NODE | FLAG_ALIGNED_NODE | FLAG_ALIGNED_NODE_MB,
-    };
 
   private:
 
@@ -165,11 +165,11 @@ namespace embree
       __forceinline void prefetch(int types=0) const {
         prefetchL1(((char*)ptr)+0*64);
         prefetchL1(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+2*64);
           prefetchL1(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+4*64);
           prefetchL1(((char*)ptr)+5*64);
           prefetchL1(((char*)ptr)+6*64);
@@ -180,11 +180,11 @@ namespace embree
       __forceinline void prefetchL2(int types=0) const {
         embree::prefetchL2(((char*)ptr)+0*64);
         embree::prefetchL2(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchL2(((char*)ptr)+2*64);
           embree::prefetchL2(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchL2(((char*)ptr)+4*64);
           embree::prefetchL2(((char*)ptr)+5*64);
           embree::prefetchL2(((char*)ptr)+6*64);
@@ -195,11 +195,11 @@ namespace embree
       __forceinline void prefetchW(int types=0) const {
         embree::prefetchEX(((char*)ptr)+0*64);
         embree::prefetchEX(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchEX(((char*)ptr)+2*64);
           embree::prefetchEX(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types > FLAG_ALIGNED_NODE)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchEX(((char*)ptr)+4*64);
           embree::prefetchEX(((char*)ptr)+5*64);
           embree::prefetchEX(((char*)ptr)+6*64);
@@ -221,11 +221,11 @@ namespace embree
 
       /*! checks if this is a leaf */
       __forceinline int isLeaf(int types) const {
-        if      (types == FLAG_ALIGNED_NODE) return !isNode();
-        else if (types == (FLAG_TRANSFORM_NODE | FLAG_ALIGNED_NODE)) return !isNode();
-        /*else if (types == FLAG_ALIGNED_NODE_MB) return !isNodeMB();
-        else if (types == FLAG_UNALIGNED_NODE) return !isUnalignedNode();
-        else if (types == FLAG_UNALIGNED_NODE_MB) return !isUnalignedNodeMB();*/
+        if      (types == BVH_FLAG_ALIGNED_NODE) return !isNode();
+        else if (types == (BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE)) return !isNode();
+        /*else if (types == BVH_FLAG_ALIGNED_NODE_MB) return !isNodeMB();
+        else if (types == BVH_FLAG_UNALIGNED_NODE) return !isUnalignedNode();
+        else if (types == BVH_FLAG_UNALIGNED_NODE_MB) return !isUnalignedNodeMB();*/
         else return isLeaf();
       }
 
@@ -234,29 +234,29 @@ namespace embree
 
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
-      __forceinline int isNode(int types) const { return ((types & ~FLAG_TRANSFORM_NODE) == FLAG_ALIGNED_NODE) || ((types & FLAG_ALIGNED_NODE) && isNode()); }
+      __forceinline int isNode(int types) const { return ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) || ((types & BVH_FLAG_ALIGNED_NODE) && isNode()); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
-      __forceinline int isNodeMB(int types) const { return (types == FLAG_ALIGNED_NODE_MB) || ((types & FLAG_ALIGNED_NODE_MB) && isNodeMB()); }
+      __forceinline int isNodeMB(int types) const { return (types == BVH_FLAG_ALIGNED_NODE_MB) || ((types & BVH_FLAG_ALIGNED_NODE_MB) && isNodeMB()); }
 
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
-      __forceinline int isUnalignedNode(int types) const { return (types == FLAG_UNALIGNED_NODE) || ((types & FLAG_UNALIGNED_NODE) && isUnalignedNode()); }
+      __forceinline int isUnalignedNode(int types) const { return (types == BVH_FLAG_UNALIGNED_NODE) || ((types & BVH_FLAG_UNALIGNED_NODE) && isUnalignedNode()); }
 
       /*! checks if this is a motion blur node with unaligned bounding boxes */
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
-      __forceinline int isUnalignedNodeMB(int types) const { return (types == FLAG_UNALIGNED_NODE_MB) || ((types & FLAG_UNALIGNED_NODE_MB) && isUnalignedNodeMB()); }
+      __forceinline int isUnalignedNodeMB(int types) const { return (types == BVH_FLAG_UNALIGNED_NODE_MB) || ((types & BVH_FLAG_UNALIGNED_NODE_MB) && isUnalignedNodeMB()); }
 
       /*! checks if this is a transformation node */
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
-      __forceinline int isTransformNode(int types) const { return (types == FLAG_TRANSFORM_NODE) || ((types & FLAG_TRANSFORM_NODE) && isTransformNode()); }
+      __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
       /*! returns base node pointer */
       __forceinline BaseNode* baseNode(int types)
       {
         assert(!isLeaf());
-        if ((types & ~FLAG_TRANSFORM_NODE) == FLAG_ALIGNED_NODE) {
+        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
           assert((ptr & (size_t)align_mask) == 0);
           return (BaseNode*)ptr;
         }
@@ -266,7 +266,7 @@ namespace embree
       __forceinline const BaseNode* baseNode(int types) const
       {
         assert(!isLeaf());
-        if ((types & ~FLAG_TRANSFORM_NODE) == FLAG_ALIGNED_NODE) {
+        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
           assert((ptr & (size_t)align_mask) == 0);
           return (const BaseNode*)ptr;
         }
