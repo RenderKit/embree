@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh4_refit.h"
-#include "bvh4_statistics.h"
+#include "../bvh/bvh_statistics.h"
 
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"

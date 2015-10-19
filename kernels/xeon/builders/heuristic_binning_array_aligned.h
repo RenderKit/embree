@@ -41,7 +41,7 @@ namespace embree
         
         static const size_t PARALLEL_THRESHOLD = 10000;
         static const size_t PARALLEL_FIND_BLOCK_SIZE = 4096;
-        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 64;
+        static const size_t PARALLEL_PARITION_BLOCK_SIZE = 128;
 
         __forceinline HeuristicArrayBinningSAH ()
           : prims(nullptr) {}
@@ -150,7 +150,7 @@ namespace embree
           CentGeomBBox3fa local_right(empty);
           const unsigned int splitPos = split.pos;
           const unsigned int splitDim = split.dim;
-          const unsigned int splitDimMask = (unsigned int)1 << splitDim; // FIXME: also use in unaligned and spatial binner
+          const unsigned int splitDimMask = (unsigned int)1 << splitDim; 
 
 #if defined(__AVX512F__)
           const vint4 vSplitPos(splitPos);
@@ -203,7 +203,6 @@ namespace embree
 
           /* new static partition code */
 #if 1
-          //const size_t threadCount = TaskSchedulerTBB::threadCount();
           const size_t mid = parallel_in_place_partitioning_static<PARALLEL_PARITION_BLOCK_SIZE,PrimRef,PrimInfo>(&prims[begin],end-begin,init,left,right,
                                                                                                            [&] (const PrimRef &ref) { return split.mapping.bin_unsafe(center2(ref.bounds()))[splitDim] < splitPos; },
                                                                                                            [] (PrimInfo &pinfo,const PrimRef &ref) { pinfo.add(ref.bounds()); },
@@ -218,7 +217,7 @@ namespace embree
 #endif
           
           const size_t center = begin+mid;
-          left.begin  = begin;  left.end  = center; // FIXME: remove?
+          left.begin  = begin;  left.end  = center; 
           right.begin = center; right.end = end;
           
           new (&lset) range<size_t>(begin,center);

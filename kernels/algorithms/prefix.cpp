@@ -47,7 +47,7 @@ namespace embree
 	
 	double t0 = getSeconds();
 	for (size_t i=0; i<M; i++) {
-	  uint32_t sum1 = parallel_prefix_sum(src,dst,N);
+	  uint32_t sum1 = parallel_prefix_sum(src,dst,N,std::plus<uint32_t>());
           passed &= (sum0 == sum1);
         }
 	double t1 = getSeconds();

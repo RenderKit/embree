@@ -321,7 +321,7 @@ bool enableFilterDispatch = false;
 /* filter dispatch function */
 void filterDispatch(void* ptr, RTCRay2& ray) {
   if (!enableFilterDispatch) return;
-  if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray)); // FIXME: use RTCRay& cast
+  if (ray.filter) ray.filter(ptr,*((RTCRay*)&ray));
 }
 
 #if !defined(__XEON_PHI__)
@@ -336,9 +336,9 @@ void occlusionFilter(void* ptr, RTCRay2& ray)
     return;
   }
   Vec3fa T = hair_Kt;
-  T = T * ray.transparency; // FIXME: use *= operator
+  T = T * ray.transparency;
   ray.transparency = T;
-  if (ne(T,Vec3fa(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID; // FIXME: use != operator
+  if (ne(T,Vec3fa(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
 Vec3fa occluded(RTCScene scene, RTCRay2& ray)
@@ -348,7 +348,7 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
   ray.mask = -1;
   ray.filter = (RTCFilterFunc) &occlusionFilter;
   ray.transparency = Vec3fa(1.0f);
-  rtcOccluded(scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcOccluded(scene,*((RTCRay*)&ray));
 
   return ray.transparency;
 }
@@ -382,7 +382,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+    rtcIntersect(g_scene,*((RTCRay*)&ray));
     
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -432,7 +432,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     shadow.time = time;
     Vec3fa T = occluded(g_scene,shadow);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(g_dirlight_direction)));
-    color = color + weight*c*T*Vec3fa(g_dirlight_intensity); // FIXME: use += operator
+    color = color + weight*c*T*Vec3fa(g_dirlight_intensity);
 
 #if 1
     /* sample BRDF */
@@ -451,7 +451,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
     ray.mask = -1;
     ray.time = time;
     ray.filter = nullptr;
-    weight = weight * c/wi.w; // FIXME: use *= operator
+    weight = weight * c/wi.w;
 
 #else    
 
@@ -487,7 +487,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
   Vec3fa color = Vec3fa(0.0f);
   float weight = 1.0f;
 
-  rtcIntersect(g_scene,*((RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcIntersect(g_scene,*((RTCRay*)&ray));
   ray.filter = nullptr; 
 
   if (ray.primID == -1)
@@ -511,7 +511,7 @@ Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa&
     Ng = dz;
   }
 
-  color = color + Vec3fa(0.2f + 0.5f * abs(dot(ray.dir,Ng))); // FIXME: use += operator
+  color = color + Vec3fa(0.2f + 0.5f * abs(dot(ray.dir,Ng)));
   return color;
 }
 
@@ -551,7 +551,7 @@ void renderTile(int taskIndex, int* pixels,
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
-    *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    *dst = *dst + Vec3fa(color.x,color.y,color.z,1.0f);
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
@@ -584,10 +584,10 @@ extern "C" void device_render (int* pixels,
 
   /* reset accumulator */
   bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
-  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx;
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy;
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p; 
   g_accu_count++;
   if (camera_changed) {
     g_accu_count=0;

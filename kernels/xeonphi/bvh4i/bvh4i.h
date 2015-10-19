@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "../../common/alloc.h"
 #include "../../common/accel.h"
 #include "../../common/device.h"
 #include "../../common/scene.h"
@@ -453,16 +452,6 @@ namespace embree
 
     void clear() {}
 
-    /*! BVH4i instantiations */
-    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
-    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
-    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
-
     /*! Calculates the SAH of the BVH */
     float sah ();
 
@@ -571,9 +560,9 @@ namespace embree
     const vfloat16 e1 = v0 - v1;
     const vfloat16 e2 = v2 - v0;	     
     const vfloat16 normal = lcross_xyz(e1,e2);
-    const vfloat16 _v0 = select(0x8888,cast((__m512i)primID),v0);
-    const vfloat16 _v1 = select(0x8888,cast((__m512i)geomID),v1);
-    const vfloat16 _v2 = select(0x8888,cast((__m512i)mask),v2);
+    const vfloat16 _v0 = select(0x8888,asFloat((__m512i)primID),v0);
+    const vfloat16 _v1 = select(0x8888,asFloat((__m512i)geomID),v1);
+    const vfloat16 _v2 = select(0x8888,asFloat((__m512i)mask),v2);
     const vfloat16 _v3 = select(0x8888,vfloat16::zero(),normal);
     const vfloat16 final = lane_shuffle_gather<0>(_v0,_v1,_v2,_v3);
     return final;

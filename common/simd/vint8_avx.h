@@ -28,9 +28,9 @@ namespace embree
 
     enum  { size = 8 };        // number of SIMD elements
     union {                    // data
-      __m256i m256; 
-      struct { __m128i l,h; }; 
-      int v[8]; 
+      __m256i v;
+      struct { __m128i vl,vh; };
+      int i[8];
     }; 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -38,34 +38,34 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vint            ( ) {}
-    __forceinline vint            ( const vint8& a ) { m256 = a.m256; }
-    __forceinline vint8& operator=( const vint8& a ) { m256 = a.m256; return *this; }
+    __forceinline vint            ( const vint8& a ) { v = a.v; }
+    __forceinline vint8& operator=( const vint8& a ) { v = a.v; return *this; }
 
-    __forceinline vint( const __m256i a ) : m256(a) {}
-    __forceinline operator const __m256i&( void ) const { return m256; }
-    __forceinline operator       __m256i&( void )       { return m256; }
+    __forceinline vint( const __m256i a ) : v(a) {}
+    __forceinline operator const __m256i&( void ) const { return v; }
+    __forceinline operator       __m256i&( void )       { return v; }
 
-    __forceinline explicit vint( const vint4& a ) : m256(_mm256_insertf128_si256(_mm256_castsi128_si256(a),a,1)) {}
-    __forceinline vint( const vint4& a, const vint4& b ) : m256(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
-    __forceinline vint( const __m128i& a, const __m128i& b ) : l(a), h(b) {}
+    __forceinline explicit vint( const vint4& a ) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),a,1)) {}
+    __forceinline vint( const vint4& a, const vint4& b ) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
+    __forceinline vint( const __m128i& a, const __m128i& b ) : vl(a), vh(b) {}
  
-    __forceinline explicit vint   ( const int* const a ) : m256(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
-    __forceinline vint            ( int  a ) : m256(_mm256_set1_epi32(a)) {}
-    __forceinline vint            ( int  a, int  b) : m256(_mm256_set_epi32(b, a, b, a, b, a, b, a)) {}
-    __forceinline vint            ( int  a, int  b, int  c, int  d) : m256(_mm256_set_epi32(d, c, b, a, d, c, b, a)) {}
-    __forceinline vint            ( int  a, int  b, int  c, int  d, int  e, int  f, int  g, int  h) : m256(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
+    __forceinline explicit vint   ( const int* const a ) : v(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
+    __forceinline vint            ( int  a ) : v(_mm256_set1_epi32(a)) {}
+    __forceinline vint            ( int  a, int  b) : v(_mm256_set_epi32(b, a, b, a, b, a, b, a)) {}
+    __forceinline vint            ( int  a, int  b, int  c, int  d) : v(_mm256_set_epi32(d, c, b, a, d, c, b, a)) {}
+    __forceinline vint            ( int  a, int  b, int  c, int  d, int  e, int  f, int  g, int  vh) : v(_mm256_set_epi32(vh, g, f, e, d, c, b, a)) {}
 
-    __forceinline explicit vint( const __m256 a ) : m256(_mm256_cvtps_epi32(a)) {}
+    __forceinline explicit vint( const __m256 a ) : v(_mm256_cvtps_epi32(a)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vint( ZeroTy   ) : m256(_mm256_setzero_si256()) {}
-    __forceinline vint( OneTy    ) : m256(_mm256_set_epi32(1,1,1,1,1,1,1,1)) {}
-    __forceinline vint( PosInfTy ) : m256(_mm256_set_epi32(pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf)) {}
-    __forceinline vint( NegInfTy ) : m256(_mm256_set_epi32(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
-    __forceinline vint( StepTy   ) : m256(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
+    __forceinline vint( ZeroTy   ) : v(_mm256_setzero_si256()) {}
+    __forceinline vint( OneTy    ) : v(_mm256_set_epi32(1,1,1,1,1,1,1,1)) {}
+    __forceinline vint( PosInfTy ) : v(_mm256_set_epi32(pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf,pos_inf)) {}
+    __forceinline vint( NegInfTy ) : v(_mm256_set_epi32(neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf,neg_inf)) {}
+    __forceinline vint( StepTy   ) : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
@@ -100,8 +100,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline const int& operator []( const size_t i ) const { assert(i < 8); return v[i]; }
-    __forceinline       int& operator []( const size_t i )       { assert(i < 8); return v[i]; }
+    __forceinline const int& operator []( const size_t index ) const { assert(index < 8); return i[index]; }
+    __forceinline       int& operator []( const size_t index )       { assert(index < 8); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -109,22 +109,22 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const vint8 operator +( const vint8& a ) { return a; }
-  __forceinline const vint8 operator -( const vint8& a ) { return vint8(_mm_sub_epi32(_mm_setzero_si128(), a.l), _mm_sub_epi32(_mm_setzero_si128(), a.h)); }
-  __forceinline const vint8 abs       ( const vint8& a ) { return vint8(_mm_abs_epi32(a.l), _mm_abs_epi32(a.h)); }
+  __forceinline const vint8 operator -( const vint8& a ) { return vint8(_mm_sub_epi32(_mm_setzero_si128(), a.vl), _mm_sub_epi32(_mm_setzero_si128(), a.vh)); }
+  __forceinline const vint8 abs       ( const vint8& a ) { return vint8(_mm_abs_epi32(a.vl), _mm_abs_epi32(a.vh)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint8 operator +( const vint8& a, const vint8& b ) { return vint8(_mm_add_epi32(a.l, b.l), _mm_add_epi32(a.h, b.h)); }
+  __forceinline const vint8 operator +( const vint8& a, const vint8& b ) { return vint8(_mm_add_epi32(a.vl, b.vl), _mm_add_epi32(a.vh, b.vh)); }
   __forceinline const vint8 operator +( const vint8& a, const int    b ) { return a + vint8(b); }
   __forceinline const vint8 operator +( const int    a, const vint8& b ) { return vint8(a) + b; }
 
-  __forceinline const vint8 operator -( const vint8& a, const vint8& b ) { return vint8(_mm_sub_epi32(a.l, b.l), _mm_sub_epi32(a.h, b.h)); }
+  __forceinline const vint8 operator -( const vint8& a, const vint8& b ) { return vint8(_mm_sub_epi32(a.vl, b.vl), _mm_sub_epi32(a.vh, b.vh)); }
   __forceinline const vint8 operator -( const vint8& a, const int    b ) { return a - vint8(b); }
   __forceinline const vint8 operator -( const int    a, const vint8& b ) { return vint8(a) - b; }
 
-  __forceinline const vint8 operator *( const vint8& a, const vint8& b ) { return vint8(_mm_mullo_epi32(a.l, b.l), _mm_mullo_epi32(a.h, b.h)); }
+  __forceinline const vint8 operator *( const vint8& a, const vint8& b ) { return vint8(_mm_mullo_epi32(a.vl, b.vl), _mm_mullo_epi32(a.vh, b.vh)); }
   __forceinline const vint8 operator *( const vint8& a, const int    b ) { return a * vint8(b); }
   __forceinline const vint8 operator *( const int    a, const vint8& b ) { return vint8(a) * b; }
 
@@ -140,17 +140,17 @@ namespace embree
   __forceinline const vint8 operator ^( const vint8& a, const int    b ) { return a ^ vint8(b); }
   __forceinline const vint8 operator ^( const int    a, const vint8& b ) { return vint8(a) ^ b; }
 
-  __forceinline const vint8 operator <<( const vint8& a, const int n ) { return vint8(_mm_slli_epi32(a.l, n), _mm_slli_epi32(a.h, n)); }
-  __forceinline const vint8 operator >>( const vint8& a, const int n ) { return vint8(_mm_srai_epi32(a.l, n), _mm_srai_epi32(a.h, n)); }
+  __forceinline const vint8 operator <<( const vint8& a, const int n ) { return vint8(_mm_slli_epi32(a.vl, n), _mm_slli_epi32(a.vh, n)); }
+  __forceinline const vint8 operator >>( const vint8& a, const int n ) { return vint8(_mm_srai_epi32(a.vl, n), _mm_srai_epi32(a.vh, n)); }
 
-  __forceinline const vint8 sra ( const vint8& a, const int b ) { return vint8(_mm_srai_epi32(a.l, b), _mm_srai_epi32(a.h, b)); }
-  __forceinline const vint8 srl ( const vint8& a, const int b ) { return vint8(_mm_srli_epi32(a.l, b), _mm_srli_epi32(a.h, b)); }
+  __forceinline const vint8 sra ( const vint8& a, const int b ) { return vint8(_mm_srai_epi32(a.vl, b), _mm_srai_epi32(a.vh, b)); }
+  __forceinline const vint8 srl ( const vint8& a, const int b ) { return vint8(_mm_srli_epi32(a.vl, b), _mm_srli_epi32(a.vh, b)); }
   
-  __forceinline const vint8 min( const vint8& a, const vint8& b ) { return vint8(_mm_min_epi32(a.l, b.l), _mm_min_epi32(a.h, b.h)); }
+  __forceinline const vint8 min( const vint8& a, const vint8& b ) { return vint8(_mm_min_epi32(a.vl, b.vl), _mm_min_epi32(a.vh, b.vh)); }
   __forceinline const vint8 min( const vint8& a, const int    b ) { return min(a,vint8(b)); }
   __forceinline const vint8 min( const int    a, const vint8& b ) { return min(vint8(a),b); }
 
-  __forceinline const vint8 max( const vint8& a, const vint8& b ) { return vint8(_mm_max_epi32(a.l, b.l), _mm_max_epi32(a.h, b.h)); }
+  __forceinline const vint8 max( const vint8& a, const vint8& b ) { return vint8(_mm_max_epi32(a.vl, b.vl), _mm_max_epi32(a.vh, b.vh)); }
   __forceinline const vint8 max( const vint8& a, const int    b ) { return max(a,vint8(b)); }
   __forceinline const vint8 max( const int    a, const vint8& b ) { return max(vint8(a),b); }
 
@@ -180,8 +180,8 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboolf8 operator ==( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmpeq_epi32 (a.l, b.l)),
-                                                                                     _mm_castsi128_ps(_mm_cmpeq_epi32 (a.h, b.h))); }
+  __forceinline const vboolf8 operator ==( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmpeq_epi32 (a.vl, b.vl)),
+                                                                                     _mm_castsi128_ps(_mm_cmpeq_epi32 (a.vh, b.vh))); }
   __forceinline const vboolf8 operator ==( const vint8& a, const int    b ) { return a == vint8(b); }
   __forceinline const vboolf8 operator ==( const int    a, const vint8& b ) { return vint8(a) == b; }
   
@@ -189,8 +189,8 @@ namespace embree
   __forceinline const vboolf8 operator !=( const vint8& a, const int    b ) { return a != vint8(b); }
   __forceinline const vboolf8 operator !=( const int    a, const vint8& b ) { return vint8(a) != b; }
   
-  __forceinline const vboolf8 operator < ( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmplt_epi32 (a.l, b.l)),
-                                                                                     _mm_castsi128_ps(_mm_cmplt_epi32 (a.h, b.h))); }
+  __forceinline const vboolf8 operator < ( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmplt_epi32 (a.vl, b.vl)),
+                                                                                     _mm_castsi128_ps(_mm_cmplt_epi32 (a.vh, b.vh))); }
   __forceinline const vboolf8 operator < ( const vint8& a, const int    b ) { return a <  vint8(b); }
   __forceinline const vboolf8 operator < ( const int    a, const vint8& b ) { return vint8(a) <  b; }
   
@@ -198,8 +198,8 @@ namespace embree
   __forceinline const vboolf8 operator >=( const vint8& a, const int    b ) { return a >= vint8(b); }
   __forceinline const vboolf8 operator >=( const int    a, const vint8& b ) { return vint8(a) >= b; }
 
-  __forceinline const vboolf8 operator > ( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmpgt_epi32 (a.l, b.l)),
-                                                                                     _mm_castsi128_ps(_mm_cmpgt_epi32 (a.h, b.h))); }
+  __forceinline const vboolf8 operator > ( const vint8& a, const vint8& b ) { return vboolf8(_mm_castsi128_ps(_mm_cmpgt_epi32 (a.vl, b.vl)),
+                                                                                     _mm_castsi128_ps(_mm_cmpgt_epi32 (a.vh, b.vh))); }
   __forceinline const vboolf8 operator > ( const vint8& a, const int    b ) { return a >  vint8(b); }
   __forceinline const vboolf8 operator > ( const int    a, const vint8& b ) { return vint8(a) >  b; }
 
@@ -222,11 +222,11 @@ namespace embree
     return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(a), _MM_SHUFFLE(i, i, i, i)));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle128( const vint8& a ) {
+  template<size_t i0, size_t i1> __forceinline const vint8 shuffle4( const vint8& a ) {
     return _mm256_permute2f128_si256(a, a, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vint8 shuffle128( const vint8& a,  const vint8& b) {
+  template<size_t i0, size_t i1> __forceinline const vint8 shuffle4( const vint8& a,  const vint8& b) {
     return _mm256_permute2f128_si256(a, b, (i1 << 4) | (i0 << 0));
   }
 
@@ -243,8 +243,11 @@ namespace embree
   template<> __forceinline const vint8 shuffle<0, 1, 0, 1>( const vint8& b ) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(b))))); }
 
   __forceinline const vint8 broadcast(const int* ptr) { return _mm256_castps_si256(_mm256_broadcast_ss((const float*)ptr)); }
-  template<size_t i> __forceinline const vint8 insert (const vint8& a, const vint4& b) { return _mm256_insertf128_si256 (a,b,i); }
-  template<size_t i> __forceinline const vint4 extract(const vint8& a               )  { return _mm256_extractf128_si256(a  ,i); }
+  template<size_t i> __forceinline const vint8 insert4(const vint8& a, const vint4& b) { return _mm256_insertf128_si256(a, b, i); }
+  template<size_t i> __forceinline const vint4 extract4   (const vint8& a) { return _mm256_extractf128_si256(a, i); }
+  template<>         __forceinline const vint4 extract4<0>(const vint8& a) { return _mm256_castsi256_si128(a);      }
+
+  __forceinline int toScalar(const vint8& a) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(a)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -252,19 +255,19 @@ namespace embree
 
   __forceinline const vint8 vreduce_min2(const vint8& v) { return min(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vint8 vreduce_min4(const vint8& v) { vint8 v1 = vreduce_min2(v); return min(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vint8 vreduce_min (const vint8& v) { vint8 v1 = vreduce_min4(v); return min(v1,shuffle128<1,0>(v1)); }
+  __forceinline const vint8 vreduce_min (const vint8& v) { vint8 v1 = vreduce_min4(v); return min(v1,shuffle4<1,0>(v1)); }
 
   __forceinline const vint8 vreduce_max2(const vint8& v) { return max(v,shuffle<1,0,3,2>(v)); }
   __forceinline const vint8 vreduce_max4(const vint8& v) { vint8 v1 = vreduce_max2(v); return max(v1,shuffle<2,3,0,1>(v1)); }
-  __forceinline const vint8 vreduce_max (const vint8& v) { vint8 v1 = vreduce_max4(v); return max(v1,shuffle128<1,0>(v1)); }
+  __forceinline const vint8 vreduce_max (const vint8& v) { vint8 v1 = vreduce_max4(v); return max(v1,shuffle4<1,0>(v1)); }
 
   __forceinline const vint8 vreduce_add2(const vint8& v) { return v + shuffle<1,0,3,2>(v); }
   __forceinline const vint8 vreduce_add4(const vint8& v) { vint8 v1 = vreduce_add2(v); return v1 + shuffle<2,3,0,1>(v1); }
-  __forceinline const vint8 vreduce_add (const vint8& v) { vint8 v1 = vreduce_add4(v); return v1 + shuffle128<1,0>(v1); }
+  __forceinline const vint8 vreduce_add (const vint8& v) { vint8 v1 = vreduce_add4(v); return v1 + shuffle4<1,0>(v1); }
 
-  __forceinline int reduce_min(const vint8& v) { return extract<0>(extract<0>(vreduce_min(v))); }
-  __forceinline int reduce_max(const vint8& v) { return extract<0>(extract<0>(vreduce_max(v))); }
-  __forceinline int reduce_add(const vint8& v) { return extract<0>(extract<0>(vreduce_add(v))); }
+  __forceinline int reduce_min(const vint8& v) { return toScalar(vreduce_min(v)); }
+  __forceinline int reduce_max(const vint8& v) { return toScalar(vreduce_max(v)); }
+  __forceinline int reduce_add(const vint8& v) { return toScalar(vreduce_add(v)); }
 
   __forceinline size_t select_min(const vint8& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vint8& v) { return __bsf(movemask(v == vreduce_max(v))); }

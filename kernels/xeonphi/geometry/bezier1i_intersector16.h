@@ -26,9 +26,6 @@ namespace embree
 
   struct __aligned(64) Precalculations 
   {
-     /* __forceinline Precalculations (const Ray16& ray, const size_t k)  */
-     /*   : ray_space(frame(Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed()) {} // FIXME: works only with normalized ray direction  */
-
     __forceinline Precalculations (const LinearSpace3vf16& ls16, const vfloat16 &rcp_length, const size_t k)
       : ray_space(ls16.vx.x[k],ls16.vy.x[k],ls16.vz.x[k],
 		  ls16.vx.y[k],ls16.vy.y[k],ls16.vz.y[k],
@@ -52,10 +49,10 @@ namespace embree
 				      const vfloat16 &c3)
     {
 #if 1
-      const vfloat16 p0 = shuffle128<0>(p0123);
-      const vfloat16 p1 = shuffle128<1>(p0123);
-      const vfloat16 p2 = shuffle128<2>(p0123);
-      const vfloat16 p3 = shuffle128<3>(p0123);
+      const vfloat16 p0 = shuffle4<0>(p0123);
+      const vfloat16 p1 = shuffle4<1>(p0123);
+      const vfloat16 p2 = shuffle4<2>(p0123);
+      const vfloat16 p3 = shuffle4<3>(p0123);
 
       const vfloat16 x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
       const vfloat16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);

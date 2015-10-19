@@ -134,12 +134,6 @@ inline varying Vec3f xfmVector(const varying LinearSpace3f l, const varying Vec3
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////
 
-//inline uniform bool operator==(const uniform LinearSpace3f a, const uniform LinearSpace3f b) { return eq(a.vx,b.vx) & eq(a.vy,b.vy) & eq(a.vz,b.vz); } // FIXME: enable
-//inline varying bool operator==(const varying LinearSpace3f a, const varying LinearSpace3f b) { return eq(a.vx,b.vx) & eq(a.vy,b.vy) & eq(a.vz,b.vz); }
-
-//inline uniform bool operator!=(const uniform LinearSpace3f a, const uniform LinearSpace3f b) { return ne(a.vx,b.vx) | ne(a.vy,b.vy) | ne(a.vz,b.vz); }
-//inline varying bool operator!=(const varying LinearSpace3f a, const varying LinearSpace3f b) { return ne(a.vx,b.vx) | ne(a.vy,b.vy) | ne(a.vz,b.vz); }
-
 inline uniform bool eq(const uniform LinearSpace3f a, const uniform LinearSpace3f b) { return eq(a.vx,b.vx) & eq(a.vy,b.vy) & eq(a.vz,b.vz); }
 inline varying bool eq(const varying LinearSpace3f a, const varying LinearSpace3f b) { return eq(a.vx,b.vx) & eq(a.vy,b.vy) & eq(a.vz,b.vz); }
 

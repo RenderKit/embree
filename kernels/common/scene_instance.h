@@ -20,12 +20,22 @@
 
 namespace embree
 {
+  struct InstanceFactory
+  {
+    InstanceFactory(int features);
+    DEFINE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+    DEFINE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
+    DEFINE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
+    DEFINE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
+    DEFINE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+  };
   /*! Instanced acceleration structure */
   struct Instance : public AccelSet
   {
   public:
     Instance (Scene* parent, Accel* object); 
     virtual void setTransform(const AffineSpace3fa& local2world);
+    virtual void setMask (unsigned mask);
     virtual void build(size_t threadIndex, size_t threadCount) {}
     
   public:

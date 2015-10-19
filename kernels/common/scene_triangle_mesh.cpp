@@ -151,7 +151,8 @@ namespace embree
 
   void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    /* test if interpolation is enabled */
+#if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
@@ -222,7 +223,5 @@ namespace embree
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
     for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
 
-    while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));   // FIXME: why is this written twice?
   }
 }

@@ -47,7 +47,7 @@ namespace embree
   
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align = 64);
-  void alignedFree(const void* ptr);
+  void alignedFree(void* ptr);
   
   /*! alloca that returns aligned data */
   template<class T>
@@ -64,7 +64,7 @@ namespace embree
       typedef const T* const_pointer;
       typedef T& reference;
       typedef const T& const_reference;
-      typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
+      typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
 
       __forceinline pointer allocate( size_type n ) {
@@ -90,7 +90,6 @@ namespace embree
   void  os_commit (void* ptr, size_t bytes);
   size_t os_shrink (void* ptr, size_t bytesNew, size_t bytesOld);
   void  os_free   (void* ptr, size_t bytes);
-  void* os_realloc(void* ptr, size_t bytesNew, size_t bytesOld); // FIXME: remove, not used and not implemented completely
 
   /*! allocator that performs OS allocations */
   template<typename T>

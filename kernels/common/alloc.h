@@ -75,24 +75,6 @@ namespace embree
           return alloc->malloc(bytes,maxAlignment);
 	}
 
-#if 0 // FIXME: this optimization is broken
-
-        /* get new partial block if allocation failed */
-	if (alloc->usedBlocks) 
-	{
-	  size_t blockSize = allocBlockSize;
-	  ptr = (char*) alloc->usedBlocks->malloc_some(blockSize,maxAlignment);
-	  bytesWasted += end-cur;
-	  cur = 0; end = blockSize;
-	  
-	  /* retry allocation */
-	  size_t ofs = (align - cur) & (align-1); 
-	  cur += bytes + ofs;
-	  if (likely(cur <= end)) { bytesWasted += ofs; return &ptr[cur - bytes]; }
-	  cur -= bytes + ofs;
-	}
-#endif
-
         /* get new full block if allocation failed */
         size_t blockSize = allocBlockSize;
 	ptr = (char*) alloc->malloc(blockSize,maxAlignment);
@@ -262,12 +244,7 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-	// FIXME: MIC
-#if defined(__MIC__)
-        size_t threadIndex = 0;
-#else
         size_t threadIndex = TaskSchedulerTBB::threadIndex();
-#endif
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
@@ -428,19 +405,6 @@ namespace embree
 	return &data[i];
       }
       
-      void* malloc_some(MemoryMonitorInterface* device, size_t& bytes, size_t align = 16) 
-      {
-        assert(align <= maxAlignment);
-        bytes = (bytes+(align-1)) & ~(align-1);
-	const size_t i = atomic_add(&cur,bytes);
-	if (unlikely(i+bytes > reserveEnd)) bytes = reserveEnd-i;
-	if (i+bytes > allocEnd) {
-          if (device) device->memoryMonitor(i+bytes-max(i,allocEnd),true);
-          os_commit(&data[i],bytes); // FIXME: optimize, may get called frequently
-        }
-	return &data[i];
-      }
-
       void* ptr() {
         return &data[cur];
       }

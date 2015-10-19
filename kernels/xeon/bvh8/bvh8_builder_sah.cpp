@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh8.h"
-#include "bvh8_statistics.h"
+#include "../bvh/bvh.h"
+#include "../bvh/bvh_statistics.h"
 #include "bvh8_builder.h"
 
 #include "../builders/primrefgen.h"
@@ -31,6 +31,8 @@ namespace embree
 {
   namespace isa
   {
+    static const float travCost = 1.0f;
+
     typedef FastAllocator::ThreadLocal2 Allocator;
 
     template<typename Primitive>
@@ -42,7 +44,7 @@ namespace embree
       {
         size_t items = Primitive::blocks(current.prims.size());
         size_t start = current.prims.begin();
-        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive), 1 << BVH8::alignment);
+        Primitive* accel = (Primitive*) alloc->alloc1.malloc(items*sizeof(Primitive), BVH8::byteNodeAlignment);
         BVH8::NodeRef node = bvh->encodeLeaf((char*)accel,items);
         for (size_t i=0; i<items; i++) {
           accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
@@ -108,14 +110,14 @@ namespace embree
                   auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
                   auto virtualprogress = BuildProgressMonitorFromClosure(progress);
 
-                  bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
+                  bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
                   prims.resize(numSplitPrimitives);
                   PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims,virtualprogress) : createPrimRefArray<Mesh,1>(scene,prims,virtualprogress);
                   if (presplitFactor > 1.0f)
                     pinfo = presplit<Mesh>(scene, pinfo, prims);
 
                   BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                    prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                    prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
                   if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 
@@ -128,13 +130,13 @@ namespace embree
                   bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
                   if (staticGeom) {
                   prims.clear();
-                  bvh->alloc2.shrink();
+                  bvh->alloc.shrink();
                 }
-                  bvh->alloc2.cleanup();
+                  bvh->alloc.cleanup();
 
                   /* verbose mode */
                   if (bvh->device->verbosity(1) && mesh == nullptr) {
-                  const size_t usedBytes = bvh->alloc2.getUsedBytes();
+                  const size_t usedBytes = bvh->alloc.getUsedBytes();
                   std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
                 }
                   if (bvh->device->verbosity(2) && mesh == nullptr)
@@ -214,7 +216,7 @@ namespace embree
                               createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
 
                             const size_t numPrimitives = pinfo.size();
-                            bvh->alloc2.init_estimate(numPrimitives*sizeof(PrimRef));
+                            bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 
 #if 0
                             PRINT(numPrimitives);
@@ -227,7 +229,7 @@ namespace embree
                             // ============================================
 
                             BVH8Builder::build(bvh,CreateBVH8Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                                               prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                                               prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
                             if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 
@@ -240,13 +242,13 @@ namespace embree
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
           prims.clear();
-          bvh->alloc2.shrink();
+          bvh->alloc.shrink();
         }
-	bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 
 	/* verbose mode */
 	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+          const size_t usedBytes = bvh->alloc.getUsedBytes();
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numOriginalPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
         }
 	if (bvh->device->verbosity(2) && mesh == nullptr)
@@ -281,7 +283,7 @@ namespace embree
       
       __forceinline BVH8::Node* operator() (const isa::BVHBuilderBinnedSpatialSAH::BuildRecord& current, BVHBuilderBinnedSpatialSAH::BuildRecord* children, const size_t N, Allocator* alloc) 
       {
-        BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), 1 << BVH8::alignment); node->clear();
+        BVH8::Node* node = (BVH8::Node*) alloc->alloc0.malloc(sizeof(BVH8::Node), BVH8::byteNodeAlignment); node->clear();
         for (size_t i=0; i<N; i++) {
           node->set(i,children[i].pinfo.geomBounds);
           children[i].parent = (size_t*) &node->child(i);
@@ -302,7 +304,7 @@ namespace embree
       {
         size_t n = current.pinfo.size();
         size_t N = Primitive::blocks(n);
-        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive), 1 << BVH8::alignment);
+        Primitive* leaf = (Primitive*) alloc->alloc1.malloc(N*sizeof(Primitive), BVH8::byteNodeAlignment);
         BVH8::NodeRef node = bvh->encodeLeaf((char*)leaf,N);
 
         /*PrimRefList::block_iterator_unsafe iter1(current.prims);
@@ -376,7 +378,7 @@ namespace embree
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
         
-        bvh->alloc2.init_estimate(numSplitPrimitives*sizeof(PrimRef));
+        bvh->alloc.init_estimate(numSplitPrimitives*sizeof(PrimRef));
         //prims.resize(numSplitPrimitives);
         //PrimInfo pinfo = mesh ? createPrimRefArray<Mesh>(mesh,prims) : createPrimRefArray<Mesh,1>(scene,prims);
         PrimRefList prims;
@@ -428,20 +430,20 @@ namespace embree
           };
         
         BVH8BuilderSpatial::build(bvh,splitPrimitive,CreateBVH8ListLeaf<Primitive>(bvh),
-                                  virtualprogress,prims,pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH8::travCost,intCost);
+                                  virtualprogress,prims,pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
             
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
-          bvh->alloc2.shrink();
+          bvh->alloc.shrink();
         }
-	bvh->alloc2.cleanup();
+        bvh->alloc.cleanup();
 
         /* verbose mode */
 	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc2.getUsedBytes();
+          const size_t usedBytes = bvh->alloc.getUsedBytes();
 	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
         }
 	if (bvh->device->verbosity(2) && mesh == nullptr)

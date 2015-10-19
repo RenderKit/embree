@@ -16,20 +16,25 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "bvh.h"
 
 namespace embree
 {
-  class BVH4Statistics 
+  template<int N>
+  class BVHNStatistics
   {
-    typedef BVH4::Node AlignedNode;
-    typedef BVH4::UnalignedNode UnalignedNode;
-    typedef BVH4::NodeRef NodeRef;
+    typedef BVHN<N> BVH;
+    typedef typename BVH::Node AlignedNode;
+    typedef typename BVH::UnalignedNode UnalignedNode;
+    typedef typename BVH::NodeMB AlignedNodeMB;
+    typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
+    typedef typename BVH::TransformNode TransformNode;
+    typedef typename BVH::NodeRef NodeRef;
 
   public:
 
     /* Constructor gathers statistics. */
-    BVH4Statistics (BVH4* bvh);
+    BVHNStatistics (BVH* bvh);
 
     /*! Convert statistics into a string */
     std::string str();
@@ -42,21 +47,24 @@ namespace embree
     void statistics(NodeRef node, const float A, size_t& depth);
 
   private:
-    BVH4* bvh;
+    BVH* bvh;
     float bvhSAH;                      //!< SAH cost.
     float leafSAH;
     size_t numAlignedNodes;            //!< Number of aligned internal nodes.
     size_t numUnalignedNodes;          //!< Number of unaligned internal nodes.
-    size_t numAlignedNodesMB;            //!< Number of aligned internal nodes.
-    size_t numUnalignedNodesMB;          //!< Number of unaligned internal nodes.
-    size_t numTransformNodes;           //!< Number of transformation nodes;
+    size_t numAlignedNodesMB;          //!< Number of aligned internal nodes.
+    size_t numUnalignedNodesMB;        //!< Number of unaligned internal nodes.
+    size_t numTransformNodes;          //!< Number of transformation nodes;
     size_t childrenAlignedNodes;       //!< Number of children of aligned nodes
     size_t childrenUnalignedNodes;     //!< Number of children of unaligned internal nodes.
-    size_t childrenAlignedNodesMB;       //!< Number of children of aligned nodes
-    size_t childrenUnalignedNodesMB;     //!< Number of children of unaligned internal nodes.
+    size_t childrenAlignedNodesMB;     //!< Number of children of aligned nodes
+    size_t childrenUnalignedNodesMB;   //!< Number of children of unaligned internal nodes.
     size_t numLeaves;                  //!< Number of leaf nodes.
     size_t numPrims;                   //!< Number of primitives.
     size_t numPrimBlocks;              //!< Number of primitive blocks.
     size_t depth;                      //!< Depth of the tree.
   };
+
+  typedef BVHNStatistics<4> BVH4Statistics;
+  typedef BVHNStatistics<8> BVH8Statistics;
 }

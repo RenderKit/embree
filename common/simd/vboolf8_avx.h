@@ -28,9 +28,9 @@ namespace embree
 
     enum  { size = 8 };       // number of SIMD elements
     union {                   // data
-      __m256 m256; 
-      struct { __m128 l,h; }; 
-      int v[8]; 
+      __m256 v;
+      struct { __m128 vl,vh; };
+      int i[8];
     };  
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -38,13 +38,13 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboolf            () {}
-    __forceinline vboolf            ( const vboolf8& a ) { m256 = a.m256; }
-    __forceinline vboolf8& operator=( const vboolf8& a ) { m256 = a.m256; return *this; }
+    __forceinline vboolf            ( const vboolf8& a ) { v = a.v; }
+    __forceinline vboolf8& operator=( const vboolf8& a ) { v = a.v; return *this; }
 
-    __forceinline vboolf( const __m256 a ) : m256(a) {}
-    __forceinline operator const __m256&( void ) const { return m256; }
-    __forceinline operator const __m256i( void ) const { return _mm256_castps_si256(m256); }
-    __forceinline operator const __m256d( void ) const { return _mm256_castps_pd(m256); }
+    __forceinline vboolf( const __m256 a ) : v(a) {}
+    __forceinline operator const __m256&( void ) const { return v; }
+    __forceinline operator const __m256i( void ) const { return _mm256_castps_si256(v); }
+    __forceinline operator const __m256d( void ) const { return _mm256_castps_pd(v); }
 
     __forceinline vboolf ( const int a )
     {
@@ -53,35 +53,35 @@ namespace embree
       const __m256i mask = _mm256_set_epi32(0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1);
       const __m256i b = _mm256_set1_epi32(a);
       const __m256i c = _mm256_and_si256(b,mask);
-      m256 = _mm256_castsi256_ps(_mm256_cmpeq_epi32(c,mask));
+      v = _mm256_castsi256_ps(_mm256_cmpeq_epi32(c,mask));
 #else
-      l = _mm_lookupmask_ps[a & 0xF];
-      h = _mm_lookupmask_ps[a >> 4];
+      vl = _mm_lookupmask_ps[a & 0xF];
+      vh = _mm_lookupmask_ps[a >> 4];
 #endif
     }
     
-    __forceinline vboolf ( const vboolf4& a                  ) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),a,1)) {}
-    __forceinline vboolf ( const vboolf4& a, const vboolf4& b) : m256(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
-    __forceinline vboolf ( const __m128 a, const __m128 b) : l(a), h(b) {}
+    __forceinline vboolf ( const vboolf4& a                  ) : v(_mm256_insertf128_ps(_mm256_castps128_ps256(a),a,1)) {}
+    __forceinline vboolf ( const vboolf4& a, const vboolf4& b) : v(_mm256_insertf128_ps(_mm256_castps128_ps256(a),b,1)) {}
+    __forceinline vboolf ( const __m128 a, const __m128 b) : vl(a), vh(b) {}
 
-    __forceinline vboolf ( bool a ) : m256(vboolf8(vboolf4(a), vboolf4(a))) {}
-    __forceinline vboolf ( bool a, bool b) : m256(vboolf8(vboolf4(a), vboolf4(b))) {}
-    __forceinline vboolf ( bool a, bool b, bool c, bool d) : m256(vboolf8(vboolf4(a,b), vboolf4(c,d))) {}
-    __forceinline vboolf ( bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool h ) : m256(vboolf8(vboolf4(a,b,c,d), vboolf4(e,f,g,h))) {}
+    __forceinline vboolf ( bool a ) : v(vboolf8(vboolf4(a), vboolf4(a))) {}
+    __forceinline vboolf ( bool a, bool b) : v(vboolf8(vboolf4(a), vboolf4(b))) {}
+    __forceinline vboolf ( bool a, bool b, bool c, bool d) : v(vboolf8(vboolf4(a,b), vboolf4(c,d))) {}
+    __forceinline vboolf ( bool a, bool b, bool c, bool d, bool e, bool f, bool g, bool vh ) : v(vboolf8(vboolf4(a,b,c,d), vboolf4(e,f,g,vh))) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboolf( FalseTy ) : m256(_mm256_setzero_ps()) {}
-    __forceinline vboolf( TrueTy  ) : m256(_mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)) {}
+    __forceinline vboolf( FalseTy ) : v(_mm256_setzero_ps()) {}
+    __forceinline vboolf( TrueTy  ) : v(_mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)) {}
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool operator []( const size_t i ) const { assert(i < 8); return (_mm256_movemask_ps(m256) >> i) & 1; }
-    __forceinline int& operator []( const size_t i )       { assert(i < 8); return v[i]; }
+    __forceinline bool operator []( const size_t index ) const { assert(index < 8); return (_mm256_movemask_ps(v) >> index) & 1; }
+    __forceinline int& operator []( const size_t index )       { assert(index < 8); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -117,18 +117,18 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf8 unpacklo( const vboolf8& a, const vboolf8& b ) { return _mm256_unpacklo_ps(a.m256, b.m256); }
-  __forceinline vboolf8 unpackhi( const vboolf8& a, const vboolf8& b ) { return _mm256_unpackhi_ps(a.m256, b.m256); }
+  __forceinline vboolf8 unpacklo( const vboolf8& a, const vboolf8& b ) { return _mm256_unpacklo_ps(a.v, b.v); }
+  __forceinline vboolf8 unpackhi( const vboolf8& a, const vboolf8& b ) { return _mm256_unpackhi_ps(a.v, b.v); }
 
   template<size_t i> __forceinline const vboolf8 shuffle( const vboolf8& a ) {
     return _mm256_permute_ps(a, _MM_SHUFFLE(i, i, i, i));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle128( const vboolf8& a ) {
+  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle4( const vboolf8& a ) {
     return _mm256_permute2f128_ps(a, a, (i1 << 4) | (i0 << 0));
   }
 
-  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle128( const vboolf8& a,  const vboolf8& b) {
+  template<size_t i0, size_t i1> __forceinline const vboolf8 shuffle4( const vboolf8& a,  const vboolf8& b) {
     return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
   }
 
@@ -144,8 +144,9 @@ namespace embree
   template<> __forceinline const vboolf8 shuffle<1, 1, 3, 3>( const vboolf8& b ) { return _mm256_movehdup_ps(b); }
   template<> __forceinline const vboolf8 shuffle<0, 1, 0, 1>( const vboolf8& b ) { return _mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(b))); }
 
-  template<size_t i> __forceinline const vboolf8 insert (const vboolf8& a, const vboolf4& b) { return _mm256_insertf128_ps (a,b,i); }
-  template<size_t i> __forceinline const vboolf4 extract(const vboolf8& a               ) { return _mm256_extractf128_ps(a  ,i); }
+  template<size_t i> __forceinline const vboolf8 insert4(const vboolf8& a, const vboolf4& b) { return _mm256_insertf128_ps(a, b, i); }
+  template<size_t i> __forceinline const vboolf4 extract4   (const vboolf8& a) { return _mm256_extractf128_ps(a, i); }
+  template<>         __forceinline const vboolf4 extract4<0>(const vboolf8& a) { return _mm256_castps256_ps128(a);   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations
@@ -169,9 +170,9 @@ namespace embree
   /// Get/Set Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool get(const vboolf8& a, size_t i) { return a[i]; }
-  __forceinline void set(vboolf8& a, size_t i)       { a[i] = -1; }
-  __forceinline void clear(vboolf8& a, size_t i)     { a[i] =  0; }
+  __forceinline bool get(const vboolf8& a, size_t index) { return a[index]; }
+  __forceinline void set(vboolf8& a, size_t index)       { a[index] = -1; }
+  __forceinline void clear(vboolf8& a, size_t index)     { a[index] =  0; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

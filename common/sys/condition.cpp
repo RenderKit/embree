@@ -38,12 +38,8 @@ namespace embree
       SleepConditionVariableCS(&cond, (LPCRITICAL_SECTION)mutex_in.mutex, INFINITE);
     }
 
-    __forceinline void broadcast() {
-      WakeAllConditionVariable(&cond);
-    }
-
     __forceinline void notify_all() {
-      broadcast();
+      WakeAllConditionVariable(&cond);
     }
 
   public:
@@ -85,7 +81,7 @@ namespace embree
       }
     }
 
-    __forceinline void broadcast() 
+    __forceinline void notify_all() 
     {
       /* we support only one broadcast at a given time */
       bool hasWaiters = count > 0;
@@ -94,10 +90,6 @@ namespace embree
       if (hasWaiters) 
         if (SetEvent(event) == 0)
           THROW_RUNTIME_ERROR("SetEvent failed");
-    }
-
-    __forceinline void notify_all() {
-      broadcast();
     }
 
   public:
@@ -126,10 +118,6 @@ namespace embree
       pthread_cond_wait(&cond, (pthread_mutex_t*)mutex.mutex); 
     }
     
-    __forceinline void broadcast() { 
-      pthread_cond_broadcast(&cond); 
-    }
-
     __forceinline void notify_all() { 
       pthread_cond_broadcast(&cond); 
     }
@@ -152,10 +140,6 @@ namespace embree
 
   void ConditionSys::wait(MutexSys& mutex) { 
     ((ConditionImplementation*) cond)->wait(mutex);
-  }
-
-  void ConditionSys::broadcast() { 
-    ((ConditionImplementation*) cond)->broadcast();
   }
 
   void ConditionSys::notify_all() { 

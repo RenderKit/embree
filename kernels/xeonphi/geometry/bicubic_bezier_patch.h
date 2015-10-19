@@ -72,7 +72,7 @@ namespace embree
       const vfloat16 v11 = one_minus_v * v01 + v * v02;
       const vfloat16 v20 = one_minus_v * v10 + v * v11;
 
-      const Vec3fa *const u_ptr = (Vec3fa*)&v20; // FIXME
+      const Vec3fa *const u_ptr = (Vec3fa*)&v20; 
       const vfloat16 u00 = one_minus_u * bc(u_ptr[0]) + u * bc(u_ptr[1]);
       const vfloat16 u01 = one_minus_u * bc(u_ptr[1]) + u * bc(u_ptr[2]);
       const vfloat16 u02 = one_minus_u * bc(u_ptr[2]) + u * bc(u_ptr[3]);
@@ -103,7 +103,7 @@ namespace embree
       const vfloat16 v11 = one_minus_v * v01 + v * v02;
       const vfloat16 v20 = one_minus_v * v10 + v * v11;
 
-      const Vec3fa *const u_ptr = (Vec3fa*)&v20; //FIXME
+      const Vec3fa *const u_ptr = (Vec3fa*)&v20; 
       const vfloat16 u00 =  one_minus_u * bc(u_ptr[0]) + u * bc(u_ptr[1]);
       const vfloat16 u01 =  one_minus_u * bc(u_ptr[1]) + u * bc(u_ptr[2]);
       const vfloat16 u10 =  one_minus_u * u00 + u * u01;

@@ -74,6 +74,8 @@ namespace embree
   {
   private:
 
+    static const size_t MAX_TASKS = 256;
+
     const Compare& cmp;
     const Reduction_T& reduction_t;
     const Reduction_V& reduction_v;
@@ -87,16 +89,16 @@ namespace embree
 
     AlignedAtomicCounter64 blockID;
 
-    AlignedAtomicCounter64 numLeftRemainderBlocks; // FIXME: has to be 64 bit?
-    AlignedAtomicCounter64 numRightRemainderBlocks; // FIXME: has to be 64 bit?
+    AlignedAtomicCounter64 numLeftRemainderBlocks; 
+    AlignedAtomicCounter64 numRightRemainderBlocks; 
     AlignedAtomicCounter32 maxLeftBlockID;
     AlignedAtomicCounter32 maxRightBlockID;
       
-    unsigned int  leftRemainderBlockIDs[MAX_MIC_THREADS];
-    unsigned int rightRemainderBlockIDs[MAX_MIC_THREADS];
+    unsigned int  leftRemainderBlockIDs[MAX_TASKS]; 
+    unsigned int rightRemainderBlockIDs[MAX_TASKS];
 
-    V leftReductions[MAX_MIC_THREADS];
-    V rightReductions[MAX_MIC_THREADS];
+    V leftReductions[MAX_TASKS]; 
+    V rightReductions[MAX_TASKS];
 
 
     enum {
@@ -432,7 +434,7 @@ namespace embree
     {    
       leftReduction = init;
       rightReduction = init;
-      const size_t numThreads = TaskSchedulerTBB::threadCount();
+      const size_t numThreads = min(TaskSchedulerTBB::threadCount(),MAX_TASKS);
 
       if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
       {
@@ -607,7 +609,7 @@ namespace embree
                                                         const Reduction_V& reduction_v)
   //							Scheduler &scheduler)
   {
-#if defined(__X86_64__) // FIXME: enable parallel partition also in 32 bit mode
+#if defined(__X86_64__) 
     parallel_partition<BLOCK_SIZE,T,V,Compare,Reduction_T,Reduction_V> p(array,N,init,cmp,reduction_t,reduction_v);
     return p.partition_parallel(leftReduction,rightReduction);    
 #else
@@ -619,6 +621,11 @@ namespace embree
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  //////////////////////////////////////////////////////
+  // only used by  KNC with the lockstep taskscheduler
+  //////////////////////////////////////////////////////
+
+#if defined(__MIC__)
 
   template<typename T, typename ThreadLocalPartition, typename Scheduler>
     class __aligned(64) parallel_partition_static
@@ -658,10 +665,10 @@ namespace embree
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
-    __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
-    __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
+    __aligned(64) unsigned int counter_start[MAX_THREADS]; 
+    __aligned(64) unsigned int counter_left[MAX_THREADS];  
+    __aligned(64) Range leftMisplacedRanges[MAX_THREADS];  
+    __aligned(64) Range rightMisplacedRanges[MAX_THREADS]; 
 
 
       
@@ -1030,7 +1037,7 @@ namespace embree
   
     return true;
   }
-
+#endif
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1038,6 +1045,8 @@ namespace embree
     class __aligned(64) parallel_partition_static_task
   {
   private:
+
+    static const size_t MAX_TASKS = 512;
 
     const Compare& cmp;
     const Reduction_T& reduction_t;
@@ -1074,12 +1083,12 @@ namespace embree
     size_t numMisplacedRangesRight;
     size_t numMisplacedItems;
 
-    __aligned(64) unsigned int counter_start[MAX_MIC_THREADS];
-    __aligned(64) unsigned int counter_left[MAX_MIC_THREADS];     
-    __aligned(64) Range leftMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) Range rightMisplacedRanges[MAX_MIC_THREADS];
-    __aligned(64) V leftReductions[MAX_MIC_THREADS];
-    __aligned(64) V rightReductions[MAX_MIC_THREADS];
+    __aligned(64) unsigned int counter_start[MAX_TASKS]; 
+    __aligned(64) unsigned int counter_left[MAX_TASKS];  
+    __aligned(64) Range leftMisplacedRanges[MAX_TASKS];  
+    __aligned(64) Range rightMisplacedRanges[MAX_TASKS]; 
+    __aligned(64) V leftReductions[MAX_TASKS];           
+    __aligned(64) V rightReductions[MAX_TASKS];          
 
 
      
@@ -1098,6 +1107,7 @@ namespace embree
       numMisplacedRangesRight = 0;
       numMisplacedItems  = 0;
       tasks = (N+maxNumThreads-1)/maxNumThreads >= BLOCK_SIZE ? maxNumThreads : (N+BLOCK_SIZE-1)/BLOCK_SIZE;
+      tasks = min(tasks,MAX_TASKS);
     }
 
     __forceinline const Range *findStartRange(size_t &index,const Range *const r,const size_t numRanges)
@@ -1320,7 +1330,7 @@ namespace embree
                                                                const Reduction_V& reduction_v,
                                                                const size_t numThreads = TaskSchedulerTBB::threadCount())
   {
-#if defined(__X86_64__) // FIXME: enable parallel partition also in 32 bit mode
+#if defined(__X86_64__) 
     parallel_partition_static_task<BLOCK_SIZE, T,V,Compare,Reduction_T,Reduction_V> p(array,N,numThreads,init,cmp,reduction_t,reduction_v);
     return p.partition(leftReduction,rightReduction);    
 #else

@@ -321,7 +321,7 @@ uniform bool enableFilterDispatch = false;
 /* filter dispatch function */
 void filterDispatch(void* uniform ptr, RTCRay2& ray) {
   if (!enableFilterDispatch) return;
-  if (ray.filter) ray.filter(ptr,*((varying RTCRay*)&ray)); // FIXME: use RTCRay& cast
+  if (ray.filter) ray.filter(ptr,*((varying RTCRay*)&ray));
 }
 
 #if !defined(__XEON_PHI__)
@@ -336,9 +336,9 @@ void occlusionFilter(void* uniform ptr, RTCRay2& ray)
     return;
   }
   Vec3f T = hair_Kt;
-  T = T * ray.transparency; // FIXME: use *= operator
+  T = T * ray.transparency;
   ray.transparency = T;
-  if (ne(T,make_Vec3f(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID; // FIXME: use != operator
+  if (ne(T,make_Vec3f(0.0f))) ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
 Vec3f occluded(RTCScene scene, RTCRay2& ray)
@@ -348,7 +348,7 @@ Vec3f occluded(RTCScene scene, RTCRay2& ray)
   ray.mask = -1;
   ray.filter = (RTCFilterFuncVarying) &occlusionFilter;
   ray.transparency = make_Vec3f(1.0f);
-  rtcOccluded(scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcOccluded(scene,*((varying RTCRay*)&ray));
 
   return ray.transparency;
 }
@@ -382,7 +382,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect(g_scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+    rtcIntersect(g_scene,*((varying RTCRay*)&ray));
     
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -432,7 +432,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
     shadow.time = time;
     Vec3f T = occluded(g_scene,shadow);
     Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
-    color = color + weight*c*T*make_Vec3f(g_dirlight_intensity); // FIXME: use += operator
+    color = color + weight*c*T*make_Vec3f(g_dirlight_intensity);
 
 #if 1
     /* sample BRDF */
@@ -451,7 +451,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
     ray.mask = -1;
     ray.time = time;
     ray.filter = NULL;
-    weight = weight * c/wi.w; // FIXME: use *= operator
+    weight = weight * c/wi.w;
 
 #else    
 
@@ -487,7 +487,7 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const u
   Vec3f color = make_Vec3f(0.0f);
   float weight = 1.0f;
 
-  rtcIntersect(g_scene,*((varying RTCRay*)&ray)); // FIXME: use (RTCRay&) cast
+  rtcIntersect(g_scene,*((varying RTCRay*)&ray));
   ray.filter = NULL; 
 
   if (ray.primID == -1)
@@ -511,7 +511,7 @@ Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const u
     Ng = dz;
   }
 
-  color = color + make_Vec3f(0.2f + 0.5f * abs(dot(ray.dir,Ng))); // FIXME: use += operator
+  color = color + make_Vec3f(0.2f + 0.5f * abs(dot(ray.dir,Ng)));
   return color;
 }
 
@@ -551,7 +551,7 @@ task void renderTile(uniform int* uniform pixels,
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];
-    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f); // FIXME: use += operator
+    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f);
     float f = rcp(max(0.001f,dst->w));
     unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
@@ -584,10 +584,10 @@ export void device_render (uniform int* uniform pixels,
 
   /* reset accumulator */
   uniform bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy; // FIXME: use != operator
-  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz; // FIXME: use != operator
-  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p;  // FIXME: use != operator
+  camera_changed |= ne(g_accu_vx,vx); g_accu_vx = vx;
+  camera_changed |= ne(g_accu_vy,vy); g_accu_vy = vy;
+  camera_changed |= ne(g_accu_vz,vz); g_accu_vz = vz;
+  camera_changed |= ne(g_accu_p,  p); g_accu_p  = p; 
   g_accu_count++;
   if (camera_changed) {
     g_accu_count=0;

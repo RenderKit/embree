@@ -68,11 +68,11 @@ namespace embree
       }
     };
 
-#if defined(__SSE__)
-    struct SubdivPatch1CachedIntersector4
+    template <int K>
+    struct SubdivPatch1CachedIntersectorK
     {
       typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAIntersectorK<4>::Precalculations Precalculations;
+      typedef typename GridSOAIntersectorK<K>::Precalculations Precalculations;
       
       static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
       {
@@ -87,75 +87,33 @@ namespace embree
         return false;
       }
       
-      static __forceinline void intersect(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        if (likely(ty == 0)) GridSOAIntersectorK<4>::intersect(valid,pre,ray,prim,ty,scene,lazy_node);
+        if (likely(ty == 0)) GridSOAIntersectorK<K>::intersect(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,prim,scene,lazy_node);
       }
       
-      static __forceinline vbool4 occluded(const vbool4& valid, Precalculations& pre, Ray4& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline vbool<K> occluded(const vbool<K>& valid, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        if (likely(ty == 0)) return GridSOAIntersectorK<4>::occluded(valid,pre,ray,prim,ty,scene,lazy_node);
+        if (likely(ty == 0)) return GridSOAIntersectorK<K>::occluded(valid,pre,ray,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,prim,scene,lazy_node);
       }
       
-      static __forceinline void intersect(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        if (likely(ty == 0)) GridSOAIntersectorK<4>::intersect(pre,ray,k,prim,ty,scene,lazy_node);
+        if (likely(ty == 0)) GridSOAIntersectorK<K>::intersect(pre,ray,k,prim,ty,scene,lazy_node);
         else                 processLazyNode(pre,prim,scene,lazy_node);
       }
       
-      static __forceinline bool occluded(Precalculations& pre, Ray4& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        if (likely(ty == 0)) return GridSOAIntersectorK<4>::occluded(pre,ray,k,prim,ty,scene,lazy_node);
+        if (likely(ty == 0)) return GridSOAIntersectorK<K>::occluded(pre,ray,k,prim,ty,scene,lazy_node);
         else                 return processLazyNode(pre,prim,scene,lazy_node);
       }
     };
-#endif
 
-#if defined(__AVX__)
-    struct SubdivPatch1CachedIntersector8
-    {
-      typedef SubdivPatch1Cached Primitive;
-      typedef GridSOAIntersectorK<8>::Precalculations Precalculations;
-      
-      static __forceinline bool processLazyNode(Precalculations& pre, const Primitive* prim_i, Scene* scene, size_t& lazy_node)
-      {
-        Primitive* prim = (Primitive*) prim_i;
-        if (pre.grid) SharedLazyTessellationCache::sharedLazyTessellationCache.unlock();
-        GridSOA* grid = (GridSOA*) SharedLazyTessellationCache::lookup(prim->entry(),scene->commitCounterSubdiv,[&] () {
-            auto alloc = [] (const size_t bytes) { return SharedLazyTessellationCache::sharedLazyTessellationCache.malloc(bytes); };
-            return GridSOA::create(prim,scene,alloc);
-          });
-        lazy_node = grid->root;
-        pre.grid = grid;
-        return false;
-      }
-      
-      static __forceinline void intersect(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
-      {
-        if (likely(ty == 0)) GridSOAIntersectorK<8>::intersect(valid,pre,ray,prim,ty,scene,lazy_node);
-        else                 processLazyNode(pre,prim,scene,lazy_node);
-      }
-      
-      static __forceinline vbool8 occluded(const vbool8& valid, Precalculations& pre, Ray8& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        if (likely(ty == 0)) return GridSOAIntersectorK<8>::occluded(valid,pre,ray,prim,ty,scene,lazy_node);
-        else                 return processLazyNode(pre,prim,scene,lazy_node);
-      }
-      
-      static __forceinline void intersect(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
-      {
-        if (likely(ty == 0)) GridSOAIntersectorK<8>::intersect(pre,ray,k,prim,ty,scene,lazy_node);
-        else                 processLazyNode(pre,prim,scene,lazy_node);
-      }
-      
-      static __forceinline bool occluded(Precalculations& pre, Ray8& ray, size_t k, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node) 
-      {
-        if (likely(ty == 0)) return GridSOAIntersectorK<8>::occluded(pre,ray,k,prim,ty,scene,lazy_node);
-        else                 return processLazyNode(pre,prim,scene,lazy_node);
-      }
-    };
-#endif
+    typedef SubdivPatch1CachedIntersectorK<4>  SubdivPatch1CachedIntersector4;
+    typedef SubdivPatch1CachedIntersectorK<8>  SubdivPatch1CachedIntersector8;
+    typedef SubdivPatch1CachedIntersectorK<16> SubdivPatch1CachedIntersector16;
   }
 }

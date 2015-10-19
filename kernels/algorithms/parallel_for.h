@@ -21,7 +21,7 @@
 
 #if defined(TASKING_LOCKSTEP)
 #include "../../common/tasking/taskscheduler_mic.h"
-#endif // if defined(TASKING_TBB_INTERNAL) // FIXME
+#endif
 #include "../../common/tasking/taskscheduler_tbb.h"
 
 namespace embree
@@ -34,14 +34,9 @@ namespace embree
     __forceinline ParallelForTask (const Index taskCount, const Func& func)
       : func(func)
     {
-#if 0
-      for (size_t taskIndex=0; taskIndex<taskCount; taskIndex++)
-	func(taskIndex);
-#else
       if (taskCount == 0) return;
       else if (taskCount == 1) func(0);
       else LockStepTaskScheduler::instance()->dispatchTaskSet(task_set,this,taskCount);
-#endif
     }
 
     static void task_set(void* data, const size_t threadIndex, const size_t threadCount, const size_t taskIndex, const size_t taskCount) {

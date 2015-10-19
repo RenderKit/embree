@@ -447,7 +447,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces);
     if (faceVertices.isModified()) 
-      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces);
+      numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces,std::plus<int>());
 
     /* create set with all holes */
     if (holes.isModified())
@@ -486,8 +486,8 @@ namespace embree
     if (parent->isInterpolatable()) 
     {
 #if defined (__TARGET_AVX__)
-      auto numInterpolationSlots = [] (size_t stride) {
-        if (hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
+      auto numInterpolationSlots = [&] (size_t stride) {
+        if (parent->device->hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
       };
 #else
       auto numInterpolationSlots = [] (size_t stride) {
@@ -582,7 +582,8 @@ namespace embree
 
   void SubdivMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    /* test if interpolation is enabled */
+#if defined(DEBUG) 
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
@@ -625,7 +626,8 @@ namespace embree
   void SubdivMesh::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                 RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+    /* test if interpolation is enabled */
+#if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif

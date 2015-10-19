@@ -19,7 +19,7 @@
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
-extern uniform bool g_instancing_mode;
+extern uniform int g_instancing_mode;
 
 /* scene data */
 RTCDevice g_device = NULL;
@@ -390,7 +390,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);
   //Vec3f Ng = normalize(ray.Ng);
   //Vec3f Nf = dot(ray.dir,Ng) < 0.0f ? Ng : neg(Ng);
-  color = color*dot(ray.dir,Nf);   // FIXME: *=
+  color = color*dot(ray.dir,Nf);
   return color;
 }
 

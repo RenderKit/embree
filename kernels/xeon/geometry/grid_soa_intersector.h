@@ -24,19 +24,24 @@ namespace embree
 {
   namespace isa
   {
-    template<int KK>
+    template<int K>
     class GridSOAIntersectorK
     {
     public:
-      enum { K = KK };
       typedef SubdivPatch1Cached Primitive;
       typedef Vec3<vfloat<K>> Vec3vfK;
       
       class Precalculations 
       { 
+#if defined(__AVX__)
+        static const int M = 8;
+#else
+        static const int M = 4;
+#endif
+
       public:
         __forceinline Precalculations (const vbool<K>& valid, RayK<K>& ray)
-          : grid(nullptr) {}
+          : grid(nullptr), intersector(valid,ray) {}
         
         __forceinline ~Precalculations() 
         {
@@ -46,6 +51,7 @@ namespace embree
         
       public:
         GridSOA* grid;
+        PlueckerIntersectorK<M,K> intersector; // FIXME: use quad intersector
       };     
 
       struct MapUV0
@@ -93,8 +99,6 @@ namespace embree
        /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        enum { M = 1 };
-        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -114,10 +118,8 @@ namespace embree
             const Vec3vfK p01(grid_x[ofs01],grid_y[ofs01],grid_z[ofs01]);
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
-            
-            // FIXME: use quad intersector
-            intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
-            intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<M,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid_i,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),IntersectKEpilogU<1,K,true>(ray,pre.grid->geomID,pre.grid->primID,scene));
           }
         }
       }
@@ -125,8 +127,6 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive* prim, size_t ty, Scene* scene, size_t& lazy_node)
       {
-        enum { M = 1 };
-        PlueckerIntersectorK<M,K> intersector(valid_i,ray);
         const size_t dim_offset    = pre.grid->dim_offset;
         const size_t line_offset   = pre.grid->width;
         const float* const grid_x  = pre.grid->gridData() + ((size_t) (prim) >> 4) - 1;
@@ -148,9 +148,9 @@ namespace embree
             const Vec3vfK p10(grid_x[ofs10],grid_y[ofs10],grid_z[ofs10]);
             const Vec3vfK p11(grid_x[ofs11],grid_y[ofs11],grid_z[ofs11]);
 
-            intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p00,p01,p10,MapUV0(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
-            intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<M,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
+            pre.intersector.intersectK(valid,ray,p10,p01,p11,MapUV1(grid_uv,ofs00,ofs01,ofs10,ofs11),OccludedKEpilogU<1,K,true>(valid,ray,pre.grid->geomID,pre.grid->primID,scene));
             if (none(valid)) break;
           }
         }
@@ -193,13 +193,10 @@ namespace embree
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
 	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-        
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-        
-        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
-        intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Intersect1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       };
       
       template<typename Loader>
@@ -218,13 +215,10 @@ namespace embree
 	const Vec3<vfloat> tri_v012_x = Loader::gather(grid_x,line_offset);
 	const Vec3<vfloat> tri_v012_y = Loader::gather(grid_y,line_offset);
 	const Vec3<vfloat> tri_v012_z = Loader::gather(grid_z,line_offset);
-        
 	const Vec3<vfloat> v0(tri_v012_x[0],tri_v012_y[0],tri_v012_z[0]);
 	const Vec3<vfloat> v1(tri_v012_x[1],tri_v012_y[1],tri_v012_z[1]);
 	const Vec3<vfloat> v2(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
-
-        PlueckerIntersectorK<M,K> intersector(true,ray); // FIXME: create in precalc
-        return intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
+        return pre.intersector.intersect(ray,k,v0,v1,v2,MapUV2<Loader>(grid_uv,line_offset),Occluded1KEpilogU<M,K,true>(ray,k,pre.grid->geomID,pre.grid->primID,scene));
       }
 
       /*! Intersect a ray with the primitive. */

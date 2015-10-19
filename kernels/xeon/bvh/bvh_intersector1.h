@@ -16,34 +16,30 @@
 
 #pragma once
 
-#include "bvh8.h"
-#include "../../common/stack_item.h"
+#include "bvh.h"
 #include "../../common/ray.h"
 
 namespace embree
 {
-    
   namespace isa
   {
-    /*! BVH8 Traverser. Packet traversal implementation for a Quad BVH. */
-template<typename TriangleIntersector8>    
-class BVH8Intersector8Hybrid
+    /*! BVH single ray intersector. */
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
+      class BVHNIntersector1
     {
-
       /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector8::Precalculations Precalculations;
-      typedef typename TriangleIntersector8::Primitive Triangle;
-      typedef typename BVH8::NodeRef NodeRef;
-      typedef typename BVH8::Node Node;
-      static const size_t stackSizeSingle = 1+3*BVH8::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH8::maxDepth+1;
+      typedef typename PrimitiveIntersector::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector::Primitive Primitive;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::TransformNode TransformNode;
 
-      static void intersect1(const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const vfloat8 &ray_tnear, const vfloat8 &ray_tfar, const Vec3vi8& nearXYZ);
-      static bool occluded1 (const BVH8* bvh, NodeRef root, const size_t k, Precalculations& pre, Ray8& ray, const Vec3vf8 &ray_org, const Vec3vf8 &ray_dir, const Vec3vf8 &ray_rdir, const vfloat8 &ray_tnear, const vfloat8 &ray_tfar, const Vec3vi8& nearXYZ);
+      static const size_t stackSize = 1+(N-1)*BVH::maxDepth;
 
     public:
-      static void intersect(vbool8* valid, BVH8* bvh, Ray8& ray);
-      static void occluded (vbool8* valid, BVH8* bvh, Ray8& ray);
+      static void intersect(const BVH* This, Ray& ray);
+      static void occluded (const BVH* This, Ray& ray);
     };
   }
 }

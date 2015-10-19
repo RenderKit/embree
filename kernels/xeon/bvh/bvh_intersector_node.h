@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "bvh4.h"
+#include "bvh.h"
 
 namespace embree
 {
@@ -32,10 +32,12 @@ namespace embree
       {
         const Vec3fa ray_rdir = rcp_safe(ray_dir);
         const Vec3fa ray_org_rdir = ray_org*ray_rdir;
-        org = Vec3vf4(ray_org.x,ray_org.y,ray_org.z);
-        dir = Vec3vf4(ray_dir.x,ray_dir.y,ray_dir.z);
-        rdir = Vec3vf4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-        org_rdir = Vec3vf4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+        org = Vec3<vfloat<N>>(ray_org.x,ray_org.y,ray_org.z);
+        dir = Vec3<vfloat<N>>(ray_dir.x,ray_dir.y,ray_dir.z);
+        rdir = Vec3<vfloat<N>>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+#if defined(__AVX2__)
+        org_rdir = Vec3<vfloat<N>>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+#endif
         nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat<N>) : 1*sizeof(vfloat<N>);
         nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat<N>) : 3*sizeof(vfloat<N>);
         nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat<N>) : 5*sizeof(vfloat<N>);
@@ -43,64 +45,36 @@ namespace embree
         farY  = nearY ^ sizeof(vfloat<N>);
         farZ  = nearZ ^ sizeof(vfloat<N>);
       }
+
+      template<int K>
+      __forceinline TravRay (size_t k, const Vec3<vfloat<K>> &ray_org, const Vec3<vfloat<K>> &ray_dir, const Vec3<vfloat<K>> &ray_rdir, const Vec3<vint<K>>& nearXYZ)
+      {
+        org = Vec3<vfloat<N>>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
+	dir = Vec3<vfloat<N>>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
+	rdir = Vec3<vfloat<N>>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+#if defined(__AVX2__)
+	org_rdir = org*rdir;
+#endif
+	nearX = nearXYZ.x[k];
+	nearY = nearXYZ.y[k];
+	nearZ = nearXYZ.z[k];
+        farX  = nearX ^ sizeof(vfloat<N>);
+        farY  = nearY ^ sizeof(vfloat<N>);
+        farZ  = nearZ ^ sizeof(vfloat<N>);
+      }
+
       Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
-      Vec3<vfloat<N>> org, dir, rdir, org_rdir; // FIXME: is org_rdir optimized away?
+      Vec3<vfloat<N>> org, dir, rdir;
+#if defined(__AVX2__)
+      Vec3<vfloat<N>> org_rdir;
+#endif
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
     };
 
     /*! intersection with single rays */
     template<int N, bool robust>
-      __forceinline size_t intersect_node(const BVH4::Node* node, size_t nearX, size_t nearY, size_t nearZ,
-                                          const Vec3<vfloat<N>>& org, const Vec3<vfloat<N>>& rdir, const Vec3<vfloat<N>>& org_rdir, const vfloat<N>& tnear, const vfloat<N>& tfar, 
-                                          vfloat<N>& dist) 
-    {
-      const size_t farX  = nearX ^ sizeof(vfloat<N>), farY  = nearY ^ sizeof(vfloat<N>), farZ  = nearZ ^ sizeof(vfloat<N>);
-#if defined (__AVX2__)
-      const vfloat<N> tNearX = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+nearX)), rdir.x, org_rdir.x);
-      const vfloat<N> tNearY = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+nearY)), rdir.y, org_rdir.y);
-      const vfloat<N> tNearZ = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+nearZ)), rdir.z, org_rdir.z);
-      const vfloat<N> tFarX  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+farX )), rdir.x, org_rdir.x);
-      const vfloat<N> tFarY  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+farY )), rdir.y, org_rdir.y);
-      const vfloat<N> tFarZ  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+farZ )), rdir.z, org_rdir.z);
-#else
-      const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+nearX)) - org.x) * rdir.x;
-      const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+nearY)) - org.y) * rdir.y;
-      const vfloat<N> tNearZ = (vfloat<N>::load((float*)((const char*)&node->lower_x+nearZ)) - org.z) * rdir.z;
-      const vfloat<N> tFarX  = (vfloat<N>::load((float*)((const char*)&node->lower_x+farX )) - org.x) * rdir.x;
-      const vfloat<N> tFarY  = (vfloat<N>::load((float*)((const char*)&node->lower_x+farY )) - org.y) * rdir.y;
-      const vfloat<N> tFarZ  = (vfloat<N>::load((float*)((const char*)&node->lower_x+farZ )) - org.z) * rdir.z;
-#endif
-      
-      if (robust) {
-        const float round_down = 1.0f-2.0f*float(ulp);
-        const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
-        const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-        const vbool4 vmask = (round_down*tNear <= round_up*tFar);
-        const size_t mask = movemask(vmask);
-        dist = tNear;
-        return mask;
-      }
-      
-#if defined(__SSE4_1__)
-      const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-      const vbool4 vmask = cast(tNear) > cast(tFar);
-      const size_t mask = movemask(vmask)^0xf;
-#else
-      const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
-      const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-      const vbool4 vmask = tNear <= tFar;
-      const size_t mask = movemask(vmask);
-#endif
-      dist = tNear;
-      return mask;
-    }
-
-    /*! intersection with single rays */
-    template<int N, bool robust>
-      __forceinline size_t intersect_node(const BVH4::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist) 
+      __forceinline vbool<N> intersectNode(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
 #if defined (__AVX2__)
       const vfloat<N> tNearX = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
@@ -123,30 +97,26 @@ namespace embree
         const float round_up   = 1.0f+2.0f*float(ulp);
         const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
         const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-        const vbool4 vmask = (round_down*tNear <= round_up*tFar);
-        const size_t mask = movemask(vmask);
+        const vbool<N> vmask = (round_down*tNear <= round_up*tFar);
         dist = tNear;
-        return mask;
+        return vmask;
       }
       
 #if defined(__SSE4_1__)
       const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
       const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-      const vbool4 vmask = cast(tNear) > cast(tFar);
-      const size_t mask = movemask(vmask)^0xf;
 #else
       const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-      const vbool4 vmask = tNear <= tFar;
-      const size_t mask = movemask(vmask);
 #endif
+      const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return mask;
+      return vmask;
     }
     
     /*! intersection with ray packet of size K */
-    template<int K, bool robust>
-      __forceinline vbool<K> intersect_node(const BVH4::Node* node, size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir, 
+    template<int N, int K, bool robust>
+      __forceinline vbool<K> intersectNode(const typename BVHN<N>::Node* node, size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                             const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
     {
 #if defined(__AVX2__)
@@ -184,39 +154,30 @@ namespace embree
     
     /*! intersection with single rays */
     template<int N>
-    __forceinline size_t intersect_node(const BVH4::NodeMB* node, size_t nearX, size_t nearY, size_t nearZ,
-                                        const Vec3<vfloat<N>>& org, const Vec3<vfloat<N>>& rdir, const Vec3<vfloat<N>>& org_rdir, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time,
-                                        vfloat<N>& dist) 
+    __forceinline vbool<N> intersectNode(const typename BVHN<N>::NodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
-      const size_t farX  = nearX ^ sizeof(vfloat<N>), farY  = nearY ^ sizeof(vfloat<N>), farZ  = nearZ ^ sizeof(vfloat<N>);
-      const vfloat<N>* pNearX = (const vfloat<N>*)((const char*)&node->lower_x+nearX);
-      const vfloat<N>* pNearY = (const vfloat<N>*)((const char*)&node->lower_x+nearY);
-      const vfloat<N>* pNearZ = (const vfloat<N>*)((const char*)&node->lower_x+nearZ);
-      const vfloat<N> tNearX = (vfloat<N>(pNearX[0]) + time*pNearX[6] - org.x) * rdir.x;
-      const vfloat<N> tNearY = (vfloat<N>(pNearY[0]) + time*pNearY[6] - org.y) * rdir.y;
-      const vfloat<N> tNearZ = (vfloat<N>(pNearZ[0]) + time*pNearZ[6] - org.z) * rdir.z;
+      const vfloat<N>* pNearX = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearX);
+      const vfloat<N>* pNearY = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearY);
+      const vfloat<N>* pNearZ = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearZ);
+      const vfloat<N> tNearX = (vfloat<N>(pNearX[0]) + time*pNearX[6] - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tNearY = (vfloat<N>(pNearY[0]) + time*pNearY[6] - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tNearZ = (vfloat<N>(pNearZ[0]) + time*pNearZ[6] - ray.org.z) * ray.rdir.z;
       const vfloat<N> tNear = max(tnear,tNearX,tNearY,tNearZ);
-      const vfloat<N>* pFarX = (const vfloat<N>*)((const char*)&node->lower_x+farX);
-      const vfloat<N>* pFarY = (const vfloat<N>*)((const char*)&node->lower_x+farY);
-      const vfloat<N>* pFarZ = (const vfloat<N>*)((const char*)&node->lower_x+farZ);
-      const vfloat<N> tFarX = (vfloat<N>(pFarX[0]) + time*pFarX[6] - org.x) * rdir.x;
-      const vfloat<N> tFarY = (vfloat<N>(pFarY[0]) + time*pFarY[6] - org.y) * rdir.y;
-      const vfloat<N> tFarZ = (vfloat<N>(pFarZ[0]) + time*pFarZ[6] - org.z) * rdir.z;
+      const vfloat<N>* pFarX = (const vfloat<N>*)((const char*)&node->lower_x+ray.farX);
+      const vfloat<N>* pFarY = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
+      const vfloat<N>* pFarZ = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
+      const vfloat<N> tFarX = (vfloat<N>(pFarX[0]) + time*pFarX[6] - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tFarY = (vfloat<N>(pFarY[0]) + time*pFarY[6] - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tFarZ = (vfloat<N>(pFarZ[0]) + time*pFarZ[6] - ray.org.z) * ray.rdir.z;
       const vfloat<N> tFar = min(tfar,tFarX,tFarY,tFarZ);
-      const size_t mask = movemask(tNear <= tFar);
+      const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return mask;
-    }
-
-    /*! intersection with single rays */
-    template<int N>
-    __forceinline size_t intersect_node(const BVH4::NodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist) {
-      return intersect_node(node,ray.nearX,ray.nearY,ray.nearZ,ray.org,ray.rdir,ray.org_rdir,tnear,tfar,time,dist);
+      return vmask;
     }
     
     /*! intersection with ray packet of size K */
-    template<int K>
-    __forceinline vbool<K> intersect_node(const BVH4::NodeMB* node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir, 
+    template<int N, int K>
+    __forceinline vbool<K> intersectNode(const typename BVHN<N>::NodeMB* node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist) 
     {
       const vfloat<K> vlower_x = vfloat<K>(node->lower_x[i]) + time * vfloat<K>(node->lower_dx[i]);
@@ -251,13 +212,12 @@ namespace embree
     
     /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const Vec3<vfloat<N>>& ray_org, const Vec3<vfloat<N>>& ray_dir, 
-                                          const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
+      __forceinline vbool<N> intersectNode(const typename BVHN<N>::UnalignedNode* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
-      const Vec3<vfloat<N>> dir = xfmVector(node->naabb,ray_dir);
+      const Vec3<vfloat<N>> dir = xfmVector(node->naabb,ray.dir);
       //const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))/dir;
       const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))*rcp_safe(dir);
-      const Vec3<vfloat<N>> org = xfmPoint(node->naabb,ray_org);
+      const Vec3<vfloat<N>> org = xfmPoint(node->naabb,ray.org);
       const Vec3<vfloat<N>> tLowerXYZ = org * nrdir;     // (Vec3fa(zero) - org) * rdir;
       const Vec3<vfloat<N>> tUpperXYZ = tLowerXYZ - nrdir; // (Vec3fa(one ) - org) * rdir;
       
@@ -271,55 +231,125 @@ namespace embree
       const vfloat<N> tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
-      return movemask(vmask);
-    }
-
-    /*! intersect N OBBs with single ray */
-    template<int N>
-      __forceinline size_t intersect_node(const BVH4::UnalignedNode* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist) {
-      return intersect_node(node,ray.org,ray.dir,tnear,tfar,dist);
+      return vmask;
     }
     
-    /*! intersect N OBBs with single ray */
-    template<int N>
-    __forceinline size_t intersect_node(const BVH4::UnalignedNodeMB* node,
-                                        const Vec3<vfloat<N>>& ray_org, const Vec3<vfloat<N>>& ray_dir, 
-                                        const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
-      {
-	const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
-
-	const AffineSpace3vf4 xfm = node->space0;
-	const Vec3<vfloat<N>> b0_lower = zero;
-	const Vec3<vfloat<N>> b0_upper = one;
-	const Vec3<vfloat<N>> lower = t0*b0_lower + t1*node->b1.lower;
-	const Vec3<vfloat<N>> upper = t0*b0_upper + t1*node->b1.upper;
-	
-	const BBox3vf4 bounds(lower,upper);
-	const Vec3<vfloat<N>> dir = xfmVector(xfm,ray_dir);
-	const Vec3<vfloat<N>> rdir = rcp_safe(dir); 
-	const Vec3<vfloat<N>> org = xfmPoint(xfm,ray_org);
-	
-	const Vec3<vfloat<N>> tLowerXYZ = (bounds.lower - org) * rdir;
-	const Vec3<vfloat<N>> tUpperXYZ = (bounds.upper - org) * rdir;
-	
-	const vfloat<N> tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
-	const vfloat<N> tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
-	const vfloat<N> tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
-	const vfloat<N> tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
-	const vfloat<N> tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
-	const vfloat<N> tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-	const vfloat<N> tNear  = max(tnear, tNearX,tNearY,tNearZ);
-	const vfloat<N> tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
-	const vbool<N> vmask = tNear <= tFar;
-	dist = tNear;
-	return movemask(vmask);
-      }
-
      /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersect_node(const BVH4::UnalignedNodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist) {
-      return intersect_node(node,ray.org,ray.dir,tnear,tfar,time,dist);
+      __forceinline vbool<N> intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
+    {
+      const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
+      
+      const AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>> xfm = node->space0;
+      const Vec3<vfloat<N>> b0_lower = zero;
+      const Vec3<vfloat<N>> b0_upper = one;
+      const Vec3<vfloat<N>> lower = t0*b0_lower + t1*node->b1.lower;
+      const Vec3<vfloat<N>> upper = t0*b0_upper + t1*node->b1.upper;
+      
+      const BBox<Vec3<vfloat<N>>> bounds(lower,upper);
+      const Vec3<vfloat<N>> dir = xfmVector(xfm,ray.dir);
+      const Vec3<vfloat<N>> rdir = rcp_safe(dir); 
+      const Vec3<vfloat<N>> org = xfmPoint(xfm,ray.org);
+      
+      const Vec3<vfloat<N>> tLowerXYZ = (bounds.lower - org) * rdir;
+      const Vec3<vfloat<N>> tUpperXYZ = (bounds.upper - org) * rdir;
+      
+      const vfloat<N> tNearX = mini(tLowerXYZ.x,tUpperXYZ.x);
+      const vfloat<N> tNearY = mini(tLowerXYZ.y,tUpperXYZ.y);
+      const vfloat<N> tNearZ = mini(tLowerXYZ.z,tUpperXYZ.z);
+      const vfloat<N> tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
+      const vfloat<N> tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
+      const vfloat<N> tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
+      const vfloat<N> tNear  = max(tnear, tNearX,tNearY,tNearZ);
+      const vfloat<N> tFar   = min(tfar,  tFarX ,tFarY ,tFarZ );
+      const vbool<N> vmask = tNear <= tFar;
+      dist = tNear;
+      return vmask;
     }
+
+    /*! Intersects N nodes with 1 ray */
+    template<int N, int types, bool robust>
+    struct BVHNNodeIntersector1;
+
+    template<int N, bool robust>
+    struct BVHNNodeIntersector1<N,0x1,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, vbool<N>& vmask)
+      {
+        vmask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N, bool robust>
+    struct BVHNNodeIntersector1<N,0x10,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, vbool<N>& vmask)
+      {
+        vmask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
+        return true;
+      }
+    };
+
+    template<int N, bool robust>
+    struct BVHNNodeIntersector1<N,0x101,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, vbool<N>& vmask)
+      {
+        if (likely(node.isNode()))                 vmask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        else if (unlikely(node.isUnalignedNode())) vmask = intersectNode<N>(node.unalignedNode(),ray,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N, bool robust>
+    struct BVHNNodeIntersector1<N,0x1010,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, vbool<N>& vmask)
+      {
+        if (likely(node.isNodeMB()))            vmask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
+        if (unlikely(node.isUnalignedNodeMB())) vmask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
+        return true;
+      }
+    };
+
+    template<int N, bool robust>
+    struct BVHNNodeIntersector1<N,0x10011,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, vbool<N>& vmask)
+      {
+        if (likely(node.isNode()))        vmask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        else if (likely(node.isNodeMB())) vmask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
+        else                              return false;
+        return true;
+      }
+    };
+
+    /*! Intersects N nodes with K rays */
+    template<int N, int K, int types, bool robust>
+    struct BVHNNodeIntersectorK;
+
+    template<int N, int K, bool robust>
+    struct BVHNNodeIntersectorK<N,K,0x1,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        vmask = intersectNode<N,K,robust>(node.node(),i,org,rdir,org_rdir,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N, int K, bool robust>
+    struct BVHNNodeIntersectorK<N,K,0x10,robust>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        vmask = intersectNode<N,K>(node.nodeMB(),i,org,rdir,org_rdir,tnear,tfar,time,dist);
+        return true;
+      }
+    };
   }
 }
 

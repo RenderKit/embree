@@ -260,7 +260,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   while (true)
   {
     /* intersect ray with scene */
-    rtcIntersect(g_scene,*((varying RTCRay*)&primary)); // FIXME: use (RTCRay&) cast
+    rtcIntersect(g_scene,*((varying RTCRay*)&primary));
     
     /* shade pixels */
     if (primary.geomID == RTC_INVALID_GEOMETRY_ID) 
@@ -269,7 +269,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     float opacity = 1.0f-primary.transparency;
     Vec3f diffuse = colors[primary.primID];
     Vec3f La = diffuse*0.5f;
-    color = color + weight*opacity*La; // FIXME: +=
+    color = color + weight*opacity*La;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
       
     /* initialize shadow ray */
@@ -285,12 +285,12 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     shadow.transparency = 1.0f;
     
     /* trace shadow ray */
-    rtcOccluded(g_scene,*((varying RTCRay*)&shadow)); // FIXME: use (RTCRay&) cast
+    rtcOccluded(g_scene,*((varying RTCRay*)&shadow));
     
     /* add light contribution */
     if (shadow.geomID) {
       Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
-      color = color + weight*opacity*Ll; // FIXME: +=
+      color = color + weight*opacity*Ll;
     }
 
     /* shoot transmission ray */

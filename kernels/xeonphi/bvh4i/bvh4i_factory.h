@@ -16,40 +16,21 @@
 
 #pragma once
 
-#include "bvh8.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
-  class BVH8Statistics 
+  /*! BVH4i instantiations */
+  struct BVH4iFactory
   {
-    typedef BVH8::Node Node;
-    typedef BVH8::NodeRef NodeRef;
-
-  public:
-
-    /* Constructor gathers statistics. */
-    BVH8Statistics (BVH8* bvh);
-
-    /*! Convert statistics into a string */
-    std::string str();
-
-    /*! memory required to store BVH8 */
-    size_t bytesUsed();
-
-    /*! returns sah cost */
-    float sah() const { return bvhSAH; }
-
-  private:
-    void statistics(NodeRef node, const BBox3fa& bounds, size_t& depth);
-
-  private:
-    BVH8* bvh;
-    float bvhSAH;                      //!< SAH cost of the BVH8.
-    float leafSAH;                      //!< SAH cost of the BVH8.
-    size_t numNodes;                   //!< Number of internal nodes.
-    size_t numLeaves;                  //!< Number of leaf nodes.
-    size_t numPrimBlocks;              //!< Number of primitive blocks.
-    size_t numPrims;                   //!< Number of primitives.
-    size_t depth;                      //!< Depth of the tree.
+    static Accel* BVH4iTriangle1ObjectSplitBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitEnhancedMorton(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1PreSplitsBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iVirtualGeometryBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1MemoryConservativeBinnedSAH(Scene* scene,bool robust);
+    static Accel* BVH4iTriangle1ObjectSplitMorton64Bit(Scene* scene,bool robust);
+    static Accel* BVH4iSubdivMeshBinnedSAH(Scene* scene,bool robust);
   };
 }

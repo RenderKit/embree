@@ -16,29 +16,14 @@
 
 #pragma once
 
-#include "bvh8.h"
-#include "../../common/stack_item.h"
-#include "../../common/ray.h"
+#include "../../common/accel.h"
+#include "../../common/scene.h"
 
 namespace embree
 {
-    
-  namespace isa
+  /*! BVH4Hair instantiations */
+  struct BVH4HairFactory
   {
-    /*! BVH8 Traverser. Packet traversal implementation for a Quad BVH. */
-template<typename TriangleIntersector8>    
-class BVH8Intersector8Chunk
-    {
-
-      /* shortcuts for frequently used types */
-      typedef typename TriangleIntersector8::Precalculations Precalculations;
-      typedef typename TriangleIntersector8::Primitive Triangle;
-      typedef typename BVH8::NodeRef NodeRef;
-      typedef typename BVH8::Node Node;
-
-    public:
-      static void intersect(vbool8* valid, BVH8* bvh, Ray8& ray);
-      static void occluded (vbool8* valid, BVH8* bvh, Ray8& ray);
-    };
-  }
+    static Accel* BVH4HairBinnedSAH(Scene* scene);
+  };
 }

@@ -390,7 +390,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       Ng = cross(dPdv,dPdu);
     }
     Ng = normalize(Ng);
-    color = color + diffuse*0.5f; // FIXME: +=
+    color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
     /* initialize shadow ray */
@@ -412,7 +412,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
       Vec3fa r = normalize(reflect(ray.dir,Ng));
       float s = pow(clamp(dot(r,lightDir),0.0f,1.0f),10.0f);
       float d = clamp(-dot(lightDir,Ng),0.0f,1.0f);
-      color = color + diffuse*d + 0.5f*Vec3fa(s); // FIXME: +=
+      color = color + diffuse*d + 0.5f*Vec3fa(s);
     }
   }
   return color;

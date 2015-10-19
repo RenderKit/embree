@@ -19,7 +19,7 @@
 #include "../../common/ray.h"
 #include "../../common/scene_subdiv_mesh.h"
 #include "filter.h"
-#include "../bvh4/bvh4.h"
+#include "../bvh/bvh.h"
 #include "../../common/subdiv/tessellation.h"
 #include "../../common/subdiv/tessellation_cache.h"
 #include "subdivpatch1cached.h"
@@ -38,10 +38,6 @@ namespace embree
               const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
               const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o = nullptr);
 
-      static __forceinline size_t calculate_grid_size(size_t width, size_t height) {
-        return ((width*height+VSIZEX-1)&(-VSIZEX)) / VSIZEX * VSIZEX;
-      }
-
       /*! Subgrid creation */
       template<typename Allocator>
         static GridSOA* create(SubdivPatch1Base* const patch, unsigned x0, unsigned x1, unsigned y0, unsigned y1, const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
@@ -50,7 +46,7 @@ namespace embree
         const size_t height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         const size_t bvhBytes  = getBVHBytes(range,0);
-        const size_t gridBytes = 4*4*calculate_grid_size(width,height);
+        const size_t gridBytes = 4*width*height*sizeof(float)+4; // 4 bytes of padding required because of off by 1 read below
         return new (alloc(offsetof(GridSOA,data)+bvhBytes+gridBytes)) GridSOA(*patch,x0,x1,y0,y1,patch->grid_u_res,patch->grid_v_res,scene->getSubdivMesh(patch->geom),bvhBytes,bounds_o);  
       }
 
@@ -118,10 +114,10 @@ namespace embree
         static __forceinline const Vec3<vfloat4> gather(const float* const grid, const size_t line_offset)
         {
           const vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
-          const vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // FIXME: this accesses 1 element too much
+          const vfloat4 r1 = vfloat4::loadu(grid + 1*line_offset); // this accesses 1 element too much, but this is ok as we ensure enough padding after the grid
           return Vec3<vfloat4>(unpacklo(r0,r1),       // r00, r10, r01, r11
-                              shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
-                              shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
+                               shuffle<1,1,2,2>(r0),  // r01, r01, r02, r02
+                               shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
         }
       };
       
@@ -137,12 +133,12 @@ namespace embree
         {
           const vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
           const vfloat4 rb = vfloat4::loadu(grid + 1*line_offset);
-          const vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); // FIXME: this accesses 1 element too much
+          const vfloat4 rc = vfloat4::loadu(grid + 2*line_offset); // this accesses 1 element too much, but this is ok as we ensure enough padding after the grid
           const vfloat8 r0 = vfloat8(ra,rb);
           const vfloat8 r1 = vfloat8(rb,rc);
           return Vec3<vfloat8>(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21
-                              shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
-                              shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
+                               shuffle<1,1,2,2>(r0),    // r01, r01, r02, r02, r11, r11, r12, r12
+                               shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
         }
       };
 #endif
@@ -151,8 +147,8 @@ namespace embree
       static __forceinline Vec2<vfloat> decodeUV(const vfloat& uv)
       {
         typedef typename vfloat::Int vint;
-	const vint iu  = cast(uv) & 0xffff;
-	const vint iv  = srl(cast(uv),16);
+        const vint iu  = asInt(uv) & 0xffff;
+        const vint iv  = srl(asInt(uv),16);
 	const vfloat u = (vfloat)iu * vfloat(1.0f/0xFFFF);
 	const vfloat v = (vfloat)iv * vfloat(1.0f/0xFFFF);
 	return Vec2<vfloat>(u,v);

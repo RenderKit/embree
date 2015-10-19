@@ -26,55 +26,35 @@ namespace embree
 {
   namespace isa
   {
-    /*! Intersector1 for triangle4i */
+    /*! Intersector1 for Triangle4i */
     template<bool filter>
     struct Triangle4iIntersector1Pluecker
       {
-        enum { M = Triangle4i::M };
+        enum { M = 4 };
         typedef Triangle4i Primitive;
         typedef PlueckerIntersector1<M> Precalculations;
         
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
-          /* gather vertices */
           STAT3(normal.trav_prims,1,1,1);
-          const int* base0 = (const int*) tri.v0[0];
-          const int* base1 = (const int*) tri.v0[1];
-          const int* base2 = (const int*) tri.v0[2];
-          const int* base3 = (const int*) tri.v0[3];
-          const vfloat4 a0 = vfloat4::loadu(base0          ), a1 = vfloat4::loadu(base1          ), a2 = vfloat4::loadu(base2          ), a3 = vfloat4::loadu(base3          );
-          const vfloat4 b0 = vfloat4::loadu(base0+tri.v1[0]), b1 = vfloat4::loadu(base1+tri.v1[1]), b2 = vfloat4::loadu(base2+tri.v1[2]), b3 = vfloat4::loadu(base3+tri.v1[3]);
-          const vfloat4 c0 = vfloat4::loadu(base0+tri.v2[0]), c1 = vfloat4::loadu(base1+tri.v2[1]), c2 = vfloat4::loadu(base2+tri.v2[2]), c3 = vfloat4::loadu(base3+tri.v2[3]);
-          Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-          Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-          Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          pre.intersect(ray,p0,p1,p2,UVIdentity<M>(),Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          Vec3vf4 v0, v1, v2; tri.gather(v0,v1,v2);
+          pre.intersect(ray,v0,v1,v2,UVIdentity<M>(),Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
-          /* gather vertices */
           STAT3(shadow.trav_prims,1,1,1);
-          const int* base0 = (const int*) tri.v0[0];
-          const int* base1 = (const int*) tri.v0[1];
-          const int* base2 = (const int*) tri.v0[2];
-          const int* base3 = (const int*) tri.v0[3];
-          const vfloat4 a0 = vfloat4::loadu(base0          ), a1 = vfloat4::loadu(base1          ), a2 = vfloat4::loadu(base2          ), a3 = vfloat4::loadu(base3          );
-          const vfloat4 b0 = vfloat4::loadu(base0+tri.v1[0]), b1 = vfloat4::loadu(base1+tri.v1[1]), b2 = vfloat4::loadu(base2+tri.v1[2]), b3 = vfloat4::loadu(base3+tri.v1[3]);
-          const vfloat4 c0 = vfloat4::loadu(base0+tri.v2[0]), c1 = vfloat4::loadu(base1+tri.v2[1]), c2 = vfloat4::loadu(base2+tri.v2[2]), c3 = vfloat4::loadu(base3+tri.v2[3]);
-          Vec3vf4 p0; transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-          Vec3vf4 p1; transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-          Vec3vf4 p2; transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-          return pre.intersect(ray,p0,p1,p2,UVIdentity<M>(),Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          Vec3vf4 v0, v1, v2; tri.gather(v0,v1,v2);
+          return pre.intersect(ray,v0,v1,v2,UVIdentity<M>(),Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
       };
 
-    /*! triangle4i intersector for K rays */
+    /*! Triangle4i intersector for K rays */
     template<int K, bool filter>
       struct Triangle4iIntersectorKPluecker
       {
         typedef Triangle4i Primitive;
-        enum { M = Triangle4i::M };
+        enum { M = 4 };
         typedef PlueckerIntersectorK<M,K> Precalculations;
  
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& tri, Scene* scene)
@@ -111,6 +91,20 @@ namespace embree
             if (none(valid0)) break;
           }
           return !valid0;
+        }
+
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
+        {
+          STAT3(normal.trav_prims,1,1,1);
+          Vec3vf4 v0, v1, v2; tri.gather(v0,v1,v2);
+          pre.intersect(ray,k,v0,v1,v2,UVIdentity<M>(),Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+        }
+        
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const Primitive& tri, Scene* scene)
+        {
+          STAT3(shadow.trav_prims,1,1,1);
+          Vec3vf4 v0, v1, v2; tri.gather(v0,v1,v2);
+          return pre.intersect(ray,k,v0,v1,v2,UVIdentity<M>(),Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
         }
       };
   }

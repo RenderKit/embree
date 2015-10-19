@@ -32,7 +32,7 @@ namespace embree
       typedef const T* const_pointer;
       typedef T& reference;
       typedef const T& const_reference;
-      typedef std::size_t size_type; // FIXME: also use std::size_t type under windows if available
+      typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
 
       __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 

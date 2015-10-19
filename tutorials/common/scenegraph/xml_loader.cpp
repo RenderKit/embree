@@ -636,15 +636,6 @@ namespace embree
     return new SceneGraph::LightNode<QuadLight>(QuadLight(v0,v1,v2,v3,L));
   }
 
-  Ref<SceneGraph::Node> XMLLoader::loadHDRILight(const Ref<XML>& xml) 
-  {
-    AffineSpace3fa space = load<AffineSpace3fa>(xml->child("AffineSpace"));
-    Vec3fa L = load<Vec3fa>(xml->child("L"));
-    //image =  rtLoadImage(path + load<std::string>(xml->child("image"))));
-    std::cout << "Warning: ignoring HDRILight" << std::endl; // FIXME: HDRI light not yet supported
-    return new SceneGraph::GroupNode(0); 
-  }
-
   Texture* XMLLoader::loadTextureParm(const Ref<XML>& xml)
   {
     const std::string id = xml->parm("id");
@@ -702,10 +693,6 @@ namespace embree
         else if (type == "float4" ) { material.add(name, load<Vec4f>(entry)); }
         else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid param type: "+type);
       }
-      else if (entry->name == "textures") {
-        // we do not parse BGF format textures for now
-      }
-      else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid type: "+entry->name);
     }
     return material;
   }
@@ -948,7 +935,6 @@ namespace embree
       else if (xml->name == "AmbientLight"    ) return sceneMap[id] = loadAmbientLight    (xml);
       else if (xml->name == "TriangleLight"   ) return sceneMap[id] = loadTriangleLight   (xml);
       else if (xml->name == "QuadLight"       ) return sceneMap[id] = loadQuadLight       (xml);
-      else if (xml->name == "HDRILight"       ) return sceneMap[id] = loadHDRILight       (xml);
       else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4.h"
+#include "../bvh/bvh.h"
 #include "bvh4_builder.h"
 
 #include "../builders/primrefgen.h"
@@ -34,6 +34,8 @@ namespace embree
 {
   namespace isa
   {
+    static const float travCost = 1.0f;
+
     typedef FastAllocator::ThreadLocal2 Allocator;
 
     template<typename Primitive>
@@ -112,7 +114,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+        BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -266,7 +268,7 @@ namespace embree
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVH4BuilderSpatial::build(bvh,splitPrimitive,CreateBVH4ListLeaf<Primitive>(bvh),bvh->scene->progressInterface,prims,pinfo,
-                                  sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+                                  sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         /* clear temporary data for static geometry */
 	if (scene->isStatic()) bvh->shrink();
@@ -360,7 +362,7 @@ namespace embree
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVH4BuilderMblur::build(bvh,CreateBVH4LeafMB<Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
-                                sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+                                sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -446,7 +448,7 @@ namespace embree
         // ============================================
 
         BVH4Builder::build(bvh,CreateBVH4Leaf<Primitive>(bvh,prims.data()),virtualprogress,
-                           prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,BVH4::travCost,intCost);
+                           prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
 

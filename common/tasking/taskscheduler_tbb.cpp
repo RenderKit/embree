@@ -25,7 +25,7 @@
 
 namespace embree
 {
-  size_t g_numThreads = 0;                              //!< number of threads to use in builders
+  size_t TaskSchedulerTBB::g_numThreads = 0;
   __thread TaskSchedulerTBB* TaskSchedulerTBB::g_instance = nullptr;
   __thread TaskSchedulerTBB::Thread* TaskSchedulerTBB::thread_local_thread = nullptr;
   TaskSchedulerTBB::ThreadPool* TaskSchedulerTBB::threadPool = nullptr;
@@ -126,27 +126,57 @@ namespace embree
     return tasks[left].N;
   }
 
-  void threadPoolFunction(void* ptr)
+  static MutexSys g_mutex;
+  static BarrierSys g_barrier(2);
+
+  void threadPoolFunction(std::pair<TaskSchedulerTBB::ThreadPool*,size_t>* pair)
   {
-    TaskSchedulerTBB::ThreadPool* pool = (TaskSchedulerTBB::ThreadPool*) ptr;
-    pool->thread_loop();
+    TaskSchedulerTBB::ThreadPool* pool = pair->first;
+    size_t threadIndex = pair->second;
+    g_barrier.wait();
+    pool->thread_loop(threadIndex);
   }
 
-  TaskSchedulerTBB::ThreadPool::ThreadPool(size_t numThreads, bool set_affinity)
-    : numThreads(numThreads), set_affinity(set_affinity), running(false), terminate(false) 
-  {
-    if (this->numThreads == 0)
-      this->numThreads = getNumberOfLogicalThreads();
-  }
+  TaskSchedulerTBB::ThreadPool::ThreadPool(bool set_affinity)
+    : numThreads(0), numThreadsRunning(0), set_affinity(set_affinity), running(false) {}
 
   __dllexport void TaskSchedulerTBB::ThreadPool::startThreads()
   {
-    if (!running) 
+    if (running) return;
+    setNumThreads(numThreads,true);
+  }
+
+  void TaskSchedulerTBB::ThreadPool::setNumThreads(size_t newNumThreads, bool startThreads)
+  {
+    Lock<MutexSys> lock(g_mutex);
+    
+    if (newNumThreads == 0)
+      newNumThreads = getNumberOfLogicalThreads();
+
+    numThreads = newNumThreads;
+    if (!startThreads && !running) return;
+    running = true;
+    size_t numThreadsActive = numThreadsRunning;
+
+    mutex.lock();
+    numThreadsRunning = newNumThreads;
+    mutex.unlock();
+    condition.notify_all();
+
+    /* start new threads */
+    for (size_t t=numThreadsActive; t<numThreads; t++) 
     {
-      running = true;
-      for (size_t t=1; t<numThreads; t++) {
-        threads.push_back(createThread((thread_func)threadPoolFunction,this,4*1024*1024,set_affinity ? t : -1));
-      }
+      if (t == 0) continue;
+      auto pair = std::make_pair(this,t);
+      threads.push_back(createThread((thread_func)threadPoolFunction,&pair,4*1024*1024,set_affinity ? t : -1));
+      g_barrier.wait();
+    }
+
+    /* stop some threads if we reduce the number of threads */
+    for (ssize_t t=numThreadsActive-1; t>=ssize_t(numThreadsRunning); t--) {
+      if (t == 0) continue;
+      embree::join(threads.back());
+      threads.pop_back();
     }
   }
 
@@ -154,7 +184,7 @@ namespace embree
   {
     /* leave all taskschedulers */
     mutex.lock();
-    terminate = true;
+    numThreadsRunning = 0;
     mutex.unlock();
     condition.notify_all();
 
@@ -182,16 +212,16 @@ namespace embree
     }
   }
 
-  void TaskSchedulerTBB::ThreadPool::thread_loop()
+  void TaskSchedulerTBB::ThreadPool::thread_loop(size_t globalThreadIndex)
   {
-    while (!terminate)
+    while (globalThreadIndex < numThreadsRunning)
     {
       Ref<TaskSchedulerTBB> scheduler = NULL;
       ssize_t threadIndex = -1;
       {
         Lock<MutexSys> lock(mutex);
-        condition.wait(mutex, [&] () { return terminate || !schedulers.empty(); });
-        if (terminate) break;
+        condition.wait(mutex, [&] () { return globalThreadIndex >= numThreadsRunning || !schedulers.empty(); });
+        if (globalThreadIndex >= numThreadsRunning) break;
         scheduler = schedulers.front();
         threadIndex = scheduler->allocThreadIndex();
       }
@@ -200,9 +230,10 @@ namespace embree
   }
   
   TaskSchedulerTBB::TaskSchedulerTBB()
-    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) /* , cancellingException(nullptr) */
+    : threadCounter(0), anyTasksRunning(0), hasRootTask(false) 
   {
-    for (size_t i=0; i<MAX_THREADS; i++)
+    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the join mode the worker threads also join
+    for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i] = nullptr;
   }
   
@@ -226,8 +257,7 @@ namespace embree
 #endif
    }
   __dllexport size_t TaskSchedulerTBB::threadCount() {
-    return g_numThreads; // FIXME: possible to return number of thread through TBB call?
-    //return tbb::task_scheduler_init::default_num_threads();
+    return g_numThreads;
   }
 #endif
 
@@ -254,8 +284,8 @@ namespace embree
 
   void TaskSchedulerTBB::create(size_t numThreads, bool set_affinity)
   {
-    if (threadPool) THROW_RUNTIME_ERROR("Embree threads already running.");
-    threadPool = new TaskSchedulerTBB::ThreadPool(numThreads,set_affinity);
+    if (!threadPool) threadPool = new TaskSchedulerTBB::ThreadPool(set_affinity);
+    threadPool->setNumThreads(numThreads,false);
   }
 
   void TaskSchedulerTBB::destroy() {
@@ -265,7 +295,7 @@ namespace embree
   __dllexport ssize_t TaskSchedulerTBB::allocThreadIndex()
   {
     size_t threadIndex = atomic_add(&threadCounter,1);
-    assert(threadIndex < MAX_THREADS);
+    assert(threadIndex < threadLocal.size());
     return threadIndex;
   }
 

@@ -47,6 +47,12 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
 
   /* configuration */
@@ -190,9 +196,9 @@ namespace embree
     {
       size_t threadIndex = (size_t) ptr;
       size_t threadCount = g_num_threads;
-      g_barrier_active.wait(threadIndex,threadCount);
+      g_barrier_active.wait(threadIndex);
       for (size_t i=0; i<N; i++) 
-	g_barrier_active.wait(threadIndex,threadCount);
+	g_barrier_active.wait(threadIndex);
     }
   
     double run (size_t numThreads)
@@ -203,10 +209,10 @@ namespace embree
 	g_threads.push_back(createThread(benchmark_barrier_active_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t0 = getSeconds();
       for (size_t i=0; i<N; i++) 
-	g_barrier_active.wait(0,numThreads);
+	g_barrier_active.wait(0);
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)
@@ -232,11 +238,11 @@ namespace embree
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       __memory_barrier();
       while (atomic_add(&g_atomic_cntr,-1) > 0);
       __memory_barrier();
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       
     }
     
@@ -250,13 +256,13 @@ namespace embree
 	g_threads.push_back(createThread(benchmark_atomic_inc_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t0 = getSeconds();
       //size_t c0 = rdtsc();
       benchmark_atomic_inc_thread(nullptr);
       //size_t c1 = rdtsc();
       double t1 = getSeconds();
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -282,12 +288,12 @@ namespace embree
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
       for (size_t i=start; i<end; i+=64)
 	ptr[i] = 0;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
     }
     
     double run (size_t numThreads)
@@ -303,11 +309,11 @@ namespace embree
 	g_threads.push_back(createThread(benchmark_pagefaults_thread,(void*)i,1000000,i));
       //setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t0 = getSeconds();
       benchmark_pagefaults_thread(0);
       double t1 = getSeconds();
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -343,10 +349,10 @@ namespace embree
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
     }
     
     double run (size_t numThreads)
@@ -395,14 +401,14 @@ namespace embree
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       size_t start = (threadIndex+0)*N/threadCount;
       size_t end   = (threadIndex+1)*N/threadCount;
       char p = 0;
       for (size_t i=start; i<end; i+=64)
 	p += ptr[i];
       volatile char out = p;
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
     }
     
     double run (size_t numThreads)
@@ -416,11 +422,11 @@ namespace embree
 	g_threads.push_back(createThread(benchmark_bandwidth_thread,(void*)i,1000000,i));
       //setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t0 = getSeconds();
       benchmark_bandwidth_thread(0);
       double t1 = getSeconds();
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
 
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
       g_threads.clear();
@@ -736,18 +742,15 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 
-      g_barrier_active.wait(threadIndex,threadCount);
+      g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
       
-      size_t start = (threadIndex+0)*N/threadCount;
-      size_t end   = (threadIndex+1)*N/threadCount;
-
       for (size_t i=0; i<N; i++) {
         RTCRay ray = makeRay(zero,numbers[i]);
         rtcIntersect(scene,ray);
       }        
 
-      g_barrier_active.wait(threadIndex,threadCount);
+      g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
 
       delete [] numbers;
@@ -771,12 +774,12 @@ namespace embree
 	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect1_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      //g_barrier_active.wait(0,numThreads);
+      //g_barrier_active.wait(0);
       //double t0 = getSeconds();
 
       double delta = benchmark_rtcore_intersect1_throughput_thread(0);
 
-      //g_barrier_active.wait(0,numThreads);
+      //g_barrier_active.wait(0);
       //double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
@@ -802,7 +805,7 @@ namespace embree
     benchmark_rtcore_intersect16_throughput () 
       : Benchmark("incoherent_intersect16_throughput","MRays/s (all HW threads)") {}
 
-    static void benchmark_rtcore_intersect16_throughput_thread(void* arg) 
+    static double benchmark_rtcore_intersect16_throughput_thread(void* arg) 
     {
       size_t threadIndex = (size_t) arg;
       size_t threadCount = g_num_threads;
@@ -818,7 +821,8 @@ namespace embree
 
       __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t0 = getSeconds();
 
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
@@ -826,10 +830,11 @@ namespace embree
           setRay(ray16,j,makeRay(zero,numbers[i+j]));
         rtcIntersect16(valid16,scene,ray16);
       }        
-
-      if (threadIndex != 0) g_barrier_active.wait(threadIndex,threadCount);
+      if (threadIndex != 0) g_barrier_active.wait(threadIndex);
+      double t1 = getSeconds();
 
       delete [] numbers;
+      return t1-t0;
     }
     
     double run (size_t numThreads)
@@ -846,15 +851,15 @@ namespace embree
       g_num_threads = numThreads;
       g_barrier_active.init(numThreads);
       for (size_t i=1; i<numThreads; i++)
-	g_threads.push_back(createThread(benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
+	g_threads.push_back(createThread((thread_func)benchmark_rtcore_intersect16_throughput_thread,(void*)i,1000000,i));
       setAffinity(0);
       
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t0 = getSeconds();
 
-      benchmark_rtcore_intersect16_throughput_thread(0);
+      double delta = benchmark_rtcore_intersect16_throughput_thread(0);
 
-      g_barrier_active.wait(0,numThreads);
+      g_barrier_active.wait(0);
       double t1 = getSeconds();
       
       for (size_t i=0; i<g_threads.size(); i++)	join(g_threads[i]);
@@ -862,7 +867,7 @@ namespace embree
       
       rtcDeleteScene(scene);
       rtcDeleteDevice(device);
-      return 1E-6*double(N)/(t1-t0)*double(numThreads);
+      return 1E-6*double(N)/(delta)*double(numThreads);
     }
   };
 
@@ -1011,7 +1016,7 @@ namespace embree
       for (size_t j=0; j<8; j++) {
         setRay(ray8,j,makeRay(zero,numbers[i+j]));
       }
-      __aligned(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid8,scene,ray8);
     }
     double t1 = getSeconds();

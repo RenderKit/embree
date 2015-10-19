@@ -20,19 +20,17 @@
 
 namespace embree
 {
-  extern size_t g_numThreads; // FIXME: move into state?
-
   struct State
   {
   public:
     /*! state construction */
-    State ();
+    State (bool singledevice);
 
     /*! state destruction */
     ~State();
 
-    /*! clears the state to its defaults */
-    void clear(bool singledevice);
+    /*! verifies that state is correct */
+    void verify();
 
     /*! parses state from a configuration file */
     bool parseFile(const FileName& fileName);
@@ -51,6 +49,9 @@ namespace embree
 
     /*! returns thread local error code */
     RTCError* error();
+
+    /*! checks if some particular ISA is enabled */
+    bool hasISA(const int isa);
 
   public:
     std::string tri_accel;                 //!< acceleration structure to use for triangles
@@ -89,8 +90,9 @@ namespace embree
     size_t regression_testing;             //!< enables regression tests at startup
 
   public:
-    //size_t numThreads;                   //!< number of threads to use in builders
+    size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
+    int cpu_features;                      //!< CPU ISA features to use
 
   public:
     tls_t thread_error;

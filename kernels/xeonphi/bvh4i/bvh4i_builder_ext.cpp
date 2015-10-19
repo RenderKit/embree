@@ -35,8 +35,6 @@
 #define L1_PREFETCH_ITEMS 2
 #define L2_PREFETCH_ITEMS 16
 
-//FIXME: use 8-bytes compact prim ref is used
-
 namespace embree
 {
 #if defined(__MIC__)
@@ -97,7 +95,7 @@ namespace embree
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = (size_t)((float)numPrimitives * PRESPLIT_SPACE_FACTOR);
 PRINT(numPrims);
@@ -614,7 +612,6 @@ PRINT(CORRECT_numPrims);
 	  const vfloat16 area_tri = tri_sah(v[0],v[1],v[2]);
 	  const vfloat16 area_box = box_sah(bmin,bmax);
 
-	  // FIXME: use store4f
 	  Vec3fa vtxA = *(Vec3fa*)&v[0];
 	  Vec3fa vtxB = *(Vec3fa*)&v[1];
 	  Vec3fa vtxC = *(Vec3fa*)&v[2];
@@ -785,7 +782,7 @@ PRINT(CORRECT_numPrims);
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
 
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = numPrimitives;
 	const size_t minAllocNodes = (threadCount+1) * 2 * ALLOCATOR_NODE_BLOCK_SIZE;
@@ -901,7 +898,7 @@ PRINT(CORRECT_numPrims);
           fastUpdateMode &= !iter[i]->vertexIndices.isModified(); 
           fastUpdateMode &= !iter[i]->faceVertices.isModified();
           fastUpdateMode &= !iter[i]->holes.isModified();
-          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); // FIXME: has to get enabled once FAS trees are precalculated
+          //fastUpdateMode &= !iter[i]->edge_creases.isModified(); 
           //fastUpdateMode &= !iter[i]->edge_crease_weights.isModified();
           //fastUpdateMode &= !iter[i]->vertex_creases.isModified();
           //fastUpdateMode &= !iter[i]->vertex_crease_weights.isModified(); 
@@ -974,10 +971,10 @@ PRINT(CORRECT_numPrims);
   {
     size_t numPrimitivesOld = numPrimitives;
     numPrimitives = totalNumPrimitives;
-    if (numPrimitivesOld != numPrimitives)
+    if (numPrimitivesOld != numPrimitives || bvh->qbvh == NULL)
       {
 	const size_t numPrims = numPrimitives+4;
-	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_MIC_THREADS; // (threadCount+1) 
+	const size_t minAllocNodes =  ALLOCATOR_NODE_BLOCK_SIZE * MAX_THREADS; // (threadCount+1) 
 	const size_t numNodes = (size_t)((float)(numPrims+2)/2) + minAllocNodes;
 	allocateMemoryPools(numPrims,numNodes,sizeof(BVH4i::Node),sizeof(SubdivPatch1),1.0f);
       }

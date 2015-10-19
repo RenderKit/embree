@@ -229,10 +229,9 @@ namespace embree
 
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
-    template<int KK>
+    template<int K>
     struct Bezier1IntersectorK
     {
-      enum { K = KK };
       typedef Vec3<vfloat<K>> Vec3vfK;
       
       struct Precalculations 

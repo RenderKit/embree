@@ -27,7 +27,12 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#if !defined(__MIC__)
+#include "../xeon/bvh4/bvh4_factory.h"
+#include "../xeon/bvh8/bvh8_factory.h"
+#endif
+
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE) // FIXME: move to intrinsics.h header
 #define _MM_DENORMALS_ZERO_ON   (0x0040)
 #define _MM_DENORMALS_ZERO_OFF  (0x0000)
 #define _MM_DENORMALS_ZERO_MASK (0x0040)
@@ -42,12 +47,8 @@
 
 namespace embree
 {
-  /* functions to initialize global state */
+  /* functions to initialize global constants */
   void init_globals();
-
-  /* register functions for accels */
-  void BVH4Register();
-  void BVH8Register();
 
 #if defined(__MIC__)
   void BVH4iRegister();
@@ -55,102 +56,47 @@ namespace embree
   void BVH4HairRegister();
 #endif
 
-  /*! intersector registration functions */
-  DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
-  DECLARE_SYMBOL(AccelSet::Intersector1,InstanceIntersector1);
-  DECLARE_SYMBOL(AccelSet::Intersector4,InstanceIntersector4);
-  DECLARE_SYMBOL(AccelSet::Intersector8,InstanceIntersector8);
-  DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
-  
-  void InstanceIntersectorsRegister ()
-  {
-    int features = getCPUFeatures();
-#if defined(__MIC__)
-    SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector1);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector16);
-#else
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-#if defined (RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_SYMBOL_AVX_AVX2(features,InstanceIntersector8);
-#endif
-#endif
-  }
-
-#if defined(TASKING_LOCKSTEP)
-
-  LockStepTaskScheduler regression_task_scheduler;
-
-  void task_regression_testing(void* This, size_t threadIndex, size_t threadCount, size_t taskIndex, size_t taskCount, TaskScheduler::Event* taskGroup) 
-  {
-    LockStepTaskScheduler::setInstance(&regression_task_scheduler);
-    LockStepTaskScheduler::Init init(threadIndex,threadCount,&regression_task_scheduler);
-    if (threadIndex != 0) return;
-    runRegressionTests();
-  }
-#endif
-
 #if defined(TASKING_TBB)
 
-  template <typename R, typename S>
-  R tbb_pi( S num_steps )
-  {
-    const R step = R(1) / num_steps;
-    return step * tbb::parallel_reduce( tbb::blocked_range<S>( 0, num_steps ), R(0),
-                                        [step] ( const tbb::blocked_range<S> r, R local_sum ) -> R {
-                                          for ( S i = r.begin(); i < r.end(); ++i ) {
-                                            R x = (i + R(0.5)) * step;
-                                            local_sum += R(4) / (R(1) + x*x);
-                                          }
-                                          return local_sum;
-                                        },
-                                        std::plus<R>()
-      );
-  }
-
   bool g_tbb_threads_initialized = false;
-  tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
+  tbb::task_scheduler_init g_tbb_threads(tbb::task_scheduler_init::deferred);
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-    tbb::atomic<int> num_threads;
+    tbb::atomic<int> threadCount;
 
     void on_scheduler_entry( bool ) {
-      ++num_threads;
-      setAffinity(TaskSchedulerTBB::threadIndex());
-      //PING;
-      //PRINT(num_threads);
+      ++threadCount;
+      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use threadCount?
     }
 
     void on_scheduler_exit( bool ) { 
-      --num_threads; 
-      //PING;
-      //PRINT(num_threads);
+      --threadCount; 
     }
   public:
     
-    TBBAffinity() { num_threads = 0; }
+    TBBAffinity() { threadCount = 0; }
 
-    int  get_concurrency()      { return num_threads; }
-    void set_concurrency(int i) { num_threads = i; }
+    int  get_concurrency()      { return threadCount; }
+    void set_concurrency(int i) { threadCount = i; }
 
   } tbb_affinity;
 #endif
 
-  static MutexSys g_cache_size_mutex;
+  static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
+  static std::map<Device*,size_t> g_num_threads_map;
 
   Device::Device (const char* cfg, bool singledevice)
+    : State(singledevice)
   {
     /* initialize global state */
     init_globals();
-    State::clear(singledevice);
     State::parseString(cfg);
     State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    State::verify();
     
     /*! set tessellation cache size */
     setCacheSize( State::tessellation_cache_size );
@@ -168,134 +114,48 @@ namespace embree
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
 
-#if defined(__MIC__) // FIXME: put into State::verify function
-    if (!(g_numThreads == 1 || (g_numThreads % 4) == 0))
-      throw_RTCError(RTC_INVALID_OPERATION,"Xeon Phi supports only number of threads % 4 == 0, or threads == 1");
-#endif
-
     /* print info header */
     if (State::verbosity(1))
       print();
-
-    /* CPU has to support at least SSE2 */
-#if !defined (__MIC__)
-    if (!hasISA(SSE2)) 
-      throw_RTCError(RTC_UNSUPPORTED_CPU,"CPU does not support SSE2");
-#endif
-
-    /* verify that calculations stay in range */
-    assert(rcp(min_rcp_input)*FLT_LARGE+FLT_LARGE < 0.01f*FLT_MAX);
-
-    /* here we verify that CPP files compiled for a specific ISA only
-     * call that same or lower ISA version of non-inlined class member
-     * functions */
-#if !defined (__MIC__) && defined(DEBUG)
-    assert(isa::getISA() == ISA);
-#if defined(__TARGET_SSE41__)
-    assert(sse41::getISA() <= SSE41);
-#endif
-#if defined(__TARGET_SSE42__)
-    assert(sse42::getISA() <= SSE42);
-#endif
-#if defined(__TARGET_AVX__)
-    assert(avx::getISA() <= AVX);
-#endif
-#if defined(__TARGET_AVX2__)
-    assert(avx2::getISA() <= AVX2);
-#endif
-#if defined (__TARGET_AVX512__)
-    assert(avx512::getISA() <= AVX512KNL);
-#endif
-#endif
-
-#if !defined(__MIC__)
-    BVH4Register();
-#else
-    BVH4iRegister();
-    BVH4MBRegister();
-    BVH4HairRegister();
-
-#endif 
-#if defined(__TARGET_AVX__)
-    if (hasISA(AVX)) {
-      BVH8Register();
-    }
-#endif
-    
-    InstanceIntersectorsRegister();
-
     if (State::verbosity(2)) 
       State::print();
 
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
+    /* register all algorithms */
+    instance_factory = new InstanceFactory(cpu_features);
+
+#if !defined(__MIC__)
+    bvh4_factory = new BVH4Factory(cpu_features);
 #endif
 
-#if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::create(g_numThreads,State::set_affinity); // FIXME: prevents creation of two devices
+#if defined(__TARGET_AVX__)
+    bvh8_factory = new BVH8Factory(cpu_features);
 #endif
 
-#if defined(TASKING_TBB)
+#if defined(__MIC__)
+    BVH4iRegister();
+    BVH4MBRegister();
+    BVH4HairRegister();
+#endif 
 
-    /* only set affinity of requested by the user */
-    if (State::set_affinity) {
-      tbb_affinity.set_concurrency(0);
-      tbb_affinity.observe(true); 
-    }
-    
-    if (g_numThreads == 0) {
-      g_tbb_threads_initialized = false;
-      g_numThreads = tbb::task_scheduler_init::default_num_threads();
-    } else {
-      g_tbb_threads_initialized = true;
-      tbb_threads.initialize(g_numThreads);
-
-#if 0
-      const size_t N = 1024*1024;
-      //PRINT(g_numThreads );
-      while (tbb_affinity.get_concurrency() < g_numThreads /*tbb::task_scheduler_init::default_num_threads()*/) 
-        tbb_pi<double> (N);
-      PRINT( tbb_affinity.get_concurrency() );
-#endif
-    }
-#if USE_TASK_ARENA
-    arena = new tbb::task_arena(g_numThreads);
-#endif
-#endif
+    /* setup tasking system */
+    initTaskingSystem(numThreads);
 
     /* execute regression tests */
+#if !defined(__MIC__)
     if (State::regression_testing) 
-    {
-#if defined(TASKING_LOCKSTEP)
-      TaskScheduler::EventSync event;
-      TaskScheduler::Task task(&event,task_regression_testing,nullptr,TaskScheduler::getNumThreads(),nullptr,nullptr,"regression_testing");
-      TaskScheduler::addTask(-1,TaskScheduler::GLOBAL_FRONT,&task);
-      event.sync();
-#else
       runRegressionTests();
 #endif
-    }
   }
 
   Device::~Device ()
   {
+    delete instance_factory;
+#if !defined(__MIC__)
+    delete bvh4_factory;
+    delete bvh8_factory;
+#endif
     setCacheSize(0);
-   
-#if defined(TASKING_LOCKSTEP)
-    TaskScheduler::destroy(); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB_INTERNAL)
-    TaskSchedulerTBB::destroy(); // FIXME: prevents creation of two devices
-#endif
-
-#if defined(TASKING_TBB)
-#if USE_TASK_ARENA
-    delete arena; arena = nullptr;
-#endif
-    if (g_tbb_threads_initialized)
-      tbb_threads.terminate();
-#endif
+    exitTaskingSystem();
   }
 
   void Device::print()
@@ -304,7 +164,7 @@ namespace embree
     std::cout << "  Compiler : " << getCompilerName() << std::endl;
     std::cout << "  Platform : " << getPlatformName() << std::endl;
     std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
+    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << "(" << stringOfCPUFeatures(cpu_features) << ")" << std::endl;
     std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
@@ -321,7 +181,7 @@ namespace embree
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-    // FIXME: should also print SSE2, SSSE3, MIC
+    std::cout << ISA_STR << " ";
 #if defined(__TARGET_SSE41__)
     std::cout << "SSE4.1 ";
 #endif
@@ -431,19 +291,100 @@ namespace embree
  
   void Device::setCacheSize(size_t bytes) 
   {
-    Lock<MutexSys> lock(g_cache_size_mutex);
+    Lock<MutexSys> lock(g_mutex);
     if (bytes == 0) g_cache_size_map.erase(this);
     else            g_cache_size_map[this] = bytes;
-    updateCacheSize();
-  }
-
-  void Device::updateCacheSize()
-  {
+    
     size_t maxCacheSize = 0;
     for (std::map<Device*,size_t>::iterator i=g_cache_size_map.begin(); i!= g_cache_size_map.end(); i++)
       maxCacheSize = max(maxCacheSize, (*i).second);
     
     resizeTessellationCache(max(size_t(1024*1024),maxCacheSize));
+  }
+
+  void Device::initTaskingSystem(size_t numThreads) 
+  {
+    Lock<MutexSys> lock(g_mutex);
+    if (numThreads == 0) g_num_threads_map[this] = -1;
+    else                 g_num_threads_map[this] = numThreads;
+    configureTaskingSystem();
+  }
+
+  void Device::configureTaskingSystem() 
+  {
+    /* terminate tasking system */
+    if (g_num_threads_map.size() == 0)
+    {
+#if defined(TASKING_LOCKSTEP)
+      TaskScheduler::destroy();
+#endif
+      
+#if defined(TASKING_TBB_INTERNAL)
+      TaskSchedulerTBB::destroy();
+#endif
+      
+#if defined(TASKING_TBB)
+      if (g_tbb_threads_initialized) {
+        g_tbb_threads.terminate();
+        g_tbb_threads_initialized = false;
+      }
+#endif
+      return;
+    }
+
+    /*! get maximal configured number of threads */
+    size_t maxNumThreads = 0;
+    for (std::map<Device*,size_t>::iterator i=g_num_threads_map.begin(); i != g_num_threads_map.end(); i++)
+      maxNumThreads = max(maxNumThreads, (*i).second);
+    if (maxNumThreads == -1) 
+      maxNumThreads = 0;
+
+#if defined(TASKING_LOCKSTEP)
+    TaskScheduler::create(maxNumThreads,State::set_affinity);
+#endif
+
+#if defined(TASKING_TBB_INTERNAL)
+    TaskSchedulerTBB::create(maxNumThreads,State::set_affinity);
+#endif
+
+#if defined(TASKING_TBB)
+
+    /* first terminate threads in case we configured them */
+    if (g_tbb_threads_initialized) {
+      g_tbb_threads.terminate();
+      g_tbb_threads_initialized = false;
+    }
+
+    /* only set affinity if requested by the user */
+    if (State::set_affinity) {
+      tbb_affinity.set_concurrency(0);
+      tbb_affinity.observe(true); 
+    }
+
+    /* now either keep default settings are configure number of threads */
+    if (maxNumThreads == 0) 
+    {
+      g_tbb_threads_initialized = false;
+      TaskSchedulerTBB::g_numThreads = tbb::task_scheduler_init::default_num_threads();
+    } else {
+      g_tbb_threads_initialized = true;
+      g_tbb_threads.initialize(maxNumThreads);
+      TaskSchedulerTBB::g_numThreads = maxNumThreads;
+    }
+#if USE_TASK_ARENA
+    arena = new tbb::task_arena(maxNumThreads);
+#endif
+#endif
+  }
+
+  void Device::exitTaskingSystem() 
+  {
+    Lock<MutexSys> lock(g_mutex);
+    g_num_threads_map.erase(this);
+    configureTaskingSystem();
+#if USE_TASK_ARENA
+    delete arena; arena = nullptr;
+#endif
   }
 
   void Device::setParameter1i(const RTCParameter parm, ssize_t val)

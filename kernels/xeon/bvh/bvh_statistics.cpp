@@ -14,12 +14,18 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_statistics.h"
+#include "bvh_statistics.h"
 #include <sstream>
 
 namespace embree
 {
-  BVH4Statistics::BVH4Statistics (BVH4* bvh) : bvh(bvh)
+  static const int travCostAligned = 1;
+  static const int travCostUnaligned = 1;
+  static const int travCostTransform = 1;
+  static const int intCost = 1;
+
+  template<int N>
+  BVHNStatistics<N>::BVHNStatistics (BVH* bvh) : bvh(bvh)
   {
     numAlignedNodes = numUnalignedNodes = 0;
     numAlignedNodesMB = numUnalignedNodesMB = 0;
@@ -32,30 +38,32 @@ namespace embree
     statistics(bvh->root,A,depth);
     bvhSAH /= halfArea(bvh->bounds);
     leafSAH /= halfArea(bvh->bounds);
-    assert(depth <= BVH4::maxDepth);
+    assert(depth <= BVH::maxDepth);
   }
   
-  size_t BVH4Statistics::bytesUsed() const
+  template<int N>
+  size_t BVHNStatistics<N>::bytesUsed() const
   {
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
-    size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(BVH4::NodeMB);
-    size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(BVH4::UnalignedNodeMB);
-    size_t bytesTransformNodes = numTransformNodes*sizeof(BVH4::TransformNode);
+    size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
+    size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
+    size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
     return bytesAlignedNodes+bytesUnalignedNodes+bytesAlignedNodesMB+bytesUnalignedNodesMB+bytesTransformNodes+bytesPrims+bytesVertices;
   }
   
-  std::string BVH4Statistics::str()  
+  template<int N>
+  std::string BVHNStatistics<N>::str()
   {
     std::ostringstream stream;
     size_t bytesAlignedNodes = numAlignedNodes*sizeof(AlignedNode);
     size_t bytesUnalignedNodes = numUnalignedNodes*sizeof(UnalignedNode);
-    size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(BVH4::NodeMB);
-    size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(BVH4::UnalignedNodeMB);
-    size_t bytesTransformNodes = numTransformNodes*sizeof(BVH4::TransformNode);
+    size_t bytesAlignedNodesMB = numAlignedNodesMB*sizeof(AlignedNodeMB);
+    size_t bytesUnalignedNodesMB = numUnalignedNodesMB*sizeof(UnalignedNodeMB);
+    size_t bytesTransformNodes = numTransformNodes*sizeof(TransformNode);
     size_t bytesPrims  = numPrimBlocks*bvh->primTy.bytes;
     size_t numVertices = bvh->numVertices;
     size_t bytesVertices = numVertices*sizeof(Vec3fa); 
@@ -72,28 +80,28 @@ namespace embree
     stream.precision(1);
     if (numAlignedNodes) {
       stream << "  alignedNodes = "  << numAlignedNodes << " "
-	     << "(" << 100.0*double(childrenAlignedNodes)/double(BVH4::N*numAlignedNodes) << "% filled) " 
+             << "(" << 100.0*double(childrenAlignedNodes)/double(N*numAlignedNodes) << "% filled) "
 	     << "(" << bytesAlignedNodes/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesAlignedNodes)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     if (numUnalignedNodes) {
       stream << "  unalignedNodes = "  << numUnalignedNodes << " "
-	     << "(" << 100.0*double(childrenUnalignedNodes)/double(BVH4::N*numUnalignedNodes) << "% filled) " 
+             << "(" << 100.0*double(childrenUnalignedNodes)/double(N*numUnalignedNodes) << "% filled) "
 	     << "(" << bytesUnalignedNodes/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesUnalignedNodes)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     if (numAlignedNodesMB) {
       stream << "  alignedNodesMB = "  << numAlignedNodesMB << " "
-	     << "(" << 100.0*double(childrenAlignedNodesMB)/double(BVH4::N*numAlignedNodesMB) << "% filled) " 
+             << "(" << 100.0*double(childrenAlignedNodesMB)/double(N*numAlignedNodesMB) << "% filled) "
 	     << "(" << bytesAlignedNodesMB/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesAlignedNodesMB)/double(bytesTotal) << "% of total)"
 	     << std::endl;
     }
     if (numUnalignedNodesMB) {
       stream << "  unalignedNodesMB = "  << numUnalignedNodesMB << " "
-	     << "(" << 100.0*double(childrenUnalignedNodesMB)/double(BVH4::N*numUnalignedNodesMB) << "% filled) " 
+             << "(" << 100.0*double(childrenUnalignedNodesMB)/double(N*numUnalignedNodesMB) << "% filled) "
 	     << "(" << bytesUnalignedNodesMB/1E6  << " MB) " 
 	     << "(" << 100.0*double(bytesUnalignedNodesMB)/double(bytesTotal) << "% of total)"
 	     << std::endl;
@@ -117,16 +125,17 @@ namespace embree
     return stream.str();
   }
   
-  void BVH4Statistics::statistics(NodeRef node, const float A, size_t& depth)
+  template<int N>
+  void BVHNStatistics<N>::statistics(NodeRef node, const float A, size_t& depth)
   {
     if (node.isNode())
     {
       numAlignedNodes++;
       AlignedNode* n = node.node();
-      bvhSAH += A*BVH4::travCostAligned;
+      bvhSAH += A*travCostAligned;
       depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) == BVH4::emptyNode) continue;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
         childrenAlignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
@@ -138,11 +147,11 @@ namespace embree
     {
       numUnalignedNodes++;
       UnalignedNode* n = node.unalignedNode();
-      bvhSAH += A*BVH4::travCostUnaligned;
+      bvhSAH += A*travCostUnaligned;
       
       depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) == BVH4::emptyNode) continue;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
         childrenUnalignedNodes++;
         const float Ai = max(0.0f,halfArea(n->extend(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
@@ -153,12 +162,12 @@ namespace embree
     else if (node.isNodeMB())
     {
       numAlignedNodesMB++;
-      BVH4::NodeMB* n = node.nodeMB();
-      bvhSAH += A*BVH4::travCostAligned;
+      AlignedNodeMB* n = node.nodeMB();
+      bvhSAH += A*travCostAligned;
       
       depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) == BVH4::emptyNode) continue;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
         childrenAlignedNodesMB++;
         const float Ai = max(0.0f,halfArea(n->extend0(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
@@ -169,12 +178,12 @@ namespace embree
     else if (node.isUnalignedNodeMB())
     {
       numUnalignedNodesMB++;
-      BVH4::UnalignedNodeMB* n = node.unalignedNodeMB();
-      bvhSAH += A*BVH4::travCostUnaligned;
+      UnalignedNodeMB* n = node.unalignedNodeMB();
+      bvhSAH += A*travCostUnaligned;
       
       depth = 0;
-      for (size_t i=0; i<BVH4::N; i++) {
-        if (n->child(i) == BVH4::emptyNode) continue;
+      for (size_t i=0; i<N; i++) {
+        if (n->child(i) == BVH::emptyNode) continue;
         childrenUnalignedNodesMB++;
         const float Ai = max(0.0f,halfArea(n->extend0(i)));
         size_t cdepth; statistics(n->child(i),Ai,cdepth); 
@@ -185,8 +194,8 @@ namespace embree
     else if (node.isTransformNode())
     {
       numTransformNodes++;
-      BVH4::TransformNode* n = node.transformNode();
-      bvhSAH += A*BVH4::travCostTransform;
+      TransformNode* n = node.transformNode();
+      bvhSAH += A*travCostTransform;
 
       depth = 0;
       const BBox3fa worldBounds = xfmBounds(n->local2world,n->localBounds);
@@ -205,8 +214,14 @@ namespace embree
       for (size_t i=0; i<num; i++)
         numPrims += bvh->primTy.size(tri+i*bvh->primTy.bytes);
       
-      float sah = A * BVH4::intCost * num;
+      float sah = A * intCost * num;
       leafSAH += sah;
     }
   } 
+
+#if defined(__AVX__)
+  template class BVHNStatistics<8>;
+#else
+  template class BVHNStatistics<4>;
+#endif
 }
