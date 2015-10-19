@@ -23,16 +23,16 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base& patch, 
                      const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
-      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
+      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
-      dim_offset = calculate_grid_size(width,height);
-      dynamic_large_stack_array(float,local_grid_u,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_v,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_x,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_y,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_z,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_uv,dim_offset+VSIZEX,64*64);
+      size_t temp_size = width*height+VSIZEX;
+      dynamic_large_stack_array(float,local_grid_u,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_v,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_x,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_y,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_z,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64);
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
