@@ -23,12 +23,11 @@ namespace embree
   BVHN<NN>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
-      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0), worldBVH(nullptr) {}
+      root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
 
   template<int NN>
   BVHN<NN>::~BVHN ()
   {
-    delete worldBVH;
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
         
