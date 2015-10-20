@@ -62,7 +62,7 @@ namespace embree
 
       /* verify correct input */
       assert(ray.tnear >= 0.0f);
-      assert(!(types & BVH::MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
@@ -185,7 +185,7 @@ namespace embree
 
       /* verify correct input */
       assert(ray.tnear >= 0.0f);
-      assert(!(types & BVH::MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
+      assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
