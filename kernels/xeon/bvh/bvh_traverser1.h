@@ -17,19 +17,20 @@
 #pragma once
 
 #include "bvh.h"
+#include "bvh_intersector_node.h"
 #include "../../common/stack_item.h"
 
 namespace embree
 {
   namespace isa
   {
-    /*! BVH node traversal for single rays. */
+    /*! BVH regular node traversal for single rays. */
     template<int N, int types>
-    class BVHNTraverser1;
+    class BVHNNodeTraverser1Hit;
 
     /* Specialization for BVH4. */
     template<int types>
-    class BVHNTraverser1<4,types>
+    class BVHNNodeTraverser1Hit<4,types>
     {
       typedef BVH4 BVH;
       typedef BVH4::NodeRef NodeRef;
@@ -139,7 +140,7 @@ namespace embree
 
     /* Specialization for BVH8. */
     template<int types>
-    class BVHNTraverser1<8,types>
+    class BVHNNodeTraverser1Hit<8,types>
     {
       typedef BVH8 BVH;
       typedef BVH8::NodeRef NodeRef;
@@ -268,6 +269,151 @@ namespace embree
         }
         cur = (NodeRef) stackPtr[-1]; stackPtr--;
       }
+    };
+
+    /*! BVH transform node traversal for single rays. */
+    template<int N, int types, bool transform>
+    class BVHNNodeTraverser1Transform;
+
+    template<int N, int types>
+    class BVHNNodeTraverser1Transform<N,types,true>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::TransformNode TransformNode;
+
+    public:
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N>& vray)
+      {
+        new (tlray) TravRay<N>(vray);
+      }
+
+      __forceinline bool traverseTransform(NodeRef& cur,
+                                           Ray& ray,
+                                           TravRay<N>& vray,
+                                           size_t& leafType,
+                                           const unsigned int*& geomID_to_instID,
+                                           StackItemT<NodeRef>*& stackPtr,
+                                           StackItemT<NodeRef>* stackEnd)
+      {
+        /*! process transformation node */
+        if (unlikely(cur.isTransformNode(types)))
+        {
+          //STAT3(normal.transform_nodes,1,1,1);
+          const TransformNode* node = cur.transformNode();
+#if defined(RTCORE_RAY_MASK)
+          if (unlikely((ray.mask & node->mask) == 0)) return true;
+#endif
+          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
+          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+          leafType = node->type;
+          geomID_to_instID = &node->instID;
+          new (&vray) TravRay<N>(ray_org,ray_dir);
+          ray.org = ray_org;
+          ray.dir = ray_dir;
+          stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
+          stackPtr->ptr = node->child; stackPtr->dist = neg_inf; stackPtr++;
+          return true;
+        }
+
+        /*! restore toplevel ray */
+        if (cur == BVH::popRay)
+        {
+          leafType = 0;
+          geomID_to_instID = nullptr;
+          vray = (TravRay<N>&) tlray;
+          ray.org = ((TravRay<N>&)tlray).org_xyz;
+          ray.dir = ((TravRay<N>&)tlray).dir_xyz;
+          return true;
+        }
+
+        return false;
+      }
+
+      __forceinline bool traverseTransform(NodeRef& cur,
+                                           Ray& ray,
+                                           TravRay<N>& vray,
+                                           size_t& leafType,
+                                           const unsigned int*& geomID_to_instID,
+                                           NodeRef*& stackPtr,
+                                           NodeRef* stackEnd)
+      {
+        /*! process transformation node */
+        if (unlikely(cur.isTransformNode(types)))
+        {
+          //STAT3(shadow.transform_nodes,1,1,1);
+          const TransformNode* node = cur.transformNode();
+#if defined(RTCORE_RAY_MASK)
+          if (unlikely((ray.mask & node->mask) == 0)) return true;
+#endif
+          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
+          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+          leafType = node->type;
+          geomID_to_instID = &node->instID;
+          new (&vray) TravRay<N>(ray_org,ray_dir);
+          ray.org = ray_org;
+          ray.dir = ray_dir;
+          *stackPtr = BVH::popRay; stackPtr++; // FIXME: requires larger stack!
+          *stackPtr = node->child; stackPtr++;
+          return true;
+        }
+
+        /*! restore toplevel ray */
+        if (cur == BVH::popRay)
+        {
+          leafType = 0;
+          geomID_to_instID = nullptr;
+          vray = (TravRay<N>&) tlray;
+          ray.org = ((TravRay<N>&)tlray).org_xyz;
+          ray.dir = ((TravRay<N>&)tlray).dir_xyz;
+          return true;
+        }
+
+        return false;
+      }
+
+    private:
+      __aligned(32) char tlray[sizeof(TravRay<N>)];
+    };
+
+    template<int N, int types>
+    class BVHNNodeTraverser1Transform<N,types,false>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+    public:
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N>& vray) {}
+
+      __forceinline bool traverseTransform(NodeRef& cur,
+                                           Ray& ray,
+                                           TravRay<N>& vray,
+                                           size_t& leafType,
+                                           const unsigned int*& geomID_to_instID,
+                                           StackItemT<NodeRef>*& stackPtr,
+                                           StackItemT<NodeRef>* stackEnd)
+      {
+        return false;
+      }
+
+      __forceinline bool traverseTransform(NodeRef& cur,
+                                           Ray& ray,
+                                           TravRay<N>& vray,
+                                           size_t& leafType,
+                                           const unsigned int*& geomID_to_instID,
+                                           NodeRef*& stackPtr,
+                                           NodeRef* stackEnd)
+      {
+        return false;
+      }
+    };
+
+    /*! BVH node traversal for single rays. */
+    template<int N, int types>
+    class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, types>, public BVHNNodeTraverser1Transform<N, types, types & BVH_FLAG_TRANSFORM_NODE>
+    {
+    public:
+      __forceinline explicit BVHNNodeTraverser1(const TravRay<N>& vray) : BVHNNodeTraverser1Transform<N, types, types & BVH_FLAG_TRANSFORM_NODE>(vray) {}
     };
   }
 }

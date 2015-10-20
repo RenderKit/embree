@@ -68,10 +68,9 @@ namespace embree
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N> vray(ray.org,ray.dir);
-      __aligned(32) char tlray[sizeof(TravRay<N>)];
-      new (tlray) TravRay<N>(vray);
       vfloat<N> ray_near(ray.tnear);
       vfloat<N> ray_far (ray.tfar);
+      BVHNNodeTraverser1<N,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -104,40 +103,12 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
 
         /* ray transformation support */
-        if (types & BVH_FLAG_TRANSFORM_NODE)
-        {
-          /*! process transformation nodes */
-          if (unlikely(cur.isTransformNode(types))) 
-          {
-            //STAT3(normal.transform_nodes,1,1,1);
-            const TransformNode* node = cur.transformNode();
-            if (unlikely((ray.mask & node->mask) == 0)) continue;
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
-            leafType = node->type;
-            geomID_to_instID = &node->instID;
-            new (&vray) TravRay<N>(ray_org,ray_dir);
-            ray.org = ray_org;
-            ray.dir = ray_dir;
-            stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
-            stackPtr->ptr = node->child;  stackPtr->dist = neg_inf; stackPtr++;
-            continue;
-          }
-          
-          /*! restore toplevel ray */
-          if (cur == BVH::popRay) {
-            leafType = 0;
-            geomID_to_instID = nullptr;
-            vray = (TravRay<N>&) tlray; 
-            ray.org = ((TravRay<N>&)tlray).org_xyz;
-            ray.dir = ((TravRay<N>&)tlray).dir_xyz;
-            continue;
-          }
-        }
+        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,geomID_to_instID,stackPtr,stackEnd)))
+          goto pop;
         
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
@@ -191,10 +162,9 @@ namespace embree
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N> vray(ray.org,ray.dir);
-      __aligned(32) char tlray[sizeof(TravRay<N>)];
-      new (tlray) TravRay<N>(vray);
       const vfloat<N> ray_near(ray.tnear);
       vfloat<N> ray_far (ray.tfar);
+      BVHNNodeTraverser1<N,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -223,39 +193,13 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
         }
         
         /* ray transformation support */
-        if (types & BVH_FLAG_TRANSFORM_NODE)
-        {
-          /*! process transformation nodes */
-          if (unlikely(cur.isTransformNode(types))) 
-          {
-            //STAT3(normal.transform_nodes,1,1,1);
-            const TransformNode* node = cur.transformNode();
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
-            leafType = node->type;
-            geomID_to_instID = &node->instID;
-            new (&vray) TravRay<N>(ray_org,ray_dir);
-            ray.org = ray_org;
-            ray.dir = ray_dir;
-            *stackPtr = BVH::popRay; stackPtr++; // FIXME: requires larger stack!
-            *stackPtr = node->child;  stackPtr++;
-            goto pop;
-          }
-          
-          /*! restore toplevel ray */
-          if (cur == BVH::popRay) {
-            leafType = 0;
-            geomID_to_instID = nullptr;
-            vray = (TravRay<N>&) tlray; 
-            ray.org = ((TravRay<N>&)tlray).org_xyz;
-            ray.dir = ((TravRay<N>&)tlray).dir_xyz;
-            goto pop;
-          }
-        }
+        if (unlikely(nodeTraverser.traverseTransform(cur,ray,vray,leafType,geomID_to_instID,stackPtr,stackEnd)))
+          goto pop;
+
         /*! this is a leaf node */
         assert(cur != BVH::emptyNode);
         STAT3(shadow.trav_leaves,1,1,1);

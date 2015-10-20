@@ -100,7 +100,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */
@@ -160,7 +160,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */
