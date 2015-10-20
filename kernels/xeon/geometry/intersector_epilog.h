@@ -47,10 +47,10 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           vbool<M> valid = valid_i;
-          auto hit = getHit();
+          hit.finalize();
           
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
@@ -125,7 +125,7 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
@@ -137,7 +137,7 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            auto hit = getHit(); // FIXME: executed too often
+            hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             const int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
@@ -189,7 +189,7 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
@@ -197,10 +197,8 @@ namespace embree
           if ((geometry->mask & ray.mask) == 0) return false;
 #endif
           
-          vfloat<M> u, v, t; 
-          Vec3<vfloat<M>> Ng;
           vbool<M> valid = valid_i;
-          auto hit = getHit();
+          hit.finalize();
           
           size_t i = select_min(valid,hit.vt);
           
@@ -254,7 +252,7 @@ namespace embree
           : ray(ray), geomID(geomID), primID(primID), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
         {
           /* ray mask test */
           Geometry* geometry = scene->get(geomID);
@@ -266,7 +264,7 @@ namespace embree
 #if defined(RTCORE_INTERSECTION_FILTER)
           if (unlikely(geometry->hasOcclusionFilter1())) 
           {
-            auto hit = getHit();
+            hit.finalize();
             for (size_t m=movemask(valid), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m)) 
             {  
               const Vec2f uv = hit.uv(i);
@@ -503,10 +501,10 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           vbool<M> valid = valid_i;
-          auto hit = getHit();
+          hit.finalize();
           
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
@@ -576,7 +574,7 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
@@ -587,7 +585,7 @@ namespace embree
             if (unlikely(m == 0)) return false;
           entry:
             size_t i=__bsf(m);
-            auto hit = getHit(); // FIXME: executed too often
+            hit.finalize(); // FIXME: executed too often
 
             const int geomID = geomIDs[i];
             Geometry* geometry = scene->get(geomID);
@@ -636,7 +634,7 @@ namespace embree
           : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
@@ -647,7 +645,7 @@ namespace embree
 
           /* finalize hit calculation */
           vbool<M> valid = valid_i;
-          auto hit = getHit();
+          hit.finalize();
           size_t i = select_min(valid,hit.vt);
           
           /* intersection filter test */
@@ -698,7 +696,7 @@ namespace embree
           : ray(ray), k(k), geomID(geomID), primID(primID), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, const Hit& getHit) const
+        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
         {
           Geometry* geometry = scene->get(geomID);
 #if defined(RTCORE_RAY_MASK)
@@ -712,7 +710,7 @@ namespace embree
           if (filter) {
             if (unlikely(geometry->hasOcclusionFilter<vfloat<K>>())) 
             {
-              auto hit = getHit();
+              hit.finalize();
               for (size_t m=movemask(valid_i), i=__bsf(m); m!=0; m=__btc(m,i), i=__bsf(m))
               {  
                 const Vec2f uv = hit.uv(i);

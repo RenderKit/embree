@@ -37,37 +37,53 @@ namespace embree
   namespace isa
   {
     template<int M>
+      struct MoellerTrumborePairsHitM
+    {
+      __forceinline MoellerTrumborePairsHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const vint<M>& flags, const Vec3<vfloat<M>>& Ng)
+        : U(U), V(V), T(T), absDen(absDen), flags(flags), vNg(Ng) {}
+      
+      __forceinline void finalize() 
+      {
+        const vfloat<M> rcpAbsDen = rcp(absDen);
+        vt = T * rcpAbsDen;
+        vu = U * rcpAbsDen;
+        vv = V * rcpAbsDen;
+        const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
+        vNg = Vec3<vfloat<M>>(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
+      }
+
+      __forceinline Vec2f uv (const size_t i) 
+      { 
+        const vfloat<M> vw = 1.0f - vu - vv;
+        const vfloat<M> uwv[3] = { vu,vw,vv };
+        const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
+        const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
+        const float uu = uwv[indexU][i];
+        const float vv = uwv[indexV][i];
+        return Vec2f(uu,vv);
+      }
+
+      __forceinline float t  (const size_t i) { return vt[i]; }
+      __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+      
+    private:
+      const vfloat<M> U;
+      const vfloat<M> V;
+      const vfloat<M> T;
+      const vfloat<M> absDen;
+      const vint<M> flags;
+      const Vec3<vfloat<M>> tri_Ng;
+      
+    public:
+      vfloat<M> vu;
+      vfloat<M> vv;
+      vfloat<M> vt;
+      Vec3<vfloat<M>> vNg;
+    };
+
+    template<int M>
       struct MoellerTrumboreIntersectorPairs1
     {
-      struct Hit
-      {
-        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng, const vint<M>& flags)
-          : vu(u), vv(v), vt(t), vNg(Ng), flags(flags) {}
-
-        __forceinline Vec2f uv (const size_t i) 
-        { 
-          const vfloat<M> vw = 1.0f - vu - vv;
-          const vfloat<M> uwv[3] = { vu,vw,vv };
-          const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-          const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-          const float uu = uwv[indexU][i];
-          const float vv = uwv[indexV][i];
-          return Vec2f(uu,vv);
-        }
-
-        __forceinline float t  (const size_t i) { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) { 
-          return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); 
-        }
-
-      public:
-        const vfloat<M> vu;
-        const vfloat<M> vv;
-        const vfloat<M> vt;
-        const Vec3<vfloat<M>> vNg;
-        const vint<M> flags;
-      };
-
       __forceinline MoellerTrumboreIntersectorPairs1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
@@ -107,15 +123,8 @@ namespace embree
         if (likely(none(valid))) return false;
 
         /* update hit information */
-        return epilog(valid,[&] () {
-            const vfloat<M> rcpAbsDen = rcp(absDen);
-            const vfloat<M> t = T * rcpAbsDen;
-            const vfloat<M> u = U * rcpAbsDen;
-            const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
-            const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
-            return Hit(u,v,t,Ng,flags);
-          });
+        MoellerTrumborePairsHitM<M> hit(U,V,T,absDen,flags,tri_Ng);
+        return epilog(valid,hit);
       }
       
       template<typename Epilog>
@@ -132,37 +141,44 @@ namespace embree
         return intersect(ray,v0,e1,e2,Ng,flags,epilog);
       }
     };
+
+    template<int K>
+      struct MoellerTrumborePairsHitK
+    {
+      __forceinline MoellerTrumborePairsHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& absDen, const Vec3<vfloat<K>>& tri_Ng,
+                                             const unsigned int rotation, const float flipNg)
+        : U(U), V(V), T(T), absDen(absDen), tri_Ng(tri_Ng), rotation(rotation), flipNg(flipNg) {}
       
+      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3<vfloat<K>>> operator() () const
+      {
+        const vfloat<K> rcpAbsDen = rcp(absDen);
+        const unsigned int indexU = (rotation >>  0) & 0xff;
+        const unsigned int indexV = (rotation >> 16) & 0xff;
+        const vfloat<K> t =  T*rcpAbsDen;
+        const vfloat<K> uu = U*rcpAbsDen;
+        const vfloat<K> vv = V*rcpAbsDen;
+        const vfloat<K> ww = 1.0f-uu-vv;
+        const vfloat<K> uwv[3] = { uu,ww,vv };
+        const vfloat<K> u = uwv[indexU];
+        const vfloat<K> v = uwv[indexV];
+        const vfloat<K> flip(flipNg); 
+        const Vec3<vfloat<K>> Ng(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
+        return std::make_tuple(u,v,t,Ng);
+      }
+      
+    private:
+      const vfloat<K> U;
+      const vfloat<K> V;
+      const vfloat<K> T;
+      const vfloat<K> absDen;
+      const Vec3<vfloat<K>> tri_Ng;
+      const unsigned int rotation;
+      const float flipNg;
+    };
+
     template<int M, int K>
     struct MoellerTrumboreIntersectorPairK
     {
-       struct Hit
-      {
-        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng, const vint<M>& flags)
-          : vu(u), vv(v), vt(t), vNg(Ng), flags(flags) {}
-
-        __forceinline Vec2f uv (const size_t i) 
-        { 
-          const vfloat<M> vw = 1.0f - vu - vv;
-          const vfloat<M> uwv[3] = { vu,vw,vv };
-          const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-          const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-          const float uu = uwv[indexU][i];
-          const float vv = uwv[indexV][i];
-          return Vec2f(uu,vv);
-        }
-
-        __forceinline float t  (const size_t i) { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-
-      public:
-        const vfloat<M> vu;
-        const vfloat<M> vv;
-        const vfloat<M> vt;
-        const Vec3<vfloat<M>> vNg;
-        const vint<M> flags;
-      };
-
       __forceinline MoellerTrumboreIntersectorPairK(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
@@ -218,21 +234,8 @@ namespace embree
 #endif
         
         /* calculate hit information */
-        return epilog(valid,[&] () {
-            const vfloat<K> rcpAbsDen = rcp(absDen);
-            const unsigned int indexU = (rotation >>  0) & 0xff;
-            const unsigned int indexV = (rotation >> 16) & 0xff;
-            const vfloat<K> t =  T*rcpAbsDen;
-            const vfloat<K> uu = U*rcpAbsDen;
-            const vfloat<K> vv = V*rcpAbsDen;
-            const vfloat<K> ww = 1.0f-uu-vv;
-            const vfloat<K> uwv[3] = { uu,ww,vv };
-            const vfloat<K> u = uwv[indexU];
-            const vfloat<K> v = uwv[indexV];
-            const vfloat<K> flip(flipNg); 
-            const Vec3vfK Ng(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
-            return std::make_tuple(u,v,t,Ng);
-          });
+        MoellerTrumborePairsHitK<K> hit(U,V,T,absDen,tri_Ng,rotation,flipNg);
+        return epilog(valid,hit);
       }
       
       /*! Intersects K rays with one of M triangles. */
@@ -292,15 +295,8 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
-        return epilog(valid,[&] () {
-            const vfloat<M> rcpAbsDen = rcp(absDen);
-            const vfloat<M> t = T * rcpAbsDen;
-            const vfloat<M> u = U * rcpAbsDen;
-            const vfloat<M> v = V * rcpAbsDen;
-            const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
-            const Vec3vfM Ng(tri_Ng.x * flip,tri_Ng.y * flip,tri_Ng.z * flip);
-            return Hit(u,v,t,Ng,flags);
-          });
+        MoellerTrumborePairsHitM<M> hit(U,V,T,absDen,flags,tri_Ng);
+        return epilog(valid,hit);
       }
       
       template<typename Epilog>

@@ -33,24 +33,39 @@ namespace embree
   namespace isa
   {
     template<int M>
+      struct MoellerTrumboreHitM
+    {
+      __forceinline MoellerTrumboreHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3<vfloat<M>>& Ng)
+        : U(U), V(V), T(T), absDen(absDen), vNg(Ng) {}
+      
+      __forceinline void finalize() 
+      {
+        const vfloat<M> rcpAbsDen = rcp(absDen);
+        vt = T * rcpAbsDen;
+        vu = U * rcpAbsDen;
+        vv = V * rcpAbsDen;
+      }
+      
+      __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
+      __forceinline float t  (const size_t i) const { return vt[i]; }
+      __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+      
+    private:
+      const vfloat<M> U;
+      const vfloat<M> V;
+      const vfloat<M> T;
+      const vfloat<M> absDen;
+      
+    public:
+      vfloat<M> vu;
+      vfloat<M> vv;
+      vfloat<M> vt;
+      Vec3<vfloat<M>> vNg;
+    };
+    
+    template<int M>
       struct MoellerTrumboreIntersector1
     {
-      struct Hit
-      {
-        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
-          : vu(u), vv(v), vt(t), vNg(Ng) {}
-
-        __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
-        __forceinline float t  (const size_t i) const { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-
-      public:
-        const vfloat<M> vu;
-        const vfloat<M> vv;
-        const vfloat<M> vt;
-        const Vec3<vfloat<M>> vNg;
-      };
-
       __forceinline MoellerTrumboreIntersector1(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
@@ -89,13 +104,8 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* update hit information */
-        return epilog(valid,[&] () {
-            const vfloat<M> rcpAbsDen = rcp(absDen);
-            const vfloat<M> t = T * rcpAbsDen;
-            const vfloat<M> u = U * rcpAbsDen;
-            const vfloat<M> v = V * rcpAbsDen;
-            return Hit(u,v,t,tri_Ng);
-          });
+        MoellerTrumboreHitM<M> hit(U,V,T,absDen,tri_Ng);
+        return epilog(valid,hit);
       }
       
       template<typename Epilog>
@@ -111,28 +121,35 @@ namespace embree
         return intersect(ray,v0,e1,e2,Ng,epilog);
       }
     };
+
+     template<int K>
+      struct MoellerTrumboreHitK
+    {
+      __forceinline MoellerTrumboreHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& absDen, const Vec3<vfloat<K>>& Ng)
+        : U(U), V(V), T(T), absDen(absDen), Ng(Ng) {}
+      
+      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3<vfloat<K>>> operator() () const
+      {
+        const vfloat<K> rcpAbsDen = rcp(absDen);
+        const vfloat<K> t = T * rcpAbsDen;
+        const vfloat<K> u = U * rcpAbsDen;
+        const vfloat<K> v = V * rcpAbsDen;
+        return std::make_tuple(u,v,t,Ng);
+      }
+      
+    private:
+      const vfloat<K> U;
+      const vfloat<K> V;
+      const vfloat<K> T;
+      const vfloat<K> absDen;
+      const Vec3<vfloat<K>> Ng;
+    };
     
     template<int M, int K>
     struct MoellerTrumboreIntersectorK
     {
-      struct Hit
-      {
-        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
-          : vu(u), vv(v), vt(t), vNg(Ng) {}
-
-        __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
-        __forceinline float t  (const size_t i) const { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-
-      public:
-        const vfloat<M> vu;
-        const vfloat<M> vv;
-        const vfloat<M> vt;
-        const Vec3<vfloat<M>> vNg;
-      };
-
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
-            
+      
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
@@ -184,13 +201,8 @@ namespace embree
 #endif
         
         /* calculate hit information */
-        return epilog(valid,[&] () {
-            const vfloat<K> rcpAbsDen = rcp(absDen);
-            const vfloat<K> u = U*rcpAbsDen;
-            const vfloat<K> v = V*rcpAbsDen;
-            const vfloat<K> t = T*rcpAbsDen;
-            return std::make_tuple(u,v,t,tri_Ng);
-          });
+        MoellerTrumboreHitK<K> hit(U,V,T,absDen,tri_Ng);
+        return epilog(valid,hit);
       }
       
       /*! Intersects K rays with one of M triangles. */
@@ -246,13 +258,8 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
-        return epilog(valid,[&] () {
-            const vfloat<M> rcpAbsDen = rcp(absDen);
-            const vfloat<M> t = T * rcpAbsDen;
-            const vfloat<M> u = U * rcpAbsDen;
-            const vfloat<M> v = V * rcpAbsDen;
-            return Hit(u,v,t,tri_Ng);
-          });
+        MoellerTrumboreHitM<M> hit(U,V,T,absDen,tri_Ng);
+        return epilog(valid,hit);
       }
       
       template<typename Epilog>
