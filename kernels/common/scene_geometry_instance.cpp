@@ -34,7 +34,7 @@ namespace embree
       case USER_GEOMETRY: atomic_add(&parent->instanced1.numUserGeometries,f*ssize_t(geom->size())); break;
       case BEZIER_CURVES: atomic_add(&parent->instanced1.numBezierCurves  ,f*ssize_t(geom->size())); break;
       case SUBDIV_MESH  : atomic_add(&parent->instanced1.numSubdivPatches ,f*ssize_t(geom->size())); break;
-      default           : THROW_RUNTIME_ERROR("invalid geometry type");
+      default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry ");
       };
     }
     else
@@ -44,7 +44,7 @@ namespace embree
       case USER_GEOMETRY: atomic_add(&parent->instanced2.numUserGeometries,f*ssize_t(geom->size())); break;
       case BEZIER_CURVES: atomic_add(&parent->instanced2.numBezierCurves  ,f*ssize_t(geom->size())); break;
       case SUBDIV_MESH  : atomic_add(&parent->instanced2.numSubdivPatches ,f*ssize_t(geom->size())); break;
-      default           : THROW_RUNTIME_ERROR("invalid geometry type");
+      default           : throw_RTCError(RTC_INVALID_OPERATION,"cannot instantiate this geometry");
       };
     }
   }

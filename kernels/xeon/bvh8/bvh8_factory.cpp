@@ -162,7 +162,7 @@ namespace embree
     else if (scene->device->tri_builder == "binned_sah2" )          builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else THROW_RUNTIME_ERROR("unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -193,7 +193,7 @@ namespace embree
     else if (scene->device->tri_builder == "binned_sah2" )          builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else THROW_RUNTIME_ERROR("unknown builder "+scene->device->tri_builder+" for BVH8<Triangle8>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -205,7 +205,7 @@ namespace embree
 
     Builder* builder = nullptr;
     if      (scene->device->tri_builder == "default"     ) builder = BVH8TrianglePairs4SceneBuilderSAH(accel,scene,0);
-    else THROW_RUNTIME_ERROR("unknown builder "+scene->device->tri_builder+" for BVH8<TrianglePairs4v>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<TrianglePairs4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }

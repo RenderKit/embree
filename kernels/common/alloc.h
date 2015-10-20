@@ -254,7 +254,7 @@ namespace embree
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
-          FATAL("allocation is too large");
+          throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
 
         /* if this fails allocate new block */
         {

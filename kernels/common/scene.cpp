@@ -128,10 +128,10 @@ namespace embree
           accels.add(BVH4iFactory::BVH4iTriangle1ObjectSplitMorton64Bit(this,isRobust()));
         }
         
-        else THROW_RUNTIME_ERROR("unknown builder "+device->tri_builder+" for BVH4i<Triangle1>");
+        else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+device->tri_builder+" for BVH4i<Triangle1>");
       }
     }
-    else THROW_RUNTIME_ERROR("unknown accel "+device->tri_accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown accel "+device->tri_accel);
     
 #else
     createTriangleAccel();
@@ -215,7 +215,7 @@ namespace embree
     else if (device->tri_accel == "bvh8.triangle8")         accels.add(device->bvh8_factory->BVH8Triangle8(this));
     else if (device->tri_accel == "bvh8.trianglepairs4")    accels.add(device->bvh8_factory->BVH8TrianglePairs4ObjectSplit(this));
 #endif
-    else THROW_RUNTIME_ERROR("unknown triangle acceleration structure "+device->tri_accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
   }
 
   void Scene::createHairAccel()
@@ -246,7 +246,7 @@ namespace embree
     else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,false));
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,false));
-    else THROW_RUNTIME_ERROR("unknown hair acceleration structure "+device->hair_accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
   }
 
   void Scene::createSubdivAccel()
@@ -260,7 +260,7 @@ namespace embree
     }
     else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
     else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
-    else THROW_RUNTIME_ERROR("unknown subdiv accel "+device->subdiv_accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
   }
 
 #endif

@@ -520,7 +520,7 @@ namespace embree
         encodeMask = ((size_t)1 << encodeShift)-1;
         size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          THROW_RUNTIME_ERROR("encoding error in morton builder");
+          throw_RTCError(RTC_UNKNOWN_ERROR,"encoding error in morton builder");
        
         /* skip build for empty scene */
         if (numPrimitives == 0) {
