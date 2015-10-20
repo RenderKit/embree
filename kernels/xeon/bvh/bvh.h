@@ -219,34 +219,20 @@ namespace embree
       /*! checks if this is a leaf */
       __forceinline size_t isLeaf() const { return ptr & tyLeaf; }
 
-      /*! checks if this is a leaf */
-      __forceinline int isLeaf(int types) const {
-        if      (types == BVH_FLAG_ALIGNED_NODE) return !isNode();
-        else if (types == (BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE)) return !isNode();
-        /*else if (types == BVH_FLAG_ALIGNED_NODE_MB) return !isNodeMB();
-        else if (types == BVH_FLAG_UNALIGNED_NODE) return !isUnalignedNode();
-        else if (types == BVH_FLAG_UNALIGNED_NODE_MB) return !isUnalignedNodeMB();*/
-        else return isLeaf();
-      }
-
       /*! returns node type */
       __forceinline int type() const { return ptr & (size_t)align_mask; }
 
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
-      __forceinline int isNode(int types) const { return ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) || ((types & BVH_FLAG_ALIGNED_NODE) && isNode()); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
-      __forceinline int isNodeMB(int types) const { return (types == BVH_FLAG_ALIGNED_NODE_MB) || ((types & BVH_FLAG_ALIGNED_NODE_MB) && isNodeMB()); }
 
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
-      __forceinline int isUnalignedNode(int types) const { return (types == BVH_FLAG_UNALIGNED_NODE) || ((types & BVH_FLAG_UNALIGNED_NODE) && isUnalignedNode()); }
 
       /*! checks if this is a motion blur node with unaligned bounding boxes */
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
-      __forceinline int isUnalignedNodeMB(int types) const { return (types == BVH_FLAG_UNALIGNED_NODE_MB) || ((types & BVH_FLAG_UNALIGNED_NODE_MB) && isUnalignedNodeMB()); }
 
       /*! checks if this is a transformation node */
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }

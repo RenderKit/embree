@@ -89,7 +89,7 @@ namespace embree
             vfloat<N> tNear;
 
             /*! stop if we found a leaf node */
-            if (unlikely(cur.isLeaf(types))) break;
+            if (unlikely(cur.isLeaf())) break;
             STAT3(normal.trav_nodes,1,1,1);
 
             /* intersect node */
@@ -149,7 +149,7 @@ namespace embree
             vfloat<N> tNear;
 
             /*! stop if we found a leaf node */
-            if (unlikely(cur.isLeaf(types))) break;
+            if (unlikely(cur.isLeaf())) break;
             STAT3(shadow.trav_nodes,1,1,1);
 
             /* intersect node */
