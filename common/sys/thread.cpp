@@ -74,21 +74,21 @@ namespace embree
       groupAffinity.Reserved[1] = 0;
       groupAffinity.Reserved[2] = 0;
       if (!pSetThreadGroupAffinity(thread, &groupAffinity, nullptr))
-        THROW_RUNTIME_ERROR("cannot set thread group affinity");
+        WARNING("SetThreadGroupAffinity failed"); // on purpose only a warning
   
       PROCESSOR_NUMBER processorNumber;
       processorNumber.Group = group;
       processorNumber.Number = number;
       processorNumber.Reserved = 0;
       if (!pSetThreadIdealProcessorEx(thread, &processorNumber, nullptr))
-        THROW_RUNTIME_ERROR("cannot set ideal processor");
-  
-    } else {
-  
+        WARNING("SetThreadIdealProcessorEx failed"); // on purpose only a warning
+    } 
+    else 
+    {
       if (!SetThreadAffinityMask(thread, DWORD_PTR(uint64_t(1) << affinity)))
-        THROW_RUNTIME_ERROR("cannot set thread affinity mask");
+        WARNING("SetThreadAffinityMask failed"); // on purpose only a warning
       if (SetThreadIdealProcessor(thread, (DWORD)affinity) == (DWORD)-1)
-        THROW_RUNTIME_ERROR("cannot set ideal processor");
+        WARNING("SetThreadIdealProcessor failed"); // on purpose only a warning
       }
   }
 
@@ -121,7 +121,7 @@ namespace embree
   thread_t createThread(thread_func f, void* arg, size_t stack_size, ssize_t threadID)
   {
     HANDLE thread = CreateThread(nullptr, stack_size, (LPTHREAD_START_ROUTINE)threadStartup, new ThreadStartupData(f,arg), 0, nullptr);
-    if (thread == nullptr) THROW_RUNTIME_ERROR("cannot create thread");
+    if (thread == nullptr) FATAL("CreateThread failed");
     if (threadID >= 0) setAffinity(thread, threadID);
     return thread_t(thread);
   }
@@ -182,7 +182,7 @@ namespace embree
     CPU_SET(affinity, &cset);
 
     if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
-      std::cerr << "Thread: cannot set affinity" << std::endl;
+      WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
   }
 }
 #endif
@@ -205,7 +205,7 @@ namespace embree
     thread_affinity_policy ap;
     ap.affinity_tag = affinity;
     if (thread_policy_set(mach_thread_self(),THREAD_AFFINITY_POLICY,(thread_policy_t)&ap,THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS)
-      std::cerr << "Thread: cannot set affinity" << std::endl;
+      WARNING("setting thread affinity failed"); // on purpose only a warning
   }
 }
 #endif
@@ -265,7 +265,7 @@ namespace embree
     /* create thread */
     pthread_t* tid = new pthread_t;
     if (pthread_create(tid,&attr,(void*(*)(void*))threadStartup,new ThreadStartupData(f,arg,threadID)) != 0)
-      THROW_RUNTIME_ERROR("pthread_create");
+      FATAL("pthread_create failed");
 
     /* set affinity */
 #if defined(__LINUX__)
@@ -273,9 +273,8 @@ namespace embree
       cpu_set_t cset;
       CPU_ZERO(&cset);
       CPU_SET(threadID, &cset);
-      int ret = pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset);
-      if (ret)
-        std::cout << "WARNING: setting thread affinity failed" << std::endl;
+      if (pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset))
+        WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
     }
 #endif
 
@@ -290,7 +289,7 @@ namespace embree
   /*! waits until the given thread has terminated */
   void join(thread_t tid) {
     if (pthread_join(*(pthread_t*)tid, nullptr) != 0)
-      THROW_RUNTIME_ERROR("pthread_join");
+      FATAL("pthread_join failed");
     delete (pthread_t*)tid;
   }
 
@@ -305,7 +304,7 @@ namespace embree
     static int cntr = 0;
     pthread_key_t* key = new pthread_key_t;
     if (pthread_key_create(key,nullptr) != 0)
-      THROW_RUNTIME_ERROR("pthread_key_create");
+      FATAL("pthread_key_create failed");
 
     return tls_t(key);
   }
@@ -322,7 +321,7 @@ namespace embree
   {
     assert(tls);
     if (pthread_setspecific(*(pthread_key_t*)tls, ptr) != 0)
-      THROW_RUNTIME_ERROR("pthread_setspecific");
+      FATAL("pthread_setspecific failed");
   }
 
   /*! destroys thread local storage identifier */
@@ -330,7 +329,7 @@ namespace embree
   {
     assert(tls);
     if (pthread_key_delete(*(pthread_key_t*)tls) != 0)
-      THROW_RUNTIME_ERROR("pthread_key_delete");
+      FATAL("pthread_key_delete failed");
     delete (pthread_key_t*)tls;
   }
 }
