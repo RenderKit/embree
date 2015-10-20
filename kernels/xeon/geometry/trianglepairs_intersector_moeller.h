@@ -30,57 +30,12 @@
  *  algorithm is similar to the fastest one of the paper "Optimizing
  *  Ray-Triangle Intersection via Automated Search". */
 
+#if defined(__AVX__) // FIXME: implement SSE mode
+
 namespace embree
 {
   namespace isa
   {
-#if 0
-     template<int M>
-        struct MoellerTrumboreIntersectorPairs1 : MoellerTrumboreIntersector1<M>
-    {
-      __forceinline MoellerTrumboreIntersectorPairs1(const Ray& ray, const void* ptr)
-        : MoellerTrumboreIntersector1<M>(ray,ptr) {}
-
-      template<typename Epilog>
-        struct GetHit
-        {
-          const vint<M>& flags;
-          const Epilog& epilog; 
-          
-          __forceinline GetHit(const vint<M>& flags, const Epilog& epilog) 
-            : flags(flags), epilog(epilog) {}
-          
-          template<typename Hit>
-          __forceinline bool operator() (const vbool<M>& valid_i, const Hit& hit) const 
-          {
-            return epilog(valid_i,[&] (const vbool<M>& valid) {
-                vfloat<M> u, v, t; Vec3<vfloat<M>> Ng; size_t i; std::tie(u,v,t,Ng,i) = hit(valid);
-                const vfloat<M> w = 1.0f - u - v;
-                const vfloat<M> uwv[3] = { u,w,v };
-                const unsigned int indexU = (((unsigned int)flags[i]) >>  0) & 0xff;
-                const unsigned int indexV = (((unsigned int)flags[i]) >> 16) & 0xff;
-                
-                /* update hit information */
-                const vfloat<M> uu = uwv[indexU];
-                const vfloat<M> vv = uwv[indexV];
-                return std::make_tuple(uu,vv,t,Ng,i);
-              });
-          }
-        };
-      
-      template<typename Epilog>
-        __forceinline bool intersect(Ray& ray, 
-                                     const Vec3<vfloat<M>>& v0, 
-                                     const Vec3<vfloat<M>>& v1, 
-                                     const Vec3<vfloat<M>>& v2, 
-                                     const vint<M>& flags,
-                                     const Epilog& epilog) const
-      {
-        return MoellerTrumboreIntersector1<M>::intersect(ray,v0,v1,v2,GetHit<Epilog>(flags,epilog));
-      }
-    };
-#endif
-
     template<int M>
       struct MoellerTrumboreIntersectorPairs1
     {
@@ -380,7 +335,6 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-#if defined(__AVX__)
         Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
                      vfloat8(tri.v1.y,tri.v3.y),
                      vfloat8(tri.v1.z,tri.v3.z));
@@ -394,19 +348,16 @@ namespace embree
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         vint8   flags(tri.flags);
         pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<2*M,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));          
-#else
-        FATAL("SSE mode not yet supported");
+
         //vint<M> geomIDs(tri.geomIDs);
         //pre.intersect(ray,tri.v1,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID));
         //pre.intersect(ray,tri.v3,tri.v0,tri.v2,IntersectPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID));
-#endif
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-#if defined(__AVX__)
           Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
                        vfloat8(tri.v1.y,tri.v3.y),
                        vfloat8(tri.v1.z,tri.v3.z));
@@ -420,13 +371,10 @@ namespace embree
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
           return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<2*M,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID));
-#else
-          FATAL("SSE mode not yet supported");
+
           //vint<M> geomIDs(tri.geomIDs);
           //if (pre.intersect(ray,tri.v0,tri.v1,tri.v2,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+0,scene,geomID_to_instID))) return true;
           //if (pre.intersect(ray,tri.v0,tri.v2,tri.v3,OccludedPairs1Epilog<M,filter>(ray,geomIDs,tri.primIDs+1,scene,geomID_to_instID))) return true;
-          
-#endif
           return false;
         }
       };
@@ -484,7 +432,6 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TrianglePairsMv<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-#if defined(__AVX__)
           Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
                        vfloat8(tri.v1.y,tri.v3.y),
                        vfloat8(tri.v1.z,tri.v3.z));
@@ -498,18 +445,15 @@ namespace embree
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));
-#else
-          FATAL("SSE mode not supported");
+
           //pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
           //pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
-#endif
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TrianglePairsMv<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-#if defined(__AVX__)
           Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
                        vfloat8(tri.v1.y,tri.v3.y),
                        vfloat8(tri.v1.z,tri.v3.z));
@@ -523,15 +467,13 @@ namespace embree
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));          
-#else
-          FATAL("SSE mode not supported");
+          
           //if (pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
           //if (pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
-#endif
           return false;
         }
       };
-
-
-  }
+   }
 }
+
+#endif
