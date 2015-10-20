@@ -112,38 +112,79 @@ namespace embree
 
     /*! intersection with single rays */
     template<int N>
-      __forceinline size_t intersectNode(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
+      __forceinline size_t intersectNode(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist);
+
+    template<>
+      __forceinline size_t intersectNode<4>(const typename BVH4::Node* node, const TravRay<4>& ray, const vfloat4& tnear, const vfloat4& tfar, vfloat4& dist)
     {
 #if defined (__AVX2__)
-      const vfloat<N> tNearX = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
-      const vfloat<N> tNearY = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
-      const vfloat<N> tNearZ = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
-      const vfloat<N> tFarX  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farX )), ray.rdir.x, ray.org_rdir.x);
-      const vfloat<N> tFarY  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY )), ray.rdir.y, ray.org_rdir.y);
-      const vfloat<N> tFarZ  = msub(vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ )), ray.rdir.z, ray.org_rdir.z);
+      const vfloat4 tNearX = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
+      const vfloat4 tNearY = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
+      const vfloat4 tNearZ = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
+      const vfloat4 tFarX  = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.farX )), ray.rdir.x, ray.org_rdir.x);
+      const vfloat4 tFarY  = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.farY )), ray.rdir.y, ray.org_rdir.y);
+      const vfloat4 tFarZ  = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.farZ )), ray.rdir.z, ray.org_rdir.z);
 #else
-      const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
-      const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
-      const vfloat<N> tNearZ = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
-      const vfloat<N> tFarX  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
-      const vfloat<N> tFarY  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
-      const vfloat<N> tFarZ  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
+      const vfloat4 tNearX = (vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
+      const vfloat4 tNearY = (vfloat4::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
+      const vfloat4 tNearZ = (vfloat4::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
+      const vfloat4 tFarX  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
+      const vfloat4 tFarY  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
+      const vfloat4 tFarZ  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
       
 #if defined(__SSE4_1__)
-      const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
-      const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
-      const vbool<N> vmask = asInt(tNear) > asInt(tFar);
-      const size_t mask = movemask(vmask) ^ ((1<<N)-1);
+      const vfloat4 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+      const vfloat4 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vbool4 vmask = asInt(tNear) > asInt(tFar);
+      const size_t mask = movemask(vmask) ^ ((1<<4)-1);
 #else
-      const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
-      const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-      const vbool<N> vmask = tNear <= tFar;
+      const vfloat4 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const vfloat4 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool4 vmask = tNear <= tFar;
       const size_t mask = movemask(vmask);
 #endif
       dist = tNear;
       return mask;
     }
+
+#if defined(__AVX__)
+
+    template<>
+      __forceinline size_t intersectNode<8>(const typename BVH8::Node* node, const TravRay<8>& ray, const vfloat8& tnear, const vfloat8& tfar, vfloat8& dist)
+    {
+#if defined (__AVX2__)
+      const vfloat8 tNearX = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
+      const vfloat8 tNearY = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
+      const vfloat8 tNearZ = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
+      const vfloat8 tFarX  = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.farX )), ray.rdir.x, ray.org_rdir.x);
+      const vfloat8 tFarY  = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.farY )), ray.rdir.y, ray.org_rdir.y);
+      const vfloat8 tFarZ  = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.farZ )), ray.rdir.z, ray.org_rdir.z);
+#else
+      const vfloat8 tNearX = (vfloat8::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
+      const vfloat8 tNearY = (vfloat8::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
+      const vfloat8 tNearZ = (vfloat8::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
+      const vfloat8 tFarX  = (vfloat8::load((float*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
+      const vfloat8 tFarY  = (vfloat8::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
+      const vfloat8 tFarZ  = (vfloat8::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
+#endif
+      
+#if defined(__AVX2__) && !defined(__AVX512F__)
+      const vfloat8 tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
+      const vfloat8 tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
+      const vbool8 vmask = asInt(tNear) > asInt(tFar);
+      const size_t mask = movemask(vmask) ^ ((1<<8)-1);
+#else
+      const vfloat8 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const vfloat8 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool8 vmask = tNear <= tFar;
+      const size_t mask = movemask(vmask);
+#endif
+      dist = tNear;
+      return mask;
+    }
+
+#endif
 
     /*! intersection with ray packet of size K */
     template<int N, int K>
