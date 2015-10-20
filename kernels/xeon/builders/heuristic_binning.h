@@ -65,11 +65,8 @@ namespace embree
         }
 
 #if defined(__AVX512F__)
-        __forceinline vint16 bin16(const Vec3fa& p) const 
-        {
-          const vint4 i = floori((vfloat4(p)-ofs)*scale);
-          vint16 i16(i);
-          return i16;
+        __forceinline vint16 bin16(const Vec3fa& p) const {
+          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
         }
 #endif
         
@@ -375,7 +372,7 @@ namespace embree
       }
       
       __forceinline Bin16Info(EmptyTy) {
-	clear(); // FIXME: check in builder code whether we need this in serial code
+	clear();
       }
       
       /*! clears the bin info */
@@ -536,26 +533,14 @@ namespace embree
         count[2] = count2;
       }
 
-
-
-      /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping, const AffineSpace3fa& space)
-      {
-        FATAL("not yet implemented");
-      }
-      
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<16>& mapping) {
 	bin(prims+begin,end-begin,mapping);
       }
 
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<16>& mapping, const AffineSpace3fa& space) {
-	bin(prims+begin,end-begin,mapping,space);
-      }
-      
       /*! merges in other binning information */
       __forceinline void merge (const Bin16Info& other, size_t numBins)
       {
-        for (size_t i=0;i<3;i++)
+        for (size_t i=0; i<3; i++)
         {
           lower[i]  = min(lower[i],other.lower[i]);
           upper[i]  = max(upper[i],other.upper[i]);
