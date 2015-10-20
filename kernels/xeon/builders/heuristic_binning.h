@@ -36,7 +36,7 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) // FIXME: should only be active if the AVX512 binner is used
           num = BINS;
           assert(num == 16);
 #else
@@ -364,14 +364,14 @@ namespace embree
 
     /* 16 bins in-register binner */
     template<typename PrimRef>
-      struct __aligned(64) Bin16Info
+      struct __aligned(64) BinInfo<16,PrimRef>
     {
       typedef BinSplit<16> Split;
       
-      __forceinline Bin16Info() {
+      __forceinline BinInfo() {
       }
       
-      __forceinline Bin16Info(EmptyTy) {
+      __forceinline BinInfo(EmptyTy) {
 	clear();
       }
       
@@ -538,7 +538,7 @@ namespace embree
       }
 
       /*! merges in other binning information */
-      __forceinline void merge (const Bin16Info& other, size_t numBins)
+      __forceinline void merge (const BinInfo& other, size_t numBins)
       {
         for (size_t i=0; i<3; i++)
         {
@@ -549,7 +549,7 @@ namespace embree
       }
 
       /*! reducesr binning information */
-      static __forceinline const Bin16Info reduce (const Bin16Info& a, const Bin16Info& b)
+      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
       {
         BinInfo c;
 	for (size_t i=0; i<3; i++) 
@@ -624,11 +624,6 @@ namespace embree
       Vec3vf16 upper[3];
       vint16   count[3];
     };
-
 #endif
-
-
-
-
   }
 }
