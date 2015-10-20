@@ -42,8 +42,8 @@ namespace embree
       return VerifyMultiTargetLinking::getISA(); 
     }
   
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::intersect(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -117,7 +117,7 @@ namespace embree
         STAT3(normal.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        PrimitiveIntersector::intersect(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node);
+        PrimitiveIntersector1::intersect(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node);
         ray_far = ray.tfar;
 
         /*! push lazy node onto stack */
@@ -139,8 +139,8 @@ namespace embree
       AVX_ZERO_UPPER();
     }
     
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
-    void BVHNIntersector1<N,types,robust,PrimitiveIntersector>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
+    void BVHNIntersector1<N,types,robust,PrimitiveIntersector1>::occluded(const BVH* __restrict__ bvh, Ray& __restrict__ ray)
     {
       /*! perform per ray precalculations required by the primitive intersector */
       Precalculations pre(ray,bvh);
@@ -209,7 +209,7 @@ namespace embree
         STAT3(shadow.trav_leaves,1,1,1);
         size_t num; Primitive* prim = (Primitive*) cur.leaf(num);
         size_t lazy_node = 0;
-        if (PrimitiveIntersector::occluded(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node)) {
+        if (PrimitiveIntersector1::occluded(pre,ray,leafType,prim,num,bvh->scene,geomID_to_instID,lazy_node)) {
           ray.geomID = 0;
           break;
         }
