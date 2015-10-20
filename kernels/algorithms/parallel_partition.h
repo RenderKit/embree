@@ -1289,30 +1289,6 @@ namespace embree
                      });
       }
 
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-      ////////////////////////////////////////////////////////////////////////////
-#if 0       
-      for (size_t i=0;i<global_mid;i++)
-        if (!cmp(array[i]))
-        {
-          PRINT("left side partition");
-          PRINT(i);
-          PRINT(array[i]);
-          exit(0);
-        }
-
-      for (size_t i=global_mid;i<N;i++)
-        if (cmp(array[i]))
-        {
-          PRINT("right side partition");
-          PRINT(i);
-          PRINT(array[i]);
-          exit(0);
-        }
-
-      PRINT("CHECK DONE");
-#endif
       return global_mid;
     }
 
