@@ -242,7 +242,7 @@
 #define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
 #endif
 
-#define NOT_IMPLEMENTED FATAL(__FUNCTION__ " not implemented")
+#define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Basic Types
