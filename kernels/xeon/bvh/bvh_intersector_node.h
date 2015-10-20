@@ -91,7 +91,27 @@ namespace embree
     };
 
     /*! intersection with single rays */
-    template<int N, bool robust>
+    template<int N>
+      __forceinline size_t intersectNodeRobust(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist) 
+    {      
+      const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tNearZ = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
+      const vfloat<N> tFarX  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
+      const vfloat<N> tFarY  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
+      const vfloat<N> tFarZ  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
+      const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+      const float round_up   = 1.0f+2.0f*float(ulp);
+      const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool<N> vmask = (round_down*tNear <= round_up*tFar);
+      const size_t mask = movemask(vmask);
+      dist = tNear;
+      return mask;
+    }
+
+    /*! intersection with single rays */
+    template<int N>
       __forceinline size_t intersectNode(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
 #if defined (__AVX2__)
@@ -109,18 +129,7 @@ namespace embree
       const vfloat<N> tFarY  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
       const vfloat<N> tFarZ  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
-
-      if (robust) {
-        const float round_down = 1.0f-2.0f*float(ulp);
-        const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,tnear);
-        const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
-        const vbool<N> vmask = (round_down*tNear <= round_up*tFar);
-        const size_t mask = movemask(vmask);
-        dist = tNear;
-        return mask;
-      }
-
+      
 #if defined(__SSE4_1__)
       const vfloat<N> tNear = maxi(maxi(tNearX,tNearY),maxi(tNearZ,tnear));
       const vfloat<N> tFar  = mini(mini(tFarX ,tFarY ),mini(tFarZ ,tfar ));
@@ -137,9 +146,31 @@ namespace embree
     }
 
     /*! intersection with ray packet of size K */
-    template<int N, int K, bool robust>
+    template<int N, int K>
+      __forceinline vbool<K> intersectNodeRobust(const typename BVHN<N>::Node* node, size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                                 const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
+    {
+      // FIXME: use per instruction rounding for AVX512
+      const vfloat<K> lclipMinX = (node->lower_x[i] - org.x) * rdir.x;
+      const vfloat<K> lclipMinY = (node->lower_y[i] - org.y) * rdir.y;
+      const vfloat<K> lclipMinZ = (node->lower_z[i] - org.z) * rdir.z;
+      const vfloat<K> lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
+      const vfloat<K> lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
+      const vfloat<K> lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
+      const float round_down = 1.0f-2.0f*float(ulp);
+      const float round_up   = 1.0f+2.0f*float(ulp);
+      const vfloat<K> lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit   = round_down*max(lnearP,tnear) <= round_up*min(lfarP,tfar);
+      dist = lnearP;
+      return lhit;
+    }
+    
+    /*! intersection with ray packet of size K */
+    template<int N, int K>
       __forceinline vbool<K> intersectNode(const typename BVHN<N>::Node* node, size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                            const vfloat<K>& tnear, const vfloat<K>& tfar, vfloat<K>& dist)
+ 
     {
 #if defined(__AVX2__)
       const vfloat<K> lclipMinX = msub(node->lower_x[i],rdir.x,org_rdir.x);
@@ -155,18 +186,7 @@ namespace embree
       const vfloat<K> lclipMaxX = (node->upper_x[i] - org.x) * rdir.x;
       const vfloat<K> lclipMaxY = (node->upper_y[i] - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ = (node->upper_z[i] - org.z) * rdir.z;
-#endif
-
-      if (robust) { // FIXME: use per instruction rounding
-        const float round_down = 1.0f-2.0f*float(ulp);
-        const float round_up   = 1.0f+2.0f*float(ulp);
-        const vfloat<K> lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-        const vfloat<K> lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-        const vbool<K> lhit   = round_down*max(lnearP,tnear) <= round_up*min(lfarP,tfar);
-        dist = lnearP;
-        return lhit;
-      }
-
+#endif  
       const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
       const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const vbool<K> lhit    = maxi(lnearP,tnear) <= mini(lfarP,tfar);
@@ -293,18 +313,28 @@ namespace embree
     template<int N, int types, bool robust>
     struct BVHNNodeIntersector1;
 
-    template<int N, bool robust>
-    struct BVHNNodeIntersector1<N,BVH_AN1,robust>
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_AN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        mask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        mask = intersectNode<N>(node.node(),ray,tnear,tfar,dist);
         return true;
       }
     };
 
-    template<int N, bool robust>
-    struct BVHNNodeIntersector1<N,BVH_AN2,robust>
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_AN1,true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      {
+        mask = intersectNodeRobust<N>(node.node(),ray,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_AN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -313,19 +343,19 @@ namespace embree
       }
     };
 
-    template<int N, bool robust>
-    struct BVHNNodeIntersector1<N,BVH_AN1_UN1,robust>
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_AN1_UN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (likely(node.isNode()))                 mask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        if (likely(node.isNode()))                 mask = intersectNode<N>(node.node(),ray,tnear,tfar,dist);
         else if (unlikely(node.isUnalignedNode())) mask = intersectNode<N>(node.unalignedNode(),ray,tnear,tfar,dist);
         return true;
       }
     };
 
-    template<int N, bool robust>
-    struct BVHNNodeIntersector1<N,BVH_AN2_UN2,robust>
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_AN2_UN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -335,12 +365,12 @@ namespace embree
       }
     };
 
-    template<int N, bool robust>
-    struct BVHNNodeIntersector1<N,BVH_TN_AN1_AN2,robust>
+    template<int N>
+    struct BVHNNodeIntersector1<N,BVH_TN_AN1_AN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        if (likely(node.isNode()))        mask = intersectNode<N,robust>(node.node(),ray,tnear,tfar,dist);
+        if (likely(node.isNode()))        mask = intersectNode<N>(node.node(),ray,tnear,tfar,dist);
         else if (likely(node.isNodeMB())) mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
         else                              return false;
         return true;
@@ -351,19 +381,30 @@ namespace embree
     template<int N, int K, int types, bool robust>
     struct BVHNNodeIntersectorK;
 
-    template<int N, int K, bool robust>
-    struct BVHNNodeIntersectorK<N,K,BVH_AN1,robust>
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N,K,BVH_AN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
-        vmask = intersectNode<N,K,robust>(node.node(),i,org,rdir,org_rdir,tnear,tfar,dist);
+        vmask = intersectNode<N,K>(node.node(),i,org,rdir,org_rdir,tnear,tfar,dist);
         return true;
       }
     };
 
-    template<int N, int K, bool robust>
-    struct BVHNNodeIntersectorK<N,K,BVH_AN2,robust>
+    template<int N, int K>
+      struct BVHNNodeIntersectorK<N,K,BVH_AN1,true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
+                                          const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        vmask = intersectNodeRobust<N,K>(node.node(),i,org,rdir,org_rdir,tnear,tfar,dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N,K,BVH_AN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const size_t i, const Vec3<vfloat<K>>& org, const Vec3<vfloat<K>>& rdir, const Vec3<vfloat<K>>& org_rdir,
                                           const vfloat<K>& tnear, const vfloat<K>& tfar, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
