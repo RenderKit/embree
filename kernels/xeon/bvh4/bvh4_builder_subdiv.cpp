@@ -131,7 +131,7 @@ namespace embree
         PrimInfo pinfo(pinfo3.end,pinfo3.geomBounds,pinfo3.centBounds);
         
         auto createLeaf =  [&] (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) -> int {
-          if (current.pinfo.size() != 1) THROW_RUNTIME_ERROR("bvh4_builder_subdiv: internal error");
+          assert(current.pinfo.size() == 1);
           *current.parent = (size_t) prims[current.prims.begin()].ID();
           return 0;
         };

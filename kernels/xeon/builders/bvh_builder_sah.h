@@ -92,13 +92,14 @@ namespace embree
           travCost(travCost), intCost(intCost)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
-            THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
+            FATAL("bvh_builder: branching factor too large");
         }
         
         const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
+          /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
-            THROW_RUNTIME_ERROR("depth limit reached");
+            FATAL("depth limit reached");
           
           /* create leaf for few primitives */
           if (current.pinfo.size() <= maxLeafSize)

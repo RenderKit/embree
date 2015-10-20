@@ -18,10 +18,6 @@
 
 #include "../common/default.h"
 
-#define DBG_PART(x) 
-#define DBG_PART2(x) 
-#define DBG_CHECK(x) 
-
 namespace embree
 {
   /* serial partitioning */
@@ -287,22 +283,6 @@ namespace embree
       return mode;
     }
 
-    /* check left part of array */
-    void checkLeft(const size_t begin, const size_t end)
-    {
-      for (size_t i=begin;i<end;i++)
-        if (!cmp(array[i]))
-          THROW_RUNTIME_ERROR("partition error on left side");
-    }
-
-    /* check right part of array */
-    void checkRight(const size_t begin, const size_t end)
-    {
-      for (size_t i=begin;i<end;i++)
-        if (cmp(array[i]))
-          THROW_RUNTIME_ERROR("partition error on right side");
-    }
-
   public:
 
     /* initialize atomic counters */
@@ -315,9 +295,6 @@ namespace embree
       maxRightBlockID         = 0;
         
       blocks = N/BLOCK_SIZE;
-      DBG_PART(
-        PRINT(blocks);
-        );
     }
 
     /* each thread neutralizes blocks taken from left and right */
@@ -339,18 +316,7 @@ namespace embree
 
       while(1)
       {
-        DBG_PART(
-          std::cout << std::endl;
-          PRINT("NEXT ITERATION");
-          );
-
         int64_t id = getBlockID(mode);
-
-        DBG_PART(
-          PRINT(id);
-          PRINT(validBlockID(id));
-          );
-
         if (!validBlockID(id)) break;
 
         /* need a left block? */
@@ -360,12 +326,6 @@ namespace embree
           const size_t blockIndex = getLeftBlockIndex(id);
           getLeftArrayIndex(blockIndex,left_begin,left_end);                
           currentLeftBlock = blockIndex;
-
-          DBG_PART(
-            PRINT("LEFT BLOCK");
-            PRINT(currentLeftBlock);
-            );
-
         }
 
         /* need a right block? */
@@ -374,23 +334,10 @@ namespace embree
           const size_t blockIndex = getRightBlockIndex(id);
           getRightArrayIndex(blockIndex,right_begin,right_end);
           currentRightBlock = blockIndex;
-
-          DBG_PART(
-            PRINT("RIGHT BLOCK");
-            PRINT(currentRightBlock);
-            );
         }
-
-        DBG_PART(
-          PRINT(left_begin);
-          PRINT(left_end);
-          PRINT(right_begin);
-          PRINT(right_end);
-          );
             
         assert(left_begin  < left_end);
         assert(right_begin < right_end);
-
         assert(left_end <= right_begin);
 
         mode = neutralizeBlocks(left_begin,left_end,right_begin,right_end,leftReduction,rightReduction);
@@ -438,25 +385,10 @@ namespace embree
 
       if (N <= 2 * BLOCK_SIZE * numThreads) // need at least 1 block from the left and 1 block from the right per thread
       {
-#if defined(__MIC__)
-        PRINT("SERIAL FALLBACK");
-        PRINT("numThreads");
-#endif
         size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);
-        DBG_PART(
-          PRINT( mid );
-          checkLeft(0,mid);
-          checkRight(mid,N);
-          );
         return mid;
       }
 
-      DBG_PART2(
-        PRINT("PARALLEL MODE");
-        );
-
-
-      //scheduler->dispatchTask(task_thread_partition,this,0,numThreads);
       parallel_for(numThreads,[&] (const size_t threadIndex) {
           task_thread_partition(this,threadIndex,numThreads);
         });
@@ -476,17 +408,6 @@ namespace embree
         insertionsort_ascending<unsigned int>(leftRemainderBlockIDs,(unsigned int)numLeftRemainderBlocks);
         insertionsort_ascending<unsigned int>(rightRemainderBlockIDs,(unsigned int)numRightRemainderBlocks);
 
-        DBG_PART(
-          PRINT(numLeftRemainderBlocks);
-          for (size_t i=0;i<numLeftRemainderBlocks;i++)
-            std::cout << i << " -> " << leftRemainderBlockIDs[i] << std::endl;
-          PRINT(numRightRemainderBlocks);
-          for (size_t i=0;i<numRightRemainderBlocks;i++)
-            std::cout << i << " -> " << rightRemainderBlockIDs[i] << std::endl;
-          PRINT(maxLeftBlockID);
-          PRINT(maxRightBlockID);                 
-          );
-
         /* compact left remaining blocks */        
         for (size_t i=0;i<numLeftRemainderBlocks;i++)
         {
@@ -504,8 +425,6 @@ namespace embree
         getLeftArrayIndex(left_border_index,left_begin,left_end);
 
         assert(left_begin != (size_t)-1);
-
-        DBG_CHECK( checkLeft(0,left_begin) );
 
         /* compact right remaining blocks */
 
@@ -527,38 +446,7 @@ namespace embree
 
         assert(right_end  != (size_t)-1);
 
-        DBG_CHECK( checkRight(right_end,N) );
-
-        /* if (!numLeftRemainderBlocks) */
-        /*   left_begin += BLOCK_SIZE; */
-        
-        /* if (!numRightRemainderBlocks) */
-        /*   right_end -= BLOCK_SIZE; */
-        
-        DBG_PART(
-          PRINT("CLEANUP");
-                 
-          PRINT(left_begin);
-          PRINT(left_end);
-          PRINT(right_begin);
-          PRINT(right_end);
-
-          //for (size_t i=0;i<N;i++)
-          //std::cout << i << " -> " << array[i] << std::endl;
-          );
-
-        DBG_CHECK(
-                 
-          checkLeft(0,left_begin);
-          checkRight(right_end,N);
-          );
-
-
-        
-        DBG_CHECK(
-          assert( right_end - left_begin <= numThreads*3*BLOCK_SIZE);
-          )
-          }
+      }
       else
       {
         left_begin = 0;
@@ -574,11 +462,6 @@ namespace embree
       }
         
 
-      DBG_CHECK(
-        checkLeft(0,mid);
-        checkRight(mid,N);
-        );
-        
       return mid;
     }
 
@@ -589,10 +472,6 @@ namespace embree
       leftReduction = init;
       rightReduction = init;
       const size_t mid = serialPartitioning(0,N,leftReduction,rightReduction);      
-      DBG_CHECK(
-        checkLeft(0,mid);
-        checkRight(mid,N);
-        );        
       return mid;
     }
 
@@ -876,17 +755,10 @@ namespace embree
 
       if (N <= 4 * numThreads)
       {
-        DBG_PART(
-          PRINT(numThreads);
-          );
-
         size_t mid = partition_serial(array,N);
         return mid;
       }
 
-      DBG_PART2(
-        PRINT("PARALLEL MODE");
-        );
 #define TIME_PHASES 0
 
       ////////////////////////////////////////////////////////////////////////////

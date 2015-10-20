@@ -254,7 +254,7 @@ namespace embree
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
-          THROW_RUNTIME_ERROR("allocation is too large");
+          FATAL("allocation is too large");
 
         /* if this fails allocate new block */
         {

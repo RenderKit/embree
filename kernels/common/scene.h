@@ -312,7 +312,7 @@ namespace embree
       return world1.size() + world2.size();
     }
 
-    template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives                    () const { THROW_RUNTIME_ERROR("NOT IMPLEMENTED"); }
+    template<typename Mesh, int timeSteps> __forceinline size_t getNumPrimitives() const;
    
     atomic_t numIntersectionFilters4;   //!< number of enabled intersection/occlusion filters for 4-wide ray packets
     atomic_t numIntersectionFilters8;   //!< number of enabled intersection/occlusion filters for 8-wide ray packets
