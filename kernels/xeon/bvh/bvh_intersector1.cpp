@@ -70,6 +70,8 @@ namespace embree
       TravRay<N> vray(ray.org,ray.dir);
       vfloat<N> ray_near(ray.tnear);
       vfloat<N> ray_far (ray.tfar);
+
+      /*! initialize the node traverser */
       BVHNNodeTraverser1<N,types> nodeTraverser(vray);
 
       /* pop loop */
@@ -164,6 +166,8 @@ namespace embree
       TravRay<N> vray(ray.org,ray.dir);
       const vfloat<N> ray_near(ray.tnear);
       vfloat<N> ray_far (ray.tfar);
+
+      /*! initialize the node traverser */
       BVHNNodeTraverser1<N,types> nodeTraverser(vray);
 
       /* pop loop */
