@@ -243,8 +243,8 @@ namespace embree
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
       int64_t xcr0 = get_xcr0();
       xmm_enabled = ((xcr0 & 0x02) == 0x02); /* check if xmm are enabled in XCR0 */
-      ymm_enabled = ymm_enabled && ((xcr0 & 0x06) == 0x06); /* check if ymm state are enabled in XCR0 */
-      zmm_enabled = zmm_enabled && ((xcr0 & 0xE0) == 0xE0); /* check if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
+      ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* check if ymm state are enabled in XCR0 */
+      zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* check if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
     }
     
     if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE   ) cpu_features |= CPU_FEATURE_SSE;
