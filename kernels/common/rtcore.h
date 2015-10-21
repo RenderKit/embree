@@ -73,10 +73,6 @@ namespace embree
     std::string str;
   };
   
-#if defined(__WIN32__) && defined(__clang__)
-  #define throw_RTCError(error,str) // FIXME: enable
-#else
 #define throw_RTCError(error,str) \
   throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
-#endif
 }

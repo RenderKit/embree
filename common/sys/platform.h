@@ -231,12 +231,8 @@
 #define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
 #define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
 
-#if defined(__WIN32__) && defined(__clang__)
-#define THROW_RUNTIME_ERROR(str) // FIXME: enable
-#else
 #define THROW_RUNTIME_ERROR(str) \
   throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
-#endif
 
 #if defined(__MIC__)
 #define FATAL(x) { std::cout << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
