@@ -164,14 +164,14 @@ namespace embree
   static const int CPU_FEATURE_BIT_BMI1    = 1 << 3;
   static const int CPU_FEATURE_BIT_AVX2    = 1 << 5;
   static const int CPU_FEATURE_BIT_BMI2    = 1 << 8;
-  static const int CPU_FEATURE_BIT_AVX512F = 1 << 16;     // AVX-512 foundation
-  static const int CPU_FEATURE_BIT_AVX512DQ = 1 << 17;    
-  static const int CPU_FEATURE_BIT_AVX512PF = 1 << 26;    // AVX-512 prefetch
-  static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX-512 exponential and reciprocal
-  static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX-512 conflict detection
-  static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;
-  static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;
-  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;  // uses ECX!
+  static const int CPU_FEATURE_BIT_AVX512F = 1 << 16;     // AVX512F (foundation)
+  static const int CPU_FEATURE_BIT_AVX512DQ = 1 << 17;    // AVX512DQ
+  static const int CPU_FEATURE_BIT_AVX512PF = 1 << 26;    // AVX512PF (prefetch)
+  static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX512ER (exponential and reciprocal)
+  static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX512CD (conflict detection)
+  static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;    // AVX512BW
+  static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;  // AVX512IFMA
+  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (uses ECX!)
 
   __noinline int64_t get_xcr0() 
   {
