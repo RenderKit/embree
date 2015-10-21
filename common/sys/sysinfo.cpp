@@ -133,6 +133,12 @@ namespace embree
     }
   }
 
+  /* constants to access destination registers of CPUID instruction */
+  static const int EAX = 0;
+  static const int EBX = 1;
+  static const int ECX = 2;
+  static const int EDX = 3;
+
   /* cpuid[eax=0].ecx */
   static const int CPU_FEATURE_BIT_SSE3   = 1 << 0;
   static const int CPU_FEATURE_BIT_SSSE3  = 1 << 9;
@@ -200,62 +206,71 @@ namespace embree
 
   int getCPUFeatures()
   {
+    /* cache CPU features access */
     static int cpu_features = 0;
     if (cpu_features) 
       return cpu_features;
-    
-    int info[4]; 
-    __cpuid(info, 0x00000000);
-    unsigned nIds = info[0];  
-    __cpuid(info, 0x80000000);
-    unsigned nExIds = info[0];
 
-    int info1[4] = { 0,0,0,0 };
-    int info7[4] = { 0,0,0,0 };
-    int infoe1[4] = { 0,0,0,0 };
-    if (nIds >= 1) __cpuid (info1,0x00000001);
+    /* get number of CPUID leaves */
+    int cpuid_leaf0[4]; 
+    __cpuid(cpuid_leaf0, 0x00000000);
+    unsigned nIds = cpuid_leaf0[EAX];  
+
+    /* get number of extended CPUID leaves */
+    int cpuid_leafe[4]; 
+    __cpuid(cpuid_leafe, 0x80000000);
+    unsigned nExIds = cpuid_leafe[EAX];
+
+    /* get CPUID leaves for EAX = 1,7, and 0x80000001 */
+    int cpuid_leaf_1[4] = { 0,0,0,0 };
+    int cpuid_leaf_7[4] = { 0,0,0,0 };
+    int cpuid_leaf_e1[4] = { 0,0,0,0 };
+    if (nIds >= 1) __cpuid (cpuid_leaf_1,0x00000001);
 #if _WIN32
 #if _MSC_VER && (_MSC_FULL_VER < 160040219)
 #else
-	 if (nIds >= 7) __cpuidex(info7,0x00000007,0);
+    if (nIds >= 7) __cpuidex(cpuid_leaf_7,0x00000007,0);
 #endif
 #else
-    if (nIds >= 7) __cpuid_count(info7,0x00000007,0);
+    if (nIds >= 7) __cpuid_count(cpuid_leaf_7,0x00000007,0);
 #endif
-    if (nExIds >= 0x80000001) __cpuid(infoe1,0x80000001);
+    if (nExIds >= 0x80000001) __cpuid(cpuid_leaf_e1,0x80000001);
 
-    bool has_ymm = false;
-    bool has_zmm = false;
-    if (info1[2] & CPU_FEATURE_BIT_OXSAVE) {
+    /* detect if OS saves XMM, YMM, and ZMM states */
+    bool xmm_enabled = false;
+    bool ymm_enabled = false;
+    bool zmm_enabled = false;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
       int64_t xcr0 = get_xcr0();
-      has_ymm = ((xcr0 & 0x06) == 0x06); /* checking if xmm and ymm state are enabled in XCR0 */
-      has_zmm = ((xcr0 & 0xE0) == 0xE0); /* OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled by OS */
+      xmm_enabled = ((xcr0 & 0x02) == 0x02); /* check if xmm are enabled in XCR0 */
+      ymm_enabled = ymm_enabled && ((xcr0 & 0x06) == 0x06); /* check if ymm state are enabled in XCR0 */
+      zmm_enabled = zmm_enabled && ((xcr0 & 0xE0) == 0xE0); /* check if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
     }
     
-    if (info1[3] & CPU_FEATURE_BIT_SSE) cpu_features |= CPU_FEATURE_SSE;
-    if (info1[3] & CPU_FEATURE_BIT_SSE2) cpu_features |= CPU_FEATURE_SSE2;
-    if (info1[2] & CPU_FEATURE_BIT_SSE3) cpu_features |= CPU_FEATURE_SSE3;
-    if (info1[2] & CPU_FEATURE_BIT_SSSE3) cpu_features |= CPU_FEATURE_SSSE3;
-    if (info1[2] & CPU_FEATURE_BIT_SSE4_1) cpu_features |= CPU_FEATURE_SSE41;
-    if (info1[2] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
-    if (info1[2] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
-    if (has_ymm && info1[2] & CPU_FEATURE_BIT_AVX) cpu_features |= CPU_FEATURE_AVX;
-    if (info1[2] & CPU_FEATURE_BIT_F16C) cpu_features |= CPU_FEATURE_F16C;
-    if (info1[2] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
-    if (has_ymm && info7[1] & CPU_FEATURE_BIT_AVX2) cpu_features |= CPU_FEATURE_AVX2;
-    if (has_ymm && info1[2] & CPU_FEATURE_BIT_FMA3) cpu_features |= CPU_FEATURE_FMA3;
-    if (infoe1[2] & CPU_FEATURE_BIT_LZCNT) cpu_features |= CPU_FEATURE_LZCNT;
-    if (info7[1] & CPU_FEATURE_BIT_BMI1) cpu_features |= CPU_FEATURE_BMI1;
-    if (info7[1] & CPU_FEATURE_BIT_BMI2) cpu_features |= CPU_FEATURE_BMI2;
+    if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE   ) cpu_features |= CPU_FEATURE_SSE;
+    if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE2  ) cpu_features |= CPU_FEATURE_SSE2;
+    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE3  ) cpu_features |= CPU_FEATURE_SSE3;
+    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSSE3 ) cpu_features |= CPU_FEATURE_SSSE3;
+    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_1) cpu_features |= CPU_FEATURE_SSE41;
+    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
+    if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
+    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
+    if (xmm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
+    if (               cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
+    if (ymm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
+    if (ymm_enabled && cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_FMA3  ) cpu_features |= CPU_FEATURE_FMA3;
+    if (cpuid_leaf_e1[ECX] & CPU_FEATURE_BIT_LZCNT) cpu_features |= CPU_FEATURE_LZCNT;
+    if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI1 ) cpu_features |= CPU_FEATURE_BMI1;
+    if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI2 ) cpu_features |= CPU_FEATURE_BMI2;
 
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512F)  cpu_features |= CPU_FEATURE_AVX512F;
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512DQ) cpu_features |= CPU_FEATURE_AVX512DQ;
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512PF) cpu_features |= CPU_FEATURE_AVX512PF;
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512ER) cpu_features |= CPU_FEATURE_AVX512ER; 
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512CD) cpu_features |= CPU_FEATURE_AVX512CD;
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512BW) cpu_features |= CPU_FEATURE_AVX512BW;
-    if (has_zmm && info7[1] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
-    if (has_zmm && info7[2] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI; // info7[2] is no typo!
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512F )  cpu_features |= CPU_FEATURE_AVX512F;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512DQ) cpu_features |= CPU_FEATURE_AVX512DQ;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512PF) cpu_features |= CPU_FEATURE_AVX512PF;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512ER) cpu_features |= CPU_FEATURE_AVX512ER; 
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD) cpu_features |= CPU_FEATURE_AVX512CD;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW) cpu_features |= CPU_FEATURE_AVX512BW;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
+    if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI; // cpuid_leaf_7[ECX] is no typo!
 
 #if defined(__MIC__)
     cpu_features |= CPU_FEATURE_KNC;
