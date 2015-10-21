@@ -24,12 +24,12 @@ namespace embree
   namespace isa
   {
     /*! BVH single ray intersector. */
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
       class BVHNIntersector1
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
+      typedef typename PrimitiveIntersector1::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector1::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::Node Node;
