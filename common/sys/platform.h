@@ -235,7 +235,7 @@
   throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 
 #if defined(__MIC__)
-#define FATAL(x) { std::cout << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
+#define FATAL(x) { std::cerr << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
 #define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
 #else
 #define FATAL(x) THROW_RUNTIME_ERROR(x)
