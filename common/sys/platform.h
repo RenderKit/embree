@@ -99,12 +99,12 @@
 /// ISA configuration
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
   #define __SSE__
   #define __SSE2__
 #endif
 
-#if defined(__WIN32__) 
+#if defined(__WIN32__) && !defined(__clang__)
 #if defined(CONFIG_SSE41)
   #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
     #define __SSE3__
@@ -231,8 +231,12 @@
 #define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
 #define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
 
+#if defined(__WIN32__) && defined(__clang__)
+#define THROW_RUNTIME_ERROR(str) // FIXME: enable
+#else
 #define THROW_RUNTIME_ERROR(str) \
   throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
+#endif
 
 #if defined(__MIC__)
 #define FATAL(x) { std::cout << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
@@ -293,6 +297,13 @@ typedef int32_t ssize_t;
 #pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
 #pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
+#endif
+
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wreorder"
+#pragma clang diagnostic ignored "-Wmicrosoft"
+#pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
