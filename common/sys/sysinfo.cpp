@@ -170,8 +170,11 @@ namespace embree
   static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX512ER (exponential and reciprocal)
   static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX512CD (conflict detection)
   static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;    // AVX512BW
+  static const int CPU_FEATURE_BIT_AVX512VL = 1 << 31;    // AVX512VL (EVEX.128 and EVEX.256 AVX512 instructions)
   static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;  // AVX512IFMA
-  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (uses ECX!)
+  
+  /* cpuid[eax=7,ecx=0].ecx */
+  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI
 
   __noinline int64_t get_xcr0() 
   {
@@ -270,7 +273,8 @@ namespace embree
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD) cpu_features |= CPU_FEATURE_AVX512CD;
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW) cpu_features |= CPU_FEATURE_AVX512BW;
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
-    if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI; // cpuid_leaf_7[ECX] is no typo!
+    if (ymm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL) cpu_features |= CPU_FEATURE_AVX512VL; // on purpose ymm_enabled!
+    if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
 #if defined(__MIC__)
     cpu_features |= CPU_FEATURE_KNC;
@@ -303,6 +307,7 @@ namespace embree
     if (features & CPU_FEATURE_AVX512ER) str += "AVX512ER ";
     if (features & CPU_FEATURE_AVX512CD) str += "AVX512CD ";
     if (features & CPU_FEATURE_AVX512BW) str += "AVX512BW ";
+    if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
     return str;
