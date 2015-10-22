@@ -37,6 +37,7 @@ typedef int socklen_t;
 #include <netinet/tcp.h>
 #include <netdb.h> 
 #define SOCKET int
+#define INVALID_SOCKET -1
 #define closesocket close
 #endif
 
