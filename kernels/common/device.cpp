@@ -145,7 +145,9 @@ namespace embree
     delete instance_factory;
 #if !defined(__MIC__)
     delete bvh4_factory;
+#if defined(__TARGET_AVX__)
     delete bvh8_factory;
+#endif
 #endif
     setCacheSize(0);
     exitTaskingSystem();
