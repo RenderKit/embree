@@ -81,7 +81,7 @@ builds = []
 
 #ISAs_win  = ['AVX2']
 ISAs_win  = ['SSE2', 'AVX', 'AVX2']
-ISAs_unix = ['AVX2']
+#ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
