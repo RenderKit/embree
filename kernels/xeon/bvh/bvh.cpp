@@ -108,11 +108,11 @@ namespace embree
     for (size_t i=0; i<lst.size(); i++)
       lst[i].node->setBarrier();
       
-    root = layoutLargeNodesRecursion(root);
+    root = layoutLargeNodesRecursion(root,alloc.threadLocal2()->alloc0);
   }
   
   template<int NN>
-  typename BVHN<NN>::NodeRef BVHN<NN>::layoutLargeNodesRecursion(NodeRef& node)
+  typename BVHN<NN>::NodeRef BVHN<NN>::layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator)
   {
     if (node.isBarrier()) {
       node.clearBarrier();
@@ -121,10 +121,10 @@ namespace embree
     else if (node.isNode()) 
     {
       Node* oldnode = node.node();
-      Node* newnode = (BVHN::Node*) alloc.threadLocal2()->alloc0.malloc(sizeof(BVHN::Node)); // FIXME: optimize access to threadLocal2
+      Node* newnode = (BVHN::Node*) allocator.malloc(sizeof(BVHN::Node),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
-        newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c));
+        newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);
       return encodeNode(newnode);
     }
     else return node;

@@ -359,8 +359,6 @@ namespace embree
         }
       
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderMblurSAH");
-
-        if (bvh->device->verbosity(1)) t0 = getSeconds();
 	    
         //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
@@ -431,60 +429,37 @@ namespace embree
         }
 
       
-        /* verbose mode */
-        if (bvh->device->verbosity(1) && mesh == nullptr)  // FIXME: call preBuild function
-          std::cout << "building BVH<" << bvh->primTy.name << "> with " << TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderSAH " << " ... " << std::flush;
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderSAH");
 
-
-        double t0 = 0.0f, dt = 0.0f;
 #if PROFILE
-        profile(2,20,numOriginalPrimitives,[&] (ProfileTimer& timer)
-                {
+        profile(2,20,numOriginalPrimitives,[&] (ProfileTimer& timer) {
 #endif
-	    
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) t0 = getSeconds();
-
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-
-        PrimInfo pinfo = mesh ? 
-          createPrimRefArrayTrianglePairs<Mesh>(mesh,prims,virtualprogress) : 
-          createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
-
-        const size_t numPrimitives = pinfo.size();
-        bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
-
-
-
-        // ============================================
-
-        BVHBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),virtualprogress,
-                             prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-        
-        if ((bvh->device->benchmark || bvh->device->verbosity(1)) && mesh == nullptr) dt = getSeconds()-t0;
-
+            
+            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
+            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
+            
+            PrimInfo pinfo = mesh ? 
+              createPrimRefArrayTrianglePairs<Mesh>(mesh,prims,virtualprogress) : 
+              createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
+            
+            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
+            
+            BVHBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),virtualprogress,
+                                 prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+            
 #if PROFILE
-        dt = timer.avg();
-                }); 
+            dt = timer.avg();
+          }); 
 #endif	
-
         
-	/* clear temporary data for static geometry */
+        /* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
 	if (staticGeom) {
           prims.clear();
-          bvh->alloc.shrink();
+          bvh->shrink();
         }
-	bvh->alloc.cleanup();
-
-	/* verbose mode */
-	if (bvh->device->verbosity(1) && mesh == nullptr) {
-          const size_t usedBytes = bvh->alloc.getUsedBytes();
-	  std::cout << "[DONE] " << 1000.0f*dt << "ms, " << numOriginalPrimitives/dt*1E-6 << " Mtris/s, " << usedBytes/dt*1E-9 << " GB/s"  << std::endl;
-        }
-	if (bvh->device->verbosity(2) && mesh == nullptr)
-	  bvh->printStatistics();
-
+	bvh->cleanup();
+        bvh->postBuild(t0);
       }
 
       void clear() {

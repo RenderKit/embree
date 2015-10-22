@@ -752,7 +752,7 @@ namespace embree
 
     /*! lays out num large nodes of the BVH */
     void layoutLargeNodes(size_t num);
-    NodeRef layoutLargeNodesRecursion(NodeRef& node);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);
 
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
