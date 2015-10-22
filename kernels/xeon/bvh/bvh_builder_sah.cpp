@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../bvh/bvh.h"
-#include "bvh4_builder.h"
+#include "bvh.h"
+#include "bvh_builder.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/presplit.h"

@@ -17,8 +17,8 @@
 #include "scene.h"
 
 #if !defined(__MIC__)
-#include "../xeon/bvh4/bvh4_factory.h"
-#include "../xeon/bvh8/bvh8_factory.h"
+#include "../xeon/bvh/bvh4_factory.h"
+#include "../xeon/bvh/bvh8_factory.h"
 #else
 #include "../xeonphi/bvh4i/bvh4i_factory.h"
 #include "../xeonphi/bvh4mb/bvh4mb_factory.h"

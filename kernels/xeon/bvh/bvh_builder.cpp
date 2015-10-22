@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder.h"
-#include "bvh4_rotate.h"
+#include "bvh_builder.h"
+#include "../bvh4/bvh4_rotate.h"
 
 #define ROTATE_TREE 0
 

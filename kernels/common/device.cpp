@@ -28,8 +28,8 @@
 #include "geometry.h"
 
 #if !defined(__MIC__)
-#include "../xeon/bvh4/bvh4_factory.h"
-#include "../xeon/bvh8/bvh8_factory.h"
+#include "../xeon/bvh/bvh4_factory.h"
+#include "../xeon/bvh/bvh8_factory.h"
 #endif
 
 #if !defined(_MM_SET_DENORMALS_ZERO_MODE) // FIXME: move to intrinsics.h header

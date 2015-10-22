@@ -16,7 +16,7 @@
 
 #include "../bvh/bvh.h"
 #include "bvh4_refit.h"
-#include "bvh4_builder.h"
+#include "../bvh/bvh_builder.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"

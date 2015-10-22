@@ -79,15 +79,15 @@ SET(EMBREE_LIBRARY_FILES
 
   bvh/bvh.cpp
   bvh/bvh_statistics.cpp
-  bvh4/bvh4_factory.cpp
-  bvh8/bvh8_factory.cpp
+  bvh/bvh4_factory.cpp
+  bvh/bvh8_factory.cpp
 
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
-  bvh4/bvh4_builder.cpp
+  bvh/bvh_builder.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_morton.cpp
-  bvh4/bvh4_builder_sah.cpp
+  bvh/bvh_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_instancing.cpp
   bvh4/bvh4_builder_subdiv.cpp
@@ -132,10 +132,10 @@ SET(EMBREE_LIBRARY_FILES_AVX
 
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_refit.avx.cpp
-    bvh4/bvh4_builder.avx.cpp
+    bvh/bvh_builder.avx.cpp
     bvh4/bvh4_builder_hair.avx.cpp
     bvh4/bvh4_builder_morton.avx.cpp
-    bvh4/bvh4_builder_sah.avx.cpp
+    bvh/bvh_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
@@ -185,11 +185,10 @@ SET(EMBREE_LIBRARY_FILES_AVX512
     ../common/subdiv/subdivpatch1base_eval.cpp
 
     builders/primrefgen.avx512.cpp
-    bvh4/bvh4_builder.avx512.cpp
-    bvh4/bvh4_builder_sah.avx512.cpp
+    bvh/bvh_builder.avx512.cpp
+    bvh/bvh_builder_sah.avx512.cpp
 
     bvh4/bvh4_refit.cpp
-    bvh4/bvh4_builder.avx512.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp
     bvh/bvh_intersector1.cpp)
 
