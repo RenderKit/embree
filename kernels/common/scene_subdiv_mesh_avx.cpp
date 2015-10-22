@@ -27,7 +27,7 @@ namespace embree
     
   void SubdivMeshAVX::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+#if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
@@ -127,7 +127,7 @@ namespace embree
   void SubdivMeshAVX::interpolateN(const void* valid_i, const unsigned* primIDs, const float* u, const float* v, size_t numUVs, 
                                    RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)
   {
-#if defined(DEBUG) // FIXME: use function pointers and also throw error in release mode
+#if defined(DEBUG)
     if ((parent->aflags & RTC_INTERPOLATE) == 0) 
       throw_RTCError(RTC_INVALID_OPERATION,"rtcInterpolate can only get called when RTC_INTERPOLATE is enabled for the scene");
 #endif
