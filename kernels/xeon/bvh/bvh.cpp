@@ -131,9 +131,9 @@ namespace embree
   }
 
   template<int NN>
-  double BVHN<NN>::preBuild(const char* builderName)
+  double BVHN<NN>::preBuild(const std::string& builderName)
   {
-    if (builderName == nullptr) 
+    if (builderName == "") 
       return inf;
 
     if (device->verbosity(1))

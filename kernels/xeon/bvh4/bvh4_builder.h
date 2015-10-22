@@ -21,20 +21,22 @@ namespace embree
 {
   namespace isa
   {
-    struct BVH4Builder
+    template<int N>
+      struct BVHBuilder
     {
+      typedef BVHN<N> BVH;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
-      struct BVH4BuilderV {
-        void build(BVH4* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                    const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
         virtual size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
       };
 
       template<typename CreateLeafFunc>
-      struct BVH4BuilderT : public BVH4BuilderV
+      struct BVHBuilderT : public BVHBuilderV
       {
-        BVH4BuilderT (CreateLeafFunc createLeafFunc) 
+        BVHBuilderT (CreateLeafFunc createLeafFunc) 
           : createLeafFunc(createLeafFunc) {}
 
         size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
@@ -46,26 +48,28 @@ namespace embree
       };
 
       template<typename CreateLeafFunc>
-      static void build(BVH4* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                         const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-        BVH4BuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       }
     };
 
-    struct BVH4BuilderMblur
+    template<int N>
+      struct BVHBuilderMblur
     {
+      typedef BVHN<N> BVH;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
-      struct BVH4BuilderV {
-        void build(BVH4* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                    const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
         virtual std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
       };
 
       template<typename CreateLeafFunc>
-      struct BVH4BuilderT : public BVH4BuilderV
+      struct BVHBuilderT : public BVHBuilderV
       {
-        BVH4BuilderT (CreateLeafFunc createLeafFunc) 
+        BVHBuilderT (CreateLeafFunc createLeafFunc) 
           : createLeafFunc(createLeafFunc) {}
 
         std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
@@ -77,27 +81,29 @@ namespace embree
       };
 
       template<typename CreateLeafFunc>
-      static void build(BVH4* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                         const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-        BVH4BuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       }
     };
 
-    struct BVH4BuilderSpatial
+    template<int N>
+      struct BVHBuilderSpatial
     {
+      typedef BVHN<N> BVH;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
-      struct BVH4BuilderV {
-        void build(BVH4* bvh, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
                    const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
         virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
         virtual size_t createLeaf (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
       };
 
       template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-      struct BVH4BuilderT : public BVH4BuilderV
+      struct BVHBuilderT : public BVHBuilderV
       {
-        BVH4BuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc) 
+        BVHBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc) 
           : splitPrimitiveFunc(splitPrimitiveFunc), createLeafFunc(createLeafFunc) {}
 
         void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
@@ -114,9 +120,9 @@ namespace embree
       };
 
       template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-      static void build(BVH4* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
+      static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
                         const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-        BVH4BuilderT<SplitPrimitiveFunc,CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHBuilderT<SplitPrimitiveFunc,CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       }
     };
   }

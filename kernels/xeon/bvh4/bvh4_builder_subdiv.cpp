@@ -136,7 +136,7 @@ namespace embree
           return 0;
         };
        
-        BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
+        BVHBuilder<BVH4::N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -336,7 +336,7 @@ namespace embree
             return 0;
           };
           
-          BVH4Builder::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
+          BVHBuilder<BVH4::N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
 
           delete refitter; refitter = nullptr;
         }

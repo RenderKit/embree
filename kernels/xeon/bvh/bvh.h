@@ -762,7 +762,7 @@ namespace embree
     }
 
     /*! called by all builders before build starts */
-    double preBuild(const char* builderName);
+    double preBuild(const std::string& builderName);
 
     /*! called by all builders after build ended */
     void postBuild(double t0);
