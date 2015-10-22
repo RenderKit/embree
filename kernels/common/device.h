@@ -35,7 +35,7 @@ namespace embree
     Device (const char* cfg, bool singledevice);
 
     /*! Device destruction */
-    ~Device ();
+    virtual ~Device ();
 
     /*! prints info about the device */
     void print();
