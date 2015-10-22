@@ -27,12 +27,12 @@ namespace embree
     {      
       /* the generate loops need padded arrays, thus first store into these temporary arrays */
       size_t temp_size = width*height+VSIZEX;
-      dynamic_large_stack_array(float,local_grid_u,temp_size,64*64);
-      dynamic_large_stack_array(float,local_grid_v,temp_size,64*64);
-      dynamic_large_stack_array(float,local_grid_x,temp_size,64*64);
-      dynamic_large_stack_array(float,local_grid_y,temp_size,64*64);
-      dynamic_large_stack_array(float,local_grid_z,temp_size,64*64);
-      dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64);
+      dynamic_large_stack_array(float,local_grid_u,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_v,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_x,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_y,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_z,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64*sizeof(float));
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
