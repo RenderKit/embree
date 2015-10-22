@@ -66,9 +66,7 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = NN;
 
-    /*! Number of bytes the Node and primitives are minimally aligned
-        to. Maximally byteAlignment-1 many primitive blocks per leaf are
-        supported. */
+    /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
     static const size_t byteNodeAlignment = 4*N;
 
@@ -130,7 +128,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node), byteNodeAlignment); node->clear();
         for (size_t i=0; i<n; i++) {
           node->set(i,children[i].bounds());
           children[i].parent = (size_t*)&node->child(i);
