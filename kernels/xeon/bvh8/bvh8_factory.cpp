@@ -158,10 +158,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle4Intersectors(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     )          builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2" )          builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    if      (scene->device->tri_builder == "default"     )  builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         )  builder = BVH8Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" )  builder = BVH8Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH8Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -189,10 +189,10 @@ namespace embree
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     )          builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2" )          builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2_spatial" )  builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "binned_sah2_presplit" ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    if      (scene->device->tri_builder == "default"     ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         ) builder = BVH8Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
