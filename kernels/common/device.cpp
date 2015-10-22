@@ -32,13 +32,6 @@
 #include "../xeon/bvh/bvh8_factory.h"
 #endif
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE) // FIXME: move to intrinsics.h header
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
-
 #if defined(TASKING_LOCKSTEP)
 #  include "../../common/tasking/taskscheduler_mic.h"
 #elif defined(TASKING_TBB_INTERNAL)
