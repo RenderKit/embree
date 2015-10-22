@@ -161,9 +161,7 @@ namespace embree
   static const int AVXI   = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
   static const int KNC    = CPU_FEATURE_KNC;
-  static const int AVX512F128 = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512VL; // proper way of detecting 128bit AVX512 instructions
-  static const int AVX512F256 = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512VL; // proper way of detecting 256bit AVX512 instructions
-  static const int AVX512F = AVX2 | CPU_FEATURE_AVX512F;
+  static const int AVX512F = AVX2 | CPU_FEATURE_AVX512VL | CPU_FEATURE_AVX512F;
   static const int AVX512KNL = AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
 
   /*! converts ISA bitvector into a string */
