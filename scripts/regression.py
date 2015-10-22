@@ -196,7 +196,6 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command = 'cmake -L '
     command += ' -G "' + generator + '"'
     command += ' -T ' + full_compiler
-    command += ' -A ' + platform
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
