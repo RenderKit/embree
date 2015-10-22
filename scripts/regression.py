@@ -85,8 +85,7 @@ ISAs_win  = ['SSE2', 'AVX', 'AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
-supported_configurations =
-[
+supported_configurations = [
   'V110_Win32_RelWithDebInfo_SSE2',
   'V110_x64_RelWithDebInfo_SSE2',
   
