@@ -32,8 +32,8 @@
 
 namespace embree
 {
-#define size_t int  // FIXME: workaround for ISPC bug
-#define ssize_t int  // FIXME: workaround for ISPC bug
+#define size_t int   // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2)
+#define ssize_t int  // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2) 
 
   extern "C" RTCDevice ispcNewDevice(const char* cfg) {
     return rtcNewDevice(cfg);
