@@ -23,10 +23,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__WIN32__)
-#include <winsock2.h>
-#include <io.h>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+//#include <winsock2.h>
+//#include <io.h>
 typedef int socklen_t;
-#define SHUT_RDWR SD_BOTH
+#define SHUT_RDWR 0x2
 #else 
 #include <unistd.h>
 #include <fcntl.h>
@@ -91,7 +92,7 @@ namespace embree
 
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-      if (sockfd < 0) THROW_RUNTIME_ERROR("cannot create socket");
+      if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
       
       /*! perform DNS lookup */
       struct hostent* server = ::gethostbyname(host);
@@ -126,7 +127,7 @@ namespace embree
 
       /*! create a new socket */
       SOCKET sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-      if (sockfd < 0) THROW_RUNTIME_ERROR("cannot create socket");
+      if (sockfd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot create socket");
 
       /* When the server completes, the server socket enters a time-wait state during which the local
       address and port used by the socket are believed to be in use by the OS. The wait state may
@@ -160,7 +161,7 @@ namespace embree
       struct sockaddr_in addr;
       socklen_t len = sizeof(addr);
       SOCKET fd = ::accept(sockfd, (struct sockaddr *) &addr, &len);
-      if (fd < 0) THROW_RUNTIME_ERROR("cannot accept connection");
+      if (fd == INVALID_SOCKET) THROW_RUNTIME_ERROR("cannot accept connection");
 
       /*! enable TCP_NODELAY */
 #ifdef TCP_NODELAY

@@ -1089,7 +1089,7 @@ namespace embree
     }
 #endif
 
-    delete numbers;
+    delete[] numbers;
 
     rtcDeleteScene(scene);
     rtcDeleteDevice(device);

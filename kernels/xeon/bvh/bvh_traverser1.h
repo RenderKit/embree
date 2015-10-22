@@ -410,10 +410,10 @@ namespace embree
 
     /*! BVH node traversal for single rays. */
     template<int N, int types>
-    class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, types>, public BVHNNodeTraverser1Transform<N, types, types & BVH_FLAG_TRANSFORM_NODE>
+    class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, types>, public BVHNNodeTraverser1Transform<N, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
     {
     public:
-      __forceinline explicit BVHNNodeTraverser1(const TravRay<N>& vray) : BVHNNodeTraverser1Transform<N, types, types & BVH_FLAG_TRANSFORM_NODE>(vray) {}
+      __forceinline explicit BVHNNodeTraverser1(const TravRay<N>& vray) : BVHNNodeTraverser1Transform<N, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
     };
   }
 }

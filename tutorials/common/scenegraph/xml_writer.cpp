@@ -129,7 +129,7 @@ namespace embree
   void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
   {
     const long int offset = ftell(bin);
-    tab(); fprintf(xml, "<%s ofs=\"%zu\" size=\"%zu\"/>\n", name, offset, vec.size());
+    tab(); fprintf(xml, "<%s ofs=\"%ld\" size=\"%zu\"/>\n", name, offset, vec.size());
     for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3f),bin);
   }
 
@@ -151,7 +151,7 @@ namespace embree
       const long int offset = ftell(bin);
       fwrite(tex->data,tex->width*tex->height,tex->bytesPerTexel,bin);
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%zu\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%ld\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",
                      name,id,offset,tex->width,tex->height,Texture::format_to_string(tex->format));
     }
   }

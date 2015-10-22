@@ -300,6 +300,9 @@ typedef int32_t ssize_t;
 #pragma clang diagnostic ignored "-Wreorder"
 #pragma clang diagnostic ignored "-Wmicrosoft"
 #pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

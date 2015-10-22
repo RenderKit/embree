@@ -21,8 +21,8 @@ SET(FLAGS_SSSE3 "/QxSSSE3")
 SET(FLAGS_SSE41 "/DCONFIG_SSE41 /QxSSE4.1")
 SET(FLAGS_SSE42 "/DCONFIG_SSE42 /QxSSE4.2")
 SET(FLAGS_AVX   "/arch:AVX /DCONFIG_AVX")
-# Intel Compiler 15, Update 1 unfortunately cannot handle /arch:AVX2
 
+# Intel Compiler 15, Update 1 unfortunately cannot handle /arch:AVX2
 IF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
   SET(FLAGS_AVX2  "/DCONFIG_AVX2 /QxCORE-AVX2")
 ELSE()
