@@ -374,7 +374,7 @@ namespace embree
     /* computes the limit vertex */
     __forceinline Vertex getLimitVertex() const
     {
-      /* FIXME: is this correct ? */ 
+      /* return hard corner */ 
       if (unlikely(std::isinf(vertex_crease_weight)))
         return vtx;
 

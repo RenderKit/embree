@@ -21,7 +21,6 @@
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
-#include "gregory_triangle_patch.h"
 #include "tessellation_cache.h"
 
 #if 1

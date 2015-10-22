@@ -28,8 +28,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-        return ((GregoryTrianglePatch3fa*)patch.patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
@@ -41,8 +39,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-	      return ((GregoryTrianglePatch3fa*)patch.patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
@@ -56,8 +52,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-        return ((GregoryTrianglePatch3fa*)patch.patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
@@ -71,8 +65,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-         return ((GregoryTrianglePatch3fa*)patch.patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 

@@ -28,12 +28,13 @@
 #include <list>
 
 #if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
-#define NOMINMAX
-#define __TBB_NO_IMPLICIT_LINKAGE 1
-//#define is_trivially_copyable has_trivial_copy_constructor
-#if defined(__WIN32__) && defined(__clang__)
-#define __MINGW64__ 1 // FIXME: clang windows workaround
+#if defined(__WIN32__)
+#  define NOMINMAX
+#  if defined(__clang__)
+#    define __MINGW64__ 1
+#  endif
 #endif
+#define __TBB_NO_IMPLICIT_LINKAGE 1
 #include "tbb/tbb.h"
 #endif
 
