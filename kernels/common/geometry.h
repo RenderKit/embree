@@ -244,8 +244,8 @@ namespace embree
   public:
     __forceinline bool hasIntersectionFilter1() const { return intersectionFilter1 != nullptr; }
     __forceinline bool hasOcclusionFilter1() const { return occlusionFilter1 != nullptr; }
-    template<typename simd> __forceinline bool hasIntersectionFilter() const { return false; } // FIXME: should be deleted!?
-    template<typename simd> __forceinline bool hasOcclusionFilter() const { return false; } // FIXME: should be deleted!?
+    template<typename simd> __forceinline bool hasIntersectionFilter() const;
+    template<typename simd> __forceinline bool hasOcclusionFilter() const;
 
   public:
     Scene* parent;             //!< pointer to scene this mesh belongs to
