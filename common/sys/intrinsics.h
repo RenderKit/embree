@@ -69,7 +69,12 @@
 #endif
 
 #if defined(__MIC__)
-#include <immintrin.h>
+#  include <immintrin.h>
+#endif
+
+#if defined(__WIN32__)
+#  define NOMINMAX
+#  include <windows.h>
 #endif
 
 namespace embree
@@ -81,8 +86,11 @@ namespace embree
   
 #if defined(__WIN32__)
   
-  __forceinline size_t read_tsc()  { // FIXME: use QueryPerformanceCounter
-    return 0;
+  __forceinline size_t read_tsc()  
+  {
+    LARGE_INTEGER li;
+    QueryPerformanceCounter(&li);
+    return li.QuadPart;
   }
   
 #if defined(__SSE4_2__)

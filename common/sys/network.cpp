@@ -24,10 +24,10 @@
 
 #if defined(__WIN32__)
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include <winsock2.h>
-#include <io.h>
+//#include <winsock2.h>
+//#include <io.h>
 typedef int socklen_t;
-#define SHUT_RDWR SD_BOTH
+#define SHUT_RDWR 0x2
 #else 
 #include <unistd.h>
 #include <fcntl.h>
