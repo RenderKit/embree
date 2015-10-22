@@ -143,7 +143,7 @@ namespace embree
       bvh->clearBarrier(bvh->root);
 #endif
       
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
     }
 
     template<int N>
