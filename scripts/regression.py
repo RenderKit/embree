@@ -248,7 +248,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin + ' .. && ' 
 
     # now we can set all other settings
-    command += 'cmake &>> ../' + logFile
+    command += 'cmake '
     command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
@@ -264,9 +264,9 @@ def compile(OS,compiler,platform,build,isa,tasking):
     else:
       sys.stdout.write("invalid tasking system: " + tasking)
       return 1
-    command += ' .. '
-    command += '&& make clean && make -j 8'
-    command += ' &>> ../' + logFile
+    command += ' .. &> ../' + logFile + ' && '
+    command += 'make clean && '
+    command += 'make -j 8 2>> ../' + logFile + ' >> ../' + logFile
     return os.system(command)
 
 def compileLoop(OS):
