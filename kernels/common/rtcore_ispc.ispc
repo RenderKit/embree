@@ -249,9 +249,9 @@ uniform unsigned int rtcNewInstance (RTCScene target, RTCScene source) {
   return ispcNewInstance(target,source);
 }
 
-uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
-  return ispcNewGeometryInstance(scene,geomID);
-}
+//uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
+//  return ispcNewGeometryInstance(scene,geomID);
+//}
 
 void rtcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm) {
   ispcSetTransform(scene,geomID,layout,xfm);

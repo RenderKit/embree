@@ -194,14 +194,15 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, uni
 
 uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
 {
-  if (g_instancing_mode == 1) {
+  /*if (g_instancing_mode == 1) {
     uniform unsigned int geom_inst = meshID_to_geomID[instance->geomID];
     uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     geomID_to_mesh[geomID] = (uniform ISPCGeometry* uniform) instance;
     meshID_to_geomID[meshID] = geomID;
     return geomID;
-  } else if (g_instancing_mode == 2) {
+    } else */
+  if (g_instancing_mode == 2) {
     RTCScene scene_inst = meshID_to_scene[instance->geomID];
     uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
