@@ -297,7 +297,7 @@ namespace embree
     return _mm256_blendv_ps(f, t, m); 
   }
 
-#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
   __forceinline const vfloat8 select(const int m, const vfloat8& t, const vfloat8& f) {
     return select(vboolf8(m), t, f); // workaround for clang and Microsoft compiler bugs
   }

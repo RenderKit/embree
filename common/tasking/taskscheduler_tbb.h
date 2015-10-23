@@ -30,7 +30,7 @@
 #if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
 #if defined(__WIN32__)
 #  define NOMINMAX
-#  if defined(__clang__)
+#  if defined(__clang__) && !defined(__INTEL_COMPILER) 
 #    define __MINGW64__ 1
 #  endif
 #endif

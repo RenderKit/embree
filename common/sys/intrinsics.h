@@ -850,14 +850,13 @@ namespace embree
 #endif
   
 /* compiler memory barriers */
-#if defined(__GNUC__) || defined(__clang__)
-#  define __memory_barrier() asm volatile("" ::: "memory")
-#elif defined(__MIC__)
+#if defined(__MIC__)
 #define __memory_barrier()
 #elif defined(__INTEL_COMPILER)
 //#define __memory_barrier() __memory_barrier()
+#elif defined(__GNUC__) || defined(__clang__)
+#  define __memory_barrier() asm volatile("" ::: "memory")
 #elif  defined(_MSC_VER)
 #  define __memory_barrier() _ReadWriteBarrier()
 #endif
-  
 }

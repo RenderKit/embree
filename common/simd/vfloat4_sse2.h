@@ -302,7 +302,7 @@ namespace embree
 
   
 #if defined(__SSE4_1__) 
-#if defined(__clang__) || defined(_MSC_VER) && (!defined(__INTEL_COMPILER) || defined(_DEBUG))
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__INTEL_COMPILER) && defined(_DEBUG)
   __forceinline const vfloat4 select(const int mask, const vfloat4& t, const vfloat4& f) {
     return select(vboolf4(mask), t, f);
   }

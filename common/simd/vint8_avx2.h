@@ -223,7 +223,7 @@ namespace embree
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m)); 
   }
 
-#if defined(__clang__) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER)
   __forceinline const vint8 select(const int m, const vint8& t, const vint8& f) {
           return select(vboolf8(m), t, f); // workaround for clang and Microsoft compiler bugs
   }

@@ -61,8 +61,8 @@ dash = '/'
 #compilers_win = ['ICC']
 compilers_win  = ['ICC', 'V110', 'V120']
 #compilers_win  = ['ICC', 'V110', 'V120', 'V140']
-#compilers_unix = ['ICC']
-compilers_unix = ['GCC', 'CLANG', 'ICC']
+compilers_unix = ['ICC']
+#compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -241,13 +241,19 @@ def compile(OS,compiler,platform,build,isa,tasking):
       return 1
       
     # first we need to configure the compiler
-    command = 'mkdir -p build && cd build && rm -f CMakeCache.txt && '
-    command += 'cmake 2>/dev/null > /dev/null'
+    command = 'mkdir -p build && cd build && rm -f CMakeCache.txt'
+    ret = os.system(command)
+    if ret != 0: return ret
+      
+    command  = 'cd build && cmake ' 
     command += ' -D CMAKE_C_COMPILER:STRING=' + c_compiler_bin
-    command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin + ' .. && ' 
-
+    command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin
+    command += ' .. &> ../' + logFile 
+    ret = os.system(command)
+    if ret != 0: return ret
+    
     # now we can set all other settings
-    command += 'cmake '
+    command  = 'cd build && cmake '
     command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
@@ -263,9 +269,12 @@ def compile(OS,compiler,platform,build,isa,tasking):
     else:
       sys.stdout.write("invalid tasking system: " + tasking)
       return 1
-    command += ' .. &> ../' + logFile + ' && '
-    command += 'make clean && '
-    command += 'make -j 8 2>> ../' + logFile + ' >> ../' + logFile
+    command += ' .. >> ../' + logFile 
+    ret = os.system(command)
+    if ret != 0: return ret
+
+    command  = 'cd build && make clean && make -j 8 '
+    command += ' 2>> ../' + logFile + ' >> ../' + logFile
     return os.system(command)
 
 def compileLoop(OS):

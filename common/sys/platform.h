@@ -104,65 +104,56 @@
   #define __SSE2__
 #endif
 
-#if defined(__WIN32__) && !defined(__clang__)
-#if defined(CONFIG_SSE41)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-  #endif
+#if defined(CONFIG_SSE41) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
 #endif
-#if defined(CONFIG_SSE42)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-  #endif
+
+#if defined(CONFIG_SSE42) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
 #endif
-#if defined(CONFIG_AVX)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-  #endif
-#endif
-#if defined(CONFIG_AVX2)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-    #if !defined(__AVX2__)
-      #define __AVX2__
-    #endif
-  #endif
-#endif
-#if defined(CONFIG_AVX512)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-    #if !defined(__AVX2__)
-      #define __AVX2__
-    #endif
-    #if !defined(__AVX512F__)
-      #define __AVX512F__
-    #endif
+
+#if defined(CONFIG_AVX) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
+  #if !defined(__AVX__)
+    #define __AVX__
   #endif
 #endif
 
+#if defined(CONFIG_AVX2) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
+  #if !defined(__AVX__)
+    #define __AVX__
+  #endif
+  #if !defined(__AVX2__)
+    #define __AVX2__
+  #endif
+#endif
+
+#if defined(CONFIG_AVX512) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
+  #if !defined(__AVX__)
+    #define __AVX__
+  #endif
+  #if !defined(__AVX2__)
+    #define __AVX2__
+  #endif
+  #if !defined(__AVX512F__)
+    #define __AVX512F__
+  #endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
