@@ -289,8 +289,8 @@ namespace embree
     if (features & CPU_FEATURE_SSE2  ) str += "SSE2 ";
     if (features & CPU_FEATURE_SSE3  ) str += "SSE3 ";
     if (features & CPU_FEATURE_SSSE3 ) str += "SSSE3 ";
-    if (features & CPU_FEATURE_SSE41 ) str += "SSE41 ";
-    if (features & CPU_FEATURE_SSE42 ) str += "SSE42 ";
+    if (features & CPU_FEATURE_SSE41 ) str += "SSE4.1 ";
+    if (features & CPU_FEATURE_SSE42 ) str += "SSE4.2 ";
     if (features & CPU_FEATURE_POPCNT) str += "POPCNT ";
     if (features & CPU_FEATURE_AVX   ) str += "AVX ";
     if (features & CPU_FEATURE_F16C  ) str += "F16C ";
@@ -319,14 +319,34 @@ namespace embree
     if (isa == SSE2) return "SSE2";
     if (isa == SSE3) return "SSE3";
     if (isa == SSSE3) return "SSSE3";
-    if (isa == SSE41) return "SSE4_1";
-    if (isa == SSE42) return "SSE4_2";
+    if (isa == SSE41) return "SSE4.1";
+    if (isa == SSE42) return "SSE4.2";
     if (isa == AVX) return "AVX";
-    if (isa == AVXI) return "AVXI";
     if (isa == AVX2) return "AVX2";
-    if (isa == KNC) return "KNC";
     if (isa == AVX512KNL) return "AVX512KNL";
+    if (isa == KNC) return "KNC";
     return "UNKNOWN";
+  }
+
+  bool hasISA(int features, int isa) {
+    return (features & isa) == isa;
+  }
+  
+  std::string supportedTargetList (int features)
+  {
+    std::string v;
+    if (hasISA(features,SSE)) v += "SSE ";
+    if (hasISA(features,SSE2)) v += "SSE2 ";
+    if (hasISA(features,SSE3)) v += "SSE3 ";
+    if (hasISA(features,SSSE3)) v += "SSSE3 ";
+    if (hasISA(features,SSE41)) v += "SSE4.1 ";
+    if (hasISA(features,SSE42)) v += "SSE4.2 ";
+    if (hasISA(features,AVX)) v += "AVX ";
+    if (hasISA(features,AVXI)) v += "AVXI ";
+    if (hasISA(features,AVX2)) v += "AVX2 ";
+    if (hasISA(features,AVX512KNL)) v += "AVX512KNL ";
+    if (hasISA(features,KNC)) v += "KNC ";
+    return v;
   }
 }
 

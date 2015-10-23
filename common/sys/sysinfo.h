@@ -150,6 +150,9 @@ namespace embree
   /*! convert CPU features into a string */
   std::string stringOfCPUFeatures(int features);
 
+  /*! creates a string of all supported targets that are supported */
+  std::string supportedTargetList (int isa);
+
   /*! ISAs */
   static const int SSE    = CPU_FEATURE_SSE; 
   static const int SSE2   = SSE | CPU_FEATURE_SSE2;
@@ -160,9 +163,8 @@ namespace embree
   static const int AVX    = SSE42 | CPU_FEATURE_AVX;
   static const int AVXI   = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
+  static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
   static const int KNC    = CPU_FEATURE_KNC;
-  static const int AVX512F = AVX2 | CPU_FEATURE_AVX512F; // FIXME: shouldn't we also test for the CPU_FEATURE_AVX512VL flag?
-  static const int AVX512KNL = AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);

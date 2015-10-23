@@ -86,7 +86,8 @@ namespace embree
     /* initialize global state */
     init_globals();
     State::parseString(cfg);
-    State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    if (FileName::executableFolder() != FileName(""))
+      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
@@ -114,14 +115,14 @@ namespace embree
       State::print();
 
     /* register all algorithms */
-    instance_factory = new InstanceFactory(cpu_features);
+    instance_factory = new InstanceFactory(enabled_cpu_features);
 
 #if !defined(__MIC__)
-    bvh4_factory = new BVH4Factory(cpu_features);
+    bvh4_factory = new BVH4Factory(enabled_cpu_features);
 #endif
 
 #if defined(__TARGET_AVX__)
-    bvh8_factory = new BVH8Factory(cpu_features);
+    bvh8_factory = new BVH8Factory(enabled_cpu_features);
 #endif
 
 #if defined(__MIC__)
@@ -153,62 +154,82 @@ namespace embree
     exitTaskingSystem();
   }
 
+  std::string getEnabledTargets()
+  {
+    std::string v = std::string(ISA_STR) + " ";
+#if defined(__TARGET_SSE41__)
+    v += "SSE4.1 ";
+#endif
+#if defined(__TARGET_SSE42__)
+    v += "SSE4.2 ";
+#endif
+#if defined(__TARGET_AVX__)
+    v += "AVX ";
+#endif
+#if defined(__TARGET_AVX2__)
+    v += "AVX2 ";
+#endif
+#if defined(__TARGET_AVX512KNL__)
+    v += "AVX512KNL ";
+#endif
+    return v;
+  }
+
+  std::string getEmbreeFeatures()
+  {
+    std::string v;
+#if defined(RTCORE_RAY_MASK)
+    v += "raymasks ";
+#endif
+#if defined (RTCORE_BACKFACE_CULLING)
+    v += "backfaceculling ";
+#endif
+#if defined(RTCORE_INTERSECTION_FILTER)
+    v += "intersection_filter ";
+#endif
+#if defined(RTCORE_BUFFER_STRIDE)
+    v += "bufferstride ";
+#endif
+    return v;
+  }
+
   void Device::print()
   {
+    const int cpu_features = getCPUFeatures();
     std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
-    std::cout << "  Compiler : " << getCompilerName() << std::endl;
-    std::cout << "  Platform : " << getPlatformName() << std::endl;
-    std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << "(" << stringOfCPUFeatures(cpu_features) << ")" << std::endl;
-    std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
+    std::cout << "  Compiler  : " << getCompilerName() << std::endl;
+    std::cout << "  Build     : ";
+#if defined(DEBUG)
+    std::cout << "Debug " << std::endl;
+#else
+    std::cout << "Release " << std::endl;
+#endif
+    std::cout << "  Platform  : " << getPlatformName() << std::endl;
+    std::cout << "  CPU       : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+    std::cout << "   Threads  : " << getNumberOfLogicalThreads() << std::endl;
+    std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << std::endl;
+    std::cout << "   Targets  : " << supportedTargetList(cpu_features) << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
-    std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
+    std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
-    std::cout << "  Config   : ";
-#if defined(DEBUG)
-    std::cout << "Debug ";
-#else
-    std::cout << "Release ";
-#endif
+    std::cout << "  Config" << std::endl;
+    std::cout << "    Threads : " << (numThreads ? std::to_string(numThreads) : std::string("default")) << std::endl;
+    std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
+    std::cout << "    Targets : " << supportedTargetList(enabled_cpu_features) << " (supported)" << std::endl;
+    std::cout << "              " << getEnabledTargets() << " (compile time enabled)" << std::endl;
+    std::cout << "    Features: " << getEmbreeFeatures() << std::endl;
+    std::cout << "    Tasking : ";
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-    std::cout << ISA_STR << " ";
-#if defined(__TARGET_SSE41__)
-    std::cout << "SSE4.1 ";
-#endif
-#if defined(__TARGET_SSE42__)
-    std::cout << "SSE4.2 ";
-#endif
-#if defined(__TARGET_AVX__)
-    std::cout << "AVX ";
-#endif
-#if defined(__TARGET_AVX2__)
-    std::cout << "AVX2 ";
-#endif
-#if defined(__TARGET_AVX512__)
-    std::cout << "AVX512 ";
-#endif
 #if defined(TASKING_TBB_INTERNAL)
-    std::cout << "internal_tasking_system ";
+      std::cout << "internal_tasking_system ";
 #endif
 #if defined(TASKING_LOCKSTEP)
     std::cout << "internal_tasking_system ";
-#endif
-#if defined(RTCORE_RAY_MASK)
-    std::cout << "raymasks ";
-#endif
-#if defined (RTCORE_BACKFACE_CULLING)
-    std::cout << "backfaceculling ";
-#endif
-#if defined(RTCORE_INTERSECTION_FILTER)
-    std::cout << "intersection_filter ";
-#endif
-#if defined(RTCORE_BUFFER_STRIDE)
-    std::cout << "bufferstride ";
 #endif
     std::cout << std::endl;
 
@@ -221,10 +242,10 @@ namespace embree
       {
         std::cout << std::endl;
         std::cout << "================================================================================" << std::endl;
-        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled " << std::endl 
-                  << "         in the MXCSR control and status register. This can have a severe " << std::endl
-                  << "         performance impact. Please enable these modes for each application " << std::endl
-                  << "         thread the following way:" << std::endl
+        std::cout << "  WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled "         << std::endl 
+                  << "           in the MXCSR control and status register. This can have a severe "     << std::endl
+                  << "           performance impact. Please enable these modes for each application "   << std::endl
+                  << "           thread the following way:" << std::endl
                   << std::endl 
                   << "           #include \"xmmintrin.h\"" << std::endl 
                   << "           #include \"pmmintrin.h\"" << std::endl 
@@ -241,6 +262,8 @@ namespace embree
     if (State::verbosity(1))
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
 #endif
+
+    std::cout << std::endl;
   }
 
   void Device::process_error(RTCError error, const char* str)

@@ -37,7 +37,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__))
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0
@@ -57,9 +57,7 @@ namespace embree
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 
                                                   | RTC_INTERSECT4 
                                                   | RTC_INTERSECT8 
-#if defined(__TARGET_AVX512__)
                                                   | RTC_INTERSECT16 
-#endif
     );
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);

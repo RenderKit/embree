@@ -183,7 +183,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512(features,BVH4TrianglePairs4SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH4TrianglePairs4SceneBuilderSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -199,7 +199,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderSAH);
 
-    SELECT_SYMBOL_DEFAULT_AVX_AVX512(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitSAH);
@@ -297,30 +297,30 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4TrianglePairs4Intersector8HybridMoellerNoFilter);
 
     /* select intersectors16 */
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Bezier1vIntersector16Chunk);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Bezier1iIntersector16Chunk);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Bezier1vIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Bezier1iIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Bezier1iMBIntersector16Single_OBB);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4Intersector16ChunkMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4Intersector16ChunkMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle8Intersector16ChunkMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle8Intersector16ChunkMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4Intersector16HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle8Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle8Intersector16HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4vIntersector16ChunkPluecker);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4vIntersector16HybridPluecker);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4iIntersector16ChunkPluecker);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4iIntersector16HybridPluecker);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4vMBIntersector16ChunkMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Triangle4vMBIntersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4Subdivpatch1CachedIntersector16);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4GridAOSIntersector16);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4VirtualIntersector16Chunk);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH4TrianglePairs4Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Bezier1vIntersector16Chunk);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Bezier1iIntersector16Chunk);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Bezier1vIntersector16Single_OBB);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Bezier1iIntersector16Single_OBB);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Bezier1iMBIntersector16Single_OBB);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4Intersector16ChunkMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4Intersector16ChunkMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle8Intersector16ChunkMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle8Intersector16ChunkMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle8Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle8Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vIntersector16ChunkPluecker);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vIntersector16HybridPluecker);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4iIntersector16ChunkPluecker);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4iIntersector16HybridPluecker);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vMBIntersector16ChunkMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vMBIntersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Subdivpatch1CachedIntersector16);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4GridAOSIntersector16);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualIntersector16Chunk);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4TrianglePairs4Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4TrianglePairs4Intersector16HybridMoellerNoFilter);
 
 #endif
   }

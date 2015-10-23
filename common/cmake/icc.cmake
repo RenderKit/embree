@@ -21,7 +21,7 @@ SET(FLAGS_SSE41  "-xsse4.1")
 SET(FLAGS_SSE42  "-xsse4.2")
 SET(FLAGS_AVX    "-xAVX")
 SET(FLAGS_AVX2   "-xCORE-AVX2")
-SET(FLAGS_AVX512 "-xMIC-AVX512")
+SET(FLAGS_AVX512KNL "-xMIC-AVX512")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -no-ansi-alias -static-intel -fasm-blocks")
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O0")

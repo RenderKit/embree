@@ -102,14 +102,14 @@ namespace embree
 #define SELECT_SYMBOL_AVX2(features,intersector)
 #endif
 
-#if defined(__TARGET_AVX512__)
+#if defined(__TARGET_AVX512KNL__)
 #if !defined(__TARGET_SIMD16__)
 #define __TARGET_SIMD16__
 #endif
-#define SELECT_SYMBOL_AVX512(features,intersector) \
+#define SELECT_SYMBOL_AVX512KNL(features,intersector) \
   if ((features & AVX512KNL) == AVX512KNL) intersector = avx512::intersector; 
 #else
-#define SELECT_SYMBOL_AVX512(features,intersector)
+#define SELECT_SYMBOL_AVX512KNL(features,intersector)
 #endif
 
 #if defined(__MIC__)
@@ -146,10 +146,10 @@ namespace embree
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);                       
   
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX512(features,intersector)     \
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,intersector)     \
   SELECT_SYMBOL_DEFAULT(features,intersector);                     \
   SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX512(features,intersector);                        
+  SELECT_SYMBOL_AVX512KNL(features,intersector);                        
   
 #define SELECT_SYMBOL_INIT_AVX(features,intersector)                    \
   INIT_SYMBOL(intersector);                                             \
@@ -160,14 +160,14 @@ namespace embree
   SELECT_SYMBOL_AVX(features,intersector);                         \
   SELECT_SYMBOL_AVX2(features,intersector);
   
-#define SELECT_SYMBOL_INIT_AVX_AVX512(features,intersector)        \
+#define SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,intersector)        \
   INIT_SYMBOL(intersector);                                        \
   SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  SELECT_SYMBOL_AVX512KNL(features,intersector);
   
-#define SELECT_SYMBOL_INIT_AVX512(features,intersector)            \
+#define SELECT_SYMBOL_INIT_AVX512KNL(features,intersector)            \
   INIT_SYMBOL(intersector);                                        \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  SELECT_SYMBOL_AVX512KNL(features,intersector);
   
   struct VerifyMultiTargetLinking {
     static __noinline int getISA(int depth = 5) { 

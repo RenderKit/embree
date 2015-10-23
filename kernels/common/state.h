@@ -92,7 +92,7 @@ namespace embree
   public:
     size_t numThreads;                     //!< number of threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
-    int cpu_features;                      //!< CPU ISA features to use
+    int enabled_cpu_features;              //!< CPU ISA features to use
 
   public:
     tls_t thread_error;

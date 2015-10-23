@@ -65,9 +65,9 @@ namespace embree
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
-    SELECT_SYMBOL_INIT_AVX_AVX512(features,BVH8Triangle4SceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512(features,BVH8Triangle8SceneBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX_AVX512(features,BVH8TrianglePairs4SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8TrianglePairs4SceneBuilderSAH);
 
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
@@ -98,16 +98,16 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
 
     /* select intersectors16 */
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle4Intersector16ChunkMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle4Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle4Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16ChunkMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter);
 
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle8Intersector16ChunkMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle8Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8Triangle8Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16ChunkMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoellerNoFilter);
 
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8TrianglePairs4Intersector16HybridMoeller);
-    SELECT_SYMBOL_INIT_AVX512(features,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
 
 #endif
   }
