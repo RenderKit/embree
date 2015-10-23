@@ -295,7 +295,7 @@ typedef int32_t ssize_t;
 #pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
 #endif
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(__INTEL_COMPILER)
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #pragma clang diagnostic ignored "-Wreorder"
