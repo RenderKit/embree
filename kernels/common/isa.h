@@ -64,7 +64,7 @@ namespace embree
   void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
 
 #define INIT_SYMBOL(intersector) \
-  if (!intersector) intersector = decltype(intersector)(intersector##_error);
+  intersector = decltype(intersector)(intersector##_error);
 
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
   intersector = isa::intersector;
