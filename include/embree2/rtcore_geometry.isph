@@ -100,7 +100,7 @@ uniform unsigned int rtcNewInstance (RTCScene target,           //!< the scene t
   ray through the provided scene. If any geometry is hit, the geometry
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
-uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID);
+//uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID); // FIXME: this feature is still experimental
 
 /*! \brief Sets transformation of the instance */
 void rtcSetTransform (RTCScene scene,                                  //!< scene handle
