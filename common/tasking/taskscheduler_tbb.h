@@ -305,14 +305,7 @@ namespace embree
       
       if (useThreadPool) addScheduler(this);
 
-      try {
-        while (thread.tasks.execute_local(thread,nullptr));
-      } 
-      catch (...) 
-      {
-        if (!cancellingException)
-          cancellingException = std::current_exception();
-      }
+      while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
       
