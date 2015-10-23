@@ -131,7 +131,7 @@ RTCORE_API unsigned rtcNewInstance (RTCScene target,                  //!< the s
   ray through the provided scene. If any geometry is hit, the geometry
   ID (geomID) member of the ray will get set to the geometry ID of the
   instance. */
-//RTCORE_API unsigned rtcNewGeometryInstance(RTCScene scene, unsigned geomID); // FIXME: this feature is still experimental
+RTCORE_API unsigned rtcNewGeometryInstance(RTCScene scene, unsigned geomID);
 
 /*! \brief Sets transformation of the instance */
 RTCORE_API void rtcSetTransform (RTCScene scene,                          //!< scene handle
