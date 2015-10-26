@@ -81,6 +81,7 @@ namespace embree
 
       void open(size_t numPrimitives);
 
+      size_t numCollapsedTransformNodes;
       BVH4::NodeRef collapse(BVH4::NodeRef& node);
       
     public:

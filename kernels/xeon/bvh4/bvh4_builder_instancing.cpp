@@ -285,7 +285,10 @@ namespace embree
            prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
+        numCollapsedTransformNodes = refs.size();
         bvh->root = collapse(bvh->root);
+        if (scene->device->verbosity(1))
+          std::cout << "collapsing from " << refs.size() << " to " << numCollapsedTransformNodes << " minimally possible " << nextRef << std::endl;
       }
             
       bvh->alloc.cleanup();
@@ -412,10 +415,12 @@ namespace embree
       for (size_t c=0; c<BVH4::N; c++) {
         if (n->child(c) == BVH4::emptyNode) continue;
         BVH4::TransformNode* child = n->child(c).transformNode();
+        numCollapsedTransformNodes--;
         const BBox3fa cbounds = child->localBounds;
         n->set(c,cbounds,child->child);
         bounds.extend(cbounds);
       }
+      numCollapsedTransformNodes++;
       first->localBounds = bounds;
       first->child = node;
       return BVH4::encodeNode(first);
