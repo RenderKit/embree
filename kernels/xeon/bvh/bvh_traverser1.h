@@ -299,7 +299,7 @@ namespace embree
         /*! process transformation node */
         if (unlikely(cur.isTransformNode(types)))
         {
-          //STAT3(normal.transform_nodes,1,1,1);
+          STAT3(normal.trav_xfm_nodes,1,1,1);
           const TransformNode* node = cur.transformNode();
 #if defined(RTCORE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
@@ -341,7 +341,7 @@ namespace embree
         /*! process transformation node */
         if (unlikely(cur.isTransformNode(types)))
         {
-          //STAT3(shadow.transform_nodes,1,1,1);
+          STAT3(shadow.trav_xfm_nodes,1,1,1);
           const TransformNode* node = cur.transformNode();
 #if defined(RTCORE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
