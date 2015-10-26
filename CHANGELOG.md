@@ -1,6 +1,27 @@
 Version History
 ---------------
 
+### New Features in Embree 2.7.1
+
+-   Internal tasking system supports cancellation of build operations.
+-   ISPC mode for robust and compact scenes got significantly faster
+    (implemented hybrid traversal for bvh4.triangle4v and bvh4.triangle4i).
+-   Hair rendering got faster as we fixed some issues with the SAH
+    heuristic cost factors.
+-   BVH8 got slight faster for single ray traversal (improves sorting
+    when hitting more than 4 boxes).
+-   BVH build performance got up to 30% faster on CPUs with high core
+    counts (improved parallel partition code).
+-   High quality build mode again working properly (spatial splits had been
+    deactivated in v2.7.0 due to some bug).
+-   Support for merging two adjacent triangles sharing a common edge
+    into a triangle-pair primitive (can reduce memory consumption and
+    BVH build times by up to 50% for mostly quad-based input meshes).
+-   Internal cleanups (reduced number of traversal kernels by more templating)
+-   Reduced stack size requirements of BVH builders.
+-   Fixed crash for dynamic scenes, triggered by deleting all
+    geometries from the scene.
+
 ### New Features in Embree 2.7.0
 
 -   Added device concept to Embree to allow different components of an
@@ -22,10 +43,10 @@ Version History
 -   Added ray packet intersectors for subdivision geometry, resulting in
     improved performance for coherent rays.
 -   Reduced virtual address space usage for static geometries.
--   Fixed some AVX2 code paths when compiling with GCC or CLANG.
+-   Fixed some AVX2 code paths when compiling with GCC or Clang.
 -   Bugfix for subdiv patches with non-matching winding order.
 -   Bugfix in ISA detection of AVX512.
-	
+
 ### New Features in Embree 2.6.1
 
 -   Major performance improvements for ray tracing subdivision surfaces,
