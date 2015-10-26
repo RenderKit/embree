@@ -1465,7 +1465,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-        if (hasISA(AVX512F) || hasISA(KNC)) 
+        if (hasISA(AVX512KNL) || hasISA(KNC)) 
         {
           RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
           setRay(ray16,0,ray0);
@@ -1579,7 +1579,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1698,7 +1698,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1882,7 +1882,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1964,7 +1964,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -2050,7 +2050,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
       __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
@@ -2548,7 +2548,7 @@ namespace embree
     }
 #endif
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
         ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
@@ -2655,7 +2655,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
@@ -3722,7 +3722,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_watertight_closed16("sphere",pos);
       rtcore_watertight_closed16("cube",pos);
@@ -3748,7 +3748,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
       rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);

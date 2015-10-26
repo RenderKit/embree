@@ -1058,7 +1058,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {    
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {    
       rtcore_coherent_intersect16(scene);
     }
 #endif
@@ -1084,7 +1084,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {
       rtcore_incoherent_intersect16(scene,numbers,N);
     }
 #endif
@@ -1106,7 +1106,7 @@ namespace embree
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
     }
 #endif
