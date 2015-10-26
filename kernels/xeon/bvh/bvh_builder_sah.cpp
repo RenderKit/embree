@@ -102,7 +102,7 @@ namespace embree
           return;
         }
         
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderSAH");
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string((long long)N) + "BuilderSAH");
 
         /* create primref array */
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
@@ -222,7 +222,7 @@ namespace embree
           return;
         }
       
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderSpatialSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + std::to_string((long long)N) + "BuilderSpatialSAH");
         
         /* create primref list */
         PrimRefList prims;
@@ -358,7 +358,7 @@ namespace embree
           return;
         }
       
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderMblurSAH");
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string((long long)N) + "BuilderMblurSAH");
 	    
         //bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
         prims.resize(numPrimitives);
@@ -429,7 +429,7 @@ namespace embree
         }
 
       
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string(N) + "BuilderSAH");
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + std::to_string((long long)N) + "BuilderSAH");
 
 #if PROFILE
         profile(2,20,numOriginalPrimitives,[&] (ProfileTimer& timer) {
