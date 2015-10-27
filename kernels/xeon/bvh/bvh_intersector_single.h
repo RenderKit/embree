@@ -245,8 +245,9 @@ namespace embree
         const vbool16 mask8(0xff);
 
         TravRay<K> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ, sizeof(vfloat<N>));
-        //vfloat<K> ray_near(select(mask8,vfloat<K>(ray_tnear[k]),vfloat<K>(pos_inf))), ray_far(select(mask8,vfloat<K>(ray_tfar[k]),vfloat<K>(neg_inf)));
-        vfloat<K> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+        const vfloat<K> ray_near(select(mask8,vfloat<K>(ray_tnear[k]),vfloat<K>(pos_inf)));
+              vfloat<K> ray_far (select(mask8,vfloat<K>(ray_tfar[k] ),vfloat<K>(neg_inf)));
+        //vfloat<K> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -274,31 +275,21 @@ namespace embree
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
 
-#if 1
             const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
             const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
             const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
             const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
-#else
-            const vfloat16 tNearX = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 tNearY = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 tNearZ = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
-            const vfloat16 tFarX  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 tFarY  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 tFarZ  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
-            
-#endif      
+
             const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
             const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
 
-            const vbool16 vmask = (tNear <= tFar) & mask8; //le(0xff,tNear,tFar); //tNear <= tFar;
+            const vbool16 vmask = tNear <= tFar;
             mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */
-            if (unlikely(mask == 0))
-              goto pop;
+            if (unlikely(none(vmask))) goto pop;
 
             /* select next child and push other children */
             vfloat8 tNear8((__m256)tNear);
@@ -312,7 +303,8 @@ namespace embree
 
           size_t lazy_node = 0;
           PrimitiveIntersectorK::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
-	  ray_far = ray.tfar[k];
+	  //ray_far = ray.tfar[k];
+          ray_far = select(mask8,vfloat<K>(ray_tfar[k] ),vfloat<K>(neg_inf));
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr = lazy_node;
@@ -326,7 +318,6 @@ namespace embree
                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
                                           const Vec3viK& nearXYZ)
       {
-#if 1
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
         NodeRef* stackPtr = stack+1;     //!< current stack pointer
@@ -334,8 +325,8 @@ namespace embree
 	stack[0]  = root;
       
 	/*! load the ray into SIMD registers */
-        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         const vbool16 mask8(0xff);
+        TravRay<K> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ, sizeof(vfloat<N>));
         const vfloat<K> ray_near(select(mask8,ray_tnear[k],vfloat<K>(pos_inf))), ray_far(select(mask8,ray_tfar[k],vfloat<K>(neg_inf)));
 	
 	/* pop loop */
@@ -356,7 +347,6 @@ namespace embree
             STAT3(shadow.trav_nodes,1,1,1);
 
             /* intersect node */
-            /* intersect node */
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
 
@@ -367,15 +357,14 @@ namespace embree
             const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
       
-            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tNear);
-            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
 
             const vbool16 vmask = tNear <= tFar;
             mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */
-            if (unlikely(mask == 0))
-              goto pop;
+            if (unlikely(none(vmask))) goto pop;
 
             vfloat8 tNear8((__m256)tNear);
             /* select next child and push other children */
@@ -398,7 +387,6 @@ namespace embree
             stackPtr++;
           }
 	}
-#endif
 	return false;
       }
       
