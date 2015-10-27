@@ -334,7 +334,7 @@ namespace embree
             ray.org = ray_org;
             ray.dir = ray_dir;
           }
-          stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
+          stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++;
           stackPtr->ptr = node->child; stackPtr->dist = neg_inf; stackPtr++;
           return true;
         }
@@ -394,7 +394,7 @@ namespace embree
             ray.org = ray_org;
             ray.dir = ray_dir;
           }
-          *stackPtr = BVH::popRay; stackPtr++; // FIXME: requires larger stack!
+          *stackPtr = BVH::popRay; stackPtr++;
           *stackPtr = node->child; stackPtr++;
           return true;
         }

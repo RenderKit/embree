@@ -81,7 +81,7 @@ namespace embree
         farZ = ray.farZ;
       }
 
-      Vec3fa org_xyz, dir_xyz; // FIXME: store somewhere else
+      Vec3fa org_xyz, dir_xyz;
       Vec3<vfloat<N>> org, dir, rdir;
 #if defined(__AVX2__)
       Vec3<vfloat<N>> org_rdir;

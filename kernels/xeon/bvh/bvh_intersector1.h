@@ -35,7 +35,9 @@ namespace embree
       typedef typename BVH::Node Node;
       typedef typename BVH::TransformNode TransformNode;
 
-      static const size_t stackSize = 1+(N-1)*BVH::maxDepth;
+      static const size_t stackSize = 
+        1+(N-1)*BVH::maxDepth+   // standard depth
+        1+(N-1)*BVH::maxDepth;   // transform feature
 
     public:
       static void intersect(const BVH* This, Ray& ray);
