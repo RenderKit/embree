@@ -76,8 +76,9 @@ namespace embree
       /*! creates a large leaf that could be larger than supported by the BVH */
       BVH4::NodeRef createLargeLeaf(size_t depth, const PrimInfo& pinfo, Allocator alloc)
       {
+        /* this should never occur but is a fatal error */
         if (depth > maxDepth) 
-          THROW_RUNTIME_ERROR("depth limit reached");
+          throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
         
         /* create leaf for few primitives */
         if (pinfo.size() <= maxLeafSize)

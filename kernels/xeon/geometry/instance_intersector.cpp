@@ -20,27 +20,24 @@ namespace embree
 {
   namespace isa
   {
-    namespace // FIXME: required?
-    {
-      template<int K>
-      __forceinline void intersectObject(vint<K>* valid, Accel* object, RayK<K>& ray);
-      template<int K>
-      __forceinline void occludedObject(vint<K>* valid, Accel* object, RayK<K>& ray);
-
-
+    template<int K>
+    __forceinline void intersectObject(vint<K>* valid, Accel* object, RayK<K>& ray);
+    template<int K>
+    __forceinline void occludedObject(vint<K>* valid, Accel* object, RayK<K>& ray);
+    
+    
 #if defined (__SSE__)
-      template<> __forceinline void intersectObject<4>(vint4* valid, Accel* object, Ray4& ray) { object->intersect4(valid,(RTCRay4&)ray); }
-      template<> __forceinline void occludedObject <4>(vint4* valid, Accel* object, Ray4& ray) { object->occluded4 (valid,(RTCRay4&)ray); }
+    template<> __forceinline void intersectObject<4>(vint4* valid, Accel* object, Ray4& ray) { object->intersect4(valid,(RTCRay4&)ray); }
+    template<> __forceinline void occludedObject <4>(vint4* valid, Accel* object, Ray4& ray) { object->occluded4 (valid,(RTCRay4&)ray); }
 #endif
 #if defined (__AVX__)
-      template<> __forceinline void intersectObject<8>(vint8* valid, Accel* object, Ray8& ray) { object->intersect8(valid,(RTCRay8&)ray); }
-      template<> __forceinline void occludedObject <8>(vint8* valid, Accel* object, Ray8& ray) { object->occluded8 (valid,(RTCRay8&)ray); }
+    template<> __forceinline void intersectObject<8>(vint8* valid, Accel* object, Ray8& ray) { object->intersect8(valid,(RTCRay8&)ray); }
+    template<> __forceinline void occludedObject <8>(vint8* valid, Accel* object, Ray8& ray) { object->occluded8 (valid,(RTCRay8&)ray); }
 #endif
 #if defined (__AVX512F__)
-      template<> __forceinline void intersectObject<16>(vint16* valid, Accel* object, Ray16& ray) { object->intersect16(valid,(RTCRay16&)ray); }
-      template<> __forceinline void occludedObject <16>(vint16* valid, Accel* object, Ray16& ray) { object->occluded16 (valid,(RTCRay16&)ray); }
+    template<> __forceinline void intersectObject<16>(vint16* valid, Accel* object, Ray16& ray) { object->intersect16(valid,(RTCRay16&)ray); }
+    template<> __forceinline void occludedObject <16>(vint16* valid, Accel* object, Ray16& ray) { object->occluded16 (valid,(RTCRay16&)ray); }
 #endif
-    }
 
     template<int K>
     void FastInstanceIntersectorK<K>::intersect(vint<K>* valid, const Instance* instance, RayK<K>& ray, size_t item)

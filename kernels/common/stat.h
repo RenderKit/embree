@@ -70,7 +70,8 @@ namespace embree
 	    AtomicCounter trav_prim_hits;
 	    AtomicCounter trav_hit_boxes[16+1];
 	    AtomicCounter trav_stack_pop;
-	    AtomicCounter trav_stack_nodes;            
+	    AtomicCounter trav_stack_nodes; 
+            AtomicCounter trav_xfm_nodes; 
 	  } normal, shadow;
 	} all, active, code; 
 

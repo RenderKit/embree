@@ -32,25 +32,42 @@ namespace embree
 {
   namespace isa
   {
+    template<int M, typename UVMapper>
+      struct PlueckerHitM
+    {
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& den, const Vec3<vfloat<M>>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), T(T), den(den), vNg(Ng), mapUV(mapUV) {}
+      
+      __forceinline void finalize() 
+      {
+        const vfloat<M> rcpDen = rcp(den);
+        vt = T * rcpDen;
+        vu = U * rcpDen;
+        vv = V * rcpDen;
+        mapUV(vu,vv);
+      }
+      
+      __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
+      __forceinline float t  (const size_t i) const { return vt[i]; }
+      __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+      
+    private:
+      const vfloat<M> U;
+      const vfloat<M> V;
+      const vfloat<M> T;
+      const vfloat<M> den;
+      const UVMapper& mapUV;
+      
+    public:
+      vfloat<M> vu;
+      vfloat<M> vv;
+      vfloat<M> vt;
+      Vec3<vfloat<M>> vNg;
+    };
+
     template<int M>
       struct PlueckerIntersector1
       {
-        struct Hit
-      {
-        __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
-          : vu(u), vv(v), vt(t), vNg(Ng) {}
-
-        __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
-        __forceinline float t  (const size_t i) const { return vt[i]; }
-        __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-
-      public:
-        const vfloat<M> vu;
-        const vfloat<M> vv;
-        const vfloat<M> vt;
-        const Vec3<vfloat<M>> vNg;
-      };
-
         __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
         
         template<typename UVMapper, typename Epilog>
@@ -105,36 +122,39 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
-          return epilog(valid,[&] () {
-              const vfloat<M> rcpDen = rcp(den);
-              const vfloat<M> t = T * rcpDen;
-              vfloat<M> u = U * rcpDen;
-              vfloat<M> v = V * rcpDen;
-              mapUV(u,v);
-              return Hit(u,v,t,Ng);
-            });
+          PlueckerHitM<M,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          return epilog(valid,hit);
         }
       };
+
+    template<int K, typename UVMapper>
+      struct PlueckerHitK
+    {
+      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& den, const Vec3<vfloat<K>>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
+      
+      __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3<vfloat<K>>> operator() () const
+      {
+        const vfloat<K> rcpDen = rcp(den);
+        const vfloat<K> t = T * rcpDen;
+        vfloat<K> u = U * rcpDen;
+        vfloat<K> v = V * rcpDen;
+        mapUV(u,v);
+        return std::make_tuple(u,v,t,Ng);
+      }
+      
+    private:
+      const vfloat<K> U;
+      const vfloat<K> V;
+      const vfloat<K> T;
+      const vfloat<K> den;
+      const Vec3<vfloat<K>> Ng;
+      const UVMapper& mapUV;
+    };
     
     template<int M, int K>
       struct PlueckerIntersectorK
       {
-        struct Hit
-        {
-          __forceinline Hit(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3<vfloat<M>>& Ng)
-            : vu(u), vv(v), vt(t), vNg(Ng) {}
-          
-          __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
-          __forceinline float t  (const size_t i) const { return vt[i]; }
-          __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-          
-        public:
-          const vfloat<M> vu;
-          const vfloat<M> vv;
-          const vfloat<M> vt;
-          const Vec3<vfloat<M>> vNg;
-        };
-
         __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
         
         /*! Intersects K rays with one of M triangles. */
@@ -193,14 +213,8 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          return epilog(valid,[&] () {
-              const vfloat<K> rcpDen = rcp(den);
-              const vfloat<K> t = T * rcpDen;
-              vfloat<K> u = U * rcpDen;
-              vfloat<K> v = V * rcpDen;
-              mapUV(u,v);
-              return std::make_tuple(u,v,t,Ng);
-            });
+          PlueckerHitK<K,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          return epilog(valid,hit);
         }
         
         /*! Intersect k'th ray from ray packet of size K with M triangles. */
@@ -257,14 +271,8 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          return epilog(valid,[&] () {
-              const vfloat<M> rcpDen = rcp(den);
-              const vfloat<M> t = T * rcpDen;
-              vfloat<M> u = U * rcpDen;
-              vfloat<M> v = V * rcpDen;
-              mapUV(u,v);
-              return Hit(u,v,t,Ng);
-            });
+          PlueckerHitM<M,UVMapper> hit(U,V,T,den,Ng,mapUV);
+          return epilog(valid,hit);
         }
       };
     

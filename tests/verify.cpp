@@ -20,13 +20,6 @@
 #include <vector>
 #include <cstddef>
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
-
 #define DEFAULT_STACK_SIZE 4*1024*1024
 //#define DEFAULT_STACK_SIZE 2*1024*1024
 //#define DEFAULT_STACK_SIZE 512*1024
@@ -44,7 +37,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__))
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0
@@ -52,15 +45,19 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCDevice g_device = nullptr;
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 
                                                   | RTC_INTERSECT4 
                                                   | RTC_INTERSECT8 
-#if defined(__TARGET_AVX512__)
                                                   | RTC_INTERSECT16 
-#endif
     );
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
@@ -1468,7 +1465,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-        if (hasISA(AVX512F) || hasISA(KNC)) 
+        if (hasISA(AVX512KNL) || hasISA(KNC)) 
         {
           RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
           setRay(ray16,0,ray0);
@@ -1582,7 +1579,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1701,7 +1698,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1885,7 +1882,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1967,7 +1964,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -2053,7 +2050,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
       __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
@@ -2551,7 +2548,7 @@ namespace embree
     }
 #endif
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
         ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
@@ -2658,7 +2655,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
@@ -3725,7 +3722,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_watertight_closed16("sphere",pos);
       rtcore_watertight_closed16("cube",pos);
@@ -3751,7 +3748,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
       rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);

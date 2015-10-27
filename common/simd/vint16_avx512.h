@@ -175,7 +175,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vint16 cast      ( const __m512& a ) { return _mm512_castps_si512(a); }
+  __forceinline const vint16 asInt     ( const __m512& a ) { return _mm512_castps_si512(a); }
   __forceinline const vint16 operator +( const vint16& a ) { return a; }
   __forceinline const vint16 operator -( const vint16& a ) { return _mm512_sub_epi32(_mm512_setzero_epi32(), a); }
 
@@ -321,7 +321,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint16 shuffle(const vint16& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_swizzle_epi32(x,perm32); }
-  __forceinline vint16 shuffle128(const vint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
+  __forceinline vint16 shuffle4(const vint16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_epi32(x,perm128); }
   
   template<int D, int C, int B, int A> __forceinline vint16 shuffle   (const vint16& v) { return _mm512_shuffle_epi32(v,_MM_SHUF_PERM(D,C,B,A)); }
   template<int A>                      __forceinline vint16 shuffle   (const vint16& x) { return shuffle<A,A,A,A>(v); }
@@ -330,10 +330,10 @@ namespace embree
   template<>                           __forceinline vint16 shuffle<2>(const vint16& x) { return shuffle(x,_MM_SWIZ_REG_CCCC); }
   template<>                           __forceinline vint16 shuffle<3>(const vint16& x) { return shuffle(x,_MM_SWIZ_REG_DDDD); }
 
-  template<int D, int C, int B, int A> __forceinline vint16 shuffle128(const vint16& v) { return shuffle128(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vint16 shuffle128(const vint16& x) { return shuffle128<A,A,A,A>(x); }
+  template<int D, int C, int B, int A> __forceinline vint16 shuffle4(const vint16& v) { return shuffle4(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int A>                      __forceinline vint16 shuffle4(const vint16& x) { return shuffle4<A,A,A,A>(x); }
 
-  __forceinline vint16 shuffle(const vint16& x,_MM_PERM_ENUM    perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle128(x,perm128),perm32); }
+  __forceinline vint16 shuffle(const vint16& x,_MM_PERM_ENUM    perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle4(x,perm128),perm32); }
   
   __forceinline vint16 shuffle(const vboolf16& mask, vint16& v, const vint16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
     return _mm512_mask_swizzle_epi32(_mm512_mask_permute4f128_epi32(v,mask,x,perm128),mask,x,perm32);  
@@ -361,6 +361,14 @@ namespace embree
     return _mm512_alignr_epi32(a,b,i); 
   };
 
+  __forceinline int toScalar(const vint16& a)
+  {
+#if defined(__AVX512F__)
+    return _mm_cvtsi128_si32(_mm512_castsi512_si128(a));
+#else
+    return a[0];
+#endif
+  }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -374,28 +382,28 @@ namespace embree
   
   __forceinline vint16 vreduce_min2(vint16 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vint16 vreduce_min4(vint16 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vint16 vreduce_min8(vint16 x) { x = vreduce_min4(x); return min(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vint16 vreduce_min (vint16 x) { x = vreduce_min8(x); return min(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vint16 vreduce_min8(vint16 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vint16 vreduce_min (vint16 x) { x = vreduce_min8(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vint16 vreduce_max2(vint16 x) {                      return max(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vint16 vreduce_max4(vint16 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vint16 vreduce_max8(vint16 x) { x = vreduce_max4(x); return max(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vint16 vreduce_max (vint16 x) { x = vreduce_max8(x); return max(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vint16 vreduce_max8(vint16 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vint16 vreduce_max (vint16 x) { x = vreduce_max8(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vint16 vreduce_and2(vint16 x) {                      return x & shuffle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_and4(vint16 x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_and8(vint16 x) { x = vreduce_and4(x); return x & shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_and (vint16 x) { x = vreduce_and8(x); return x & shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_and8(vint16 x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_and (vint16 x) { x = vreduce_and8(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline vint16 vreduce_or2(vint16 x) {                     return x | shuffle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_or4(vint16 x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_or8(vint16 x) { x = vreduce_or4(x); return x | shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_or (vint16 x) { x = vreduce_or8(x); return x | shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_or8(vint16 x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_or (vint16 x) { x = vreduce_or8(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline vint16 vreduce_add2(vint16 x) {                      return x + shuffle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vint16 vreduce_add4(vint16 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vint16 vreduce_add8(vint16 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vint16 vreduce_add (vint16 x) { x = vreduce_add8(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

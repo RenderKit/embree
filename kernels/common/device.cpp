@@ -27,11 +27,9 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
+#if !defined(__MIC__)
+#include "../xeon/bvh/bvh4_factory.h"
+#include "../xeon/bvh/bvh8_factory.h"
 #endif
 
 #if defined(TASKING_LOCKSTEP)
@@ -42,43 +40,14 @@
 
 namespace embree
 {
-  /* functions to initialize global state */
+  /* functions to initialize global constants */
   void init_globals();
-
-  /* register functions for accels */
-  void BVH4Register();
-  void BVH8Register();
 
 #if defined(__MIC__)
   void BVH4iRegister();
   void BVH4MBRegister();
   void BVH4HairRegister();
 #endif
-
-  /*! intersector registration functions */
-  DECLARE_SYMBOL(RTCBoundsFunc,InstanceBoundsFunc); // FIXME: move this state to device class
-  DECLARE_SYMBOL(AccelSet::Intersector1,InstanceIntersector1);
-  DECLARE_SYMBOL(AccelSet::Intersector4,InstanceIntersector4);
-  DECLARE_SYMBOL(AccelSet::Intersector8,InstanceIntersector8);
-  DECLARE_SYMBOL(AccelSet::Intersector16,InstanceIntersector16);
-  
-  void InstanceIntersectorsRegister ()
-  {
-    int features = getCPUFeatures();
-#if defined(__MIC__)
-    SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector1);
-    SELECT_SYMBOL_KNC(features,InstanceIntersector16);
-#else
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
-#if defined (RTCORE_RAY_PACKETS)
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
-    SELECT_SYMBOL_AVX_AVX2(features,InstanceIntersector8);
-    SELECT_SYMBOL_AVX512(features,InstanceIntersector16);
-#endif
-#endif
-  }
 
 #if defined(TASKING_TBB)
 
@@ -87,22 +56,22 @@ namespace embree
 
   class TBBAffinity: public tbb::task_scheduler_observer
   {
-    tbb::atomic<int> num_threads;
+    tbb::atomic<int> threadCount;
 
     void on_scheduler_entry( bool ) {
-      ++num_threads;
-      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use num_threads?
+      ++threadCount;
+      setAffinity(TaskSchedulerTBB::threadIndex()); // FIXME: use threadCount?
     }
 
     void on_scheduler_exit( bool ) { 
-      --num_threads; 
+      --threadCount; 
     }
   public:
     
-    TBBAffinity() { num_threads = 0; }
+    TBBAffinity() { threadCount = 0; }
 
-    int  get_concurrency()      { return num_threads; }
-    void set_concurrency(int i) { num_threads = i; }
+    int  get_concurrency()      { return threadCount; }
+    void set_concurrency(int i) { threadCount = i; }
 
   } tbb_affinity;
 #endif
@@ -117,7 +86,8 @@ namespace embree
     /* initialize global state */
     init_globals();
     State::parseString(cfg);
-    State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
+    if (FileName::executableFolder() != FileName(""))
+      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     if (FileName::homeFolder() != FileName("")) // home folder is not available on KNC
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(__EMBREE_VERSION_MAJOR__)));
     State::verify();
@@ -145,19 +115,21 @@ namespace embree
       State::print();
 
     /* register all algorithms */
+    instance_factory = new InstanceFactory(enabled_cpu_features);
+
 #if !defined(__MIC__)
-    BVH4Register();
-#else
+    bvh4_factory = new BVH4Factory(enabled_cpu_features);
+#endif
+
+#if defined(__TARGET_AVX__)
+    bvh8_factory = new BVH8Factory(enabled_cpu_features);
+#endif
+
+#if defined(__MIC__)
     BVH4iRegister();
     BVH4MBRegister();
     BVH4HairRegister();
 #endif 
-#if defined(__TARGET_AVX__)
-    if (hasISA(AVX)) {
-      BVH8Register();
-    }
-#endif
-    InstanceIntersectorsRegister();
 
     /* setup tasking system */
     initTaskingSystem(numThreads);
@@ -171,66 +143,93 @@ namespace embree
 
   Device::~Device ()
   {
+    delete instance_factory;
+#if !defined(__MIC__)
+    delete bvh4_factory;
+#if defined(__TARGET_AVX__)
+    delete bvh8_factory;
+#endif
+#endif
     setCacheSize(0);
     exitTaskingSystem();
   }
 
+  std::string getEnabledTargets()
+  {
+    std::string v = std::string(ISA_STR) + " ";
+#if defined(__TARGET_SSE41__)
+    v += "SSE4.1 ";
+#endif
+#if defined(__TARGET_SSE42__)
+    v += "SSE4.2 ";
+#endif
+#if defined(__TARGET_AVX__)
+    v += "AVX ";
+#endif
+#if defined(__TARGET_AVX2__)
+    v += "AVX2 ";
+#endif
+#if defined(__TARGET_AVX512KNL__)
+    v += "AVX512KNL ";
+#endif
+    return v;
+  }
+
+  std::string getEmbreeFeatures()
+  {
+    std::string v;
+#if defined(RTCORE_RAY_MASK)
+    v += "raymasks ";
+#endif
+#if defined (RTCORE_BACKFACE_CULLING)
+    v += "backfaceculling ";
+#endif
+#if defined(RTCORE_INTERSECTION_FILTER)
+    v += "intersection_filter ";
+#endif
+#if defined(RTCORE_BUFFER_STRIDE)
+    v += "bufferstride ";
+#endif
+    return v;
+  }
+
   void Device::print()
   {
+    const int cpu_features = getCPUFeatures();
     std::cout << "Embree Ray Tracing Kernels " << __EMBREE_VERSION__ << " (" << __DATE__ << ")" << std::endl;
-    std::cout << "  Compiler : " << getCompilerName() << std::endl;
-    std::cout << "  Platform : " << getPlatformName() << std::endl;
-    std::cout << "  CPU      : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-    std::cout << "  ISA      : " << stringOfCPUFeatures(getCPUFeatures()) << std::endl;
-    std::cout << "  Threads  : " << getNumberOfLogicalThreads() << std::endl;
+    std::cout << "  Compiler  : " << getCompilerName() << std::endl;
+    std::cout << "  Build     : ";
+#if defined(DEBUG)
+    std::cout << "Debug " << std::endl;
+#else
+    std::cout << "Release " << std::endl;
+#endif
+    std::cout << "  Platform  : " << getPlatformName() << std::endl;
+    std::cout << "  CPU       : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
+    std::cout << "   Threads  : " << getNumberOfLogicalThreads() << std::endl;
+    std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << std::endl;
+    std::cout << "   Targets  : " << supportedTargetList(cpu_features) << std::endl;
 #if !defined(__MIC__)
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
-    std::cout << "  MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
+    std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
-    std::cout << "  Config   : ";
-#if defined(DEBUG)
-    std::cout << "Debug ";
-#else
-    std::cout << "Release ";
-#endif
+    std::cout << "  Config" << std::endl;
+    std::cout << "    Threads : " << (numThreads ? std::to_string(numThreads) : std::string("default")) << std::endl;
+    std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
+    std::cout << "    Targets : " << supportedTargetList(enabled_cpu_features) << " (supported)" << std::endl;
+    std::cout << "              " << getEnabledTargets() << " (compile time enabled)" << std::endl;
+    std::cout << "    Features: " << getEmbreeFeatures() << std::endl;
+    std::cout << "    Tasking : ";
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
 #endif
-    std::cout << ISA_STR << " ";
-#if defined(__TARGET_SSE41__)
-    std::cout << "SSE4.1 ";
-#endif
-#if defined(__TARGET_SSE42__)
-    std::cout << "SSE4.2 ";
-#endif
-#if defined(__TARGET_AVX__)
-    std::cout << "AVX ";
-#endif
-#if defined(__TARGET_AVX2__)
-    std::cout << "AVX2 ";
-#endif
-#if defined(__TARGET_AVX512__)
-    std::cout << "AVX512 ";
-#endif
 #if defined(TASKING_TBB_INTERNAL)
-    std::cout << "internal_tasking_system ";
+      std::cout << "internal_tasking_system ";
 #endif
 #if defined(TASKING_LOCKSTEP)
     std::cout << "internal_tasking_system ";
-#endif
-#if defined(RTCORE_RAY_MASK)
-    std::cout << "raymasks ";
-#endif
-#if defined (RTCORE_BACKFACE_CULLING)
-    std::cout << "backfaceculling ";
-#endif
-#if defined(RTCORE_INTERSECTION_FILTER)
-    std::cout << "intersection_filter ";
-#endif
-#if defined(RTCORE_BUFFER_STRIDE)
-    std::cout << "bufferstride ";
 #endif
     std::cout << std::endl;
 
@@ -243,10 +242,10 @@ namespace embree
       {
         std::cout << std::endl;
         std::cout << "================================================================================" << std::endl;
-        std::cout << "WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled " << std::endl 
-                  << "         in the MXCSR control and status register. This can have a severe " << std::endl
-                  << "         performance impact. Please enable these modes for each application " << std::endl
-                  << "         thread the following way:" << std::endl
+        std::cout << "  WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled "         << std::endl 
+                  << "           in the MXCSR control and status register. This can have a severe "     << std::endl
+                  << "           performance impact. Please enable these modes for each application "   << std::endl
+                  << "           thread the following way:" << std::endl
                   << std::endl 
                   << "           #include \"xmmintrin.h\"" << std::endl 
                   << "           #include \"pmmintrin.h\"" << std::endl 
@@ -263,6 +262,8 @@ namespace embree
     if (State::verbosity(1))
       std::cout << "  WARNING: enabled 'bufferstride' support will lower BVH build performance" << std::endl;
 #endif
+
+    std::cout << std::endl;
   }
 
   void Device::process_error(RTCError error, const char* str)

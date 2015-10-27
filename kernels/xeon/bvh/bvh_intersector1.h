@@ -18,25 +18,26 @@
 
 #include "bvh.h"
 #include "../../common/ray.h"
-#include "../../common/stack_item.h"
 
 namespace embree
 {
   namespace isa
   {
-    /*! BVHN single ray traversal implementation. */
-    template<int N, int types, bool robust, typename PrimitiveIntersector>
+    /*! BVH single ray intersector. */
+    template<int N, int types, bool robust, typename PrimitiveIntersector1>
       class BVHNIntersector1
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
+      typedef typename PrimitiveIntersector1::Precalculations Precalculations;
+      typedef typename PrimitiveIntersector1::Primitive Primitive;
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::Node Node;
       typedef typename BVH::TransformNode TransformNode;
 
-      static const size_t stackSize = 1+(N-1)*BVH::maxDepth;
+      static const size_t stackSize = 
+        1+(N-1)*BVH::maxDepth+   // standard depth
+        1+(N-1)*BVH::maxDepth;   // transform feature
 
     public:
       static void intersect(const BVH* This, Ray& ray);

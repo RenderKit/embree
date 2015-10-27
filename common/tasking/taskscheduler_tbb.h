@@ -28,9 +28,13 @@
 #include <list>
 
 #if !defined(TASKING_TBB_INTERNAL) && !defined(__MIC__)
-#define NOMINMAX
+#if defined(__WIN32__)
+#  define NOMINMAX
+#  if defined(__clang__) && !defined(__INTEL_COMPILER) 
+#    define __MINGW64__ 1
+#  endif
+#endif
 #define __TBB_NO_IMPLICIT_LINKAGE 1
-//#define is_trivially_copyable has_trivial_copy_constructor
 #include "tbb/tbb.h"
 #endif
 
@@ -301,14 +305,7 @@ namespace embree
       
       if (useThreadPool) addScheduler(this);
 
-      try {
-        while (thread.tasks.execute_local(thread,nullptr));
-      } 
-      catch (...) 
-      {
-        if (!cancellingException)
-          cancellingException = std::current_exception();
-      }
+      while (thread.tasks.execute_local(thread,nullptr));
       atomic_add(&anyTasksRunning,-1);
       if (useThreadPool) removeScheduler(this);
       

@@ -61,16 +61,22 @@ namespace embree
     {
       Task* prevTask = thread.task; 
       thread.task = this;
-      closure->execute();
+      try {
+        if (thread.scheduler->cancellingException == nullptr)
+          closure->execute();
+      } catch (...) {
+        if (thread.scheduler->cancellingException == nullptr)
+          thread.scheduler->cancellingException = std::current_exception();
+      }
       thread.task = prevTask;
       add_dependencies(-1);
     }
     
     /* steal until all dependencies have completed */
     steal_loop(thread,
-               [&] () { return thread.scheduler->cancellingException == 0 && dependencies>0; },
+               [&] () { return dependencies>0; },
                [&] () { while (thread.tasks.execute_local(thread,this)); });
-   
+
     /* now signal our parent task that we are finished */
     if (parent) 
       parent->add_dependencies(-1);
@@ -78,10 +84,6 @@ namespace embree
 
   __dllexport bool TaskSchedulerTBB::TaskQueue::execute_local(Thread& thread, Task* parent)
   {
-    /* stop if task should get cancelled */
-    if (thread.scheduler->cancellingException != 0)
-      return false;
-
     /* stop if we run out of local tasks or reach the waiting task */
     if (right == 0 || &tasks[right-1] == parent)
       return false;
@@ -335,7 +337,7 @@ namespace embree
     Thread* thread = TaskSchedulerTBB::thread();
     if (thread == nullptr) return true;
     while (thread->tasks.execute_local(*thread,thread->task)) {};
-    return thread->scheduler->cancellingException == 0;
+    return thread->scheduler->cancellingException == nullptr;
   }
 
   std::exception_ptr TaskSchedulerTBB::thread_loop(size_t threadIndex)
@@ -346,30 +348,22 @@ namespace embree
     Thread* oldThread = swapThread(&thread);
 
     /* main thread loop */
-    try 
+    while (anyTasksRunning)
     {
-      while (anyTasksRunning > 0 && cancellingException == 0)
-      {
-        steal_loop(thread,
-                   [&] () { return cancellingException == 0 && anyTasksRunning > 0; },
-                   [&] () { 
-                     atomic_add(&anyTasksRunning,+1);
-                     while (thread.tasks.execute_local(thread,nullptr));
-                     atomic_add(&anyTasksRunning,-1);
-                   });
-      }
-    }
-    catch (...) 
-    {
-      if (cancellingException == nullptr)
-        cancellingException = std::current_exception();
+      steal_loop(thread,
+                 [&] () { return anyTasksRunning > 0; },
+                 [&] () { 
+                   atomic_add(&anyTasksRunning,+1);
+                   while (thread.tasks.execute_local(thread,nullptr));
+                   atomic_add(&anyTasksRunning,-1);
+                 });
     }
     threadLocal[threadIndex] = nullptr;
     swapThread(oldThread);
 
     /* remember exception to throw */
     std::exception_ptr except = nullptr;
-    if (cancellingException != 0) except = cancellingException;
+    if (cancellingException != nullptr) except = cancellingException;
 
     /* wait for all threads to terminate */
     atomic_add(&threadCounter,-1);

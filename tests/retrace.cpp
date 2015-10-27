@@ -34,7 +34,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512F__))
+#if defined(RTCORE_RAY_PACKETS) && defined(__MIC__) //|| defined(__TARGET_AVX512KNL__)
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0

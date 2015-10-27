@@ -81,19 +81,19 @@ namespace embree
       };
     
     /*! Performs standard object binning */
-    template<typename PrimRef, typename SplitPrimitive, size_t BINS = 32>
-      struct HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH
+    template<typename PrimRef, typename SplitPrimitive, size_t OBINS, size_t SBINS>
+      struct HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH
       {
-        typedef BinSplit<BINS> ObjectSplit;
-        typedef SpatialBinSplit<16> SpatialSplit; // FIXME: also use 32 bins?
+        typedef BinSplit<OBINS> ObjectSplit;
+        typedef SpatialBinSplit<SBINS> SpatialSplit;
         typedef atomic_set<PrimRefBlockT<PrimRef> > Set;
         typedef Split2<ObjectSplit,SpatialSplit> Split;
         
-        __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH () {
+        __forceinline HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH () {
         }
 
         /*! remember scene for later splits */
-        __forceinline HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH (const SplitPrimitive& splitPrimitive) 
+        __forceinline HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH (const SplitPrimitive& splitPrimitive) 
           : spatial_binning(splitPrimitive) {}
         
         /*! finds the best split */
@@ -120,10 +120,10 @@ namespace embree
           else               return  object_binning.split(split.objectSplit() ,pinfo,set,left,lset,right,rset);
         }
 
-        __forceinline void deterministic_order(const Set& set) 
+        __forceinline void deterministic_order(const Set& set)  // FIXME: implement deterministic_order
         {
           /* required as parallel partition destroys original primitive order */
-          //std::sort(&prims[set.begin()],&prims[set.end()]);
+          //std::sort(&prims[set.begin()],&prims[set.end()]); 
         }
 
         void splitFallback(Set& prims, PrimInfo& linfo_o, Set& lprims_o, PrimInfo& rinfo_o, Set& rprims_o) {
@@ -131,8 +131,8 @@ namespace embree
         }
 
       private:
-        HeuristicListBinningSAH<PrimRef> object_binning;
-        HeuristicSpatialBlockListBinningSAH<SplitPrimitive,PrimRef> spatial_binning;
+        HeuristicListBinningSAH<PrimRef,OBINS> object_binning;
+        HeuristicSpatialBlockListBinningSAH<SplitPrimitive,PrimRef,SBINS> spatial_binning;
       };
   }
 }

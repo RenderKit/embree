@@ -26,6 +26,27 @@
 
 namespace embree
 {
+  /*! flags used to enable specific node types in intersectors */
+  enum BVHNodeFlags
+  {
+    BVH_FLAG_ALIGNED_NODE = 0x00001,
+    BVH_FLAG_ALIGNED_NODE_MB = 0x00010,
+    BVH_FLAG_UNALIGNED_NODE = 0x00100,
+    BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
+    BVH_FLAG_TRANSFORM_NODE = 0x10000,
+
+    /* short versions */
+    BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
+    BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
+    BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
+    BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_TN_AN1 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE,
+    BVH_TN_AN1_AN2 = BVH_FLAG_TRANSFORM_NODE | BVH_FLAG_ALIGNED_NODE | BVH_FLAG_ALIGNED_NODE_MB,
+  };
+
   /*! Multi BVH with N children. Each node stores the bounding box of
    * it's N children as well as N child pointers. */
   template<int NN>
@@ -45,9 +66,7 @@ namespace embree
     /*! branching width of the tree */
     static const size_t N = NN;
 
-    /*! Number of bytes the Node and primitives are minimally aligned
-        to. Maximally byteAlignment-1 many primitive blocks per leaf are
-        supported. */
+    /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
     static const size_t byteNodeAlignment = 4*N;
 
@@ -81,16 +100,6 @@ namespace embree
     /*! Maximal number of primitive blocks in a leaf. */
     static const size_t maxLeafBlocks = items_mask-tyLeaf;
 
-    /*! flags used to enable specific node types in intersectors */
-    enum NodeFlags {  // FIXME: use these flags also in intersector implementations, currently hardcoded constants are used
-      FLAG_ALIGNED_NODE = 0x00001,
-      FLAG_ALIGNED_NODE_MB = 0x00010,
-      FLAG_UNALIGNED_NODE = 0x00100,
-      FLAG_UNALIGNED_NODE_MB = 0x01000,
-      FLAG_NODE_MB = FLAG_ALIGNED_NODE_MB | FLAG_UNALIGNED_NODE_MB,
-      FLAG_TRANSFORM_NODE = 0x10000,
-    };
-
   private:
 
     /*! Shortcuts */
@@ -119,7 +128,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline Node* operator() (const BuildRecord& current, BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc)
       {
-        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+        Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node), byteNodeAlignment); node->clear();
         for (size_t i=0; i<n; i++) {
           node->set(i,children[i].bounds());
           children[i].parent = (size_t*)&node->child(i);
@@ -154,11 +163,11 @@ namespace embree
       __forceinline void prefetch(int types=0) const {
         prefetchL1(((char*)ptr)+0*64);
         prefetchL1(((char*)ptr)+1*64);
-        if ((N >= 8) || (types & 0x1110)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+2*64);
           prefetchL1(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types & 0x1110)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+4*64);
           prefetchL1(((char*)ptr)+5*64);
           prefetchL1(((char*)ptr)+6*64);
@@ -169,11 +178,11 @@ namespace embree
       __forceinline void prefetchL2(int types=0) const {
         embree::prefetchL2(((char*)ptr)+0*64);
         embree::prefetchL2(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > 0x1)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchL2(((char*)ptr)+2*64);
           embree::prefetchL2(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types > 0x1)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchL2(((char*)ptr)+4*64);
           embree::prefetchL2(((char*)ptr)+5*64);
           embree::prefetchL2(((char*)ptr)+6*64);
@@ -184,11 +193,11 @@ namespace embree
       __forceinline void prefetchW(int types=0) const {
         embree::prefetchEX(((char*)ptr)+0*64);
         embree::prefetchEX(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > 0x1)) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchEX(((char*)ptr)+2*64);
           embree::prefetchEX(((char*)ptr)+3*64);
         }
-        if ((N >= 8) && (types > 0x1)) {
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           embree::prefetchEX(((char*)ptr)+4*64);
           embree::prefetchEX(((char*)ptr)+5*64);
           embree::prefetchEX(((char*)ptr)+6*64);
@@ -208,44 +217,30 @@ namespace embree
       /*! checks if this is a leaf */
       __forceinline size_t isLeaf() const { return ptr & tyLeaf; }
 
-      /*! checks if this is a leaf */
-      __forceinline int isLeaf(int types) const {
-        if      (types == 0x0001) return !isNode();
-        else if (types == 0x10001) return !isNode();
-        /*else if (types == 0x0010) return !isNodeMB();
-        else if (types == 0x0100) return !isUnalignedNode();
-        else if (types == 0x1000) return !isUnalignedNodeMB();*/
-        else return isLeaf();
-      }
-
       /*! returns node type */
       __forceinline int type() const { return ptr & (size_t)align_mask; }
 
       /*! checks if this is a node */
       __forceinline int isNode() const { return (ptr & (size_t)align_mask) == tyNode; }
-      __forceinline int isNode(int types) const { return ((types & ~0x10000) == 0x1) || ((types & 0x1) && isNode()); }
 
       /*! checks if this is a motion blur node */
       __forceinline int isNodeMB() const { return (ptr & (size_t)align_mask) == tyNodeMB; }
-      __forceinline int isNodeMB(int types) const { return (types == 0x10) || ((types & 0x10) && isNodeMB()); }
 
       /*! checks if this is a node with unaligned bounding boxes */
       __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
-      __forceinline int isUnalignedNode(int types) const { return (types == 0x100) || ((types & 0x100) && isUnalignedNode()); }
 
       /*! checks if this is a motion blur node with unaligned bounding boxes */
       __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
-      __forceinline int isUnalignedNodeMB(int types) const { return (types == 0x1000) || ((types & 0x1000) && isUnalignedNodeMB()); }
 
       /*! checks if this is a transformation node */
       __forceinline int isTransformNode() const { return (ptr & (size_t)align_mask) == tyTransformNode; }
-      __forceinline int isTransformNode(int types) const { return (types == 0x10000) || ((types & 0x10000) && isTransformNode()); }
+      __forceinline int isTransformNode(int types) const { return (types == BVH_FLAG_TRANSFORM_NODE) || ((types & BVH_FLAG_TRANSFORM_NODE) && isTransformNode()); }
 
       /*! returns base node pointer */
       __forceinline BaseNode* baseNode(int types)
       {
         assert(!isLeaf());
-        if (types == 0x1 || types == 0x10001) {
+        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
           assert((ptr & (size_t)align_mask) == 0);
           return (BaseNode*)ptr;
         }
@@ -255,7 +250,7 @@ namespace embree
       __forceinline const BaseNode* baseNode(int types) const
       {
         assert(!isLeaf());
-        if (types == 0x1 || types == 0x10001) {
+        if ((types & ~BVH_FLAG_TRANSFORM_NODE) == BVH_FLAG_ALIGNED_NODE) {
           assert((ptr & (size_t)align_mask) == 0);
           return (const BaseNode*)ptr;
         }
@@ -584,7 +579,6 @@ namespace embree
 
       /*! Sets ID of child. */
       __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
         assert(i < N);
         children[i] = childID;
       }
@@ -646,30 +640,23 @@ namespace embree
 
       /*! Sets ID of child. */
       __forceinline void set(size_t i, const NodeRef& childID) {
-        //Node::set(i,childID);
         assert(i < N);
         children[i] = childID;
-      }
-
-      /*! Returns bounds of specified child. */
-      __forceinline const BBox3fa bounds0(const size_t i) const {
-        assert(i < N);
-        /*const Vec3fa lower(b0.lower.x[i],b0.lower.y[i],b0.lower.z[i]);
-        const Vec3fa upper(b0.upper.x[i],b0.upper.y[i],b0.upper.z[i]);
-        return BBox3fa(lower,upper);*/
-        return empty; // FIXME: not yet implemented
       }
 
       /*! Returns the extend of the bounds of the ith child */
       __forceinline Vec3fa extend0(size_t i) const {
         assert(i < N);
-        //return bounds0(i).size();
-        return zero; // FIXME: no yet implemented
+        const Vec3fa vx(space0.l.vx.x[i],space0.l.vx.y[i],space0.l.vx.z[i]);
+        const Vec3fa vy(space0.l.vy.x[i],space0.l.vy.y[i],space0.l.vy.z[i]);
+        const Vec3fa vz(space0.l.vz.x[i],space0.l.vz.y[i],space0.l.vz.z[i]);
+        const Vec3fa p (space0.p   .x[i],space0.p   .y[i],space0.p   .z[i]);
+        return rsqrt(vx*vx + vy*vy + vz*vz);
       }
 
     public:
       AffineSpace3vfN space0;
-      //BBox3vfN b0;
+      //BBox3vfN b0; // these are the unit bounds
       BBox3vfN b1;
     };
 
@@ -765,7 +752,7 @@ namespace embree
 
     /*! lays out num large nodes of the BVH */
     void layoutLargeNodes(size_t num);
-    NodeRef layoutLargeNodesRecursion(NodeRef& node);
+    NodeRef layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator);
 
     /*! calculates the amount of bytes allocated */
     size_t bytesAllocated() {
@@ -773,7 +760,7 @@ namespace embree
     }
 
     /*! called by all builders before build starts */
-    double preBuild(const char* builderName);
+    double preBuild(const std::string& builderName);
 
     /*! called by all builders after build ended */
     void postBuild(double t0);
@@ -848,7 +835,6 @@ namespace embree
 
     /*! data arrays for special builders */
   public:
-    BVHN* worldBVH;
     std::vector<BVHN*> objects;
     void* data_mem;                   //!< additional memory, currently used for subdivpatch1cached memory
     size_t size_data_mem;

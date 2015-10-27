@@ -164,7 +164,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vfloat4 cast      (const __m128i& a) { return _mm_castsi128_ps(a); }
+  __forceinline const vfloat4 asFloat   ( const __m128i& a ) { return _mm_castsi128_ps(a); }
   __forceinline const vfloat4 operator +( const vfloat4& a ) { return a; }
   __forceinline const vfloat4 operator -( const vfloat4& a ) { return _mm_xor_ps(a.v, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
   __forceinline const vfloat4 abs       ( const vfloat4& a ) { return _mm_and_ps(a.v, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff))); }
@@ -302,7 +302,7 @@ namespace embree
 
   
 #if defined(__SSE4_1__) 
-#if defined(__clang__) || defined(_MSC_VER) && (!defined(__INTEL_COMPILER) || defined(_DEBUG))
+#if defined(__clang__) && !defined(__INTEL_COMPILER) || defined(_MSC_VER) && !defined(__INTEL_COMPILER) || defined(__INTEL_COMPILER) && defined(_DEBUG)
   __forceinline const vfloat4 select(const int mask, const vfloat4& t, const vfloat4& f) {
     return select(vboolf4(mask), t, f);
   }
@@ -402,6 +402,8 @@ namespace embree
   template<size_t dst, size_t src> __forceinline const vfloat4 insert( const vfloat4& a, const vfloat4& b ) { vfloat4 c = a; c[dst] = b[src]; return c; }
   template<size_t dst>             __forceinline const vfloat4 insert( const vfloat4& a, const float b ) { vfloat4 c = a; c[dst] = b; return c; }
 #endif
+
+  __forceinline float toScalar(const vfloat4& a) { return _mm_cvtss_f32(a); }
 
   __forceinline vfloat4 broadcast4f( const vfloat4& a, const size_t k ) {
     return vfloat4::broadcast(&a[k]);

@@ -73,20 +73,21 @@ SET(EMBREE_LIBRARY_FILES
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp
   geometry/instance_intersector.cpp
-  geometry/subdivpatch1_intersector1.cpp
   geometry/grid_soa.cpp	
   ../common/subdiv/subdivpatch1base_eval.cpp	
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
   bvh/bvh_statistics.cpp
-  bvh4/bvh4_factory.cpp
+  bvh/bvh4_factory.cpp
+  bvh/bvh8_factory.cpp
+
   bvh4/bvh4_rotate.cpp
   bvh4/bvh4_refit.cpp
-  bvh4/bvh4_builder.cpp
+  bvh/bvh_builder.cpp
   bvh4/bvh4_builder_hair.cpp
   bvh4/bvh4_builder_morton.cpp
-  bvh4/bvh4_builder_sah.cpp
+  bvh/bvh_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_instancing.cpp
   bvh4/bvh4_builder_subdiv.cpp
@@ -99,20 +100,19 @@ IF (RTCORE_RAY_PACKETS)
   ../common/rtcore_ispc.cpp
   ../common/rtcore_ispc.ispc
 
-  bvh4/bvh4_intersector_single.cpp
-  bvh4/bvh4_intersector_hybrid.cpp)
+  bvh/bvh_intersector_single.cpp
+  bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
 SET(EMBREE_LIBRARY_FILES_SSE42
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
     SET(EMBREE_LIBRARY_FILES_SSE42 ${EMBREE_LIBRARY_FILES_SSE42}
-    bvh4/bvh4_intersector_single.cpp
-    bvh4/bvh4_intersector_hybrid.cpp)
+    bvh/bvh_intersector_single.cpp
+    bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
 IF (TARGET_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
@@ -126,17 +126,16 @@ SET(EMBREE_LIBRARY_FILES_AVX
     geometry/primitive.cpp
     geometry/instance_intersector1.cpp
     
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.avx.cpp
 
     bvh4/bvh4_rotate.cpp
     bvh4/bvh4_refit.avx.cpp
-    bvh4/bvh4_builder.avx.cpp
+    bvh/bvh_builder.avx.cpp
     bvh4/bvh4_builder_hair.avx.cpp
     bvh4/bvh4_builder_morton.avx.cpp
-    bvh4/bvh4_builder_sah.avx.cpp
+    bvh/bvh_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp
     bvh4/bvh4_builder_subdiv.avx.cpp
@@ -144,9 +143,6 @@ SET(EMBREE_LIBRARY_FILES_AVX
     
     bvh/bvh.cpp
     bvh/bvh_statistics.cpp
-    bvh8/bvh8_factory.cpp
-    bvh8/bvh8_builder.avx.cpp
-    bvh8/bvh8_builder_sah.avx.cpp
     )
 
 IF (RTCORE_RAY_PACKETS)
@@ -154,12 +150,8 @@ IF (RTCORE_RAY_PACKETS)
 
     geometry/instance_intersector.cpp
 
-    bvh4/bvh4_intersector_single.cpp
-    bvh4/bvh4_intersector_hybrid.cpp
-
-    bvh8/bvh8_intersector4_hybrid.cpp
-    bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp)
+    bvh/bvh_intersector_single.cpp
+    bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
 IF (TARGET_AVX AND EMBREE_LIBRARY_FILES_AVX)
@@ -169,7 +161,6 @@ ENDIF()
 SET(EMBREE_LIBRARY_FILES_AVX2
 
     geometry/instance_intersector1.cpp
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
 
@@ -179,53 +170,39 @@ IF (RTCORE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES_AVX2 ${EMBREE_LIBRARY_FILES_AVX2}
     geometry/instance_intersector.cpp
 
-    bvh4/bvh4_intersector_single.cpp
-    bvh4/bvh4_intersector_hybrid.cpp
-
-    bvh8/bvh8_intersector4_hybrid.cpp
-    bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp)
+    bvh/bvh_intersector_single.cpp
+    bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
 IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
  ADD_DEFINITIONS(-D__TARGET_AVX2__)
 ENDIF()
 
-SET(EMBREE_LIBRARY_FILES_AVX512
+SET(EMBREE_LIBRARY_FILES_AVX512KNL
 
     geometry/instance_intersector1.cpp
-    geometry/subdivpatch1_intersector1.cpp
     geometry/grid_soa.cpp
     ../common/subdiv/subdivpatch1base_eval.cpp
 
     builders/primrefgen.avx512.cpp
-    bvh4/bvh4_builder.avx512.cpp
-    bvh4/bvh4_builder_sah.avx512.cpp
-    bvh8/bvh8_builder.avx512.cpp
-    bvh8/bvh8_builder_sah.avx512.cpp
+    bvh/bvh_builder.avx512.cpp
+    bvh/bvh_builder_sah.avx512.cpp
 
     bvh4/bvh4_refit.cpp
-    bvh4/bvh4_builder.avx512.cpp
     bvh4/bvh4_builder_subdiv.avx512.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
-  SET(EMBREE_LIBRARY_FILES_AVX512 ${EMBREE_LIBRARY_FILES_AVX512}
+  SET(EMBREE_LIBRARY_FILES_AVX512KNL ${EMBREE_LIBRARY_FILES_AVX512KNL}
 
     geometry/instance_intersector.cpp
 
-    bvh4/bvh4_intersector_single.cpp
-    bvh4/bvh4_intersector_hybrid.cpp
-
-    bvh8/bvh8_intersector4_hybrid.cpp
-    bvh8/bvh8_intersector8_chunk.cpp
-    bvh8/bvh8_intersector8_hybrid.cpp
-    bvh8/bvh8_intersector16_chunk.cpp
-    bvh8/bvh8_intersector16_hybrid.cpp)
+    bvh/bvh_intersector_single.cpp
+    bvh/bvh_intersector_hybrid.cpp)
 ENDIF()
 
-IF (TARGET_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
- ADD_DEFINITIONS(-D__TARGET_AVX512__)
+IF (TARGET_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
+ ADD_DEFINITIONS(-D__TARGET_AVX512KNL__)
 ENDIF()
 
 ADD_ISPC_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
@@ -252,9 +229,9 @@ IF (TARGET_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
 ENDIF()
 
-IF (TARGET_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
-  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512})
-  SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
+IF (TARGET_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
+  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512KNL})
+  SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
   SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
 ENDIF()

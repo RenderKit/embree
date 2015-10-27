@@ -55,28 +55,7 @@ namespace embree
     return ProgressMonitorClosure<Closure>(closure);
   }
 
-// FIXME: simplify ISA selection
-#define DECLARE_BUILDER(Accel,Mesh,Args,symbol)                         \
-  typedef Builder* (*symbol##Func)(Accel* accel, Mesh* mesh, Args args); \
-  namespace isa   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace sse41 { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx   { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx2  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  namespace avx512  { extern Builder* symbol(Accel* accel, Mesh* scene, Args args); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  symbol##Func symbol = (symbol##Func) symbol##_error;
-
   struct TriangleMesh;
   class Scene;
   typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
-
-  typedef Builder* (*BVH4BuilderTopLevelFunc  )(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
-
-#define DECLARE_TOPLEVEL_BUILDER(symbol)                                         \
-  namespace isa   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace sse41 { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx   { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  namespace avx2  { extern Builder* symbol(void* accel, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel); } \
-  void symbol##_error() { throw_RTCError(RTC_UNSUPPORTED_CPU,"builder " TOSTRING(symbol) " not supported by your CPU"); } \
-  BVH4BuilderTopLevelFunc symbol = (BVH4BuilderTopLevelFunc) symbol##_error;
 }

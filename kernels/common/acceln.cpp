@@ -187,3 +187,4 @@ namespace embree
       accels[i]->clear();
   }
 }
+

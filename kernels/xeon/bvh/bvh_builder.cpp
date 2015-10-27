@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder.h"
-#include "bvh4_rotate.h"
+#include "bvh_builder.h"
+#include "../bvh4/bvh4_rotate.h"
 
 #define ROTATE_TREE 0
 
@@ -24,10 +24,16 @@ namespace embree
   namespace isa
   {
     /* tree rotations */
-    __forceinline size_t rotate(BVH4::Node* node, const size_t* counts, const size_t N)
+    template<int N>
+    __forceinline size_t rotate(typename BVHN<N>::Node* node, const size_t* counts, const size_t num) {
+      return 0;
+    }
+
+#if ROTATE_TREE
+    template<>
+    __forceinline size_t rotate<4>(BVH4::Node* node, const size_t* counts, const size_t N)
     {
       size_t n = 0;
-#if ROTATE_TREE
       assert(N <= BVH4::N);
       for (size_t i=0; i<N; i++) 
         n += counts[i];
@@ -40,11 +46,12 @@ namespace embree
           }
         }
       }
-#endif
       return n;
     }
+#endif
 
-    void BVH4Builder::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    template<int N>
+    void BVHBuilder<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -56,40 +63,45 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      BVH4::NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-        (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,createLeafFunc,progressFunc,
-         prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      typename BVH::NodeRef root;
+      BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
+         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
       for (int i=0; i<ROTATE_TREE; i++) 
-        BVH4Rotate::rotate(bvh->root);
+        BVHRotate::rotate(bvh->root);
       bvh->clearBarrier(bvh->root);
 #endif
       
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
-    struct CreateBVH4NodeMB
+    template<int N>
+      struct CreateNodeMB
     {
-      __forceinline CreateBVH4NodeMB (BVH4* bvh) : bvh(bvh) {}
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeMB NodeMB;
+
+      __forceinline CreateNodeMB (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline BVH4::NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) 
+      __forceinline NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t NN, FastAllocator::ThreadLocal2* alloc) 
       {
-        BVH4::NodeMB* node = (BVH4::NodeMB*) alloc->alloc0.malloc(sizeof(BVH4::NodeMB)); node->clear();
-        for (size_t i=0; i<N; i++) {
+        NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB)); node->clear();
+        for (size_t i=0; i<NN; i++) {
           children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
 	return node;
       }
 
-      BVH4* bvh;
+      BVH* bvh;
     };
 
-    void BVH4BuilderMblur::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    template<int N>
+    void BVHBuilderMblur<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -102,12 +114,12 @@ namespace embree
       };
 
       /* reduction function */
-      auto reduce = [] (BVH4::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t N) -> std::pair<BBox3fa,BBox3fa>
+      auto reduce = [] (typename BVH::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t NN) -> std::pair<BBox3fa,BBox3fa>
       {
-        assert(N <= BVH4::N);
+        assert(NN <= N);
         BBox3fa bounds0 = empty;
         BBox3fa bounds1 = empty;
-        for (size_t i=0; i<N; i++) {
+        for (size_t i=0; i<NN; i++) {
           const BBox3fa b0 = bounds[i].first;
           const BBox3fa b1 = bounds[i].second;
           node->set(i,b0,b1);
@@ -118,24 +130,25 @@ namespace embree
       };
       auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
       
-      BVH4::NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<BVH4::NodeRef>
-        (root,BVH4::CreateAlloc(bvh),identity,CreateBVH4NodeMB(bvh),reduce,createLeafFunc,progressFunc,
-         prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      typename BVH::NodeRef root;
+      BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
+        (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
+         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
       for (int i=0; i<ROTATE_TREE; i++) 
-        BVH4Rotate::rotate(bvh->root);
+        BVHRotate::rotate(bvh->root);
       bvh->clearBarrier(bvh->root);
 #endif
       
-      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: enable
+      //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
     }
 
-    void BVH4BuilderSpatial::BVH4BuilderV::build(BVH4* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
-                                                 const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    template<int N>
+    void BVHBuilderSpatial<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
+                                                  const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
       
@@ -151,21 +164,31 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      BVH4::NodeRef root;
-      BVHBuilderBinnedSpatialSAH::build_reduce<BVH4::NodeRef>
-        (root,BVH4::CreateAlloc(bvh),size_t(0),BVH4::CreateNode(bvh),rotate,
+      typename BVH::NodeRef root;
+      BVHBuilderBinnedSpatialSAH::build_reduce<typename BVH::NodeRef>
+        (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,
          createLeafFunc,splitPrimitiveFunc,progressFunc,
-         prims,pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
       for (int i=0; i<ROTATE_TREE; i++) 
-        BVH4Rotate::rotate(bvh->root);
+        BVHRotate::rotate(bvh->root);
       bvh->clearBarrier(bvh->root);
 #endif
       
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
+
+    template class BVHBuilder<4>;
+    template class BVHBuilderMblur<4>;    
+    template class BVHBuilderSpatial<4>;
+
+#if defined(__AVX__)
+    template class BVHBuilder<8>;
+    template class BVHBuilderMblur<8>;
+    template class BVHBuilderSpatial<8>;
+#endif
   }
 }

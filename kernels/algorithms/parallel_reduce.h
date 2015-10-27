@@ -40,7 +40,7 @@ namespace embree
     taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */
-    Value values[maxTasks];
+    dynamic_large_stack_array(Value,values,taskCount,4096); // consumes at most 4096 bytes on the stack
     parallel_for(taskCount, [&](const size_t taskIndex) {
         const size_t k0 = first+(taskIndex+0)*(last-first)/taskCount;
         const size_t k1 = first+(taskIndex+1)*(last-first)/taskCount;
