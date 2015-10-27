@@ -31,15 +31,20 @@ namespace embree
 
   public:
 
+    /* Returns maximal number of stored primitives */
+    static __forceinline size_t max_size() { return 1; }
+
+    /* Returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
+  public:
+
     /*! Default constructor. */
     __forceinline Bezier1i () {}
 
     /*! Construction from vertices and IDs. */
     __forceinline Bezier1i (const unsigned vertexID, const unsigned geomID, const unsigned primID)
       : vertexID(vertexID), geom(geomID), prim(primID) {}
-
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! returns geometry ID */
     __forceinline unsigned geomID() const { return geom; }

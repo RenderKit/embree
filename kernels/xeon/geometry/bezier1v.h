@@ -33,6 +33,14 @@ namespace embree
 
   public:
 
+    /* Returns maximal number of stored primitives */
+    static __forceinline size_t max_size() { return 1; }
+
+    /* Returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
+  public:
+
     /*! Default constructor. */
     __forceinline Bezier1v () {}
 
@@ -40,9 +48,6 @@ namespace embree
     __forceinline Bezier1v (const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const Vec3fa& p3, const float t0, const float t1,
                            const unsigned int geomID, const unsigned int primID, const bool last)
       : p0(p0), p1(p1), p2(p2), p3(p3), t0(t0), t1(t1), geom(geomID), prim(primID | (last << 31)) {}
-    
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! access hidden members */
     __forceinline unsigned int primID() const { 
