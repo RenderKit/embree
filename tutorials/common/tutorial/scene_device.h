@@ -58,6 +58,7 @@ namespace embree
       hairs = (ISPCHair*) (in->hairs.size() ? &in->hairs[0] : nullptr);
       numVertices = in->v.size();
       numHairs = in->hairs.size();
+      materialID = in->materialID;
     }
 
     ISPCGeometry geom;
@@ -66,6 +67,7 @@ namespace embree
     ISPCHair* hairs; //!< for each hair, index to first control point
     int numVertices;
     int numHairs;
+    int materialID;
   };
   
   

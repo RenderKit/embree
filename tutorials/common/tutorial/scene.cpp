@@ -127,6 +127,8 @@ namespace embree
       for (size_t i=0; i<mesh->hairs.size(); i++)
         hairset->hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
 
+      hairset->materialID = materialID;
+
       scene->geometries.push_back(hairset);
       return scene->geometries.size()-1;
     }

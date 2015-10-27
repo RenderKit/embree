@@ -31,7 +31,8 @@ namespace embree
     MATERIAL_METALLIC_PAINT, 
     MATERIAL_MATTE, 
     MATERIAL_MIRROR, 
-    MATERIAL_REFLECTIVE_METAL 
+    MATERIAL_REFLECTIVE_METAL,
+    MATERIAL_HAIR
   };
   
   struct MatteMaterial
@@ -169,6 +170,20 @@ namespace embree
     Vec3fa glitterColor;
     float glitterSpread;
     float eta;
+  };
+
+  struct HairMaterial
+  {
+    HairMaterial (const Vec3fa& Kr, const Vec3fa& Kt, float nx, float ny)
+    : ty(MATERIAL_HAIR), Kr(Kr), Kt(Kt), nx(nx), ny(ny) {}
+    
+  public:
+    int ty;
+    int align[3];
+    Vec3fa Kr;
+    Vec3fa Kt;
+    float nx;
+    float ny;
   };
   
   /*! Material */

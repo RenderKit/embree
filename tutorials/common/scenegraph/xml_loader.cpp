@@ -261,6 +261,7 @@ namespace embree
     std::vector<float> loadFloatArray(const Ref<XML>& xml);
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
+    std::vector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
     std::vector<int>   loadIntArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
@@ -470,6 +471,30 @@ namespace embree
         data[i] = Vec3f(xml->body[3*i+0].Float(),xml->body[3*i+1].Float(),xml->body[3*i+2].Float());
     }
     std::vector<Vec3f> res;
+    for (size_t i=0; i<size; i++) res.push_back(data[i]);
+    alignedFree(data);
+    return res;
+  }
+
+  std::vector<Vec3fa> XMLLoader::loadVec4fArray(const Ref<XML>& xml)
+  {
+    /*! do not fail of array does not exist */
+    if (!xml) { return std::vector<Vec3fa>(); }
+
+    size_t size = 0;
+    Vec3fa* data = nullptr;
+    if (xml->parm("ofs") != "") {
+      data = (Vec3fa*) loadBinary(xml,4*sizeof(float),size);
+    }
+    else {
+      size_t elts = xml->body.size();
+      if (elts % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float4> body");
+      size = elts/4;
+      data = (Vec3fa*) alignedMalloc(size*sizeof(Vec3fa));
+      for (size_t i=0; i<size; i++) 
+        data[i] = Vec3fa(xml->body[4*i+0].Float(),xml->body[4*i+1].Float(),xml->body[4*i+2].Float(),xml->body[4*i+3].Float());
+    }
+    std::vector<Vec3fa> res;
     for (size_t i=0; i<size; i++) res.push_back(data[i]);
     alignedFree(data);
     return res;
@@ -803,6 +828,14 @@ namespace embree
       const float eta           = parms.getFloat("eta",1.4f);
       new (&material) MetallicPaintMaterial(shadeColor,glitterColor,glitterSpread,eta);
     }
+    else if (type == "Hair")
+    {
+      const Vec3fa Kr = parms.getVec3fa("Kr",one);
+      const Vec3fa Kt = parms.getVec3fa("Kt",zero);
+      const float nx = parms.getFloat("nx",20.0f);
+      const float ny = parms.getFloat("ny",2.0f);
+      new (&material) HairMaterial(Kr,Kt,nx,ny);
+    }
     else {
       std::cout << "Warning: unsupported material " << type << std::endl;
       new (&material) OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
@@ -855,8 +888,8 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadHairSet(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
-    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
+    std::vector<Vec3fa> positions = loadVec4fArray(xml->childOpt("positions"));
+    std::vector<Vec3fa> positions2= loadVec4fArray(xml->childOpt("positions2"));
     std::vector<Vec2i> indices   = loadVec2iArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(material);
