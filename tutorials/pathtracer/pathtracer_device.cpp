@@ -47,6 +47,9 @@ struct DifferentialGeometry
   Vec3fa P;
   Vec3fa Ng;
   Vec3fa Ns;
+  Vec3fa Tx; //direction along hair
+  Vec3fa Ty;
+  float tnear_eps;
 };
 
 struct BRDF
@@ -828,13 +831,7 @@ Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& br
 
 void HairMaterial__preprocess(HairMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
 {
-  /* calculate tangent space */
-  const Vec3fa dx = normalize(dg.Ng);
-  const Vec3fa dy = normalize(cross(wo,dx));
-  const Vec3fa dz = normalize(cross(dy,dx));
-
-  /* generate anisotropic BRDF */
-  AnisotropicBlinn__Constructor((AnisotropicBlinn*)&brdf,Vec3fa(This->Kr),Vec3fa(This->Kt),dx,(float)This->nx,dy,(float)This->ny,dz);
+  AnisotropicBlinn__Constructor((AnisotropicBlinn*)&brdf,Vec3fa(This->Kr),Vec3fa(This->Kt),dg.Tx,(float)This->nx,dg.Ty,(float)This->ny,dg.Ng);
 }
 
 Vec3fa HairMaterial__eval(HairMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
@@ -844,8 +841,6 @@ Vec3fa HairMaterial__eval(HairMaterial* This, const BRDF& brdf, const Vec3fa& wo
 
 Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
 {
-  //Vec3fa p = evalBezier(ray.geomID,ray.primID,ray.u);
-  //tnear_eps = 1.1f*p.w;
   return AnisotropicBlinn__sample((AnisotropicBlinn*)&brdf,wo,wi_o,s.x,s.y,s.x);
 }
 
@@ -946,8 +941,11 @@ ISPCInstance** geomID_to_inst = nullptr;
 renderPixelFunc renderPixel;
 
 /* occlusion filter function */
-void intersectionfilterReject(void* ptr, RTCRay& ray);
-void intersectionfilterOBJ(void* ptr, RTCRay& ray);
+void intersectionFilterReject(void* ptr, RTCRay& ray);
+void intersectionFilterOBJ(void* ptr, RTCRay& ray);
+void occlusionFilterOpaque(void* ptr, RTCRay& ray);
+void occlusionFilterOBJ(void* ptr, RTCRay& ray);
+void occlusionFilterHair(void* ptr, RTCRay& ray);
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -1021,17 +1019,18 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterReject);
+  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterReject);
   //else 
   if (material.ty == MATERIAL_OBJ) 
   {
     OBJMaterial& obj = (OBJMaterial&) material;
     if (obj.d != 1.0f || obj.map_d) {
-      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterOBJ);
-      rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterOBJ);
+      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+      rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFunc)&occlusionFilterOBJ);
     }
   }
   return geomID;
@@ -1052,6 +1051,7 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   return geomID;
 } 
 
@@ -1061,7 +1061,7 @@ unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
   if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
   rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
-  //rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&filterDispatch);
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterHair);
   return geomID;
 }
 
@@ -1235,10 +1235,35 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
+  const Vec3fa* vertices = hair->v;
+  const ISPCHair* hairs = hair->hairs;
+  
+  const int i = hairs[primID].vertex;
+  const Vec3fa p00 = vertices[i+0];
+  const Vec3fa p01 = vertices[i+1];
+  const Vec3fa p02 = vertices[i+2];
+  const Vec3fa p03 = vertices[i+3];
+  
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
+
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  dg.tnear_eps = 0.001f;
   int geomID = ray_geomID; 
   {
     /* get instance and geometry pointers */
@@ -1278,7 +1303,16 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
     else if (geometry->type == HAIR_SET) 
     {
       ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-      materialID = mesh->materialID; 
+      materialID = mesh->materialID;
+      const Vec3fa dx = normalize(dg.Ng);
+      const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+      const Vec3fa dz = normalize(cross(dy,dx));
+      dg.Tx = dx;
+      dg.Ty = dy;
+      dg.Ng = dg.Ns = dz;
+
+      Vec3fa p = evalBezier(geomID,ray.primID,ray.u);
+      dg.tnear_eps = 1.1f*p.w;
     }
 
     /* convert normals */
@@ -1291,11 +1325,11 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-void intersectionfilterReject(void* ptr, RTCRay& ray) {
+void intersectionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-void intersectionfilterOBJ(void* ptr, RTCRay& ray) 
+void intersectionFilterOBJ(void* ptr, RTCRay& ray) 
 {
   /* compute differential geometry */
   DifferentialGeometry dg;
@@ -1320,6 +1354,63 @@ void intersectionfilterOBJ(void* ptr, RTCRay& ray)
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) >= 1.0f)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
+
+void occlusionFilterOpaque(void* ptr, RTCRay& ray) {
+  ray.transparency = Vec3fa(0.0f);
+}
+
+void occlusionFilterOBJ(void* ptr, RTCRay& ray) 
+{
+  /* compute differential geometry */
+  DifferentialGeometry dg;
+  dg.geomID = ray.geomID;
+  dg.primID = ray.primID;
+  dg.u = ray.u;
+  dg.v = ray.v;
+  dg.P  = ray.org+ray.tfar*ray.dir;
+  dg.Ng = ray.Ng;
+  dg.Ns = ray.Ng;
+  int materialID = postIntersect(ray,dg);
+  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+  const Vec3fa wo = neg(ray.dir);
+  
+  /* calculate BRDF */
+  BRDF brdf; brdf.Kt = Vec3fa(0,0,0);
+  int numMaterials = g_ispc_scene->numMaterials;
+  ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+  Medium medium = make_Medium_Vacuum();
+  Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
+  ray.transparency = ray.transparency * brdf.Kt;
+  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+/* occlusion filter function */
+void occlusionFilterHair(void* ptr, RTCRay& ray)
+{
+  Vec3fa Kt = Vec3fa(0.0f);
+  int geomID = ray.geomID;
+  {
+    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+    if (geometry->type == HAIR_SET) 
+    {
+      int materialID = ((ISPCHairSet*)geometry)->materialID;
+      ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+      switch (material->ty) {
+      case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
+      default: break;
+      }
+    }
+  }
+
+  Kt = Kt * ray.transparency;
+  ray.transparency = Kt;
+  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
 
 Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
@@ -1347,6 +1438,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
+      //L = L + Lw*Vec3fa(1.0f);
 #if 1
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
@@ -1401,6 +1493,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     Sample3f wi1;
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
 
+#if 1
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
@@ -1410,10 +1503,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
 
       if (wi0.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0,time);
+        RTCRay shadow = RTCRay(dg.P,wi0.v,dg.tnear_eps,tMax0,time); shadow.transparency = Vec3fa(1.0f);
         rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
+        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
+          L0 = Ll0/wi0.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
 
         L = L + Lw*L0;
@@ -1424,9 +1518,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi1.v,0.001f,inf,time);
+        RTCRay shadow = RTCRay(dg.P,wi1.v,dg.tnear_eps,inf,time); shadow.transparency = Vec3fa(1.0f);
         rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
           L1 = Ll1/wi1.pdf*c;
         }
         L = L + Lw*L1;
@@ -1440,10 +1535,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
 
     /* iterate over directional lights */
@@ -1451,10 +1547,11 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     {
       Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) 
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
 
     /* iterate over distant lights */
@@ -1463,16 +1560,21 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
 
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) 
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
+#endif
+
     if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf;
 
     /* setup secondary ray */
-    ray = RTCRay(dg.P,normalize(wi1.v),0.001f,inf,time);
+    float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
+    dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
+    ray = RTCRay(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
   }
   return L;
 }
@@ -1491,7 +1593,10 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
             1253*x+345*y+1452*g_accu_count+564,
             10253*x+3435*y+52*g_accu_count+13+i*1793);
 
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
+  /* calculate pixel color */
+  float fx = x + frand(state);
+  float fy = y + frand(state);
+  L = L + renderPixelFunction(fx,fy,state,vx,vy,vz,p); 
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;

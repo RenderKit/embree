@@ -54,6 +54,9 @@ struct RTCRay
   int geomID;    //!< geometry ID
   int primID;    //!< primitive ID
   int instID;    //!< instance ID
+
+  // ray extensions
+  Vec3f transparency;
 };
 
 /*! Constructs a ray from origin, direction, and ray segment. Near
