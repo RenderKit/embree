@@ -20,6 +20,6 @@
 
 namespace embree
 {
-  std::string strlwr(const std::string& s);
-  std::string strupr(const std::string& s);
+  std::string toLowerCase(const std::string& s);
+  std::string toUpperCase(const std::string& s);
 }

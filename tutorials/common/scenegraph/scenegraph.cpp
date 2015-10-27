@@ -25,17 +25,17 @@ namespace embree
 {
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
   {
-    if      (strlwr(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
-    else if (strlwr(filename.ext()) == std::string("xml" )) return loadXML(filename);
-    else if (strlwr(filename.ext()) == std::string("hair")) return loadCYHair(filename);
-    else if (strlwr(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
-    else if (strlwr(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
+    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
+    else if (toLowerCase(filename.ext()) == std::string("hair")) return loadCYHair(filename);
+    else if (toLowerCase(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
+    else if (toLowerCase(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
   void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename)
   {
-    if (strlwr(filename.ext()) == std::string("xml")) {
+    if (toLowerCase(filename.ext()) == std::string("xml")) {
       storeXML(root,filename);
     }
     else

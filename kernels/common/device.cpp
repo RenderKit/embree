@@ -215,7 +215,7 @@ namespace embree
     std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
 #endif
     std::cout << "  Config" << std::endl;
-    std::cout << "    Threads : " << (numThreads ? std::to_string(numThreads) : std::string("default")) << std::endl;
+    std::cout << "    Threads : " << (numThreads ? toString(numThreads) : std::string("default")) << std::endl;
     std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
     std::cout << "    Targets : " << supportedTargetList(enabled_cpu_features) << " (supported)" << std::endl;
     std::cout << "              " << getEnabledTargets() << " (compile time enabled)" << std::endl;

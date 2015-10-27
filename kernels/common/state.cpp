@@ -187,12 +187,12 @@ namespace embree
         set_affinity = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
-        std::string isa = strlwr(cin->get().Identifier());
+        std::string isa = toLowerCase(cin->get().Identifier());
         enabled_cpu_features = string_to_cpufeatures(isa);
       }
 
       else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
-        std::string isa = strlwr(cin->get().Identifier());
+        std::string isa = toLowerCase(cin->get().Identifier());
         enabled_cpu_features &= string_to_cpufeatures(isa);
       }
 

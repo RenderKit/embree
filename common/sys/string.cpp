@@ -23,6 +23,6 @@ namespace embree
 {
   char to_lower(char c) { return char(tolower(int(c))); }
   char to_upper(char c) { return char(toupper(int(c))); }
-  std::string strlwr(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_lower); return dst; }
-  std::string strupr(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_upper); return dst; }
+  std::string toLowerCase(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_lower); return dst; }
+  std::string toUpperCase(const std::string& s) { std::string dst(s); std::transform(dst.begin(), dst.end(), dst.begin(), to_upper); return dst; }
 }

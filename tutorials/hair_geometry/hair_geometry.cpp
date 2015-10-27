@@ -456,7 +456,7 @@ float noise(float x, float y, float z)
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
+      g_rtcore += ",threads=" + toString(g_numThreads);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

@@ -74,5 +74,5 @@ namespace embree
   };
   
 #define throw_RTCError(error,str) \
-  throw rtcore_error(error,std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
+  throw rtcore_error(error,std::string(__FILE__) + " (" + toString(__LINE__) + "): " + std::string(str));
 }

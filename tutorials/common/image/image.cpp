@@ -25,7 +25,7 @@ namespace embree
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImageFromDisk(const FileName& fileName)
   {
-    std::string ext = strlwr(fileName.ext());
+    std::string ext = toLowerCase(fileName.ext());
 #ifdef USE_OPENEXR
     if (ext == "exr" ) return loadExr(fileName);
 #endif
@@ -70,7 +70,7 @@ namespace embree
   /*! stores an image to file with auto-detection of format */
   void storeImage(const Ref<Image>& img, const FileName& fileName)
   {
-    std::string ext = strlwr(fileName.ext());
+    std::string ext = toLowerCase(fileName.ext());
 
 #ifdef USE_OPENEXR
     if (ext == "exr" ) { storeExr(img, fileName);  return; }

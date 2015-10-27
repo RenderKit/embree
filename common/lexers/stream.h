@@ -46,8 +46,8 @@ namespace embree
     {
       std::string str = "unknown";
       if (fileName) str = fileName->str;
-      if (lineNumber >= 0) str += " line " + std::to_string((long long)lineNumber);
-      if (lineNumber >= 0 && colNumber >= 0) str += " character " + std::to_string((long long)colNumber);
+      if (lineNumber >= 0) str += " line " + toString(lineNumber);
+      if (lineNumber >= 0 && colNumber >= 0) str += " character " + toString(colNumber);
       return str;
     }
 

@@ -61,10 +61,10 @@ namespace embree
     int icc_mayor = __INTEL_COMPILER / 100 % 100;
     int icc_minor = __INTEL_COMPILER % 100;
     std::string version = "Intel Compiler ";
-    version += std::to_string((long long)icc_mayor);
-    version += "." + std::to_string((long long)icc_minor);
+    version += toString(icc_mayor);
+    version += "." + toString(icc_minor);
 #if defined(__INTEL_COMPILER_UPDATE)
-    version += "." + std::to_string((long long)__INTEL_COMPILER_UPDATE);
+    version += "." + toString(__INTEL_COMPILER_UPDATE);
 #endif
     return version;
 #elif defined(__clang__)
@@ -72,7 +72,7 @@ namespace embree
 #elif defined (__GNUC__)
     return "GCC " __VERSION__;
 #elif defined(_MSC_VER)
-    std::string version = std::to_string((long long)_MSC_FULL_VER);
+    std::string version = toString(_MSC_FULL_VER);
     version.insert(4,".");
     version.insert(9,".");
     version.insert(2,".");

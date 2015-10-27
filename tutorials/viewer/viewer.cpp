@@ -222,21 +222,21 @@ namespace embree
 
     /* configure number of threads */
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
+      g_rtcore += ",threads=" + toString(g_numThreads);
     if (g_numBenchmarkFrames)
       g_rtcore += ",benchmark=1";
 
     g_rtcore += g_subdiv_mode;
 
     /* load scene */
-    if (strlwr(filename.ext()) == std::string("obj")) {
+    if (toLowerCase(filename.ext()) == std::string("obj")) {
       g_scene->add(loadOBJ(filename,g_subdiv_mode != ""));
     }
-    else if (strlwr(filename.ext()) == std::string("xml")) {
+    else if (toLowerCase(filename.ext()) == std::string("xml")) {
       g_scene->add(loadXML(filename,one));
     }
     else if (filename.ext() != "")
-      THROW_RUNTIME_ERROR("invalid scene type: "+strlwr(filename.ext()));
+      THROW_RUNTIME_ERROR("invalid scene type: "+toLowerCase(filename.ext()));
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());

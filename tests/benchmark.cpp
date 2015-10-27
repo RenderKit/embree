@@ -581,7 +581,7 @@ namespace embree
 
     double run(size_t numThreads)
     {
-      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
@@ -620,7 +620,7 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
@@ -661,7 +661,7 @@ namespace embree
   
     double run(size_t numThreads)
     {
-      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       std::vector<RTCScene> scenes;
@@ -752,7 +752,7 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
@@ -832,7 +832,7 @@ namespace embree
     
     double run (size_t numThreads)
     {
-      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
