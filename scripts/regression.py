@@ -133,7 +133,8 @@ models = {}
 #models['Win32'] = [ 'conference' ]
 #models['x64'  ] = [ 'crown' ]
 models['Win32'] = [ 'conference', 'sponza' ]
-models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'xyz_dragon', 'powerplant' ]
+models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'xyz_dragon', 'powerplant', 'tighten' ]
+models_large = ['sophie', 'sophie_mblur']
 
 modelDir  = ''
 testDir = ''
@@ -322,9 +323,6 @@ def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags)
 def render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
 
-def render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"hair_geometry"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
-
 def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
   if scene[0:6] == 'subdiv':
     render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -i tutorials/models/" + scene + '.xml',scene,flags)
@@ -361,11 +359,6 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
         render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
 
       render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
-      render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'tighten', 'default')
-      if platform == "x64" and OS != 'macosx': # not enough memory on MacOSX test machine:
-        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie', 'default')
-        render_hair_geometry(OS, compiler, platform, build, isa, tasking, ty, 'sophie_mblur', 'default')
-
       render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
     
@@ -386,7 +379,9 @@ def renderLoop(OS):
           for isa in ISAs:
             for tasking in ['tbb','internal']:
               if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
-                processConfiguration(OS, compiler, platform, build, isa, tasking, models[platform])
+                model_list = models[platform]
+                if OS != 'macosx': model_list += models_large
+                processConfiguration(OS, compiler, platform, build, isa, tasking, model_list)
 
 ########################## command line parsing ##########################
 
