@@ -275,6 +275,8 @@ namespace embree
     template<int N, int types, bool transform>
     class BVHNNodeTraverser1Transform;
 
+#define ENABLE_TRANSFORM_CACHE 0
+
     template<int N, int types>
     class BVHNNodeTraverser1Transform<N,types,true>
     {
@@ -284,6 +286,9 @@ namespace embree
 
     public:
       __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N>& vray)
+#if ENABLE_TRANSFORM_CACHE
+        : cacheSlot(0), cacheTag(-1)
+#endif
       {
         new (tlray) TravRay<N>(vray);
       }
@@ -303,14 +308,32 @@ namespace embree
           const TransformNode* node = cur.transformNode();
 #if defined(RTCORE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
-#endif
-          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
-          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+#endif          
           leafType = node->type;
           geomID_to_instID = &node->instID;
-          new (&vray) TravRay<N>(ray_org,ray_dir);
-          ray.org = ray_org;
-          ray.dir = ray_dir;
+
+#if ENABLE_TRANSFORM_CACHE
+          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
+          if (likely(any(xfm_hit))) {
+            const int slot = __bsf(movemask(xfm_hit));
+            vray = cacheEntry[slot];
+            ray.org = vray.org_xyz;
+            ray.dir = vray.dir_xyz;
+          } 
+          else 
+#endif
+          {
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);  
+            new (&vray) TravRay<N>(ray_org,ray_dir);
+#if ENABLE_TRANSFORM_CACHE
+            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
+            cacheEntry[cacheSlot&(VSIZEX-1)] = vray;
+            cacheSlot++;
+#endif
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+          }
           stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++; // FIXME: requires larger stack!
           stackPtr->ptr = node->child; stackPtr->dist = neg_inf; stackPtr++;
           return true;
@@ -346,13 +369,31 @@ namespace embree
 #if defined(RTCORE_RAY_MASK)
           if (unlikely((ray.mask & node->mask) == 0)) return true;
 #endif
-          const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
-          const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
           leafType = node->type;
           geomID_to_instID = &node->instID;
-          new (&vray) TravRay<N>(ray_org,ray_dir);
-          ray.org = ray_org;
-          ray.dir = ray_dir;
+
+#if ENABLE_TRANSFORM_CACHE
+          const vboolx xfm_hit = cacheTag == vintx(node->xfmID);
+          if (likely(any(xfm_hit))) {
+            const int slot = __bsf(movemask(xfm_hit));
+            vray = cacheEntry[slot];
+            ray.org = vray.org_xyz;
+            ray.dir = vray.dir_xyz;
+          } 
+          else 
+#endif
+          {
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
+            new (&vray) TravRay<N>(ray_org,ray_dir);
+#if ENABLE_TRANSFORM_CACHE
+            cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
+            cacheEntry[cacheSlot&(VSIZEX-1)] = vray;
+            cacheSlot++;
+#endif
+            ray.org = ray_org;
+            ray.dir = ray_dir;
+          }
           *stackPtr = BVH::popRay; stackPtr++; // FIXME: requires larger stack!
           *stackPtr = node->child; stackPtr++;
           return true;
@@ -374,6 +415,9 @@ namespace embree
 
     private:
       __aligned(32) char tlray[sizeof(TravRay<N>)];
+      unsigned int cacheSlot;
+      vintx cacheTag;
+      TravRay<N> cacheEntry[VSIZEX];
     };
 
     template<int N, int types>
