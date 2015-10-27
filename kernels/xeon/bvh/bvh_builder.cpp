@@ -31,14 +31,14 @@ namespace embree
 
 #if ROTATE_TREE
     template<>
-    __forceinline size_t rotate<4>(BVH4::Node* node, const size_t* counts, const size_t N)
+    __forceinline size_t rotate<4>(BVH4::Node* node, const size_t* counts, const size_t num)
     {
       size_t n = 0;
-      assert(N <= BVH4::N);
-      for (size_t i=0; i<N; i++) 
+      assert(num <= 4);
+      for (size_t i=0; i<num; i++)
         n += counts[i];
       if (n >= 4096) {
-        for (size_t i=0; i<N; i++) {
+        for (size_t i=0; i<num; i++) {
           if (counts[i] < 4096) {
             for (int j=0; j<ROTATE_TREE; j++) 
               BVH4Rotate::rotate(node->child(i)); 
@@ -66,7 +66,7 @@ namespace embree
       typename BVH::NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
-         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
@@ -87,10 +87,10 @@ namespace embree
 
       __forceinline CreateNodeMB (BVH* bvh) : bvh(bvh) {}
       
-      __forceinline NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t NN, FastAllocator::ThreadLocal2* alloc) 
+      __forceinline NodeMB* operator() (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc)
       {
         NodeMB* node = (NodeMB*) alloc->alloc0.malloc(sizeof(NodeMB)); node->clear();
-        for (size_t i=0; i<NN; i++) {
+        for (size_t i=0; i<num; i++) {
           children[i].parent = (size_t*)&node->child(i);
         }
         *current.parent = bvh->encodeNode(node);
@@ -114,12 +114,12 @@ namespace embree
       };
 
       /* reduction function */
-      auto reduce = [] (typename BVH::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t NN) -> std::pair<BBox3fa,BBox3fa>
+      auto reduce = [] (typename BVH::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t num) -> std::pair<BBox3fa,BBox3fa>
       {
-        assert(NN <= N);
+        assert(num <= N);
         BBox3fa bounds0 = empty;
         BBox3fa bounds1 = empty;
-        for (size_t i=0; i<NN; i++) {
+        for (size_t i=0; i<num; i++) {
           const BBox3fa b0 = bounds[i].first;
           const BBox3fa b1 = bounds[i].second;
           node->set(i,b0,b1);
@@ -133,7 +133,7 @@ namespace embree
       typename BVH::NodeRef root;
       BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
-         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
@@ -168,7 +168,7 @@ namespace embree
       BVHBuilderBinnedSpatialSAH::build_reduce<typename BVH::NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,
          createLeafFunc,splitPrimitiveFunc,progressFunc,
-         prims,pinfo,BVH::N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+         prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       

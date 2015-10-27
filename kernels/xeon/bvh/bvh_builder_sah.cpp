@@ -241,12 +241,12 @@ namespace embree
           return A;
         },std::plus<double>());
         
-        /* calculate maxmal number of spatial splits per primitive */
+        /* calculate maximal number of spatial splits per primitive */
         float f = 10.0f;
         iter = prims;
         parallel_reduce(size_t(0),threadCount,size_t(0), [&] (const range<size_t>& r) -> size_t
         {
-          size_t NN = 0;
+          size_t num = 0;
           while (PrimRefList::item* block = iter.next()) {
             for (size_t i=0; i<block->size(); i++) {
               PrimRef& prim = block->at(i);
@@ -255,11 +255,11 @@ namespace embree
               //const size_t n = 64;
               //const size_t n = min(ssize_t(127), max(ssize_t(1), ssize_t(nf)));
               const size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-              NN += n;
+              num += n;
               prim.lower.a |= n << 24;
             }
           }
-          return NN;
+          return num;
         },std::plus<size_t>());
         
         /* function that splits a primitive at some position and dimension */
