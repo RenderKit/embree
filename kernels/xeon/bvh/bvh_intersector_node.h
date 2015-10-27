@@ -418,6 +418,7 @@ namespace embree
       }
     };
 
+
     /*! Intersects N nodes with K rays */
     template<int N, int K, int types, bool robust>
     struct BVHNNodeIntersectorK;

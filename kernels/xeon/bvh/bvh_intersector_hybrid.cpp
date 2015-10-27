@@ -103,7 +103,7 @@ namespace embree
         
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
-        if (single)
+        if (single || 1)
         {
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {

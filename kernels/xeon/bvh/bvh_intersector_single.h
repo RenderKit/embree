@@ -200,9 +200,12 @@ namespace embree
 
 
     /*! BVH single ray intersector for packets. */
-    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
-      class BVHNIntersectorKSingle<8,16,types,robust,PrimitiveIntersectorK>
+    template<int types, typename PrimitiveIntersectorK>
+      class BVHNIntersectorKSingle<8,16,types,false,PrimitiveIntersectorK>
     {
+    static const int N = 8;
+    static const int K = 16;
+
       /* shortcuts for frequently used types */
       typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
       typedef typename PrimitiveIntersectorK::Primitive Primitive;
@@ -239,12 +242,17 @@ namespace embree
 	stack[0].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
+        const vbool16 mask8(0xff);
+
         TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
-        vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
-	
+        //vfloat<K> ray_near(select(mask8,vfloat<K>(ray_tnear[k]),vfloat<K>(pos_inf))), ray_far(select(mask8,vfloat<K>(ray_tfar[k]),vfloat<K>(neg_inf)));
+
+        vfloat<K> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+
 	/* pop loop */
 	while (true) pop:
 	{
+
 	  /*! pop next node */
 	  if (unlikely(stackPtr == stack)) break;
 	  stackPtr--;
@@ -258,21 +266,44 @@ namespace embree
           while (true)
           {
             size_t mask;
-            vfloat<N> tNear;
 
             /*! stop if we found a leaf node */
             if (unlikely(cur.isLeaf())) break;
             STAT3(normal.trav_nodes,1,1,1);
 
             /* intersect node */
-            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            const typename BVH8::Node* node = cur.node();
+
+#if 0
+            const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
+#else
+            const vfloat16 tNearX = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tNearY = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tNearZ = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tFarX  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tFarY  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tFarZ  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
+            
+#endif      
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tNear);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+
+            const vbool16 vmask = le(0xff,tNear,tFar); //tNear <= tFar;
+            mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+            vfloat8 tNear8((__m256)tNear);
+            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear8,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */
@@ -296,6 +327,7 @@ namespace embree
                                           RayK<K>& ray, const Vec3vfK &ray_org, const Vec3vfK &ray_dir, const Vec3vfK &ray_rdir, const vfloat<K> &ray_tnear, const vfloat<K> &ray_tfar,
                                           const Vec3viK& nearXYZ)
       {
+#if 1
 	/*! stack state */
 	NodeRef stack[stackSizeSingle];  //!< stack of nodes that still need to get traversed
         NodeRef* stackPtr = stack+1;     //!< current stack pointer
@@ -304,7 +336,8 @@ namespace embree
       
 	/*! load the ray into SIMD registers */
         TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
-        const vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
+        const vbool16 mask8(0xff);
+        const vfloat<K> ray_near(select(mask8,ray_tnear[k],vfloat<K>(pos_inf))), ray_far(select(mask8,ray_tfar[k],vfloat<K>(neg_inf)));
 	
 	/* pop loop */
 	while (true) pop:
@@ -318,21 +351,36 @@ namespace embree
           while (true)
           {
             size_t mask;
-            vfloat<N> tNear;
 
             /*! stop if we found a leaf node */
             if (unlikely(cur.isLeaf())) break;
             STAT3(shadow.trav_nodes,1,1,1);
 
             /* intersect node */
-            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            /* intersect node */
+            //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            const typename BVH8::Node* node = cur.node();
+
+            const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
+      
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tNear);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+
+            const vbool16 vmask = tNear <= tFar;
+            mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
 
+            vfloat8 tNear8((__m256)tNear);
             /* select next child and push other children */
-            BVHNNodeTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,types>::traverseAnyHit(cur,mask,tNear8,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */
@@ -351,6 +399,7 @@ namespace embree
             stackPtr++;
           }
 	}
+#endif
 	return false;
       }
       
