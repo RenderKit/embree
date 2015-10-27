@@ -51,7 +51,7 @@ namespace embree
 #endif
 
     template<int N>
-    void BVHBuilder<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilder<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -101,7 +101,7 @@ namespace embree
     };
 
     template<int N>
-    void BVHBuilderMblur<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
+    void BVHNBuilderMblur<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRef* prims, const PrimInfo& pinfo, const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
 
@@ -147,7 +147,7 @@ namespace embree
     }
 
     template<int N>
-    void BVHBuilderSpatial<N>::BVHBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
+    void BVHNBuilderSpatial<N>::BVHNBuilderV::build(BVH* bvh, BuildProgressMonitor& progress_in, PrimRefList& prims, const PrimInfo& pinfo, 
                                                   const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost)
     {
       //bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
@@ -181,14 +181,14 @@ namespace embree
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
-    template class BVHBuilder<4>;
-    template class BVHBuilderMblur<4>;    
-    template class BVHBuilderSpatial<4>;
+    template class BVHNBuilder<4>;
+    template class BVHNBuilderMblur<4>;    
+    template class BVHNBuilderSpatial<4>;
 
 #if defined(__AVX__)
-    template class BVHBuilder<8>;
-    template class BVHBuilderMblur<8>;
-    template class BVHBuilderSpatial<8>;
+    template class BVHNBuilder<8>;
+    template class BVHNBuilderMblur<8>;
+    template class BVHNBuilderSpatial<8>;
 #endif
   }
 }

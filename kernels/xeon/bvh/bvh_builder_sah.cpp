@@ -69,7 +69,7 @@ namespace embree
     /************************************************************************************/
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHBuilderSAH : public Builder
+    struct BVHNBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
       BVH* bvh;
@@ -82,11 +82,11 @@ namespace embree
       const size_t maxLeafSize;
       const float presplitFactor;
 
-      BVHBuilderSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
-      BVHBuilderSAH (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
 
@@ -117,7 +117,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -135,24 +135,24 @@ namespace embree
     };
 
     /* entry functions for the scene builder */
-    Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
-    Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
-    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
-    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Bezier1vSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1v>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Bezier1iSceneBuilderSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,BezierCurves,Bezier1i>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
+    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,1,1,1.0f,1,1,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
-    Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAH<8,TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH4Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle8SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
 #endif
 
     /* entry functions for the mesh builders */
-    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }         
+    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,2,2,1.0f,4,inf,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,mesh,8,4,1.0f,8,inf,mode); }
+    Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,mesh,8,4,1.0f,8,inf,mode); }
 #endif
 
     /************************************************************************************/ 
@@ -197,7 +197,7 @@ namespace embree
     };
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHBuilderSpatialSAH : public Builder
+    struct BVHNBuilderSpatialSAH : public Builder
     {
       typedef BVHN<N> BVH;
       BVH* bvh;
@@ -208,7 +208,7 @@ namespace embree
       const size_t maxLeafSize;
       const float presplitFactor;
 
-      BVHBuilderSpatialSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, 
+      BVHNBuilderSpatialSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize,
                              const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)),
           presplitFactor((mode & MODE_HIGH_QUALITY) ? 1.5f : 1.0f) {}
@@ -274,7 +274,7 @@ namespace embree
              
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHBuilderSpatial<N>::build(bvh,splitPrimitive,CreateListLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims,pinfo,
+        BVHNBuilderSpatial<N>::build(bvh,splitPrimitive,CreateListLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims,pinfo,
                                     sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
         /* clear temporary data for static geometry */
@@ -288,13 +288,13 @@ namespace embree
     };
 
     /* entry functions for the scene builder */
-    Builder* BVH4Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4vSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4iSceneBuilderSpatialSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,2,2,1.0f,4,inf,mode); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
-    Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSpatialSAH<8,TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH4Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<4,TriangleMesh,Triangle8>((BVH4*)bvh,scene,8,4,1.0f,8,inf,mode); }
+    Builder* BVH8Triangle4SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle8SceneBuilderSpatialSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSpatialSAH<8,TriangleMesh,Triangle8>((BVH8*)bvh,scene,8,4,1.0f,8,inf,mode); }
  #endif
 
     /************************************************************************************/ 
@@ -330,7 +330,7 @@ namespace embree
     };
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHBuilderMblurSAH : public Builder
+    struct BVHNBuilderMblurSAH : public Builder
     {
       typedef BVHN<N> BVH;
       BVH* bvh;
@@ -342,10 +342,10 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
-      BVHBuilderMblurSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVHNBuilderMblurSAH (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)) {}
 
-      BVHBuilderMblurSAH (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
+      BVHNBuilderMblurSAH (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(mesh->parent->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
@@ -369,7 +369,7 @@ namespace embree
         
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-        BVHBuilderMblur<N>::build(bvh,CreateLeafMB<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
+        BVHNBuilderMblur<N>::build(bvh,CreateLeafMB<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,
                                   sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
         
 	/* clear temporary data for static geometry */
@@ -387,8 +387,8 @@ namespace embree
       }
     };
 
-    Builder* BVH4Triangle4vMBMeshBuilderSAH   (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4vMBSceneBuilderSAH  (void* bvh, Scene* scene,       size_t mode) { return new BVHBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4vMBMeshBuilderSAH   (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4vMBSceneBuilderSAH  (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,4,1.0f,4,inf); }
 
 
     /************************************************************************************/ 
@@ -399,7 +399,7 @@ namespace embree
 #if defined(__AVX__)
 
     template<int N, typename Mesh, typename Primitive>
-    struct BVHBuilderSAHTrianglePairs : public Builder
+    struct BVHNBuilderSAHTrianglePairs : public Builder
     {
       typedef BVHN<N> BVH;
       BVH* bvh;
@@ -411,11 +411,11 @@ namespace embree
       const size_t minLeafSize;
       const size_t maxLeafSize;
 
-      BVHBuilderSAHTrianglePairs (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAHTrianglePairs (BVH* bvh, Scene* scene, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)) 
       {}
 
-      BVHBuilderSAHTrianglePairs (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAHTrianglePairs (BVH* bvh, Mesh* mesh, const size_t leafBlockSize, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,leafBlockSize*BVH::maxLeafBlocks)) {}
 
       void build(size_t, size_t) 
@@ -444,7 +444,7 @@ namespace embree
             
             bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
             
-            BVHBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),virtualprogress,
+            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),virtualprogress,
                                  prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
             
 #if PROFILE
@@ -468,10 +468,10 @@ namespace embree
     };
 
     /* entry functions for the scene builder */
-    Builder* BVH4TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH4TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
-    Builder* BVH8TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
-    Builder* BVH8TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,mesh,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH4TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,mesh,4,4,1.0f,4,inf,mode); }
+    Builder* BVH8TrianglePairs4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,scene,4,4,1.0f,4,inf,mode); }
+    Builder* BVH8TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,mesh,4,4,1.0f,4,inf,mode); }
 
 #endif
   }
