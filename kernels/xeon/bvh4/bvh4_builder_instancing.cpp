@@ -29,11 +29,7 @@ namespace embree
     Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
     BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
-      : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), 
-        nextRef(0)//, numInstancedPrimitives(0), worldBVH(new BVH4(Triangle4::type,scene)), worldBuilder(BVH4Triangle4SceneBuilderSAH(worldBVH,scene,0))  
-    {
-      //bvh->worldBVH = worldBVH; // BVH4 manages lifetime
-    }
+      : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
     
     BVH4BuilderInstancing::~BVH4BuilderInstancing ()
     {
@@ -176,11 +172,6 @@ namespace embree
           }
         });
 
-      /* create world space instance */
-      //worldBuilder->build();
-      //if (!worldBVH->bounds.empty())
-      //  refs[nextRef++] = BVH4BuilderInstancing::BuildRef(one,worldBVH->bounds,worldBVH->root,-1,-1,0);
-      
       /* creates all instances */
       parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
