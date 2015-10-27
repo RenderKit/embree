@@ -290,7 +290,7 @@ namespace embree
         : cacheSlot(0), cacheTag(-1)
 #endif
       {
-        new (tlray) TravRay<N>(vray);
+        new (&tlray) TravRay<N>(vray);
       }
 
       __forceinline bool traverseTransform(NodeRef& cur,
@@ -414,7 +414,8 @@ namespace embree
       }
 
     private:
-      __aligned(32) char tlray[sizeof(TravRay<N>)];
+      //__aligned(32) char tlray[sizeof(TravRay<N>)];
+      TravRay<N> tlray;
       unsigned int cacheSlot;
       vintx cacheTag;
       TravRay<N> cacheEntry[VSIZEX];
