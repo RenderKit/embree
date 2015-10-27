@@ -47,7 +47,7 @@ namespace embree
       }
 
       template<int K>
-      __forceinline TravRay (size_t k, const Vec3<vfloat<K>> &ray_org, const Vec3<vfloat<K>> &ray_dir, const Vec3<vfloat<K>> &ray_rdir, const Vec3<vint<K>>& nearXYZ)
+      __forceinline TravRay (size_t k, const Vec3<vfloat<K>> &ray_org, const Vec3<vfloat<K>> &ray_dir, const Vec3<vfloat<K>> &ray_rdir, const Vec3<vint<K>>& nearXYZ, const size_t flip = sizeof(vfloat<N>))
       {
         org = Vec3<vfloat<N>>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
 	dir = Vec3<vfloat<N>>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
@@ -58,9 +58,9 @@ namespace embree
 	nearX = nearXYZ.x[k];
 	nearY = nearXYZ.y[k];
 	nearZ = nearXYZ.z[k];
-        farX  = nearX ^ sizeof(vfloat<N>);
-        farY  = nearY ^ sizeof(vfloat<N>);
-        farZ  = nearZ ^ sizeof(vfloat<N>);
+        farX  = nearX ^ flip;
+        farY  = nearY ^ flip;
+        farZ  = nearZ ^ flip;
       }
 
       __forceinline TravRay (const TravRay& ray)

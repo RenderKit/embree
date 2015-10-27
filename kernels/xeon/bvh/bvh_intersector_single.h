@@ -244,9 +244,8 @@ namespace embree
 	/*! load the ray into SIMD registers */
         const vbool16 mask8(0xff);
 
-        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
+        TravRay<K> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ, sizeof(vfloat<N>));
         //vfloat<K> ray_near(select(mask8,vfloat<K>(ray_tnear[k]),vfloat<K>(pos_inf))), ray_far(select(mask8,vfloat<K>(ray_tfar[k]),vfloat<K>(neg_inf)));
-
         vfloat<K> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 
 	/* pop loop */
@@ -275,7 +274,7 @@ namespace embree
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
 
-#if 0
+#if 1
             const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
             const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
@@ -291,10 +290,10 @@ namespace embree
             const vfloat16 tFarZ  = msub(vfloat16::loadu((float*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
             
 #endif      
-            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tNear);
-            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tFar);
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
 
-            const vbool16 vmask = le(0xff,tNear,tFar); //tNear <= tFar;
+            const vbool16 vmask = (tNear <= tFar) & mask8; //le(0xff,tNear,tFar); //tNear <= tFar;
             mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */
