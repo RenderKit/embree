@@ -176,8 +176,9 @@ public:
     ISPCHair *hairs;    //!< list of hairs
     int numVertices;
     int numHairs;
-    ISPCHairSet(int numHairs, int numVertices) 
-      : ISPCGeometry(HAIR_SET), numHairs(numHairs),numVertices(numVertices),positions(nullptr),positions2(nullptr),hairs(nullptr) {}
+    int materialID;
+    ISPCHairSet(int numHairs, int numVertices, int materialID) 
+      : ISPCGeometry(HAIR_SET), numHairs(numHairs),numVertices(numVertices),positions(nullptr),positions2(nullptr),hairs(nullptr),materialID(materialID) {}
     ~ISPCHairSet() {
       if (positions) free(positions);
       if (positions2) free(positions2);
@@ -458,7 +459,7 @@ struct ISPCSubdivMeshKeyFrame {
 				     uint16_t         in_ReturnValueLength)
   {
     size_t geomID = g_geometryID++;
-    ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices);
+    ISPCHairSet* hairset = new ISPCHairSet(in_pMiscData->numHairs,in_pMiscData->numVertices,in_pMiscData->materialID);
     memcpy(hairset->positions = (Vec3fa*)malloc(in_pBufferLengths[0]),in_ppBufferPointers[0],in_pBufferLengths[0]);
     memcpy(hairset->hairs = (ISPCHair*)malloc(in_pBufferLengths[1]),in_ppBufferPointers[1],in_pBufferLengths[1]);
     g_ispc_scene->geometry[geomID] = hairset;

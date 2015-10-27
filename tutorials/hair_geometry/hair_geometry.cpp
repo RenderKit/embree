@@ -336,13 +336,13 @@ float noise(float x, float y, float z)
       }
 
       /* directional light */
-      else if (tag == "--dirlight") {
+      else if (tag == "-dirlight" || tag == "--dirlight" ) {
         g_dirlight_direction = normalize(cin->getVec3fa());
         g_dirlight_intensity = cin->getVec3fa();
       }
 
       /* ambient light */
-      else if (tag == "--ambient") {
+      else if (tag == "-ambientlight" || tag == "--ambient") {
         g_ambient_intensity = cin->getVec3fa();
       }
 

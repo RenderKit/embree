@@ -192,6 +192,15 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, uni
   return geomID;
 }
 
+uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
+{
+  uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(uniform Vertex));
+  if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(uniform Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(uniform ISPCHair));
+  return geomID;
+}
+
 uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
 {
   if (g_instancing_mode == 1) {
@@ -254,6 +263,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
         meshID_to_geomID[i] = geomID;
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == HAIR_SET) {
+        uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+        meshID_to_geomID[i] = geomID;
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == INSTANCE)
         convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
     }
@@ -277,6 +292,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
         meshID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
+      else if (geometry->type == HAIR_SET) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertHairSet((uniform ISPCHairSet* uniform) geometry, objscene);
+        meshID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
       else if (geometry->type == INSTANCE) {
         convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
         meshID_to_scene[i] = NULL;
@@ -296,6 +317,10 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
       }
       else if (geometry->type == TRIANGLE_MESH) {
         uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, i, scene_out);
+        geomID_to_mesh[geomID] = geometry;
+      }
+      else if (geometry->type == HAIR_SET) {
+        uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         geomID_to_mesh[geomID] = geometry;
       }
     }
@@ -328,7 +353,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   }
 
   /* shade all rays that hit something */
-  Vec3f color = make_Vec3f(0.0f);
+  Vec3f color = make_Vec3f(0.5f);
   Vec3f Ns = ray.Ng;
 
   if (g_use_smooth_normals)
@@ -373,6 +398,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
       uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
       materialID = mesh->materialID; 
     }
+    else if (geometry->type == HAIR_SET) 
+    {
+      uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
+      materialID = mesh->materialID;
+    }
   }
 
   if (g_instancing_mode)
@@ -383,8 +413,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   }
 
   Ns = normalize(Ns);
-  uniform OBJMaterial* material = (uniform OBJMaterial*) &g_ispc_scene->materials[materialID];
-  color = make_Vec3f(material->Kd);
+  if (g_ispc_scene->materials[materialID].ty == MATERIAL_OBJ) {
+    uniform OBJMaterial* material = (uniform OBJMaterial*) &g_ispc_scene->materials[materialID];
+    color = make_Vec3f(material->Kd);
+  }
 
   /* apply ambient light */
   Vec3f Nf = faceforward(Ns,neg(ray.dir),Ns);

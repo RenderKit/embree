@@ -144,6 +144,7 @@ namespace embree
 
     parms.numVertices = hairset->v.size();
     parms.numHairs    = hairset->hairs.size();
+    parms.materialID  = hairset->materialID;
     COI_ACCESS_FLAGS flags[2] = { COI_SINK_READ, COI_SINK_READ};
 
     COIEVENT event;

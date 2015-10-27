@@ -23,11 +23,10 @@ import re
 ########################## configuration ##########################
 
 dash = '/'
-#models1 = [ 'conference' ]
-#models1 = [ 'conference', 'sponza', 'headlight', 'crown']
-models1 = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
-models2 = [ 'sophie', 'sophie_mblur'] # FIXME: models1/2 only required as pathtracer does not support hair!
-models = []
+#models = [ 'conference' ]
+#models = [ 'conference', 'sponza', 'headlight', 'crown']
+models = [ 'conference', 'sponza', 'headlight', 'crown', 'bentley', 'xyz_dragon', 'powerplant' ]
+#models = [ 'sophie', 'sophie_mblur']
 
 arg = ''
 modelDir  = ''
@@ -175,36 +174,11 @@ if sys.argv[1] == 'run':
   name = sys.argv[2]
   tutorial = sys.argv[3]
   args = sys.argv[4:]
-  models = models1
-  renderLoop()
-  sys.exit(1)
-
-if sys.argv[1] == 'run1':
-  name = sys.argv[2]
-  tutorial = sys.argv[3]
-  args = sys.argv[4:]
-  models = models1
-  renderLoop()
-  sys.exit(1)
-
-if sys.argv[1] == 'run2':
-  name = sys.argv[2]
-  tutorial = sys.argv[3]
-  args = sys.argv[4:]
-  models = models2
   renderLoop()
   sys.exit(1)
 
 if sys.argv[1] == 'print':
   names = sys.argv[2:]
-  models = models1
-  extractLoop()
-  printDataLoop()
-  sys.exit(1)
-
-if sys.argv[1] == 'print2':
-  names = sys.argv[2:]
-  models = models2
   extractLoop()
   printDataLoop()
   sys.exit(1)
