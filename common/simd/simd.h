@@ -35,7 +35,7 @@
 
 #if defined (__AVX__)
 #if defined(__AVX512F__)
-#define AVX_ZERO_UPPER()
+#define AVX_ZERO_UPPER() // FIXME: shouldn't this be enabled if AVX512VL not supported?
 #else
 #define AVX_ZERO_UPPER() _mm256_zeroupper()
 #endif

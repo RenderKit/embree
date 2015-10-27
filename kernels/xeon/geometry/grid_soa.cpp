@@ -23,38 +23,38 @@ namespace embree
     GridSOA::GridSOA(const SubdivPatch1Base& patch, 
                      const size_t x0, const size_t x1, const size_t y0, const size_t y1, const size_t swidth, const size_t sheight,
                      const SubdivMesh* const geom, const size_t bvhBytes, BBox3fa* bounds_o)
-      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(0), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
+      : root(BVH4::emptyNode), width(x1-x0+1), height(y1-y0+1), dim_offset(width*height), geomID(patch.geom), primID(patch.prim), bvhBytes(bvhBytes)
     {      
-      dim_offset = calculate_grid_size(width,height);
-
-      dynamic_large_stack_array(float,local_grid_u,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_v,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_x,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_y,dim_offset+VSIZEX,64*64);
-      dynamic_large_stack_array(float,local_grid_z,dim_offset+VSIZEX,64*64);
+      /* the generate loops need padded arrays, thus first store into these temporary arrays */
+      size_t temp_size = width*height+VSIZEX;
+      dynamic_large_stack_array(float,local_grid_u,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_v,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_x,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_y,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_z,temp_size,64*64*sizeof(float));
+      dynamic_large_stack_array(float,local_grid_uv,temp_size,64*64*sizeof(float));
 
       /* compute vertex grid (+displacement) */
       evalGrid(patch,x0,x1,y0,y1,swidth,sheight,
                local_grid_x,local_grid_y,local_grid_z,local_grid_u,local_grid_v,geom);
-
-      /* copy temporary data to tessellation cache */
-      float* const grid_x  = (float*)(gridData() + 0*dim_offset);
-      float* const grid_y  = (float*)(gridData() + 1*dim_offset);
-      float* const grid_z  = (float*)(gridData() + 2*dim_offset);
-      int  * const grid_uv = (int*  )(gridData() + 3*dim_offset);
-      
-      /* copy points */
-      memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
-      memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
-      memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
       
       /* encode UVs */
       for (size_t i=0; i<dim_offset; i+=VSIZEX) {
         const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
         const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*0xFFFF, vfloatx(0.0f), vfloatx(0xFFFF));
-        vintx::storeu(&grid_uv[i], (iv << 16) | iu);
+        vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
       }
 
+      /* copy temporary data to compact grid */
+      float* const grid_x  = (float*)(gridData() + 0*dim_offset);
+      float* const grid_y  = (float*)(gridData() + 1*dim_offset);
+      float* const grid_z  = (float*)(gridData() + 2*dim_offset);
+      int  * const grid_uv = (int*  )(gridData() + 3*dim_offset);
+      memcpy(grid_x, local_grid_x, dim_offset*sizeof(float));
+      memcpy(grid_y, local_grid_y, dim_offset*sizeof(float));
+      memcpy(grid_z, local_grid_z, dim_offset*sizeof(float));
+      memcpy(grid_uv,local_grid_uv,dim_offset*sizeof(int));
+      
       /* create BVH */
       root = buildBVH(bvhData(),gridData(),bvhBytes,bounds_o);
     }

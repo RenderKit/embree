@@ -57,14 +57,12 @@ dash = '/'
 
 ########################## configuration ##########################
 
-#compilers_win = ['V120']
+#compilers_win = ['V140']
 #compilers_win = ['ICC']
-#compilers_win  = ['V120', 'ICC']
 compilers_win  = ['ICC', 'V110', 'V120']
-#compilers_win  = ['V110', 'V120']
-#compilers_unix = ['ICC']
-#compilers_unix = ['GCC', 'CLANG']
-compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_win  = ['ICC', 'V110', 'V120', 'V140']
+compilers_unix = ['ICC']
+#compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -83,19 +81,52 @@ builds = []
 
 #ISAs_win  = ['AVX2']
 ISAs_win  = ['SSE2', 'AVX', 'AVX2']
-ISAs_unix = ['AVX2']
+#ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
 supported_configurations = [
-  'V110_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX',
-  'V110_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',  
-  'V120_Win32_RelWithDebInfo_SSE2', 'V120_Win32_RelWithDebInfo_SSE4.2', 'V120_Win32_RelWithDebInfo_AVX', 'V120_Win32_RelWithDebInfo_AVX2', 
-  'V120_x64_RelWithDebInfo_SSE2',   'V120_x64_RelWithDebInfo_SSE4.2',   'V120_x64_RelWithDebInfo_AVX',   'V120_x64_RelWithDebInfo_AVX2', 
-  'ICC_Win32_RelWithDebInfo_SSE2',  'ICC_Win32_RelWithDebInfo_SSE4.2',  'ICC_Win32_RelWithDebInfo_AVX',  'ICC_Win32_RelWithDebInfo_AVX2', 
-  'ICC_x64_RelWithDebInfo_SSE2',    'ICC_x64_RelWithDebInfo_SSE4.2',    'ICC_x64_RelWithDebInfo_AVX',    'ICC_x64_RelWithDebInfo_AVX2', 'ICC_x64_RelWithDebInfo_AVX512', 
-  'GCC_x64_RelWithDebInfo_SSE2',    'GCC_x64_RelWithDebInfo_SSE4.2',    'GCC_x64_RelWithDebInfo_AVX',    'GCC_x64_RelWithDebInfo_AVX2', 
-  'CLANG_x64_RelWithDebInfo_SSE2',  'CLANG_x64_RelWithDebInfo_SSE4.2',  'CLANG_x64_RelWithDebInfo_AVX',  'CLANG_x64_RelWithDebInfo_AVX2',  
+  'V110_Win32_RelWithDebInfo_SSE2',
+  'V110_x64_RelWithDebInfo_SSE2',
+  
+  'V120_Win32_RelWithDebInfo_SSE2',
+  'V120_Win32_RelWithDebInfo_SSE4.2',
+  'V120_Win32_RelWithDebInfo_AVX',
+  'V120_Win32_RelWithDebInfo_AVX2', 
+  'V120_x64_RelWithDebInfo_SSE2',
+  'V120_x64_RelWithDebInfo_SSE4.2',
+  'V120_x64_RelWithDebInfo_AVX',  
+  'V120_x64_RelWithDebInfo_AVX2',
+
+  'V140_Win32_RelWithDebInfo_SSE2',
+  'V140_Win32_RelWithDebInfo_SSE4.2',
+  'V140_Win32_RelWithDebInfo_AVX',
+  'V140_Win32_RelWithDebInfo_AVX2', 
+  'V140_x64_RelWithDebInfo_SSE2',
+  'V140_x64_RelWithDebInfo_SSE4.2',
+  'V140_x64_RelWithDebInfo_AVX',  
+  'V140_x64_RelWithDebInfo_AVX2',
+  
+  'ICC_Win32_RelWithDebInfo_SSE2',
+  'ICC_Win32_RelWithDebInfo_SSE4.2',
+  'ICC_Win32_RelWithDebInfo_AVX',
+  'ICC_Win32_RelWithDebInfo_AVX2',
+  
+  'ICC_x64_RelWithDebInfo_SSE2',
+  'ICC_x64_RelWithDebInfo_SSE4.2',
+  'ICC_x64_RelWithDebInfo_AVX',
+  'ICC_x64_RelWithDebInfo_AVX2',
+  'ICC_x64_RelWithDebInfo_AVX512',
+  
+  'GCC_x64_RelWithDebInfo_SSE2',
+  'GCC_x64_RelWithDebInfo_SSE4.2',
+  'GCC_x64_RelWithDebInfo_AVX',
+  'GCC_x64_RelWithDebInfo_AVX2',
+  
+  'CLANG_x64_RelWithDebInfo_SSE2',
+  'CLANG_x64_RelWithDebInfo_SSE4.2',
+  'CLANG_x64_RelWithDebInfo_AVX',
+  'CLANG_x64_RelWithDebInfo_AVX2',  
   ]
 
 models = {}
@@ -133,6 +164,9 @@ def compile(OS,compiler,platform,build,isa,tasking):
     elif (compiler == 'V120'):
       generator = 'Visual Studio 12 2013'
       full_compiler = 'V120'
+    elif (compiler == 'V140'):
+      generator = 'Visual Studio 14 2015'
+      full_compiler = 'V140'
     elif (compiler == 'ICC'):
       generator = 'Visual Studio 12 2013'
       full_compiler = '"Intel C++ Compiler XE 15.0" '
@@ -162,7 +196,6 @@ def compile(OS,compiler,platform,build,isa,tasking):
     command = 'cmake -L '
     command += ' -G "' + generator + '"'
     command += ' -T ' + full_compiler
-    command += ' -A ' + platform
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
     command += ' -D RTCORE_BACKFACE_CULLING=OFF'
@@ -208,13 +241,19 @@ def compile(OS,compiler,platform,build,isa,tasking):
       return 1
       
     # first we need to configure the compiler
-    command = 'mkdir -p build && cd build && rm -f CMakeCache.txt && '
-    command += 'cmake 2>/dev/null > /dev/null'
+    command = 'mkdir -p build && cd build && rm -f CMakeCache.txt'
+    ret = os.system(command)
+    if ret != 0: return ret
+      
+    command  = 'cd build && cmake ' 
     command += ' -D CMAKE_C_COMPILER:STRING=' + c_compiler_bin
-    command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin + ' .. && ' 
-
+    command += ' -D CMAKE_CXX_COMPILER:STRING=' + cpp_compiler_bin
+    command += ' .. &> ../' + logFile 
+    ret = os.system(command)
+    if ret != 0: return ret
+    
     # now we can set all other settings
-    command += 'cmake &>> ../' + logFile
+    command  = 'cd build && cmake '
     command += ' -D CMAKE_BUILD_TYPE=' + build
     command += ' -D XEON_ISA=' + isa
     command += ' -D RTCORE_RAY_MASK=OFF'
@@ -230,9 +269,12 @@ def compile(OS,compiler,platform,build,isa,tasking):
     else:
       sys.stdout.write("invalid tasking system: " + tasking)
       return 1
-    command += ' .. '
-    command += '&& make clean && make -j 8'
-    command += ' &>> ../' + logFile
+    command += ' .. >> ../' + logFile 
+    ret = os.system(command)
+    if ret != 0: return ret
+
+    command  = 'cd build && make clean && make -j 8 '
+    command += ' 2>> ../' + logFile + ' >> ../' + logFile
     return os.system(command)
 
 def compileLoop(OS):

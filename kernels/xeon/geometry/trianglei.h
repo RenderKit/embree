@@ -71,6 +71,9 @@ namespace embree
     /* Returns the primitive IDs */
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
+
+    /* gather the triangles */
+    __forceinline void gather(Vec3<vfloat<M>>& p0, Vec3<vfloat<M>>& p1, Vec3<vfloat<M>>& p2) const;
     
     /* Calculate the bounds of the triangles */
     __forceinline const BBox3fa bounds() const 
@@ -183,6 +186,21 @@ namespace embree
     vint<M> geomIDs;    // geometry ID of mesh
     vint<M> primIDs;    // primitive ID of primitive inside mesh
   };
+
+  template<>
+    __forceinline void TriangleMi<4>::gather(Vec3vf4& p0, Vec3vf4& p1, Vec3vf4& p2) const
+  {
+    const int* base0 = (const int*) v0[0];
+    const int* base1 = (const int*) v0[1];
+    const int* base2 = (const int*) v0[2];
+    const int* base3 = (const int*) v0[3];
+    const vfloat4 a0 = vfloat4::loadu(base0      ), a1 = vfloat4::loadu(base1      ), a2 = vfloat4::loadu(base2      ), a3 = vfloat4::loadu(base3      );
+    const vfloat4 b0 = vfloat4::loadu(base0+v1[0]), b1 = vfloat4::loadu(base1+v1[1]), b2 = vfloat4::loadu(base2+v1[2]), b3 = vfloat4::loadu(base3+v1[3]);
+    const vfloat4 c0 = vfloat4::loadu(base0+v2[0]), c1 = vfloat4::loadu(base1+v2[1]), c2 = vfloat4::loadu(base2+v2[2]), c3 = vfloat4::loadu(base3+v2[3]);
+    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+  }
 
   template<int M>
   typename TriangleMi<M>::Type TriangleMi<M>::type;

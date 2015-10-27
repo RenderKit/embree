@@ -19,21 +19,38 @@
 
 namespace embree
 {
-  extern RTCBoundsFunc InstanceBoundsFunc;
-  extern AccelSet::Intersector1 InstanceIntersector1;
-  extern AccelSet::Intersector4 InstanceIntersector4;
-  extern AccelSet::Intersector8 InstanceIntersector8;
-  extern AccelSet::Intersector16 InstanceIntersector16;
+  DECLARE_SYMBOL2(RTCBoundsFunc,InstanceBoundsFunc);
+  DECLARE_SYMBOL2(AccelSet::Intersector1,InstanceIntersector1);
+  DECLARE_SYMBOL2(AccelSet::Intersector4,InstanceIntersector4);
+  DECLARE_SYMBOL2(AccelSet::Intersector8,InstanceIntersector8);
+  DECLARE_SYMBOL2(AccelSet::Intersector16,InstanceIntersector16);
+
+  InstanceFactory::InstanceFactory(int features)
+  {
+#if defined(__MIC__)
+    SELECT_SYMBOL_KNC(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_KNC(features,InstanceIntersector1);
+    SELECT_SYMBOL_KNC(features,InstanceIntersector16);
+#else
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceBoundsFunc);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector1);
+#if defined (RTCORE_RAY_PACKETS)
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,InstanceIntersector4);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,InstanceIntersector8);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,InstanceIntersector16);
+#endif
+#endif
+  }
 
   Instance::Instance (Scene* parent, Accel* object) 
     : AccelSet(parent,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
-    boundsFunc = InstanceBoundsFunc;
-    intersectors.intersector1 = InstanceIntersector1;
-    intersectors.intersector4 = InstanceIntersector4; 
-    intersectors.intersector8 = InstanceIntersector8; 
-    intersectors.intersector16 = InstanceIntersector16;
+    boundsFunc = parent->device->instance_factory->InstanceBoundsFunc;
+    intersectors.intersector1 = parent->device->instance_factory->InstanceIntersector1;
+    intersectors.intersector4 = parent->device->instance_factory->InstanceIntersector4; 
+    intersectors.intersector8 = parent->device->instance_factory->InstanceIntersector8; 
+    intersectors.intersector16 = parent->device->instance_factory->InstanceIntersector16;
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm)
@@ -44,4 +61,15 @@ namespace embree
     local2world = xfm;
     world2local = rcp(xfm);
   }
+
+  void Instance::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  }
+
+  
 }

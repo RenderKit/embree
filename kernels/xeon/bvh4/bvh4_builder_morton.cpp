@@ -40,7 +40,7 @@ namespace embree
     {
       __forceinline BVH4::Node* operator() (MortonBuildRecord<BVH4::NodeRef>& current, MortonBuildRecord<BVH4::NodeRef>* children, size_t numChildren, FastAllocator::ThreadLocal2* alloc)
       {
-        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
+        BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node),BVH4::byteNodeAlignment); node->clear();
         *current.parent = BVH4::encodeNode(node);
         for (size_t i=0; i<numChildren; i++)
           children[i].parent = &node->child(i);
@@ -360,7 +360,7 @@ namespace embree
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device) {}
+        : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), numPrimitives(0) {}
 
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
@@ -370,8 +370,12 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* calculate size of scene */
-        size_t numPrimitives = mesh->size();
+        /* We have to clear the allocator to guarantee that we can
+         * temporarily use the first allocation block for sorting the
+         * morton codes. */
+        const size_t numNewPrimitives = mesh->size();
+        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
+        numPrimitives = numNewPrimitives;
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -380,37 +384,12 @@ namespace embree
         }
       
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-        
+
+        /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-        bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data, not using fast allocation scheme !
-
-#if 0
-            /* compute scene bounds */
-            const BBox3fa centBounds = parallel_reduce 
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-           
-            //timer("compute_bounds");
-
-            /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            parallel_for
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), [&](const range<size_t>& r) 
-                {
-                  MortonCodeGenerator generator(mapping,&dest[r.begin()]);
-                  for (size_t i=r.begin(); i<r.end(); i++) {
-                    generator(mesh->bounds(i),i);
-                  }
-                });
-            size_t numPrimitivesGen = numPrimitives;
-
-#else 
+        bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
+        bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
             ParallelPrefixSumState<size_t> pstate;
       
@@ -429,7 +408,6 @@ namespace embree
             size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
             {
               size_t N = 0;
-              //MortonCodeGenerator generator(mapping,&dest[r.begin()]);
               MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
@@ -448,7 +426,6 @@ namespace embree
               numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
               {
                 size_t N = 0;
-                //MortonCodeGenerator generator(mapping,&dest[base]);
                 MortonCodeGenerator generator(mapping,&morton.data()[base]);
 
                 for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -462,7 +439,6 @@ namespace embree
               }, std::plus<size_t>());
             }
             
-#endif
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
@@ -501,6 +477,7 @@ namespace embree
       Mesh* mesh;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      size_t numPrimitives;
       mvector<MortonID32Bit> morton;
     };
     
@@ -518,7 +495,7 @@ namespace embree
     public:
       
       BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device) {}
+        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device), numPrimitives(0) {}
       
       /*! Destruction */
       ~BVH4SceneBuilderMorton () {
@@ -528,8 +505,12 @@ namespace embree
       /* build function */
       void build(size_t threadIndex, size_t threadCount) 
       {
-        /* calculate size of scene */
-        size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
+         /* We have to clear the allocator to guarantee that we can
+         * temporarily use the first allocation block for sorting the
+         * morton codes. */
+        const size_t numNewPrimitives = scene->getNumPrimitives<Mesh,1>();
+        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
+        numPrimitives = numNewPrimitives;
         
         /* calculate groupID, primID encoding */ // FIXME: does not work for all scenes, use 64 bit IDs !!!
         Scene::Iterator<Mesh,1> iter2(scene);
@@ -539,11 +520,8 @@ namespace embree
         encodeMask = ((size_t)1 << encodeShift)-1;
         size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
         if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          THROW_RUNTIME_ERROR("encoding error in morton builder");
-        
-        /* preallocate arrays */
-        morton.resize(numPrimitives);
-
+          throw_RTCError(RTC_UNKNOWN_ERROR,"encoding error in morton builder");
+       
         /* skip build for empty scene */
         if (numPrimitives == 0) {
           bvh->set(BVH4::emptyNode,empty,0);
@@ -558,38 +536,12 @@ namespace embree
 #endif
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
 
-            //bvh->alloc.init(numPrimitives*sizeof(BVH4::Node),numPrimitives*sizeof(BVH4::Node));
+            /* preallocate arrays */
+            morton.resize(numPrimitives);
             size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bvh->alloc.init(bytesAllocated,2*bytesAllocated); // FIXME: not working if scene size changes, initial block has to get reallocated as used as temporary data, not using fast allocation scheme!
+            bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
+            bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
-#if 0
-            
-            /* compute scene bounds */
-            Scene::Iterator<Mesh,1> iter1(scene);
-            const BBox3fa centBounds = parallel_for_for_reduce 
-              ( iter1, size_t(BLOCK_SIZE), BBox3fa(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-
-            /* compute morton codes */
-            Scene::Iterator<Mesh,1> iter(scene);
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            parallel_for_for
-              ( iter, size_t(BLOCK_SIZE), [&](Mesh* mesh, const range<size_t>& r, size_t k) 
-                {
-                  MortonCodeGenerator generator(mapping,&dest[k]);
-                  for (size_t i=r.begin(); i<r.end(); i++) {
-                    generator(mesh->bounds(i),i | (mesh->id << encodeShift));
-                  }
-                });
-
-            size_t numPrimitivesGen = numPrimitives;
-
-#else 
             /* compute scene bounds */
             Scene::Iterator<Mesh,1> iter1(scene);
             const BBox3fa centBounds = parallel_for_for_reduce 
@@ -610,7 +562,6 @@ namespace embree
             {
               size_t N = 0;
               PrimInfo pinfo(empty);
-              //MortonCodeGenerator generator(mapping,&dest[k]);
               MortonCodeGenerator generator(mapping,&morton.data()[k]);
 
               for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -631,7 +582,6 @@ namespace embree
               {
                 size_t N = 0;
                 PrimInfo pinfo(empty);
-                //MortonCodeGenerator generator(mapping,&dest[base]);
                 MortonCodeGenerator generator(mapping,&morton.data()[base]);
 
                 for (ssize_t j=r.begin(); j<r.end(); j++)
@@ -645,10 +595,6 @@ namespace embree
               }, std::plus<size_t>());
             }
             
-            //timer("compute_morton_codes");
-            
-#endif
-
             /* create BVH */
             AllocBVH4Node allocNode;
             SetBVH4Bounds setBounds(bvh);
@@ -658,7 +604,6 @@ namespace embree
               [&] () { return bvh->alloc.threadLocal2(); },
                 BBox3fa(empty),
               allocNode,setBounds,createLeaf,calculateBounds,progress,
-              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
               morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
 
             bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
@@ -692,6 +637,7 @@ namespace embree
       Scene* scene;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      size_t numPrimitives;
       size_t encodeShift;
       size_t encodeMask;
       mvector<MortonID32Bit> morton;

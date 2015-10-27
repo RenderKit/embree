@@ -36,14 +36,13 @@ namespace embree
         /*! calculates the mapping */
         __forceinline BinMapping(const PrimInfo& pinfo) 
         {
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) // FIXME: should only be active if the AVX512 binner is used
           num = BINS;
           assert(num == 16);
 #else
           num = min(BINS,size_t(4.0f + 0.05f*pinfo.size()));
 #endif
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
-          //scale = select(diag > vfloat4(1E-19f),rcp(diag) * vfloat4(0.99f*num),vfloat4(0.0f));
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
         }
@@ -66,11 +65,8 @@ namespace embree
         }
 
 #if defined(__AVX512F__)
-        __forceinline vint16 bin16(const Vec3fa& p) const 
-        {
-          const vint4 i = floori((vfloat4(p)-ofs)*scale);
-          vint16 i16(i);
-          return i16;
+        __forceinline vint16 bin16(const Vec3fa& p) const {
+          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
         }
 #endif
         
@@ -368,15 +364,15 @@ namespace embree
 
     /* 16 bins in-register binner */
     template<typename PrimRef>
-      struct __aligned(64) Bin16Info
+      struct __aligned(64) BinInfo<16,PrimRef>
     {
       typedef BinSplit<16> Split;
       
-      __forceinline Bin16Info() {
+      __forceinline BinInfo() {
       }
       
-      __forceinline Bin16Info(EmptyTy) {
-	clear(); // FIXME: check in builder code whether we need this in serial code
+      __forceinline BinInfo(EmptyTy) {
+	clear();
       }
       
       /*! clears the bin info */
@@ -537,26 +533,14 @@ namespace embree
         count[2] = count2;
       }
 
-
-
-      /*! bins an array of primitives */
-      __forceinline void bin (const PrimRef* prims, size_t N, const BinMapping<16>& mapping, const AffineSpace3fa& space)
-      {
-        FATAL("not yet implemented");
-      }
-      
       __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<16>& mapping) {
 	bin(prims+begin,end-begin,mapping);
       }
 
-      __forceinline void bin(const PrimRef* prims, size_t begin, size_t end, const BinMapping<16>& mapping, const AffineSpace3fa& space) {
-	bin(prims+begin,end-begin,mapping,space);
-      }
-      
       /*! merges in other binning information */
-      __forceinline void merge (const Bin16Info& other, size_t numBins)
+      __forceinline void merge (const BinInfo& other, size_t numBins)
       {
-        for (size_t i=0;i<3;i++)
+        for (size_t i=0; i<3; i++)
         {
           lower[i]  = min(lower[i],other.lower[i]);
           upper[i]  = max(upper[i],other.upper[i]);
@@ -565,7 +549,7 @@ namespace embree
       }
 
       /*! reducesr binning information */
-      static __forceinline const Bin16Info reduce (const Bin16Info& a, const Bin16Info& b)
+      static __forceinline const BinInfo reduce (const BinInfo& a, const BinInfo& b)
       {
         BinInfo c;
 	for (size_t i=0; i<3; i++) 
@@ -640,11 +624,6 @@ namespace embree
       Vec3vf16 upper[3];
       vint16   count[3];
     };
-
 #endif
-
-
-
-
   }
 }

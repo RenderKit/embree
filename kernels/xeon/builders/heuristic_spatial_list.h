@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     /*! Performs standard object binning */
-    template<typename SplitPrimitive, typename PrimRef, size_t BINS = 16>
+    template<typename SplitPrimitive, typename PrimRef, size_t BINS = 32>
       struct HeuristicSpatialBlockListBinningSAH
       {
         typedef SpatialBinSplit<BINS> Split;
@@ -131,19 +131,9 @@ namespace embree
                 rblock->insert(prim);
                 continue;
               }
-              //assert(prim.geomID() >> 24);
-
-              /* split and sort to left and right */
-              //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-              //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
-              //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-              //const Vec3fa v0 = mesh->vertex(tri.v[0]);
-              //const Vec3fa v1 = mesh->vertex(tri.v[1]);
-              //const Vec3fa v2 = mesh->vertex(tri.v[2]);
               
               PrimRef left,right;
               float fpos = split.mapping.pos(split.pos,split.dim);
-              //splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
               splitPrimitive(prim,split.dim,fpos,left,right);
               int lsplits = splits/2, rsplits = lsplits+splits%2;
               
@@ -231,19 +221,9 @@ namespace embree
                   rblock->insert(prim);
                   continue;
                 }
-                //assert(prim.geomID() >> 24);
-                
-                /* split and sort to left and right */
-                //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID());
-                //TriangleMesh* mesh = (TriangleMesh*) scene->get(prim.geomID() & 0x00FFFFFF); // FIXME: hack !!
-                //TriangleMesh::Triangle tri = mesh->triangle(prim.primID());
-                //const Vec3fa v0 = mesh->vertex(tri.v[0]);
-                //const Vec3fa v1 = mesh->vertex(tri.v[1]);
-                //const Vec3fa v2 = mesh->vertex(tri.v[2]);
                 
                 PrimRef left,right;
                 float fpos = split.mapping.pos(split.pos,split.dim);
-                //splitTriangle(prim,split.dim,fpos,v0,v1,v2,left,right);
                 splitPrimitive(prim,split.dim,fpos,left,right);
                 int lsplits = splits/2, rsplits = lsplits+splits%2;
                 
@@ -278,7 +258,7 @@ namespace embree
           rinfo_o.merge(info.right);
         }
         
-        void deterministic_order(const Set& set) // FIXME: implement me
+        void deterministic_order(const Set& set) // FIXME: implement deterministic_order
         {
           /* required as parallel partition destroys original primitive order */
           //std::sort(&prims[set.begin()],&prims[set.end()]);

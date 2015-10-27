@@ -28,8 +28,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-        return ((GregoryTrianglePatch3fa*)patch.patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
@@ -41,8 +39,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-	      return ((GregoryTrianglePatch3fa*)patch.patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3fa( zero );
     }
 
@@ -56,8 +52,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-        return ((GregoryTrianglePatch3fa*)patch.patch_v)->eval(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
@@ -71,8 +65,6 @@ namespace embree
         return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
 	      return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
-      else if (likely(patch.type == SubdivPatch1Base::GREGORY_TRIANGLE_PATCH))
-         return ((GregoryTrianglePatch3fa*)patch.patch_v)->normal(uu * (1.0f - vv), vv);
       return Vec3<simdf>( zero );
     }
 
@@ -97,9 +89,9 @@ namespace embree
       {
         const bool displ = geom->displFunc;
         const size_t N = displ ? M : 0;
-        dynamic_large_stack_array(float,grid_Ng_x,N,64*64);
-        dynamic_large_stack_array(float,grid_Ng_y,N,64*64);
-        dynamic_large_stack_array(float,grid_Ng_z,N,64*64);
+        dynamic_large_stack_array(float,grid_Ng_x,N,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_y,N,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_z,N,64*64*sizeof(float));
         
         if (geom->patch_eval_trees.size())
         {
@@ -209,18 +201,18 @@ namespace embree
       const size_t dheight = y1-y0+1;
       const size_t M = dwidth*dheight+VSIZEX;
       const size_t grid_size_simd_blocks = (M-1)/VSIZEX;
-      dynamic_large_stack_array(float,grid_u,M,64*64);
-      dynamic_large_stack_array(float,grid_v,M,64*64);
+      dynamic_large_stack_array(float,grid_u,M,64*64*sizeof(float));
+      dynamic_large_stack_array(float,grid_v,M,64*64*sizeof(float));
 
       if (unlikely(patch.type == SubdivPatch1Base::EVAL_PATCH))
       {
         const bool displ = geom->displFunc;
-        dynamic_large_stack_array(float,grid_x,M,64*64);
-        dynamic_large_stack_array(float,grid_y,M,64*64);
-        dynamic_large_stack_array(float,grid_z,M,64*64);
-        dynamic_large_stack_array(float,grid_Ng_x,displ ? M : 0,64*64);
-        dynamic_large_stack_array(float,grid_Ng_y,displ ? M : 0,64*64);
-        dynamic_large_stack_array(float,grid_Ng_z,displ ? M : 0,64*64);
+        dynamic_large_stack_array(float,grid_x,M,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_y,M,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_z,M,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_x,displ ? M : 0,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_y,displ ? M : 0,64*64*sizeof(float));
+        dynamic_large_stack_array(float,grid_Ng_z,displ ? M : 0,64*64*sizeof(float));
 
         if (geom->patch_eval_trees.size())
         {

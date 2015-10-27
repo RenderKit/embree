@@ -20,13 +20,6 @@
 #include "../kernels/algorithms/parallel_for.h"
 #include <vector>
 
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
-
 #if defined(RTCORE_RAY_PACKETS) && !defined(__MIC__)
 #  define HAS_INTERSECT4 1
 #else
@@ -39,7 +32,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__))
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0
@@ -47,6 +40,12 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
 
   /* configuration */
@@ -1010,7 +1009,7 @@ namespace embree
       for (size_t j=0; j<8; j++) {
         setRay(ray8,j,makeRay(zero,numbers[i+j]));
       }
-      __aligned(16) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
+      __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
       rtcIntersect8(valid8,scene,ray8);
     }
     double t1 = getSeconds();
@@ -1059,7 +1058,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {    
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {    
       rtcore_coherent_intersect16(scene);
     }
 #endif
@@ -1085,12 +1084,12 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {
       rtcore_incoherent_intersect16(scene,numbers,N);
     }
 #endif
 
-    delete numbers;
+    delete[] numbers;
 
     rtcDeleteScene(scene);
     rtcDeleteDevice(device);
@@ -1107,7 +1106,7 @@ namespace embree
     benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC)) {
+    if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
     }
 #endif

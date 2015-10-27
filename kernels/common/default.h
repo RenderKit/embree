@@ -41,9 +41,9 @@
 #include "../../common/math/affinespace.h"
 #include "../../common/lexers/tokenstream.h"
 
-#if defined(TASKING_LOCKSTEP)
+#if defined(__MIC__)
 #include "../../common/tasking/taskscheduler_mic.h"
-#else // if defined(TASKING_TBB_INTERNAL) // FIXME
+#else
 #include "../../common/tasking/taskscheduler_tbb.h"
 #endif
 

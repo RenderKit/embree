@@ -102,7 +102,7 @@ namespace embree
         for (size_t x=0; x<width; x++)
           values[y*width+x] = luminance(distribution->get(x,y));
       dist = new Distribution2D(values,width,height);
-      delete values;
+      delete[] values;
     }
         
     void instantiate(Ref<SceneGraph::GroupNode>& group) 

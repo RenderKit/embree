@@ -191,8 +191,9 @@ namespace embree
       
       BBox3fa createLargeLeaf(MortonBuildRecord<NodeRef>& current, Allocator alloc)
       {
+        /* this should never occur but is a fatal error */
         if (current.depth > maxDepth) 
-          THROW_RUNTIME_ERROR("depth limit reached");
+          throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
         
         /* create leaf for few primitives */
         if (current.size() <= maxLeafSize) {

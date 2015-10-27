@@ -244,12 +244,7 @@ namespace embree
       while (true) 
       {
         /* allocate using current block */
-	// FIXME: MIC
-#if defined(__MIC__)
-        size_t threadIndex = 0;
-#else
         size_t threadIndex = TaskSchedulerTBB::threadIndex();
-#endif
         size_t slot = threadIndex & slotMask;
 	Block* myUsedBlocks = threadUsedBlocks[slot];
         if (myUsedBlocks) {
@@ -259,7 +254,7 @@ namespace embree
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
-          THROW_RUNTIME_ERROR("allocation is too large");
+          throw_RTCError(RTC_UNKNOWN_ERROR,"allocation is too large");
 
         /* if this fails allocate new block */
         {

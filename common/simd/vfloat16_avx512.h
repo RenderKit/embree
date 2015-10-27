@@ -218,7 +218,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vfloat16 cast      (const __m512i& a) { return _mm512_castsi512_ps(a); }
+  __forceinline const vfloat16 asFloat   ( const __m512i&  a ) { return _mm512_castsi512_ps(a); }
   __forceinline const vfloat16 operator +( const vfloat16& a ) { return a; }
   __forceinline const vfloat16 operator -( const vfloat16& a ) { return _mm512_mul_ps(a,vfloat16(-1)); }
   __forceinline const vfloat16 abs       ( const vfloat16& a ) {
@@ -520,20 +520,20 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_SWIZZLE_ENUM perm32 ) {
+  __forceinline vfloat16 shuffle(const vfloat16& x, _MM_SWIZZLE_ENUM perm32) {
 #if 0 
     return _mm512_permute_ps(x,perm32); // WARNING: permute has a different intermediate encoding!!!
 #else
     return _mm512_swizzle_ps(x,perm32); 
 #endif
   }
-  __forceinline vfloat16 shuffle128(const vfloat16& x,_MM_PERM_ENUM    perm128) { return _mm512_permute4f128_ps(x,perm128); }
+  __forceinline vfloat16 shuffle4(const vfloat16& x, _MM_PERM_ENUM perm128) { return _mm512_permute4f128_ps(x, perm128); }
   
   template<int D, int C, int B, int A> __forceinline vfloat16 shuffle   (const vfloat16& v) {
 #if defined(__AVX512F__)
     return _mm512_permute_ps(v,_MM_SHUF_PERM(D,C,B,A)); 
 #else
-    return cast(_mm512_shuffle_epi32(cast(v),_MM_SHUF_PERM(D,C,B,A)));
+    return asFloat(_mm512_shuffle_epi32(asInt(v),_MM_SHUF_PERM(D,C,B,A)));
 #endif
   }
   template<int A>                      __forceinline vfloat16 shuffle   (const vfloat16& x) { return shuffle<A,A,A,A>(v); }
@@ -542,10 +542,10 @@ namespace embree
   template<>                           __forceinline vfloat16 shuffle<2>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_CCCC); }
   template<>                           __forceinline vfloat16 shuffle<3>(const vfloat16& x) { return shuffle(x,_MM_SWIZ_REG_DDDD); }
 
-  template<int D, int C, int B, int A> __forceinline vfloat16 shuffle128(const vfloat16& v) { return shuffle128(v,_MM_SHUF_PERM(D,C,B,A)); }
-  template<int A>                      __forceinline vfloat16 shuffle128(const vfloat16& x) { return shuffle128<A,A,A,A>(x); }
+  template<int D, int C, int B, int A> __forceinline vfloat16 shuffle4(const vfloat16& v) { return shuffle4(v,_MM_SHUF_PERM(D,C,B,A)); }
+  template<int A>                      __forceinline vfloat16 shuffle4(const vfloat16& x) { return shuffle4<A,A,A,A>(x); }
 
-  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle128(x,perm128),perm32); }
+  __forceinline vfloat16 shuffle(const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32) { return shuffle(shuffle4(x,perm128),perm32); }
   
   __forceinline vfloat16 shuffle(const vboolf16& mask, vfloat16& v, const vfloat16& x,_MM_PERM_ENUM perm128, _MM_SWIZZLE_ENUM perm32)  {
     return _mm512_mask_swizzle_ps(_mm512_mask_permute4f128_ps(v,mask,x,perm128),mask,x,perm32);  
@@ -603,8 +603,9 @@ namespace embree
   {
     vfloat16 z = vfloat16::zero();
     return mask_align_shift_right<15>(0xfffe,z,a,a);
-  }  
+  }
 
+  __forceinline float toScalar(const vfloat16& a) { return _mm512_cvtss_f32(a); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -630,18 +631,18 @@ namespace embree
 
   __forceinline vfloat16 vreduce_min2(vfloat16 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vfloat16 vreduce_min4(vfloat16 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_min8(vfloat16 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_min (vfloat16 x) { x = vreduce_min8(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vfloat16 vreduce_max2(vfloat16 x) {                      return max(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vfloat16 vreduce_max4(vfloat16 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,shuffle128(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,shuffle128(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
   __forceinline vfloat16 vreduce_add2(vfloat16 x) {                      return x + shuffle(x,_MM_SWIZ_REG_BADC); }
   __forceinline vfloat16 vreduce_add4(vfloat16 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle128(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + shuffle128(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   __forceinline size_t select_min(const vfloat16& v) { return __bsf(movemask(v == vreduce_min(v))); }
   __forceinline size_t select_max(const vfloat16& v) { return __bsf(movemask(v == vreduce_max(v))); }
@@ -787,7 +788,7 @@ namespace embree
     v = mask_and(m_00f0,v,v_mask, broadcast4to16i((const int*)ptr1));
     v = mask_and(m_0f00,v,v_mask, broadcast4to16i((const int*)ptr2));
     v = mask_and(m_f000,v,v_mask, broadcast4to16i((const int*)ptr3));
-    return cast(v);
+    return asFloat(v);
   }
 
   __forceinline vfloat16 gather_2f_zlc(const vint16 &v_mask,
@@ -797,7 +798,7 @@ namespace embree
   {
     vint16 v = v_mask &  broadcast4to16i((const int*)ptr0);
     v = mask_and(mask,v,v_mask, broadcast4to16i((const int*)ptr1));
-    return cast(v);
+    return asFloat(v);
   }
 
 
@@ -833,7 +834,7 @@ namespace embree
                                              const void *__restrict__ const ptr3)
   {
     vfloat16 v = gather16f_4f_align(ptr0,ptr1,ptr2,ptr3);
-    return cast(cast(v) & v_mask);
+    return asFloat(asInt(v) & v_mask);
   }
 
   __forceinline void compactustore16f_low(const vboolf16& mask, float * addr, const vfloat16 &reg) {
@@ -972,10 +973,10 @@ namespace embree
                                               const void *__restrict__ const ptr2,
                                               const void *__restrict__ const ptr3)
   {
-    vfloat16 v = shuffle128<0>(vfloat16::loadu((float*)ptr3));
-    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr2)));
-    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr1)));
-    v = align_shift_right<12>(v,shuffle128<0>(vfloat16::loadu((float*)ptr0)));
+    vfloat16 v = shuffle4<0>(vfloat16::loadu((float*)ptr3));
+    v = align_shift_right<12>(v,shuffle4<0>(vfloat16::loadu((float*)ptr2)));
+    v = align_shift_right<12>(v,shuffle4<0>(vfloat16::loadu((float*)ptr1)));
+    v = align_shift_right<12>(v,shuffle4<0>(vfloat16::loadu((float*)ptr0)));
     return v;
   }
 

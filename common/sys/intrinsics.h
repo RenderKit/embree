@@ -69,7 +69,20 @@
 #endif
 
 #if defined(__MIC__)
-#include <immintrin.h>
+#  include <immintrin.h>
+#endif
+
+#if defined(__WIN32__)
+#  define NOMINMAX
+#  include <windows.h>
+#endif
+
+/* normally defined in pmmintrin.h, but we always need this */
+#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
+#define _MM_DENORMALS_ZERO_ON   (0x0040)
+#define _MM_DENORMALS_ZERO_OFF  (0x0000)
+#define _MM_DENORMALS_ZERO_MASK (0x0040)
+#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
 #endif
 
 namespace embree
@@ -81,8 +94,11 @@ namespace embree
   
 #if defined(__WIN32__)
   
-  __forceinline size_t read_tsc()  { // FIXME: use QueryPerformanceCounter
-    return 0;
+  __forceinline size_t read_tsc()  
+  {
+    LARGE_INTEGER li;
+    QueryPerformanceCounter(&li);
+    return li.QuadPart;
   }
   
 #if defined(__SSE4_2__)
@@ -834,14 +850,13 @@ namespace embree
 #endif
   
 /* compiler memory barriers */
-#ifdef __GNUC__
-#  define __memory_barrier() asm volatile("" ::: "memory")
-#elif defined(__MIC__)
+#if defined(__MIC__)
 #define __memory_barrier()
 #elif defined(__INTEL_COMPILER)
 //#define __memory_barrier() __memory_barrier()
+#elif defined(__GNUC__) || defined(__clang__)
+#  define __memory_barrier() asm volatile("" ::: "memory")
 #elif  defined(_MSC_VER)
 #  define __memory_barrier() _ReadWriteBarrier()
 #endif
-  
 }

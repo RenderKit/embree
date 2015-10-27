@@ -49,7 +49,7 @@ namespace embree
     __forceinline bool hasLeafSize() const
     {
 #if defined(__MIC__)
-      return u_end-u_start <= 1 && v_end-v_start <= 1; // FIXME: what does this ???
+      return u_end-u_start <= 1 && v_end-v_start <= 1;
 #else
       const unsigned int u_size = u_end-u_start+1;
       const unsigned int v_size = v_end-v_start+1;

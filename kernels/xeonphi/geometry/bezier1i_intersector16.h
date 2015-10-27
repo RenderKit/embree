@@ -49,10 +49,10 @@ namespace embree
 				      const vfloat16 &c3)
     {
 #if 1
-      const vfloat16 p0 = shuffle128<0>(p0123);
-      const vfloat16 p1 = shuffle128<1>(p0123);
-      const vfloat16 p2 = shuffle128<2>(p0123);
-      const vfloat16 p3 = shuffle128<3>(p0123);
+      const vfloat16 p0 = shuffle4<0>(p0123);
+      const vfloat16 p1 = shuffle4<1>(p0123);
+      const vfloat16 p2 = shuffle4<2>(p0123);
+      const vfloat16 p3 = shuffle4<3>(p0123);
 
       const vfloat16 x = c0 * swAAAA(p0) + c1 * swAAAA(p1) + c2 * swAAAA(p2) + c3 * swAAAA(p3);
       const vfloat16 y = c0 * swBBBB(p0) + c1 * swBBBB(p1) + c2 * swBBBB(p2) + c3 * swBBBB(p3);

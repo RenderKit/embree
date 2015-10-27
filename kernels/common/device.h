@@ -21,6 +21,10 @@
 
 namespace embree
 {
+  struct BVH4Factory;
+  struct BVH8Factory;
+  struct InstanceFactory;
+
   class Device : public State, public MemoryMonitorInterface
   {
     ALIGNED_CLASS;
@@ -31,7 +35,7 @@ namespace embree
     Device (const char* cfg, bool singledevice);
 
     /*! Device destruction */
-    ~Device ();
+    virtual ~Device ();
 
     /*! prints info about the device */
     void print();
@@ -47,7 +51,7 @@ namespace embree
 
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
-
+    
   private:
     
     /*! initializes the tasking system */
@@ -60,11 +64,20 @@ namespace embree
     void exitTaskingSystem();
 
   public:
+    bool singledevice;      //!< true if this is the device created implicitely through rtcInit
+
+    InstanceFactory* instance_factory;
+
+#if !defined(__MIC__)
+    BVH4Factory* bvh4_factory;
+#endif
+
+#if defined(__TARGET_AVX__)
+    BVH8Factory* bvh8_factory;
+#endif
 
 #if USE_TASK_ARENA
   tbb::task_arena* arena;
 #endif
-
-  bool singledevice;
   };
 }

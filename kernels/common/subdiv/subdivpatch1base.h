@@ -20,7 +20,6 @@
 #include "bezier_patch.h"
 #include "gregory_patch.h"
 #include "gregory_patch_dense.h"
-#include "gregory_triangle_patch.h"
 #include "tessellation.h"
 #include "tessellation_cache.h"
 #include "gridrange.h"
@@ -39,7 +38,6 @@ namespace embree
       BSPLINE_PATCH          = 1,  
       BEZIER_PATCH           = 2,  
       GREGORY_PATCH          = 3,
-      GREGORY_TRIANGLE_PATCH = 4,
       EVAL_PATCH             = 5,
     };
 

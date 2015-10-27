@@ -18,13 +18,7 @@
 #include "../include/embree2/rtcore_ray.h"
 #include "../kernels/common/default.h"
 #include <vector>
-
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
+#include <cstddef>
 
 #define DEFAULT_STACK_SIZE 4*1024*1024
 //#define DEFAULT_STACK_SIZE 2*1024*1024
@@ -43,7 +37,7 @@
 #  define HAS_INTERSECT8 0
 #endif
 
-#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512__))
+#if defined(RTCORE_RAY_PACKETS) && (defined(__MIC__) || defined(__TARGET_AVX512KNL__))
 #  define HAS_INTERSECT16 1
 #else
 #  define HAS_INTERSECT16 0
@@ -51,15 +45,19 @@
 
 namespace embree
 {
+  bool hasISA(const int isa) 
+  {
+    int cpu_features = getCPUFeatures();
+    return (cpu_features & isa) == isa;
+  }
+
   RTCDevice g_device = nullptr;
 
 #if !defined(__MIC__)
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 
                                                   | RTC_INTERSECT4 
                                                   | RTC_INTERSECT8 
-#if defined(__TARGET_AVX512__)
                                                   | RTC_INTERSECT16 
-#endif
     );
 #else
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT16);
@@ -147,10 +145,16 @@ namespace embree
     ~ClearBuffers() { clearBuffers(); }
   };
 
+
+  typedef decltype(nullptr) nullptr_t; 
+
+
   struct RTCSceneRef
   {
   public:
-    RTCSceneRef(std::nullptr_t) 
+    RTCScene scene;
+
+    RTCSceneRef(nullptr_t) 
       : scene(nullptr) {}
 
     RTCSceneRef(RTCScene scene) 
@@ -178,14 +182,12 @@ namespace embree
       return *this;
     }
 
-    __forceinline RTCSceneRef& operator= (std::nullptr_t) 
+    __forceinline RTCSceneRef& operator= (nullptr_t) 
     {
       if (scene) rtcDeleteScene(scene);
       scene = nullptr;
       return *this;
     }
-  public:
-    RTCScene scene;
   };
 
   RTCSceneFlags getSceneFlag(size_t i) 
@@ -555,7 +557,7 @@ namespace embree
     if (numTimeSteps >= 1) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER0,vertices0 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     if (numTimeSteps >= 2) rtcSetBuffer(scene,mesh,RTC_VERTEX_BUFFER1,vertices1 = (Vertex3f*) allocBuffer(numVertices*sizeof(Vertex3f)), 0, sizeof(Vertex3f)); 
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     /* create sphere geometry */
     size_t tri = 0;
@@ -698,10 +700,10 @@ namespace embree
     size_t numVertexCreases = 10;
     size_t numHoles = 0; // do not test holes as this causes some tests that assume a closed sphere to fail
     unsigned int mesh = rtcNewSubdivisionMesh(scene, flags, numFaces, numEdges, numVertices, numEdgeCreases, numVertexCreases, numHoles);
-    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (g_enable_build_cancel && vertexBuffer == nullptr) return mesh;
-    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (g_enable_build_cancel && indexBuffer == nullptr) return mesh;
-    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (g_enable_build_cancel && facesBuffer == nullptr) return mesh;
-    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (g_enable_build_cancel && levelBuffer == nullptr) return mesh;
+    Vec3fa* vertexBuffer = (Vec3fa*  ) rtcMapBuffer(scene,mesh,RTC_VERTEX_BUFFER);  if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    int*    indexBuffer  = (int     *) rtcMapBuffer(scene,mesh,RTC_INDEX_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    int*    facesBuffer = (int     *) rtcMapBuffer(scene,mesh,RTC_FACE_BUFFER);     if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
+    float*  levelBuffer  = (float   *) rtcMapBuffer(scene,mesh,RTC_LEVEL_BUFFER);   if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     memcpy(vertexBuffer,vertices.data(),numVertices*sizeof(Vec3fa));
     memcpy(indexBuffer ,indices.data() ,numEdges*sizeof(int));
@@ -713,9 +715,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_LEVEL_BUFFER);
     
     int* edgeCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseIndices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
     float* edgeCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && edgeCreaseWeights == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     for (size_t i=0; i<numEdgeCreases; i++) 
     {
@@ -735,9 +737,9 @@ namespace embree
     rtcUnmapBuffer(scene,mesh,RTC_EDGE_CREASE_WEIGHT_BUFFER); 
     
     int* vertexCreaseIndices  = (int*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_INDEX_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseIndices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
     float* vertexCreaseWeights = (float*) rtcMapBuffer(scene,mesh,RTC_VERTEX_CREASE_WEIGHT_BUFFER);
-    if (g_enable_build_cancel && vertexCreaseWeights == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,mesh); return -1; }
 
     for (size_t i=0; i<numVertexCreases; i++) 
     {
@@ -764,7 +766,7 @@ namespace embree
     
     /* set vertices */
     Vec3fa* vertices = (Vec3fa*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
-    if (g_enable_build_cancel && vertices == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
     vertices[0] = pos + r*Vec3fa(-1,-1,-1); 
     vertices[1] = pos + r*Vec3fa(-1,-1,+1); 
     vertices[2] = pos + r*Vec3fa(-1,+1,-1); 
@@ -778,7 +780,7 @@ namespace embree
     /* set triangles and colors */
     int tri = 0;
     Triangle* triangles = (Triangle*) rtcMapBuffer(scene_i,mesh,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && triangles == nullptr) return mesh;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene_i,mesh); return -1; }
     
     // left side
     triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 1; tri++;
@@ -819,14 +821,14 @@ namespace embree
     Vec3fa* vertices1 = nullptr;
     if (numTimeSteps >= 1) {
       vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0); 
-      if (g_enable_build_cancel && vertices0 == nullptr) return geomID;
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
     }
     if (numTimeSteps >= 2) {
       vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
-      if (g_enable_build_cancel && vertices1 == nullptr) return geomID;
+      if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
     }
     int* indices = (int*) rtcMapBuffer(scene,geomID,RTC_INDEX_BUFFER);
-    if (g_enable_build_cancel && indices == nullptr) return geomID;
+    if (rtcDeviceGetError(g_device) != RTC_NO_ERROR) { rtcDeleteGeometry(scene,geomID); return -1; }
 
     for (size_t i=0; i<numHairs; i++) 
     {
@@ -1463,7 +1465,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-        if (hasISA(AVX512F) || hasISA(KNC)) 
+        if (hasISA(AVX512KNL) || hasISA(KNC)) 
         {
           RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
           setRay(ray16,0,ray0);
@@ -1577,7 +1579,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1696,7 +1698,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
 	RTCRay ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray0.mask = mask0;
 	RTCRay ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray1.mask = mask1;
@@ -1880,7 +1882,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -1962,7 +1964,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
 
@@ -2048,7 +2050,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
       __aligned(64) RTCRay16 ray16; memset(&ray16,-1,sizeof(RTCRay16));
       setRay(ray16,i,ray);
@@ -2546,7 +2548,7 @@ namespace embree
     }
 #endif
 #if HAS_INTERSECT16
-      if (hasISA(AVX512F) || hasISA(KNC))
+      if (hasISA(AVX512KNL) || hasISA(KNC))
       {
         ray = frontfacing; rtcOccludedN(scene,ray,16); if (ray.geomID != 0) passed = false;
         ray = frontfacing; rtcIntersectN(scene,ray,16);if (ray.geomID != 0) passed = false;
@@ -2653,7 +2655,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       RTCRay16 ray16; memset(&ray16,0,sizeof(ray16));
       for (size_t j=0; j<16; j++) {
@@ -2909,15 +2911,12 @@ namespace embree
           case 0: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 1: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,0.0f); break;
           case 2: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,0.0f); break;
-#if !defined(__MIC__) // FIXME: multiple geometry types currently trigger bug on Xeon Phi
           case 3: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
 	  case 4: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
 	  case 5: geom[index] = addSubdivSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,4,numTriangles,0.0f); break;
-
           case 6: geom[index] = addSphere(task->scene,RTC_GEOMETRY_STATIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 7: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DEFORMABLE,pos,2.0f,numPhi,numTriangles,1.0f); break;
           case 8: geom[index] = addSphere(task->scene,RTC_GEOMETRY_DYNAMIC,pos,2.0f,numPhi,numTriangles,1.0f); break;
-#endif            
           case 9: spheres[index] = Sphere(pos,2.0f); geom[index] = addUserGeometryEmpty(task->scene,&spheres[index]); break;
           }; 
 	  //CountErrors();
@@ -3091,7 +3090,8 @@ namespace embree
       monitorMemoryInvokations = 0;
       monitorProgressBreak = -1;
       monitorProgressInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      RegressionTask task1(sceneIndex,1,0);
+      func(new ThreadRegressionTask(0,0,&task1));
       if (monitorMemoryBytesUsed) {
         rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
         //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
@@ -3102,7 +3102,8 @@ namespace embree
       monitorMemoryInvokations = 0;
       monitorProgressBreak = monitorProgressInvokations * 2.0f * drand48();
       monitorProgressInvokations = 0;
-      func(new ThreadRegressionTask(0,0,new RegressionTask(sceneIndex,1,0)));
+      RegressionTask task2(sceneIndex,1,0);
+      func(new ThreadRegressionTask(0,0,&task2));
       if (monitorMemoryBytesUsed) { // || (monitorMemoryInvokations != 0 && errorCounter != 1)) { // FIXME: test that rtcCommit has returned with error code
         rtcDeviceSetMemoryMonitorFunction(g_device,nullptr);
         //rtcDeviceSetProgressMonitorFunction(g_device,nullptr);
@@ -3721,7 +3722,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_watertight_closed16("sphere",pos);
       rtcore_watertight_closed16("cube",pos);
@@ -3747,7 +3748,7 @@ namespace embree
 #endif
 
 #if HAS_INTERSECT16
-    if (hasISA(AVX512F) || hasISA(KNC))
+    if (hasISA(AVX512KNL) || hasISA(KNC))
     {
       rtcore_nan("nan_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);
       rtcore_inf("inf_test_16",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,16);

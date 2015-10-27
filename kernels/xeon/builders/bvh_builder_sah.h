@@ -92,13 +92,14 @@ namespace embree
           travCost(travCost), intCost(intCost)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
-            THROW_RUNTIME_ERROR("bvh_builder: branching factor too large");
+            throw_RTCError(RTC_UNKNOWN_ERROR,"bvh_builder: branching factor too large");
         }
         
         const ReductionTy createLargeLeaf(BuildRecord& current, Allocator alloc)
         {
+          /* this should never occur but is a fatal error */
           if (current.depth > maxDepth) 
-            THROW_RUNTIME_ERROR("depth limit reached");
+            throw_RTCError(RTC_UNKNOWN_ERROR,"depth limit reached");
           
           /* create leaf for few primitives */
           if (current.pinfo.size() <= maxLeafSize)
@@ -376,8 +377,9 @@ namespace embree
     /* Spatial Split SAH builder that operates on lists of blocks of BuildRecords */
     struct BVHBuilderBinnedSpatialSAH
     {
+      enum { OBINS = 32, SBINS = 16 };
       typedef PrimRefList Set;
-      typedef Split2<BinSplit<32>,SpatialBinSplit<16> > Split;
+      typedef Split2<BinSplit<OBINS>,SpatialBinSplit<SBINS> > Split;
       typedef GeneralBuildRecord<Set,Split> BuildRecord;
       
       /*! standard spatial build without reduction */
@@ -447,7 +449,7 @@ namespace embree
         assert((blockSize ^ (size_t(1) << logBlockSize)) == 0);
         
         /* instantiate spatial binning heuristic */
-        typedef HeuristicSpatialSplitAndObjectSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc> Heuristic;
+        typedef HeuristicObjectSplitAndSpatialSplitBlockListBinningSAH<PrimRef,SplitPrimitiveFunc,OBINS,SBINS> Heuristic;
         Heuristic heuristic(splitPrimitive);
         
         typedef GeneralBVHBuilder<

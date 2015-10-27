@@ -27,6 +27,15 @@ namespace embree
     Geometry::setUserData(ptr);
   }
 
+  void UserGeometry::setMask (unsigned mask) 
+  {
+    if (parent->isStatic() && parent->isBuild())
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
+
+    this->mask = mask; 
+    Geometry::update();
+  }
+
   void UserGeometry::setBoundsFunction (RTCBoundsFunc bounds) 
   {
     if (parent->isStatic() && parent->isBuild())

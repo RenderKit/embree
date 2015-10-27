@@ -24,15 +24,6 @@
 #include "glutdisplay.h"
 #include "../transport/transport_host.h"
 
-#include <xmmintrin.h>
-
-#if !defined(_MM_SET_DENORMALS_ZERO_MODE)
-#define _MM_DENORMALS_ZERO_ON   (0x0040)
-#define _MM_DENORMALS_ZERO_OFF  (0x0000)
-#define _MM_DENORMALS_ZERO_MASK (0x0040)
-#define _MM_SET_DENORMALS_ZERO_MODE(x) (_mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (x)))
-#endif
-
 #if defined __WIN32__
 inline double drand48() {
   return (double)rand()/(double)RAND_MAX;

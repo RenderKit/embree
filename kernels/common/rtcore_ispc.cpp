@@ -17,23 +17,20 @@
 #include "default.h"
 #include "scene.h"
 
-#if defined(_MSC_VER)
-#pragma warning (disable: 4996) // warning: function was declared deprecated
-#endif
 #if defined(__INTEL_COMPILER)
 #pragma warning (disable: 1478) // warning: function was declared deprecated
-#endif
-#if defined(__clang__)
+#elif defined(_MSC_VER)
+#pragma warning (disable: 4996) // warning: function was declared deprecated
+#elif defined(__clang__)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
-#endif
-#if defined(__GNUC__)
+#elif defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations" // warning: xxx is deprecated
 #endif
 
 namespace embree
 {
-#define size_t int  // FIXME: workaround for ISPC bug
-#define ssize_t int  // FIXME: workaround for ISPC bug
+#define size_t int   // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2)
+#define ssize_t int  // FIXME: workaround for ISPC bug (ISPC bug still present in ISPC v1.8.2) 
 
   extern "C" RTCDevice ispcNewDevice(const char* cfg) {
     return rtcNewDevice(cfg);

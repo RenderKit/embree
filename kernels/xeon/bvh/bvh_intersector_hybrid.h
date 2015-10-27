@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../../common/ray.h"
 #include "../../common/stack_item.h"
 
@@ -24,33 +24,35 @@ namespace embree
 {
   namespace isa 
   {
-    /*! BVH4 Hybrid Packet traversal implementation. Switched between packet and single ray traversal (optional). */
-    template<int K, int types, bool robust, typename PrimitiveIntersector, bool single = true>
-    class BVH4IntersectorKHybrid
+    /*! BVH hybrid packet intersector. Switches between packet and single ray traversal (optional). */
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
+    class BVHNIntersectorKHybrid
     {
       /* shortcuts for frequently used types */
-      typedef typename PrimitiveIntersector::Precalculations Precalculations;
-      typedef typename PrimitiveIntersector::Primitive Primitive;
-      typedef typename BVH4::NodeRef NodeRef;
-      typedef typename BVH4::Node Node;
+      typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
+      typedef typename PrimitiveIntersectorK::Primitive Primitive;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::BaseNode BaseNode;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::NodeMB NodeMB;
       typedef Vec3<vfloat<K>> Vec3vfK;
       typedef Vec3<vint<K>> Vec3viK;
 
-      static const size_t stackSizeSingle = 1+3*BVH4::maxDepth;
-      static const size_t stackSizeChunk = 4*BVH4::maxDepth+1;
+      static const size_t stackSizeChunk = N*BVH::maxDepth+1;
 
       static const size_t switchThreshold = (K==4)  ? 3 :
-                                            (K==8)  ? 5 :
+                                            (K==8)  ? ((N==4) ? 5 : 7) :
                                             (K==16) ? 7 :
                                                       0;
 
     public:
-      static void intersect(vint<K>* valid, BVH4* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH4* bvh, RayK<K>& ray);
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
     };
 
-    /*! BVH4 packet traversal implementation. */
-    template<int K, int types, bool robust, typename PrimitiveIntersector>
-    class BVH4IntersectorKChunk : public BVH4IntersectorKHybrid<K,types,robust,PrimitiveIntersector,false> {};
+    /*! BVH packet intersector. */
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
+    class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
   }
 }

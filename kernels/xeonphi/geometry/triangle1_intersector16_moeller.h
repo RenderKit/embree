@@ -73,11 +73,11 @@ namespace embree
 #if 1
 	     const vfloat16 p0 = load16f(&pptr[0]); 
 	     const vfloat16 p1 = load16f(&pptr[1]); 
-	     const vfloat16 _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask); 
+             const vfloat16 _v2 = asFloat(asInt(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
 #else
 	    const vfloat16 p0 = broadcast8to16f(&pptr[0].v2);
 	    const vfloat16 p1 = broadcast8to16f(&pptr[1].v2);
-	    const vfloat16 _v2 = cast(cast(select(0xff00,p1,p0)) & and_mask);
+            const vfloat16 _v2 = asFloat(asInt(select(0xff00,p1,p0)) & and_mask);
 #endif
 
 	    v0 = _v0;
@@ -268,7 +268,7 @@ namespace embree
 
 	    const vfloat16 p0 = load16f(&pptr[0]);
 	    const vfloat16 p1 = load16f(&pptr[1]);
-	    const vfloat16 _v2 = cast(cast(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
+            const vfloat16 _v2 = asFloat(asInt(select(0x00ff,align_shift_right<8>(p0,p0),p1)) & and_mask);
 
 	    v0 = _v0;
 	    v1 = _v1;

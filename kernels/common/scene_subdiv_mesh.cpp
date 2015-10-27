@@ -486,8 +486,8 @@ namespace embree
     if (parent->isInterpolatable()) 
     {
 #if defined (__TARGET_AVX__)
-      auto numInterpolationSlots = [] (size_t stride) {
-        if (hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
+      auto numInterpolationSlots = [&] (size_t stride) {
+        if (parent->device->hasISA(AVX)) return numInterpolationSlots8(stride); else return numInterpolationSlots4(stride);
       };
 #else
       auto numInterpolationSlots = [] (size_t stride) {

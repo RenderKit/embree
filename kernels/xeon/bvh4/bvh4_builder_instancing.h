@@ -81,14 +81,13 @@ namespace embree
 
       void open(size_t numPrimitives);
 
+      size_t numCollapsedTransformNodes;
       BVH4::NodeRef collapse(BVH4::NodeRef& node);
       
     public:
       BVH4* bvh;
       std::vector<BVH4*>& objects;
       std::vector<Builder*> builders;
-      //BVH4* worldBVH;
-      //Ref<Builder> worldBuilder;
 
     public:
       Scene* scene;
@@ -96,7 +95,6 @@ namespace embree
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;
       AtomicCounter nextRef;
-      //AtomicCounter numInstancedPrimitives; 
     };
   }
 }

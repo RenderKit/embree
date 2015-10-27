@@ -22,7 +22,6 @@
 #include "trianglei.h"
 #include "trianglev_mb.h"
 #include "trianglepairsv.h"
-#include "subdivpatch1.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
 
@@ -137,19 +136,6 @@ namespace embree
 #endif
 #endif
 
-  /********************** SubdivPatch1 **************************/
-
-#if !defined(__AVX__)
-  SubdivPatch1::Type::Type () 
-    : PrimitiveType("subdivpatch1",sizeof(SubdivPatch1),1) {} 
-  
-  size_t SubdivPatch1::Type::size(const char* This) const {
-    return 1;
-  }
-
-  SubdivPatch1::Type SubdivPatch1::type;
-#endif
-
   /********************** SubdivPatch1Cached **************************/
 
 #if !defined(__AVX__)
@@ -162,20 +148,6 @@ namespace embree
 
   SubdivPatch1Cached::Type SubdivPatch1Cached::type;
 #endif
-
-  /********************** Virtual Object **************************/
-
-#if !defined(__AVX__)
-  Object::Type::Type () 
-    : PrimitiveType("object",sizeof(Object),1) {} 
-
-  size_t Object::Type::size(const char* This) const {
-    return 1;
-  }
-
-  Object::Type Object::type;
-#endif
-
 
   /********************** SubdivPatch1Eager **************************/
 
@@ -190,6 +162,18 @@ namespace embree
   SubdivPatch1Eager::Type SubdivPatch1Eager::type;
 #endif
 
+  /********************** Virtual Object **************************/
+
+#if !defined(__AVX__)
+  Object::Type::Type () 
+    : PrimitiveType("object",sizeof(Object),1) {} 
+
+  size_t Object::Type::size(const char* This) const {
+    return 1;
+  }
+
+  Object::Type Object::type;
+#endif
 }
 
 

@@ -126,14 +126,16 @@ namespace embree
     };
 
   /*! dynamic sized array that is allocated on the stack */
-#define dynamic_large_stack_array(Ty,Name,N,M) StackArray<Ty,M> Name(N)
-  template<typename Ty, size_t M>
+#define dynamic_large_stack_array(Ty,Name,N,max_stack_bytes) StackArray<Ty,max_stack_bytes> Name(N)
+  template<typename Ty, size_t max_stack_bytes>
     struct __aligned(64) StackArray
   {
     __forceinline StackArray (const size_t N) 
     {
-      if (N < M) data = &arr[0];
-      else       data = (Ty*) alignedMalloc(N*sizeof(Ty),64); 
+      if (N*sizeof(Ty) <= max_stack_bytes) 
+        data = &arr[0];
+      else
+        data = (Ty*) alignedMalloc(N*sizeof(Ty),64); 
     }
 
     __forceinline ~StackArray () {
@@ -147,7 +149,7 @@ namespace embree
     __forceinline const Ty& operator[](const size_t i) const { return data[i]; }
 
   private:
-    Ty arr[M];
+    Ty arr[max_stack_bytes/sizeof(Ty)];
     Ty* data;
   };
 }

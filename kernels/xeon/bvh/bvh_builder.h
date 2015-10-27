@@ -14,27 +14,29 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../builders/bvh_builder_sah.h"
 
 namespace embree
 {
   namespace isa
   {
-    struct BVH8Builder
+    template<int N>
+      struct BVHBuilder
     {
+      typedef BVHN<N> BVH;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
-      struct BVH8BuilderV {
-        void build(BVH8* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                    const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
         virtual size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
       };
 
       template<typename CreateLeafFunc>
-      struct BVH8BuilderT : public BVH8BuilderV
+      struct BVHBuilderT : public BVHBuilderV
       {
-        BVH8BuilderT (CreateLeafFunc createLeafFunc) 
+        BVHBuilderT (CreateLeafFunc createLeafFunc) 
           : createLeafFunc(createLeafFunc) {}
 
         size_t createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
@@ -46,27 +48,62 @@ namespace embree
       };
 
       template<typename CreateLeafFunc>
-      static void build(BVH8* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+      static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
                         const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-        BVH8BuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       }
     };
 
-    struct BVH8BuilderSpatial
+    template<int N>
+      struct BVHBuilderMblur
     {
+      typedef BVHN<N> BVH;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
-      struct BVH8BuilderV {
-        void build(BVH8* bvh, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                   const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
+        virtual std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) = 0;
+      };
+
+      template<typename CreateLeafFunc>
+      struct BVHBuilderT : public BVHBuilderV
+      {
+        BVHBuilderT (CreateLeafFunc createLeafFunc) 
+          : createLeafFunc(createLeafFunc) {}
+
+        std::pair<BBox3fa,BBox3fa> createLeaf (const BVHBuilderBinnedSAH::BuildRecord& current, Allocator* alloc) {
+          return createLeafFunc(current,alloc);
+        }
+
+      private:
+        CreateLeafFunc createLeafFunc;
+      };
+
+      template<typename CreateLeafFunc>
+      static void build(BVH* bvh, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRef* prims, const PrimInfo& pinfo, 
+                        const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
+        BVHBuilderT<CreateLeafFunc>(createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+      }
+    };
+
+    template<int N>
+      struct BVHBuilderSpatial
+    {
+      typedef BVHN<N> BVH;
+      typedef FastAllocator::ThreadLocal2 Allocator;
+      
+      struct BVHBuilderV {
+        void build(BVH* bvh, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
                    const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost);
         virtual void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) = 0;
         virtual size_t createLeaf (BVHBuilderBinnedSpatialSAH::BuildRecord& current, Allocator* alloc) = 0;
       };
 
       template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-      struct BVH8BuilderT : public BVH8BuilderV
+      struct BVHBuilderT : public BVHBuilderV
       {
-        BVH8BuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc) 
+        BVHBuilderT (SplitPrimitiveFunc splitPrimitiveFunc, CreateLeafFunc createLeafFunc) 
           : splitPrimitiveFunc(splitPrimitiveFunc), createLeafFunc(createLeafFunc) {}
 
         void splitPrimitive (const PrimRef& prim, int dim, float pos, PrimRef& left_o, PrimRef& right_o) {
@@ -83,9 +120,9 @@ namespace embree
       };
 
       template<typename SplitPrimitiveFunc, typename CreateLeafFunc>
-      static void build(BVH8* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
+      static void build(BVH* bvh, SplitPrimitiveFunc splitPrimitive, CreateLeafFunc createLeaf, BuildProgressMonitor& progress, PrimRefList& prims, const PrimInfo& pinfo, 
                         const size_t blockSize, const size_t minLeafSize, const size_t maxLeafSize, const float travCost, const float intCost) {
-        BVH8BuilderT<SplitPrimitiveFunc,CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
+        BVHBuilderT<SplitPrimitiveFunc,CreateLeafFunc>(splitPrimitive,createLeaf).build(bvh,progress,prims,pinfo,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
       }
     };
   }

@@ -26,8 +26,6 @@
 
 #define STATIC_SUBTREE_EXTRACTION 1
 
-#define TIMER(x) 
-
 namespace embree
 {
   namespace isa
@@ -44,7 +42,7 @@ namespace embree
     BVH4Refitter::BVH4Refitter (BVH4* bvh, const LeafBoundsInterface& leafBounds)
       : bvh(bvh), leafBounds(leafBounds), numSubTrees(0)
     {
-#if STATIC_SUBTREE_EXTRACTION == 1
+#if STATIC_SUBTREE_EXTRACTION
 
 #else
       if (bvh->numPrimitives > block_size) {
@@ -56,22 +54,14 @@ namespace embree
 
     void BVH4Refitter::refit()
     {
-#if STATIC_SUBTREE_EXTRACTION == 1
-      if (bvh->numPrimitives <= block_size) 
-      {
+#if STATIC_SUBTREE_EXTRACTION
+      if (bvh->numPrimitives <= block_size) {
         bvh->bounds = recurse_bottom(bvh->root);
       }
       else
       {
-        TIMER(const double t0 = getSeconds());
-
         numSubTrees = 0;
         gather_subtree_refs(bvh->root,numSubTrees,0);
-
-        TIMER(const double t1 = getSeconds());
-        TIMER(PRINT(t1-t0));
-
-        TIMER(const double t2 = getSeconds());
 
         if (numSubTrees)
           parallel_for(size_t(0), numSubTrees, [&] (const range<size_t>& r) {
@@ -81,20 +71,8 @@ namespace embree
               }
             });
 
-        TIMER(const double t3 = getSeconds());
-        TIMER(PRINT(t3-t2));
-        TIMER(const double t4 = getSeconds());
-
         numSubTrees = 0;        
         bvh->bounds = refit_toplevel(bvh->root,numSubTrees,0);
-
-        TIMER(const double t5 = getSeconds());
-        TIMER(PRINT(t5-t4));
-
-        //PRINT(numSubTrees);
-        //PRINT(bvh->bounds);
-        //if (numSubTrees) exit(0);
-
       }
 #else
       /* single threaded fallback */
@@ -271,8 +249,7 @@ namespace embree
       /* recurse if this is an internal node */
       Node* node = ref.node();
 
-      /* enable exclusive prefetch for >= AVX platforms */
-      
+      /* enable exclusive prefetch for >= AVX platforms */      
 #if defined(__AVX__)      
       ref.prefetchW();
 #endif      
@@ -295,22 +272,9 @@ namespace embree
       node->upper_z = bounds.upper.z;
       
       /* return merged bounds */
-#if 1
       const Vec3fa lower = min(min(bounds0.lower,bounds1.lower),min(bounds2.lower,bounds3.lower));
       const Vec3fa upper = max(max(bounds0.upper,bounds1.upper),max(bounds2.upper,bounds3.upper));
-
       return BBox3fa(lower,upper);
-#else
-      const float lower_x = reduce_min(bounds.lower.x);
-      const float lower_y = reduce_min(bounds.lower.y);
-      const float lower_z = reduce_min(bounds.lower.z);
-      const float upper_x = reduce_max(bounds.upper.x);
-      const float upper_y = reduce_max(bounds.upper.y);
-      const float upper_z = reduce_max(bounds.upper.z);
-
-      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-                     Vec3fa(upper_x,upper_y,upper_z));
-#endif
     }
     
     BBox3fa BVH4Refitter::recurse_top(NodeRef& ref)
@@ -345,22 +309,10 @@ namespace embree
       node->upper_y = bounds.upper.y;
       node->upper_z = bounds.upper.z;
 
-#if 1
+      /* return merged bounds */
       const Vec3fa lower = min(min(bounds0.lower,bounds1.lower),min(bounds2.lower,bounds3.lower));
       const Vec3fa upper = max(max(bounds0.upper,bounds1.upper),max(bounds2.upper,bounds3.upper));
-
       return BBox3fa(lower,upper);
-#else      
-      /* return merged bounds */
-      const float lower_x = reduce_min(bounds.lower.x);
-      const float lower_y = reduce_min(bounds.lower.y);
-      const float lower_z = reduce_min(bounds.lower.z);
-      const float upper_x = reduce_max(bounds.upper.x);
-      const float upper_y = reduce_max(bounds.upper.y);
-      const float upper_z = reduce_max(bounds.upper.z);
-      return BBox3fa(Vec3fa(lower_x,lower_y,lower_z),
-                    Vec3fa(upper_x,upper_y,upper_z));
-#endif
     }
     
     template<typename Primitive>

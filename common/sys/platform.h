@@ -99,70 +99,45 @@
 /// ISA configuration
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
   #define __SSE__
   #define __SSE2__
 #endif
 
-#if defined(__WIN32__) 
-#if defined(CONFIG_SSE41)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-  #endif
+#if defined(CONFIG_SSE41) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
 #endif
-#if defined(CONFIG_SSE42)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-  #endif
+
+#if defined(CONFIG_SSE42) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
 #endif
-#if defined(CONFIG_AVX)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-  #endif
-#endif
-#if defined(CONFIG_AVX2)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-    #if !defined(__AVX2__)
-      #define __AVX2__
-    #endif
-  #endif
-#endif
-#if defined(CONFIG_AVX512)
-  #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
-    #define __SSE3__
-    #define __SSSE3__
-    #define __SSE4_1__
-    #define __SSE4_2__
-    #if !defined(__AVX__)
-      #define __AVX__
-    #endif
-    #if !defined(__AVX2__)
-      #define __AVX2__
-    #endif
-    #if !defined(__AVX512F__)
-      #define __AVX512F__
-    #endif
+
+#if defined(CONFIG_AVX) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
+  #if !defined(__AVX__)
+    #define __AVX__
   #endif
 #endif
 
+#if defined(CONFIG_AVX2) && defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+  #define __SSE3__
+  #define __SSSE3__
+  #define __SSE4_1__
+  #define __SSE4_2__
+  #if !defined(__AVX__)
+    #define __AVX__
+  #endif
+  #if !defined(__AVX2__)
+    #define __AVX2__
+  #endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -235,12 +210,14 @@
   throw std::runtime_error(std::string(__FILE__) + " (" + std::to_string((long long)__LINE__) + "): " + std::string(str));
 
 #if defined(__MIC__)
-#define FATAL(x) { std::cout << "FATAL error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
+#define FATAL(x) { std::cerr << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
+#define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
 #else
 #define FATAL(x) THROW_RUNTIME_ERROR(x)
+#define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
 #endif
 
-#define NOT_IMPLEMENTED FATAL("Not implemented")
+#define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Basic Types
@@ -288,8 +265,19 @@ typedef int32_t ssize_t;
 #pragma warning(disable:4018) // '<' : signed / unsigned mismatch
 #pragma warning(disable:4305) // 'initializing' : truncation from 'double' to 'float'
 #pragma warning(disable:4068) // unknown pragma
-#pragma warning(disable:4146) // : unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable:4838) // conversion from 'unsigned int' to 'const int' requires a narrowing conversion)
 #pragma warning(disable:4227) // anachronism used : qualifiers on reference are ignored
+#endif
+
+#if defined(__clang__) && !defined(__INTEL_COMPILER)
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wreorder"
+#pragma clang diagnostic ignored "-Wmicrosoft"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -693,10 +693,6 @@ namespace embree
         else if (type == "float4" ) { material.add(name, load<Vec4f>(entry)); }
         else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid param type: "+type);
       }
-      else if (entry->name == "textures") {
-        // we do not parse BGF format textures for now
-      }
-      else THROW_RUNTIME_ERROR(entry->loc.str()+": invalid type: "+entry->name);
     }
     return material;
   }
