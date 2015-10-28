@@ -17,50 +17,54 @@
 OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
 MARK_AS_ADVANCED(ENABLE_INSTALLER)
 
-IF (ENABLE_INSTALLER AND APPLE)
-  #SET(CMAKE_MACOSX_RPATH ON)
-  #SET(CMAKE_SKIP_INSTALL_RPATH OFF)
-  #SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-  SET(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-  SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-  #SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-  #SET(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-ELSE()
-  SET(CMAKE_SKIP_INSTALL_RPATH ON)
-ENDIF()
-
+SET(INCLUDE_INSTALL_DIR include)
 IF (NOT ENABLE_INSTALLER)
+  IF(NOT DEFINED LIB_INSTALL_DIR) 
+    SET(LIB_INSTALL_DIR lib)
+  ENDIF()
   SET(DOC_INSTALL_DIR doc)
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
+  SET(BIN_INSTALL_DIR bin)
 ELSEIF (WIN32)
+  IF(NOT DEFINED LIB_INSTALL_DIR) 
+    SET(LIB_INSTALL_DIR lib)
+  ENDIF()
   SET(DOC_INSTALL_DIR doc)
-  SET(TUTORIALS_INSTALL_DIR bin)
-  SET(UTILITIES_INSTALL_DIR bin)
+  SET(BIN_INSTALL_DIR bin)
 ELSEIF (APPLE)
+  IF(NOT DEFINED LIB_INSTALL_DIR) 
+    SET(LIB_INSTALL_DIR lib)
+  ENDIF()
   SET(DOC_INSTALL_DIR ../../Applications/Embree2/documentation)
   SET(APPLICATION_INSTALL_DIR ../../Applications/Embree2)
-  SET(TUTORIALS_INSTALL_DIR ../../Applications/Embree2/tutorials)
-  SET(UTILITIES_INSTALL_DIR ../../Applications/Embree2/tutorials)
+  SET(BIN_INSTALL_DIR ../../Applications/Embree2/tutorials)
 ELSE()
+  IF(NOT DEFINED LIB_INSTALL_DIR) 
+    SET(LIB_INSTALL_DIR lib)
+  ENDIF()
   SET(DOC_INSTALL_DIR share/doc/embree-${EMBREE_VERSION})
-  SET(TUTORIALS_INSTALL_DIR bin/embree-${EMBREE_VERSION})
-  SET(UTILITIES_INSTALL_DIR bin/embree-${EMBREE_VERSION})
+  SET(BIN_INSTALL_DIR bin/embree-${EMBREE_VERSION})
+ENDIF()
+
+IF (ENABLE_INSTALLER AND APPLE)
+  SET(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
+  SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+ELSE()
+  SET(CMAKE_SKIP_INSTALL_RPATH ON)
 ENDIF()
 
 ##############################################################
 # Install Headers
 ##############################################################
-INSTALL(DIRECTORY include/embree2 DESTINATION include COMPONENT devel)
+INSTALL(DIRECTORY include/embree2 DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT devel)
 CONFIGURE_FILE(include/embree2/rtcore.h rtcore.h @ONLY)
 CONFIGURE_FILE(include/embree2/rtcore.isph rtcore.isph @ONLY)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION include/embree2 COMPONENT devel)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION include/embree2 COMPONENT devel)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION ${INCLUDE_INSTALL_DIR}/embree2 COMPONENT devel)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION ${INCLUDE_INSTALL_DIR}/embree2 COMPONENT devel)
 
 ##############################################################
 # Install Models
 ##############################################################
-INSTALL(DIRECTORY tutorials/models DESTINATION "${TUTORIALS_INSTALL_DIR}" COMPONENT examples)
+INSTALL(DIRECTORY tutorials/models DESTINATION "${BIN_INSTALL_DIR}" COMPONENT examples)
 
 ##############################################################
 # Install Documentation
@@ -119,8 +123,8 @@ ENDIF()
 
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "lib/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "${LIB_INSTALL_DIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${LIB_INSTALL_DIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 
 ##############################################################
 # CPack specific stuff
