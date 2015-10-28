@@ -20,6 +20,7 @@
 #include "../bvh/bvh.h"
 
 #include "../geometry/triangle.h"
+#include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglepairsv.h"
 #include "../../common/accelinstance.h"
 
@@ -39,6 +40,10 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vMBIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle4vMBIntersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4vMBIntersector8HybridMoeller);
+
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
@@ -52,11 +57,14 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
 
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
+
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8TrianglePairs4SceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
@@ -67,6 +75,7 @@ namespace embree
     /* select builders */
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle8SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vMBSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8TrianglePairs4SceneBuilderSAH);
 
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
@@ -75,6 +84,7 @@ namespace embree
     /* select intersectors1 */
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
@@ -84,6 +94,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector4HybridMoellerNoFilter);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector4HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector4HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector4HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
 
@@ -94,6 +105,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
 
@@ -105,6 +117,8 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoellerNoFilter);
+
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4vMBIntersector16HybridMoeller);
 
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
@@ -137,6 +151,17 @@ namespace embree
     intersectors.intersector8_nofilter  = BVH8Triangle8Intersector8HybridMoellerNoFilter;
     intersectors.intersector16_filter   = BVH8Triangle8Intersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Triangle8Intersector16HybridMoellerNoFilter;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8Triangle4vMBIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH8Triangle4vMBIntersector1Moeller;
+    intersectors.intersector4  = BVH8Triangle4vMBIntersector4HybridMoeller;
+    intersectors.intersector8  = BVH8Triangle4vMBIntersector8HybridMoeller;
+    intersectors.intersector16 = BVH8Triangle4vMBIntersector16HybridMoeller;
     return intersectors;
   }
 
@@ -196,6 +221,19 @@ namespace embree
     else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_presplit") builder = BVH8Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Triangle8>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8Triangle4vMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Triangle4vMB::type,scene);
+    Accel::Intersectors intersectors= BVH8Triangle4vMBIntersectors(accel);
+
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder_mb == "default"     )  builder = BVH8Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder_mb == "sah"         )  builder = BVH8Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH8<Triangle4vMB>");
 
     return new AccelInstance(accel,builder,intersectors);
   }

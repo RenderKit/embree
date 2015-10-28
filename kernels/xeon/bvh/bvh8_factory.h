@@ -41,10 +41,12 @@ namespace embree
     Accel* BVH8Triangle8SpatialSplit(Scene* scene);
     //Accel* BVH8Triangle8vObjectSplit(Scene* scene);
     //Accel* BVH8Triangle8vSpatialSplit(Scene* scene);
+    Accel* BVH8Triangle4vMB(Scene* scene);
     
   private:
     Accel::Intersectors BVH8Triangle4Intersectors(BVH8* bvh);
     Accel::Intersectors BVH8Triangle8Intersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Triangle4vMBIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8TrianglePairs4Intersectors(BVH8* bvh);
 
   private:
@@ -62,6 +64,10 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
     
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vMBIntersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8Triangle4vMBIntersector4HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Triangle4vMBIntersector8HybridMoeller);
+
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
@@ -75,11 +81,14 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
     
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
+
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH8TrianglePairs4SceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
