@@ -236,10 +236,12 @@ namespace embree
         asm nop;
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-	StackItemT<NodeRef>* stackPtr = stack + 1;        //!< current stack pointer
+	StackItemT<NodeRef>* stackPtr = stack + 2;        //!< current stack pointer
 	StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
-	stack[0].ptr = root;
-	stack[0].dist = neg_inf;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].dist = pos_inf;
+	stack[1].ptr  = root;
+	stack[1].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
         const vbool16 mask8(0xff);
@@ -254,13 +256,14 @@ namespace embree
 	{
 
 	  /*! pop next node */
-	  if (unlikely(stackPtr == stack)) break;
+	  //if (unlikely(stackPtr == stack)) break;
 	  stackPtr--;
 	  NodeRef cur = NodeRef(stackPtr->ptr);
 	  
 	  /*! if popped node is too far, pop next one */
-	  if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
-	    continue;
+	  //if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) continue;
+
+          assert(*(float*)&stackPtr->dist < ray.tfar[k]);
 
           /* downtraversal loop */
           while (true)
@@ -320,15 +323,38 @@ namespace embree
             BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear8,stackPtr,stackEnd);
           }
 
+	  /*! sentinal to indicate stack is empty */          
+          if (unlikely(cur == BVH::invalidNode)) {
+            assert(sptr_node == stack_node);
+            break;
+          }
+        
 	  /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
 	  STAT3(normal.trav_leaves, 1, 1, 1);
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
+          const float old_tfar = ray.tfar[k];
+
           PrimitiveIntersectorK::intersect(pre, ray, k, prim, num, bvh->scene, lazy_node);
+
+        // perform stack compaction
+          ray_far = select(mask8,vfloat<K>(ray.tfar[k] ),vfloat<K>(neg_inf));
+#if 1
+          if (unlikely(ray.tfar[k] < old_tfar))
+          {
+            StackItemT<NodeRef>* left = stack + 1;
+            for (StackItemT<NodeRef>* right = stack+1; right<stackPtr; right++) 
+            {
+              if (*(float*)&right->dist >= ray.tfar[k]) continue;
+              *left = *right; 
+              left++;
+            }
+            stackPtr = left;
+          }
+#endif
 	  //ray_far = ray.tfar[k];
-          ray_far = select(mask8,vfloat<K>(ray_tfar[k] ),vfloat<K>(neg_inf));
 
           if (unlikely(lazy_node)) {
             stackPtr->ptr = lazy_node;
