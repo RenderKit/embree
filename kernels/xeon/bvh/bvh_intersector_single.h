@@ -274,18 +274,42 @@ namespace embree
             /* intersect node */
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
+#if 1
+            const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+            const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
+            const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
+            const vbool16 m_active = nodeX != vfloat<K>(pos_inf);
+            const vfloat16 tNearFarX = msub(nodeX, vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tNearFarY = msub(nodeY, vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tNearFarZ = msub(nodeZ, vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
+            const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
+            const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
+            const vfloat16 tNearX = min(tNearFarX,tFarNearX);
+            const vfloat16 tFarX  = max(tNearFarX,tFarNearX);
+            const vfloat16 tNearY = min(tNearFarY,tFarNearY);
+            const vfloat16 tFarY  = max(tNearFarY,tFarNearY);
+            const vfloat16 tNearZ = min(tNearFarZ,tFarNearZ);
+            const vfloat16 tFarZ  = max(tNearFarZ,tFarNearZ);
 
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
+
+            const vbool16 vmask = le(m_active,tNear,tFar);
+
+#else
             const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
             const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
             const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
             const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
             const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
-
             const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
             const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
 
             const vbool16 vmask = tNear <= tFar;
+
+#endif
             mask = movemask(vmask);
 
             /*! if no child is hit, pop next node */

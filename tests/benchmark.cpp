@@ -817,6 +817,7 @@ namespace embree
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
+      //while(1)
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
         for (size_t j=0;j<16;j++)        
