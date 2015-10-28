@@ -665,10 +665,11 @@ namespace embree
       __forceinline TransformNode () {}
 
       __forceinline TransformNode(const AffineSpace3fa& local2world, const BBox3fa& localBounds, NodeRef child, unsigned mask, unsigned int instID, unsigned int xfmID, unsigned int type)
-        : local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), child(child), mask(mask), instID(instID), xfmID(xfmID), type(type) {}
+        : identity(local2world == AffineSpace3fa(one)), local2world(local2world), world2local(rcp(local2world)), localBounds(localBounds), child(child), mask(mask), instID(instID), xfmID(xfmID), type(type) {}
 
       NodeRef child;
       unsigned mask;
+      bool identity;
       AffineSpace3fa world2local; //!< transforms from world space to local space
       AffineSpace3fa local2world; //!< transforms from local space to world space
       BBox3fa localBounds;

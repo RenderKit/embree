@@ -1065,6 +1065,22 @@ unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   return geomID;
 }
 
+void convertGroup(ISPCGroup* group, RTCScene scene_out)
+{
+  for (size_t i=0; i<group->numGeometries; i++)
+  {
+    ISPCGeometry* geometry = group->geometries[i];
+    if (geometry->type == SUBDIV_MESH)
+      convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+    else if (geometry->type == TRIANGLE_MESH)
+      convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+    else if (geometry->type == HAIR_SET)
+      convertHairSet((ISPCHairSet*) geometry, scene_out);
+    else
+      assert(false);
+  }
+}
+
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
   if (g_instancing_mode == 1) {
@@ -1072,14 +1088,12 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else if (g_instancing_mode == 2) {
+  } else {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
-    return 0;
-  }
+  } 
 }     
 
 typedef ISPCInstance* ISPCInstance_ptr;
@@ -1095,8 +1109,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
     }
   } 
 
-  size_t numGeometries = scene_in->numGeometries;
-  
+  size_t numGeometries = scene_in->numGeometries;  
   geomID_to_scene = new RTCScene[numGeometries];
   geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
 
@@ -1136,18 +1149,20 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
         assert(geomID == i); geomID_to_inst[geomID] = (ISPCInstance*) geometry;
       }
+      else
+        assert(false);
     }
   }
 
   /* use scene instancing feature */
-  else if (g_instancing_mode == 2)
+  else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
     for (size_t i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        convertSubdivMesh((ISPCSubdivMesh*) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1163,10 +1178,18 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
+      else if (geometry->type == GROUP) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertGroup((ISPCGroup*) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
       else if (geometry->type == INSTANCE) {
         unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
         geomID_to_scene[i] = nullptr; geomID_to_inst[geomID] = (ISPCInstance*) geometry;
       }
+      else
+        assert(false);
     }
   } 
 
@@ -1188,6 +1211,8 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i);
       }
+      else
+        assert(false);
     }
   }
 
@@ -1235,10 +1260,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
   
@@ -1259,10 +1283,57 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
+void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+{
+  if (geometry->type == TRIANGLE_MESH) 
+  {
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+    materialID = mesh->triangles[ray.primID].materialID;
+    if (mesh->texcoords) {
+      ISPCTriangle* tri = &mesh->triangles[ray.primID];
+      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
+      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
+      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      const Vec2f st = w*st0 + u*st1 + v*st2;
+      dg.u = st.x;
+      dg.v = st.y;
+    } 
+  }
+  else if (geometry->type == SUBDIV_MESH) 
+  {
+    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+    materialID = mesh->materialID; 
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
+  }
+  else if (geometry->type == HAIR_SET) 
+  {
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->materialID;
+    const Vec3fa dx = normalize(dg.Ng);
+    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+    const Vec3fa dz = normalize(cross(dy,dx));
+    dg.Tx = dx;
+    dg.Ty = dy;
+    dg.Ng = dg.Ns = dz;
+    Vec3fa p = evalBezier(mesh,ray.primID,ray.u);
+    dg.tnear_eps = 1.1f*p.w;
+  }
+  else if (geometry->type == GROUP) {
+    int geomID = ray.geomID; {
+      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
+    }
+  }
+  else
+    assert(false);
+}
+
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   dg.tnear_eps = 0.001f;
   int geomID = ray_geomID; 
   {
@@ -1277,43 +1348,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
       geometry = g_ispc_scene->geometries[geomID];
     }
 
-    if (geometry->type == TRIANGLE_MESH) 
-    {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      materialID = mesh->triangles[ray.primID].materialID;
-      if (mesh->texcoords) {
-        ISPCTriangle* tri = &mesh->triangles[ray.primID];
-        const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-        const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-        const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
-        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        const Vec2f st = w*st0 + u*st1 + v*st2;
-        dg.u = st.x;
-        dg.v = st.y;
-      } 
-    }
-    else if (geometry->type == SUBDIV_MESH) 
-    {
-      ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-      materialID = mesh->materialID; 
-      const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-      dg.u = st.x;
-      dg.v = st.y;
-    }
-    else if (geometry->type == HAIR_SET) 
-    {
-      ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-      materialID = mesh->materialID;
-      const Vec3fa dx = normalize(dg.Ng);
-      const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
-      const Vec3fa dz = normalize(cross(dy,dx));
-      dg.Tx = dx;
-      dg.Ty = dy;
-      dg.Ng = dg.Ns = dz;
-
-      Vec3fa p = evalBezier(geomID,ray.primID,ray.u);
-      dg.tnear_eps = 1.1f*p.w;
-    }
+    postIntersectGeometry(ray,dg,geometry,materialID);
 
     /* convert normals */
     if (instance) {

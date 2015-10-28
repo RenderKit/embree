@@ -42,6 +42,76 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
+  void SceneGraph::Node::resetNode(std::set<Ref<Node>>& done)
+  {
+    indegree = 0;
+    closed = true;
+  }
+
+  void SceneGraph::TransformNode::resetNode(std::set<Ref<Node>>& done)
+  {
+    if (done.find(this) != done.end()) return;
+    else done.insert(this);
+    indegree = 0;
+    closed = false;
+    child->resetNode(done);
+  }
+
+  void SceneGraph::GroupNode::resetNode(std::set<Ref<Node>>& done)
+  {
+    if (done.find(this) != done.end()) return;
+    else done.insert(this);
+    indegree = 0;
+    closed = false;
+    for (auto c : children)
+      c->resetNode(done);
+  }
+
+  void SceneGraph::Node::calculateInDegree() {
+    indegree++;
+  }
+
+  void SceneGraph::TransformNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      child->calculateInDegree();
+      if (xfm0 != xfm1) child->calculateInDegree(); // break instanced up when motion blur is used
+    }
+  }
+
+  void SceneGraph::GroupNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      for (auto c : children)
+        c->calculateInDegree();
+    }
+  }
+
+  bool SceneGraph::Node::calculateClosed() 
+  {
+    assert(indegree);
+    closed = true;
+    return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::TransformNode::calculateClosed() 
+  {
+    assert(indegree);
+    closed = child->calculateClosed();
+    return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::GroupNode::calculateClosed()
+  {
+    assert(indegree);
+    closed = true;
+    for (auto c : children)
+      closed &= c->calculateClosed();
+    return closed && (indegree == 1);
+  }
+  
   void SceneGraph::TriangleMeshNode::verify() const
   {
     const size_t numVertices = v.size();

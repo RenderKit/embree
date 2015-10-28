@@ -275,7 +275,8 @@ namespace embree
   {
     if (device->subdiv_accel == "default") 
     {
-      if (isIncoherent(flags) && isStatic())
+      bool packetsEnabled = aflags & (RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
+      if (isIncoherent(flags) && isStatic() && !packetsEnabled) // cannot choose for packets as intersection filter not implemented yet
         accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
       else
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));

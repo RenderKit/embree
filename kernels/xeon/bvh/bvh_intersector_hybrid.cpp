@@ -372,9 +372,12 @@ namespace embree
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector4Hybrid Definitions
+    /// BVH4Intersector4 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1vIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1iIntersectorK<4> > >);
+  
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
 #if defined(__AVX__)
@@ -390,12 +393,17 @@ namespace embree
 #endif
    
     DEFINE_INTERSECTOR4(BVH4Subdivpatch1CachedIntersector4, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector4>);
+    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA ObjectIntersector4> >);
+
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector8Hybrid Definitions
+    /// BVH4Intersector8 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
+    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1vIntersectorK<8> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1iIntersectorK<8> > >);
+
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
@@ -409,6 +417,7 @@ namespace embree
     
     DEFINE_INTERSECTOR8(BVH4Subdivpatch1CachedIntersector8, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector8>);
 
+    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA ObjectIntersector8> >);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -416,6 +425,9 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
+    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1vIntersectorK<16> > >);
+    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1iIntersectorK<16> > >);
+  
     DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
@@ -429,74 +441,11 @@ namespace embree
 
     DEFINE_INTERSECTOR16(BVH4Subdivpatch1CachedIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1CachedIntersector16>);
 
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector4Chunk Definitions
-    ////////////////////////////////////////////////////////////////////////////////
-
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1vIntersectorK<4> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1iIntersectorK<4> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
-#if defined(__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle8Intersector4ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 4 COMMA false> > >);
-
-    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector4ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
-#endif
-    DEFINE_INTERSECTOR4(BVH4Triangle4vIntersector4ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<4 COMMA TriangleMvIntersectorKPluecker<4 COMMA 4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Triangle4iIntersector4ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<4 COMMA Triangle4iIntersectorKPluecker<4 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4VirtualIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA ObjectIntersector4> >);
-
-    DEFINE_INTERSECTOR4(BVH4Triangle4vMBIntersector4ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK<4 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector8Chunk Definitions
-    ////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__AVX__)
-    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1vIntersectorK<8> > >);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1iIntersectorK<8> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4vIntersector8ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<8 COMMA TriangleMvIntersectorKPluecker<4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4Triangle4iIntersector8ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<8 COMMA Triangle4iIntersectorKPluecker<8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH4VirtualIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA ObjectIntersector8> >);
-
-    DEFINE_INTERSECTOR8(BVH4Triangle4vMBIntersector8ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
-
-    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector8ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4TrianglePairs4Intersector8ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector16Chunk Definitions
-    ////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__AVX512F__)
-    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1vIntersectorK<16> > >);
-    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1iIntersectorK<16> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
-
-    DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
-
-    DEFINE_INTERSECTOR16(BVH4TrianglePairs4Intersector16ChunkMoellerNoFilter, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
-
-    DEFINE_INTERSECTOR16(BVH4Triangle4vIntersector16ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<16 COMMA TriangleMvIntersectorKPluecker<4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR16(BVH4Triangle4iIntersector16ChunkPluecker, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA ArrayIntersectorK<16 COMMA Triangle4iIntersectorKPluecker<16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4VirtualIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA ObjectIntersector16> >);
-    DEFINE_INTERSECTOR16(BVH4Triangle4vMBIntersector16ChunkMoeller, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMvMBIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH8Intersector4Hybrid Definitions
+    /// BVH8Intersector4 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
@@ -513,7 +462,7 @@ namespace embree
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH8Intersector8Hybrid Definitions
+    /// BVH8Intersector8 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
@@ -530,7 +479,7 @@ namespace embree
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH8Intersector16Hybrid Definitions
+    /// BVH8Intersector16 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
@@ -544,27 +493,6 @@ namespace embree
 
     DEFINE_INTERSECTOR16(BVH8TrianglePairs4Intersector16HybridMoeller,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH8TrianglePairs4Intersector16HybridMoellerNoFilter,BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TrianglePairsMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// BVH8Intersector8Chunk Definitions
-    ////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__AVX__)
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8ChunkMoeller,BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoeller,BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
-
-    DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8ChunkMoellerNoFilter,BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
-    DEFINE_INTERSECTOR8(BVH8Triangle8Intersector8ChunkMoellerNoFilter,BVHNIntersectorKChunk<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA false> > >);
-#endif
-
-    ////////////////////////////////////////////////////////////////////////////////
-    /// BVH8Intersector16Chunk Definitions
-    ////////////////////////////////////////////////////////////////////////////////
-
-#if defined(__AVX512F__)
-    DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16ChunkMoeller,BVHNIntersectorKChunk<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
-    DEFINE_INTERSECTOR16(BVH8Triangle8Intersector16ChunkMoeller,BVHNIntersectorKChunk<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA false> > >);
 #endif
   }
 }

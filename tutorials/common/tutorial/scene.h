@@ -26,7 +26,8 @@ namespace embree
   {
     TutorialScene () {}
 
-    void add (Ref<SceneGraph::Node> node, bool instancing = false);
+    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_SCENE_GEOMETRY, INSTANCING_SCENE_GROUP };
+    void add (Ref<SceneGraph::Node> node, InstancingMode instancing);
 
     /*! OBJ Triangle */
     struct Triangle 
@@ -57,7 +58,7 @@ namespace embree
 
     struct Geometry : public RefCount
     {
-      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
       Type type;
 
       Geometry (Type type) : type(type) {}
@@ -126,6 +127,18 @@ namespace embree
     public:
       AffineSpace3fa space;
       int geomID;
+    };
+
+    struct Group : public Geometry
+    {
+      Group (std::vector<Ref<Geometry>> children)
+        : Geometry(GROUP), children(children) {}
+
+      size_t size() const { return children.size(); }
+      Ref<Geometry> at(size_t i) { return children[i]; }
+
+    public:
+      std::vector<Ref<Geometry>> children;
     };
 
     bool empty() const {

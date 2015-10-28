@@ -32,7 +32,7 @@ struct ISPCQuad
   int v3;                /*< fourth triangle vertex */
 };
 
-enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
 
 struct ISPCGeometry
 {
@@ -102,6 +102,7 @@ struct ISPCHairSet
 struct ISPCInstance
 {
   uniform ISPCGeometry geom;
+  int8 align[12];
   struct {
     struct {
       Vec3fa vx;
@@ -111,6 +112,13 @@ struct ISPCInstance
     Vec3fa p;
   } space;
   int geomID;
+};
+
+struct ISPCGroup
+{
+  ISPCGeometry geom;
+  ISPCGeometry** geometries;
+  size_t numGeometries;
 };
 
 struct ISPCAmbientLight

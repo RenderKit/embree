@@ -466,7 +466,7 @@ float noise(float x, float y, float z)
       g_scene->add(SceneGraph::load(sceneFilename));
     
     /* convert scene graph to OBJ scene */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>());
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),TutorialScene::INSTANCING_NONE);
     g_scene = nullptr;
     
     /* if scene is empty, create default scene */

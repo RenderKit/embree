@@ -109,9 +109,10 @@ namespace embree
 
       else if (tag == "-instancing") {
         std::string mode = cin->getString();
-        if      (mode == "none"    ) g_instancing_mode = 0;
-        else if (mode == "geometry") g_instancing_mode = 1;
-        else if (mode == "scene"   ) g_instancing_mode = 2;
+        if      (mode == "none"    ) g_instancing_mode = TutorialScene::INSTANCING_NONE;
+        else if (mode == "geometry") g_instancing_mode = TutorialScene::INSTANCING_GEOMETRY;
+        else if (mode == "scene_geometry") g_instancing_mode = TutorialScene::INSTANCING_SCENE_GEOMETRY;
+        else if (mode == "scene_group"   ) g_instancing_mode = TutorialScene::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);
       }
 
@@ -230,7 +231,7 @@ namespace embree
       std::cout << "." << std::flush;
       TutorialScene *scene = new TutorialScene;
       FileName keyframe = fileName[i];
-      scene->add(loadOBJ(keyframe,true));
+      scene->add(loadOBJ(keyframe,true),TutorialScene::INSTANCING_NONE);
       g_keyframes.push_back(scene);
     }
     std::cout << std::endl;
@@ -279,7 +280,7 @@ namespace embree
       loadKeyFrameAnimation(keyframeList);
     
     /* initialize ray tracing core */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),g_instancing_mode); 
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 
     g_scene = nullptr;
     init(g_rtcore.c_str());
 
