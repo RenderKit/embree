@@ -24,11 +24,13 @@ SET(FLAGS_AVX2   "-xCORE-AVX2")
 SET(FLAGS_AVX512KNL "-xMIC-AVX512")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -no-ansi-alias -static-intel -fasm-blocks")
+
 SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g -O0")
-##SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict -g -debug inline-debug-info")
 SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -restrict -no-inline-max-total-size -inline-factor=200")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DDEBUG  -g -O3 -restrict -no-inline-max-total-size -inline-factor=200")
-SET(CMAKE_EXE_LINKER_FLAGS "-g") 
+
+#SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -debug inline-debug-info")
+#SET(CMAKE_EXE_LINKER_FLAGS "-g") 
 
 IF (NOT RTCORE_EXPORT_ALL_SYMBOLS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
