@@ -25,11 +25,18 @@ namespace embree
   {
     struct Node : public RefCount
     {
-      Node () 
-        : name("unnamed"), indegree(0), closed(false) {}
-      
-      Node (const std::string& name)
-        : name(name) {}
+      Node (bool closed = false)
+        : indegree(0), closed(closed) {}
+
+       /* resets indegree and closed parameters */
+      void reset()
+      {
+        std::set<Ref<Node>> done;
+        resetNode(done);
+      }
+
+      /* resets indegree and closed parameters */
+      virtual void resetNode(std::set<Ref<Node>>& done);
 
       /* calculates the number of parent nodes pointing to this node */
       virtual void calculateInDegree();
@@ -37,8 +44,10 @@ namespace embree
       /* calculates for each node if its subtree is closed, indegrees have to be calculated first */
       virtual bool calculateClosed();
 
+      /* checks if the node is closed */
+      __forceinline bool isClosed() const { return closed; }
+
     protected:
-      std::string name;  // name of the node
       size_t indegree;   // number of nodes pointing to us
       bool closed;       // determines if the subtree may represent an instance
     };
@@ -53,6 +62,7 @@ namespace embree
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
         : xfm0(xfm0), xfm1(xfm1), child(child) {}
 
+      virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
 
@@ -76,6 +86,7 @@ namespace embree
         children[i] = node;
       }
 
+      virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
       
@@ -119,7 +130,7 @@ namespace embree
       
     public:
       TriangleMeshNode (Ref<MaterialNode> material) 
-        : material(material) {}
+        : Node(true), material(material) {}
       
       void verify() const;
 
@@ -136,7 +147,7 @@ namespace embree
     struct SubdivMeshNode : public Node
     {
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : material(material) {}
+        : Node(true), material(material) {}
 
       void verify() const;
       
@@ -171,7 +182,7 @@ namespace embree
       
     public:
       HairSetNode (Ref<MaterialNode> material)
-      : material(material) {}
+        : Node(true), material(material) {}
       
       void verify() const;
 
