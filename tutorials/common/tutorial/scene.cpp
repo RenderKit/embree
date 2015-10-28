@@ -177,7 +177,7 @@ namespace embree
       {
         std::vector<Ref<TutorialScene::Geometry>> geometries;
         convertGeometries(geometries,node,one,one);
-
+        
         if (geometries.size() == 1)
           scene->geometries.push_back(geometries[0]);
         else 

@@ -1065,6 +1065,22 @@ uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene 
   return geomID;
 }
 
+void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
+{
+  for (uniform size_t i=0; i<group->numGeometries; i++)
+  {
+    uniform ISPCGeometry* uniform geometry = group->geometries[i];
+    if (geometry->type == SUBDIV_MESH)
+      convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
+    else if (geometry->type == TRIANGLE_MESH)
+      convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+    else if (geometry->type == HAIR_SET)
+      convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
+    else
+      assert(false);
+  }
+}
+
 uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
 {
   if (g_instancing_mode == 1) {
@@ -1072,14 +1088,12 @@ uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uni
     uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else if (g_instancing_mode == 2) {
+  } else {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
-    return 0;
-  }
+  } 
 }     
 
 typedef uniform ISPCInstance* uniform ISPCInstance_ptr;
@@ -1136,18 +1150,20 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
         uniform unsigned int geomID = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
         assert(geomID == i); geomID_to_inst[geomID] = (uniform ISPCInstance* uniform) geometry;
       }
+      else
+        assert(false);
     }
   }
 
   /* use scene instancing feature */
-  else if (g_instancing_mode == 2)
+  else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
     for (uniform size_t i=0; i<scene_in->numGeometries; i++)
     {
       uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
+        convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1163,10 +1179,18 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
+      else if (geometry->type == GROUP) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertGroup((uniform ISPCGroup* uniform) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
       else if (geometry->type == INSTANCE) {
         uniform unsigned int geomID = convertInstance((uniform ISPCInstance* uniform) geometry, i, scene_out);
         geomID_to_scene[i] = NULL; geomID_to_inst[geomID] = (uniform ISPCInstance* uniform) geometry;
       }
+      else
+        assert(false);
     }
   } 
 
@@ -1188,6 +1212,8 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
         uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i);
       }
+      else
+        assert(false);
     }
   }
 
@@ -1235,10 +1261,9 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
+inline Vec3fa evalBezier(const ISPCHairSet* uniform hair, const int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
   const Vec3fa* vertices = hair->v;
   const ISPCHair* hairs = hair->hairs;
   
@@ -1259,10 +1284,57 @@ inline Vec3fa evalBezier(const int geomID, const int primID, const float t)
   //tangent = p21-p20;
 }
 
+void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
+{
+  if (geometry->type == TRIANGLE_MESH) 
+  {
+    uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
+    materialID = mesh->triangles[ray.primID].materialID;
+    if (mesh->texcoords) {
+      ISPCTriangle* tri = &mesh->triangles[ray.primID];
+      const Vec2f st0 = make_Vec2f(mesh->texcoords[tri->v0]);
+      const Vec2f st1 = make_Vec2f(mesh->texcoords[tri->v1]);
+      const Vec2f st2 = make_Vec2f(mesh->texcoords[tri->v2]);
+      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      const Vec2f st = w*st0 + u*st1 + v*st2;
+      dg.u = st.x;
+      dg.v = st.y;
+    } 
+  }
+  else if (geometry->type == SUBDIV_MESH) 
+  {
+    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
+    materialID = mesh->materialID; 
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
+  }
+  else if (geometry->type == HAIR_SET) 
+  {
+    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
+    materialID = mesh->materialID;
+    const Vec3f dx = normalize(dg.Ng);
+    const Vec3f dy = normalize(cross(neg(ray.dir),dx));
+    const Vec3f dz = normalize(cross(dy,dx));
+    dg.Tx = dx;
+    dg.Ty = dy;
+    dg.Ng = dg.Ns = dz;
+    Vec3fa p = evalBezier(mesh,ray.primID,ray.u);
+    dg.tnear_eps = 1.1f*p.w;
+  }
+  else if (geometry->type == GROUP) {
+    foreach_unique (geomID in ray.geomID) {
+      postIntersectGeometry(ray,dg,((uniform ISPCGroup*) geometry)->geometries[geomID],materialID);
+    }
+  }
+  else
+    assert(false);
+}
+
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
   dg.tnear_eps = 0.001f;
   foreach_unique (geomID in ray_geomID) 
   {
@@ -1277,43 +1349,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
       geometry = g_ispc_scene->geometries[geomID];
     }
 
-    if (geometry->type == TRIANGLE_MESH) 
-    {
-      uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
-      materialID = mesh->triangles[ray.primID].materialID;
-      if (mesh->texcoords) {
-        ISPCTriangle* tri = &mesh->triangles[ray.primID];
-        const Vec2f st0 = make_Vec2f(mesh->texcoords[tri->v0]);
-        const Vec2f st1 = make_Vec2f(mesh->texcoords[tri->v1]);
-        const Vec2f st2 = make_Vec2f(mesh->texcoords[tri->v2]);
-        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        const Vec2f st = w*st0 + u*st1 + v*st2;
-        dg.u = st.x;
-        dg.v = st.y;
-      } 
-    }
-    else if (geometry->type == SUBDIV_MESH) 
-    {
-      uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-      materialID = mesh->materialID; 
-      const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-      dg.u = st.x;
-      dg.v = st.y;
-    }
-    else if (geometry->type == HAIR_SET) 
-    {
-      uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-      materialID = mesh->materialID;
-      const Vec3f dx = normalize(dg.Ng);
-      const Vec3f dy = normalize(cross(neg(ray.dir),dx));
-      const Vec3f dz = normalize(cross(dy,dx));
-      dg.Tx = dx;
-      dg.Ty = dy;
-      dg.Ng = dg.Ns = dz;
-
-      Vec3fa p = evalBezier(geomID,ray.primID,ray.u);
-      dg.tnear_eps = 1.1f*p.w;
-    }
+    postIntersectGeometry(ray,dg,geometry,materialID);
 
     /* convert normals */
     if (instance) {

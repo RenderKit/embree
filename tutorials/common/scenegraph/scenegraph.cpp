@@ -92,7 +92,8 @@ namespace embree
   bool SceneGraph::Node::calculateClosed() 
   {
     assert(indegree);
-    return closed = indegree == 1;
+    closed = true;
+    return closed && (indegree == 1);
   }
 
   bool SceneGraph::TransformNode::calculateClosed() 
