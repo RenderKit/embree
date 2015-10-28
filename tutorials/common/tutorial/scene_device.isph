@@ -114,6 +114,13 @@ struct ISPCInstance
   int geomID;
 };
 
+struct ISPCGroup
+{
+  ISPCGeometry geom;
+  ISPCGeometry* geometries;
+  size_t numGeometries;
+};
+
 struct ISPCAmbientLight
 {
   Vec3fa L;                  //!< radiance of ambient light

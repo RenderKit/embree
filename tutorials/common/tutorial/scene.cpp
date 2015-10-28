@@ -178,17 +178,11 @@ namespace embree
         std::vector<Ref<TutorialScene::Geometry>> geometries;
         convertGeometries(geometries,node,one,one);
 
-        if (geometries.size() == 1) {
+        if (geometries.size() == 1)
           scene->geometries.push_back(geometries[0]);
-        }
-        else {
-          Ref<TutorialScene::Group> group = new TutorialScene::Group;
-          for (auto g : geometries) {
-            scene->geometries.push_back(g);
-            group->children.push_back(scene->geometries.size()-1);
-          }
-          scene->geometries.push_back(group.cast<TutorialScene::Geometry>());
-        }
+        else 
+          scene->geometries.push_back(new TutorialScene::Group(geometries));
+        
         geometry2id[node] = scene->geometries.size()-1;
       }
       return geometry2id[node];

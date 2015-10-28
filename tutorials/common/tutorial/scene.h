@@ -131,10 +131,14 @@ namespace embree
 
     struct Group : public Geometry
     {
-      Group (): Geometry(GROUP) {}
+      Group (std::vector<Ref<Geometry>> children)
+        : Geometry(GROUP), children(children) {}
+
       size_t size() const { return children.size(); }
-      int at(size_t i) { return children[i]; }
-      std::vector<int> children;
+      Ref<Geometry> at(size_t i) { return children[i]; }
+
+    public:
+      std::vector<Ref<Geometry>> children;
     };
 
     bool empty() const {
