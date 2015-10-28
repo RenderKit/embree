@@ -102,6 +102,7 @@ struct ISPCHairSet
 struct ISPCInstance
 {
   uniform ISPCGeometry geom;
+  int8 align[12];
   struct {
     struct {
       Vec3fa vx;
