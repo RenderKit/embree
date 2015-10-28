@@ -28,14 +28,12 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle4Intersector4HybridMoellerNoFilter);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8ChunkMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle4Intersector8HybridMoellerNoFilter);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle8Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Triangle8Intersector4HybridMoellerNoFilter);
-  DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8ChunkMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8Triangle8Intersector8HybridMoellerNoFilter);
 
@@ -45,10 +43,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
 
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16ChunkMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16ChunkMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
 
@@ -88,21 +84,17 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector4HybridMoellerNoFilter);
 
     /* select intersectors8 */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector8HybridMoellerNoFilter);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector8HybridMoellerNoFilter);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector8HybridMoeller);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector8HybridMoellerNoFilter);
 
     /* select intersectors16 */
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter);
 
-    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16ChunkMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle8Intersector16HybridMoellerNoFilter);
 
