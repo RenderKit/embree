@@ -42,6 +42,48 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
+  void SceneGraph::Node::calculateInDegree() {
+    indegree++;
+  }
+
+  void SceneGraph::TransformNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) 
+      child->calculateInDegree();
+  }
+
+  void SceneGraph::GroupNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      for (auto c : children)
+        c->calculateInDegree();
+    }
+  }
+
+  bool SceneGraph::Node::calculateClosed() 
+  {
+    assert(indegree);
+    return closed = indegree == 1;
+  }
+
+  bool SceneGraph::TransformNode::calculateClosed() 
+  {
+    assert(indegree);
+    closed = child->calculateClosed();
+    return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::GroupNode::calculateClosed()
+  {
+    assert(indegree);
+    closed = true;
+    for (auto c : children)
+      closed &= c->calculateClosed();
+    return closed && (indegree == 1);
+  }
+  
   void SceneGraph::TriangleMeshNode::verify() const
   {
     const size_t numVertices = v.size();
