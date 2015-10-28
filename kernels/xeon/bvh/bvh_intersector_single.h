@@ -261,7 +261,7 @@ namespace embree
 	  NodeRef cur = NodeRef(stackPtr->ptr);
 	  
 	  /*! if popped node is too far, pop next one */
-	  //if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k])) continue;
+	  if (unlikely(*(float*)&stackPtr->dist >= ray.tfar[k])) continue;
 
           assert(*(float*)&stackPtr->dist < ray.tfar[k]);
 
@@ -277,7 +277,7 @@ namespace embree
             /* intersect node */
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
-#if 1
+#if 0
             const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
             const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
             const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
@@ -325,7 +325,6 @@ namespace embree
 
 	  /*! sentinal to indicate stack is empty */          
           if (unlikely(cur == BVH::invalidNode)) {
-            assert(sptr_node == stack_node);
             break;
           }
         
@@ -341,7 +340,7 @@ namespace embree
 
         // perform stack compaction
           ray_far = select(mask8,vfloat<K>(ray.tfar[k] ),vfloat<K>(neg_inf));
-#if 1
+#if 0
           if (unlikely(ray.tfar[k] < old_tfar))
           {
             StackItemT<NodeRef>* left = stack + 1;

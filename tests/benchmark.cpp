@@ -805,12 +805,32 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
+#if 1
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
+#else
+#define NUM 128
+      float rx[NUM];
+      float ry[NUM];
+      float rz[NUM];
+
+      for (size_t i=0; i<NUM; i++) {
+        rx[i] = drand48();
+        ry[i] = drand48();
+        rz[i] = drand48();
+      }
+
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*rx[i%NUM]-1.0f;
+        float y = 2.0f*ry[i%NUM]-1.0f;
+        float z = 2.0f*rz[i%NUM]-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#endif
 
       __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 
