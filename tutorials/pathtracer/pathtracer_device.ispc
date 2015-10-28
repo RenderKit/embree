@@ -1109,8 +1109,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
     }
   } 
 
-  uniform size_t numGeometries = scene_in->numGeometries;
-  
+  uniform size_t numGeometries = scene_in->numGeometries;  
   geomID_to_scene = uniform new RTCScene[numGeometries];
   geomID_to_inst  = uniform new ISPCInstance_ptr[numGeometries];
 

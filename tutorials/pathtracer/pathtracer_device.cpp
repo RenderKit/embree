@@ -1109,8 +1109,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
     }
   } 
 
-  size_t numGeometries = scene_in->numGeometries;
-  
+  size_t numGeometries = scene_in->numGeometries;  
   geomID_to_scene = new RTCScene[numGeometries];
   geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
 
