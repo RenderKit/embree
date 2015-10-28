@@ -175,10 +175,20 @@ namespace embree
     {
       if (geometry2id.find(node) == geometry2id.end())
       {
-        Ref<TutorialScene::Group> group = new TutorialScene::Group;
-        convertGeometries(group->children,node,one,one);
-        if (group->size() == 1) scene->geometries.push_back(group->at(0));
-        else                    scene->geometries.push_back(group.cast<TutorialScene::Geometry>());
+        std::vector<Ref<TutorialScene::Geometry>> geometries;
+        convertGeometries(geometries,node,one,one);
+
+        if (geometries.size() == 1) {
+          scene->geometries.push_back(geometries[0]);
+        }
+        else {
+          Ref<TutorialScene::Group> group = new TutorialScene::Group;
+          for (auto g : geometries) {
+            scene->geometries.push_back(g);
+            group->children.push_back(scene->geometries.size()-1);
+          }
+          scene->geometries.push_back(group.cast<TutorialScene::Geometry>());
+        }
         geometry2id[node] = scene->geometries.size()-1;
       }
       return geometry2id[node];

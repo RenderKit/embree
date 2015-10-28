@@ -133,8 +133,8 @@ namespace embree
     {
       Group (): Geometry(GROUP) {}
       size_t size() const { return children.size(); }
-      Ref<Geometry> at(size_t i) { return children[i]; }
-      std::vector<Ref<Geometry>> children;
+      int at(size_t i) { return children[i]; }
+      std::vector<int> children;
     };
 
     bool empty() const {

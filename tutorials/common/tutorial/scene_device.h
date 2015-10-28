@@ -40,7 +40,7 @@ namespace embree
     int id;
   };
   
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
   
   struct ISPCGeometry
   {
@@ -176,6 +176,15 @@ namespace embree
     AffineSpace3fa space;
     int geomID;
   };
+
+  struct ISPCGroup
+  {
+    ISPCGroup (Ref<TutorialScene::Group> in)
+      : geom(GROUP), geometries(in->children) {}
+    
+    ISPCGeometry geom;
+    std::vector<int> geometries;
+  };
   
   struct ISPCAmbientLight
   {
@@ -202,8 +211,6 @@ namespace embree
     float radHalfAngle;  //!< Half illumination angle in radians
     float cosHalfAngle;  //!< Cosine of half illumination angle
   };
-  
-//enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
   
   struct ISPCMaterial
   {
@@ -260,6 +267,8 @@ namespace embree
         return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
       else if (in->type == TutorialScene::Geometry::INSTANCE)
         return (ISPCGeometry*) new ISPCInstance(in.dynamicCast<TutorialScene::Instance>());
+      else if (in->type == TutorialScene::Geometry::GROUP)
+        return (ISPCGeometry*) new ISPCGroup(in.dynamicCast<TutorialScene::Group>());
       else 
         THROW_RUNTIME_ERROR("unknown geometry type");
     }
