@@ -813,7 +813,7 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 #else
-#define NUM 128
+#define NUM 1
       float rx[NUM];
       float ry[NUM];
       float rz[NUM];
@@ -857,6 +857,8 @@ namespace embree
 
       int numPhi = 501;
       //int numPhi = 61;
+      //int numPhi = 1601;
+
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);

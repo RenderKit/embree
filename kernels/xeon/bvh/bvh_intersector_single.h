@@ -277,7 +277,7 @@ namespace embree
             /* intersect node */
             //BVHNNodeIntersector1<N,types,false>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
             const typename BVH8::Node* node = cur.node();
-#if 0
+#if 1
             const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
             const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
             const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
