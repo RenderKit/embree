@@ -56,13 +56,26 @@ REM compile
 cmake --clean-first --build . --config Release --target PREINSTALL -- /m /nologo /verbosity:n
 
 REM create installers
-cmake -D RTCORE_ZIP_MODE=OFF ..
+cmake ^
+-D RTCORE_ZIP_MODE=OFF ^
+-D CMAKE_INSTALL_INCLUDEDIR=include ^
+-D CMAKE_INSTALL_LIBDIR=lib ^
+-D CMAKE_INSTALL_DOCDIR=doc ^
+-D CMAKE_INSTALL_BINDIR=bin ^
+..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
 REM create ZIP files
-cmake -D RTCORE_ZIP_MODE=ON -D CMAKE_INSTALL_PREFIX= ..
+cmake ^
+-D RTCORE_ZIP_MODE=ON ^
+-D CMAKE_INSTALL_INCLUDEDIR=include ^
+-D CMAKE_INSTALL_LIBDIR=lib ^
+-D CMAKE_INSTALL_DOCDIR=doc ^
+-D CMAKE_INSTALL_BINDIR=bin ^
+..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
+del CMakeCache.txt 
 cd ..
 
 :abort
