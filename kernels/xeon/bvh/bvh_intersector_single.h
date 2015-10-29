@@ -233,7 +233,6 @@ namespace embree
                                            const vfloat<K> &ray_tfar,
                                            const Vec3viK& nearXYZ)
       {
-        asm nop;
 	/*! stack state */
 	StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
 	StackItemT<NodeRef>* stackPtr = stack + 2;        //!< current stack pointer

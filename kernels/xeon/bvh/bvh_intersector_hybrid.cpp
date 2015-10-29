@@ -228,40 +228,211 @@ namespace embree
       ray_tfar16  = select(valid0,ray_tfar16 ,vfloat<K>(neg_inf));
 
       /* compute near/far per ray */
-      Vec3viK nearXYZ;
-      nearXYZ.x = select(rdir16.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
-      nearXYZ.y = select(rdir16.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
-      nearXYZ.z = select(rdir16.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+      // Vec3viK nearXYZ;
+      // nearXYZ.x = select(rdir16.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      // nearXYZ.y = select(rdir16.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      // nearXYZ.z = select(rdir16.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
       Precalculations pre(valid0,ray);
 
 
-      StackItemT<NodeRef> stack[stackSizeSingle];  //!< stack of nodes 
-      StackItemT<NodeRef>* stackEnd = stack + stackSizeSingle;
-      stack[0].ptr  = BVH::invalidNode;
-      stack[0].dist = pos_inf;
+      StackItemT<NodeRef> stack0[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef> stack1[stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>* stackEnd0 = stack0 + stackSizeSingle;
+      StackItemT<NodeRef>* stackEnd1 = stack1 + stackSizeSingle;
+
+      stack0[0].ptr  = BVH::invalidNode;
+      stack0[0].dist = pos_inf;
+      stack1[0].ptr  = BVH::invalidNode;
+      stack1[0].dist = pos_inf;
 
 
       size_t m_active = movemask(valid0);
       while(m_active)
       {
+        size_t m_active_traversal = 1;
         size_t rayID0 = __bsf(m_active);
-        m_active      = __btc(m_active,rayID0);
+        m_active      = __btc(m_active,rayID0);       
+        size_t rayID1 = (size_t)-1;
+        if (likely(m_active))
+        {
+          m_active_traversal |= 2;
+          rayID1 = __bsf(m_active);
+          m_active      = __btc(m_active,rayID1);                 
+        }
+
 #if 0
         NodeRef cur = bvh->root;
         BVHNIntersectorKSingle<8,16,types,false,PrimitiveIntersectorK>::intersect1(bvh, cur, rayID0, pre, ray, ray_org16, ray_dir16, rdir16, ray_tnear16, ray_tfar16, nearXYZ);
 #else
 
-	stack[1].ptr  = bvh->root;
-	stack[1].dist = neg_inf;
-        StackItemT<NodeRef>* stackPtr = stack + 2;        //!< current stack pointer
+        
+
+        StackItemT<NodeRef>* stackPtr0 = stack0 + 2;        //!< current stack pointer 0
+        StackItemT<NodeRef>* stackPtr1 = stack1 + 2;        //!< current stack pointer 1
 
 	/*! load the ray into SIMD registers */
-        const vbool16 mask8(0xff);
+        const vbool16 m_lower8(0xff);
 
-        TravRay<K> vray(rayID0,ray_org16,ray_dir16,rdir16,nearXYZ, sizeof(vfloat<N>));
-        const vfloat<K> ray_near(select(mask8,vfloat<K>(ray_tnear16[rayID0]),vfloat<K>(pos_inf)));
-        vfloat<K> ray_far (select(mask8,vfloat<K>(ray_tfar16[rayID0] ),vfloat<K>(neg_inf)));
+        Vec3vfK rdir0 = Vec3vfK(rdir16.x[rayID0],rdir16.y[rayID0],rdir16.z[rayID0]);
+        Vec3vfK rdir1 = Vec3vfK(rdir16.x[rayID1],rdir16.y[rayID1],rdir16.z[rayID1]);
+        Vec3vfK org_rdir0 = Vec3vfK(org_rdir16.x[rayID0],org_rdir16.y[rayID0],org_rdir16.z[rayID0]);
+        Vec3vfK org_rdir1 = Vec3vfK(org_rdir16.x[rayID1],org_rdir16.y[rayID1],org_rdir16.z[rayID1]);
+        vfloat<K> ray_near0(ray_tnear16[rayID0]);
+        vfloat<K> ray_near1(ray_tnear16[rayID1]);
+        vfloat<K> ray_far0(ray_tfar16[rayID0]);
+        vfloat<K> ray_far1(ray_tfar16[rayID1]);
+        asm nop;
+
+        NodeRef cur0 = bvh->root;
+        NodeRef cur1 = bvh->root;
+
+	while (true)
+	{
+          NodeRef cur;
+          /* down traversal */
+          while(true)
+          {                        
+            /*! stop if we found a leaf node for ray0 */
+            if ( likely(m_active_traversal & 1) )
+            {
+              cur = cur0;
+              if (unlikely(cur0.isLeaf())) break;
+              STAT3(normal.trav_nodes,1,1,1);
+              /* intersect node */
+              const typename BVH8::Node* node = cur0.node();
+
+              const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+              const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
+              const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
+              const vbool16 m_node = nodeX != vfloat<K>(pos_inf);
+              const vfloat16 tNearFarX = msub(nodeX, rdir0.x, org_rdir0.x);
+              const vfloat16 tNearFarY = msub(nodeY, rdir0.y, org_rdir0.y);
+              const vfloat16 tNearFarZ = msub(nodeZ, rdir0.z, org_rdir0.z);
+              const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
+              const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
+              const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
+              const vfloat16 tNearX = min(tNearFarX,tFarNearX);
+              const vfloat16 tFarX  = max(tNearFarX,tFarNearX);
+              const vfloat16 tNearY = min(tNearFarY,tFarNearY);
+              const vfloat16 tFarY  = max(tNearFarY,tFarNearY);
+              const vfloat16 tNearZ = min(tNearFarZ,tFarNearZ);
+              const vfloat16 tFarZ  = max(tNearFarZ,tFarNearZ);
+              const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near0);
+              const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far0);
+              const vbool16 vmask = le(m_node,tNear,tFar);
+              size_t mask = movemask(vmask);
+              stackPtr0--;
+              cur0 = NodeRef(stackPtr0->ptr);
+
+              /*! if no child is hit, pop next node */
+              if (unlikely(any(vmask)))
+              {
+                stackPtr0++;
+                /* select next child and push other children */
+                vfloat8 tNear8((__m256)tNear);
+                BVHNNodeTraverser1<N,types>::traverseClosestHit(cur0,node,mask,tNear8,stackPtr0,stackEnd0);              
+              }
+            }
+
+            /*! stop if we found a leaf node for ray1 */
+            if ( likely(m_active_traversal & 2) )
+            {
+              cur = cur0;
+              if (unlikely(cur1.isLeaf())) break;
+              STAT3(normal.trav_nodes,1,1,1);
+              /* intersect node */
+              const typename BVH8::Node* node = cur1.node();
+
+              const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+              const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
+              const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
+              const vbool16 m_node = nodeX != vfloat<K>(pos_inf);
+              const vfloat16 tNearFarX = msub(nodeX, rdir1.x, org_rdir1.x);
+              const vfloat16 tNearFarY = msub(nodeY, rdir1.y, org_rdir1.y);
+              const vfloat16 tNearFarZ = msub(nodeZ, rdir1.z, org_rdir1.z);
+              const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
+              const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
+              const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
+              const vfloat16 tNearX = min(tNearFarX,tFarNearX);
+              const vfloat16 tFarX  = max(tNearFarX,tFarNearX);
+              const vfloat16 tNearY = min(tNearFarY,tFarNearY);
+              const vfloat16 tFarY  = max(tNearFarY,tFarNearY);
+              const vfloat16 tNearZ = min(tNearFarZ,tFarNearZ);
+              const vfloat16 tFarZ  = max(tNearFarZ,tFarNearZ);
+              const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near1);
+              const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far1);
+              const vbool16 vmask = le(m_node,tNear,tFar);
+              size_t mask = movemask(vmask);
+              stackPtr1--;
+              cur1 = NodeRef(stackPtr1->ptr);
+
+              /*! if no child is hit, pop next node */
+              if (unlikely(any(vmask)))
+              {
+                stackPtr1++;
+                /* select next child and push other children */
+                vfloat8 tNear8((__m256)tNear);
+                BVHNNodeTraverser1<N,types>::traverseClosestHit(cur1,node,mask,tNear8,stackPtr1,stackEnd1);              
+              }
+            }           
+          }
+
+          /* leaf code */
+
+	  /*! sentinal to indicate stack is empty */          
+          if (unlikely(cur == BVH::invalidNode)) 
+          {
+            if (cur0 == BVH::invalidNode) m_active_traversal &= ~1;
+            if (cur1 == BVH::invalidNode) m_active_traversal &= ~2;
+            if (unlikely(m_active_traversal == 0))
+              break;
+          }
+          else
+          {
+            assert(cur != BVH::emptyNode);
+            STAT3(normal.trav_leaves, 1, 1, 1);
+            size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+            size_t rayID = cur == cur0 ? rayID0 : rayID1;
+            size_t lazy_node = 0;
+            PrimitiveIntersectorK::intersect(pre, ray, rayID, prim, num, bvh->scene, lazy_node);
+
+            // perform stack0 compaction
+            if (unlikely(any(ray.tfar[rayID0] < ray_far0)))
+            {
+              StackItemT<NodeRef>* left = stack0 + 1;
+              for (StackItemT<NodeRef>* right = stack0+1; right<stackPtr0; right++) 
+              {
+                if (*(float*)&right->dist >= ray.tfar[rayID0]) continue;
+                *left = *right; 
+                left++;
+              }
+              stackPtr0 = left;
+            }
+
+            // perform stack1 compaction
+            if (unlikely(any(ray.tfar[rayID1] < ray_far1)))
+            {
+              StackItemT<NodeRef>* left = stack1 + 1;
+              for (StackItemT<NodeRef>* right = stack1+1; right<stackPtr1; right++) 
+              {
+                if (*(float*)&right->dist >= ray.tfar[rayID1]) continue;
+                *left = *right; 
+                left++;
+              }
+              stackPtr1 = left;
+            }
+
+            ray_far0 = ray.tfar[rayID0];
+            ray_far1 = ray.tfar[rayID1];
+            
+          }
+          
+        }
+
+#if 0
+	org_rdir = org*rdir;
+
 
 	while (true)
 	{
@@ -274,90 +445,44 @@ namespace embree
           /* downtraversal loop */
           while (true)
           {
-            size_t mask;
+            if (unlikely(cur0.isLeaf())) break;
+            {
+              STAT3(normal.trav_nodes,1,1,1);
+              /* intersect node */
+              const typename BVH8::Node* node = cur0.node();
 
-            /*! stop if we found a leaf node */
-            if (unlikely(cur.isLeaf())) break;
-            STAT3(normal.trav_nodes,1,1,1);
+              const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+              const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
+              const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
+              const vbool16 m_node = nodeX != vfloat<K>(pos_inf);
+              const vfloat16 tNearFarX = msub(nodeX, rdir0.x, org_rdir0.x);
+              const vfloat16 tNearFarY = msub(nodeY, rdir0.y, org_rdir0.y);
+              const vfloat16 tNearFarZ = msub(nodeZ, rdir0.z, org_rdir0.z);
+              const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
+              const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
+              const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
+              const vfloat16 tNearX = min(tNearFarX,tFarNearX);
+              const vfloat16 tFarX  = max(tNearFarX,tFarNearX);
+              const vfloat16 tNearY = min(tNearFarY,tFarNearY);
+              const vfloat16 tFarY  = max(tNearFarY,tFarNearY);
+              const vfloat16 tNearZ = min(tNearFarZ,tFarNearZ);
+              const vfloat16 tFarZ  = max(tNearFarZ,tFarNearZ);
+              const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+              const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
+              const vbool16 vmask = le(m_node,tNear,tFar);
+              size_t mask = movemask(vmask);
+              stackPtr0--;
+              cur0 = NodeRef(stackPtr->ptr);
 
-            /* intersect node */
-            const typename BVH8::Node* node = cur.node();
-#if 1
+              /*! if no child is hit, pop next node */
+              if (unlikely(none(vmask))) continue;
+              stackPtr0++;
 
-#if 1
-            const vfloat16 lowerX = vfloat16(*(vfloat8*)&node->lower_x);
-            const vfloat16 upperX = vfloat16(*(vfloat8*)&node->upper_x);
+              /* select next child and push other children */
+              vfloat8 tNear8((__m256)tNear);
+              BVHNNodeTraverser1<N,types>::traverseClosestHit(cur0,node,mask,tNear8,stackPtr0,stackEnd0);
+            }
 
-            const vfloat16 lowerY = vfloat16(*(vfloat8*)&node->lower_y);
-            const vfloat16 upperY = vfloat16(*(vfloat8*)&node->upper_y);
-
-            const vfloat16 lowerZ = vfloat16(*(vfloat8*)&node->lower_z);
-            const vfloat16 upperZ = vfloat16(*(vfloat8*)&node->upper_z);
-
-            const vfloat16 t_lowerX = msub(lowerX, vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 t_upperX = msub(upperX, vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 t_lowerY = msub(lowerY, vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 t_upperY = msub(upperY, vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 t_lowerZ = msub(lowerZ, vray.rdir.z, vray.org_rdir.z);
-            const vfloat16 t_upperZ = msub(upperZ, vray.rdir.z, vray.org_rdir.z);
-
-            const vbool16 m_node = lowerX != vfloat<K>(pos_inf);
-
-            const vfloat16 tNearX = min(t_lowerX,t_upperX);
-            const vfloat16 tFarX  = max(t_lowerX,t_upperX);
-            const vfloat16 tNearY = min(t_lowerY,t_upperY);
-            const vfloat16 tFarY  = max(t_lowerY,t_upperY);
-            const vfloat16 tNearZ = min(t_lowerZ,t_upperZ);
-            const vfloat16 tFarZ  = max(t_lowerZ,t_upperZ);
-
-#else
-            const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
-            const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
-            const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
-            const vbool16 m_node = nodeX != vfloat<K>(pos_inf);
-            const vfloat16 tNearFarX = msub(nodeX, vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 tNearFarY = msub(nodeY, vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 tNearFarZ = msub(nodeZ, vray.rdir.z, vray.org_rdir.z);
-            const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
-            const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
-            const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
-            const vfloat16 tNearX = min(tNearFarX,tFarNearX);
-            const vfloat16 tFarX  = max(tNearFarX,tFarNearX);
-            const vfloat16 tNearY = min(tNearFarY,tFarNearY);
-            const vfloat16 tFarY  = max(tNearFarY,tFarNearY);
-            const vfloat16 tNearZ = min(tNearFarZ,tFarNearZ);
-            const vfloat16 tFarZ  = max(tNearFarZ,tFarNearZ);
-#endif
-            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
-            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-
-            const vbool16 vmask = le(m_node,tNear,tFar);
-
-#else
-            const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
-            const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
-            const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
-            const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
-            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
-            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
-
-            const vbool16 vmask = tNear <= tFar;
-
-#endif
-            mask = movemask(vmask);
-            stackPtr--;
-            cur = NodeRef(stackPtr->ptr);
-
-            /*! if no child is hit, pop next node */
-            //if (unlikely(none(vmask))) goto pop;
-            if (unlikely(none(vmask))) continue;
-            stackPtr++;
-
-            /* select next child and push other children */
-            vfloat8 tNear8((__m256)tNear);
-            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,node,mask,tNear8,stackPtr,stackEnd);
           }
 
 	  /*! sentinal to indicate stack is empty */          
@@ -398,6 +523,7 @@ namespace embree
             stackPtr++;
           }        
         }
+#endif
 #endif
       }
     }
@@ -772,3 +898,44 @@ namespace embree
 #endif
   }
 }
+
+
+/*
+            const vfloat16 lowerX = vfloat16(*(vfloat8*)&node->lower_x);
+            const vfloat16 upperX = vfloat16(*(vfloat8*)&node->upper_x);
+
+            const vfloat16 lowerY = vfloat16(*(vfloat8*)&node->lower_y);
+            const vfloat16 upperY = vfloat16(*(vfloat8*)&node->upper_y);
+
+            const vfloat16 lowerZ = vfloat16(*(vfloat8*)&node->lower_z);
+            const vfloat16 upperZ = vfloat16(*(vfloat8*)&node->upper_z);
+
+            const vfloat16 t_lowerX = msub(lowerX, vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 t_upperX = msub(upperX, vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 t_lowerY = msub(lowerY, vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 t_upperY = msub(upperY, vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 t_lowerZ = msub(lowerZ, vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 t_upperZ = msub(upperZ, vray.rdir.z, vray.org_rdir.z);
+
+            const vbool16 m_node = lowerX != vfloat<K>(pos_inf);
+
+            const vfloat16 tNearX = min(t_lowerX,t_upperX);
+            const vfloat16 tFarX  = max(t_lowerX,t_upperX);
+            const vfloat16 tNearY = min(t_lowerY,t_upperY);
+            const vfloat16 tFarY  = max(t_lowerY,t_upperY);
+            const vfloat16 tNearZ = min(t_lowerZ,t_upperZ);
+            const vfloat16 tFarZ  = max(t_lowerZ,t_upperZ);
+
+            const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearX)), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearY)), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tNearZ = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.nearZ)), vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farX )), vray.rdir.x, vray.org_rdir.x);
+            const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farY )), vray.rdir.y, vray.org_rdir.y);
+            const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+vray.farZ )), vray.rdir.z, vray.org_rdir.z);
+            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near);
+            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far);
+
+            const vbool16 vmask = tNear <= tFar;
+
+
+ */
