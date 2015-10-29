@@ -14,95 +14,68 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-OPTION(ENABLE_INSTALLER "Switches between installer or ZIP file creation for 'make package'" ON)
-MARK_AS_ADVANCED(ENABLE_INSTALLER)
+INCLUDE(GNUInstallDirs)
 
-SET(INCLUDE_INSTALL_DIR include)
-IF (NOT ENABLE_INSTALLER)
-  IF(NOT DEFINED RTCORE_INSTALL_LIBDIR) 
-    SET(RTCORE_INSTALL_LIBDIR lib)
-  ENDIF()
-  SET(RTCORE_INSTALL_DOCDIR doc)
-  SET(RTCORE_INSTALL_BINDIR bin)
-ELSEIF (WIN32)
-  IF(NOT DEFINED RTCORE_INSTALL_LIBDIR) 
-    SET(RTCORE_INSTALL_LIBDIR lib)
-  ENDIF()
-  SET(RTCORE_INSTALL_DOCDIR doc)
-  SET(RTCORE_INSTALL_BINDIR bin)
-ELSEIF (APPLE)
-  IF(NOT DEFINED RTCORE_INSTALL_LIBDIR) 
-    SET(RTCORE_INSTALL_LIBDIR lib)
-  ENDIF()
-  SET(RTCORE_INSTALL_DOCDIR ../../Applications/Embree2/documentation)
-  SET(RTCORE_INSTALL_BINDIR ../../Applications/Embree2/tutorials)
-ELSE()
-  IF(NOT DEFINED RTCORE_INSTALL_LIBDIR) 
-    SET(RTCORE_INSTALL_LIBDIR lib)
-  ENDIF()
-  SET(RTCORE_INSTALL_DOCDIR share/doc/embree-${EMBREE_VERSION})
-  SET(RTCORE_INSTALL_BINDIR bin/embree-${EMBREE_VERSION})
+IF (NOT RTCORE_ZIP_MODE)
+  SET(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/embree${EMBREE_VERSION_MAJOR})
+  SET(CMAKE_INSTALL_FULL_BINDIR ${CMAKE_INSTALL_FULL_BINDIR}/embree${EMBREE_VERSION_MAJOR})
 ENDIF()
 
-IF (ENABLE_INSTALLER AND APPLE)
-  SET(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${RTCORE_INSTALL_LIBDIR}")
-  SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-ELSE()
-  SET(CMAKE_SKIP_INSTALL_RPATH ON)
-ENDIF()
+SET(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_FULL_LIBDIR})
 
 ##############################################################
 # Install Headers
 ##############################################################
-INSTALL(DIRECTORY include/embree2 DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT devel)
+
+INSTALL(DIRECTORY include/embree2 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
 CONFIGURE_FILE(include/embree2/rtcore.h rtcore.h @ONLY)
 CONFIGURE_FILE(include/embree2/rtcore.isph rtcore.isph @ONLY)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION ${INCLUDE_INSTALL_DIR}/embree2 COMPONENT devel)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION ${INCLUDE_INSTALL_DIR}/embree2 COMPONENT devel)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/embree2 COMPONENT devel)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/rtcore.isph DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/embree2 COMPONENT devel)
 
 ##############################################################
 # Install Models
 ##############################################################
-INSTALL(DIRECTORY tutorials/models DESTINATION "${RTCORE_INSTALL_BINDIR}" COMPONENT examples)
+INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
 
 ##############################################################
 # Install Documentation
 ##############################################################
 
-#FILE(GLOB DOC_FILES ${PROJECT_SOURCE_DIR}/embree-doc/docbin/*)
-#INSTALL(FILES ${DOC_FILES} OPTIONAL DESTINATION ${RTCORE_INSTALL_DOCDIR} COMPONENT lib)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${RTCORE_INSTALL_DOCDIR} COMPONENT lib)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${RTCORE_INSTALL_DOCDIR} COMPONENT lib)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${RTCORE_INSTALL_DOCDIR} COMPONENT lib)
-INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${RTCORE_INSTALL_DOCDIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/LICENSE.txt DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/CHANGELOG.md DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/README.md DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT lib)
+INSTALL(FILES ${PROJECT_SOURCE_DIR}/readme.pdf DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT lib)
 
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${RTCORE_INSTALL_DOCDIR}/LICENSE.txt" "LICENSE")
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${RTCORE_INSTALL_DOCDIR}/CHANGELOG.txt" "CHANGELOG")
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${RTCORE_INSTALL_DOCDIR}/README.md" "README.md")
-SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${RTCORE_INSTALL_DOCDIR}/readme.pdf" "readme.pdf")
-
-# currently CMake does not support solution folders without projects
-# SOURCE_GROUP("Documentation" FILES README.md CHANGELOG.md LICENSE.txt readme.pdf)
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_DOCDIR}/LICENSE.txt" "LICENSE")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_DOCDIR}/CHANGELOG.txt" "CHANGELOG")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_DOCDIR}/README.md" "README.md")
+SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_DOCDIR}/readme.pdf" "readme.pdf")
 
 ##############################################################
 # Install scripts to set embree paths
 ##############################################################
 
-IF (NOT ENABLE_INSTALLER)
+IF (RTCORE_ZIP_MODE)
   IF (WIN32)
   ELSEIF(APPLE)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh DESTINATION "." COMPONENT lib)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.csh DESTINATION "." COMPONENT lib)
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.sh embree-vars.sh @ONLY)
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/scripts/install_macosx/embree-vars.csh embree-vars.csh @ONLY)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/embree-vars.sh DESTINATION "." COMPONENT lib)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/embree-vars.csh DESTINATION "." COMPONENT lib)
   ELSE()
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh  DESTINATION "." COMPONENT lib)
-    INSTALL(FILES ${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.csh DESTINATION "." COMPONENT lib)
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.sh embree-vars.sh @ONLY)
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/scripts/install_linux/embree-vars.csh embree-vars.csh @ONLY)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/embree-vars.sh DESTINATION "." COMPONENT lib)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/embree-vars.csh DESTINATION "." COMPONENT lib)
   ENDIF()
 ENDIF()
 
 ##############################################################
 # Install Embree CMake Configuration
 ##############################################################
-IF (ENABLE_INSTALLER)
+
+IF (NOT RTCORE_ZIP_MODE)
   SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION})
 ELSE()
   SET(EMBREE_CONFIG_VERSION ${EMBREE_VERSION_MAJOR})
@@ -112,9 +85,9 @@ IF (WIN32)
   CONFIGURE_FILE(common/cmake/embree-config-windows.cmake embree-config.cmake @ONLY)
 ELSEIF (APPLE)
   CONFIGURE_FILE(common/cmake/embree-config-macosx.cmake embree-config.cmake @ONLY)
-  IF (ENABLE_INSTALLER)
+  IF (NOT RTCORE_ZIP_MODE)
     CONFIGURE_FILE(scripts/install_macosx/uninstall.command uninstall.command @ONLY)
-    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${RTCORE_INSTALL_BINDIR}/.. COMPONENT lib)
+    INSTALL(PROGRAMS "${PROJECT_BINARY_DIR}/uninstall.command" DESTINATION ${CMAKE_INSTALL_BINDIR}/.. COMPONENT lib)
   ENDIF()
 ELSE()
   CONFIGURE_FILE(common/cmake/embree-config-linux.cmake embree-config.cmake @ONLY)
@@ -122,8 +95,8 @@ ENDIF()
 
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
 
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "${RTCORE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
-INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${RTCORE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
+INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}" COMPONENT devel)
 
 ##############################################################
 # CPack specific stuff
@@ -140,6 +113,7 @@ SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Embree: High Performance Ray Tracing Kernels")
 SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
 SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
+SET(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
 SET(CPACK_COMPONENT_LIB_DISPLAY_NAME "Library")
 SET(CPACK_COMPONENT_LIB_DESCRIPTION "The Embree library including documentation.")
@@ -180,7 +154,7 @@ IF(WIN32)
   ENDIF()
 
   # NSIS specific settings
-  IF (ENABLE_INSTALLER)
+  IF (NOT RTCORE_ZIP_MODE)
     SET(CPACK_GENERATOR NSIS)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}")
     SET(CPACK_COMPONENTS_ALL lib devel examples)
@@ -210,7 +184,7 @@ ELSEIF(APPLE)
   CONFIGURE_FILE(README.md README.txt)
   SET(CPACK_RESOURCE_FILE_README ${PROJECT_BINARY_DIR}/README.txt)
 
-  IF (ENABLE_INSTALLER)
+  IF (NOT RTCORE_ZIP_MODE)
     SET(CPACK_GENERATOR PackageMaker)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64")
     #SET(CPACK_COMPONENTS_ALL lib devel examples)
@@ -228,7 +202,7 @@ ELSEIF(APPLE)
 ELSE()
 
 
-  IF (ENABLE_INSTALLER)
+  IF (NOT RTCORE_ZIP_MODE)
 
     SET(CPACK_GENERATOR RPM)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_RPM_PACKAGE_RELEASE}.x86_64")
@@ -253,4 +227,3 @@ ELSE()
   ENDIF()
   
 ENDIF()
-

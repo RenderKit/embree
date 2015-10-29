@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(EMBREE_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/../../../include)
+SET(EMBREE_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/../../../@CMAKE_INSTALL_INCLUDEDIR@)
 SET(EMBREE_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/../../embree.lib)
 
 MARK_AS_ADVANCED(embree_DIR)

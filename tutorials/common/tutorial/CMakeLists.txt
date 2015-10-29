@@ -54,7 +54,7 @@ IF (WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GLUT_DIR}/freeglut.dll $<TARGET_FILE_DIR:tutorial>
     COMMENT "Copy FreeGlut DLL" VERBATIM
   )
-  INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION ${TUTORIAL_INSTALL_DIR} COMPONENT examples)
+  INSTALL(PROGRAMS ${GLUT_DIR}/freeglut.dll DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 ENDIF (WIN32)
 
 ADD_LIBRARY(tutorial_device STATIC tutorial_device.cpp)
