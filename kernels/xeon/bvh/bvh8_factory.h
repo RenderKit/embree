@@ -24,7 +24,7 @@
 namespace embree
 {
   /*! BVH8 instantiations */
-  struct BVH8Factory
+  class BVH8Factory
   {
   public:
     BVH8Factory(int features);
