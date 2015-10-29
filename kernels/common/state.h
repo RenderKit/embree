@@ -71,6 +71,9 @@ namespace embree
     double      hair_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
+    std::string hair_accel_mb;             //!< acceleration structure to use for motion blur hair
+
+  public:
     float       memory_preallocation_factor; 
     size_t      tessellation_cache_size;   //!< size of the shared tessellation cache 
     std::string subdiv_accel;              //!< acceleration structure to use for subdivision surfaces

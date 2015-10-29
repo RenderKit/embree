@@ -36,6 +36,8 @@ namespace embree
     hair_traverser = "default";
     hair_builder_replication_factor = 3.0f;
 
+    hair_accel_mb = "default";
+
     memory_preallocation_factor     = 1.0f; 
 
     tessellation_cache_size = 128*1024*1024;
@@ -224,6 +226,9 @@ namespace embree
       else if (tok == Token::Id("hair_builder_replication_factor") && cin->trySymbol("="))
         hair_builder_replication_factor = cin->get().Int();
 
+      else if (tok == Token::Id("hair_accel_mb") && cin->trySymbol("="))
+        hair_accel_mb = cin->get().Identifier();
+
       else if (tok == Token::Id("instancing_open_min") && cin->trySymbol("="))
         instancing_open_min = cin->get().Int();
       else if (tok == Token::Id("instancing_block_size") && cin->trySymbol("=")) {
@@ -313,6 +318,9 @@ namespace embree
     std::cout << "  builder       = " << hair_builder << std::endl;
     std::cout << "  traverser     = " << hair_traverser << std::endl;
     std::cout << "  replications  = " << hair_builder_replication_factor << std::endl;
+
+    std::cout << "motion blur hair:" << std::endl;
+    std::cout << "  accel         = " << hair_accel_mb << std::endl;
     
     std::cout << "subdivision surfaces:" << std::endl;
     std::cout << "  accel         = " << subdiv_accel << std::endl;
