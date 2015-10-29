@@ -856,6 +856,7 @@ namespace embree
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       int numPhi = 501;
+      //int numPhi = 61;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);

@@ -261,7 +261,7 @@ namespace embree
 	  NodeRef cur = NodeRef(stackPtr->ptr);
 	  
 	  /*! if popped node is too far, pop next one */
-	  if (unlikely(*(float*)&stackPtr->dist >= ray.tfar[k])) continue;
+	  //if (unlikely(*(float*)&stackPtr->dist >= ray.tfar[k])) continue;
 
           assert(*(float*)&stackPtr->dist < ray.tfar[k]);
 
@@ -314,13 +314,17 @@ namespace embree
 
 #endif
             mask = movemask(vmask);
+            stackPtr--;
+            cur = NodeRef(stackPtr->ptr);
 
             /*! if no child is hit, pop next node */
-            if (unlikely(none(vmask))) goto pop;
+            //if (unlikely(none(vmask))) goto pop;
+            if (unlikely(none(vmask))) continue;
+            stackPtr++;
 
             /* select next child and push other children */
             vfloat8 tNear8((__m256)tNear);
-            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear8,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,node,mask,tNear8,stackPtr,stackEnd);
           }
 
 	  /*! sentinal to indicate stack is empty */          
@@ -340,7 +344,7 @@ namespace embree
 
         // perform stack compaction
           ray_far = select(mask8,vfloat<K>(ray.tfar[k] ),vfloat<K>(neg_inf));
-#if 0
+#if 1
           if (unlikely(ray.tfar[k] < old_tfar))
           {
             StackItemT<NodeRef>* left = stack + 1;
