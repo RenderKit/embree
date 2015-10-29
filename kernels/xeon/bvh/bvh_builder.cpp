@@ -63,8 +63,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      typename BVH::NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
+      NodeRef root;
+      BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
@@ -114,7 +114,7 @@ namespace embree
       };
 
       /* reduction function */
-      auto reduce = [] (typename BVH::NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t num) -> std::pair<BBox3fa,BBox3fa>
+      auto reduce = [] (NodeMB* node, const std::pair<BBox3fa,BBox3fa>* bounds, const size_t num) -> std::pair<BBox3fa,BBox3fa>
       {
         assert(num <= N);
         BBox3fa bounds0 = empty;
@@ -130,8 +130,8 @@ namespace embree
       };
       auto identity = std::make_pair(BBox3fa(empty),BBox3fa(empty));
       
-      typename BVH::NodeRef root;
-      BVHBuilderBinnedSAH::build_reduce<typename BVH::NodeRef>
+      NodeRef root;
+      BVHBuilderBinnedSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),identity,CreateNodeMB<N>(bvh),reduce,createLeafFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
 
@@ -164,8 +164,8 @@ namespace embree
         return createLeaf(current,alloc);
       };
       
-      typename BVH::NodeRef root;
-      BVHBuilderBinnedSpatialSAH::build_reduce<typename BVH::NodeRef>
+      NodeRef root;
+      BVHBuilderBinnedSpatialSAH::build_reduce<NodeRef>
         (root,typename BVH::CreateAlloc(bvh),size_t(0),typename BVH::CreateNode(bvh),rotate<N>,
          createLeafFunc,splitPrimitiveFunc,progressFunc,
          prims,pinfo,N,BVH::maxBuildDepthLeaf,blockSize,minLeafSize,maxLeafSize,travCost,intCost);
