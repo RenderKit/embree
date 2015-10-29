@@ -55,12 +55,12 @@ cmake -L ^
 REM compile
 cmake --clean-first --build . --config Release --target PREINSTALL -- /m /nologo /verbosity:n
 
-REM create ZIP files
-cmake -D RTCORE_ZIP_MODE=ON ..
-cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
-
 REM create installers
 cmake -D RTCORE_ZIP_MODE=OFF ..
+cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
+
+REM create ZIP files
+cmake -D RTCORE_ZIP_MODE=ON -D CMAKE_INSTALL_PREFIX= ..
 cmake --build . --config Release --target PACKAGE -- /m /nologo /verbosity:n
 
 cd ..
