@@ -406,18 +406,9 @@ namespace embree
       /* build function */
       std::pair<NodeRef,BBox3fa> build(MortonID32Bit* src, MortonID32Bit* tmp, size_t numPrimitives) 
       {
-        //double t0 = getSeconds();
-
         /* using 4 phases radix sort */
-#if 0
-        morton = tmp;
-        radix_sort_copy_u32(src,morton,numPrimitives);
-#else
         morton = src;
         radix_sort_u32(src,tmp,numPrimitives);
-#endif
-        //double t1 = getSeconds();
-        //PRINT(t1-t0);
 
         /* build BVH */
         NodeRef root;

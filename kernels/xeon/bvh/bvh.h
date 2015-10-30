@@ -110,7 +110,7 @@ namespace embree
   public:
 
     /*! Builder interface to create allocator */
-    struct CreateAlloc
+    struct CreateAlloc 
     {
     public:
       __forceinline CreateAlloc (BVHN* bvh) : bvh(bvh) {}
