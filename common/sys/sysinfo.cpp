@@ -164,17 +164,17 @@ namespace embree
   static const int CPU_FEATURE_BIT_BMI1    = 1 << 3;
   static const int CPU_FEATURE_BIT_AVX2    = 1 << 5;
   static const int CPU_FEATURE_BIT_BMI2    = 1 << 8;
-  static const int CPU_FEATURE_BIT_AVX512F = 1 << 16;     // AVX512F (foundation)
-  static const int CPU_FEATURE_BIT_AVX512DQ = 1 << 17;    // AVX512DQ
-  static const int CPU_FEATURE_BIT_AVX512PF = 1 << 26;    // AVX512PF (prefetch)
-  static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX512ER (exponential and reciprocal)
-  static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX512CD (conflict detection)
-  static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;    // AVX512BW
-  static const int CPU_FEATURE_BIT_AVX512VL = 1 << 31;    // AVX512VL (EVEX.128 and EVEX.256 AVX512 instructions)
-  static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;  // AVX512IFMA
+  static const int CPU_FEATURE_BIT_AVX512F = 1 << 16;     // AVX512F  (foundation)
+  static const int CPU_FEATURE_BIT_AVX512DQ = 1 << 17;    // AVX512DQ (doubleword and quadword instructions)
+  static const int CPU_FEATURE_BIT_AVX512PF = 1 << 26;    // AVX512PF (prefetch gather/scatter instructions)
+  static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX512ER (exponential and reciprocal instructions)
+  static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX512CD (conflict detection instructions)
+  static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;    // AVX512BW (byte and word instructions)
+  static const int CPU_FEATURE_BIT_AVX512VL = 1 << 31;    // AVX512VL (vector length extensions)
+  static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;  // AVX512IFMA (integer fused multiple-add instructions)
   
   /* cpuid[eax=7,ecx=0].ecx */
-  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI
+  static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
 
   __noinline int64_t get_xcr0() 
   {
@@ -245,9 +245,9 @@ namespace embree
     bool zmm_enabled = false;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
       int64_t xcr0 = get_xcr0();
-      xmm_enabled = ((xcr0 & 0x02) == 0x02); /* check if xmm are enabled in XCR0 */
-      ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* check if ymm state are enabled in XCR0 */
-      zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* check if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
+      xmm_enabled = ((xcr0 & 0x02) == 0x02);                /* checks if xmm are enabled in XCR0 */
+      ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* checks if ymm state are enabled in XCR0 */
+      zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* checks if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
     }
     
     if (xmm_enabled && cpuid_leaf_1[EDX] & CPU_FEATURE_BIT_SSE   ) cpu_features |= CPU_FEATURE_SSE;
@@ -266,14 +266,14 @@ namespace embree
     if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI1 ) cpu_features |= CPU_FEATURE_BMI1;
     if (cpuid_leaf_7 [EBX] & CPU_FEATURE_BIT_BMI2 ) cpu_features |= CPU_FEATURE_BMI2;
 
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512F )  cpu_features |= CPU_FEATURE_AVX512F;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512DQ) cpu_features |= CPU_FEATURE_AVX512DQ;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512PF) cpu_features |= CPU_FEATURE_AVX512PF;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512ER) cpu_features |= CPU_FEATURE_AVX512ER; 
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD) cpu_features |= CPU_FEATURE_AVX512CD;
-    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW) cpu_features |= CPU_FEATURE_AVX512BW;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512F   ) cpu_features |= CPU_FEATURE_AVX512F;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512DQ  ) cpu_features |= CPU_FEATURE_AVX512DQ;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512PF  ) cpu_features |= CPU_FEATURE_AVX512PF;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512ER  ) cpu_features |= CPU_FEATURE_AVX512ER; 
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512CD  ) cpu_features |= CPU_FEATURE_AVX512CD;
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512BW  ) cpu_features |= CPU_FEATURE_AVX512BW;
     if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
-    if (ymm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL) cpu_features |= CPU_FEATURE_AVX512VL; // on purpose ymm_enabled!
+    if (zmm_enabled && cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (zmm_enabled && cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
 #if defined(__MIC__)
