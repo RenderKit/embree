@@ -345,7 +345,7 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = numPrimitives*sizeof(BVH4::Node)/(2*BVH4::N) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4); // FIXME: sizeof(Triangle4)
+        size_t bytesAllocated = numPrimitives*sizeof(BVH4::Node)/(4*BVH4::N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
         
