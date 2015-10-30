@@ -83,9 +83,12 @@ namespace embree
       }
     };
 
-    struct CreateTriangle4Leaf
+    template<typename Primitive>
+    struct CreateMortonLeaf;
+
+    template<> struct CreateMortonLeaf<Triangle4>
     {
-      __forceinline CreateTriangle4Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
@@ -135,9 +138,9 @@ namespace embree
     
 #if defined(__AVX__)
     
-    struct CreateTriangle8Leaf
+    template<> struct CreateMortonLeaf<Triangle8>
     {
-      __forceinline CreateTriangle8Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
@@ -186,9 +189,9 @@ namespace embree
     };
 #endif
     
-    struct CreateTriangle4vLeaf
+    template<> struct CreateMortonLeaf<Triangle4v>
     {
-      __forceinline CreateTriangle4vLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
@@ -235,9 +238,9 @@ namespace embree
       MortonID32Bit* morton;
     };
 
-    struct CreateTriangle4iLeaf
+    template<> struct CreateMortonLeaf<Triangle4i>
     {
-      __forceinline CreateTriangle4iLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
@@ -309,7 +312,7 @@ namespace embree
       Mesh* mesh;
     };        
     
-    template<typename Mesh, typename CreateLeaf>
+    template<typename Mesh, typename Primitive>
     class BVH4MeshBuilderMorton : public Builder
     {
     public:
@@ -392,7 +395,7 @@ namespace embree
         /* create BVH */
         AllocBVH4Node allocNode;
         SetBVH4Bounds setBounds(bvh);
-        CreateLeaf createLeaf(mesh,morton.data());
+        CreateMortonLeaf<Primitive> createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
           BVH4::CreateAlloc(bvh), BBox3fa(empty),
@@ -429,12 +432,12 @@ namespace embree
       mvector<MortonID32Bit> morton;
     };
     
-    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle8> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
 #endif
-    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
   }
 }
 
