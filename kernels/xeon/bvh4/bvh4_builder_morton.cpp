@@ -387,13 +387,12 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+        size_t bytesAllocated = numPrimitives*sizeof(BVH4::Node)/(2*BVH4::N) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4); // FIXME: sizeof(Triangle4)
         bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
         
-        ParallelPrefixSumState<size_t> pstate;
-        
         /* compute scene bounds */
+        ParallelPrefixSumState<size_t> pstate;
         const BBox3fa centBounds = parallel_reduce 
           ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
             {
@@ -418,14 +417,12 @@ namespace embree
             return N;
           }, std::plus<size_t>());
         
+        /* fallback in case some primitives were invalid */
         if (numPrimitivesGen != numPrimitives)
         {
-          assert(numPrimitivesGen<numPrimitives);
-          
           numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t N = 0;
               MortonCodeGenerator generator(mapping,&morton.data()[base]);
-              
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -446,7 +443,6 @@ namespace embree
           [&] () { return bvh->alloc.threadLocal2(); },
           BBox3fa(empty),
           allocNode,setBounds,createLeaf,calculateBounds,progress,
-          //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
           morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
         
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
