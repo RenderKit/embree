@@ -374,9 +374,6 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     /// BVH4Intersector4 Definitions
     ////////////////////////////////////////////////////////////////////////////////
-
-    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1vIntersectorK<4> > >);
-    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Chunk, BVHNIntersectorKChunk<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<4 COMMA Bezier1iIntersectorK<4> > >);
   
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Triangle4Intersector4HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
@@ -401,9 +398,6 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1vIntersectorK<8> > >);
-    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Chunk, BVHNIntersectorKChunk<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<8 COMMA Bezier1iIntersectorK<8> > >);
-
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle4Intersector8HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 8 COMMA false> > >);
     DEFINE_INTERSECTOR8(BVH4Triangle8Intersector8HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 8 COMMA true> > >);
@@ -421,13 +415,10 @@ namespace embree
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
-    /// BVH4Intersector16Hybrid Definitions
+    /// BVH4Intersector16 Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
-    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1vIntersectorK<16> > >);
-    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Chunk, BVHNIntersectorKChunk<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK<16 COMMA Bezier1iIntersectorK<16> > >);
-  
     DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle4Intersector16HybridMoellerNoFilter, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
     DEFINE_INTERSECTOR16(BVH4Triangle8Intersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<8 COMMA 16 COMMA true> > >);

@@ -25,6 +25,7 @@ namespace embree
       struct BVHNBuilder
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
       struct BVHNBuilderV {
@@ -58,6 +59,8 @@ namespace embree
       struct BVHNBuilderMblur
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
       struct BVHNBuilderV {
@@ -91,6 +94,7 @@ namespace embree
       struct BVHNBuilderSpatial
     {
       typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
       typedef FastAllocator::ThreadLocal2 Allocator;
       
       struct BVHNBuilderV {
