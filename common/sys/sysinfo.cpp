@@ -240,7 +240,7 @@ namespace embree
     if (nExIds >= 0x80000001) __cpuid(cpuid_leaf_e1,0x80000001);
 
     /* detect if OS saves XMM, YMM, and ZMM states */
-    bool xmm_enabled = false;
+    bool xmm_enabled = true;
     bool ymm_enabled = false;
     bool zmm_enabled = false;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
