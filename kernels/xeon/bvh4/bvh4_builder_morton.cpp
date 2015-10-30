@@ -351,8 +351,7 @@ namespace embree
       
     private:
       Mesh* mesh;
-    };
-    
+    };        
     
     template<typename Mesh, typename CreateLeaf>
     class BVH4MeshBuilderMorton : public Builder
