@@ -720,7 +720,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4ObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle4Twolevel(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
@@ -729,7 +729,7 @@ namespace embree
   }
 
 #if defined (__TARGET_AVX__)
-  Accel* BVH4Factory::BVH4BVH4Triangle8ObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle8Twolevel(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle8::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
@@ -737,7 +737,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4BVH4TrianglePairs4ObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4TrianglePairs4Twolevel(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle8::type,scene);
     Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
@@ -747,7 +747,7 @@ namespace embree
 
 #endif
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4vObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle4vTwolevel(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4v::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
@@ -755,7 +755,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4iObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle4iTwolevel(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4i::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectorsHybrid(accel);

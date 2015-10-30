@@ -188,16 +188,16 @@ namespace embree
         case /*0b00*/ 0: 
 #if defined(RTCORE_TRIANGLE_PAIRS) && defined (__TARGET_AVX__)
           if (device->hasISA(AVX)) 
-            accels.add(device->bvh4_factory->BVH4BVH4TrianglePairs4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4TrianglePairs4Twolevel(this));
           else
-            accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this));
           break;          
 #else
-          accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
+          accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
 #endif
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
       }
     }

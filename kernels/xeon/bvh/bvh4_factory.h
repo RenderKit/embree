@@ -55,11 +55,11 @@ namespace embree
     Accel* BVH4BVH4Triangle4i(Scene* scene);
     Accel* BVH4BVH4TrianglePairs4(Scene* scene);
 
-    Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
-    Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
-    Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
-    Accel* BVH4BVH4Triangle4iObjectSplit(Scene* scene);
-    Accel* BVH4BVH4TrianglePairs4ObjectSplit(Scene* scene);
+    Accel* BVH4Triangle4Twolevel(Scene* scene);
+    Accel* BVH4Triangle8Twolevel(Scene* scene);
+    Accel* BVH4Triangle4vTwolevel(Scene* scene);
+    Accel* BVH4Triangle4iTwolevel(Scene* scene);
+    Accel* BVH4TrianglePairs4Twolevel(Scene* scene);
 
     Accel* BVH4Triangle4SpatialSplit(Scene* scene);
     Accel* BVH4Triangle8SpatialSplit(Scene* scene);
