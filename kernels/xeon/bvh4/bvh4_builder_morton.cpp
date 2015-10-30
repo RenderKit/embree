@@ -351,94 +351,8 @@ namespace embree
       
     private:
       Mesh* mesh;
-    };
-
-    struct BVH4BuilderMorton
-    {
-      typedef BVHN<4> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef FastAllocator::ThreadLocal2 Allocator;
-      
-      struct BVHNBuilderV 
-      {
-        void build(BVH* bvh, 
-                   BuildProgressMonitor& progress, 
-                   MortonID32Bit* src, 
-                   MortonID32Bit* tmp, 
-                   size_t numPrimitives,
-                   const size_t maxDepth, 
-                   const size_t minLeafSize, 
-                   const size_t maxLeafSize)
-        {
-          auto progressFunc = [&] (size_t dn) { 
-            progress(dn); 
-          };
-          
-          auto createLeafFunc = [&] (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o) {
-            return createLeaf(current,alloc,box_o);
-          };
-          
-          auto calculateBoundsFunc = [&] (const MortonID32Bit& morton) {
-            return calculateBounds(morton);
-          };
-          
-          /* create BVH */
-          AllocBVH4Node allocNode;
-          SetBVH4Bounds setBounds(bvh);
-          auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-            [&] () { return bvh->alloc.threadLocal2(); }, // FIXME: use BVH4::createAlloc
-            BBox3fa(empty),
-            allocNode,setBounds,createLeafFunc,calculateBoundsFunc,progressFunc,
-            src,tmp,numPrimitives,BVH4::N,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-          
-          bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-          
-#if ROTATE_TREE
-          for (int i=0; i<ROTATE_TREE; i++) 
-            BVH4Rotate::rotate(bvh->root);
-          bvh->clearBarrier(bvh->root);
-#endif
-        }
-        
-        virtual const BBox3fa calculateBounds (const MortonID32Bit& morton) = 0;
-        virtual void createLeaf (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o) = 0;
-      };
-      
-      template<typename CreateLeafFunc, typename CalculateBoundsFunc>
-      struct BVHNBuilderT : public BVHNBuilderV
-      {
-        BVHNBuilderT (CreateLeafFunc createLeafFunc, CalculateBoundsFunc calculateBoundsFunc)
-          : createLeafFunc(createLeafFunc), calculateBoundsFunc(calculateBoundsFunc) {}
-        
-        const BBox3fa calculateBounds (const MortonID32Bit& morton) {
-          return calculateBoundsFunc(morton);
-        }
-        
-        void createLeaf (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o) {
-          createLeafFunc(current,alloc,box_o);
-        }
-        
-      private:
-        CreateLeafFunc createLeafFunc;
-        CalculateBoundsFunc calculateBoundsFunc;
-      };
-      
-      template<typename CreateLeafFunc, typename CalculateBoundsFunc>
-      static void build(BVH* bvh,
-                        CreateLeafFunc createLeaf, 
-                        CalculateBoundsFunc calculateBounds,
-                        BuildProgressMonitor& progressMonitor,
-                        MortonID32Bit* src, 
-                        MortonID32Bit* tmp, 
-                        size_t numPrimitives,
-                        const size_t maxDepth, 
-                        const size_t minLeafSize, 
-                        const size_t maxLeafSize) 
-      {
-        BVHNBuilderT<CreateLeafFunc,CalculateBoundsFunc>(createLeaf,calculateBounds).build(bvh,progressMonitor,src,tmp,numPrimitives,maxDepth,minLeafSize,maxLeafSize);
-      }
-    };
-
+    };        
+    
     template<typename Mesh, typename CreateLeaf>
     class BVH4MeshBuilderMorton : public Builder
     {
@@ -468,7 +382,7 @@ namespace embree
           return;
         }
         
-        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); }; // FIXME: remove
+        auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
@@ -518,14 +432,7 @@ namespace embree
               return N;
             }, std::plus<size_t>());
         }
-
-#if 1
-        /* create BVH */
-        CreateLeaf createLeaf(mesh,morton.data());
-        CalculateMeshBounds<Mesh> calculateBounds(mesh);
-        BVH4BuilderMorton::build(bvh,createLeaf,calculateBounds,mesh->parent->progressInterface,
-                                 morton.data(),dest,numPrimitivesGen,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-#else        
+        
         /* create BVH */
         AllocBVH4Node allocNode;
         SetBVH4Bounds setBounds(bvh);
@@ -536,7 +443,7 @@ namespace embree
           BBox3fa(empty),
           allocNode,setBounds,createLeaf,calculateBounds,progress,
           morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-
+        
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
         
 #if ROTATE_TREE
@@ -544,7 +451,6 @@ namespace embree
           BVH4Rotate::rotate(bvh->root);
         bvh->clearBarrier(bvh->root);
 #endif
-#endif   
         
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 
