@@ -56,7 +56,6 @@ REM set release settings
 cmake -L ^
 -G "Visual Studio 12 2013 Win64" ^
 -T "Intel C++ Compiler XE 15.0" ^
--D COMPILER=ICC ^
 -D XEON_ISA=AVX2 ^
 -D TBB_ROOT=%TBB_PATH_LOCAL% ^
 -D ENABLE_XEON_PHI_SUPPORT=OFF ^

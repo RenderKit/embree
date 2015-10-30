@@ -188,27 +188,23 @@ namespace embree
         case /*0b00*/ 0: 
 #if defined(RTCORE_TRIANGLE_PAIRS) && defined (__TARGET_AVX__)
           if (device->hasISA(AVX)) 
-            accels.add(device->bvh4_factory->BVH4BVH4TrianglePairs4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4TrianglePairs4Twolevel(this));
           else
-            accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this));
           break;          
 #else
-          accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
+          accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
 #endif
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
       }
     }
-    else if (device->tri_accel == "bvh4.bvh4.triangle4")  accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4v") accels.add(device->bvh4_factory->BVH4BVH4Triangle4vObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4i") accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this));
     else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
     else if (device->tri_accel == "bvh4.triangle4v")      accels.add(device->bvh4_factory->BVH4Triangle4v(this));
     else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel == "bvh4.bvh4.triangle8")  accels.add(device->bvh4_factory->BVH4BVH4Triangle8ObjectSplit(this));
     else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
