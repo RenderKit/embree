@@ -139,7 +139,7 @@ namespace embree
   static const int ECX = 2;
   static const int EDX = 3;
 
-  /* cpuid[eax=0].ecx */
+  /* cpuid[eax=1].ecx */
   static const int CPU_FEATURE_BIT_SSE3   = 1 << 0;
   static const int CPU_FEATURE_BIT_SSSE3  = 1 << 9;
   static const int CPU_FEATURE_BIT_FMA3   = 1 << 12;
