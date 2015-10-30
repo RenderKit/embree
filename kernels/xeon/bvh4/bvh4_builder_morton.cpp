@@ -85,11 +85,8 @@ namespace embree
 
     struct CreateTriangle4Leaf
     {
-      __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
       __forceinline CreateTriangle4Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : mesh(mesh), morton(morton) {}
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -109,9 +106,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -132,22 +129,16 @@ namespace embree
       }
     
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
     
 #if defined(__AVX__)
     
     struct CreateTriangle8Leaf
     {
-      __forceinline CreateTriangle8Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
       __forceinline CreateTriangle8Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -167,9 +158,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -190,21 +181,15 @@ namespace embree
       }
 
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
 #endif
     
     struct CreateTriangle4vLeaf
     {
-      __forceinline CreateTriangle4vLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
       __forceinline CreateTriangle4vLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -224,9 +209,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -246,20 +231,14 @@ namespace embree
 #endif
       }
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
 
     struct CreateTriangle4iLeaf
     {
-      __forceinline CreateTriangle4iLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
       __forceinline CreateTriangle4iLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -280,9 +259,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -312,31 +291,8 @@ namespace embree
 #endif
       }
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
-    };
-    
-    struct CalculateBounds
-    {
-      __forceinline CalculateBounds (Scene* scene, size_t encodeShift, size_t encodeMask)
-        : scene(scene), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline const BBox3fa operator() (const MortonID32Bit& morton)
-      {
-        const size_t index = morton.index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        return mesh->bounds(primID);
-      }
-      
-    private:
-      Scene* scene;
-      size_t encodeShift;
-      size_t encodeMask;
     };
     
     template<typename Mesh>
@@ -439,10 +395,9 @@ namespace embree
         CreateLeaf createLeaf(mesh,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-          [&] () { return bvh->alloc.threadLocal2(); },
-          BBox3fa(empty),
+          BVH4::CreateAlloc(bvh), BBox3fa(empty),
           allocNode,setBounds,createLeaf,calculateBounds,progress,
-          morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+          morton.data(),dest,numPrimitivesGen,BVH4::N,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
         
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
         
