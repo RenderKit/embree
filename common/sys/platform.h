@@ -206,15 +206,20 @@
 #define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
 #define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
 
-#define THROW_RUNTIME_ERROR(str) \
-  throw std::runtime_error(std::string(__FILE__) + " (" + toString(__LINE__) + "): " + std::string(str));
+#if defined(DEBUG) // only report file and line in debug mode
+  #define THROW_RUNTIME_ERROR(str) \
+    throw std::runtime_error(std::string(__FILE__) + " (" + toString(__LINE__) + "): " + std::string(str));
+#else
+  #define THROW_RUNTIME_ERROR(str) \
+    throw std::runtime_error(str);
+#endif
 
 #if defined(__MIC__)
-#define FATAL(x) { std::cerr << "Error in " << __FUNCTION__ << " : " << x << std::endl << std::flush; exit(1); }
-#define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
+  #define FATAL(x)   { std::cerr << "Error: "   << x << std::endl << std::flush; exit(1); }
+  #define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
 #else
-#define FATAL(x) THROW_RUNTIME_ERROR(x)
-#define WARNING(x) std::cerr << "Warning:" << std::string(x) << std::endl
+  #define FATAL(x)   THROW_RUNTIME_ERROR(x)
+  #define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
 #endif
 
 #define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
