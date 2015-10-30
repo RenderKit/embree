@@ -250,6 +250,9 @@ namespace embree
       stack1[0].dist = pos_inf;
 
 
+
+
+#if 0
       size_t m_active = movemask(valid0);
       while(m_active)
       {
@@ -257,30 +260,34 @@ namespace embree
         size_t rayID0 = __bsf(m_active);
         m_active      = __btc(m_active,rayID0);       
 
-
-#if 0
         NodeRef cur = bvh->root;
         BVHNIntersectorKSingle<8,16,types,false,PrimitiveIntersectorK>::intersect1(bvh, cur, rayID0, pre, ray, ray_org16, ray_dir16, rdir16, ray_tnear16, ray_tfar16, nearXYZ);
+      }
 #else
 
+      /*! load the ray into SIMD registers */
+      const vbool16 m_lower8(0xff);
+
+      size_t m_active = movemask(valid0);
+      while(m_active)
+      {
+        size_t m_active_traversal = 1;
+        size_t rayID0 = __bsf(m_active);
+        m_active      = __btc(m_active,rayID0);       
         size_t rayID1 = (size_t)-1;
-#if 1
         if (likely(m_active))
         {
           m_active_traversal |= 2;
           rayID1 = __bsf(m_active);
           m_active      = __btc(m_active,rayID1);                 
         }
-#endif
+
         DBG_PRINT(rayID0);
         DBG_PRINT(rayID1);
         
 
         StackItemT<NodeRef>* stackPtr0 = stack0 + 1;        //!< current stack pointer 0
         StackItemT<NodeRef>* stackPtr1 = stack1 + 1;        //!< current stack pointer 1
-
-	/*! load the ray into SIMD registers */
-        const vbool16 m_lower8(0xff);
 
         Vec3vfK rdir0 = Vec3vfK(rdir16.x[rayID0],rdir16.y[rayID0],rdir16.z[rayID0]);
         Vec3vfK rdir1 = Vec3vfK(rdir16.x[rayID1],rdir16.y[rayID1],rdir16.z[rayID1]);
@@ -416,8 +423,38 @@ namespace embree
             DBG_PRINT("TRAVERSAL FINISHED");
             DBG_PRINT(m_active_traversal);
 
-            if (cur0 == BVH::invalidNode) m_active_traversal &= ~1;
-            if (cur1 == BVH::invalidNode) m_active_traversal &= ~2;
+            if (cur0 == BVH::invalidNode) 
+            {
+              if (m_active)
+              {
+                rayID0        = __bsf(m_active);
+                m_active      = __btc(m_active,rayID0);       
+                rdir0         = Vec3vfK(rdir16.x[rayID0],rdir16.y[rayID0],rdir16.z[rayID0]);
+                org_rdir0     = Vec3vfK(org_rdir16.x[rayID0],org_rdir16.y[rayID0],org_rdir16.z[rayID0]);
+                ray_near0     = ray_tnear16[rayID0];
+                ray_far0      = ray_tfar16[rayID0];
+                cur0          = bvh->root;
+                stackPtr0     = stack0 + 1;
+              }                
+              else
+                m_active_traversal &= ~1;
+            }
+            if (cur1 == BVH::invalidNode) 
+            {
+              if (m_active)
+              {
+                rayID1        = __bsf(m_active);
+                m_active      = __btc(m_active,rayID1);       
+                rdir1         = Vec3vfK(rdir16.x[rayID1],rdir16.y[rayID1],rdir16.z[rayID1]);
+                org_rdir1     = Vec3vfK(org_rdir16.x[rayID1],org_rdir16.y[rayID1],org_rdir16.z[rayID1]);
+                ray_near1     = ray_tnear16[rayID1];
+                ray_far1      = ray_tfar16[rayID1];
+                cur1          = bvh->root;
+                stackPtr1     = stack1 + 1;               
+              } 
+              else
+                m_active_traversal &= ~2;
+            }
 
             DBG_PRINT(m_active_traversal);
 
