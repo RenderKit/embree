@@ -264,13 +264,14 @@ namespace embree
 #else
 
         size_t rayID1 = (size_t)-1;
+#if 1
         if (likely(m_active))
         {
           m_active_traversal |= 2;
           rayID1 = __bsf(m_active);
           m_active      = __btc(m_active,rayID1);                 
         }
-
+#endif
         DBG_PRINT(rayID0);
         DBG_PRINT(rayID1);
         
@@ -293,6 +294,7 @@ namespace embree
 
         NodeRef cur0 = bvh->root;
         NodeRef cur1 = bvh->root;
+        const vfloat<K> pinf(pos_inf);
 
 	while (true)
 	{
@@ -317,10 +319,15 @@ namespace embree
               const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
               const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
               const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
-              const vbool16 m_node = ne(m_lower8,nodeX,vfloat<K>(pos_inf));
+              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 tNearFarX = msub(nodeX, rdir0.x, org_rdir0.x);
               const vfloat16 tNearFarY = msub(nodeY, rdir0.y, org_rdir0.y);
               const vfloat16 tNearFarZ = msub(nodeZ, rdir0.z, org_rdir0.z);
+
+              stackPtr0--;
+              assert(stackPtr1 >= stack1);
+              cur0 = NodeRef(stackPtr0->ptr);
+
               const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
               const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
               const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
@@ -335,9 +342,6 @@ namespace embree
               const vbool16 vmask = le(m_node,tNear,tFar);
               DBG_PRINT(vmask);
               size_t mask = movemask(vmask);
-              stackPtr0--;
-              assert(stackPtr1 >= stack1);
-              cur0 = NodeRef(stackPtr0->ptr);
 
               /*! if no child is hit, pop next node */
               if (unlikely(any(vmask)))
@@ -345,22 +349,11 @@ namespace embree
                 stackPtr0++;
                 /* select next child and push other children */
                 vfloat8 tNear8((__m256)tNear);
-                BVHNNodeTraverser1<N,types>::traverseClosestHit(cur0,node,mask,tNear8,stackPtr0,stackEnd0);              
+                traverseClosestHit(cur0,node,mask,tNear8,stackPtr0,stackEnd0);              
               }
               DBG_PRINT(cur0);
 
-              {
-                DBG_PRINT("STACK 0");
-                size_t i;
-                i = 0;
-                for (StackItemT<NodeRef>* right = stack0; right<stackPtr0; right++,i++) 
-                {
-                  DBG_PRINT(i);
-                  DBG_PRINT(right->dist);
-                  DBG_PRINT(right->ptr);
-                }
-              }
-
+              //cur0.prefetch();
             }
 
             /*! stop if we found a leaf node for ray1 */
@@ -378,10 +371,15 @@ namespace embree
               const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
               const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
               const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
-              const vbool16 m_node = ne(m_lower8,nodeX,vfloat<K>(pos_inf));
+              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 tNearFarX = msub(nodeX, rdir1.x, org_rdir1.x);
               const vfloat16 tNearFarY = msub(nodeY, rdir1.y, org_rdir1.y);
               const vfloat16 tNearFarZ = msub(nodeZ, rdir1.z, org_rdir1.z);
+
+              stackPtr1--;
+              assert(stackPtr1 >= stack1);
+              cur1 = NodeRef(stackPtr1->ptr);
+
               const vfloat16 tFarNearX = align_shift_right<8>(tNearFarX,tNearFarX);
               const vfloat16 tFarNearY = align_shift_right<8>(tNearFarY,tNearFarY);
               const vfloat16 tFarNearZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
@@ -396,9 +394,6 @@ namespace embree
               const vbool16 vmask = le(m_node,tNear,tFar);
               DBG_PRINT(vmask);
               size_t mask = movemask(vmask);
-              stackPtr1--;
-              assert(stackPtr1 >= stack1);
-              cur1 = NodeRef(stackPtr1->ptr);
 
               /*! if no child is hit, pop next node */
               if (unlikely(any(vmask)))
@@ -406,22 +401,10 @@ namespace embree
                 stackPtr1++;
                 /* select next child and push other children */
                 vfloat8 tNear8((__m256)tNear);
-                BVHNNodeTraverser1<N,types>::traverseClosestHit(cur1,node,mask,tNear8,stackPtr1,stackEnd1);              
+                traverseClosestHit(cur1,node,mask,tNear8,stackPtr1,stackEnd1);              
               }
               DBG_PRINT(cur1);
-
-              {
-                DBG_PRINT("STACK 1");
-                size_t i;
-                i = 0;
-                for (StackItemT<NodeRef>* right = stack1; right<stackPtr1; right++,i++) 
-                {
-                  DBG_PRINT(i);
-                  DBG_PRINT(right->dist);
-                  DBG_PRINT(right->ptr);
-                }
-              }
-
+              //cur1.prefetch();
             }           
           }
 
