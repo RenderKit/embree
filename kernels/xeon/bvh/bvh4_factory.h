@@ -49,12 +49,6 @@ namespace embree
     Accel* BVH4UserGeometry(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
-    Accel* BVH4BVH4Triangle4(Scene* scene);
-    Accel* BVH4BVH4Triangle8(Scene* scene);
-    Accel* BVH4BVH4Triangle4v(Scene* scene);
-    Accel* BVH4BVH4Triangle4i(Scene* scene);
-    Accel* BVH4BVH4TrianglePairs4(Scene* scene);
-
     Accel* BVH4Triangle4Twolevel(Scene* scene);
     Accel* BVH4Triangle8Twolevel(Scene* scene);
     Accel* BVH4Triangle4vTwolevel(Scene* scene);

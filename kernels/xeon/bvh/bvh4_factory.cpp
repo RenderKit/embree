@@ -411,144 +411,6 @@ namespace embree
     return intersectors;
   }
 
-  Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
-    Builder* builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4Bezier1i(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
-    Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
-    scene->needBezierVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene, bool highQuality)
-  {
-    BVH4* accel = new BVH4(Bezier1v::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene, bool highQuality)
-  {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
-    scene->needBezierVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-   Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
-  {
-    BVH4* accel = new BVH4(Bezier1i::type,scene);
-    Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
-    Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
-    scene->needBezierVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4Triangle4(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle4::type,scene);
-
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4>");
-
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4>");
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-#if defined (__TARGET_AVX__)
-  Accel* BVH4Factory::BVH4Triangle8(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle8::type,scene);
-
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle8>");
-
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle8>");
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-#endif
-
-  Accel* BVH4Factory::BVH4Triangle4v(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle4v::type,scene);
-
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4>");
-
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4v>");
-
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH4Factory::BVH4Triangle4i(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle4i::type,scene);
-    
-    Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
-    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4i>");
-
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4i>");
-
-    scene->needTriangleVertices = true;
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-   Accel* BVH4Factory::BVH4Triangle4vMB(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle4vMB::type,scene);
-
-     Accel::Intersectors intersectors;
-    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vMBIntersectorsHybrid(accel);
-    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vMBIntersectorsHybrid(accel);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4vMB>");
-
-    Builder* builder = nullptr;
-    if       (scene->device->tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else  if (scene->device->tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4vMB>");
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
@@ -559,7 +421,6 @@ namespace embree
 #if defined (__TARGET_AVX__)
   void BVH4Factory::createTriangleMeshTriangle8Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH4Factory* factory = ;
     accel = new BVH4(Triangle8::type,mesh->parent);
     builder = mesh->parent->device->bvh4_factory->BVH4Triangle8MeshBuilderMortonGeneral(accel,mesh,0);
   }
@@ -643,80 +504,157 @@ namespace embree
     }
   }
 
-  Accel* BVH4Factory::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4Bezier1v(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle4::type,scene);
-    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
-    Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
+    BVH4* accel = new BVH4(Bezier1v::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors(accel);
+    Builder* builder = BVH4Bezier1vSceneBuilderSAH(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4(Scene* scene)
+  Accel* BVH4Factory::BVH4Bezier1i(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
+    Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
+    scene->needBezierVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4OBBBezier1v(Scene* scene, bool highQuality)
+  {
+    BVH4* accel = new BVH4(Bezier1v::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1vIntersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1vBuilder_OBB_New(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4OBBBezier1i(Scene* scene, bool highQuality)
+  {
+    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iIntersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1iBuilder_OBB_New(accel,scene,0);
+    scene->needBezierVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+   Accel* BVH4Factory::BVH4OBBBezier1iMB(Scene* scene, bool highQuality)
+  {
+    BVH4* accel = new BVH4(Bezier1i::type,scene);
+    Accel::Intersectors intersectors = BVH4Bezier1iMBIntersectors_OBB(accel);
+    Builder* builder = BVH4Bezier1iMBBuilder_OBB_New(accel,scene,0);
+    scene->needBezierVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Triangle4(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
-    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+
+    Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
     else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4Morton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
 
 #if defined (__TARGET_AVX__)
-  Accel* BVH4Factory::BVH4BVH4Triangle8(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle8(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle8::type,scene);
-    Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    
+
+    Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle8IntersectorsHybrid(accel);
+    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle8IntersectorsHybrid(accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle8>");
+
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
     else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8Morton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle8>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
-
-  Accel* BVH4Factory::BVH4BVH4TrianglePairs4(Scene* scene)
-  {
-    BVH4* accel = new BVH4(Triangle8::type,scene);
-    Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
-
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4);
-    //else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4Morton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<TrianglePairs4>");
-
-    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
 #endif
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4v(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle4v(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4v::type,scene);
-    Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+
+    Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4>");
 
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
     else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4vMorton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4v>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4v>");
 
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4BVH4Triangle4i(Scene* scene)
+  Accel* BVH4Factory::BVH4Triangle4i(Scene* scene)
   {
     BVH4* accel = new BVH4(Triangle4i::type,scene);
-    Accel::Intersectors intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
     
-    Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
-    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4i>");
+    Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
+    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4i>");
 
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
+    else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4i>");
+
+    scene->needTriangleVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+   Accel* BVH4Factory::BVH4Triangle4vMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4vMB::type,scene);
+
+     Accel::Intersectors intersectors;
+    if      (scene->device->tri_traverser == "default") intersectors = BVH4Triangle4vMBIntersectorsHybrid(accel);
+    else if (scene->device->tri_traverser == "hybrid" ) intersectors = BVH4Triangle4vMBIntersectorsHybrid(accel);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown traverser "+scene->device->tri_traverser+" for BVH4<Triangle4vMB>");
+
+    Builder* builder = nullptr;
+    if       (scene->device->tri_builder_mb == "default"    ) builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else  if (scene->device->tri_builder_mb == "sah") builder = BVH4Triangle4vMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder_mb+" for BVH4<Triangle4vMB>");
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
+    Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
   }
 
