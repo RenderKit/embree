@@ -728,12 +728,33 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
+
+#if 1
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
+#else
+#define NUM 512
+      float rx[NUM];
+      float ry[NUM];
+      float rz[NUM];
+
+      for (size_t i=0; i<NUM; i++) {
+        rx[i] = drand48();
+        ry[i] = drand48();
+        rz[i] = drand48();
+      }
+
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*rx[i%NUM]-1.0f;
+        float y = 2.0f*ry[i%NUM]-1.0f;
+        float z = 2.0f*rz[i%NUM]-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#endif
 
       g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
@@ -755,6 +776,9 @@ namespace embree
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+std::to_string((long long)numThreads)).c_str());
 
       int numPhi = 501;
+      //int numPhi = 61;
+      //int numPhi = 1601;
+
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
