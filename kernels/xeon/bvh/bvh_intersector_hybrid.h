@@ -54,5 +54,34 @@ namespace embree
     /*! BVH packet intersector. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
+
+
+    template<int types, typename PrimitiveIntersectorK>
+      class BVHNIntersectorKHybrid<8,16,types,false,PrimitiveIntersectorK,true>
+    {
+      static const int N = 8;
+      static const int K = 16;
+
+
+      /* shortcuts for frequently used types */
+      typedef typename PrimitiveIntersectorK::Precalculations Precalculations;
+      typedef typename PrimitiveIntersectorK::Primitive Primitive;
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::BaseNode BaseNode;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::NodeMB NodeMB;
+      typedef Vec3<vfloat<K>> Vec3vfK;
+      typedef Vec3<vint<K>> Vec3viK;
+
+      static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
+
+    public:
+      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
+      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
+    };
+
   }
+
+
 }
