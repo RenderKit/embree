@@ -318,7 +318,7 @@ namespace embree
       size_t encodeShift;
       size_t encodeMask;
     };
-
+    
     struct CalculateBounds
     {
       __forceinline CalculateBounds (Scene* scene, size_t encodeShift, size_t encodeMask)
@@ -353,15 +353,15 @@ namespace embree
       Mesh* mesh;
     };
     
-
+    
     template<typename Mesh, typename CreateLeaf>
-      class BVH4MeshBuilderMorton : public Builder
+    class BVH4MeshBuilderMorton : public Builder
     {
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), numPrimitives(0) {}
-
+      
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
         //bvh->shrink();
@@ -382,33 +382,50 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-      
+        
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-
+        
         /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
         bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
-
-            ParallelPrefixSumState<size_t> pstate;
-      
-            /* compute scene bounds */
-            const BBox3fa centBounds = parallel_reduce 
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-           
-            /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
+        
+        ParallelPrefixSumState<size_t> pstate;
+        
+        /* compute scene bounds */
+        const BBox3fa centBounds = parallel_reduce 
+          ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
             {
+              BBox3fa bounds(empty);
+              for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
+              return bounds;
+            }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+        
+        /* compute morton codes */
+        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
+        MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+        size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+            size_t N = 0;
+            MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+            for (ssize_t j=r.begin(); j<r.end(); j++)
+            {
+              BBox3fa bounds = empty;
+              if (!mesh->valid(j,&bounds)) continue;
+              generator(bounds,j);
+              N++;
+            }
+            return N;
+          }, std::plus<size_t>());
+        
+        if (numPrimitivesGen != numPrimitives)
+        {
+          assert(numPrimitivesGen<numPrimitives);
+          
+          numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t N = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              MortonCodeGenerator generator(mapping,&morton.data()[base]);
+              
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -418,47 +435,28 @@ namespace embree
               }
               return N;
             }, std::plus<size_t>());
-
-            if (numPrimitivesGen != numPrimitives)
-            {
-              assert(numPrimitivesGen<numPrimitives);
-
-              numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
-              {
-                size_t N = 0;
-                MortonCodeGenerator generator(mapping,&morton.data()[base]);
-
-                for (ssize_t j=r.begin(); j<r.end(); j++)
-                {
-                  BBox3fa bounds = empty;
-                  if (!mesh->valid(j,&bounds)) continue;
-                  generator(bounds,j);
-                  N++;
-                }
-                return N;
-              }, std::plus<size_t>());
-            }
-            
-            /* create BVH */
-            AllocBVH4Node allocNode;
-            SetBVH4Bounds setBounds(bvh);
-            CreateLeaf createLeaf(mesh,morton.data());
-            CalculateMeshBounds<Mesh> calculateBounds(mesh);
-            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-              [&] () { return bvh->alloc.threadLocal2(); },
-              BBox3fa(empty),
-              allocNode,setBounds,createLeaf,calculateBounds,progress,
-              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-
-            bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-
+        }
+        
+        /* create BVH */
+        AllocBVH4Node allocNode;
+        SetBVH4Bounds setBounds(bvh);
+        CreateLeaf createLeaf(mesh,morton.data());
+        CalculateMeshBounds<Mesh> calculateBounds(mesh);
+        auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
+          [&] () { return bvh->alloc.threadLocal2(); },
+          BBox3fa(empty),
+          allocNode,setBounds,createLeaf,calculateBounds,progress,
+          //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+          morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+        
+        bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+        
 #if ROTATE_TREE
-            for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh->root);
-            bvh->clearBarrier(bvh->root);
+        for (int i=0; i<ROTATE_TREE; i++) 
+          BVH4Rotate::rotate(bvh->root);
+        bvh->clearBarrier(bvh->root);
 #endif
-            
+        
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 
         {
@@ -467,11 +465,11 @@ namespace embree
         }
         bvh->cleanup();
       }
-
+      
       void clear() {
         morton.clear();
       }
-
+      
     private:
       BVH4* bvh;
       Mesh* mesh;
