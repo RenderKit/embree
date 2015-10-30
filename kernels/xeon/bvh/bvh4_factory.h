@@ -49,6 +49,12 @@ namespace embree
     Accel* BVH4UserGeometry(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
 
+    Accel* BVH4BVH4Triangle4(Scene* scene);
+    Accel* BVH4BVH4Triangle8(Scene* scene);
+    Accel* BVH4BVH4Triangle4v(Scene* scene);
+    Accel* BVH4BVH4Triangle4i(Scene* scene);
+    Accel* BVH4BVH4TrianglePairs4(Scene* scene);
+
     Accel* BVH4BVH4Triangle4ObjectSplit(Scene* scene);
     Accel* BVH4BVH4Triangle8ObjectSplit(Scene* scene);
     Accel* BVH4BVH4Triangle4vObjectSplit(Scene* scene);
@@ -85,6 +91,13 @@ namespace embree
     Accel::Intersectors BVH4Triangle4vMBIntersectorsChunk(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4vMBIntersectorsHybrid(BVH4* bvh);
     Accel::Intersectors BVH4TrianglePairs4Intersectors(BVH4* bvh);
+
+    static void createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+#if defined (__TARGET_AVX__)
+    static void createTriangleMeshTriangle8Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+#endif
+    static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 
     static void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 #if defined (__TARGET_AVX__)

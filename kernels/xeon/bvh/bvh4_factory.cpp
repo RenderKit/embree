@@ -563,6 +563,37 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Triangle4::type,mesh->parent);
+    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
+  }
+
+#if defined (__TARGET_AVX__)
+  void BVH4Factory::createTriangleMeshTriangle8Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = ;
+    accel = new BVH4(Triangle8::type,mesh->parent);
+    builder = mesh->parent->device->bvh4_factory->BVH4Triangle8MeshBuilderMortonGeneral(accel,mesh,0);
+  }
+
+#endif
+
+  void BVH4Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Triangle4v::type,mesh->parent);
+    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
+  }
+
+  void BVH4Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Triangle4i::type,mesh->parent);
+    builder = mesh->parent->device->bvh4_factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); 
+  }
+
   void BVH4Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
@@ -595,7 +626,7 @@ namespace embree
     switch (mesh->flags) {
     case RTC_GEOMETRY_STATIC:     builder = factory->BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0); break;
     case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4TrianglePairs4MeshRefitSAH(accel,mesh,0); break;
-    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4TrianglePairs4MeshBuilderSAH(accel,mesh,0); break; // FIXME: should be morton builder
     default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
     }
   }
@@ -631,6 +662,75 @@ namespace embree
     BVH4* accel = new BVH4(Triangle4::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
     Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4BVH4Triangle4(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
+
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4Morton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+#if defined (__TARGET_AVX__)
+  Accel* BVH4Factory::BVH4BVH4Triangle8(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle8::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
+    
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8Morton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle8>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4BVH4TrianglePairs4(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle8::type,scene);
+    Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
+
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4);
+    //else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4Morton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<TrianglePairs4>");
+
+    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+#endif
+
+  Accel* BVH4Factory::BVH4BVH4Triangle4v(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4v::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
+
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4vMorton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4v>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4BVH4Triangle4i(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Triangle4i::type,scene);
+    Accel::Intersectors intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
+    
+    Builder* builder = nullptr;
+    if      (scene->device->tri_builder == "default"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4BVH4<Triangle4i>");
+
     return new AccelInstance(accel,builder,intersectors);
   }
 

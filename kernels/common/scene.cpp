@@ -201,14 +201,14 @@ namespace embree
         }
       }
     }
-    else if (device->tri_accel == "bvh4.bvh4.triangle4")  accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4v") accels.add(device->bvh4_factory->BVH4BVH4Triangle4vObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4i") accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4")  accels.add(device->bvh4_factory->BVH4BVH4Triangle4(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4v") accels.add(device->bvh4_factory->BVH4BVH4Triangle4v(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle4i") accels.add(device->bvh4_factory->BVH4BVH4Triangle4i(this));
     else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
     else if (device->tri_accel == "bvh4.triangle4v")      accels.add(device->bvh4_factory->BVH4Triangle4v(this));
     else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel == "bvh4.bvh4.triangle8")  accels.add(device->bvh4_factory->BVH4BVH4Triangle8ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.bvh4.triangle8")  accels.add(device->bvh4_factory->BVH4BVH4Triangle8(this));
     else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
