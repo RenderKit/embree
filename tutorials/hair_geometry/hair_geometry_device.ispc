@@ -352,10 +352,10 @@ Vec3f occluded(RTCScene scene, RTCRay2& ray)
 Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   RandomSampler sampler;
-  RandomSampler__init(sampler, x, y, g_accu_count);
-  x += RandomSampler__get1D(sampler);
-  y += RandomSampler__get1D(sampler);
-  float time = RandomSampler__get1D(sampler);
+  RandomSampler_init(sampler, x, y, g_accu_count);
+  x += RandomSampler_get1D(sampler);
+  y += RandomSampler_get1D(sampler);
+  float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
   RTCRay2 ray;
@@ -435,7 +435,7 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
 #if 1
     /* sample BRDF */
     Vec3fa wi;
-    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,RandomSampler__get1D(sampler),RandomSampler__get1D(sampler),RandomSampler__get1D(sampler));
+    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,RandomSampler_get1D(sampler),RandomSampler_get1D(sampler),RandomSampler_get1D(sampler));
     if (wi.w <= 0.0f) return color;
 
     /* calculate secondary ray and offset it out of the hair */
@@ -471,9 +471,9 @@ Vec3f renderPixelPathTrace(float x, float y, const uniform Vec3f& vx, const unif
 Vec3f renderPixelTestEyeLight(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
   RandomSampler sampler;
-  RandomSampler__init(sampler, x, y, g_accu_count);
-  x += RandomSampler__get1D(sampler);
-  y += RandomSampler__get1D(sampler);
+  RandomSampler_init(sampler, x, y, g_accu_count);
+  x += RandomSampler_get1D(sampler);
+  y += RandomSampler_get1D(sampler);
 
   /* initialize ray */
   RTCRay2 ray;

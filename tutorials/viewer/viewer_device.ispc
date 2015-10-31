@@ -426,7 +426,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 {
   /* initialize sampler */
   RandomSampler sampler;
-  RandomSampler__init(sampler, x, y, 0);
+  RandomSampler_init(sampler, x, y, 0);
 
   /* initialize ray */
   RTCRay ray;
@@ -437,7 +437,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = RandomSampler__get1D(sampler);
+  ray.time = RandomSampler_get1D(sampler);
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);

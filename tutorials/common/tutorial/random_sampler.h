@@ -23,7 +23,7 @@ struct RandomSampler
   unsigned int s;
 };
 
-inline unsigned int MurmurHash3__mix(unsigned int hash, unsigned int k)
+inline unsigned int MurmurHash3_mix(unsigned int hash, unsigned int k)
 {
   const unsigned int c1 = 0xcc9e2d51;
   const unsigned int c2 = 0x1b873593;
@@ -42,7 +42,7 @@ inline unsigned int MurmurHash3__mix(unsigned int hash, unsigned int k)
   return hash;
 }
 
-inline unsigned int MurmurHash3__finalize(unsigned int hash)
+inline unsigned int MurmurHash3_finalize(unsigned int hash)
 {
   hash ^= hash >> 16;
   hash *= 0x85ebca6b;
@@ -53,32 +53,32 @@ inline unsigned int MurmurHash3__finalize(unsigned int hash)
   return hash;
 }
 
-inline void RandomSampler__init(RandomSampler& This, int pixelId, int sampleId)
+inline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
 {
   unsigned int hash = 0;
-  hash = MurmurHash3__mix(hash, pixelId);
-  hash = MurmurHash3__mix(hash, sampleId);
-  hash = MurmurHash3__finalize(hash);
+  hash = MurmurHash3_mix(hash, pixelId);
+  hash = MurmurHash3_mix(hash, sampleId);
+  hash = MurmurHash3_finalize(hash);
 
-  This.s = hash;
+  self.s = hash;
 }
 
-inline void RandomSampler__init(RandomSampler& This, int x, int y, int sampleId)
+inline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
 {
-  RandomSampler__init(This, x | (y << 16), sampleId);
+  RandomSampler_init(self, x | (y << 16), sampleId);
 }
 
-inline float RandomSampler__get1D(RandomSampler& This)
+inline float RandomSampler_get1D(RandomSampler& self)
 {
   const unsigned int m = 1664525;
   const unsigned int n = 1013904223;
-  This.s = This.s * m + n;
+  self.s = self.s * m + n;
 
   // avoid expensive uint->float conversion
-  return (float)(int)(This.s >> 1) * 4.656612873077392578125e-10f;
+  return (float)(int)(self.s >> 1) * 4.656612873077392578125e-10f;
 }
 
-inline Vec2f RandomSampler__get2D(RandomSampler& This)
+inline Vec2f RandomSampler_get2D(RandomSampler& self)
 {
-  return Vec2f(RandomSampler__get1D(This), RandomSampler__get1D(This));
+  return Vec2f(RandomSampler_get1D(self), RandomSampler_get1D(self));
 }
