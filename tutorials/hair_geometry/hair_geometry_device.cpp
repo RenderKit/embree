@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/tutorial/random_sampler.h"
 
 #if defined(__XEON_PHI__) // FIXME: gather of pointers not working in ISPC for Xeon Phi
 #define renderPixelTestEyeLight renderPixelStandard
@@ -78,12 +79,6 @@ void error_handler(const RTCError code, const char* str)
 renderPixelFunc renderPixel;
 
 Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p);
-
-/*! random number generator for floating point numbers in range [0,1] */
-inline float frand(int& seed) {
-  seed = 7 * seed + 5;
-  return (seed & 0xFFFF)/(float)0xFFFF;
-}
 
 /*! Uniform hemisphere sampling. Up direction is the z direction. */
 Vec3fa sampleSphere(const float u, const float v) 
@@ -356,8 +351,11 @@ Vec3fa occluded(RTCScene scene, RTCRay2& ray)
 /* task that renders a single screen tile */
 Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  int seed = 21344*x+121233*y+234532*g_accu_count;
-  float time = frand(seed);
+  RandomSampler sampler;
+  RandomSampler__init(sampler, x, y, g_accu_count);
+  x += RandomSampler__get1D(sampler);
+  y += RandomSampler__get1D(sampler);
+  float time = RandomSampler__get1D(sampler);
 
   /* initialize ray */
   RTCRay2 ray;
@@ -437,7 +435,7 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
 #if 1
     /* sample BRDF */
     Vec3fa wi;
-    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,frand(seed),frand(seed),frand(seed));
+    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,RandomSampler__get1D(sampler),RandomSampler__get1D(sampler),RandomSampler__get1D(sampler));
     if (wi.w <= 0.0f) return color;
 
     /* calculate secondary ray and offset it out of the hair */
@@ -472,6 +470,11 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
 
 Vec3fa renderPixelTestEyeLight(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
+  RandomSampler sampler;
+  RandomSampler__init(sampler, x, y, g_accu_count);
+  x += RandomSampler__get1D(sampler);
+  y += RandomSampler__get1D(sampler);
+
   /* initialize ray */
   RTCRay2 ray;
   ray.org = p;
@@ -538,16 +541,9 @@ void renderTile(int taskIndex, int* pixels,
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
-   int seed = (y*width+x+0) * g_accu_count;
-
     /* calculate pixel color */
-     float subpixel_x = frand(seed);
-     float subpixel_y = frand(seed);
-     float fx = x + subpixel_x;
-     float fy = y + subpixel_y;
-     Vec3fa color = renderPixel(fx,fy,vx,vy,vz,p);
-    
-    //Vec3fa color = renderPixelTestEyeLight(fx,fy,vx,vy,vz,p);
+    Vec3fa color = renderPixel(x,y,vx,vy,vz,p);
+    //Vec3fa color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
     Vec3fa* dst = &g_accu[y*width+x];

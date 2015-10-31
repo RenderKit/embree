@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/random_sampler.isph"
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform bool g_changed;
@@ -420,44 +421,12 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-/* for details about this random number generator see: P. L'Ecuyer,
-   "Maximally Equidistributed Combined Tausworthe Generators",
-   Mathematics of Computation, 65, 213 (1996), 203--213:
-   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
-
-struct rand_state {
-  unsigned int s1, s2, s3;
-};
-
-inline unsigned int irand(rand_state& state)
-{
-  state.s1 = ((state.s1 & 4294967294U) << 12U) ^ (((state.s1<<13U)^state.s1)>>19U);
-  state.s2 = ((state.s2 & 4294967288U) <<  4U) ^ (((state.s2<< 2U)^state.s2)>>25U);
-  state.s3 = ((state.s3 & 4294967280U) << 17U) ^ (((state.s3<< 3U)^state.s3)>>11U);
-  return state.s1 ^ state.s2 ^ state.s3;
-}
-
-inline void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
-{
-  state.s1 = x >=   2 ? x : x +   2;
-  state.s2 = y >=   8 ? y : y +   8;
-  state.s3 = z >=  16 ? z : z +  16;
-  for (uniform int i=0; i<10; i++) irand(state);
-}
-
-inline float frand(rand_state& state) {
-  return irand(state)*2.3283064365386963e-10f;
-}
-
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  /* initialize RNG */
-  rand_state state;
-  init_rand(state,
-            253*x+35*y+54,
-            1253*x+345*y+564,
-            10253*x+3435*y+13);
+  /* initialize sampler */
+  RandomSampler sampler;
+  RandomSampler__init(sampler, x, y, 0);
 
   /* initialize ray */
   RTCRay ray;
@@ -468,7 +437,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  ray.time = frand(state);
+  ray.time = RandomSampler__get1D(sampler);
   
   /* intersect ray with scene */
   rtcIntersect(g_scene,ray);
