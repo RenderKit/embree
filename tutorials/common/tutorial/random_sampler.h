@@ -53,6 +53,14 @@ inline unsigned int MurmurHash3_finalize(unsigned int hash)
   return hash;
 }
 
+inline unsigned int LCG_next(unsigned int value)
+{
+  const unsigned int m = 1664525;
+  const unsigned int n = 1013904223;
+
+  return value * m + n;
+}
+
 inline void RandomSampler_init(RandomSampler& self, int pixelId, int sampleId)
 {
   unsigned int hash = 0;
@@ -70,9 +78,7 @@ inline void RandomSampler_init(RandomSampler& self, int x, int y, int sampleId)
 
 inline float RandomSampler_get1D(RandomSampler& self)
 {
-  const unsigned int m = 1664525;
-  const unsigned int n = 1013904223;
-  self.s = self.s * m + n;
+  self.s = LCG_next(self.s);
 
   // avoid expensive uint->float conversion
   return (float)(int)(self.s >> 1) * 4.656612873077392578125e-10f;
