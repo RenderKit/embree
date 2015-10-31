@@ -421,7 +421,14 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleM<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return false; //pre.intersect(ray,k,tri.v0,tri.e1,tri.e2,tri.Ng,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          // M(4,8) to 16 broadcasts
+          const Vec3<vfloat<K>> v0(tri.v0.x,tri.v0.y,tri.v0.z); 
+          const Vec3<vfloat<K>> e1(tri.e1.x,tri.e1.y,tri.e1.z);
+          const Vec3<vfloat<K>> e2(tri.e2.x,tri.e2.y,tri.e2.z);
+          const Vec3<vfloat<K>> Ng(tri.Ng.x,tri.Ng.y,tri.Ng.z);
+          const vint<K> geomIDs(tri.geomIDs);
+          const vint<K> primIDs(tri.primIDs);
+          return pre.intersect(ray,k,v0,e1,e2,Ng,Occluded1KEpilog<K,K,filter>(ray,k,geomIDs,primIDs,scene));
         }
       };
 

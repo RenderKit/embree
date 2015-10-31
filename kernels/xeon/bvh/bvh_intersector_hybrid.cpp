@@ -252,7 +252,7 @@ namespace embree
 
 
 
-#if 0
+#if 1
       size_t m_active = movemask(valid0);
       while(m_active)
       {
@@ -324,9 +324,9 @@ namespace embree
               const typename BVH8::Node* node = cur0.node();
 
               const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
               const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
-              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 tNearFarX = msub(nodeX, rdir0.x, org_rdir0.x);
               const vfloat16 tNearFarY = msub(nodeY, rdir0.y, org_rdir0.y);
               const vfloat16 tNearFarZ = msub(nodeZ, rdir0.z, org_rdir0.z);
@@ -376,9 +376,9 @@ namespace embree
               const typename BVH8::Node* node = cur1.node();
 
               const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
+              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 nodeY = vfloat16::load((float*)((const char*)&node->lower_y));
               const vfloat16 nodeZ = vfloat16::load((float*)((const char*)&node->lower_z));
-              const vbool16 m_node = ne(m_lower8,nodeX,pinf);
               const vfloat16 tNearFarX = msub(nodeX, rdir1.x, org_rdir1.x);
               const vfloat16 tNearFarY = msub(nodeY, rdir1.y, org_rdir1.y);
               const vfloat16 tNearFarZ = msub(nodeZ, rdir1.z, org_rdir1.z);
@@ -567,16 +567,57 @@ namespace embree
           
         } /* traversal */
         // exit(0);
-#endif
       } /* ray packet */
+#endif
 
+      AVX_ZERO_UPPER();
     }
 
 
     template<int types, typename PrimitiveIntersectorK>
     void BVHNIntersectorKHybrid<8,16,types,false,PrimitiveIntersectorK,true>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      PING;
+      /* verify correct input */
+      vbool<K> valid0 = *valid_i == -1;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear >= 0.0f));
+      assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+      
+      /* load ray */
+      Vec3vfK ray_org16 = ray.org;
+      Vec3vfK ray_dir16 = ray.dir;
+      vfloat<K> ray_tnear16 = ray.tnear, ray_tfar16  = ray.tfar;
+      const Vec3vfK rdir16 = rcp_safe(ray_dir16);
+      const Vec3vfK org16(ray_org16), org_rdir16 = org16 * rdir16;
+      ray_tnear16 = select(valid0,ray_tnear16,vfloat<K>(pos_inf));
+      ray_tfar16  = select(valid0,ray_tfar16 ,vfloat<K>(neg_inf));
+
+      /* compute near/far per ray */
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir16.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir16.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir16.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+
+      Precalculations pre(valid0,ray);
+
+      vbool<K> terminated = !valid0;
+
+      size_t m_active = movemask(valid0);
+      while(m_active)
+      {
+        size_t m_active_traversal = 1;
+        size_t rayID0 = __bsf(m_active);
+        m_active      = __btc(m_active,rayID0);       
+
+        NodeRef cur = bvh->root;
+        if (BVHNIntersectorKSingle<8,16,types,false,PrimitiveIntersectorK>::occluded1(bvh, cur, rayID0, pre, ray, ray_org16, ray_dir16, rdir16, ray_tnear16, ray_tfar16, nearXYZ))
+          set(terminated, rayID0);
+
+      }
+      vint<K>::store(valid0 & terminated,&ray.geomID,0);
+      AVX_ZERO_UPPER();
     }
 
     // ===================================================================================================================================================================
