@@ -55,6 +55,11 @@ namespace embree
     __forceinline vint(const vint4 i) {
       v = _mm512_broadcast_i32x4(i);
     }
+
+    __forceinline vint(const vint8 i) {
+      v = _mm512_castps_si512(_mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castsi256_pd(i))));
+    }
+
 #endif
    
     __forceinline explicit vint(const __m512 f) {
