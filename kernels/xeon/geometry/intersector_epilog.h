@@ -73,7 +73,7 @@ namespace embree
 #if defined(RTCORE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask) == 0) {
-              valid[i] = 0;
+              clear(valid,i);
               continue;
             }
 #endif
@@ -84,7 +84,7 @@ namespace embree
               if (unlikely(geometry->hasIntersectionFilter1())) {
                 const Vec2f uv = hit.uv(i);
                 if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),instID,primIDs[i])) return true;
-                valid[i] = 0;
+                clear(valid,i);
                 continue;
               }
             }
@@ -213,7 +213,7 @@ namespace embree
               if (runIntersectionFilter1(geometry,ray,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) {
                 return true;
               }
-              valid[i] = 0;
+              clear(valid,i);
               if (unlikely(none(valid))) break;
               i = select_min(valid,hit.vt);
             }
@@ -524,7 +524,7 @@ namespace embree
 #if defined(RTCORE_RAY_MASK)
             /* goto next hit if mask test fails */
             if ((geometry->mask & ray.mask[k]) == 0) {
-              valid[i] = 0;
+              clear(valid,i);
               continue;
             }
 #endif
@@ -535,7 +535,7 @@ namespace embree
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
                 const Vec2f uv = hit.uv(i);
                 if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
-                valid[i] = 0;
+                clear(valid,i);
                 continue;
               }
             }
@@ -657,7 +657,8 @@ namespace embree
               {
                 const Vec2f uv = hit.uv(i);
                 if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primID)) return true;
-                valid[i] = 0;
+                clear(valid,i);
+
                 if (unlikely(none(valid))) break;
                 i = select_min(valid,hit.vt);
               }
