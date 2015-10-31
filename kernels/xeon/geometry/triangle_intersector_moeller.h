@@ -359,7 +359,7 @@ namespace embree
     // ==============================================================================================
     // ================================== AVX512 code path ==========================================
     // ==============================================================================================
-
+#if 1
     /*! Intersects M triangles with K rays. */
     template<int M, bool filter>
       struct TriangleMIntersectorKMoellerTrumbore<M,16,filter>
@@ -425,7 +425,7 @@ namespace embree
         }
       };
 
-
+#endif
     
     /*! Intersects M motion blur triangles with 1 ray */
     template<int M, bool filter>
