@@ -84,9 +84,9 @@ namespace embree
   BVH8Factory::BVH8Factory (int features)
   {
     /* select builders */
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Bezier1vBuilder_OBB_New);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Bezier1iBuilder_OBB_New);
-    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Bezier1iMBBuilder_OBB_New);
+    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1vBuilder_OBB_New);
+    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iBuilder_OBB_New);
+    SELECT_SYMBOL_INIT_AVX(features,BVH8Bezier1iMBBuilder_OBB_New);
 
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4SceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle8SceneBuilderSAH);
