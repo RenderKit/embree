@@ -270,10 +270,19 @@ namespace embree
         vfloat<K> ray_far0(ray_tfar16[rayID0]);
         const vfloat<K> pinf(pos_inf);
 
-        const vint16 permX = select(rdir0.x >= 0.0f,identity,identity_half);
-        const vint16 permY = select(rdir0.y >= 0.0f,identity,identity_half);
-        const vint16 permZ = select(rdir0.z >= 0.0f,identity,identity_half);
+#if 1
+        rdir0.x = select(m_lower8,rdir0.x,-rdir0.x);
+        rdir0.y = select(m_lower8,rdir0.y,-rdir0.y);
+        rdir0.z = select(m_lower8,rdir0.z,-rdir0.z);
 
+        org_rdir0.x = select(m_lower8,org_rdir0.x,-org_rdir0.x);
+        org_rdir0.y = select(m_lower8,org_rdir0.y,-org_rdir0.y);
+        org_rdir0.z = select(m_lower8,org_rdir0.z,-org_rdir0.z);
+
+#endif
+        const vint16 permX = select(rdir0.x[rayID0] >= 0.0f,identity,identity_half);
+        const vint16 permY = select(rdir0.y[rayID0] >= 0.0f,identity,identity_half);
+        const vint16 permZ = select(rdir0.z[rayID0] >= 0.0f,identity,identity_half);
 
         StackItemT<NodeRef>* stackPtr0 = stack0 + 1;        //!< current stack pointer 0
 
@@ -290,6 +299,7 @@ namespace embree
 	while (true)
 	{
           const vfloat<K> ray_far8 (select(m_lower8,ray_far0,vfloat<K>(neg_inf)));
+          const vfloat<K> ray_near_far = select(m_lower8,ray_near0,-ray_far0);
 
           /* down traversal */
           while(true)
@@ -312,15 +322,12 @@ namespace embree
             assert(stackPtr0 >= stack0);
             cur0 = NodeRef(stackPtr0->ptr);
 
-            const vfloat16 tFarX = align_shift_right<8>(tNearFarX,tNearFarX);
-            const vfloat16 tFarY = align_shift_right<8>(tNearFarY,tNearFarY);
-            const vfloat16 tFarZ = align_shift_right<8>(tNearFarZ,tNearFarZ);
-            const vfloat16 tNearX = tNearFarX;
-            const vfloat16 tNearY = tNearFarY;
-            const vfloat16 tNearZ = tNearFarZ;
-            const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near0);
-            const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far8);
-            const vbool16 vmask = le(tNear,tFar);
+            const vfloat16 tNearFar = max(tNearFarX,tNearFarY,tNearFarZ,ray_near_far);
+            //const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far8);
+            const vfloat16 tNear = tNearFar;
+            const vfloat16 tFar  = -align_shift_right<8>(tNearFar,tNearFar);
+
+            const vbool16 vmask = le(m_lower8,tNear,tFar);
             DBG_PRINT(vmask);
 
 #endif
