@@ -165,6 +165,22 @@ namespace embree
 #endif
     }
 
+#if defined(__AVX512F__)
+    static __forceinline vint16 compact64bit(const vboolf16& mask, vint16 &v) {
+      return _mm512_mask_compress_epi64(v,mask,v);
+    }
+
+    static __forceinline vint16 broadcast64bit(size_t v) {
+      return _mm512_set1_epi64(v);
+    }
+
+    static __forceinline size_t extract64bit(const vint16& v)
+    {
+      return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
+    }
+#endif
+
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////

@@ -837,7 +837,7 @@ namespace embree
         numbers[i] = Vec3f(x,y,z);
       }
 #else
-#define NUM 1
+#define NUM 128
       float rx[NUM];
       float ry[NUM];
       float rz[NUM];

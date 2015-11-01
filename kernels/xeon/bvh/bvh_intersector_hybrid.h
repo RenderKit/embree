@@ -79,7 +79,7 @@ namespace embree
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    const BaseNode* node,
                                                    size_t mask,
-                                                   const vfloat8& tNear,
+                                                   const vfloat16& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
@@ -93,7 +93,6 @@ namespace embree
           assert(cur != BVH::emptyNode);
           return;
         }
-
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = node->child(r); 
         c0.prefetch(types); 

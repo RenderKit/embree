@@ -175,6 +175,9 @@ namespace embree
 #endif
     }
 
+
+
+
   /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
 #if defined(__AVX512F__)
