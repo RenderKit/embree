@@ -250,7 +250,7 @@ namespace embree
       const vint16 identity_half =  align_shift_right<8>(identity,identity);
       
 
-#if 1
+#if 0
         asm nop;
 
       const vbool16 m_lower8(0xff);
@@ -276,13 +276,13 @@ namespace embree
         const vint16 permZ = select(rdir0.z >= 0.0f,identity,identity_half);
 
 #if 1
-        rdir0.x = select(m_lower8,rdir0.x,-rdir0.x);
-        rdir0.y = select(m_lower8,rdir0.y,-rdir0.y);
-        rdir0.z = select(m_lower8,rdir0.z,-rdir0.z);
-        org_rdir0.x = select(m_lower8,org_rdir0.x,-org_rdir0.x);
-        org_rdir0.y = select(m_lower8,org_rdir0.y,-org_rdir0.y);
-        org_rdir0.z = select(m_lower8,org_rdir0.z,-org_rdir0.z);
-        //const vint16 upperSign( select(m_lower8,vint16(zero),vint16(0x80000000));
+        const vfloat16 upperSign(asFloat(select(m_lower8,vint16(zero),vint16(0x80000000))));
+        rdir0.x = rdir0.x ^ upperSign;
+        rdir0.y = rdir0.y ^ upperSign;
+        rdir0.z = rdir0.z ^ upperSign;
+        org_rdir0.x = org_rdir0.x ^ upperSign; 
+        org_rdir0.y = org_rdir0.y ^ upperSign;
+        org_rdir0.z = org_rdir0.z ^ upperSign;
         const vfloat16 sign(asFloat(vint16(0x80000000)));
 #else
         const size_t flip = sizeof(vfloat<N>);
@@ -325,14 +325,17 @@ namespace embree
             cur0 = NodeRef(stackPtr0->ptr);
 
             const vfloat16 tNearFar = max(tNearFarX,tNearFarY,tNearFarZ,ray_near_far);
-            //const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far8);
+#if 0
             const vfloat16 tNear = tNearFar;
-            //const vfloat16 tFar  = -align_shift_right<8>(tNearFar,tNearFar);
             const vfloat16 tFar  = align_shift_right<8>(tNearFar,tNearFar) ^ sign;
-
-            //-align_shift_right<8>(tNearFar,tNearFar);
-
             const vbool16 vmask = le(m_lower8,tNear,tFar);
+#else
+            const vfloat16 tNear = tNearFar ^ sign;
+            const vfloat16 tFar  = align_shift_right<8>(tNearFar,tNearFar);
+            const vbool16 vmask = ge(m_lower8,tNear,tFar);
+
+#endif
+
 #endif
 
 #if 0
