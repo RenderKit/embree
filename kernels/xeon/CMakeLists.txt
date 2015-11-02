@@ -90,7 +90,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_instancing.cpp
-  bvh4/bvh4_builder_subdiv.cpp
+  bvh/bvh_builder_subdiv.cpp
 
   bvh/bvh_intersector1.cpp)
 
@@ -138,7 +138,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp
-    bvh4/bvh4_builder_subdiv.avx.cpp
+    bvh/bvh_builder_subdiv.avx.cpp
     bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
@@ -189,7 +189,7 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
     bvh/bvh_builder_sah.avx512.cpp
 
     bvh/bvh_refit.cpp
-    bvh4/bvh4_builder_subdiv.avx512.cpp
+    bvh/bvh_builder_subdiv.avx512.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
