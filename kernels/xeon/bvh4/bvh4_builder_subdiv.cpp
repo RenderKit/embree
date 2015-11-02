@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "../bvh/bvh.h"
-#include "bvh4_refit.h"
+#include "../bvh/bvh_refit.h"
 #include "../bvh/bvh_builder.h"
 
 #include "../builders/primrefgen.h"
@@ -156,12 +156,12 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVH4Refitter::LeafBoundsInterface
+    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<4>::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
       BVH4* bvh;
-      BVH4Refitter* refitter;
+      BVHNRefitter<4>* refitter;
       Scene* scene;
       mvector<PrimRef> prims; 
       mvector<BBox3fa> bounds; 
@@ -321,7 +321,7 @@ namespace embree
         if (fastUpdateMode)
         {
           if (refitter == nullptr)
-            refitter = new BVH4Refitter(bvh,*(BVH4Refitter::LeafBoundsInterface*)this);
+            refitter = new BVHNRefitter<4>(bvh,*(typename BVHNRefitter<4>::LeafBoundsInterface*)this);
 
           refitter->refit();
         }

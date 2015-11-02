@@ -18,5 +18,5 @@
 // ISAs, as a lambda name mangling bug of ICC under Windows causes
 // symbols to conflict.
 
-#include "bvh4_refit.cpp"
+#include "bvh_refit.cpp"
 
