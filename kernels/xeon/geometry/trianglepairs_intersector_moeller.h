@@ -440,7 +440,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));
+          pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx         
 
           //pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
           //pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
@@ -462,7 +462,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,K,filter>(ray,k,geomIDs,primIDs,scene));          
+          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx         
           
           //if (pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
           //if (pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;

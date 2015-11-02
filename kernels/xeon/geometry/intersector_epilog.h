@@ -485,7 +485,7 @@ namespace embree
     
     
     
-    template<int M, int K, bool filter>
+    template<int M, int Mx, int K, bool filter>
       struct Intersect1KEpilog
       {
         RayK<K>& ray;
@@ -501,11 +501,11 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
         {
-          vbool<M> valid = valid_i;
+          vbool<Mx> valid = valid_i;
           hit.finalize();
-          
+
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           
@@ -558,7 +558,7 @@ namespace embree
         }
       };
     
-    template<int M, int K, bool filter>
+    template<int M, int Mx, int K, bool filter>
       struct Occluded1KEpilog
       {
         RayK<K>& ray;
@@ -574,7 +574,7 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
+        __forceinline bool operator() (const vbool<Mx>& valid, Hit& hit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
