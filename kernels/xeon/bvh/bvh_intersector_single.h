@@ -196,7 +196,7 @@ namespace embree
 
 
 
-#if 1 // defined(__AVX512F__) //defined(__TARGET_AVX512KNL__)
+#if 0 // defined(__AVX512F__) //defined(__TARGET_AVX512KNL__)
 
 
     /*! BVH single ray intersector for packets. */

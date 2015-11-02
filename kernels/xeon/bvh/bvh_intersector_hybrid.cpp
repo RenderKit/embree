@@ -210,7 +210,7 @@ namespace embree
 //#define DBG_PRINT(x) PRINT(x)
 #define DBG_PRINT(x) 
 
-#if defined(__AVX512F__)
+#if 0 // defined(__AVX512F__)
 
     template<int types, typename PrimitiveIntersectorK>
     void BVHNIntersectorKHybrid<8,16,types,false,PrimitiveIntersectorK,true>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
