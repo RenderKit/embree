@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.isph"
+#include "../common/tutorial/random_sampler.isph"
 #include "shapesampler.isph"
 #include "optics.isph"
 
@@ -1226,35 +1227,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
   return scene_out;
 } // convertScene
 
-/* for details about this random number generator see: P. L'Ecuyer,
-   "Maximally Equidistributed Combined Tausworthe Generators",
-   Mathematics of Computation, 65, 213 (1996), 203--213:
-   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
-
-struct rand_state {
-  unsigned int s1, s2, s3;
-};
-
-inline unsigned int irand(rand_state& state)
-{
-  state.s1 = ((state.s1 & 4294967294U) << 12U) ^ (((state.s1<<13U)^state.s1)>>19U);
-  state.s2 = ((state.s2 & 4294967288U) <<  4U) ^ (((state.s2<< 2U)^state.s2)>>25U);
-  state.s3 = ((state.s3 & 4294967280U) << 17U) ^ (((state.s3<< 3U)^state.s3)>>11U);
-  return state.s1 ^ state.s2 ^ state.s3;
-}
-
-inline void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
-{
-  state.s1 = x >=   2 ? x : x +   2;
-  state.s2 = y >=   8 ? y : y +   8;
-  state.s3 = z >=  16 ? z : z +  16;
-  for (uniform int i=0; i<10; i++) irand(state);
-}
-
-inline float frand(rand_state& state) {
-  return irand(state)*2.3283064365386963e-10f;
-}
-
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
   const Vec3f Ng = _Ng;
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
@@ -1447,14 +1419,13 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
 }
 
 
-Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
+Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-
   /* radiance accumulator and weight */
   Vec3f L = make_Vec3f(0.0f);
   Vec3f Lw = make_Vec3f(1.0f);
   Medium medium = make_Medium_Vacuum();
-  float time = frand(state);
+  float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
   RTCRay ray = make_Ray(p,normalize(x*vx + y*vy + vz),0.0f,inf,time);
@@ -1526,7 +1497,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 
     /* sample BRDF at hit point */
     Sample3f wi1;
-    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, make_Vec2f(frand(state),frand(state)));
+    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
 #if 1
     /* iterate over ambient lights */
@@ -1535,7 +1506,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 #if 1
       Vec3f L0 = make_Vec3f(0.0f);
       Sample3f wi0; float tMax0;
-      Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,make_Vec2f(frand(state),frand(state)));
+      Vec3f Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,RandomSampler_get2D(sampler));
 
       if (wi0.pdf > 0.0f) {
         RTCRay shadow = make_Ray(dg.P,wi0.v,dg.tnear_eps,tMax0,time); shadow.transparency = make_Vec3f(1.0f);
@@ -1568,7 +1539,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* iterate over point lights */
     for (uniform size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
-      Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+      Vec3f Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
       rtcOccluded(g_scene,shadow);
@@ -1580,7 +1551,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* iterate over directional lights */
     for (uniform size_t i=0; i<g_ispc_scene->numDirectionalLights; i++)
     {
-      Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+      Vec3f Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
       rtcOccluded(g_scene,shadow);
@@ -1592,7 +1563,7 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
     /* iterate over distant lights */
     for (uniform size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
-      Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,make_Vec2f(frand(state),frand(state)));
+      Vec3f Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
 
       if (wi.pdf <= 0.0f) continue;
       RTCRay shadow = make_Ray(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = make_Vec3f(1.0f);
@@ -1617,21 +1588,18 @@ Vec3f renderPixelFunction(float x, float y, rand_state& state, const uniform Vec
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)
 {
-  rand_state state;
+  RandomSampler sampler;
 
   Vec3f L = make_Vec3f(0.0f,0.0f,0.0f);
 
-  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++) {
+  for (uniform int i=0; i<SAMPLES_PER_PIXEL; i++)
+  {
+    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
-  init_rand(state,
-            253*x+35*y+152*g_accu_count+54,
-            1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13+i*1793);
-
-  /* calculate pixel color */
-  float fx = x + frand(state);
-  float fy = y + frand(state);
-  L = L + renderPixelFunction(fx,fy,state,vx,vy,vz,p); 
+    /* calculate pixel color */
+    float fx = x + RandomSampler_get1D(sampler);
+    float fy = y + RandomSampler_get1D(sampler);
+    L = L + renderPixelFunction(fx,fy,sampler,vx,vy,vz,p);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;
