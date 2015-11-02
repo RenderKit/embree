@@ -248,7 +248,7 @@ namespace embree
 
       const vint16 identity( step );
       const vint16 identity_half =  align_shift_right<8>(identity,identity);
-
+      
 
 #if 1
         asm nop;
@@ -256,6 +256,7 @@ namespace embree
       const vbool16 m_lower8(0xff);
 
       size_t m_active = movemask(valid0);
+
       while(m_active)
       {
         size_t m_active_traversal = 1;
@@ -270,22 +271,20 @@ namespace embree
         vfloat<K> ray_far0(ray_tfar16[rayID0]);
         const vfloat<K> pinf(pos_inf);
 
+        const vint16 permX = select(rdir0.x >= 0.0f,identity,identity_half);
+        const vint16 permY = select(rdir0.y >= 0.0f,identity,identity_half);
+        const vint16 permZ = select(rdir0.z >= 0.0f,identity,identity_half);
+
 #if 1
         rdir0.x = select(m_lower8,rdir0.x,-rdir0.x);
         rdir0.y = select(m_lower8,rdir0.y,-rdir0.y);
         rdir0.z = select(m_lower8,rdir0.z,-rdir0.z);
-
         org_rdir0.x = select(m_lower8,org_rdir0.x,-org_rdir0.x);
         org_rdir0.y = select(m_lower8,org_rdir0.y,-org_rdir0.y);
         org_rdir0.z = select(m_lower8,org_rdir0.z,-org_rdir0.z);
-
-#endif
-        const vint16 permX = select(rdir0.x[rayID0] >= 0.0f,identity,identity_half);
-        const vint16 permY = select(rdir0.y[rayID0] >= 0.0f,identity,identity_half);
-        const vint16 permZ = select(rdir0.z[rayID0] >= 0.0f,identity,identity_half);
-
-        StackItemT<NodeRef>* stackPtr0 = stack0 + 1;        //!< current stack pointer 0
-
+        //const vint16 upperSign( select(m_lower8,vint16(zero),vint16(0x80000000));
+        const vfloat16 sign(asFloat(vint16(0x80000000)));
+#else
         const size_t flip = sizeof(vfloat<N>);
         const size_t nearX = nearXYZ.x[rayID0];
         const size_t nearY = nearXYZ.y[rayID0];
@@ -293,6 +292,10 @@ namespace embree
         const size_t farX  = nearX ^ flip;
         const size_t farY  = nearY ^ flip;
         const size_t farZ  = nearZ ^ flip;
+#endif
+
+        StackItemT<NodeRef>* stackPtr0 = stack0 + 1;        //!< current stack pointer 0
+
 
         NodeRef cur0 = bvh->root;
 
@@ -310,14 +313,13 @@ namespace embree
             const typename BVH8::Node* node = cur0.node();
 
 #if 1
-
             const vfloat16 nodeX = permute(vfloat16::load((float*)&node->lower_x),permX);
             const vfloat16 nodeY = permute(vfloat16::load((float*)&node->lower_y),permY);
             const vfloat16 nodeZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
             const vfloat16 tNearFarX = msub(nodeX, rdir0.x, org_rdir0.x);
             const vfloat16 tNearFarY = msub(nodeY, rdir0.y, org_rdir0.y);
             const vfloat16 tNearFarZ = msub(nodeZ, rdir0.z, org_rdir0.z);
-            
+
             stackPtr0--;
             assert(stackPtr0 >= stack0);
             cur0 = NodeRef(stackPtr0->ptr);
@@ -325,11 +327,12 @@ namespace embree
             const vfloat16 tNearFar = max(tNearFarX,tNearFarY,tNearFarZ,ray_near_far);
             //const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far8);
             const vfloat16 tNear = tNearFar;
-            const vfloat16 tFar  = -align_shift_right<8>(tNearFar,tNearFar);
+            //const vfloat16 tFar  = -align_shift_right<8>(tNearFar,tNearFar);
+            const vfloat16 tFar  = align_shift_right<8>(tNearFar,tNearFar) ^ sign;
+
+            //-align_shift_right<8>(tNearFar,tNearFar);
 
             const vbool16 vmask = le(m_lower8,tNear,tFar);
-            DBG_PRINT(vmask);
-
 #endif
 
 #if 0
@@ -346,6 +349,7 @@ namespace embree
 
             const vfloat16 tNear = max(tNearX,tNearY,tNearZ,ray_near0);
             const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far8);
+
             const vbool16 vmask = tNear <= tFar;
 
 #endif 
