@@ -574,10 +574,13 @@ namespace embree
           : ray(ray), k(k), geomIDs(geomIDs), primIDs(primIDs), scene(scene) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<Mx>& valid, Hit& hit) const
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
         {
+
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
+          vbool<Mx> valid = valid_i;
+          if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
           goto entry;
           while (true)
