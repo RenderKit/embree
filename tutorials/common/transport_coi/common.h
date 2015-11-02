@@ -69,6 +69,7 @@ namespace embree
   {
     int numVertices;
     int numHairs;
+    int materialID;
   };
 
   struct ResizeData {

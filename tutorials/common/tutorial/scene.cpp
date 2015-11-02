@@ -21,12 +21,27 @@ namespace embree
   struct SceneGraphConverter
   {
     TutorialScene* scene;
-    bool instancing;
     std::map<Ref<SceneGraph::MaterialNode>, size_t> material2id;
     std::map<Ref<SceneGraph::Node>, size_t> geometry2id;
     
-    SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, bool instancing)
-      : scene(scene), instancing(instancing) { convert(in,one,one); }
+    SceneGraphConverter (Ref<SceneGraph::Node> in, TutorialScene* scene, TutorialScene::InstancingMode instancing)
+      : scene(scene)
+    { 
+      convertLights(in,one,one);
+
+      if (instancing != TutorialScene::INSTANCING_NONE) 
+      {
+        if (instancing == TutorialScene::INSTANCING_SCENE_GROUP) 
+        {
+          in->reset();
+          in->calculateInDegree();
+          in->calculateClosed();
+        }
+        convertInstances(in,one,one);
+      }
+      else
+        convertGeometries(scene->geometries,in,one,one);
+    }
 
     int convert(Ref<SceneGraph::MaterialNode> node) 
     {
@@ -37,7 +52,7 @@ namespace embree
       return material2id[node];
     }
 
-    int convertTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    Ref<TutorialScene::Geometry> convertTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       int materialID = convert(mesh->material);
       
@@ -54,19 +69,10 @@ namespace embree
         objmesh->triangles[i] = TutorialScene::Triangle(tri.v0,tri.v1,tri.v2,materialID);
       }
       objmesh->meshMaterialID = materialID;
-      scene->geometries.push_back(objmesh);
-      return scene->geometries.size()-1;
+      return objmesh;
     }
 
-    int lookupTriangleMesh(Ref<SceneGraph::TriangleMeshNode> mesh)
-    {
-      Ref<SceneGraph::Node> node = mesh.dynamicCast<SceneGraph::Node>();
-      if (geometry2id.find(node) == geometry2id.end())
-        geometry2id[node] = convertTriangleMesh(mesh,one,one);
-      return geometry2id[node];
-    }
-
-    int convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    Ref<TutorialScene::Geometry> convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       int materialID = convert(mesh->material);
       
@@ -92,20 +98,10 @@ namespace embree
       subdivmesh->vertex_creases = mesh->vertex_creases;
       subdivmesh->vertex_crease_weights = mesh->vertex_crease_weights;
       subdivmesh->materialID = materialID;
-
-      scene->geometries.push_back(subdivmesh);
-      return scene->geometries.size()-1;
+      return subdivmesh;
     }
 
-    int lookupSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh)
-    {
-      Ref<SceneGraph::Node> node = mesh.dynamicCast<SceneGraph::Node>();
-      if (geometry2id.find(node) == geometry2id.end())
-        geometry2id[node] = convertSubdivMesh(mesh,one,one);
-      return geometry2id[node];
-    }
-
-    int convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    Ref<TutorialScene::Geometry> convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       int materialID = convert(mesh->material);
       
@@ -127,25 +123,17 @@ namespace embree
       for (size_t i=0; i<mesh->hairs.size(); i++)
         hairset->hairs[i] = TutorialScene::Hair(mesh->hairs[i].vertex,mesh->hairs[i].id);
 
-      scene->geometries.push_back(hairset);
-      return scene->geometries.size()-1;
+      hairset->materialID = materialID;
+      return hairset;
     }
 
-    int lookupHairSet(Ref<SceneGraph::HairSetNode> mesh)
-    {
-      Ref<SceneGraph::Node> node = mesh.dynamicCast<SceneGraph::Node>();
-      if (geometry2id.find(node) == geometry2id.end())
-        geometry2id[node] = convertHairSet(mesh,one,one);
-      return geometry2id[node];
-    }
-
-    void convert(Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+     void convertLights(Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        convert(xfmNode->child, space0*xfmNode->xfm0, space1*xfmNode->xfm1);
+        convertLights(xfmNode->child, space0*xfmNode->xfm0, space1*xfmNode->xfm1);
       } 
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
-        for (auto child : groupNode->children) convert(child,space0,space1);
+        for (auto child : groupNode->children) convertLights(child,space0,space1);
       }
       else if (Ref<SceneGraph::LightNode<AmbientLight> > ambientLight = node.dynamicCast<SceneGraph::LightNode<AmbientLight> >()) {
         scene->ambientLights.push_back(ambientLight->light.transform(space0));
@@ -162,26 +150,59 @@ namespace embree
       else if (Ref<SceneGraph::LightNode<DistantLight> > distantLight = node.dynamicCast<SceneGraph::LightNode<DistantLight> >()) {
         scene->distantLights.push_back(distantLight->light.transform(space0));
       }
-      else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
-      {
-        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupTriangleMesh(mesh)));
-        //if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,convertTriangleMesh(mesh,one,one)));
-        else            convertTriangleMesh(mesh,space0,space1);
+    }
+
+    void convertGeometries(std::vector<Ref<TutorialScene::Geometry>>& group, Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    {
+      if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        convertGeometries(group,xfmNode->child, space0*xfmNode->xfm0, space1*xfmNode->xfm1);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (auto child : groupNode->children) convertGeometries(group,child,space0,space1);
       }
-      else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) 
-      {
-        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupSubdivMesh(mesh)));
-        else            convertSubdivMesh(mesh,space0,space1);
+      else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+        group.push_back(convertTriangleMesh(mesh,space0,space1));
       }
-      else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+      else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+        group.push_back(convertSubdivMesh(mesh,space0,space1));
+      }
+      else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
+        group.push_back(convertHairSet(mesh,space0,space1));
+      }
+    }
+
+    int lookupGeometries(Ref<SceneGraph::Node> node)
+    {
+      if (geometry2id.find(node) == geometry2id.end())
       {
-        if (instancing) scene->geometries.push_back(new TutorialScene::Instance(space0,lookupHairSet(mesh)));
-        else            convertHairSet(mesh,space0,space1);
+        std::vector<Ref<TutorialScene::Geometry>> geometries;
+        convertGeometries(geometries,node,one,one);
+        
+        if (geometries.size() == 1)
+          scene->geometries.push_back(geometries[0]);
+        else 
+          scene->geometries.push_back(new TutorialScene::Group(geometries));
+        
+        geometry2id[node] = scene->geometries.size()-1;
+      }
+      return geometry2id[node];
+    }
+
+    void convertInstances(Ref<SceneGraph::Node> node, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    {
+      if (node->isClosed()) {
+        scene->geometries.push_back(new TutorialScene::Instance(space0,lookupGeometries(node)));
+      }
+      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        convertInstances(xfmNode->child, space0*xfmNode->xfm0, space1*xfmNode->xfm1);
+      } 
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (auto child : groupNode->children) convertInstances(child,space0,space1);
       }
     }
   };
 
-  void TutorialScene::add(Ref<SceneGraph::Node> node, bool instancing) {
+  void TutorialScene::add(Ref<SceneGraph::Node> node, TutorialScene::InstancingMode instancing) {
     SceneGraphConverter(node,this,instancing);
   }
 };

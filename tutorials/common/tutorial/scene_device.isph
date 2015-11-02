@@ -32,7 +32,7 @@ struct ISPCQuad
   int v3;                /*< fourth triangle vertex */
 };
 
-enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE };
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
 
 struct ISPCGeometry
 {
@@ -96,11 +96,13 @@ struct ISPCHairSet
   ISPCHair* hairs; //!< for each hair, index to first control point
   int numVertices;
   int numHairs;
+  int materialID;
 };
 
 struct ISPCInstance
 {
   uniform ISPCGeometry geom;
+  int8 align[12];
   struct {
     struct {
       Vec3fa vx;
@@ -110,6 +112,13 @@ struct ISPCInstance
     Vec3fa p;
   } space;
   int geomID;
+};
+
+struct ISPCGroup
+{
+  ISPCGeometry geom;
+  ISPCGeometry** geometries;
+  size_t numGeometries;
 };
 
 struct ISPCAmbientLight
@@ -138,7 +147,19 @@ struct ISPCDistantLight
   float cosHalfAngle;  //!< Cosine of half illumination angle
 };
 
-enum MaterialTy { MATERIAL_OBJ, MATERIAL_THIN_DIELECTRIC, MATERIAL_METAL, MATERIAL_VELVET, MATERIAL_DIELECTRIC, MATERIAL_METALLIC_PAINT, MATERIAL_MATTE, MATERIAL_MIRROR, MATERIAL_REFLECTIVE_METAL };
+enum MaterialTy 
+{ 
+  MATERIAL_OBJ, 
+  MATERIAL_THIN_DIELECTRIC, 
+  MATERIAL_METAL, 
+  MATERIAL_VELVET, 
+  MATERIAL_DIELECTRIC, 
+  MATERIAL_METALLIC_PAINT, 
+  MATERIAL_MATTE, 
+  MATERIAL_MIRROR, 
+  MATERIAL_REFLECTIVE_METAL, 
+  MATERIAL_HAIR 
+};
 
 struct ISPCMaterial
 {
@@ -257,6 +278,16 @@ struct MetallicPaintMaterial
   Vec3fa glitterColor;
   float glitterSpread;
   float eta;
+};
+
+struct HairMaterial
+{
+  int ty;
+  int align[3];
+  Vec3fa Kr;
+  Vec3fa Kt;
+  float nx;
+  float ny;
 };
 
 struct ISPCSubdivMeshKeyFrame {

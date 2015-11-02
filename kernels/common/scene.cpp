@@ -135,9 +135,9 @@ namespace embree
     
 #else
     createTriangleAccel();
-    accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
+    createTriangleMBAccel();
     createHairAccel();
-    accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
+    createHairMBAccel();
     createSubdivAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
@@ -188,72 +188,131 @@ namespace embree
         case /*0b00*/ 0: 
 #if defined(RTCORE_TRIANGLE_PAIRS) && defined (__TARGET_AVX__)
           if (device->hasISA(AVX)) 
-            accels.add(device->bvh4_factory->BVH4BVH4TrianglePairs4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4TrianglePairs4Twolevel(this));
           else
-            accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
+            accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this));
           break;          
 #else
-          accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
+          accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
 #endif
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this)); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this)); break;
+        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Triangle4Twolevel(this)); break;
+        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
+        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Triangle4iTwolevel(this)); break;
         }
       }
     }
-    else if (device->tri_accel == "bvh4.bvh4.triangle4")    accels.add(device->bvh4_factory->BVH4BVH4Triangle4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4v")   accels.add(device->bvh4_factory->BVH4BVH4Triangle4vObjectSplit(this));
-    else if (device->tri_accel == "bvh4.bvh4.triangle4i")   accels.add(device->bvh4_factory->BVH4BVH4Triangle4iObjectSplit(this));
-    else if (device->tri_accel == "bvh4.triangle4")         accels.add(device->bvh4_factory->BVH4Triangle4(this));
-    else if (device->tri_accel == "bvh4.triangle4v")        accels.add(device->bvh4_factory->BVH4Triangle4v(this));
-    else if (device->tri_accel == "bvh4.triangle4i")        accels.add(device->bvh4_factory->BVH4Triangle4i(this));
+    else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
+    else if (device->tri_accel == "bvh4.triangle4v")      accels.add(device->bvh4_factory->BVH4Triangle4v(this));
+    else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel == "bvh4.bvh4.triangle8")    accels.add(device->bvh4_factory->BVH4BVH4Triangle8ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.trianglepairs4")    accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
-    else if (device->tri_accel == "bvh4.triangle8")         accels.add(device->bvh4_factory->BVH4Triangle8(this));
-    else if (device->tri_accel == "bvh8.triangle4")         accels.add(device->bvh8_factory->BVH8Triangle4(this));
-    else if (device->tri_accel == "bvh8.triangle8")         accels.add(device->bvh8_factory->BVH8Triangle8(this));
-    else if (device->tri_accel == "bvh8.trianglepairs4")    accels.add(device->bvh8_factory->BVH8TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
+    else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
+    else if (device->tri_accel == "bvh8.triangle8")       accels.add(device->bvh8_factory->BVH8Triangle8(this));
+    else if (device->tri_accel == "bvh8.trianglepairs4")  accels.add(device->bvh8_factory->BVH8TrianglePairs4ObjectSplit(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
   }
 
+  void Scene::createTriangleMBAccel()
+  {
+    if (device->tri_accel_mb == "default")
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX))
+      {
+        accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
+      }
+      else
+#endif
+      {
+        accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
+      }
+    }
+    else if (device->tri_accel_mb == "bvh4.triangle4vmb") accels.add(device->bvh4_factory->BVH4Triangle4vMB(this));
+#if defined (__TARGET_AVX__)
+    else if (device->tri_accel_mb == "bvh8.triangle4vmb") accels.add(device->bvh8_factory->BVH8Triangle4vMB(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur triangle acceleration structure "+device->tri_accel_mb);
+  }
+
   void Scene::createHairAccel()
   {
-    if (device->hair_accel == "default") 
+    if (device->hair_accel == "default")
     {
-      if (isStatic()) {
-        int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
-        switch (mode) {
-        case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
-        case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
-        case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
-        case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
-        }
-      } 
-      else 
+      int mode = 2*(int)isCompact() + 1*(int)isRobust();
+      if (isStatic())
       {
-        int mode =  2*(int)isCompact() + 1*(int)isRobust();
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+        {
+          switch (mode) {
+          case /*0b00*/ 0: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,isHighQuality())); break;
+          case /*0b01*/ 1: accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,isHighQuality())); break;
+          case /*0b10*/ 2: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,isHighQuality())); break;
+          case /*0b11*/ 3: accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,isHighQuality())); break;
+          }
+        }
+        else
+  #endif
+        {
+          switch (mode) {
+          case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
+          case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,isHighQuality())); break;
+          case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
+          case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,isHighQuality())); break;
+          }
+        }
+      }
+      else
+      {
         switch (mode) {
         case /*0b00*/ 0: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
         case /*0b01*/ 1: accels.add(device->bvh4_factory->BVH4Bezier1v(this)); break;
         case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
         case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Bezier1i(this)); break;
         }
-      }   
+      }
     }
     else if (device->hair_accel == "bvh4.bezier1v"    ) accels.add(device->bvh4_factory->BVH4Bezier1v(this));
     else if (device->hair_accel == "bvh4.bezier1i"    ) accels.add(device->bvh4_factory->BVH4Bezier1i(this));
     else if (device->hair_accel == "bvh4obb.bezier1v" ) accels.add(device->bvh4_factory->BVH4OBBBezier1v(this,false));
     else if (device->hair_accel == "bvh4obb.bezier1i" ) accels.add(device->bvh4_factory->BVH4OBBBezier1i(this,false));
+#if defined (__TARGET_AVX__)
+    else if (device->hair_accel == "bvh8obb.bezier1v" ) accels.add(device->bvh8_factory->BVH8OBBBezier1v(this,false));
+    else if (device->hair_accel == "bvh8obb.bezier1i" ) accels.add(device->bvh8_factory->BVH8OBBBezier1i(this,false));
+#endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown hair acceleration structure "+device->hair_accel);
+  }
+
+  void Scene::createHairMBAccel()
+  {
+    if (device->hair_accel_mb == "default")
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX))
+      {
+        accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
+      }
+      else
+#endif
+      {
+        accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
+      }
+    }
+    else if (device->hair_accel_mb == "bvh4obb.bezier1imb") accels.add(device->bvh4_factory->BVH4OBBBezier1iMB(this,false));
+#if defined (__TARGET_AVX__)
+    else if (device->hair_accel_mb == "bvh8obb.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->tri_accel_mb);
   }
 
   void Scene::createSubdivAccel()
   {
     if (device->subdiv_accel == "default") 
     {
-      if (isIncoherent(flags) && isStatic())
+      bool packetsEnabled = aflags & (RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
+      if (isIncoherent(flags) && isStatic() && !packetsEnabled) // cannot choose for packets as intersection filter not implemented yet
         accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
       else
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));

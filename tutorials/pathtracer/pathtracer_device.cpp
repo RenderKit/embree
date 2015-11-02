@@ -16,6 +16,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/tutorial/random_sampler.h"
 #include "shapesampler.h"
 #include "optics.h"
 
@@ -47,6 +48,9 @@ struct DifferentialGeometry
   Vec3fa P;
   Vec3fa Ng;
   Vec3fa Ns;
+  Vec3fa Tx; //direction along hair
+  Vec3fa Ty;
+  float tnear_eps;
 };
 
 struct BRDF
@@ -57,6 +61,12 @@ struct BRDF
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
+  float dummy0;
+  float dummy1;
+  float dummy2;
+  float dummy3;
+  float dummy4;
+  float dummy5;
 };
 
 struct Medium
@@ -415,6 +425,106 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
   return m;
 }
 
+/*! Anisotropic power cosine microfacet distribution. */
+struct AnisotropicBlinn {
+  Vec3fa dx;       //!< x-direction of the distribution.
+  float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.
+  Vec3fa dy;       //!< y-direction of the distribution.
+  float ny;        //!< Exponent that determines the glossiness in y direction.
+  Vec3fa dz;       //!< z-direction of the distribution.
+  float norm1;     //!< Normalization constant for calculating the pdf for sampling.
+  float norm2;     //!< Normalization constant for calculating the distribution.
+  Vec3fa Kr,Kt; 
+  float side;
+};
+
+  /*! Anisotropic power cosine distribution constructor. */
+inline void AnisotropicBlinn__Constructor(AnisotropicBlinn* This, const Vec3fa& Kr, const Vec3fa& Kt, 
+                                          const Vec3fa& dx, float nx, const Vec3fa& dy, float ny, const Vec3fa& dz) 
+{
+  This->Kr = Kr;
+  This->Kt = Kt;
+  This->dx = dx;
+  This->nx = nx;
+  This->dy = dy;
+  This->ny = ny;
+  This->dz = dz;
+  This->norm1 = sqrtf((nx+1)*(ny+1)) * float(one_over_two_pi);
+  This->norm2 = sqrtf((nx+2)*(ny+2)) * float(one_over_two_pi);
+  This->side = reduce_max(Kr)/(reduce_max(Kr)+reduce_max(Kt));
+}
+
+/*! Evaluates the power cosine distribution. \param wh is the half
+ *  vector */
+inline float AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& wh)  
+{
+  const float cosPhiH   = dot(wh, This->dx);
+  const float sinPhiH   = dot(wh, This->dy);
+  const float cosThetaH = dot(wh, This->dz);
+  const float R = sqr(cosPhiH)+sqr(sinPhiH);
+  if (R == 0.0f) return This->norm2;
+  const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
+  return This->norm2 * pow(abs(cosThetaH), n);
+}
+
+/*! Samples the distribution. \param s is the sample location
+ *  provided by the caller. */
+inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const float sx, const float sy)
+{
+  const float phi =float(two_pi)*sx;
+  const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
+  const float cosPhi0 = sqrtf(This->ny+1)*cosf(phi);
+  const float norm = rsqrt(sqr(sinPhi0)+sqr(cosPhi0));
+  const float sinPhi = sinPhi0*norm;
+  const float cosPhi = cosPhi0*norm;
+  const float n = This->nx*sqr(cosPhi)+This->ny*sqr(sinPhi);
+  const float cosTheta = powf(sy,rcp(n+1));
+  const float sinTheta = cos2sin(cosTheta);
+  const float pdf = This->norm1*powf(cosTheta,n);
+  const Vec3fa h = Vec3fa(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
+  const Vec3fa wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
+  return Vec3fa(wh,pdf);
+}
+
+inline Vec3fa AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& wo, const Vec3fa& wi) 
+{
+  const float cosThetaI = dot(wi,This->dz);
+  
+  /* reflection */
+  if (cosThetaI > 0.0f) {
+    const Vec3fa wh = normalize(wi + wo);
+    return This->Kr * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  } 
+  
+  /* transmission */
+  else {
+    const Vec3fa wh = normalize(reflect(wi,This->dz) + wo);
+    return This->Kt * AnisotropicBlinn__eval(This,wh) * abs(cosThetaI);
+  }
+}
+
+inline Vec3fa AnisotropicBlinn__sample(const AnisotropicBlinn* This, const Vec3fa& wo, Sample3f& wi_o, const float sx, const float sy, const float sz) 
+{
+  //wi = Vec3fa(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
+  //wi = Vec3fa(neg(wo),1.0f); return Kt;
+  const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
+  //if (dot(wo,wh) < 0.0f) return Vec3fa(0.0f,0.0f);
+  
+  /* reflection */
+  if (sz < This->side) {
+    wi_o = Sample3f(reflect(wo,Vec3fa(wh)),wh.w*This->side);
+    const float cosThetaI = dot(wi_o.v,This->dz);
+    return This->Kr * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
+  }
+  
+  /* transmission */
+  else {
+    wi_o = Sample3f(reflect(reflect(wo,Vec3fa(wh)),This->dz),wh.w*(1-This->side));
+    const float cosThetaI = dot(wi_o.v,This->dz);
+    return This->Kt * AnisotropicBlinn__eval(This,Vec3fa(wh)) * abs(cosThetaI);
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //                          Matte Material                                    //
 ////////////////////////////////////////////////////////////////////////////////
@@ -717,6 +827,25 @@ Vec3fa MetallicPaintMaterial__sample(MetallicPaintMaterial* This, const BRDF& br
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//                              Hair Material                                 //
+////////////////////////////////////////////////////////////////////////////////
+
+void HairMaterial__preprocess(HairMaterial* This, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)  
+{
+  AnisotropicBlinn__Constructor((AnisotropicBlinn*)&brdf,Vec3fa(This->Kr),Vec3fa(This->Kt),dg.Tx,(float)This->nx,dg.Ty,(float)This->ny,dg.Ng);
+}
+
+Vec3fa HairMaterial__eval(HairMaterial* This, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
+{
+  return AnisotropicBlinn__eval((AnisotropicBlinn*)&brdf,wo,wi);
+}
+
+Vec3fa HairMaterial__sample(HairMaterial* This, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)  
+{
+  return AnisotropicBlinn__sample((AnisotropicBlinn*)&brdf,wo,wi_o,s.x,s.y,s.x);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //                              Material                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -738,6 +867,7 @@ inline void Material__preprocess(ISPCMaterial* materials, int materialID, int nu
       case MATERIAL_MATTE: MatteMaterial__preprocess((MatteMaterial*)material,brdf,wo,dg,medium); break;
       case MATERIAL_MIRROR: MirrorMaterial__preprocess((MirrorMaterial*)material,brdf,wo,dg,medium); break;
       case MATERIAL_THIN_DIELECTRIC: ThinDielectricMaterial__preprocess((ThinDielectricMaterial*)material,brdf,wo,dg,medium); break;
+      case MATERIAL_HAIR: HairMaterial__preprocess((HairMaterial*)material,brdf,wo,dg,medium); break;
       default: break;
       }
     }
@@ -762,6 +892,7 @@ inline Vec3fa Material__eval(ISPCMaterial* materials, int materialID, int numMat
       case MATERIAL_MATTE: c = MatteMaterial__eval((MatteMaterial*)material, brdf, wo, dg, wi); break;
       case MATERIAL_MIRROR: c = MirrorMaterial__eval((MirrorMaterial*)material, brdf, wo, dg, wi); break;
       case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__eval((ThinDielectricMaterial*)material, brdf, wo, dg, wi); break;
+      case MATERIAL_HAIR: c = HairMaterial__eval((HairMaterial*)material, brdf, wo, dg, wi); break;
       default: c = Vec3fa(0.0f); 
       }
     }
@@ -787,6 +918,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
       case MATERIAL_MATTE: c = MatteMaterial__sample((MatteMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_MIRROR: c = MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+      case MATERIAL_HAIR: c = HairMaterial__sample((HairMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       default: c = Vec3fa(0.0f); 
       }
     }
@@ -810,8 +942,11 @@ ISPCInstance** geomID_to_inst = nullptr;
 renderPixelFunc renderPixel;
 
 /* occlusion filter function */
-void intersectionfilterReject(void* ptr, RTCRay& ray);
-void intersectionfilterOBJ(void* ptr, RTCRay& ray);
+void intersectionFilterReject(void* ptr, RTCRay& ray);
+void intersectionFilterOBJ(void* ptr, RTCRay& ray);
+void occlusionFilterOpaque(void* ptr, RTCRay& ray);
+void occlusionFilterOBJ(void* ptr, RTCRay& ray);
+void occlusionFilterHair(void* ptr, RTCRay& ray);
 
 /* error reporting function */
 void error_handler(const RTCError code, const char* str)
@@ -885,17 +1020,18 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
-  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterReject);
+  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterReject);
   //else 
   if (material.ty == MATERIAL_OBJ) 
   {
     OBJMaterial& obj = (OBJMaterial&) material;
     if (obj.d != 1.0f || obj.map_d) {
-      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterOBJ);
-      rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionfilterOBJ);
+      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFunc)&intersectionFilterOBJ);
+      rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFunc)&occlusionFilterOBJ);
     }
   }
   return geomID;
@@ -916,8 +1052,35 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   return geomID;
 } 
+
+unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
+{
+  unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
+  if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterHair);
+  return geomID;
+}
+
+void convertGroup(ISPCGroup* group, RTCScene scene_out)
+{
+  for (size_t i=0; i<group->numGeometries; i++)
+  {
+    ISPCGeometry* geometry = group->geometries[i];
+    if (geometry->type == SUBDIV_MESH)
+      convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+    else if (geometry->type == TRIANGLE_MESH)
+      convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+    else if (geometry->type == HAIR_SET)
+      convertHairSet((ISPCHairSet*) geometry, scene_out);
+    else
+      assert(false);
+  }
+}
 
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
@@ -926,14 +1089,12 @@ unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else if (g_instancing_mode == 2) {
+  } else {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
-    return 0;
-  }
+  } 
 }     
 
 typedef ISPCInstance* ISPCInstance_ptr;
@@ -949,8 +1110,7 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
     }
   } 
 
-  size_t numGeometries = scene_in->numGeometries;
-  
+  size_t numGeometries = scene_in->numGeometries;  
   geomID_to_scene = new RTCScene[numGeometries];
   geomID_to_inst  = new ISPCInstance_ptr[numGeometries];
 
@@ -981,22 +1141,29 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == HAIR_SET) {
+        unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == INSTANCE) {
         unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
         assert(geomID == i); geomID_to_inst[geomID] = (ISPCInstance*) geometry;
       }
+      else
+        assert(false);
     }
   }
 
   /* use scene instancing feature */
-  else if (g_instancing_mode == 2)
+  else if (g_instancing_mode == 2 || g_instancing_mode == 3)
   {
     for (size_t i=0; i<scene_in->numGeometries; i++)
     {
       ISPCGeometry* geometry = scene_in->geometries[i];
       if (geometry->type == SUBDIV_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
-        convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
+        convertSubdivMesh((ISPCSubdivMesh*) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1006,10 +1173,24 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
+      else if (geometry->type == HAIR_SET) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertHairSet((ISPCHairSet*) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == GROUP) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertGroup((ISPCGroup*) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
       else if (geometry->type == INSTANCE) {
         unsigned int geomID = convertInstance((ISPCInstance*) geometry, i, scene_out);
         geomID_to_scene[i] = nullptr; geomID_to_inst[geomID] = (ISPCInstance*) geometry;
       }
+      else
+        assert(false);
     }
   } 
 
@@ -1027,6 +1208,12 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
         assert(geomID == i);
       }
+      else if (geometry->type == HAIR_SET) {
+        unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
+        assert(geomID == i);
+      }
+      else
+        assert(false);
     }
   }
 
@@ -1040,44 +1227,86 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
   return scene_out;
 } // convertScene
 
-/* for details about this random number generator see: P. L'Ecuyer,
-   "Maximally Equidistributed Combined Tausworthe Generators",
-   Mathematics of Computation, 65, 213 (1996), 203--213:
-   http://www.iro.umontreal.ca/~lecuyer/myftp/papers/tausme.ps */
-
-struct rand_state {
-  unsigned int s1, s2, s3;
-};
-
-inline unsigned int irand(rand_state& state)
-{
-  state.s1 = ((state.s1 & 4294967294U) << 12U) ^ (((state.s1<<13U)^state.s1)>>19U);
-  state.s2 = ((state.s2 & 4294967288U) <<  4U) ^ (((state.s2<< 2U)^state.s2)>>25U);
-  state.s3 = ((state.s3 & 4294967280U) << 17U) ^ (((state.s3<< 3U)^state.s3)>>11U);
-  return state.s1 ^ state.s2 ^ state.s3;
-}
-
-inline void init_rand(rand_state& state, unsigned int x, unsigned int y, unsigned int z)
-{
-  state.s1 = x >=   2 ? x : x +   2;
-  state.s2 = y >=   8 ? y : y +   8;
-  state.s3 = z >=  16 ? z : z +  16;
-  for (int i=0; i<10; i++) irand(state);
-}
-
-inline float frand(rand_state& state) {
-  return irand(state)*2.3283064365386963e-10f;
-}
-
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   const Vec3fa Ng = _Ng;
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
+inline Vec3fa evalBezier(const ISPCHairSet* hair, const int primID, const float t)
+{
+  const float t0 = 1.0f - t, t1 = t;
+  const Vec3fa* vertices = hair->v;
+  const ISPCHair* hairs = hair->hairs;
+  
+  const int i = hairs[primID].vertex;
+  const Vec3fa p00 = vertices[i+0];
+  const Vec3fa p01 = vertices[i+1];
+  const Vec3fa p02 = vertices[i+2];
+  const Vec3fa p03 = vertices[i+3];
+  
+  const Vec3fa p10 = p00 * t0 + p01 * t1;
+  const Vec3fa p11 = p01 * t0 + p02 * t1;
+  const Vec3fa p12 = p02 * t0 + p03 * t1;
+  const Vec3fa p20 = p10 * t0 + p11 * t1;
+  const Vec3fa p21 = p11 * t0 + p12 * t1;
+  const Vec3fa p30 = p20 * t0 + p21 * t1;
+  
+  return p30;
+  //tangent = p21-p20;
+}
+
+void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+{
+  if (geometry->type == TRIANGLE_MESH) 
+  {
+    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
+    materialID = mesh->triangles[ray.primID].materialID;
+    if (mesh->texcoords) {
+      ISPCTriangle* tri = &mesh->triangles[ray.primID];
+      const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
+      const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
+      const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
+      const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
+      const Vec2f st = w*st0 + u*st1 + v*st2;
+      dg.u = st.x;
+      dg.v = st.y;
+    } 
+  }
+  else if (geometry->type == SUBDIV_MESH) 
+  {
+    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
+    materialID = mesh->materialID; 
+    const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
+    dg.u = st.x;
+    dg.v = st.y;
+  }
+  else if (geometry->type == HAIR_SET) 
+  {
+    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
+    materialID = mesh->materialID;
+    const Vec3fa dx = normalize(dg.Ng);
+    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+    const Vec3fa dz = normalize(cross(dy,dx));
+    dg.Tx = dx;
+    dg.Ty = dy;
+    dg.Ng = dg.Ns = dz;
+    Vec3fa p = evalBezier(mesh,ray.primID,ray.u);
+    dg.tnear_eps = 1.1f*p.w;
+  }
+  else if (geometry->type == GROUP) {
+    int geomID = ray.geomID; {
+      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
+    }
+  }
+  else
+    assert(false);
+}
+
 inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned ray_geomID = g_instancing_mode == 2 ? ray.instID : ray.geomID;
+  unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
+  dg.tnear_eps = 0.001f;
   int geomID = ray_geomID; 
   {
     /* get instance and geometry pointers */
@@ -1091,29 +1320,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
       geometry = g_ispc_scene->geometries[geomID];
     }
 
-    if (geometry->type == TRIANGLE_MESH) 
-    {
-      ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-      materialID = mesh->triangles[ray.primID].materialID;
-      if (mesh->texcoords) {
-        ISPCTriangle* tri = &mesh->triangles[ray.primID];
-        const Vec2f st0 = Vec2f(mesh->texcoords[tri->v0]);
-        const Vec2f st1 = Vec2f(mesh->texcoords[tri->v1]);
-        const Vec2f st2 = Vec2f(mesh->texcoords[tri->v2]);
-        const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        const Vec2f st = w*st0 + u*st1 + v*st2;
-        dg.u = st.x;
-        dg.v = st.y;
-      } 
-    }
-    else if (geometry->type == SUBDIV_MESH) 
-    {
-      ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-      materialID = mesh->materialID; 
-      const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
-      dg.u = st.x;
-      dg.v = st.y;
-    }
+    postIntersectGeometry(ray,dg,geometry,materialID);
 
     /* convert normals */
     if (instance) {
@@ -1125,11 +1332,11 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
   return materialID;
 }
 
-void intersectionfilterReject(void* ptr, RTCRay& ray) {
+void intersectionFilterReject(void* ptr, RTCRay& ray) {
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-void intersectionfilterOBJ(void* ptr, RTCRay& ray) 
+void intersectionFilterOBJ(void* ptr, RTCRay& ray) 
 {
   /* compute differential geometry */
   DifferentialGeometry dg;
@@ -1155,14 +1362,70 @@ void intersectionfilterOBJ(void* ptr, RTCRay& ray)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 }
 
-Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
-{
+void occlusionFilterOpaque(void* ptr, RTCRay& ray) {
+  ray.transparency = Vec3fa(0.0f);
+}
 
+void occlusionFilterOBJ(void* ptr, RTCRay& ray) 
+{
+  /* compute differential geometry */
+  DifferentialGeometry dg;
+  dg.geomID = ray.geomID;
+  dg.primID = ray.primID;
+  dg.u = ray.u;
+  dg.v = ray.v;
+  dg.P  = ray.org+ray.tfar*ray.dir;
+  dg.Ng = ray.Ng;
+  dg.Ns = ray.Ng;
+  int materialID = postIntersect(ray,dg);
+  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+  const Vec3fa wo = neg(ray.dir);
+  
+  /* calculate BRDF */
+  BRDF brdf; brdf.Kt = Vec3fa(0,0,0);
+  int numMaterials = g_ispc_scene->numMaterials;
+  ISPCMaterial* material_array = &g_ispc_scene->materials[0];
+  Medium medium = make_Medium_Vacuum();
+  Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
+  ray.transparency = ray.transparency * brdf.Kt;
+  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+/* occlusion filter function */
+void occlusionFilterHair(void* ptr, RTCRay& ray)
+{
+  Vec3fa Kt = Vec3fa(0.0f);
+  int geomID = ray.geomID;
+  {
+    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+    if (geometry->type == HAIR_SET) 
+    {
+      int materialID = ((ISPCHairSet*)geometry)->materialID;
+      ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+      switch (material->ty) {
+      case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
+      default: break;
+      }
+    }
+  }
+
+  Kt = Kt * ray.transparency;
+  ray.transparency = Kt;
+  if (max(max(ray.transparency.x,ray.transparency.y),ray.transparency.z) > 0.0f)
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+}
+
+
+Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
+{
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
   Vec3fa Lw = Vec3fa(1.0f);
   Medium medium = make_Medium_Vacuum();
-  float time = frand(state);
+  float time = RandomSampler_get1D(sampler);
 
   /* initialize ray */
   RTCRay ray = RTCRay(p,normalize(x*vx + y*vy + vz),0.0f,inf,time);
@@ -1181,6 +1444,7 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* invoke environment lights if nothing hit */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) 
     {
+      //L = L + Lw*Vec3fa(1.0f);
 #if 1
       /* iterate over all ambient lights */
       for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
@@ -1233,21 +1497,23 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 
     /* sample BRDF at hit point */
     Sample3f wi1;
-    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, Vec2f(frand(state),frand(state)));
+    c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
+#if 1
     /* iterate over ambient lights */
     for (size_t i=0; i<g_ispc_scene->numAmbientLights; i++)
     {
 #if 1
       Vec3fa L0 = Vec3fa(0.0f);
       Sample3f wi0; float tMax0;
-      Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,Vec2f(frand(state),frand(state)));
+      Vec3fa Ll0 = AmbientLight__sample(g_ispc_scene->ambientLights[i],dg,wi0,tMax0,RandomSampler_get2D(sampler));
 
       if (wi0.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi0.v,0.001f,tMax0,time);
+        RTCRay shadow = RTCRay(dg.P,wi0.v,dg.tnear_eps,tMax0,time); shadow.transparency = Vec3fa(1.0f);
         rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
-          L0 = Ll0/wi0.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
+        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
+          L0 = Ll0/wi0.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi0.v);
         }
 
         L = L + Lw*L0;
@@ -1258,9 +1524,10 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
       Vec3fa L1 = Vec3fa(0.0f);
       Vec3fa Ll1 = AmbientLight__eval(g_ispc_scene->ambientLights[i],wi1.v);
       if (wi1.pdf > 0.0f) {
-        RTCRay shadow = RTCRay(dg.P,wi1.v,0.001f,inf,time);
+        RTCRay shadow = RTCRay(dg.P,wi1.v,dg.tnear_eps,inf,time); shadow.transparency = Vec3fa(1.0f);
         rtcOccluded(g_scene,shadow);
-        if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        //if (shadow.geomID == RTC_INVALID_GEOMETRY_ID) {
+        if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) {
           L1 = Ll1/wi1.pdf*c;
         }
         L = L + Lw*L1;
@@ -1272,41 +1539,48 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
     /* iterate over point lights */
     for (size_t i=0; i<g_ispc_scene->numPointLights; i++)
     {
-      Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      Vec3fa Ll = PointLight__sample(g_ispc_scene->pointLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f)
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
 
     /* iterate over directional lights */
     for (size_t i=0; i<g_ispc_scene->numDirectionalLights; i++)
     {
-      Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      Vec3fa Ll = DirectionalLight__sample(g_ispc_scene->dirLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) 
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
 
     /* iterate over distant lights */
     for (size_t i=0; i<g_ispc_scene->numDistantLights; i++)
     {
-      Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,Vec2f(frand(state),frand(state)));
+      Vec3fa Ll = DistantLight__sample(g_ispc_scene->distantLights[i],dg,wi,tMax,RandomSampler_get2D(sampler));
 
       if (wi.pdf <= 0.0f) continue;
-      RTCRay shadow = RTCRay(dg.P,wi.v,0.001f,tMax,time);
+      RTCRay shadow = RTCRay(dg.P,wi.v,dg.tnear_eps,tMax,time); shadow.transparency = Vec3fa(1.0f);
       rtcOccluded(g_scene,shadow);
-      if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
-      L = L + Lw*Ll/wi.pdf*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
+      //if (shadow.geomID != RTC_INVALID_GEOMETRY_ID) continue;
+      if (max(max(shadow.transparency.x,shadow.transparency.y),shadow.transparency.z) > 0.0f) 
+        L = L + Lw*Ll/wi.pdf*shadow.transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,wi.v);
     }
+#endif
+
     if (wi1.pdf <= 1E-4f /* 0.0f */) break;
     Lw = Lw*c/wi1.pdf;
 
     /* setup secondary ray */
-    ray = RTCRay(dg.P,normalize(wi1.v),0.001f,inf,time);
+    float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
+    dg.P = dg.P + sign*dg.tnear_eps*dg.Ng;
+    ray = RTCRay(dg.P,normalize(wi1.v),dg.tnear_eps,inf,time);
   }
   return L;
 }
@@ -1314,18 +1588,18 @@ Vec3fa renderPixelFunction(float x, float y, rand_state& state, const Vec3fa& vx
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
 {
-  rand_state state;
+  RandomSampler sampler;
 
   Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
 
-  for (int i=0; i<SAMPLES_PER_PIXEL; i++) {
+  for (int i=0; i<SAMPLES_PER_PIXEL; i++)
+  {
+    RandomSampler_init(sampler, x, y, g_accu_count*SAMPLES_PER_PIXEL+i);
 
-  init_rand(state,
-            253*x+35*y+152*g_accu_count+54,
-            1253*x+345*y+1452*g_accu_count+564,
-            10253*x+3435*y+52*g_accu_count+13+i*1793);
-
-  L = L + renderPixelFunction(x,y,state,vx,vy,vz,p); 
+    /* calculate pixel color */
+    float fx = x + RandomSampler_get1D(sampler);
+    float fy = y + RandomSampler_get1D(sampler);
+    L = L + renderPixelFunction(fx,fy,sampler,vx,vy,vz,p);
   }
   L = L*(1.0f/SAMPLES_PER_PIXEL);
   return L;

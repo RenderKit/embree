@@ -65,6 +65,10 @@
     int geomID;           //!< geometry ID
     int primID;           //!< primitive ID
     int instID;           //!< instance ID
+
+    // ray extensions
+  public:
+    embree::Vec3fa transparency;
   };
 
   /*! Outputs ray to stream. */

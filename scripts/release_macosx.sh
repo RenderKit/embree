@@ -1,24 +1,9 @@
 #!/bin/bash
 
-#if [ "$#" -ne 1 ]; then
-#  echo "Usage: ./scripts/release_macos.sh path-to-bin-folder"
-#  exit 1
-#fi
-
-#realpath() {
-#  OURPWD=$PWD
-#  cd "$(dirname "$1")"
-#  LINK=$(readlink "$(basename "$1")")
-#  while [ "$LINK" ]; do
-#    cd "$(dirname "$LINK")"
-#    LINK=$(readlink "$(basename "$1")")
-#  done
-#  destdir="$PWD/$(basename "$1")"
-#  cd "$OURPWD"
-#}
-
-#realpath "$1"
-
+# to make sure we do not include nor link against wrong TBB
+export CPATH=
+export LIBRARY_PATH=
+export DYLD_LIBRARY_PATH=
 TBB_PATH_LOCAL=$PWD/tbb
 
 mkdir -p build
@@ -28,9 +13,9 @@ rm version.h
 
 # set release settings
 cmake \
--D CMAKE_C_COMPILER=icc \
--D CMAKE_CXX_COMPILER=icpc \
--D CMAKE_INSTALL_PREFIX=/opt/local \
+-D CMAKE_C_COMPILER:FILEPATH=icc \
+-D CMAKE_CXX_COMPILER:FILEPATH=icpc \
+-D XEON_ISA=AVX2 \
 -D USE_IMAGE_MAGICK=OFF \
 -D USE_LIBJPEG=OFF \
 -D USE_LIBPNG=OFF \
@@ -39,16 +24,28 @@ cmake \
 
 # create installers
 cmake \
+-D RTCORE_ZIP_MODE=OFF \
+-D CMAKE_SKIP_INSTALL_RPATH=OFF \
+-D CMAKE_INSTALL_PREFIX=/opt/local \
+-D CMAKE_INSTALL_INCLUDEDIR=include \
+-D CMAKE_INSTALL_LIBDIR=lib \
+-D CMAKE_INSTALL_DOCDIR=../../Applications/Embree2/doc \
+-D CMAKE_INSTALL_BINDIR=../../Applications/Embree2/bin \
 -D TBB_ROOT=/opt/local \
--D ENABLE_INSTALLER=ON \
 ..
-make -j 8 package
+make -j 4 package
 
 # create ZIP files
 cmake \
+-D RTCORE_ZIP_MODE=ON \
+-D CMAKE_SKIP_INSTALL_RPATH=ON \
+-D CMAKE_INSTALL_INCLUDEDIR=include \
+-D CMAKE_INSTALL_LIBDIR=lib \
+-D CMAKE_INSTALL_DOCDIR=doc \
+-D CMAKE_INSTALL_BINDIR=bin \
 -D TBB_ROOT=$TBB_PATH_LOCAL \
--D ENABLE_INSTALLER=OFF \
 ..
-make -j 8 package
+make -j 4 package
 
+rm CMakeCache.txt # reset settings
 cd ..

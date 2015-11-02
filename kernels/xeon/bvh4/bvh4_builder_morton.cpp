@@ -83,13 +83,13 @@ namespace embree
       }
     };
 
-    struct CreateTriangle4Leaf
+    template<typename Primitive>
+    struct CreateMortonLeaf;
+
+    template<> struct CreateMortonLeaf<Triangle4>
     {
-      __forceinline CreateTriangle4Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline CreateTriangle4Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
 
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -109,9 +109,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -132,22 +132,16 @@ namespace embree
       }
     
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
     
 #if defined(__AVX__)
     
-    struct CreateTriangle8Leaf
+    template<> struct CreateMortonLeaf<Triangle8>
     {
-      __forceinline CreateTriangle8Leaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline CreateTriangle8Leaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -167,9 +161,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -190,21 +184,15 @@ namespace embree
       }
 
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
 #endif
     
-    struct CreateTriangle4vLeaf
+    template<> struct CreateMortonLeaf<Triangle4v>
     {
-      __forceinline CreateTriangle4vLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline CreateTriangle4vLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -224,9 +212,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -246,20 +234,14 @@ namespace embree
 #endif
       }
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
     };
 
-    struct CreateTriangle4iLeaf
+    template<> struct CreateMortonLeaf<Triangle4i>
     {
-      __forceinline CreateTriangle4iLeaf (Scene* scene, MortonID32Bit* morton, size_t encodeShift, size_t encodeMask)
-        : scene(scene), mesh(nullptr), morton(morton), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline CreateTriangle4iLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
-        : scene(nullptr), mesh(mesh), morton(morton), encodeShift(0), encodeMask(-1) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
+        : mesh(mesh), morton(morton) {}
       
       void operator() (MortonBuildRecord<BVH4::NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
@@ -280,9 +262,9 @@ namespace embree
         for (size_t i=0; i<items; i++)
         {
           const size_t index = morton[start+i].index;
-          const size_t primID = index & encodeMask; 
-          const size_t geomID = this->mesh ? this->mesh->id : (index >> encodeShift); 
-          const TriangleMesh* mesh = this->mesh ? this->mesh : scene->getTriangleMesh(geomID);
+          const size_t primID = index; 
+          const size_t geomID = this->mesh->id;
+          const TriangleMesh* mesh = this->mesh;
           const TriangleMesh::Triangle& tri = mesh->triangle(primID);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -312,31 +294,8 @@ namespace embree
 #endif
       }
     private:
-      Scene* scene;
       TriangleMesh* mesh;
       MortonID32Bit* morton;
-      size_t encodeShift;
-      size_t encodeMask;
-    };
-
-    struct CalculateBounds
-    {
-      __forceinline CalculateBounds (Scene* scene, size_t encodeShift, size_t encodeMask)
-        : scene(scene), encodeShift(encodeShift), encodeMask(encodeMask) {}
-      
-      __forceinline const BBox3fa operator() (const MortonID32Bit& morton)
-      {
-        const size_t index = morton.index;
-        const size_t primID = index & encodeMask; 
-        const size_t geomID = index >> encodeShift; 
-        const TriangleMesh* mesh = scene->getTriangleMesh(geomID);
-        return mesh->bounds(primID);
-      }
-      
-    private:
-      Scene* scene;
-      size_t encodeShift;
-      size_t encodeMask;
     };
     
     template<typename Mesh>
@@ -351,17 +310,16 @@ namespace embree
       
     private:
       Mesh* mesh;
-    };
+    };        
     
-
-    template<typename Mesh, typename CreateLeaf>
-      class BVH4MeshBuilderMorton : public Builder
+    template<typename Mesh, typename Primitive>
+    class BVH4MeshBuilderMorton : public Builder
     {
     public:
       
       BVH4MeshBuilderMorton (BVH4* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize)
         : bvh(bvh), mesh(mesh), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), morton(bvh->device), numPrimitives(0) {}
-
+      
       /*! Destruction */
       ~BVH4MeshBuilderMorton () {
         //bvh->shrink();
@@ -382,33 +340,47 @@ namespace embree
           bvh->set(BVH4::emptyNode,empty,0);
           return;
         }
-      
+        
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-
+        
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
+        size_t bytesAllocated = numPrimitives*sizeof(BVH4::Node)/(4*BVH4::N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
-
-            ParallelPrefixSumState<size_t> pstate;
-      
-            /* compute scene bounds */
-            const BBox3fa centBounds = parallel_reduce 
-              ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-           
-            /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
+        
+        /* compute scene bounds */
+        ParallelPrefixSumState<size_t> pstate;
+        const BBox3fa centBounds = parallel_reduce 
+          ( size_t(0), numPrimitives, size_t(BLOCK_SIZE), BBox3fa(empty), [&](const range<size_t>& r) -> BBox3fa
             {
+              BBox3fa bounds(empty);
+              for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
+              return bounds;
+            }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
+        
+        /* compute morton codes */
+        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
+        MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
+        size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
+            size_t N = 0;
+            MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+            for (ssize_t j=r.begin(); j<r.end(); j++)
+            {
+              BBox3fa bounds = empty;
+              if (!mesh->valid(j,&bounds)) continue;
+              generator(bounds,j);
+              N++;
+            }
+            return N;
+          }, std::plus<size_t>());
+        
+        /* fallback in case some primitives were invalid */
+        if (numPrimitivesGen != numPrimitives)
+        {
+          numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
               size_t N = 0;
-              MortonCodeGenerator generator(mapping,&morton.data()[r.begin()]);
+              MortonCodeGenerator generator(mapping,&morton.data()[base]);
               for (ssize_t j=r.begin(); j<r.end(); j++)
               {
                 BBox3fa bounds = empty;
@@ -418,47 +390,26 @@ namespace embree
               }
               return N;
             }, std::plus<size_t>());
-
-            if (numPrimitivesGen != numPrimitives)
-            {
-              assert(numPrimitivesGen<numPrimitives);
-
-              numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t
-              {
-                size_t N = 0;
-                MortonCodeGenerator generator(mapping,&morton.data()[base]);
-
-                for (ssize_t j=r.begin(); j<r.end(); j++)
-                {
-                  BBox3fa bounds = empty;
-                  if (!mesh->valid(j,&bounds)) continue;
-                  generator(bounds,j);
-                  N++;
-                }
-                return N;
-              }, std::plus<size_t>());
-            }
-            
-            /* create BVH */
-            AllocBVH4Node allocNode;
-            SetBVH4Bounds setBounds(bvh);
-            CreateLeaf createLeaf(mesh,morton.data());
-            CalculateMeshBounds<Mesh> calculateBounds(mesh);
-            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-              [&] () { return bvh->alloc.threadLocal2(); },
-              BBox3fa(empty),
-              allocNode,setBounds,createLeaf,calculateBounds,progress,
-              //dest,morton.data(),numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-
-            bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-
+        }
+        
+        /* create BVH */
+        AllocBVH4Node allocNode;
+        SetBVH4Bounds setBounds(bvh);
+        CreateMortonLeaf<Primitive> createLeaf(mesh,morton.data());
+        CalculateMeshBounds<Mesh> calculateBounds(mesh);
+        auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
+          BVH4::CreateAlloc(bvh), BBox3fa(empty),
+          allocNode,setBounds,createLeaf,calculateBounds,progress,
+          morton.data(),dest,numPrimitivesGen,BVH4::N,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
+        
+        bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
+        
 #if ROTATE_TREE
-            for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh->root);
-            bvh->clearBarrier(bvh->root);
+        for (int i=0; i<ROTATE_TREE; i++) 
+          BVH4Rotate::rotate(bvh->root);
+        bvh->clearBarrier(bvh->root);
 #endif
-            
+        
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 
         {
@@ -467,11 +418,11 @@ namespace embree
         }
         bvh->cleanup();
       }
-
+      
       void clear() {
         morton.clear();
       }
-
+      
     private:
       BVH4* bvh;
       Mesh* mesh;
@@ -481,175 +432,12 @@ namespace embree
       mvector<MortonID32Bit> morton;
     };
     
-    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4> ((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle8MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle8> ((BVH4*)bvh,mesh,8,8*BVH4::maxLeafBlocks); }
 #endif
-    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
-
-
-    template<typename Mesh, typename CreateLeaf>
-      class BVH4SceneBuilderMorton : public Builder
-    {
-    public:
-      
-      BVH4SceneBuilderMorton (BVH4* bvh, Scene* scene, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), encodeShift(0), encodeMask(-1), morton(scene->device), numPrimitives(0) {}
-      
-      /*! Destruction */
-      ~BVH4SceneBuilderMorton () {
-        //bvh->shrink();
-      }
-      
-      /* build function */
-      void build(size_t threadIndex, size_t threadCount) 
-      {
-         /* We have to clear the allocator to guarantee that we can
-         * temporarily use the first allocation block for sorting the
-         * morton codes. */
-        const size_t numNewPrimitives = scene->getNumPrimitives<Mesh,1>();
-        if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
-        numPrimitives = numNewPrimitives;
-        
-        /* calculate groupID, primID encoding */ // FIXME: does not work for all scenes, use 64 bit IDs !!!
-        Scene::Iterator<Mesh,1> iter2(scene);
-        size_t numGroups = iter2.size();
-        size_t maxPrimsPerGroup = iter2.maxPrimitivesPerGeometry();
-        encodeShift = __bsr(maxPrimsPerGroup) + 1;
-        encodeMask = ((size_t)1 << encodeShift)-1;
-        size_t maxGroups = ((size_t)1 << (31-encodeShift))-1;
-        if (maxPrimsPerGroup > encodeMask || numGroups > maxGroups) 
-          throw_RTCError(RTC_UNKNOWN_ERROR,"encoding error in morton builder");
-       
-        /* skip build for empty scene */
-        if (numPrimitives == 0) {
-          bvh->set(BVH4::emptyNode,empty,0);
-          return;
-        }
-
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderMorton");
-
-#if PROFILE
-	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
-        {
-#endif
-            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-
-            /* preallocate arrays */
-            morton.resize(numPrimitives);
-            size_t bytesAllocated = (numPrimitives+7)/8*sizeof(BVH4::Node) + size_t(1.2f*(numPrimitives+3)/4)*sizeof(Triangle4);
-            bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
-            bvh->alloc.init(bytesAllocated,2*bytesAllocated);
-
-            /* compute scene bounds */
-            Scene::Iterator<Mesh,1> iter1(scene);
-            const BBox3fa centBounds = parallel_for_for_reduce 
-              ( iter1, size_t(BLOCK_SIZE), BBox3fa(empty), [&](Mesh* mesh, const range<size_t>& r, size_t k) -> BBox3fa
-                {
-                  BBox3fa bounds(empty);
-                  for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
-                  return bounds;
-                }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-            
-            ParallelForForPrefixSumState<size_t> pstate;
-            pstate.init(iter1,size_t(BLOCK_SIZE));
-
-            /* compute morton codes */
-            MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
-            MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
-            size_t numPrimitivesGen = parallel_for_for_prefix_sum( pstate, iter1, size_t(BLOCK_SIZE), size_t(0), [&](Mesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
-            {
-              size_t N = 0;
-              PrimInfo pinfo(empty);
-              MortonCodeGenerator generator(mapping,&morton.data()[k]);
-
-              for (ssize_t j=r.begin(); j<r.end(); j++)
-              {
-                BBox3fa bounds = empty;
-                if (!mesh->valid(j,&bounds)) continue;
-                generator(bounds,j | (mesh->id << encodeShift));
-                N++;
-              }
-              return N;
-            }, std::plus<size_t>());
-            
-            if (numPrimitivesGen != numPrimitives)
-            {
-              assert(numPrimitivesGen<numPrimitives);
-
-              numPrimitivesGen = parallel_for_for_prefix_sum( pstate, iter1, size_t(BLOCK_SIZE), size_t(0), [&](Mesh* mesh, const range<size_t>& r, size_t k, const size_t base) -> size_t
-              {
-                size_t N = 0;
-                PrimInfo pinfo(empty);
-                MortonCodeGenerator generator(mapping,&morton.data()[base]);
-
-                for (ssize_t j=r.begin(); j<r.end(); j++)
-                {
-                  BBox3fa bounds = empty;
-                  if (!mesh->valid(j,&bounds)) continue;
-                  generator(bounds,j | (mesh->id << encodeShift));
-                  N++;
-                }
-                return N;
-              }, std::plus<size_t>());
-            }
-            
-            /* create BVH */
-            AllocBVH4Node allocNode;
-            SetBVH4Bounds setBounds(bvh);
-            CreateLeaf createLeaf(scene,morton.data(),encodeShift,encodeMask);
-            CalculateBounds calculateBounds(scene,encodeShift,encodeMask);
-            auto node_bounds = bvh_builder_morton_internal<BVH4::NodeRef>(
-              [&] () { return bvh->alloc.threadLocal2(); },
-                BBox3fa(empty),
-              allocNode,setBounds,createLeaf,calculateBounds,progress,
-              morton.data(),dest,numPrimitivesGen,4,BVH4::maxBuildDepth,minLeafSize,maxLeafSize);
-
-            bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
-
-#if ROTATE_TREE
-            for (int i=0; i<ROTATE_TREE; i++) 
-              BVH4Rotate::rotate(bvh->root);
-            bvh->clearBarrier(bvh->root);
-#endif
-
-#if PROFILE
-        }); 
-#endif
-        
-        /* clear temporary data for static geometry */ 
-	if (scene->isStatic()) 
-        {
-          morton.clear();
-          bvh->shrink();
-        }
-        bvh->cleanup();
-        bvh->postBuild(t0);
-      }
-
-      void clear() {
-        morton.clear();
-      }
-
-    private:
-      BVH4* bvh; 
-      Scene* scene;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-      size_t numPrimitives;
-      size_t encodeShift;
-      size_t encodeMask;
-      mvector<MortonID32Bit> morton;
-    };
-
-    Builder* BVH4Triangle4SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4Leaf> ((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
-#if defined(__AVX__)
-    Builder* BVH4Triangle8SceneBuilderMortonGeneral  (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle8Leaf> ((BVH4*)bvh,scene,8,8*BVH4::maxLeafBlocks); }
-#endif
-    Builder* BVH4Triangle4vSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4vLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
-    Builder* BVH4Triangle4iSceneBuilderMortonGeneral (void* bvh, Scene* scene, size_t mode) { return new class BVH4SceneBuilderMorton<TriangleMesh,CreateTriangle4iLeaf>((BVH4*)bvh,scene,4,4*BVH4::maxLeafBlocks); }
-
+    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
+    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVH4MeshBuilderMorton<TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4*BVH4::maxLeafBlocks); }
   }
 }
 

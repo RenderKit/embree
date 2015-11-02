@@ -31,12 +31,17 @@ namespace embree
 
   public:
 
+    /* Returns maximal number of stored primitives */
+    static __forceinline size_t max_size() { return 1; }
+
+    /* Returns required number of primitive blocks for N primitives */
+    static __forceinline size_t blocks(size_t N) { return N; }
+
+  public:
+
     /*! constructs a virtual object */
     Object (AccelSet* accel, unsigned item) 
     : accel(accel), item(item) {}
-
-    /*! returns required number of primitive blocks for N primitives */
-    static __forceinline size_t blocks(size_t N) { return N; }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores

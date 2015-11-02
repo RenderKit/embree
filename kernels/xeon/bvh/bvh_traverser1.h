@@ -333,17 +333,18 @@ namespace embree
           } 
           else 
 #endif
+            //if (likely(!node->identity)) 
           {
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);  
             new (&vray) TravRay<N>(ray_org,ray_dir);
+            ray.org = ray_org;
+            ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
             cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
             cacheEntry[cacheSlot&(VSIZEX-1)] = vray;
             cacheSlot++;
 #endif
-            ray.org = ray_org;
-            ray.dir = ray_dir;
           }
           stackPtr->ptr = BVH::popRay; stackPtr->dist = neg_inf; stackPtr++;
           stackPtr->ptr = node->child; stackPtr->dist = neg_inf; stackPtr++;
@@ -393,17 +394,18 @@ namespace embree
           } 
           else 
 #endif
+            //if (likely(!node->identity)) 
           {
             const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N>&)tlray).org_xyz);
             const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N>&)tlray).dir_xyz);
             new (&vray) TravRay<N>(ray_org,ray_dir);
+            ray.org = ray_org;
+            ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
             cacheTag  [cacheSlot&(VSIZEX-1)] = node->xfmID;
             cacheEntry[cacheSlot&(VSIZEX-1)] = vray;
             cacheSlot++;
 #endif
-            ray.org = ray_org;
-            ray.dir = ray_dir;
           }
           *stackPtr = BVH::popRay; stackPtr++;
           *stackPtr = node->child; stackPtr++;
@@ -425,11 +427,14 @@ namespace embree
       }
 
     private:
-      //__aligned(32) char tlray[sizeof(TravRay<N>)];
       TravRay<N> tlray;
+
+#if ENABLE_TRANSFORM_CACHE
+    private:
       unsigned int cacheSlot;
       vintx cacheTag;
       TravRay<N> cacheEntry[VSIZEX];
+#endif
     };
 
     template<int N, int types>

@@ -102,7 +102,9 @@ namespace embree
     Scene (Device* device, RTCSceneFlags flags, RTCAlgorithmFlags aflags);
 
     void createTriangleAccel();
+    void createTriangleMBAccel();
     void createHairAccel();
+    void createHairMBAccel();
     void createSubdivAccel();
 
     /*! Scene destruction */

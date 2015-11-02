@@ -131,9 +131,13 @@ namespace embree
     /// BVH4Intersector4Single Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
+    DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
+
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single_OBB, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
+
     DEFINE_INTERSECTOR4(BVH4GridAOSIntersector4, BVHNIntersectorKFromIntersector1<4 COMMA 4 COMMA BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1> >);
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -141,9 +145,13 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
+    DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
+    DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
+
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >);
+
     DEFINE_INTERSECTOR8(BVH4GridAOSIntersector8, BVHNIntersectorKFromIntersector1<4 COMMA 8 COMMA BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1> >);
 #endif
 
@@ -152,10 +160,44 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
+    DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
+    DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);
+
     DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single_OBB, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH4Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >);
+
     DEFINE_INTERSECTOR16(BVH4GridAOSIntersector16, BVHNIntersectorKFromIntersector1<4 COMMA 16 COMMA BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA GridAOSIntersector1> >);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// BVH8Intersector4Single Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX__)
+    DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
+    DEFINE_INTERSECTOR4(BVH8Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// BVH8Intersector8Single Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX__)
+    DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
+    DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
+    DEFINE_INTERSECTOR8(BVH8Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////
+    /// BVH8Intersector16Single Definitions
+    ////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__AVX512F__)
+    DEFINE_INTERSECTOR16(BVH8Bezier1vIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
+    DEFINE_INTERSECTOR16(BVH8Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);
+    DEFINE_INTERSECTOR16(BVH8Bezier1iMBIntersector16Single_OBB,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorKMB<16> > >);
 #endif
   }
 }

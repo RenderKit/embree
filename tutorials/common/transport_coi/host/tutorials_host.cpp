@@ -58,7 +58,7 @@ namespace embree
     COIRESULT result;
     result = COIEngineGetHandle( COI_ISA_MIC, 0, &engine );
     if (result != COI_SUCCESS)
-      THROW_RUNTIME_ERROR("Failed to load engine number " + std::to_string((long long)0) + ": " + COIResultGetName(result));
+      THROW_RUNTIME_ERROR("Failed to load engine number " + toString(0) + ": " + COIResultGetName(result));
     
     /* print info of engine */
     COI_ENGINE_INFO info;
@@ -144,6 +144,7 @@ namespace embree
 
     parms.numVertices = hairset->v.size();
     parms.numHairs    = hairset->hairs.size();
+    parms.materialID  = hairset->materialID;
     COI_ACCESS_FLAGS flags[2] = { COI_SINK_READ, COI_SINK_READ};
 
     COIEVENT event;

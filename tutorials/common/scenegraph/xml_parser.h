@@ -36,7 +36,7 @@ namespace embree
     const Ref<XML> child(const size_t id) const 
     {
       if (id >= children.size()) 
-        THROW_RUNTIME_ERROR (loc.str()+": XML node has no child \"" + std::to_string((long long)id) + "\"");
+        THROW_RUNTIME_ERROR (loc.str()+": XML node has no child \"" + toString(id) + "\"");
       return children[id];
     }
 

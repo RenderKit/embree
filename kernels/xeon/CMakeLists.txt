@@ -83,14 +83,14 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh8_factory.cpp
 
   bvh4/bvh4_rotate.cpp
-  bvh4/bvh4_refit.cpp
+  bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
-  bvh4/bvh4_builder_hair.cpp
+  bvh/bvh_builder_hair.cpp
   bvh4/bvh4_builder_morton.cpp
   bvh/bvh_builder_sah.cpp
   bvh4/bvh4_builder_twolevel.cpp
   bvh4/bvh4_builder_instancing.cpp
-  bvh4/bvh4_builder_subdiv.cpp
+  bvh/bvh_builder_subdiv.cpp
 
   bvh/bvh_intersector1.cpp)
 
@@ -131,14 +131,14 @@ SET(EMBREE_LIBRARY_FILES_AVX
     builders/primrefgen.avx.cpp
 
     bvh4/bvh4_rotate.cpp
-    bvh4/bvh4_refit.avx.cpp
+    bvh/bvh_refit.avx.cpp
     bvh/bvh_builder.avx.cpp
-    bvh4/bvh4_builder_hair.avx.cpp
+    bvh/bvh_builder_hair.avx.cpp
     bvh4/bvh4_builder_morton.avx.cpp
     bvh/bvh_builder_sah.avx.cpp
     bvh4/bvh4_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp
-    bvh4/bvh4_builder_subdiv.avx.cpp
+    bvh/bvh_builder_subdiv.avx.cpp
     bvh/bvh_intersector1.cpp
     
     bvh/bvh.cpp
@@ -188,8 +188,8 @@ SET(EMBREE_LIBRARY_FILES_AVX512KNL
     bvh/bvh_builder.avx512.cpp
     bvh/bvh_builder_sah.avx512.cpp
 
-    bvh4/bvh4_refit.cpp
-    bvh4/bvh4_builder_subdiv.avx512.cpp
+    bvh/bvh_refit.cpp
+    bvh/bvh_builder_subdiv.avx512.cpp
     bvh/bvh_intersector1.cpp)
 
 IF (RTCORE_RAY_PACKETS)
@@ -238,18 +238,18 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys simd lexers)
 
-IF (ENABLE_INSTALLER)
-  SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
-ELSE()
+IF (RTCORE_ZIP_MODE)
   SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION_MAJOR} SOVERSION ${EMBREE_VERSION_MAJOR})
-ENDIF()
-
-IF (WIN32)
-  INSTALL(TARGETS embree DESTINATION lib COMPONENT lib)
 ELSE()
-  INSTALL(TARGETS embree DESTINATION lib LIBRARY DESTINATION lib COMPONENT lib NAMELINK_SKIP)
+  SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
 ENDIF()
 
 IF (WIN32)
-    INSTALL(TARGETS embree DESTINATION bin COMPONENT examples)
+  INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
+ELSE()
+  INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib NAMELINK_SKIP)
+ENDIF()
+
+IF (WIN32)
+  INSTALL(TARGETS embree DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 ENDIF()

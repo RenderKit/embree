@@ -336,13 +336,13 @@ float noise(float x, float y, float z)
       }
 
       /* directional light */
-      else if (tag == "--dirlight") {
+      else if (tag == "-dirlight" || tag == "--dirlight" ) {
         g_dirlight_direction = normalize(cin->getVec3fa());
         g_dirlight_intensity = cin->getVec3fa();
       }
 
       /* ambient light */
-      else if (tag == "--ambient") {
+      else if (tag == "-ambientlight" || tag == "--ambient") {
         g_ambient_intensity = cin->getVec3fa();
       }
 
@@ -456,7 +456,7 @@ float noise(float x, float y, float z)
     /* parse command line */  
     parseCommandLine(stream, FileName());
     if (g_numThreads) 
-      g_rtcore += ",threads=" + std::to_string((long long)g_numThreads);
+      g_rtcore += ",threads=" + toString(g_numThreads);
 
     /* initialize ray tracing core */
     init(g_rtcore.c_str());
@@ -466,7 +466,7 @@ float noise(float x, float y, float z)
       g_scene->add(SceneGraph::load(sceneFilename));
     
     /* convert scene graph to OBJ scene */
-    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>());
+    g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),TutorialScene::INSTANCING_NONE);
     g_scene = nullptr;
     
     /* if scene is empty, create default scene */

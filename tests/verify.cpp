@@ -1851,8 +1851,6 @@ namespace embree
           if (!ok0) passed = false;
         }
 
-        if (subdiv) continue; // FIXME: subdiv filter callbacks only working for single ray queries
-       
 #if HAS_INTERSECT4
       {
         RTCRay ray0 = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));

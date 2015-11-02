@@ -25,13 +25,31 @@ namespace embree
   {
     struct Node : public RefCount
     {
-      Node () 
-        : name("unnamed") {}
-      
-      Node (const std::string& name)
-        : name(name) {}
-      
-      std::string name;
+      Node (bool closed = false)
+        : indegree(0), closed(closed) {}
+
+       /* resets indegree and closed parameters */
+      void reset()
+      {
+        std::set<Ref<Node>> done;
+        resetNode(done);
+      }
+
+      /* resets indegree and closed parameters */
+      virtual void resetNode(std::set<Ref<Node>>& done);
+
+      /* calculates the number of parent nodes pointing to this node */
+      virtual void calculateInDegree();
+
+      /* calculates for each node if its subtree is closed, indegrees have to be calculated first */
+      virtual bool calculateClosed();
+
+      /* checks if the node is closed */
+      __forceinline bool isClosed() const { return closed; }
+
+    protected:
+      size_t indegree;   // number of nodes pointing to us
+      bool closed;       // determines if the subtree may represent an instance
     };
     
     struct TransformNode : public Node
@@ -43,7 +61,11 @@ namespace embree
 
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
         : xfm0(xfm0), xfm1(xfm1), child(child) {}
-      
+
+      virtual void resetNode(std::set<Ref<Node>>& done);
+      virtual void calculateInDegree();
+      virtual bool calculateClosed();
+
     public:
       AffineSpace3fa xfm0;
       AffineSpace3fa xfm1;
@@ -63,6 +85,10 @@ namespace embree
       void set(const size_t i, const Ref<Node>& node) {
         children[i] = node;
       }
+
+      virtual void resetNode(std::set<Ref<Node>>& done);
+      virtual void calculateInDegree();
+      virtual bool calculateClosed();
       
     public:
       std::vector<Ref<Node> > children;
@@ -104,7 +130,7 @@ namespace embree
       
     public:
       TriangleMeshNode (Ref<MaterialNode> material) 
-        : material(material) {}
+        : Node(true), material(material) {}
       
       void verify() const;
 
@@ -121,11 +147,12 @@ namespace embree
     struct SubdivMeshNode : public Node
     {
       SubdivMeshNode (Ref<MaterialNode> material) 
-        : material(material) {}
+        : Node(true), material(material) {}
 
       void verify() const;
       
       avector<Vec3fa> positions;            //!< vertex positions
+      avector<Vec3fa> positions2;           //!< vertex positions for 2nd timestep
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces
@@ -156,7 +183,7 @@ namespace embree
       
     public:
       HairSetNode (Ref<MaterialNode> material)
-      : material(material) {}
+        : Node(true), material(material) {}
       
       void verify() const;
 

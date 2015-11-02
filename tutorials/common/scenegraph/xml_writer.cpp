@@ -36,6 +36,7 @@ namespace embree
     void store(const char* name, const Vec3fa& v);
     template<typename T> void store(const char* name, const std::vector<T>& vec);
     void store(const char* name, const avector<Vec3fa>& vec);
+    void store4f(const char* name, const avector<Vec3fa>& vec);
     void store_parm(const char* name, const float& v);
     void store_parm(const char* name, const Vec3fa& v);
     void store_parm(const char* name, const Texture* tex);
@@ -56,6 +57,7 @@ namespace embree
     void store(const VelvetMaterial& material, ssize_t id);
     void store(const DielectricMaterial& material, ssize_t id);
     void store(const MetallicPaintMaterial& material, ssize_t id);
+    void store(const HairMaterial& material, ssize_t id);
     void store(Ref<SceneGraph::MaterialNode> material);
 
     void store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id);
@@ -131,6 +133,13 @@ namespace embree
     const long int offset = ftell(bin);
     tab(); fprintf(xml, "<%s ofs=\"%ld\" size=\"%zu\"/>\n", name, offset, vec.size());
     for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3f),bin);
+  }
+
+  void XMLWriter::store4f(const char* name, const avector<Vec3fa>& vec)
+  {
+    const long int offset = ftell(bin);
+    tab(); fprintf(xml, "<%s ofs=\"%ld\" size=\"%zu\"/>\n", name, offset, vec.size());
+    for (size_t i=0; i<vec.size(); i++) fwrite(&vec[i],1,sizeof(Vec3fa),bin);
   }
 
   void XMLWriter::store_parm(const char* name, const float& v) {
@@ -330,6 +339,19 @@ namespace embree
     close("material");
   }
 
+  void XMLWriter::store(const HairMaterial& material, ssize_t id)
+  {
+    open("material",id);
+    store("code","Hair");
+    open("parameters");
+    store_parm("Kr",material.Kr);
+    store_parm("Kt",material.Kt);
+    store_parm("nx",material.nx);
+    store_parm("ny",material.ny);
+    close("parameters");
+    close("material");
+  }
+
   void XMLWriter::store(Ref<SceneGraph::MaterialNode> mnode)
   {
     Ref<SceneGraph::Node> node = mnode.dynamicCast<SceneGraph::Node>();
@@ -350,6 +372,7 @@ namespace embree
     case MATERIAL_MATTE           : store((MatteMaterial&)mnode->material,id); break;
     case MATERIAL_MIRROR          : store((MirrorMaterial&)mnode->material,id); break;
     case MATERIAL_REFLECTIVE_METAL: store((ReflectiveMetalMaterial&)mnode->material,id); break;
+    case MATERIAL_HAIR            : store((HairMaterial&)mnode->material,id); break;
     default: throw std::runtime_error("unsupported material");
     }
   }
@@ -371,6 +394,7 @@ namespace embree
     open("SubdivisionMesh",id);
     store(mesh->material);
     store("positions",mesh->positions);
+    if (mesh->positions2.size()) store("positions2",mesh->positions2);
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
     store("position_indices",mesh->position_indices);
@@ -389,8 +413,8 @@ namespace embree
   {
     open("Hair",id);
     store(hair->material);
-    store("positions",hair->v);
-    if (hair->v2.size()) store("positions2",hair->v2);
+    store4f("positions",hair->v);
+    if (hair->v2.size()) store4f("positions2",hair->v2);
     store("indices",hair->hairs);
     close("Hair");
   }

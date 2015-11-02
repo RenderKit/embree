@@ -25,23 +25,93 @@ namespace embree
 {
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename)
   {
-    if      (strlwr(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
-    else if (strlwr(filename.ext()) == std::string("xml" )) return loadXML(filename);
-    else if (strlwr(filename.ext()) == std::string("hair")) return loadCYHair(filename);
-    else if (strlwr(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
-    else if (strlwr(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
+    if      (toLowerCase(filename.ext()) == std::string("obj" )) return loadOBJ(filename);
+    else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
+    else if (toLowerCase(filename.ext()) == std::string("hair")) return loadCYHair(filename);
+    else if (toLowerCase(filename.ext()) == std::string("txt" )) return loadTxtHair(filename);
+    else if (toLowerCase(filename.ext()) == std::string("bin" )) return loadBinHair(filename);
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
   void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename)
   {
-    if (strlwr(filename.ext()) == std::string("xml")) {
+    if (toLowerCase(filename.ext()) == std::string("xml")) {
       storeXML(root,filename);
     }
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
+  void SceneGraph::Node::resetNode(std::set<Ref<Node>>& done)
+  {
+    indegree = 0;
+    closed = true;
+  }
+
+  void SceneGraph::TransformNode::resetNode(std::set<Ref<Node>>& done)
+  {
+    if (done.find(this) != done.end()) return;
+    else done.insert(this);
+    indegree = 0;
+    closed = false;
+    child->resetNode(done);
+  }
+
+  void SceneGraph::GroupNode::resetNode(std::set<Ref<Node>>& done)
+  {
+    if (done.find(this) != done.end()) return;
+    else done.insert(this);
+    indegree = 0;
+    closed = false;
+    for (auto c : children)
+      c->resetNode(done);
+  }
+
+  void SceneGraph::Node::calculateInDegree() {
+    indegree++;
+  }
+
+  void SceneGraph::TransformNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      child->calculateInDegree();
+      if (xfm0 != xfm1) child->calculateInDegree(); // break instanced up when motion blur is used
+    }
+  }
+
+  void SceneGraph::GroupNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      for (auto c : children)
+        c->calculateInDegree();
+    }
+  }
+
+  bool SceneGraph::Node::calculateClosed() 
+  {
+    assert(indegree);
+    closed = true;
+    return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::TransformNode::calculateClosed() 
+  {
+    assert(indegree);
+    closed = child->calculateClosed();
+    return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::GroupNode::calculateClosed()
+  {
+    assert(indegree);
+    closed = true;
+    for (auto c : children)
+      closed &= c->calculateClosed();
+    return closed && (indegree == 1);
+  }
+  
   void SceneGraph::TriangleMeshNode::verify() const
   {
     const size_t numVertices = v.size();
@@ -136,6 +206,27 @@ namespace embree
         
         if (different)
           mesh0->v2 = mesh1->v;
+      }
+      else THROW_RUNTIME_ERROR("incompatible scene graph"); 
+    }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh0 = node0.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      if (Ref<SceneGraph::SubdivMeshNode> mesh1 = node1.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+      {
+        if (mesh0->positions.size() != mesh1->positions.size())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+        if (mesh0->verticesPerFace.size() != mesh1->verticesPerFace.size())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+        for (size_t i=0; i<mesh0->verticesPerFace.size(); i++) 
+          if (mesh0->verticesPerFace[i] != mesh1->verticesPerFace[i])
+            THROW_RUNTIME_ERROR("incompatible scene graph");
+
+        bool different = false;
+        for (size_t i=0; i<mesh0->positions.size(); i++) 
+          different |= mesh0->positions[i] != mesh1->positions[i];
+        
+        if (different)
+          mesh0->positions2 = mesh1->positions;
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
