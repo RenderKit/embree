@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# to make sure we do not include nor link against wrong TBB
+export CPATH=
+export LIBRARY_PATH=
+export DYLD_LIBRARY_PATH=
 TBB_PATH_LOCAL=$PWD/tbb
 
 mkdir -p build

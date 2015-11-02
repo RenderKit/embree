@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# to make sure we do not include nor link against wrong libTBB
+# to make sure we do not include nor link against wrong TBB
 export CPATH=
+export LIBRARY_PATH=
 export LD_LIBRARY_PATH=
 TBB_PATH_LOCAL=$PWD/tbb
 
