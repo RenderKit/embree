@@ -129,6 +129,7 @@ unsigned int g_instance0 = -1;
 unsigned int g_instance1 = -1;
 unsigned int g_instance2 = -1;
 unsigned int g_instance3 = -1;
+AffineSpace3fa instance_xfm[4];
 
 Vec3fa colors[4][4];
 
@@ -207,9 +208,12 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    Vec3fa Ns = normalize(ray.Ng);
     Vec3fa diffuse = Vec3fa(1,1,1);
-    if (ray.instID != -1)
+    if (ray.instID != -1) {
+      Ns = xfmVector(instance_xfm[ray.instID],Ns);
       diffuse = colors[ray.instID][ray.geomID];
+    }
     color = color + diffuse*0.5;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     
@@ -229,7 +233,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
+      color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
 }
@@ -276,23 +280,26 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* create identity matrix */
-  AffineSpace3fa xfm;
-  xfm.l.vx = Vec3fa(1,0,0);
-  xfm.l.vy = Vec3fa(0,1,0);
-  xfm.l.vz = Vec3fa(0,0,1);
-  xfm.p    = Vec3fa(0,0,0);
-  float t = 0.7f*time;
+  float t0 = 0.7f*time;
+  float t1 = 1.5f*time;
 
-  /* move instances */
-  xfm.p = 2.0f*Vec3fa(+cos(t),0.0f,+sin(t));
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(-cos(t),0.0f,-sin(t));
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(-sin(t),0.0f,+cos(t));
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(+sin(t),0.0f,-cos(t));
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
+  /* rotate instances around themselves */
+  LinearSpace3fa xfm;
+  xfm.vx = Vec3fa(cos(t1),0,sin(t1));
+  xfm.vy = Vec3fa(0,1,0);
+  xfm.vz = Vec3fa(-sin(t1),0,cos(t1));
+
+  /* calculate transformations to move instances in cirle */
+  instance_xfm[0] = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
+  instance_xfm[1] = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
+  instance_xfm[2] = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
+  instance_xfm[3] = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
+
+  /* set instance transformations */
+  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0]);
+  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1]);
+  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2]);
+  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3]);
 
   /* update scene */
   rtcUpdate(g_scene,g_instance0);
