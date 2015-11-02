@@ -322,10 +322,7 @@ RTCScene g_scene0 = NULL;
 RTCScene g_scene1 = NULL;
 RTCScene g_scene2 = NULL;
 
-uniform Instance* uniform g_instance0 = NULL;
-uniform Instance* uniform g_instance1 = NULL;
-uniform Instance* uniform g_instance2 = NULL;
-uniform Instance* uniform g_instance3 = NULL;
+uniform Instance* uniform g_instance[4] = { NULL, NULL, NULL, NULL };
 
 uniform Vec3f colors[5][4];
 
@@ -368,10 +365,10 @@ export void device_init (uniform int8* uniform cfg)
 
   /* instantiate geometry */
   createGroundPlane(g_scene);
-  g_instance0 = createInstance(g_scene,g_scene0,0,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
-  g_instance1 = createInstance(g_scene,g_scene1,1,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
-  g_instance2 = createInstance(g_scene,g_scene2,2,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
-  g_instance3 = createInstance(g_scene,g_scene2,3,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
+  g_instance[0] = createInstance(g_scene,g_scene0,0,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
+  g_instance[1] = createInstance(g_scene,g_scene1,1,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
+  g_instance[2] = createInstance(g_scene,g_scene2,2,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
+  g_instance[3] = createInstance(g_scene,g_scene2,3,make_Vec3f(-2,-2,-2),make_Vec3f(+2,+2,+2));
 
   /* set all colors */
   colors[0][0] = make_Vec3f(0.25,0,0);
@@ -426,13 +423,20 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
+    /* calculate shading normal in worldspace */
+    Vec3f Ns = ray.Ng;
+    if (ray.instID >=0 && ray.instID < 4) 
+      Ns = xfmVector(g_instance[ray.instID]->local2world,Ns);
+    Ns = normalize(Ns);
+
+    /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(0.0f);
     if (ray.instID == 0) diffuse = colors[ray.instID][ray.primID];
     else                 diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
-    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     
     /* initialize shadow ray */
+    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
@@ -448,7 +452,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
+      color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
 }
@@ -495,16 +499,26 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-  /* move instances */
-  uniform float t = 0.7f*time;
-  g_instance0->local2world.p = 2.0f*make_Vec3f(+cos(t),0.0f,+sin(t));
-  g_instance1->local2world.p = 2.0f*make_Vec3f(-cos(t),0.0f,-sin(t));
-  g_instance2->local2world.p = 2.0f*make_Vec3f(-sin(t),0.0f,+cos(t));
-  g_instance3->local2world.p = 2.0f*make_Vec3f(+sin(t),0.0f,-cos(t));
-  updateInstance(g_scene,g_instance0);
-  updateInstance(g_scene,g_instance1);
-  updateInstance(g_scene,g_instance2);
-  updateInstance(g_scene,g_instance3);
+  uniform float t0 = 0.7f*time;
+  uniform float t1 = 1.5f*time;
+
+  /* rotate instances around themselves */
+  uniform LinearSpace3f xfm;
+  xfm.vx = make_Vec3f(cos(t1),0,sin(t1));
+  xfm.vy = make_Vec3f(0,1,0);
+  xfm.vz = make_Vec3f(-sin(t1),0,cos(t1));
+
+  /* calculate transformations to move instances in circles */
+  g_instance[0]->local2world = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t0),0.0f,+sin(t0)));
+  g_instance[1]->local2world = make_AffineSpace3f(xfm,2.2f*make_Vec3f(-cos(t0),0.0f,-sin(t0)));
+  g_instance[2]->local2world = make_AffineSpace3f(xfm,2.2f*make_Vec3f(-sin(t0),0.0f,+cos(t0)));
+  g_instance[3]->local2world = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+sin(t0),0.0f,-cos(t0)));
+
+  /* update scene */
+  updateInstance(g_scene,g_instance[0]);
+  updateInstance(g_scene,g_instance[1]);
+  updateInstance(g_scene,g_instance[2]);
+  updateInstance(g_scene,g_instance[3]);
   rtcCommit (g_scene);
 
   /* render all pixels */
