@@ -505,7 +505,7 @@ namespace embree
         {
           vbool<Mx> valid = valid_i;
           hit.finalize();
-
+          if (Mx > M) valid &= (1<<M)-1;
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           
