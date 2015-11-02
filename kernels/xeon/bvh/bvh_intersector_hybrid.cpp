@@ -468,10 +468,8 @@ namespace embree
         Vec3vfK rdir1 = Vec3vfK(rdir16.x[rayID1],rdir16.y[rayID1],rdir16.z[rayID1]);
         Vec3vfK org_rdir0 = Vec3vfK(org_rdir16.x[rayID0],org_rdir16.y[rayID0],org_rdir16.z[rayID0]);
         Vec3vfK org_rdir1 = Vec3vfK(org_rdir16.x[rayID1],org_rdir16.y[rayID1],org_rdir16.z[rayID1]);
-        vfloat<K> ray_near0(ray_tnear16[rayID0]);
-        vfloat<K> ray_near1(ray_tnear16[rayID1]);
-        vfloat<K> ray_far0(ray_tfar16[rayID0]);
-        vfloat<K> ray_far1(ray_tfar16[rayID1]);
+        //vfloat<K> ray_far0(ray_tfar16[rayID0]);
+        //vfloat<K> ray_far1(ray_tfar16[rayID1]);
         asm nop;
 
         NodeRef cur0 = bvh->root;
@@ -481,6 +479,12 @@ namespace embree
 	while (true)
 	{
           NodeRef cur;
+
+          const vfloat<K> ray_far0 = ray.tfar[rayID0];
+          const vfloat<K> ray_far1 = ray.tfar[rayID1];
+          const vfloat<K> ray_near0(ray_tnear16[rayID0]);
+          const vfloat<K> ray_near1(ray_tnear16[rayID1]);
+
           /* down traversal */
           while(true)
           {                        
@@ -606,8 +610,7 @@ namespace embree
                 m_active      = __btc(m_active,rayID0);       
                 rdir0         = Vec3vfK(rdir16.x[rayID0],rdir16.y[rayID0],rdir16.z[rayID0]);
                 org_rdir0     = Vec3vfK(org_rdir16.x[rayID0],org_rdir16.y[rayID0],org_rdir16.z[rayID0]);
-                ray_near0     = ray_tnear16[rayID0];
-                ray_far0      = ray_tfar16[rayID0];
+                //ray_near0     = ray_tnear16[rayID0];
                 cur0          = bvh->root;
                 stackPtr0     = stack0 + 1;
               }                
@@ -622,8 +625,7 @@ namespace embree
                 m_active      = __btc(m_active,rayID1);       
                 rdir1         = Vec3vfK(rdir16.x[rayID1],rdir16.y[rayID1],rdir16.z[rayID1]);
                 org_rdir1     = Vec3vfK(org_rdir16.x[rayID1],org_rdir16.y[rayID1],org_rdir16.z[rayID1]);
-                ray_near1     = ray_tnear16[rayID1];
-                ray_far1      = ray_tfar16[rayID1];
+                //ray_near1     = ray_tnear16[rayID1];
                 cur1          = bvh->root;
                 stackPtr1     = stack1 + 1;               
               } 
@@ -714,9 +716,6 @@ namespace embree
               }
 
             }
-
-            ray_far0 = ray.tfar[rayID0];
-            ray_far1 = ray.tfar[rayID1];
             
             DBG_PRINT(ray_far0);
             DBG_PRINT(ray_far1);
