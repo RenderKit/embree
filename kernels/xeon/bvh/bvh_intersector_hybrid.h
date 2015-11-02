@@ -55,7 +55,7 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     class BVHNIntersectorKChunk : public BVHNIntersectorKHybrid<N,K,types,robust,PrimitiveIntersectorK,false> {};
 
-
+#if defined(__AVX512F__)
     template<int types, typename PrimitiveIntersectorK>
       class BVHNIntersectorKHybrid<8,16,types,false,PrimitiveIntersectorK,true>
     {
@@ -170,6 +170,7 @@ namespace embree
       static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
       static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
     };
+#endif
 
   }
 
