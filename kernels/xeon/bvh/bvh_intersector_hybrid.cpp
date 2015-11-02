@@ -470,6 +470,36 @@ namespace embree
         Vec3vfK org_rdir1 = Vec3vfK(org_rdir16.x[rayID1],org_rdir16.y[rayID1],org_rdir16.z[rayID1]);
         //vfloat<K> ray_far0(ray_tfar16[rayID0]);
         //vfloat<K> ray_far1(ray_tfar16[rayID1]);
+
+#if 0
+
+        const vint16 permX0 = select(rdir0.x >= 0.0f,identity,identity_half);
+        const vint16 permY0 = select(rdir0.y >= 0.0f,identity,identity_half);
+        const vint16 permZ0 = select(rdir0.z >= 0.0f,identity,identity_half);
+
+        const vint16 permX1 = select(rdir1.x >= 0.0f,identity,identity_half);
+        const vint16 permY1 = select(rdir1.y >= 0.0f,identity,identity_half);
+        const vint16 permZ1 = select(rdir1.z >= 0.0f,identity,identity_half);
+
+        const vfloat16 upperSign(asFloat(select(m_lower8,vint16(zero),vint16(0x80000000))));
+
+        rdir0.x = rdir0.x ^ upperSign;
+        rdir0.y = rdir0.y ^ upperSign;
+        rdir0.z = rdir0.z ^ upperSign;
+        org_rdir0.x = org_rdir0.x ^ upperSign; 
+        org_rdir0.y = org_rdir0.y ^ upperSign;
+        org_rdir0.z = org_rdir0.z ^ upperSign;
+
+        rdir1.x = rdir1.x ^ upperSign;
+        rdir1.y = rdir1.y ^ upperSign;
+        rdir1.z = rdir1.z ^ upperSign;
+        org_rdir1.x = org_rdir1.x ^ upperSign; 
+        org_rdir1.y = org_rdir1.y ^ upperSign;
+        org_rdir1.z = org_rdir1.z ^ upperSign;
+
+        const vfloat16 sign(asFloat(vint16(0x80000000)));
+
+#endif
         asm nop;
 
         NodeRef cur0 = bvh->root;
@@ -484,6 +514,8 @@ namespace embree
           const vfloat<K> ray_far1 = ray.tfar[rayID1];
           const vfloat<K> ray_near0(ray_tnear16[rayID0]);
           const vfloat<K> ray_near1(ray_tnear16[rayID1]);
+          // const vfloat<K> ray_near_far0 = select(m_lower8,ray_near0,ray_far0^sign);
+          // const vfloat<K> ray_near_far1 = select(m_lower8,ray_near1,ray_far1^sign);
 
           /* down traversal */
           while(true)
@@ -527,8 +559,8 @@ namespace embree
               const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,ray_far0);
               const vbool16 vmask = le(m_node,tNear,tFar);
               DBG_PRINT(vmask);
-              size_t mask = movemask(vmask);
 
+              size_t mask = movemask(vmask);
               /*! if no child is hit, pop next node */
               if (unlikely(any(vmask)))
               {
