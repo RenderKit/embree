@@ -145,7 +145,7 @@ namespace embree
       const Vec3<vfloat<K>> Ng;
     };
     
-    template<int M, int K>
+     template<int M, int K>
     struct MoellerTrumboreIntersectorK
     {
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
@@ -301,7 +301,7 @@ namespace embree
       };
 
     /*! Intersects M triangles with K rays. */
-    template<int M, int K, bool filter>
+    template<int M, int Mx, int K, bool filter>
       struct TriangleMIntersectorKMoellerTrumbore
       {
         typedef TriangleM<M> Primitive;
