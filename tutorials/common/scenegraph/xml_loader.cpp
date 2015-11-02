@@ -870,6 +870,8 @@ namespace embree
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     for (size_t i=0; i<positions.size(); i++) mesh->positions.push_back(positions[i]);
+    std::vector<Vec3f> positions2 = loadVec3fArray(xml->childOpt("positions2"));
+    for (size_t i=0; i<positions2.size(); i++) mesh->positions2.push_back(positions2[i]);
     std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
     for (size_t i=0; i<normals.size(); i++) mesh->normals.push_back(normals[i]);
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));

@@ -209,5 +209,26 @@ namespace embree
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh0 = node0.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+    {
+      if (Ref<SceneGraph::SubdivMeshNode> mesh1 = node1.dynamicCast<SceneGraph::SubdivMeshNode>()) 
+      {
+        if (mesh0->positions.size() != mesh1->positions.size())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+        if (mesh0->verticesPerFace.size() != mesh1->verticesPerFace.size())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+        for (size_t i=0; i<mesh0->verticesPerFace.size(); i++) 
+          if (mesh0->verticesPerFace[i] != mesh1->verticesPerFace[i])
+            THROW_RUNTIME_ERROR("incompatible scene graph");
+
+        bool different = false;
+        for (size_t i=0; i<mesh0->positions.size(); i++) 
+          different |= mesh0->positions[i] != mesh1->positions[i];
+        
+        if (different)
+          mesh0->positions2 = mesh1->positions;
+      }
+      else THROW_RUNTIME_ERROR("incompatible scene graph"); 
+    }
   }
 }
