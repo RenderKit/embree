@@ -16,6 +16,7 @@
 
 #include "xml_loader.h"
 #include "xml_parser.h"
+#include "obj_loader.h"
 
 namespace embree
 {
@@ -959,7 +960,10 @@ namespace embree
     {
       const std::string id = xml->parm("id");
       if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
-      else if (xml->name == "obj"             ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src")); // only for compatibility reasons
+      else if (xml->name == "obj"             ) {
+        const bool subdiv_mode = xml->parm("subdiv") == "1";
+        return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
+      }
       else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
       else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
       else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);
