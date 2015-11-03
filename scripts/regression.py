@@ -130,12 +130,38 @@ supported_configurations = [
   ]
 
 models = {}
-#models['Win32'] = [ 'conference' ]
-#models['x64'  ] = [ 'crown' ]
-models['Win32'] = [ 'conference', 'sponza' ]
-models['x64'  ] = [ 'conference', 'sponza', 'headlight', 'crown', 'xyz_dragon', 'powerplant', 'tighten' ]
-models_large = ['sophie', 'sophie_mblur']
-
+#models['Win32'] = [ 'conference/conference.ecs' ]
+#models['x64'  ] = [ 'crown/crown.ecs' ]
+models['Win32'] = [ 
+  'conference/conference.ecs', 
+  'headlight/headlight.ecs', 
+  'sponza/sponza.ecs', 
+  'RoadBike/RoadBike.ecs',
+  'barbarian/barbarian_subdiv.ecs',
+  'barbarian/barbarian_mblur.ecs',
+]
+models['x64'] = models['Win32'] + [   
+  'crown/crown.ecs', 
+  'xyz_dragon/xyz_dragon.ecs', 
+  'powerplant/powerplant.ecs', 
+  'tighten/tighten.ecs' 
+]
+models_large = [
+  'sophie/sophie.ecs', 
+  'sophie_mblur/sophie_mblur.ecs'
+]
+models_subdiv = [
+  'subdiv/subdiv0.ecs',
+  'subdiv/subdiv1.ecs',
+  'subdiv/subdiv2.ecs',
+  'subdiv/subdiv3.ecs',
+  'subdiv/subdiv4.ecs',
+  'subdiv/subdiv5.ecs',
+  'subdiv/subdiv6.ecs',
+  'subdiv/subdiv7.ecs',
+  'subdiv/subdiv8.ecs',
+  'subdiv/subdiv9.ecs'
+]
 modelDir  = ''
 testDir = ''
 
@@ -144,7 +170,7 @@ def configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, fla
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
-    cfg += '_' + scene
+    cfg += '_' + scene.replace('/','_')
   if flags != '':
     cfg += '_' + flags
   return cfg
@@ -311,23 +337,17 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
     if flags != "": 
       if flags != "default":
         command += ",flags=" + flags
-      command += ' -size 1024 1024 -o ' + imageFile
+      command += ' -size 512 512 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
 def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene,scene,flags)
 
 def render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
-
-def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  if scene[0:6] == 'subdiv':
-    render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -i tutorials/models/" + scene + '.xml',scene,flags)
-  else:
-    render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene + dash + scene + '_regression.ecs ',scene,flags)
+  render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene,scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -351,6 +371,8 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
+      for model in models_subdiv:
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
 
       render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', 'default')
@@ -361,16 +383,6 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
-    
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv0', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv1', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv2', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv3', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv4', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv5', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'subdiv6', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'bigguy', 'default')
-      render_viewer(OS, compiler, platform, build, isa, tasking, ty, 'cupid', 'default')
 			    
 def renderLoop(OS):
     for compiler in compilers:
