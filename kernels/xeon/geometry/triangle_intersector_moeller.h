@@ -289,8 +289,6 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const TriangleM<M>& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          asm nop;
-          asm nop;
           pre.intersect(ray,tri.v0,tri.e1,tri.e2,tri.Ng,Intersect1Epilog<M,Mx,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
         }
         
