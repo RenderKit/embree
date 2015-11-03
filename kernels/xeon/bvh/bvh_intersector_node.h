@@ -91,8 +91,8 @@ namespace embree
     };
 
     /*! intersection with single rays */
-    template<int N>
-      __forceinline size_t intersectNodeRobust(const typename BVHN<N>::Node* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist) 
+    template<int N,int Nx>
+      __forceinline size_t intersectNodeRobust(const typename BVHN<N>::Node* node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, vfloat<Nx>& dist) 
     {      
       const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
       const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
@@ -109,6 +109,50 @@ namespace embree
       dist = tNear;
       return mask;
     }
+
+#if defined(__AVX512F__)
+
+    template<>
+      __forceinline size_t intersectNodeRobust<4,16>(const typename BVHN<4>::Node* node, const TravRay<16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
+    {      
+      const vfloat16 tNearX = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
+      const vfloat16 tNearY = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
+      const vfloat16 tNearZ = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
+      const vfloat16 tFarX  = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
+      const vfloat16 tFarY  = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
+      const vfloat16 tFarZ  = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
+      const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+      const float round_up   = 1.0f+2.0f*float(ulp);
+      const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool16 vmask = le((1 << 4)-1,round_down*tNear,round_up*tFar);
+      const size_t mask = movemask(vmask);
+      dist = tNear;
+      return mask;
+    }
+
+    template<>
+      __forceinline size_t intersectNodeRobust<8,16>(const typename BVHN<8>::Node* node, const TravRay<16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
+    {      
+      const vfloat16 tNearX = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
+      const vfloat16 tNearY = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
+      const vfloat16 tNearZ = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir.z;
+      const vfloat16 tFarX  = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir.x;
+      const vfloat16 tFarY  = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
+      const vfloat16 tFarZ  = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
+      const float round_down = 1.0f-2.0f*float(ulp); // FIXME: use per instruction rounding for AVX512
+      const float round_up   = 1.0f+2.0f*float(ulp);
+      const vfloat16 tNear = max(tNearX,tNearY,tNearZ,tnear);
+      const vfloat16 tFar  = min(tFarX ,tFarY ,tFarZ ,tfar);
+      const vbool16 vmask = le((1 << 8)-1,round_down*tNear,round_up*tFar);
+      const size_t mask = movemask(vmask);
+      dist = tNear;
+      return mask;
+    }
+
+
+#endif
+
 
     /*! intersection with single rays */
     template<int N, int Nx>
@@ -395,7 +439,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
         mask = intersectNode<N,Nx>(node.node(),ray,tnear,tfar,dist);
         return true;
@@ -405,9 +449,9 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
-        mask = intersectNodeRobust<N>(node.node(),ray,tnear,tfar,dist);
+        mask = intersectNodeRobust<N,Nx>(node.node(),ray,tnear,tfar,dist);
         return true;
       }
     };

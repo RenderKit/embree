@@ -67,12 +67,12 @@ namespace embree
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
-      TravRay<N> vray(ray.org,ray.dir);
-      vfloat<N> ray_near(ray.tnear);
-      vfloat<N> ray_far (ray.tfar);
+      TravRay<Nx> vray(ray.org,ray.dir);
+      vfloat<Nx> ray_near(ray.tnear);
+      vfloat<Nx> ray_far (ray.tfar);
 
       /*! initialize the node traverser */
-      BVHNNodeTraverser1<N,N,types> nodeTraverser(vray);
+      BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -90,14 +90,14 @@ namespace embree
         while (true)
         {
           size_t mask;
-          vfloat<N> tNear;
+          vfloat<Nx> tNear;
 
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           STAT3(normal.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -105,7 +105,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          nodeTraverser.traverseClosestHit(cur,mask,(vfloat<N>)tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
         }
 
         /* ray transformation support */
@@ -163,12 +163,12 @@ namespace embree
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
-      TravRay<N> vray(ray.org,ray.dir);
-      const vfloat<N> ray_near(ray.tnear);
-      vfloat<N> ray_far (ray.tfar);
+      TravRay<Nx> vray(ray.org,ray.dir);
+      const vfloat<Nx> ray_near(ray.tnear);
+      vfloat<Nx> ray_far (ray.tfar);
 
       /*! initialize the node traverser */
-      BVHNNodeTraverser1<N,N,types> nodeTraverser(vray);
+      BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -182,14 +182,14 @@ namespace embree
         while (true)
         {
           size_t mask;
-          vfloat<N> tNear;
+          vfloat<Nx> tNear;
 
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
           STAT3(shadow.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,Nx,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
