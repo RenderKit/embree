@@ -39,6 +39,8 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
+      static const size_t Nx = vextend<N>::size;
+
     public:
       static void intersect(const BVH* This, Ray& ray);
       static void occluded (const BVH* This, Ray& ray);

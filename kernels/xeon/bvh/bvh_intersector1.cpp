@@ -72,7 +72,7 @@ namespace embree
       vfloat<N> ray_far (ray.tfar);
 
       /*! initialize the node traverser */
-      BVHNNodeTraverser1<N,types> nodeTraverser(vray);
+      BVHNNodeTraverser1<N,N,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -97,7 +97,7 @@ namespace embree
           STAT3(normal.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */
@@ -105,7 +105,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          nodeTraverser.traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+          nodeTraverser.traverseClosestHit(cur,mask,(vfloat<N>)tNear,stackPtr,stackEnd);
         }
 
         /* ray transformation support */
@@ -168,7 +168,7 @@ namespace embree
       vfloat<N> ray_far (ray.tfar);
 
       /*! initialize the node traverser */
-      BVHNNodeTraverser1<N,types> nodeTraverser(vray);
+      BVHNNodeTraverser1<N,N,types> nodeTraverser(vray);
 
       /* pop loop */
       while (true) pop:
@@ -189,7 +189,7 @@ namespace embree
           STAT3(shadow.trav_nodes,1,1,1);
 
           /* intersect node */
-          bool nodeIntersected = BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time,tNear,mask);
           if (unlikely(!nodeIntersected)) break;
 
           /*! if no child is hit, pop next node */

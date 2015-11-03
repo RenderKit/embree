@@ -101,14 +101,14 @@ namespace embree
             STAT3(normal.trav_nodes,1,1,1);
 
             /* intersect node */
-            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,N,types>::traverseClosestHit(cur,mask,tNear,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */
@@ -161,14 +161,14 @@ namespace embree
             STAT3(shadow.trav_nodes,1,1,1);
 
             /* intersect node */
-            BVHNNodeIntersector1<N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
+            BVHNNodeIntersector1<N,N,types,robust>::intersect(cur,vray,ray_near,ray_far,ray.time[k],tNear,mask);
 
             /*! if no child is hit, pop next node */
             if (unlikely(mask == 0))
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1<N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
+            BVHNNodeTraverser1<N,N,types>::traverseAnyHit(cur,mask,tNear,stackPtr,stackEnd);
           }
 
 	  /*! this is a leaf node */

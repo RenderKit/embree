@@ -25,12 +25,12 @@ namespace embree
   namespace isa
   {
     /*! BVH regular node traversal for single rays. */
-    template<int N, int types>
+    template<int N, int Nx, int types>
     class BVHNNodeTraverser1Hit;
 
     /* Specialization for BVH4. */
     template<int types>
-    class BVHNNodeTraverser1Hit<4,types>
+      class BVHNNodeTraverser1Hit<4,4,types>
     {
       typedef BVH4 BVH;
       typedef BVH4::NodeRef NodeRef;
@@ -140,7 +140,7 @@ namespace embree
 
     /* Specialization for BVH8. */
     template<int types>
-    class BVHNNodeTraverser1Hit<8,types>
+      class BVHNNodeTraverser1Hit<8,8,types>
     {
       typedef BVH8 BVH;
       typedef BVH8::NodeRef NodeRef;
@@ -283,13 +283,13 @@ namespace embree
     };
 
     /*! BVH transform node traversal for single rays. */
-    template<int N, int types, bool transform>
+    template<int N, int Nx, int types, bool transform>
     class BVHNNodeTraverser1Transform;
 
 #define ENABLE_TRANSFORM_CACHE 0
 
-    template<int N, int types>
-    class BVHNNodeTraverser1Transform<N,types,true>
+    template<int N, int Nx, int types>
+      class BVHNNodeTraverser1Transform<N,Nx,types,true>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -437,8 +437,8 @@ namespace embree
 #endif
     };
 
-    template<int N, int types>
-    class BVHNNodeTraverser1Transform<N,types,false>
+    template<int N, int Nx, int types>
+      class BVHNNodeTraverser1Transform<N,Nx,types,false>
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -470,11 +470,11 @@ namespace embree
     };
 
     /*! BVH node traversal for single rays. */
-    template<int N, int types>
-    class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, types>, public BVHNNodeTraverser1Transform<N, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
+    template<int N, int Nx, int types>
+      class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
     {
     public:
-      __forceinline explicit BVHNNodeTraverser1(const TravRay<N>& vray) : BVHNNodeTraverser1Transform<N, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
+      __forceinline explicit BVHNNodeTraverser1(const TravRay<Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
     };
   }
 }

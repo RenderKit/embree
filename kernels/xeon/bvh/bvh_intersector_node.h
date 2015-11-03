@@ -389,21 +389,21 @@ namespace embree
     }
 
     /*! Intersects N nodes with 1 ray */
-    template<int N, int types, bool robust>
+    template<int N, int Nx, int types, bool robust>
     struct BVHNNodeIntersector1;
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_AN1,false>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
-        mask = intersectNode<N,N>(node.node(),ray,tnear,tfar,dist);
+        mask = intersectNode<N,Nx>(node.node(),ray,tnear,tfar,dist);
         return true;
       }
     };
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_AN1,true>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN1,true>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -412,8 +412,8 @@ namespace embree
       }
     };
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_AN2,false>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -422,8 +422,8 @@ namespace embree
       }
     };
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_AN1_UN1,false>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN1_UN1,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -433,8 +433,8 @@ namespace embree
       }
     };
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_AN2_UN2,false>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_AN2_UN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
@@ -444,8 +444,8 @@ namespace embree
       }
     };
 
-    template<int N>
-    struct BVHNNodeIntersector1<N,BVH_TN_AN1_AN2,false>
+    template<int N, int Nx>
+      struct BVHNNodeIntersector1<N,Nx,BVH_TN_AN1_AN2,false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
