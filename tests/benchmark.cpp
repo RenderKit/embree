@@ -755,12 +755,33 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
+
+#if 1
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
+#else
+#define NUM 512
+      float rx[NUM];
+      float ry[NUM];
+      float rz[NUM];
+
+      for (size_t i=0; i<NUM; i++) {
+        rx[i] = drand48();
+        ry[i] = drand48();
+        rz[i] = drand48();
+      }
+
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*rx[i%NUM]-1.0f;
+        float y = 2.0f*ry[i%NUM]-1.0f;
+        float z = 2.0f*rz[i%NUM]-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#endif
 
       g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
@@ -783,6 +804,9 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
+      //int numPhi = 61;
+      //int numPhi = 1601;
+
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
@@ -833,18 +857,39 @@ namespace embree
 
       srand48(threadIndex*334124);
       Vec3f* numbers = new Vec3f[N];
+#if 1
       for (size_t i=0; i<N; i++) {
         float x = 2.0f*drand48()-1.0f;
         float y = 2.0f*drand48()-1.0f;
         float z = 2.0f*drand48()-1.0f;
         numbers[i] = Vec3f(x,y,z);
       }
+#else
+#define NUM 128
+      float rx[NUM];
+      float ry[NUM];
+      float rz[NUM];
+
+      for (size_t i=0; i<NUM; i++) {
+        rx[i] = drand48();
+        ry[i] = drand48();
+        rz[i] = drand48();
+      }
+
+      for (size_t i=0; i<N; i++) {
+        float x = 2.0f*rx[i%NUM]-1.0f;
+        float y = 2.0f*ry[i%NUM]-1.0f;
+        float z = 2.0f*rz[i%NUM]-1.0f;
+        numbers[i] = Vec3f(x,y,z);
+      }      
+#endif
 
       __aligned(16) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
 
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t0 = getSeconds();
 
+      //while(1)
       for (size_t i=0; i<N; i+=16) {
         RTCRay16 ray16;
         for (size_t j=0;j<16;j++)        
@@ -864,6 +909,9 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
+      //int numPhi = 61;
+      //int numPhi = 1601;
+
       RTCSceneFlags flags = RTC_SCENE_STATIC;
       scene = rtcDeviceNewScene(device,flags,aflags);
       addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);
@@ -1329,7 +1377,6 @@ namespace embree
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-    printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
 
     create_benchmarks();
 
@@ -1339,7 +1386,8 @@ namespace embree
     if (!executed_benchmarks) 
     {
       size_t numThreads = getNumberOfLogicalThreads();
-
+      printf("%40s ... %d \n","#HW threads ",(int)getNumberOfLogicalThreads());
+      
 #if defined (__MIC__)
       numThreads -= 4;
 #endif

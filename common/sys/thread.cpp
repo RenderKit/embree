@@ -174,12 +174,30 @@ namespace embree
 #if defined(__LINUX__)
 namespace embree
 {
+  ssize_t mapThreadID(ssize_t threadID)
+  {
+#if 0
+#warning special affinity settings active    
+#define THREADS_PER_CORE 4
+#define CORES 54
+#define OFFSET 49
+#define CORES2 12
+#define OFFSET2 1    
+    ssize_t ID = OFFSET + ((threadID%THREADS_PER_CORE)*CORES) + (threadID/THREADS_PER_CORE);
+    if (threadID >= CORES*THREADS_PER_CORE)
+      ID = OFFSET2 +  ((threadID%THREADS_PER_CORE)*CORES2) + (threadID/THREADS_PER_CORE);
+#else
+    ssize_t ID = threadID;
+#endif
+    //std::cout << threadID << " -> " << ID << std::endl;
+    return ID;
+  }
   /*! set affinity of the calling thread */
   void setAffinity(ssize_t affinity)
   {
     cpu_set_t cset;
     CPU_ZERO(&cset);
-    CPU_SET(affinity, &cset);
+    CPU_SET(mapThreadID(affinity), &cset);
 
     if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
       WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
@@ -272,7 +290,7 @@ namespace embree
     if (threadID >= 0) {
       cpu_set_t cset;
       CPU_ZERO(&cset);
-      CPU_SET(threadID, &cset);
+      CPU_SET(mapThreadID(threadID), &cset);
       if (pthread_setaffinity_np(*tid,sizeof(cpu_set_t),&cset))
         WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
     }

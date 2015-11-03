@@ -43,6 +43,7 @@ namespace embree
 
     __forceinline vfloat(const __m512& t) { v = t; }
     __forceinline operator __m512 () const { return v; }
+    __forceinline operator __m256 () const { return _mm512_castps512_ps256(v); }
     
     __forceinline vfloat(const float& f) {
       v = _mm512_set_1to16_ps(f);
@@ -54,6 +55,10 @@ namespace embree
 #if defined(__AVX512F__)
     __forceinline vfloat(const vfloat4 i) {
       v = _mm512_broadcast_f32x4(i);
+    }
+
+    __forceinline vfloat(const vfloat8 i) {
+      v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i)));
     }
 #endif
     
@@ -169,6 +174,9 @@ namespace embree
       return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_1X16,_MM_HINT_NONE);
 #endif
     }
+
+
+
 
   /* pass by value to avoid compiler generating inefficient code */
     static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
@@ -748,6 +756,7 @@ namespace embree
   __forceinline vfloat16 broadcast4to16f(const void *f) {
     return _mm512_extload_ps(f,_MM_UPCONV_PS_NONE,_MM_BROADCAST_4X16,0);  
   }
+
     
 
   __forceinline vfloat16 gather16f_4f(const float *__restrict__ const ptr0,

@@ -37,6 +37,7 @@ namespace embree
       typedef BVH4::BaseNode BaseNode;
 
     public:
+
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
                                                    const vfloat4& tNear,
@@ -44,7 +45,6 @@ namespace embree
                                                    StackItemT<NodeRef>* stackEnd)
       {
         const BaseNode* node = cur.baseNode(types);
-
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         if (likely(mask == 0)) {
@@ -148,12 +148,13 @@ namespace embree
 
     public:
       static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   const BaseNode* node,
                                                    size_t mask,
                                                    const vfloat8& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
-        const BaseNode* node = cur.baseNode(types);
+        //const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
@@ -216,6 +217,16 @@ namespace embree
         }
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+      }
+
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   size_t mask,
+                                                   const vfloat8& tNear,
+                                                   StackItemT<NodeRef>*& stackPtr,
+                                                   StackItemT<NodeRef>* stackEnd)
+      {
+        const BaseNode* node = cur.baseNode(types);
+        traverseClosestHit(cur,node,mask,tNear,stackPtr,stackEnd);
       }
 
       static __forceinline void traverseAnyHit(NodeRef& cur,
