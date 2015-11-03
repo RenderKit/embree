@@ -71,12 +71,12 @@ namespace embree
       BBox3fa recurse_top(NodeRef& ref);
       
     public:
-      BVH* bvh;                             //!< BVH to refit
+      BVH* bvh;                              //!< BVH to refit
       const LeafBoundsInterface& leafBounds; //!< calculates bounds of leaves
       std::vector<NodeRef*> roots;           //!< List of equal sized subtrees for bvh refit
 
-      static const size_t MAX_NUM_SUB_TREES = 1024;
-      static const size_t MAX_SUB_TREE_EXTRACTION_DEPTH = 5;
+      static const size_t MAX_SUB_TREE_EXTRACTION_DEPTH = (N==4) ? 5    : (N==8) ? 4    : 3;
+      static const size_t MAX_NUM_SUB_TREES             = (N==4) ? 1024 : (N==8) ? 4096 : N*N*N; // N ^ MAX_SUB_TREE_EXTRACTION_DEPTH
       size_t numSubTrees;
       NodeRef subTrees[MAX_NUM_SUB_TREES];
     };

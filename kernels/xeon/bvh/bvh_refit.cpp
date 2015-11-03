@@ -212,8 +212,8 @@ namespace embree
 
     template<int N>
     void BVHNRefitter<N>::gather_subtree_refs(NodeRef& ref,
-                                           size_t &subtrees,
-                                           const size_t depth)
+                                              size_t &subtrees,
+                                              const size_t depth)
     {
       if (ref.isNode())
       {
@@ -235,8 +235,8 @@ namespace embree
 
     template<int N>
     BBox3fa BVHNRefitter<N>::refit_toplevel(NodeRef& ref,
-                                         size_t &subtrees,
-                                         const size_t depth)
+                                            size_t &subtrees,
+                                            const size_t depth)
     {
       if (ref.isNode())
       {
