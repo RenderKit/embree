@@ -22,7 +22,7 @@ namespace embree
   {
   public:
 
-    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName);
+    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures);
    ~XMLWriter();
 
   public:
@@ -77,6 +77,7 @@ namespace embree
     size_t currentNodeID;
     std::map<Ref<SceneGraph::Node>, size_t> nodeMap;   
     std::map<const Texture*, size_t> textureMap; // FIXME: use Ref<Texture>
+    bool embedTextures;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -156,12 +157,16 @@ namespace embree
 
     if (textureMap.find(tex) != textureMap.end()) {
       tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\"/>\n",name,textureMap[tex]);
-    } else {
+    } else if (embedTextures) {
       const long int offset = ftell(bin);
       fwrite(tex->data,tex->width*tex->height,tex->bytesPerTexel,bin);
       const size_t id = textureMap[tex] = currentNodeID++;
       tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" ofs=\"%ld\" width=\"%i\" height=\"%i\" format=\"%s\"/>\n",
                      name,id,offset,tex->width,tex->height,Texture::format_to_string(tex->format));
+    }
+    else {
+      const size_t id = textureMap[tex] = currentNodeID++;
+      tab(); fprintf(xml,"<texture3d name=\"%s\" id=\"%zu\" src=\"%s\"/>\n",name,textureMap[tex],tex->fileName.c_str());
     }
   }
 
@@ -469,8 +474,8 @@ namespace embree
     else throw std::runtime_error("unknown node type");
   }
  
-  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName) 
-    : xml(nullptr), bin(nullptr), ident(0), currentNodeID(0)
+  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) 
+    : xml(nullptr), bin(nullptr), ident(0), currentNodeID(0), embedTextures(embedTextures)
   {
     FileName binFileName = fileName.addExt(".bin");
     xml = fopen(fileName.c_str(),"w");
@@ -487,7 +492,7 @@ namespace embree
     if (bin) fclose(bin);
   }
 
-  void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName) {
-    XMLWriter(root,fileName);
+  void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures) {
+    XMLWriter(root,fileName,embedTextures);
   }
 }

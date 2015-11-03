@@ -23,6 +23,7 @@ namespace embree
 {
   /* name of the tutorial */
   const char* tutorialName = "convert";
+  bool embedTextures = true;
 
   struct HeightField : public RefCount
   {
@@ -179,9 +180,19 @@ namespace embree
         g_scene->add(new SceneGraph::TransformNode(space,object));
       }
 
+      /* enable texture embedding */
+      else if (tag == "-embed-textures") {
+        embedTextures = true;
+      }
+
+      /* enable texture referencing */
+      else if (tag == "-reference-textures") {
+        embedTextures = false;
+      }
+
       /* output filename */
       else if (tag == "-o") {
-        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName());
+        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures);
       }
 
       /* skip unknown command line parameter */
