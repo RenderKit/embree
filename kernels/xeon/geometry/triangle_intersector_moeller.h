@@ -432,22 +432,23 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          const Vec3<vfloat<M>> time(ray.time[k]);
-          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
-          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
-          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          pre.intersect1(ray,k,v0,v1,v2,Intersect1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          const Vec3<vfloat<Mx>> time(ray.time[k]);
+          const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
+          const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
+          const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
+          pre.intersect1(ray,k,v0,v1,v2,Intersect1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TriangleMvMB<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          const Vec3<vfloat<M>> time(ray.time[k]);
-          const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
-          const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
-          const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          return pre.intersect1(ray,k,v0,v1,v2,Occluded1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          const Vec3<vfloat<Mx>> time(ray.time[k]);
+          const Vec3<vfloat<Mx>> v0 = madd(time,Vec3<vfloat<Mx>>(tri.dv0),Vec3<vfloat<Mx>>(tri.v0));
+          const Vec3<vfloat<Mx>> v1 = madd(time,Vec3<vfloat<Mx>>(tri.dv1),Vec3<vfloat<Mx>>(tri.v1));
+          const Vec3<vfloat<Mx>> v2 = madd(time,Vec3<vfloat<Mx>>(tri.dv2),Vec3<vfloat<Mx>>(tri.v2));
+
+          return pre.intersect1(ray,k,v0,v1,v2,Occluded1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); 
         }
       };
   }

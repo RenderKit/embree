@@ -39,7 +39,7 @@ namespace embree
         1+(N-1)*BVH::maxDepth+   // standard depth
         1+(N-1)*BVH::maxDepth;   // transform feature
 
-      /* right now SIMD extension only for standard node types */
+      /* right now AVX512KNL SIMD extension only for standard node types */
       static const size_t Nx = types == BVH_AN1 ? vextend<N>::size : N;
 
     public:
