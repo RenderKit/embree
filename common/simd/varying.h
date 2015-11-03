@@ -71,13 +71,24 @@ namespace embree
 #endif
 
   /* Maximum supported varying size */
-#if defined (__AVX512F__) || defined (__MIC__)
+#if defined(__AVX512F__) || defined(__MIC__)
   const int VSIZEX = 16;
 #elif defined(__AVX__)
   const int VSIZEX = 8;
 #else
   const int VSIZEX = 4;
 #endif
+
+  /* Extends varying size N to optimal or up to max(N, N2) */
+  template<int N, int N2 = VSIZEX>
+  struct vextend
+  {
+#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
+    static const int size = (N2 == VSIZEX) ? VSIZEX : N;
+#else
+    static const int size = N;
+#endif
+  };
 
   /* 4-wide shortcuts */
   typedef vfloat<4>  vfloat4;
