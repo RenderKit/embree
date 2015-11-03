@@ -53,13 +53,20 @@ namespace embree
     }
 
 #if defined(__AVX512F__)
-    __forceinline vfloat(const vfloat4 i) {
+    __forceinline vfloat(const vfloat4 &i) {
       v = _mm512_broadcast_f32x4(i);
     }
 
-    __forceinline vfloat(const vfloat8 i) {
+    __forceinline vfloat(const vfloat8 &i) {
       v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i)));
     }
+
+    __forceinline vfloat(const vfloat8 &a, const vfloat8 &b) { // FIXME: optimize
+      const vfloat aa = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(a)));
+      const vfloat bb = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(b)));
+      v = _mm512_mask_blend_ps(0xff, bb, aa);
+    }
+
 #endif
     
     __forceinline explicit vfloat(const __m512i& a) {

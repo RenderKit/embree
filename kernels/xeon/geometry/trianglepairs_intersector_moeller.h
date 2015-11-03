@@ -48,7 +48,8 @@ namespace embree
         vt = T * rcpAbsDen;
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
-        const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
+        const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+        //const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
         vNg = Vec3<vfloat<M>>(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
       }
 
@@ -315,58 +316,81 @@ namespace embree
       }
     };
 
+    template<int M, int Mx, bool filter>
+      struct TrianglePairsMIntersector1MoellerTrumbore;
 
-    /*! Intersects M triangle pairs with 1 ray */
-    template<int M, bool filter>
-      struct TrianglePairsMIntersector1MoellerTrumbore
-      {
-        typedef TrianglePairsMv<M> Primitive;
 #if defined(__AVX__)
-        typedef MoellerTrumboreIntersectorPairs1<2*M> Precalculations;
-#else
-        typedef MoellerTrumboreIntersectorPairs1<M> Precalculations;
-#endif
+
+    /*! Intersects 4 triangle pairs with 1 ray using AVX */
+    template<bool filter>
+      struct TrianglePairsMIntersector1MoellerTrumbore<4,8,filter>
+      {
+        typedef TrianglePairsMv<4> Primitive;
+        typedef MoellerTrumboreIntersectorPairs1<8> Precalculations;
         
         /*! Intersect a ray with the M triangles and updates the hit. */
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-        Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
-                     vfloat8(tri.v1.y,tri.v3.y),
-                     vfloat8(tri.v1.z,tri.v3.z));
-        Vec3vf8 vtx1(vfloat8(tri.v0.x),
-                     vfloat8(tri.v0.y),
-                     vfloat8(tri.v0.z));
-        Vec3vf8 vtx2(vfloat8(tri.v2.x),
-                     vfloat8(tri.v2.y),
-                     vfloat8(tri.v2.z));
+        Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
+        Vec3vf8 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
+        Vec3vf8 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
         vint8   geomIDs(tri.geomIDs); 
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         vint8   flags(tri.flags);
-        pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<2*M,2*M,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); // FIXME: 2*M,16         
+        pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
-                       vfloat8(tri.v1.y,tri.v3.y),
-                       vfloat8(tri.v1.z,tri.v3.z));
-          Vec3vf8 vtx1(vfloat8(tri.v0.x),
-                       vfloat8(tri.v0.y),
-                       vfloat8(tri.v0.z));
-          Vec3vf8 vtx2(vfloat8(tri.v2.x),
-                       vfloat8(tri.v2.y),
-                       vfloat8(tri.v2.z));
+          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf8 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
+          Vec3vf8 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
           vint8   flags(tri.flags);
-          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<2*M,2*M,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); // FIXME: 2*M,16         
-          return false;
+          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
       };
 
+
+    /*! Intersects 4 triangle pairs with 1 ray using AVX512KNL */
+    template<bool filter>
+      struct TrianglePairsMIntersector1MoellerTrumbore<4,16,filter>
+      {
+        typedef TrianglePairsMv<4> Primitive;
+        typedef MoellerTrumboreIntersectorPairs1<16> Precalculations;
+        
+        /*! Intersect a ray with the M triangles and updates the hit. */
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(normal.trav_prims,1,1,1);
+          Vec3vf16 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf16 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
+          Vec3vf16 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
+          vint16   geomIDs(tri.geomIDs); 
+          vint16   primIDs(vint8(tri.primIDs,tri.primIDs+1));
+          vint16   flags(tri.flags);
+          pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<16,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+        }
+        
+        /*! Test if the ray is occluded by one of M triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(shadow.trav_prims,1,1,1);
+          Vec3vf16 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
+          Vec3vf16 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
+          Vec3vf16 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
+          vint16   geomIDs(tri.geomIDs); 
+          vint16   primIDs(vint8(tri.primIDs,tri.primIDs+1));
+          vint16   flags(tri.flags);
+          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<16,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+        }
+      };
+
+#endif
 
     /*! Intersects M triangles with K rays. */
     template<int M, int K, bool filter>
