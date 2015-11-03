@@ -63,7 +63,7 @@ namespace embree
   {
   public:
     ThinDielectricMaterial (const Vec3fa& transmission, const float eta, const float thickness)
-    : ty(MATERIAL_THIN_DIELECTRIC), transmission(log(transmission)*thickness), eta(eta), thickness(thickness) {}
+    : ty(MATERIAL_THIN_DIELECTRIC), transmission(transmission), eta(eta), thickness(thickness), transmissionFactor(log(transmission)*thickness) {}
     
   public:
     int ty;
@@ -71,6 +71,7 @@ namespace embree
     Vec3fa transmission;
     float eta;
     float thickness;
+    Vec3fa transmissionFactor;
   };
   
   /*! OBJ material */

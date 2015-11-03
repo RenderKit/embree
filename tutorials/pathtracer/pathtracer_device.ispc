@@ -797,7 +797,7 @@ Vec3f ThinDielectricMaterial__sample(ThinDielectricMaterial* uniform This, const
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = make_Sample3f(neg(wo),1.0f);
   Sample3f wis = reflect_(wo,dg.Ns);
-  Vec3f ct = exp(make_Vec3f(This->transmission)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
+  Vec3f ct = exp(make_Vec3f(This->transmissionFactor)*rcp(cosThetaO))*make_Vec3f(1.0f-R);
   Vec3f cs = make_Vec3f(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
 }
