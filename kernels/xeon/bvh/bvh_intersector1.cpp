@@ -233,19 +233,19 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH4Bezier1vIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1vIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >);
     DEFINE_INTERSECTOR1(BVH4Bezier1iMBIntersector1_OBB,BVHNIntersector1<4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >);
-    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
   
 #if 1
     typedef Select2Intersector1<
-      TriangleMIntersector1MoellerTrumbore<4 COMMA true>,
+      TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true>,
       TriangleMvMBIntersector1MoellerTrumbore<4 COMMA true> > Intersector1_Triangle4Moeller_Triangle4vMBMoeller;
     DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_TN_AN1_AN2 COMMA false COMMA Intersector1_Triangle4Moeller_Triangle4vMBMoeller>);
 #else
-    DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_TN_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4XfmTriangle4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_TN_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
 #endif
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4Triangle8Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA 8 COMMA true> > >);
 #endif
     DEFINE_INTERSECTOR1(BVH4Triangle4vIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<TriangleMvIntersector1Pluecker<4 COMMA true> > >);
     DEFINE_INTERSECTOR1(BVH4Triangle4iIntersector1Pluecker,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<Triangle4iIntersector1Pluecker<true> > >);
@@ -267,8 +267,14 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA true> > >);
-    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA true> > >);
+
+#if defined(__AVX512F__)
+    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA 16 COMMA true> > >);
+#else
+    DEFINE_INTERSECTOR1(BVH8Triangle4Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH8Triangle8Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TriangleMIntersector1MoellerTrumbore<8 COMMA 8 COMMA true> > >);
+#endif
     DEFINE_INTERSECTOR1(BVH8Triangle4vMBIntersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<4 COMMA true> > >);
     DEFINE_INTERSECTOR1(BVH8TrianglePairs4Intersector1Moeller,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TrianglePairsMIntersector1MoellerTrumbore<4 COMMA true> > >);
 
@@ -276,5 +282,7 @@ namespace embree
     DEFINE_INTERSECTOR1(BVH8Bezier1iIntersector1_OBB,BVHNIntersector1<8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1> >);
     DEFINE_INTERSECTOR1(BVH8Bezier1iMBIntersector1_OBB,BVHNIntersector1<8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersector1<Bezier1iIntersector1MB> >);
 #endif
+
+
   }
 }

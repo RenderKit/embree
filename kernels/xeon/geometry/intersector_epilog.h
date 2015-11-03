@@ -30,7 +30,7 @@ namespace embree
         }
       };
     
-    template<int M, bool filter>
+    template<int M, int Mx, bool filter>
       struct Intersect1Epilog
       {
         Ray& ray;
@@ -47,11 +47,11 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
         {
-          vbool<M> valid = valid_i;
-          hit.finalize();
-          
+          vbool<Mx> valid = valid_i;
+          if (Mx > M) valid &= (1<<M)-1;
+          hit.finalize();          
           size_t i = select_min(valid,hit.vt);
           int geomID = geomIDs[i];
           int instID = geomID_to_instID ? geomID_to_instID[0] : geomID;
@@ -108,7 +108,7 @@ namespace embree
       };
     
     
-    template<int M, bool filter>
+    template<int M, int Mx, bool filter>
       struct Occluded1Epilog
       {
         Ray& ray;
@@ -125,11 +125,12 @@ namespace embree
           : ray(ray), geomIDs(geomIDs), primIDs(primIDs), scene(scene), geomID_to_instID(geomID_to_instID) {}
         
         template<typename Hit>
-        __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
+        __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
         {
           /* intersection filter test */
 #if defined(RTCORE_INTERSECTION_FILTER) || defined(RTCORE_RAY_MASK)
-          vbool<M> valid = valid_i;
+          vbool<Mx> valid = valid_i;
+          if (Mx > M) valid &= (1<<M)-1;
           size_t m=movemask(valid);
           goto entry;
           while (true)

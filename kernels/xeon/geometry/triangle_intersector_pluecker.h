@@ -287,14 +287,14 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Intersect1Epilog<M,M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); //FIXME: Mx,M
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1Epilog<M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID));
+          return pre.intersect(ray,tri.v0,tri.v1,tri.v2,UVIdentity<M>(),Occluded1Epilog<M,M,filter>(ray,tri.geomIDs,tri.primIDs,scene,geomID_to_instID)); //FIXME: Mx,M
         }
       };
     
