@@ -96,11 +96,7 @@ namespace embree
   {
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcGetError);
-    if (g_device == nullptr) return RTC_UNKNOWN_ERROR;
-    RTCError* stored_error = g_device->error();
-    RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
-    return error;
+    return g_device->getErrorCode(); // g_device == nullptr is supported
     RTCORE_CATCH_END(g_device);
     return RTC_UNKNOWN_ERROR;
   }
@@ -110,11 +106,7 @@ namespace embree
     Device* device = (Device*) hdevice;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcDeviceGetError);
-    RTCORE_VERIFY_HANDLE(hdevice);
-    RTCError* stored_error = device->error();
-    RTCError error = *stored_error;
-    *stored_error = RTC_NO_ERROR;
-    return error;
+    return device->getErrorCode(); // device == nullptr is supported
     RTCORE_CATCH_END(device);
     return RTC_UNKNOWN_ERROR;
   }
