@@ -67,7 +67,7 @@ namespace embree
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
-      TravRay<Nx> vray(ray.org,ray.dir);
+      TravRay<N,Nx> vray(ray.org,ray.dir);
       vfloat<Nx> ray_near(ray.tnear);
       vfloat<Nx> ray_far (ray.tfar);
 
@@ -163,7 +163,7 @@ namespace embree
       /*! load the ray into SIMD registers */
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
-      TravRay<Nx> vray(ray.org,ray.dir);
+      TravRay<N,Nx> vray(ray.org,ray.dir);
       const vfloat<Nx> ray_near(ray.tnear);
       vfloat<Nx> ray_far (ray.tfar);
 

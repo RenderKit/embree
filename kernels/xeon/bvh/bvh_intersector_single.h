@@ -75,7 +75,7 @@ namespace embree
 	stack[0].dist = neg_inf;
 	
 	/*! load the ray into SIMD registers */
-        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
+        TravRay<N,N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/* pop loop */
@@ -139,7 +139,7 @@ namespace embree
 	stack[0]  = root;
       
 	/*! load the ray into SIMD registers */
-        TravRay<N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
+        TravRay<N,N> vray(k,ray_org,ray_dir,ray_rdir,nearXYZ);
         const vfloat<N> ray_near(ray_tnear[k]), ray_far(ray_tfar[k]);
 	
 	/* pop loop */

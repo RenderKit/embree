@@ -155,7 +155,7 @@ namespace embree
       typedef BVH4::BaseNode BaseNode;
 
     public:
-
+      // FIXME: optimize sequence
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
                                                    const vfloat16& tNear,
@@ -210,6 +210,7 @@ namespace embree
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
       }
 
+      // FIXME: optimize sequence
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
                                                const vfloat16& tNear,
@@ -265,15 +266,15 @@ namespace embree
       typedef BVH8::BaseNode BaseNode;
 
     public:
+
+      // FIXME: optimize sequence
       static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   const BaseNode* node,
                                                    size_t mask,
                                                    const vfloat16& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
-        //const BaseNode* node = cur.baseNode(types);
-
+        const BaseNode* node = cur.baseNode(types);
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         if (likely(mask == 0)) {
@@ -335,18 +336,10 @@ namespace embree
         }
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
+
       }
 
-      static __forceinline void traverseClosestHit(NodeRef& cur,
-                                                   size_t mask,
-                                                   const vfloat16& tNear,
-                                                   StackItemT<NodeRef>*& stackPtr,
-                                                   StackItemT<NodeRef>* stackEnd)
-      {
-        const BaseNode* node = cur.baseNode(types);
-        traverseClosestHit(cur,node,mask,tNear,stackPtr,stackEnd);
-      }
-
+      // FIXME: optimize sequence
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
                                                const vfloat16& tNear,
@@ -565,17 +558,17 @@ namespace embree
       typedef typename BVH::TransformNode TransformNode;
 
     public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<Nx>& vray)
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N,Nx>& vray)
 #if ENABLE_TRANSFORM_CACHE
         : cacheSlot(0), cacheTag(-1)
 #endif
       {
-        new (&tlray) TravRay<N>(vray);
+        new (&tlray) TravRay<N,Nx>(vray);
       }
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<Nx>& vray,
+                                           TravRay<N,Nx>& vray,
                                            size_t& leafType,
                                            const unsigned int*& geomID_to_instID,
                                            StackItemT<NodeRef>*& stackPtr,
@@ -604,9 +597,9 @@ namespace embree
 #endif
             //if (likely(!node->identity)) 
           {
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<Nx>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<Nx>&)tlray).dir_xyz);  
-            new (&vray) TravRay<Nx>(ray_org,ray_dir);
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N,Nx>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N,Nx>&)tlray).dir_xyz);  
+            new (&vray) TravRay<N,Nx>(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
@@ -625,9 +618,9 @@ namespace embree
         {
           leafType = 0;
           geomID_to_instID = nullptr;
-          vray = (TravRay<Nx>&) tlray;
-          ray.org = ((TravRay<Nx>&)tlray).org_xyz;
-          ray.dir = ((TravRay<Nx>&)tlray).dir_xyz;
+          vray = (TravRay<N,Nx>&) tlray;
+          ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
+          ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
           return true;
         }
 
@@ -636,7 +629,7 @@ namespace embree
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<Nx>& vray,
+                                           TravRay<N,Nx>& vray,
                                            size_t& leafType,
                                            const unsigned int*& geomID_to_instID,
                                            NodeRef*& stackPtr,
@@ -665,9 +658,9 @@ namespace embree
 #endif
             //if (likely(!node->identity)) 
           {
-            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<Nx>&)tlray).org_xyz);
-            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<Nx>&)tlray).dir_xyz);
-            new (&vray) TravRay<Nx>(ray_org,ray_dir);
+            const Vec3fa ray_org = xfmPoint (node->world2local,((TravRay<N,Nx>&)tlray).org_xyz);
+            const Vec3fa ray_dir = xfmVector(node->world2local,((TravRay<N,Nx>&)tlray).dir_xyz);
+            new (&vray) TravRay<N,Nx>(ray_org,ray_dir);
             ray.org = ray_org;
             ray.dir = ray_dir;
 #if ENABLE_TRANSFORM_CACHE
@@ -686,9 +679,9 @@ namespace embree
         {
           leafType = 0;
           geomID_to_instID = nullptr;
-          vray = (TravRay<Nx>&) tlray;
-          ray.org = ((TravRay<Nx>&)tlray).org_xyz;
-          ray.dir = ((TravRay<Nx>&)tlray).dir_xyz;
+          vray = (TravRay<N,Nx>&) tlray;
+          ray.org = ((TravRay<N,Nx>&)tlray).org_xyz;
+          ray.dir = ((TravRay<N,Nx>&)tlray).dir_xyz;
           return true;
         }
 
@@ -696,13 +689,13 @@ namespace embree
       }
 
     private:
-      TravRay<Nx> tlray;
+      TravRay<N,Nx> tlray;
 
 #if ENABLE_TRANSFORM_CACHE
     private:
       unsigned int cacheSlot;
       vintx cacheTag;
-      TravRay<Nx> cacheEntry[VSIZEX];
+      TravRay<N,Nx> cacheEntry[VSIZEX];
 #endif
     };
 
@@ -713,11 +706,11 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
 
     public:
-      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<Nx>& vray) {}
+      __forceinline explicit BVHNNodeTraverser1Transform(const TravRay<N,Nx>& vray) {}
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<Nx>& vray,
+                                           TravRay<N,Nx>& vray,
                                            size_t& leafType,
                                            const unsigned int*& geomID_to_instID,
                                            StackItemT<NodeRef>*& stackPtr,
@@ -728,7 +721,7 @@ namespace embree
 
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
-                                           TravRay<Nx>& vray,
+                                           TravRay<N,Nx>& vray,
                                            size_t& leafType,
                                            const unsigned int*& geomID_to_instID,
                                            NodeRef*& stackPtr,
@@ -743,7 +736,7 @@ namespace embree
       class BVHNNodeTraverser1 : public BVHNNodeTraverser1Hit<N, Nx, types>, public BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>
     {
     public:
-      __forceinline explicit BVHNNodeTraverser1(const TravRay<Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
+      __forceinline explicit BVHNNodeTraverser1(const TravRay<N,Nx>& vray) : BVHNNodeTraverser1Transform<N, Nx, types, (bool)(types & BVH_FLAG_TRANSFORM_NODE)>(vray) {}
     };
   }
 }

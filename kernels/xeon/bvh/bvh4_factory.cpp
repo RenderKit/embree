@@ -193,8 +193,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4Intersector1Moeller);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4XfmTriangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2         (features,BVH4Triangle8Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
@@ -202,7 +202,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2         (features,BVH4TrianglePairs4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 

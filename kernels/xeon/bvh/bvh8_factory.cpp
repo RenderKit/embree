@@ -97,13 +97,13 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
 
     /* select intersectors1 */
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1vIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Bezier1iMBIntersector1_OBB);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4Intersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle8Intersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8Triangle4vMBIntersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH8TrianglePairs4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1vIntersector1_OBB);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iIntersector1_OBB);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Bezier1iMBIntersector1_OBB);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle8Intersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBIntersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 

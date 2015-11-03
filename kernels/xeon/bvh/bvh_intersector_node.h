@@ -22,7 +22,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int N>
+    template<int N, int Nx>
       struct TravRay 
     {
       __forceinline TravRay () {}
@@ -82,9 +82,9 @@ namespace embree
       }
 
       Vec3fa org_xyz, dir_xyz;
-      Vec3<vfloat<N>> org, dir, rdir;
+      Vec3<vfloat<Nx>> org, dir, rdir;
 #if defined(__AVX2__)
-      Vec3<vfloat<N>> org_rdir;
+      Vec3<vfloat<Nx>> org_rdir;
 #endif
       size_t nearX, nearY, nearZ;
       size_t farX, farY, farZ;
@@ -92,7 +92,7 @@ namespace embree
 
     /*! intersection with single rays */
     template<int N,int Nx>
-      __forceinline size_t intersectNodeRobust(const typename BVHN<N>::Node* node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, vfloat<Nx>& dist) 
+      __forceinline size_t intersectNodeRobust(const typename BVHN<N>::Node* node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, vfloat<Nx>& dist) 
     {      
       const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
       const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
@@ -113,7 +113,7 @@ namespace embree
 #if defined(__AVX512F__)
 
     template<>
-      __forceinline size_t intersectNodeRobust<4,16>(const typename BVHN<4>::Node* node, const TravRay<16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
+      __forceinline size_t intersectNodeRobust<4,16>(const typename BVHN<4>::Node* node, const TravRay<4,16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
     {      
       const vfloat16 tNearX = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
       const vfloat16 tNearY = (vfloat16(*(vfloat<4>*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
@@ -132,7 +132,7 @@ namespace embree
     }
 
     template<>
-      __forceinline size_t intersectNodeRobust<8,16>(const typename BVHN<8>::Node* node, const TravRay<16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
+      __forceinline size_t intersectNodeRobust<8,16>(const typename BVHN<8>::Node* node, const TravRay<8,16>& ray, const vfloat<16>& tnear, const vfloat<16>& tfar, vfloat<16>& dist) 
     {      
       const vfloat16 tNearX = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir.x;
       const vfloat16 tNearY = (vfloat16(*(vfloat<8>*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir.y;
@@ -156,10 +156,10 @@ namespace embree
 
     /*! intersection with single rays */
     template<int N, int Nx>
-      __forceinline size_t intersectNode(const typename BVHN<N>::Node* node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, vfloat<Nx>& dist);
+      __forceinline size_t intersectNode(const typename BVHN<N>::Node* node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, vfloat<Nx>& dist);
 
     template<>
-      __forceinline size_t intersectNode<4,4>(const typename BVH4::Node* node, const TravRay<4>& ray, const vfloat4& tnear, const vfloat4& tfar, vfloat4& dist)
+      __forceinline size_t intersectNode<4,4>(const typename BVH4::Node* node, const TravRay<4,4>& ray, const vfloat4& tnear, const vfloat4& tfar, vfloat4& dist)
     {
 #if defined (__AVX2__)
       const vfloat4 tNearX = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
@@ -195,7 +195,7 @@ namespace embree
 #if defined(__AVX__)
 
     template<>
-      __forceinline size_t intersectNode<8,8>(const typename BVH8::Node* node, const TravRay<8>& ray, const vfloat8& tnear, const vfloat8& tfar, vfloat8& dist)
+      __forceinline size_t intersectNode<8,8>(const typename BVH8::Node* node, const TravRay<8,8>& ray, const vfloat8& tnear, const vfloat8& tfar, vfloat8& dist)
     {
 #if defined (__AVX2__)
       const vfloat8 tNearX = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
@@ -233,7 +233,7 @@ namespace embree
 #if defined(__AVX512F__)
 
     template<>
-      __forceinline size_t intersectNode<4,16>(const typename BVH4::Node* node, const TravRay<16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
+      __forceinline size_t intersectNode<4,16>(const typename BVH4::Node* node, const TravRay<4,16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
     {
       const vfloat16 tNearX = msub(vfloat16(*(vfloat4*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(vfloat16(*(vfloat4*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
@@ -250,7 +250,7 @@ namespace embree
     }
 
     template<>
-      __forceinline size_t intersectNode<8,16>(const typename BVH8::Node* node, const TravRay<16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
+      __forceinline size_t intersectNode<8,16>(const typename BVH8::Node* node, const TravRay<8,16>& ray, const vfloat16& tnear, const vfloat16& tfar, vfloat16& dist)
     {
       const vfloat16 tNearX = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tNearY = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
@@ -319,7 +319,7 @@ namespace embree
 
     /*! intersection with single rays */
     template<int N>
-    __forceinline size_t intersectNode(const typename BVHN<N>::NodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
+      __forceinline size_t intersectNode(const typename BVHN<N>::NodeMB* node, const TravRay<N,N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
       const vfloat<N>* pNearX = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearX);
       const vfloat<N>* pNearY = (const vfloat<N>*)((const char*)&node->lower_x+ray.nearY);
@@ -377,7 +377,7 @@ namespace embree
 
     /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNode* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
+      __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNode* node, const TravRay<N,N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, vfloat<N>& dist)
     {
       const Vec3<vfloat<N>> dir = xfmVector(node->naabb,ray.dir);
       //const Vec3<vfloat<N>> nrdir = Vec3<vfloat<N>>(vfloat<N>(-1.0f))/dir;
@@ -401,7 +401,7 @@ namespace embree
 
      /*! intersect N OBBs with single ray */
     template<int N>
-      __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
+      __forceinline size_t intersectNode(const typename BVHN<N>::UnalignedNodeMB* node, const TravRay<N,N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist)
     {
       const vfloat<N> t0 = vfloat<N>(1.0f)-time, t1 = time;
 
@@ -439,7 +439,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
         mask = intersectNode<N,Nx>(node.node(),ray,tnear,tfar,dist);
         return true;
@@ -449,7 +449,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1,true>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<Nx>& tnear, const vfloat<Nx>& tfar, const float time, vfloat<Nx>& dist, size_t& mask)
       {
         mask = intersectNodeRobust<N,Nx>(node.node(),ray,tnear,tfar,dist);
         return true;
@@ -459,7 +459,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN2,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
         mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
         return true;
@@ -469,7 +469,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN1_UN1,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
         if (likely(node.isNode()))                 mask = intersectNode<N,N>(node.node(),ray,tnear,tfar,dist);
         else if (unlikely(node.isUnalignedNode())) mask = intersectNode<N>(node.unalignedNode(),ray,tnear,tfar,dist);
@@ -480,7 +480,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_AN2_UN2,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
         if (likely(node.isNodeMB()))            mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
         if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode<N>(node.unalignedNodeMB(),ray,tnear,tfar,time,dist);
@@ -491,7 +491,7 @@ namespace embree
     template<int N, int Nx>
       struct BVHNNodeIntersector1<N,Nx,BVH_TN_AN1_AN2,false>
     {
-      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx>& ray, const vfloat<N>& tnear, const vfloat<N>& tfar, const float time, vfloat<N>& dist, size_t& mask)
       {
         if (likely(node.isNode()))        mask = intersectNode<N,N>(node.node(),ray,tnear,tfar,dist);
         else if (likely(node.isNodeMB())) mask = intersectNode<N>(node.nodeMB(),ray,tnear,tfar,time,dist);
