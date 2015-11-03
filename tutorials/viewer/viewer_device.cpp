@@ -176,7 +176,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
-  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
+  unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
   mesh->geomID = geomID;												
   for (size_t i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
