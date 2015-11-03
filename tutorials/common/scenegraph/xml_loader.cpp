@@ -669,10 +669,10 @@ namespace embree
       return textureMap[id];
 
     Texture* texture = nullptr;
-    const std::string src = xml->parm("src");
+    const FileName src = path+xml->parm("src");
 
     /*! load texture from file */
-    if (src != "") {
+    if (src.str() != "") {
       texture = Texture::load(src);
     }
 

@@ -30,8 +30,8 @@ namespace embree
   Texture::Texture () 
     : width(-1), height(-1), format(INVALID), bytesPerTexel(0), data(nullptr), width_mask(0), height_mask(0) {}
   
-  Texture::Texture(Ref<Image> img)
-    : width(img->width), height(img->height), format(RGBA8), bytesPerTexel(4), data(nullptr), width_mask(0), height_mask(0) 
+  Texture::Texture(Ref<Image> img, const std::string fileName)
+    : width(img->width), height(img->height), format(RGBA8), bytesPerTexel(4), data(nullptr), width_mask(0), height_mask(0), fileName(fileName)
   {
     width_mask  = isPowerOf2(width) ? width-1 : 0;
     height_mask = isPowerOf2(height) ? height-1 : 0;
@@ -89,6 +89,6 @@ namespace embree
     if (texture_cache.find(fileName.str()) != texture_cache.end())
       return texture_cache[fileName.str()];
 
-    return texture_cache[fileName.str()] = new Texture(loadImage(fileName));
+    return texture_cache[fileName.str()] = new Texture(loadImage(fileName),fileName);
   }
 }

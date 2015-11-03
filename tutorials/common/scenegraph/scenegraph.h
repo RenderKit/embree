@@ -196,7 +196,7 @@ namespace embree
 
   public:
     static Ref<Node> load(const FileName& fname);
-    static void store(Ref<SceneGraph::Node> root, const FileName& fname);
+    static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
   };
 }

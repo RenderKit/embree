@@ -20,6 +20,6 @@
 
 namespace embree
 {
-  void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName);
+  void storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures);
 }
 

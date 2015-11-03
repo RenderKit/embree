@@ -32,7 +32,7 @@ namespace embree
     
   public:
     Texture (); 
-    Texture (Ref<Image> image); 
+    Texture (Ref<Image> image, const std::string fileName); 
     Texture (size_t width, size_t height, const Format format, const char* in = nullptr);
     ~Texture ();
 
@@ -50,5 +50,6 @@ namespace embree
     int width_mask;
     int height_mask;
     void* data;
+    std::string fileName;
   };
 }
