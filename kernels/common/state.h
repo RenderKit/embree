@@ -47,9 +47,6 @@ namespace embree
     /*! checks if verbosity level is at least N */
     bool verbosity(int N);
 
-    /*! returns thread local error code */
-    RTCError* error();
-
     /*! checks if some particular ISA is enabled */
     bool hasISA(const int isa);
 
@@ -98,9 +95,20 @@ namespace embree
     int enabled_cpu_features;              //!< CPU ISA features to use
 
   public:
-    tls_t thread_error;
-    std::vector<RTCError*> thread_errors;
-    MutexSys errors_mutex;
+    struct ErrorHandler
+    {
+    public:
+      ErrorHandler();
+      ~ErrorHandler();
+      RTCError* error();
+
+    public:
+      tls_t thread_error;
+      std::vector<RTCError*> thread_errors;
+      MutexSys errors_mutex;
+    };
+    ErrorHandler errorHandler;
+    static ErrorHandler g_errorHandler;
 
   public:
     RTCErrorFunc error_function;

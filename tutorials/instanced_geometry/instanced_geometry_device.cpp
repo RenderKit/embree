@@ -20,8 +20,11 @@
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   printf("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -129,6 +132,8 @@ unsigned int g_instance0 = -1;
 unsigned int g_instance1 = -1;
 unsigned int g_instance2 = -1;
 unsigned int g_instance3 = -1;
+AffineSpace3fa instance_xfm[4];
+LinearSpace3fa normal_xfm[4];
 
 Vec3fa colors[4][4];
 
@@ -137,6 +142,7 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -207,13 +213,20 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3fa diffuse = Vec3fa(1,1,1);
+    /* calculate shading normal in world space */
+    Vec3fa Ns = ray.Ng;
     if (ray.instID != -1)
+      Ns = xfmVector(normal_xfm[ray.instID],Ns);
+    Ns = normalize(Ns);
+
+    /* calculate diffuse color of geometries */
+    Vec3fa diffuse = Vec3fa(1,1,1);
+    if (ray.instID != -1) 
       diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
-    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
-    
+        
     /* initialize shadow ray */
+    Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
@@ -229,7 +242,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
+      color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
 }
@@ -276,23 +289,30 @@ extern "C" void device_render (int* pixels,
                            const Vec3fa& vz, 
                            const Vec3fa& p)
 {
-  /* create identity matrix */
-  AffineSpace3fa xfm;
-  xfm.l.vx = Vec3fa(1,0,0);
-  xfm.l.vy = Vec3fa(0,1,0);
-  xfm.l.vz = Vec3fa(0,0,1);
-  xfm.p    = Vec3fa(0,0,0);
-  float t = 0.7f*time;
+  float t0 = 0.7f*time;
+  float t1 = 1.5f*time;
 
-  /* move instances */
-  xfm.p = 2.0f*Vec3fa(+cos(t),0.0f,+sin(t));
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(-cos(t),0.0f,-sin(t));
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(-sin(t),0.0f,+cos(t));
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
-  xfm.p = 2.0f*Vec3fa(+sin(t),0.0f,-cos(t));
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&xfm);
+  /* rotate instances around themselves */
+  LinearSpace3fa xfm;
+  xfm.vx = Vec3fa(cos(t1),0,sin(t1));
+  xfm.vy = Vec3fa(0,1,0);
+  xfm.vz = Vec3fa(-sin(t1),0,cos(t1));
+
+  /* calculate transformations to move instances in cirle */
+  for (int i=0; i<4; i++) {
+    float t = t0+i*2.0f*float(pi)/4.0f;
+    instance_xfm[i] = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t),0.0f,+sin(t)));
+  }
+
+  /* calculate transformations to properly transform normals */
+  for (int i=0; i<4; i++)
+    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
+
+  /* set instance transformations */
+  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0]);
+  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[1]);
+  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[2]);
+  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[3]);
 
   /* update scene */
   rtcUpdate(g_scene,g_instance0);

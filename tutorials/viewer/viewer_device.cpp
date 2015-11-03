@@ -114,8 +114,11 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   printf("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -150,6 +153,7 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);

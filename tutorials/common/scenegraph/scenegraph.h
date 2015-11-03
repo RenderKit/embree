@@ -152,6 +152,7 @@ namespace embree
       void verify() const;
       
       avector<Vec3fa> positions;            //!< vertex positions
+      avector<Vec3fa> positions2;           //!< vertex positions for 2nd timestep
       avector<Vec3fa> normals;              //!< face vertex normals
       std::vector<Vec2f> texcoords;             //!< face texture coordinates
       std::vector<int> position_indices;        //!< position indices for all faces

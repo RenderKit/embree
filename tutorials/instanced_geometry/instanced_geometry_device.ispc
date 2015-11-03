@@ -20,8 +20,11 @@
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   print("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
@@ -129,6 +132,8 @@ uniform unsigned int g_instance0 = -1;
 uniform unsigned int g_instance1 = -1;
 uniform unsigned int g_instance2 = -1;
 uniform unsigned int g_instance3 = -1;
+uniform AffineSpace3f instance_xfm[4];
+uniform LinearSpace3f normal_xfm[4];
 
 uniform Vec3f colors[4][4];
 
@@ -137,6 +142,7 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -207,13 +213,20 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    Vec3f diffuse = make_Vec3f(1,1,1);
+    /* calculate shading normal in world space */
+    Vec3f Ns = ray.Ng;
     if (ray.instID != -1)
+      Ns = xfmVector(normal_xfm[ray.instID],Ns);
+    Ns = normalize(Ns);
+
+    /* calculate diffuse color of geometries */
+    Vec3f diffuse = make_Vec3f(1,1,1);
+    if (ray.instID != -1) 
       diffuse = colors[ray.instID][ray.geomID];
     color = color + diffuse*0.5;
-    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
-    
+        
     /* initialize shadow ray */
+    Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
     RTCRay shadow;
     shadow.org = ray.org + ray.tfar*ray.dir;
     shadow.dir = neg(lightDir);
@@ -229,7 +242,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
 
     /* add light contribution */
     if (shadow.geomID)
-      color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
+      color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
 }
@@ -276,23 +289,30 @@ export void device_render (uniform int* uniform pixels,
                            const uniform Vec3f& vz, 
                            const uniform Vec3f& p)
 {
-  /* create identity matrix */
-  uniform AffineSpace3f xfm;
-  xfm.l.vx = make_Vec3f(1,0,0);
-  xfm.l.vy = make_Vec3f(0,1,0);
-  xfm.l.vz = make_Vec3f(0,0,1);
-  xfm.p    = make_Vec3f(0,0,0);
-  uniform float t = 0.7f*time;
+  uniform float t0 = 0.7f*time;
+  uniform float t1 = 1.5f*time;
 
-  /* move instances */
-  xfm.p = 2.0f*make_Vec3f(+cos(t),0.0f,+sin(t));
-  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = 2.0f*make_Vec3f(-cos(t),0.0f,-sin(t));
-  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = 2.0f*make_Vec3f(-sin(t),0.0f,+cos(t));
-  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
-  xfm.p = 2.0f*make_Vec3f(+sin(t),0.0f,-cos(t));
-  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&xfm);
+  /* rotate instances around themselves */
+  uniform LinearSpace3f xfm;
+  xfm.vx = make_Vec3f(cos(t1),0,sin(t1));
+  xfm.vy = make_Vec3f(0,1,0);
+  xfm.vz = make_Vec3f(-sin(t1),0,cos(t1));
+
+  /* calculate transformations to move instances in cirle */
+  for (uniform int i=0; i<4; i++) {
+    uniform float t = t0+i*2.0f*M_PI/4.0f;
+    instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));
+  }
+
+  /* calculate transformations to properly transform normals */
+  for (uniform int i=0; i<4; i++)
+    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
+
+  /* set instance transformations */
+  rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[0]);
+  rtcSetTransform(g_scene,g_instance1,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[1]);
+  rtcSetTransform(g_scene,g_instance2,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[2]);
+  rtcSetTransform(g_scene,g_instance3,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[3]);
 
   /* update scene */
   rtcUpdate(g_scene,g_instance0);

@@ -45,6 +45,30 @@
 
 namespace embree
 {
+  /* error reporting function */
+  void error_handler(const RTCError code, const char* str = nullptr)
+  {
+    if (code == RTC_NO_ERROR) 
+      return;
+
+    printf("Embree: ");
+    switch (code) {
+    case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+    case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+    case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+    case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+    case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+    case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
+    default                   : printf("invalid error code"); break;
+    }
+    if (str) { 
+      printf(" ("); 
+      while (*str) putchar(*str++); 
+      printf(")\n"); 
+    }
+    exit(1);
+  }
+
   bool hasISA(const int isa) 
   {
     int cpu_features = getCPUFeatures();
@@ -3618,10 +3642,12 @@ namespace embree
 
     /* print Embree version */
     rtcInit("verbose=1");
+    error_handler(rtcGetError());
     rtcExit();
     
     /* perform tests */
     g_device = rtcNewDevice(g_rtcore.c_str());
+    error_handler(rtcDeviceGetError(g_device));
     //POSITIVE("regression_static",         rtcore_regression(rtcore_regression_static_thread,0));
     //POSITIVE("regression_dynamic",        rtcore_regression(rtcore_regression_dynamic_thread,0));
     //POSITIVE("regression_static_user_threads", rtcore_regression(rtcore_regression_static_thread,1));
@@ -3780,9 +3806,12 @@ namespace embree
     /* test creation of multiple devices */
 #if !defined(__MIC__)
     RTCDevice device1 = rtcNewDevice("threads=4");
+    error_handler(rtcDeviceGetError(device1));
     rtcDeleteDevice(g_device);
     RTCDevice device2 = rtcNewDevice("threads=8");
+    error_handler(rtcDeviceGetError(device2));
     RTCDevice device3 = rtcNewDevice("threads=12");
+    error_handler(rtcDeviceGetError(device3));
     rtcDeleteDevice(device1);
     rtcDeleteDevice(device3);
     rtcDeleteDevice(device2);

@@ -16,6 +16,7 @@
 
 #include "xml_loader.h"
 #include "xml_parser.h"
+#include "obj_loader.h"
 
 namespace embree
 {
@@ -869,6 +870,8 @@ namespace embree
     SceneGraph::SubdivMeshNode* mesh = new SceneGraph::SubdivMeshNode(material);
     std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
     for (size_t i=0; i<positions.size(); i++) mesh->positions.push_back(positions[i]);
+    std::vector<Vec3f> positions2 = loadVec3fArray(xml->childOpt("positions2"));
+    for (size_t i=0; i<positions2.size(); i++) mesh->positions2.push_back(positions2[i]);
     std::vector<Vec3f> normals = loadVec3fArray(xml->childOpt("normals"));
     for (size_t i=0; i<normals.size(); i++) mesh->normals.push_back(normals[i]);
     mesh->texcoords = loadVec2fArray(xml->childOpt("texcoords"));
@@ -959,7 +962,10 @@ namespace embree
     {
       const std::string id = xml->parm("id");
       if      (xml->name == "extern"          ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src"));
-      else if (xml->name == "obj"             ) return sceneMap[id] = SceneGraph::load(path + xml->parm("src")); // only for compatibility reasons
+      else if (xml->name == "obj"             ) {
+        const bool subdiv_mode = xml->parm("subdiv") == "1";
+        return sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
+      }
       else if (xml->name == "ref"             ) return sceneMap[id] = sceneMap[xml->parm("id")];
       else if (xml->name == "PointLight"      ) return sceneMap[id] = loadPointLight      (xml);
       else if (xml->name == "SpotLight"       ) return sceneMap[id] = loadSpotLight       (xml);

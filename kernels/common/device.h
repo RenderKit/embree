@@ -40,6 +40,15 @@ namespace embree
     /*! prints info about the device */
     void print();
 
+    /*! sets the error code */
+    void setErrorCode(RTCError error);
+
+    /*! returns and clears the error code */
+    RTCError getErrorCode();
+
+    /*! returns thread local error code storage location */
+    RTCError* getError();
+
     /*! processes error codes, do not call directly */
     void process_error(RTCError error, const char* str);
 
@@ -51,9 +60,9 @@ namespace embree
 
     /*! configures some parameter */
     void setParameter1i(const RTCParameter parm, ssize_t val);
-    
+
   private:
-    
+
     /*! initializes the tasking system */
     void initTaskingSystem(size_t numThreads);
 

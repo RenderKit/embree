@@ -24,8 +24,11 @@ namespace embree
   struct Triangle { int v0, v1, v2; };
 
   /* error reporting function */
-  void error_handler(const RTCError code, const char* str)
+  void error_handler(const RTCError code, const char* str = NULL)
   {
+    if (code == RTC_NO_ERROR) 
+      return;
+
     printf("Embree: ");
     switch (code) {
     case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -221,6 +224,7 @@ namespace embree
 
     /* create new Embree device and force bvh4.triangle4v hierarchy for triangles */
     RTCDevice device = rtcNewDevice("tri_accel=bvh4.triangle4v");
+    error_handler(rtcDeviceGetError(device));
     
     /* set error handler */
     rtcDeviceSetErrorFunction(device,error_handler);

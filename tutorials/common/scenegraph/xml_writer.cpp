@@ -394,6 +394,7 @@ namespace embree
     open("SubdivisionMesh",id);
     store(mesh->material);
     store("positions",mesh->positions);
+    if (mesh->positions2.size()) store("positions2",mesh->positions2);
     store("normals",mesh->normals);
     store("texcoords",mesh->texcoords);
     store("position_indices",mesh->position_indices);

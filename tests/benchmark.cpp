@@ -46,6 +46,30 @@ namespace embree
     return (cpu_features & isa) == isa;
   }
 
+  /* error reporting function */
+  void error_handler(const RTCError code, const char* str = nullptr)
+  {
+    if (code == RTC_NO_ERROR) 
+      return;
+
+    printf("Embree: ");
+    switch (code) {
+    case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
+    case RTC_INVALID_ARGUMENT : printf("RTC_INVALID_ARGUMENT"); break;
+    case RTC_INVALID_OPERATION: printf("RTC_INVALID_OPERATION"); break;
+    case RTC_OUT_OF_MEMORY    : printf("RTC_OUT_OF_MEMORY"); break;
+    case RTC_UNSUPPORTED_CPU  : printf("RTC_UNSUPPORTED_CPU"); break;
+    case RTC_CANCELLED        : printf("RTC_CANCELLED"); break;
+    default                   : printf("invalid error code"); break;
+    }
+    if (str) { 
+      printf(" ("); 
+      while (*str) putchar(*str++); 
+      printf(")\n"); 
+    }
+    exit(1);
+  }
+
   RTCAlgorithmFlags aflags = (RTCAlgorithmFlags) (RTC_INTERSECT1 | RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
 
   /* configuration */
@@ -582,6 +606,7 @@ namespace embree
     double run(size_t numThreads)
     {
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       
@@ -621,6 +646,7 @@ namespace embree
     double run(size_t numThreads)
     {
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
@@ -662,6 +688,7 @@ namespace embree
     double run(size_t numThreads)
     {
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
       std::vector<RTCScene> scenes;
@@ -753,6 +780,7 @@ namespace embree
     double run (size_t numThreads)
     {
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
@@ -833,6 +861,7 @@ namespace embree
     double run (size_t numThreads)
     {
       RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
 
       int numPhi = 501;
       RTCSceneFlags flags = RTC_SCENE_STATIC;
@@ -1041,6 +1070,7 @@ namespace embree
   void rtcore_intersect_benchmark(RTCSceneFlags flags, size_t numPhi)
   {
     RTCDevice device = rtcNewDevice(g_rtcore.c_str());
+    error_handler(rtcDeviceGetError(device));
 
     RTCScene scene = rtcDeviceNewScene(device,flags,aflags);
     addSphere (scene, RTC_GEOMETRY_STATIC, zero, 1, numPhi);

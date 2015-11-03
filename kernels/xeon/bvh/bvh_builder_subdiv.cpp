@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../bvh/bvh.h"
-#include "bvh4_refit.h"
-#include "../bvh/bvh_builder.h"
+#include "bvh.h"
+#include "bvh_refit.h"
+#include "bvh_builder.h"
 
 #include "../builders/primrefgen.h"
 #include "../builders/bvh_builder_sah.h"
@@ -37,16 +37,19 @@ namespace embree
   {
     typedef FastAllocator::ThreadLocal2 Allocator;
 
-    struct BVH4SubdivGridEagerBuilderBinnedSAHClass : public Builder
+    template<int N>
+    struct BVHNSubdivGridEagerBuilderBinnedSAHClass : public Builder
     {
       ALIGNED_STRUCT;
 
-      BVH4* bvh;
+      typedef BVHN<N> BVH;
+
+      BVH* bvh;
       Scene* scene;
       mvector<PrimRef> prims;
       ParallelForForPrefixSumState<PrimInfo> pstate;
       
-      BVH4SubdivGridEagerBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+      BVHNSubdivGridEagerBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
         : bvh(bvh), scene(scene), prims(scene->device) {}
 
       void build(size_t, size_t) 
@@ -64,12 +67,12 @@ namespace embree
         /* skip build for empty scene */
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
         bvh->alloc.reset();
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivGridEagerBuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivGridEagerBuilderBinnedSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -88,8 +91,8 @@ namespace embree
             {
               float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
               Vec2i grid = SubdivPatch1Base::computeGridSize(level);
-              size_t N = GridAOS::getNumEagerLeaves(grid.x-1,grid.y-1);
-              g+=N;
+              size_t num = GridAOS::getNumEagerLeaves(grid.x-1,grid.y-1);
+              g+=num;
               p++;
             });
           }
@@ -97,13 +100,13 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty,empty); });
         size_t numSubPatches = pinfo1.begin;
         if (numSubPatches == 0) {
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
 
         prims.resize(pinfo1.end);
         if (pinfo1.end == 0) {
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
 
@@ -118,9 +121,9 @@ namespace embree
             patch_eval_subdivision(mesh->getHalfEdge(f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(mesh->id,f,subPatch,mesh,uv,edge_level,subdiv,VSIZEX);
-              size_t N = GridAOS::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
-              assert(N == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
-              for (size_t i=0; i<N; i++)
+              size_t num = GridAOS::createEager(patch,scene,mesh,f,alloc,&prims[base.end+s.end]);
+              assert(num == GridAOS::getNumEagerLeaves(patch.grid_u_res-1,patch.grid_v_res-1));
+              for (size_t i=0; i<num; i++)
                 s.add(prims[base.end+s.end].bounds());
               s.begin++;
             });
@@ -136,7 +139,7 @@ namespace embree
           return 0;
         };
        
-        BVHNBuilder<BVH4::N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
+        BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
         
 	/* clear temporary data for static geometry */
 	if (scene->isStatic()) {
@@ -156,24 +159,27 @@ namespace embree
     // =======================================================================================================
     // =======================================================================================================
 
-    struct BVH4SubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVH4Refitter::LeafBoundsInterface
+    template<int N>
+    struct BVHNSubdivPatch1CachedBuilderBinnedSAHClass : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
       ALIGNED_STRUCT;
 
-      BVH4* bvh;
-      BVH4Refitter* refitter;
+      typedef BVHN<N> BVH;
+
+      BVH* bvh;
+      BVHNRefitter<N>* refitter;
       Scene* scene;
       mvector<PrimRef> prims; 
       mvector<BBox3fa> bounds; 
       ParallelForForPrefixSumState<PrimInfo> pstate;
       size_t numSubdivEnableDisableEvents;
 
-      BVH4SubdivPatch1CachedBuilderBinnedSAHClass (BVH4* bvh, Scene* scene)
+      BVHNSubdivPatch1CachedBuilderBinnedSAHClass (BVH* bvh, Scene* scene)
         : bvh(bvh), refitter(nullptr), scene(scene), prims(scene->device), bounds(scene->device), numSubdivEnableDisableEvents(0) {}
       
-      virtual const BBox3fa leafBounds (BVH4::NodeRef& ref) const 
+      virtual const BBox3fa leafBounds (typename BVH::NodeRef& ref) const
       {
-        if (ref == BVH4::emptyNode) return BBox3fa(empty);
+        if (ref == BVH::emptyNode) return BBox3fa(empty);
         size_t num; SubdivPatch1Cached *sptr = (SubdivPatch1Cached*)ref.leaf(num);
         const size_t index = ((size_t)sptr - (size_t)this->bvh->data_mem) / sizeof(SubdivPatch1Cached);
         return prims[index].bounds(); 
@@ -216,7 +222,7 @@ namespace embree
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bounds.resize(numPrimitives);
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
 
@@ -224,7 +230,7 @@ namespace embree
         if (!fastUpdateMode)
           bvh->alloc.reset();
 
-        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4SubdivPatch1CachedBuilderBinnedSAH");
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1CachedBuilderBinnedSAH");
 
         auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
         auto virtualprogress = BuildProgressMonitorFromClosure(progress);
@@ -251,7 +257,7 @@ namespace embree
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bounds.resize(numPrimitives);
-          bvh->set(BVH4::emptyNode,empty,0);
+          bvh->set(BVH::emptyNode,empty,0);
           return;
         }
         
@@ -321,7 +327,7 @@ namespace embree
         if (fastUpdateMode)
         {
           if (refitter == nullptr)
-            refitter = new BVH4Refitter(bvh,*(BVH4Refitter::LeafBoundsInterface*)this);
+            refitter = new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this);
 
           refitter->refit();
         }
@@ -336,7 +342,7 @@ namespace embree
             return 0;
           };
           
-          BVHNBuilder<BVH4::N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,BVH4::N,1,1,1.0f,1.0f);
+          BVHNBuilder<N>::build(bvh,createLeaf,virtualprogress,prims.data(),pinfo,N,1,1,1.0f,1.0f);
 
           delete refitter; refitter = nullptr;
         }
@@ -356,7 +362,7 @@ namespace embree
     };
     
     /* entry functions for the scene builder */
-    Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivGridEagerBuilderBinnedSAHClass((BVH4*)bvh,scene); }
-    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVH4SubdivPatch1CachedBuilderBinnedSAHClass((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivGridEagerBuilderBinnedSAH   (void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivGridEagerBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
+    Builder* BVH4SubdivPatch1CachedBuilderBinnedSAH(void* bvh, Scene* scene, size_t mode) { return new BVHNSubdivPatch1CachedBuilderBinnedSAHClass<4>((BVH4*)bvh,scene); }
   }
 }
