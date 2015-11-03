@@ -390,11 +390,11 @@ namespace embree
       };
     
     /*! Intersects M motion blur triangles with K rays. */
-    template<int M, int K, bool filter>
+    template<int M, int Mx, int K, bool filter>
       struct TriangleMvMBIntersectorKMoellerTrumbore
       {
         typedef TriangleMvMB<M> Primitive;
-        typedef MoellerTrumboreIntersectorK<M,K> Precalculations;
+        typedef MoellerTrumboreIntersectorK<Mx,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const TriangleMvMB<M>& tri, Scene* scene)
@@ -438,7 +438,7 @@ namespace embree
           const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
           const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
           const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          pre.intersect1(ray,k,v0,v1,v2,Intersect1KEpilog<M,M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          pre.intersect1(ray,k,v0,v1,v2,Intersect1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
@@ -449,7 +449,7 @@ namespace embree
           const Vec3<vfloat<M>> v0 = madd(time,tri.dv0,tri.v0);
           const Vec3<vfloat<M>> v1 = madd(time,tri.dv1,tri.v1);
           const Vec3<vfloat<M>> v2 = madd(time,tri.dv2,tri.v2);
-          return pre.intersect1(ray,k,v0,v1,v2,Occluded1KEpilog<M,M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
+          return pre.intersect1(ray,k,v0,v1,v2,Occluded1KEpilog<M,Mx,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene)); //FIXME: M,Mx
         }
       };
   }
