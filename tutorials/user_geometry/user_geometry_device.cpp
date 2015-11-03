@@ -23,8 +23,11 @@ const int numTheta = 2*numPhi;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   printf("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -55,6 +58,7 @@ struct Instance
   int userID;
   AffineSpace3fa local2world;
   AffineSpace3fa world2local;
+  LinearSpace3fa normal2world;
   Vec3fa lower;
   Vec3fa upper;
 };
@@ -93,7 +97,10 @@ void instanceIntersectFunc(const Instance* instance, RTCRay& ray, size_t item)
   ray.org = ray_org;
   ray.dir = ray_dir;
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
-  else ray.instID = instance->userID;
+  else {
+    ray.instID = instance->userID;
+    ray.Ng = xfmVector(instance->normal2world,ray.Ng);
+  }
 }
 
 void instanceOccludedFunc(const Instance* instance, RTCRay& ray, size_t item)
@@ -130,6 +137,7 @@ void updateInstance (RTCScene scene, Instance* instance)
 {
   unsigned int geometry = instance->geometry;
   instance->world2local = rcp(instance->local2world);
+  instance->normal2world = transposed(rcp(instance->local2world.l));
   rtcUpdate(scene,instance->geometry);
 }
 
@@ -331,6 +339,7 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -423,11 +432,8 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    /* calculate shading normal in worldspace */
-    Vec3fa Ns = ray.Ng;
-    if (ray.instID >=0 && ray.instID < 4) 
-      Ns = xfmVector(g_instance[ray.instID]->local2world,Ns);
-    Ns = normalize(Ns);
+    /* calculate shading normal */
+    Vec3fa Ns = normalize(ray.Ng);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);

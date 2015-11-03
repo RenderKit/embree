@@ -38,8 +38,11 @@ uniform int disabledID = -1;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   print("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
@@ -141,6 +144,7 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);

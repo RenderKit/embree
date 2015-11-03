@@ -20,8 +20,11 @@
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   printf("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -130,6 +133,7 @@ unsigned int g_instance1 = -1;
 unsigned int g_instance2 = -1;
 unsigned int g_instance3 = -1;
 AffineSpace3fa instance_xfm[4];
+LinearSpace3fa normal_xfm[4];
 
 Vec3fa colors[4][4];
 
@@ -138,6 +142,7 @@ extern "C" void device_init (char* cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -211,7 +216,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
     if (ray.instID != -1)
-      Ns = xfmVector(instance_xfm[ray.instID],Ns);
+      Ns = xfmVector(normal_xfm[ray.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
@@ -294,10 +299,14 @@ extern "C" void device_render (int* pixels,
   xfm.vz = Vec3fa(-sin(t1),0,cos(t1));
 
   /* calculate transformations to move instances in cirle */
-  instance_xfm[0] = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
-  instance_xfm[1] = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
-  instance_xfm[2] = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
-  instance_xfm[3] = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
+  for (int i=0; i<4; i++) {
+    float t = t0+i*2.0f*float(pi)/4.0f;
+    instance_xfm[i] = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t),0.0f,+sin(t)));
+  }
+
+  /* calculate transformations to properly transform normals */
+  for (int i=0; i<4; i++)
+    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
 
   /* set instance transformations */
   rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,(float*)&instance_xfm[0]);

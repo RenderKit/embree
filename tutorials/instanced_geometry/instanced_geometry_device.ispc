@@ -20,8 +20,11 @@
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   print("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
@@ -130,6 +133,7 @@ uniform unsigned int g_instance1 = -1;
 uniform unsigned int g_instance2 = -1;
 uniform unsigned int g_instance3 = -1;
 uniform AffineSpace3f instance_xfm[4];
+uniform LinearSpace3f normal_xfm[4];
 
 uniform Vec3f colors[4][4];
 
@@ -138,6 +142,7 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -211,7 +216,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     /* calculate shading normal in world space */
     Vec3f Ns = ray.Ng;
     if (ray.instID != -1)
-      Ns = xfmVector(instance_xfm[ray.instID],Ns);
+      Ns = xfmVector(normal_xfm[ray.instID],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
@@ -294,10 +299,14 @@ export void device_render (uniform int* uniform pixels,
   xfm.vz = make_Vec3f(-sin(t1),0,cos(t1));
 
   /* calculate transformations to move instances in cirle */
-  instance_xfm[0] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t0),0.0f,+sin(t0)));
-  instance_xfm[1] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(-cos(t0),0.0f,-sin(t0)));
-  instance_xfm[2] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(-sin(t0),0.0f,+cos(t0)));
-  instance_xfm[3] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+sin(t0),0.0f,-cos(t0)));
+  for (uniform int i=0; i<4; i++) {
+    uniform float t = t0+i*2.0f*M_PI/4.0f;
+    instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));
+  }
+
+  /* calculate transformations to properly transform normals */
+  for (uniform int i=0; i<4; i++)
+    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
 
   /* set instance transformations */
   rtcSetTransform(g_scene,g_instance0,RTC_MATRIX_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[0]);

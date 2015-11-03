@@ -23,8 +23,11 @@ const uniform int numTheta = 2*numPhi;
 renderPixelFunc renderPixel;
 
 /* error reporting function */
-void error_handler(const uniform RTCError code, const uniform int8* uniform str)
+void error_handler(const uniform RTCError code, const uniform int8* uniform str = NULL)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   print("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : print("RTC_UNKNOWN_ERROR"); break;
@@ -55,6 +58,7 @@ struct Instance
   uniform int userID;
   AffineSpace3f local2world;
   AffineSpace3f world2local;
+  LinearSpace3f normal2world;
   Vec3f lower;
   Vec3f upper;
 };
@@ -93,7 +97,10 @@ void instanceIntersectFunc(const uniform Instance* uniform instance, varying RTC
   ray.org = ray_org;
   ray.dir = ray_dir;
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) ray.geomID = geomID;
-  else ray.instID = instance->userID;
+  else {
+    ray.instID = instance->userID;
+    ray.Ng = xfmVector(instance->normal2world,ray.Ng);
+  }
 }
 
 void instanceOccludedFunc(const uniform Instance* uniform instance, varying RTCRay& ray, uniform size_t item)
@@ -130,6 +137,7 @@ void updateInstance (RTCScene scene, uniform Instance* uniform instance)
 {
   uniform unsigned int geometry = instance->geometry;
   instance->world2local = rcp(instance->local2world);
+  instance->normal2world = transposed(rcp(instance->local2world.l));
   rtcUpdate(scene,instance->geometry);
 }
 
@@ -331,6 +339,7 @@ export void device_init (uniform int8* uniform cfg)
 {
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);
@@ -423,11 +432,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) 
   {
-    /* calculate shading normal in worldspace */
-    Vec3f Ns = ray.Ng;
-    if (ray.instID >=0 && ray.instID < 4) 
-      Ns = xfmVector(g_instance[ray.instID]->local2world,Ns);
-    Ns = normalize(Ns);
+    /* calculate shading normal */
+    Vec3f Ns = normalize(ray.Ng);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(0.0f);

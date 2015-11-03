@@ -797,7 +797,7 @@ Vec3fa ThinDielectricMaterial__sample(ThinDielectricMaterial* This, const BRDF& 
   float R = fresnelDielectric(cosThetaO,rcp(This->eta));
   Sample3f wit = Sample3f(neg(wo),1.0f);
   Sample3f wis = reflect_(wo,dg.Ns);
-  Vec3fa ct = exp(Vec3fa(This->transmission)*rcp(cosThetaO))*Vec3fa(1.0f-R);
+  Vec3fa ct = exp(Vec3fa(This->transmissionFactor)*rcp(cosThetaO))*Vec3fa(1.0f-R);
   Vec3fa cs = Vec3fa(R);
   return sample_component2(cs,wis,medium,ct,wit,medium,Lw,wi_o,medium,s.x);
 }
@@ -949,8 +949,11 @@ void occlusionFilterOBJ(void* ptr, RTCRay& ray);
 void occlusionFilterHair(void* ptr, RTCRay& ray);
 
 /* error reporting function */
-void error_handler(const RTCError code, const char* str)
+void error_handler(const RTCError code, const char* str = nullptr)
 {
+  if (code == RTC_NO_ERROR) 
+    return;
+
   printf("Embree: ");
   switch (code) {
   case RTC_UNKNOWN_ERROR    : printf("RTC_UNKNOWN_ERROR"); break;
@@ -1002,6 +1005,7 @@ extern "C" void device_init (char* cfg)
 
   /* create new Embree device */
   g_device = rtcNewDevice(cfg);
+  error_handler(rtcDeviceGetError(g_device));
 
   /* set error handler */
   rtcDeviceSetErrorFunction(g_device,error_handler);

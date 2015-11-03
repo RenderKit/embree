@@ -266,8 +266,33 @@ namespace embree
     std::cout << std::endl;
   }
 
+  RTCError* Device::getError()
+  {
+    if (this) return errorHandler.error();
+    else      return g_errorHandler.error();
+  }
+
+  void Device::setErrorCode(RTCError error)
+  {
+    RTCError* stored_error = getError();
+    if (*stored_error == RTC_NO_ERROR)
+      *stored_error = error;
+  }
+
+  RTCError Device::getErrorCode()
+  {
+    RTCError* stored_error = getError();
+    RTCError error = *stored_error;
+    *stored_error = RTC_NO_ERROR;
+    return error;
+  }
+
   void Device::process_error(RTCError error, const char* str)
   { 
+    /* store global error code when device construction failed */
+    if (this == nullptr)
+      return setErrorCode(error);
+
     /* print error when in verbose mode */
     if (State::verbosity(1)) 
     {
@@ -289,9 +314,7 @@ namespace embree
       State::error_function(error,str); 
 
     /* record error code */
-    RTCError* stored_error = State::error();
-    if (*stored_error == RTC_NO_ERROR)
-      *stored_error = error;
+    setErrorCode(error);
   }
 
   void Device::memoryMonitor(ssize_t bytes, bool post)

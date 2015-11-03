@@ -951,7 +951,7 @@ namespace embree
       {
         Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child(0));
         materialMap[xml->parm("id")] = material;
-        return material.cast<SceneGraph::Node>();
+        return nullptr;
       }
       else if (xml->parm("type") == "scene") 
         return sceneMap[xml->parm("id")] = loadNode(xml->child(0));

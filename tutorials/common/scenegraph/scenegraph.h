@@ -79,7 +79,7 @@ namespace embree
       }
       
       void add(const Ref<Node>& node) {
-        children.push_back(node);
+        if (node) children.push_back(node);
       }
       
       void set(const size_t i, const Ref<Node>& node) {
