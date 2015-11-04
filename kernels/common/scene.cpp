@@ -313,12 +313,28 @@ namespace embree
     {
       bool packetsEnabled = aflags & (RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
       if (isIncoherent(flags) && isStatic() && !packetsEnabled) // cannot choose for packets as intersection filter not implemented yet
-        accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
+      {
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+        {
+          accels.add(device->bvh8_factory->BVH8SubdivGridEager(this));
+        }
+        else
+#endif
+        {
+          accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
+        }
+      }
       else
+      {
         accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
+      }
     }
     else if (device->subdiv_accel == "bvh4.subdivpatch1cached") accels.add(device->bvh4_factory->BVH4SubdivPatch1Cached(this));
     else if (device->subdiv_accel == "bvh4.grid.eager"        ) accels.add(device->bvh4_factory->BVH4SubdivGridEager(this));
+#if defined (__TARGET_AVX__)
+    else if (device->subdiv_accel == "bvh8.grid.eager"        ) accels.add(device->bvh8_factory->BVH8SubdivGridEager(this));
+#endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown subdiv accel "+device->subdiv_accel);
   }
 
