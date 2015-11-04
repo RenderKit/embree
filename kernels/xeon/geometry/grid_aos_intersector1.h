@@ -26,66 +26,32 @@ namespace embree
   {
     struct GridAOSIntersector1
     {
+      static const int N = (VSIZEX == 4) ? 4 : 8;
+      typedef Vec3<vfloat<N>> Vec3vfN;
+
       typedef GridAOS::EagerLeaf Primitive;
       
       struct Precalculations 
       {
         __forceinline Precalculations (const Ray& ray, const void *ptr) 
         {
-#if defined (__AVX__)
-          
           /*! load the ray into SIMD registers */
           const Vec3fa ray_rdir = rcp_safe(ray.dir);
           const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-          org = Vec3vf8(ray.org.x,ray.org.y,ray.org.z);
-          const Vec3vf8 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-          rdir = Vec3vf8(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-          org_rdir = Vec3vf8(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
+          org = Vec3vfN(ray.org.x,ray.org.y,ray.org.z);
+          rdir = Vec3vfN(ray_rdir.x,ray_rdir.y,ray_rdir.z);
+          org_rdir = Vec3vfN(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
           ray_tnear = ray.tnear;
-          //const vfloat8  ray_tfar(ray.tfar);
-          
+
           /*! offsets to select the side that becomes the lower or upper bound */
           nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat4) : 1*sizeof(vfloat4);
           nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat4) : 3*sizeof(vfloat4);
           nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat4) : 5*sizeof(vfloat4);
-          
-#else
-          
-          /*! load the ray into SIMD registers */
-          const Vec3fa ray_rdir = rcp_safe(ray.dir);
-          const Vec3fa ray_org_rdir = ray.org*ray_rdir;
-          org = Vec3vf4(ray.org.x,ray.org.y,ray.org.z);
-          const Vec3vf4 dir(ray.dir.x,ray.dir.y,ray.dir.z);
-          rdir = Vec3vf4(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-          org_rdir = Vec3vf4(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
-          ray_tnear = ray.tnear;
-          //const vfloat4  ray_tfar(ray.tfar);
-          
-          /*! offsets to select the side that becomes the lower or upper bound */
-          nearX = ray_rdir.x >= 0.0f ? 0*sizeof(vfloat4) : 1*sizeof(vfloat4);
-          nearY = ray_rdir.y >= 0.0f ? 2*sizeof(vfloat4) : 3*sizeof(vfloat4);
-          nearZ = ray_rdir.z >= 0.0f ? 4*sizeof(vfloat4) : 5*sizeof(vfloat4);
-          
-#endif
         }
         
-#if defined (__AVX__)
-        Vec3vf8 org;
-        Vec3vf8 rdir;
-        Vec3vf8 org_rdir;
-        vfloat8 ray_tnear;
-        size_t nearX;
-        size_t nearY;
-        size_t nearZ;
-#else
-        Vec3vf4 org;
-        Vec3vf4 rdir;
-        Vec3vf4 org_rdir;
-        vfloat4 ray_tnear;
-        size_t nearX;
-        size_t nearY;
-        size_t nearZ;
-#endif
+        Vec3vfN org, rdir, org_rdir;
+        vfloat<N> ray_tnear;
+        size_t nearX, nearY, nearZ;
       };
       
       static __forceinline void intersectFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
@@ -153,13 +119,12 @@ namespace embree
           intersectFinish(ray,q11,q10,q01,u001,prim,scene);
       }
       
-#if defined(__AVX__)
-      
       __forceinline static void intersectDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
                                                   const Vec3fa& q00, const Vec3fa& q01, 
                                                   const Vec3fa& q10, const Vec3fa& q11,
                                                   const Vec3fa& q20, const Vec3fa& q21,
                                                   const Primitive& prim, Scene* scene)
+#if defined(__AVX__)
       {
         const Vec3vf8 D8(D.x,D.y,D.z);
         
@@ -187,13 +152,7 @@ namespace embree
         if (all(ge_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))) || all(le_mask(Vec3fa(extract4<1>(u001_u101)),Vec3fa(0.0f))))
           intersectFinish(ray,q21,q20,q11,extract4<1>(u001_u101),prim,scene);
       }
-      
 #else
-      __forceinline static void intersectDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
-                                                  const Vec3fa& q00, const Vec3fa& q01, 
-                                                  const Vec3fa& q10, const Vec3fa& q11,
-                                                  const Vec3fa& q20, const Vec3fa& q21,
-                                                  const Primitive& prim, Scene* scene)
       {
         intersectQuad(ray,O,D, q00,q01,q10,q11, prim, scene);
         intersectQuad(ray,O,D, q10,q11,q20,q21, prim, scene);
@@ -240,23 +199,13 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, size_t& lazy_node)
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene)
       {
         STAT3(normal.trav_prims,1,1,1);
         
-#if defined (__AVX__)
-        
         /* perform box tests */
-        const vfloat8 ray_tfar(ray.tfar);
+        const vfloat<N> ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
-        
-#else
-        
-        /* perform box tests */
-        const vfloat4 ray_tfar(ray.tfar);
-        size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
-        
-#endif
         
         /* intersect quad-quads */
         while (mask) 
@@ -296,11 +245,8 @@ namespace embree
       }
       
       /*! Intersect a ray with the triangle and updates the hit. */
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
-        intersect(pre,ray,prim[0],scene,lazy_node);
-      }  
-      static __forceinline void intersect(const Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
-        intersect(pre,ray,prim[0],scene,lazy_node);
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        intersect(pre,ray,prim[0],scene);
       }  
       
       static __forceinline bool occludedFinish (Ray& ray, const Vec3fa& p0, const Vec3fa& p1, const Vec3fa& p2, const vfloat4& uvw, const Primitive& prim, Scene* scene)
@@ -362,13 +308,12 @@ namespace embree
         return false;
       }
       
-#if defined(__AVX__)
-      
       __forceinline static bool occludedDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
                                                  const Vec3fa& q00, const Vec3fa& q01, 
                                                  const Vec3fa& q10, const Vec3fa& q11,
                                                  const Vec3fa& q20, const Vec3fa& q21,
                                                  const Primitive& prim, Scene* scene)
+#if defined(__AVX__)
       {
         const Vec3vf8 D8(D.x,D.y,D.z);
         
@@ -398,13 +343,7 @@ namespace embree
         
         return false;
       }
-      
 #else
-      __forceinline static bool occludedDualQuad(Ray& ray, const Vec3fa& O, const Vec3fa& D,
-                                                 const Vec3fa& q00, const Vec3fa& q01, 
-                                                 const Vec3fa& q10, const Vec3fa& q11,
-                                                 const Vec3fa& q20, const Vec3fa& q21,
-                                                 const Primitive& prim, Scene* scene)
       {
         if (occludedQuad(ray,O,D, q00,q01,q10,q11, prim, scene)) return true;
         if (occludedQuad(ray,O,D, q10,q11,q20,q21, prim, scene)) return true;
@@ -453,23 +392,13 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, size_t& lazy_node)
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene)
       {
         STAT3(shadow.trav_prims,1,1,1);
         
-#if defined (__AVX__)
-        
         /* perform box tests */
-        const vfloat8 ray_tfar(ray.tfar);
+        const vfloat<N> ray_tfar(ray.tfar);
         size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
-        
-#else
-        
-        /* perform box tests */
-        const vfloat4 ray_tfar(ray.tfar);
-        size_t mask = prim.bounds.intersect<false>(pre.nearX, pre.nearY, pre.nearZ, pre.org, pre.rdir, pre.org_rdir, pre.ray_tnear, ray_tfar);
-        
-#endif
         
         /* intersect quad-quads */
         while (mask) 
@@ -511,11 +440,8 @@ namespace embree
       }
       
       /*! Test if the ray is occluded by the primitive */
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
-        return occluded(pre,ray,prim[0],scene,lazy_node);
-      }
-      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, size_t ty0, const Primitive* prim, size_t ty, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
-        return occluded(pre,ray,prim[0],scene,lazy_node);
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, size_t ty, const Primitive* prim, size_t num, Scene* scene, const unsigned* geomID_to_instID, size_t& lazy_node) {
+        return occluded(pre,ray,prim[0],scene);
       }
     };
   }
