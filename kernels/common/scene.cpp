@@ -311,8 +311,7 @@ namespace embree
   {
     if (device->subdiv_accel == "default") 
     {
-      bool packetsEnabled = aflags & (RTC_INTERSECT4 | RTC_INTERSECT8 | RTC_INTERSECT16);
-      if (isIncoherent(flags) && isStatic() && !packetsEnabled) // cannot choose for packets as intersection filter not implemented yet
+      if (isIncoherent(flags) && isStatic())
       {
 #if defined (__TARGET_AVX__)
         if (device->hasISA(AVX))
