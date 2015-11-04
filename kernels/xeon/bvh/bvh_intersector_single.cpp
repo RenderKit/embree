@@ -15,7 +15,6 @@
 // ======================================================================== //
 
 #include "bvh_intersector_single.h"
-#include "bvh_intersector1.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
@@ -98,32 +97,6 @@ namespace embree
           set(terminated, i);
       }
       vint<K>::store(valid & terminated,&ray.geomID,0);
-      AVX_ZERO_UPPER();
-    }
-
-    template<int N, int K, typename Intersector1>
-    void BVHNIntersectorKFromIntersector1<N,K,Intersector1>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
-    {
-      Ray rays[K];
-      ray.get(rays);
-      size_t bits = movemask(*valid_i == -1);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-	Intersector1::intersect(bvh,rays[i]);
-      }
-      ray.set(rays);
-      AVX_ZERO_UPPER();
-    }
-    
-    template<int N, int K, typename Intersector1>
-    void BVHNIntersectorKFromIntersector1<N,K,Intersector1>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
-    {
-      Ray rays[K];
-      ray.get(rays);
-      size_t bits = movemask(*valid_i == -1);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-	Intersector1::occluded(bvh,rays[i]);
-      }
-      ray.set(rays);
       AVX_ZERO_UPPER();
     }
 

@@ -25,17 +25,6 @@ namespace embree
 {
   namespace isa 
   {
-    /*! Converts single ray intersector into packet intersector. */
-    template<int N, int K, typename Intersector1>
-    class BVHNIntersectorKFromIntersector1
-    {
-      typedef BVHN<N> BVH;
-
-    public:
-      static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
-      static void occluded (vint<K>* valid, BVH* bvh, RayK<K>& ray);
-    };
-
     /*! BVH single ray intersector for packets. */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     class BVHNIntersectorKSingle
