@@ -43,7 +43,9 @@ namespace embree
 
     __forceinline vfloat(const __m512& t) { v = t; }
     __forceinline operator __m512 () const { return v; }
+#if defined(__AVX512F__)
     __forceinline operator __m256 () const { return _mm512_castps512_ps256(v); }
+#endif
     
     __forceinline vfloat(const float& f) {
       v = _mm512_set_1to16_ps(f);
@@ -66,7 +68,6 @@ namespace embree
       const vfloat bb = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(b)));
       v = _mm512_mask_blend_ps(0xff, bb, aa);
     }
-
 #endif
     
     __forceinline explicit vfloat(const __m512i& a) {
