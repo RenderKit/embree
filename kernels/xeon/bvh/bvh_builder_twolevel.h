@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../../common/scene_triangle_mesh.h"
 
 namespace embree

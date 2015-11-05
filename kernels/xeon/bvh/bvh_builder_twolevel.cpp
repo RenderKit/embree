@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_builder_twolevel.h"
-#include "../bvh/bvh_statistics.h"
+#include "bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 
 #define PROFILE 0
@@ -237,5 +237,11 @@ namespace embree
     Builder* BVH4BuilderTwoLevelSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
       return new BVHNBuilderTwoLevel<4>((BVH4*)bvh,scene,createTriangleMeshAccel);
     }
+
+#if defined(__AVX__)
+    Builder* BVH8BuilderTwoLevelSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
+      return new BVHNBuilderTwoLevel<8>((BVH8*)bvh,scene,createTriangleMeshAccel);
+    }
+#endif
   }
 }
