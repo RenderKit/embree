@@ -37,14 +37,16 @@ namespace embree
       typedef BVH4::BaseNode BaseNode;
 
     public:
-
+      /* Traverses a node with at least one hit child. Optimized for finding the closest hit (intersection). */
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
                                                    const vfloat4& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         if (likely(mask == 0)) {
@@ -92,12 +94,14 @@ namespace embree
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
       }
 
+      /* Traverses a node with at least one hit child. Optimized for finding any hit (occlusion). */
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
                                                const vfloat4& tNear,
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
@@ -162,7 +166,9 @@ namespace embree
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         if (likely(mask == 0)) {
@@ -217,6 +223,7 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
@@ -274,7 +281,9 @@ namespace embree
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         if (likely(mask == 0)) {
@@ -346,6 +355,7 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
+        assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
 
         /*! one child is hit, continue with that child */
@@ -566,6 +576,7 @@ namespace embree
         new (&tlray) TravRay<N,Nx>(vray);
       }
 
+      /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
@@ -627,6 +638,7 @@ namespace embree
         return false;
       }
 
+      /* If a transform node is passed, traverses the node and returns true. */
       __forceinline bool traverseTransform(NodeRef& cur,
                                            Ray& ray,
                                            TravRay<N,Nx>& vray,
