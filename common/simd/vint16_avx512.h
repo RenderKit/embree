@@ -42,6 +42,9 @@ namespace embree
 
     __forceinline vint(const __m512i& t) { v = t; }
     __forceinline operator __m512i () const { return v; }
+#if defined(__AVX512F__)
+    __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
+#endif
 
     __forceinline vint(const int i) {
       v = _mm512_set_1to16_epi32(i);
@@ -245,6 +248,9 @@ namespace embree
   __forceinline const vint16 max( const vint16& a, const int     b ) { return max(a,vint16(b)); }
   __forceinline const vint16 max( const int     a, const vint16& b ) { return max(vint16(a),b); }
   
+  __forceinline const vint16 umin( const vint16& a, const vint16& b ) { return _mm512_min_epu32(a.v, b.v); }
+  __forceinline const vint16 umax( const vint16& a, const vint16& b ) { return _mm512_max_epu32(a.v, b.v); }
+
   __forceinline const vint16 mask_add(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_add_epi32(c,mask,a,b); }
   __forceinline const vint16 mask_sub(const vboolf16& mask, vint16& c, const vint16& a, const vint16& b) { return _mm512_mask_sub_epi32(c,mask,a,b); }
 

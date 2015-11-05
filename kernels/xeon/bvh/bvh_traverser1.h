@@ -283,19 +283,27 @@ namespace embree
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
-
+        const vbool16 org_mask = (int)mask;
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
+        cur = node->child(r); 
+        cur.prefetch(types);
         if (likely(mask == 0)) {
-          cur = node->child(r); cur.prefetch(types);
           assert(cur != BVH::emptyNode);
           return;
         }
 
         /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = node->child(r); c0.prefetch(types); const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        //NodeRef c0 = node->child(r); 
+        //c0.prefetch(types); 
+        NodeRef c0 = cur; // node->child(r); 
+        //c0.prefetch(types); 
+        const unsigned int d0 = ((unsigned int*)&tNear)[r];
         r = __bscf(mask);
-        NodeRef c1 = node->child(r); c1.prefetch(types); const unsigned int d1 = ((unsigned int*)&tNear)[r];
+        NodeRef c1 = node->child(r); 
+        c1.prefetch(types); 
+        const unsigned int d1 = ((unsigned int*)&tNear)[r];
+
         assert(c0 != BVH::emptyNode);
         assert(c1 != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -303,7 +311,29 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
+#if 1
+        const size_t hits    = __popcnt(org_mask);
+        const vint16 tNear_i = asInt(tNear);
+        const vint16 dist    = select((vbool16)(int)org_mask,(tNear_i & (~7)) | vint16(step),vint16(0xffffffff));
+        const vint8 order   = sortNetwork((__m256i)dist) & 7;
+        const unsigned int cur_index = toScalar(order);
+        cur = node->child(cur_index);
+        cur.prefetch();
+        // FIXME: replace with scatter
+        for (size_t i=0;i<hits-1;i++) 
+        {
+          r = order[hits-1-i];
+          assert( ((unsigned int)1 << r) & org_mask);
+          const NodeRef c = node->child(r); 
+          assert(c != BVH8::emptyNode);
+          c.prefetch(); 
+          const unsigned int d = *(unsigned int*)&tNear[r]; 
+          stackPtr->ptr = c; 
+          stackPtr->dist = d; 
+          stackPtr++;            
+        }
 
+#else
         /*! Here starts the slow path for 3 or 4 hit children. We push
          *  all nodes onto the stack to sort them there. */
         assert(stackPtr < stackEnd);
@@ -345,7 +375,7 @@ namespace embree
         }
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; stackPtr--;
-
+#endif
       }
 
       // FIXME: optimize sequence

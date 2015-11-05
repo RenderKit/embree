@@ -36,6 +36,7 @@
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
+#define FORCE_SINGLE_MODE 0
 
 namespace embree
 {
@@ -103,7 +104,9 @@ namespace embree
         
         /* switch to single ray traversal */
 #if (!defined(__WIN32__) || defined(__X86_64__)) && defined(__SSE4_2__)
+#if FORCE_SINGLE_MODE == 0
         if (single)
+#endif
         {
           size_t bits = movemask(active);
           if (unlikely(__popcnt(bits) <= switchThreshold)) {
