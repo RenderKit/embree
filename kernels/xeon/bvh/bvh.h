@@ -49,7 +49,7 @@ namespace embree
 
   /*! Multi BVH with N children. Each node stores the bounding box of
    * it's N children as well as N child pointers. */
-  template<int NN>
+  template<int N>
   class BVHN : public AccelData
   {
     ALIGNED_CLASS;
@@ -62,9 +62,6 @@ namespace embree
     struct UnalignedNode;
     struct UnalignedNodeMB;
     struct TransformNode;
-
-    /*! branching width of the tree */
-    static const size_t N = NN;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;

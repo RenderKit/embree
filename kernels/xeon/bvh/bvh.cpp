@@ -19,14 +19,14 @@
 
 namespace embree
 {
-  template<int NN>
-  BVHN<NN>::BVHN (const PrimitiveType& primTy, Scene* scene)
+  template<int N>
+  BVHN<N>::BVHN (const PrimitiveType& primTy, Scene* scene)
     : AccelData((N==4) ? AccelData::TY_BVH4 : (N==8) ? AccelData::TY_BVH8 : AccelData::TY_UNKNOWN),
       primTy(primTy), device(scene->device), scene(scene),
       root(emptyNode), alloc(scene->device), numPrimitives(0), numVertices(0), data_mem(nullptr), size_data_mem(0) {}
 
-  template<int NN>
-  BVHN<NN>::~BVHN ()
+  template<int N>
+  BVHN<N>::~BVHN ()
   {
     for (size_t i=0; i<objects.size(); i++) 
       delete objects[i];
@@ -38,29 +38,29 @@ namespace embree
     }
   }
 
-  template<int NN>
-  void BVHN<NN>::clear()
+  template<int N>
+  void BVHN<N>::clear()
   {
     set(BVHN::emptyNode,empty,0);
     alloc.clear();
   }
 
-  template<int NN>
-  void BVHN<NN>::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
+  template<int N>
+  void BVHN<N>::set (NodeRef root, const BBox3fa& bounds, size_t numPrimitives)
   {
     this->root = root;
     this->bounds = bounds;
     this->numPrimitives = numPrimitives;
   }
 
-  template<int NN>
-  void BVHN<NN>::printStatistics()
+  template<int N>
+  void BVHN<N>::printStatistics()
   {
     std::cout << BVHNStatistics<N>(this).str();
   }	
 
-  template<int NN>
-  void BVHN<NN>::clearBarrier(NodeRef& node)
+  template<int N>
+  void BVHN<N>::clearBarrier(NodeRef& node)
   {
     if (node.isBarrier())
       node.clearBarrier();
@@ -71,8 +71,8 @@ namespace embree
     }
   }
 
-  template<int NN>
-  void BVHN<NN>::layoutLargeNodes(size_t num)
+  template<int N>
+  void BVHN<N>::layoutLargeNodes(size_t num)
   {
     struct NodeArea 
     {
@@ -111,8 +111,8 @@ namespace embree
     root = layoutLargeNodesRecursion(root,alloc.threadLocal2()->alloc0);
   }
   
-  template<int NN>
-  typename BVHN<NN>::NodeRef BVHN<NN>::layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator)
+  template<int N>
+  typename BVHN<N>::NodeRef BVHN<N>::layoutLargeNodesRecursion(NodeRef& node, FastAllocator::ThreadLocal& allocator)
   {
     if (node.isBarrier()) {
       node.clearBarrier();
@@ -130,8 +130,8 @@ namespace embree
     else return node;
   }
 
-  template<int NN>
-  double BVHN<NN>::preBuild(const std::string& builderName)
+  template<int N>
+  double BVHN<N>::preBuild(const std::string& builderName)
   {
     if (builderName == "") 
       return inf;
@@ -144,8 +144,8 @@ namespace embree
     return t0;
   }
 
-  template<int NN>
-  void BVHN<NN>::postBuild(double t0)
+  template<int N>
+  void BVHN<N>::postBuild(double t0)
   {
     if (t0 == double(inf))
       return;

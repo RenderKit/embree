@@ -148,13 +148,13 @@ namespace embree
       BVH4::Node* n = node.node();
       
       std::cout << "Node {" << std::endl;
-      for (size_t i=0; i<BVH4::N; i++) 
+      for (size_t i=0; i<4; i++)
       {
         for (size_t k=0; k<depth; k++) std::cout << "  ";
         std::cout << "  bounds" << i << " = " << n->bounds(i) << std::endl;
       }
 
-      for (size_t i=0; i<BVH4::N; i++) 
+      for (size_t i=0; i<4; i++)
       {
         if (n->child(i) == BVH4::emptyNode)
           continue;
