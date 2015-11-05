@@ -89,7 +89,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_morton.cpp
   bvh/bvh_builder_sah.cpp
   bvh/bvh_builder_twolevel.cpp
-  bvh4/bvh4_builder_instancing.cpp
+  bvh/bvh_builder_instancing.cpp
   bvh/bvh_builder_subdiv.cpp
 
   bvh/bvh_intersector1.cpp)
@@ -137,7 +137,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_builder_morton.avx.cpp
     bvh/bvh_builder_sah.avx.cpp
     bvh/bvh_builder_twolevel.avx.cpp
-    bvh4/bvh4_builder_instancing.avx.cpp
+    bvh/bvh_builder_instancing.avx.cpp
     bvh/bvh_builder_subdiv.avx.cpp
     bvh/bvh_intersector1.cpp
     
