@@ -368,7 +368,7 @@ namespace embree
     }
     
     template<int N>
-    BVHNBuilderInstancing<N>::NodeRef BVHNBuilderInstancing<N>::collapse(NodeRef& node)
+    typename BVHNBuilderInstancing<N>::NodeRef BVHNBuilderInstancing<N>::collapse(NodeRef& node)
     {
       if (node.isBarrier()) {
         node.clearBarrier();
