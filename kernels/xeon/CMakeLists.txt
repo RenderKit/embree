@@ -86,7 +86,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
   bvh/bvh_builder_hair.cpp
-  bvh4/bvh4_builder_morton.cpp
+  bvh/bvh_builder_morton.cpp
   bvh/bvh_builder_sah.cpp
   bvh/bvh_builder_twolevel.cpp
   bvh4/bvh4_builder_instancing.cpp
@@ -134,7 +134,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     bvh/bvh_refit.avx.cpp
     bvh/bvh_builder.avx.cpp
     bvh/bvh_builder_hair.avx.cpp
-    bvh4/bvh4_builder_morton.avx.cpp
+    bvh/bvh_builder_morton.avx.cpp
     bvh/bvh_builder_sah.avx.cpp
     bvh/bvh_builder_twolevel.avx.cpp
     bvh4/bvh4_builder_instancing.avx.cpp

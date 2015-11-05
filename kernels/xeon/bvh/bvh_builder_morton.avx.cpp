@@ -18,5 +18,5 @@
 // ISAs, as a lambda name mangling bug of ICC under Windows causes
 // symbols to conflict.
 
-#include "bvh4_builder_morton.cpp"
+#include "bvh_builder_morton.cpp"
 
