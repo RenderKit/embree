@@ -21,19 +21,33 @@
 namespace embree
 {
   namespace isa 
-  {
-    /* BVH4 Tree Rotations. */
-    class BVH4Rotate
+  { 
+    template<int N>
+    class BVHNRotate
     {
+      typedef typename BVHN<N>::NodeRef NodeRef;
+
     public:
+      static const bool enabled = false;
+
+      static __forceinline size_t rotate(NodeRef parentRef, size_t depth = 1) { return 0; }
+      static __forceinline void restructure(NodeRef ref, size_t depth = 1) {}
+    };
+
+    /* BVH4 tree rotations */
+    template<>
+    class BVHNRotate<4>
+    {
       typedef BVH4::Node Node;
       typedef BVH4::NodeRef NodeRef;
       
     public:
+      static const bool enabled = true;
+
       static size_t rotate(NodeRef parentRef, size_t depth = 1);
       
 #if defined(__AVX__)
-      static void   restructure(NodeRef ref, size_t depth = 1);
+      static void restructure(NodeRef ref, size_t depth = 1);
 #endif
     };
   }

@@ -82,7 +82,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh4_factory.cpp
   bvh/bvh8_factory.cpp
 
-  bvh4/bvh4_rotate.cpp
+  bvh/bvh_rotate.cpp
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
   bvh/bvh_builder_hair.cpp
@@ -130,7 +130,7 @@ SET(EMBREE_LIBRARY_FILES_AVX
     ../common/subdiv/subdivpatch1base_eval.cpp
     builders/primrefgen.avx.cpp
 
-    bvh4/bvh4_rotate.cpp
+    bvh/bvh_rotate.cpp
     bvh/bvh_refit.avx.cpp
     bvh/bvh_builder.avx.cpp
     bvh/bvh_builder_hair.avx.cpp

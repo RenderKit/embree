@@ -16,7 +16,7 @@
 
 #include "bvh.h"
 #include "bvh_statistics.h"
-#include "../bvh4/bvh4_rotate.h"
+#include "bvh_rotate.h"
 #include "../../common/profile.h"
 #include "../../algorithms/parallel_prefix_sum.h"
 #include "../../algorithms/parallel_for_for_prefix_sum.h"
@@ -72,20 +72,23 @@ namespace embree
         }
 
 #if ROTATE_TREE
-        size_t n = 0;
-        for (size_t i=0; i<num; i++)
-          n += bounds[i].lower.a;
+        if (N == 4)
+        {
+          size_t n = 0;
+          for (size_t i=0; i<num; i++)
+            n += bounds[i].lower.a;
 
-        if (n >= 4096) {
-          for (size_t i=0; i<num; i++) {
-            if (bounds[i].lower.a < 4096) {
-              for (int j=0; j<ROTATE_TREE; j++)
-                BVH4Rotate::rotate(node->child(i));
-              node->child(i).setBarrier();
+          if (n >= 4096) {
+            for (size_t i=0; i<num; i++) {
+              if (bounds[i].lower.a < 4096) {
+                for (int j=0; j<ROTATE_TREE; j++)
+                  BVHNRotate<N>::rotate(node->child(i));
+                node->child(i).setBarrier();
+              }
             }
           }
+          res.lower.a = n;
         }
-        res.lower.a = n;
 #endif
 
         return res;
@@ -140,7 +143,8 @@ namespace embree
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
-        box_o.lower.a = current.size();
+        if (N == 4)
+          box_o.lower.a = current.size();
 #endif
       }
     
@@ -196,7 +200,8 @@ namespace embree
         Triangle8::store_nt(accel,Triangle8(v0,v1,v2,vgeomID,vprimID));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
-        box_o.lower.a = current.size();
+        if (N == 4)
+          box_o.lower.a = current.size();
 #endif
       }
 
@@ -251,7 +256,8 @@ namespace embree
         Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID));
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
-        box_o.lower.a = current.size();
+        if (N == 4)
+          box_o.lower.a = current.size();
 #endif
       }
     private:
@@ -315,7 +321,8 @@ namespace embree
         new (accel) Triangle4i(v0,v1,v2,vgeomID,vprimID);
         box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
-        box_o.lower.a = current.size();
+        if (N == 4)
+          box_o.lower.a = current.size();
 #endif
       }
     private:
@@ -434,9 +441,12 @@ namespace embree
         bvh->set(node_bounds.first,node_bounds.second,numPrimitives);
         
 #if ROTATE_TREE
-        for (int i=0; i<ROTATE_TREE; i++) 
-          BVH4Rotate::rotate(bvh->root);
-        bvh->clearBarrier(bvh->root);
+        if (N == 4)
+        {
+          for (int i=0; i<ROTATE_TREE; i++)
+            BVHNRotate<N>::rotate(bvh->root);
+          bvh->clearBarrier(bvh->root);
+        }
 #endif
         
         /* clear temporary data for static geometry */
