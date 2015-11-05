@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder_twolevel.h"
+#include "bvh_builder_twolevel.h"
 #include "../bvh/bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 
@@ -25,21 +25,24 @@ namespace embree
 {
   namespace isa
   {
-    BVH4BuilderTwoLevel::BVH4BuilderTwoLevel (BVH4* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) 
+    template<int N>
+    BVHNBuilderTwoLevel<N>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel)
       : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device) {}
     
-    BVH4BuilderTwoLevel::~BVH4BuilderTwoLevel ()
+    template<int N>
+    BVHNBuilderTwoLevel<N>::~BVHNBuilderTwoLevel ()
     {
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
     }
 
-    void BVH4BuilderTwoLevel::build(size_t threadIndex, size_t threadCount) 
+    template<int N>
+    void BVHNBuilderTwoLevel<N>::build(size_t threadIndex, size_t threadCount)
     {
       /* delete some objects */
-      size_t N = scene->size();
-      if (N < objects.size()) {
-        parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
+      size_t num = scene->size();
+      if (num < objects.size()) {
+        parallel_for(num, objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               delete builders[i]; builders[i] = nullptr;
               delete objects[i]; objects[i] = nullptr;
@@ -54,11 +57,11 @@ namespace embree
       const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
       if (numPrimitives == 0) {
         prims.resize(0);
-        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->set(BVH::emptyNode,empty,0);
         return;
       }
 
-      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderTwoLevel");
+      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
 #if PROFILE
 	profile(2,20,numPrimitives,[&] (ProfileTimer& timer)
@@ -66,13 +69,13 @@ namespace embree
 #endif
           
       /* resize object array if scene got larger */
-      if (objects.size()  < N) objects.resize(N);
-      if (builders.size() < N) builders.resize(N);
-      if (refs.size()     < N) refs.resize(N);
+      if (objects.size()  < num) objects.resize(num);
+      if (builders.size() < num) builders.resize(num);
+      if (refs.size()     < num) refs.resize(num);
       nextRef = 0;
       
       /* create of acceleration structures */
-      parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
+      parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
@@ -92,7 +95,7 @@ namespace embree
       });
 
       /* parallel build of acceleration structures */
-      parallel_for(size_t(0), N, [&] (const range<size_t>& r) 
+      parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
@@ -101,7 +104,7 @@ namespace embree
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
         
-          BVH4*    object  = objects [objectID]; assert(object);
+          BVH*     object  = objects [objectID]; assert(object);
           Builder* builder = builders[objectID]; assert(builder);
           
           /* build object if it got modified */
@@ -112,7 +115,7 @@ namespace embree
           
           /* create build primitive */
           if (!object->bounds.empty())
-            refs[nextRef++] = BVH4BuilderTwoLevel::BuildRef(object->bounds,object->root);
+            refs[nextRef++] = typename BVHNBuilderTwoLevel<N>::BuildRef(object->bounds,object->root);
         }
       });
       
@@ -146,19 +149,19 @@ namespace embree
 
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
-        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->set(BVH::emptyNode,empty,0);
 
       /* otherwise build toplevel hierarchy */
       else
       {
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+        NodeRef root;
+        BVHBuilderBinnedSAH::build<NodeRef>
           (root,
            [&] { return bvh->alloc.threadLocal2(); },
-           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
+           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t n, FastAllocator::ThreadLocal2* alloc) -> int
            {
-             BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-             for (size_t i=0; i<N; i++) {
+             Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+             for (size_t i=0; i<n; i++) {
                node->set(i,children[i].pinfo.geomBounds);
                children[i].parent = (size_t*)&node->child(i);
              }
@@ -168,11 +171,11 @@ namespace embree
            [&] (const BVHBuilderBinnedSAH::BuildRecord& current, FastAllocator::ThreadLocal2* alloc) -> int
            {
              assert(current.prims.size() == 1);
-             *current.parent = (BVH4::NodeRef) prims[current.prims.begin()].ID();
+             *current.parent = (NodeRef) prims[current.prims.begin()].ID();
              return 1;
            },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
+           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,N,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
       }
@@ -185,14 +188,16 @@ namespace embree
       bvh->postBuild(t0);
     }
 
-    void BVH4BuilderTwoLevel::deleteGeometry(size_t geomID)
+    template<int N>
+    void BVHNBuilderTwoLevel<N>::deleteGeometry(size_t geomID)
     {
       if (geomID >= objects.size()) return;
       delete builders[geomID]; builders[geomID] = nullptr;
       delete objects [geomID]; objects [geomID] = nullptr;
     }
 
-    void BVH4BuilderTwoLevel::clear()
+    template<int N>
+    void BVHNBuilderTwoLevel<N>::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 
         if (objects[i]) objects[i]->clear();
@@ -203,25 +208,26 @@ namespace embree
       refs.clear();
     }
 
-    void BVH4BuilderTwoLevel::open_sequential(size_t numPrimitives)
+    template<int N>
+    void BVHNBuilderTwoLevel<N>::open_sequential(size_t numPrimitives)
     {
       if (refs.size() == 0)
 	return;
 
-      size_t N = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
-      refs.reserve(N);
+      size_t num = min(numPrimitives/200,size_t(MAX_OPEN_SIZE));
+      refs.reserve(num);
       
       std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+3 <= N)
+      while (refs.size()+3 <= num)
       {
         std::pop_heap (refs.begin(),refs.end()); 
-        BVH4::NodeRef ref = refs.back().node;
+        NodeRef ref = refs.back().node;
         if (ref.isLeaf()) break;
         refs.pop_back();    
         
-        BVH4::Node* node = ref.node();
-        for (size_t i=0; i<4; i++) {
-          if (node->child(i) == BVH4::emptyNode) continue;
+        Node* node = ref.node();
+        for (size_t i=0; i<N; i++) {
+          if (node->child(i) == BVH::emptyNode) continue;
           refs.push_back(BuildRef(node->bounds(i),node->child(i)));
           std::push_heap (refs.begin(),refs.end()); 
         }
@@ -229,7 +235,7 @@ namespace embree
     }
     
     Builder* BVH4BuilderTwoLevelSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVH4BuilderTwoLevel((BVH4*)bvh,scene,createTriangleMeshAccel);
+      return new BVHNBuilderTwoLevel<4>((BVH4*)bvh,scene,createTriangleMeshAccel);
     }
   }
 }
