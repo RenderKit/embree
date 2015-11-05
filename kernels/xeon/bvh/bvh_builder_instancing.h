@@ -16,63 +16,71 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "bvh.h"
 #include "../../common/scene_triangle_mesh.h"
 
 namespace embree
 {
   namespace isa
   {
-    class BVH4BuilderInstancing : public Builder
+    template<int N>
+    class BVHNBuilderInstancing : public Builder
     {
       ALIGNED_CLASS;
+
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::Node Node;
+      typedef typename BVH::NodeMB NodeMB;
+      typedef typename BVH::TransformNode TransformNode;
+
     public:
 
       struct BuildRef
-    {
-    public:
-      __forceinline BuildRef () {}
-      
-      __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, BVH4::NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0) 
-        : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth)
       {
-        if (node.isNode()) {
-        //if (node.isNode() || node.isNodeMB()) {
-          const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
-          localBounds.lower.w = area(worldBounds);
-        } else {
+      public:
+        __forceinline BuildRef () {}
+
+        __forceinline BuildRef (const AffineSpace3fa& local2world, const BBox3fa& localBounds_in, NodeRef node, unsigned mask, int instID, int xfmID, int type, int depth = 0)
+          : local2world(local2world), localBounds(localBounds_in), node(node), mask(mask), instID(instID), xfmID(xfmID), type(type), depth(depth)
+        {
+          if (node.isNode()) {
+          //if (node.isNode() || node.isNodeMB()) {
+            const BBox3fa worldBounds = xfmBounds(local2world,localBounds);
+            localBounds.lower.w = area(worldBounds);
+          } else {
+            localBounds.lower.w = 0.0f;
+          }
+        }
+
+        __forceinline void clearArea() {
           localBounds.lower.w = 0.0f;
         }
-      }
-      
-      __forceinline void clearArea() {
-        localBounds.lower.w = 0.0f;
-      }
 
-      __forceinline BBox3fa worldBounds() const {
-        return xfmBounds(local2world,localBounds);
-      }
-      
-      friend bool operator< (const BuildRef& a, const BuildRef& b) {
-        return a.localBounds.lower.w < b.localBounds.lower.w;
-      }
-      
-    public:
-      AffineSpace3fa local2world;
-      BBox3fa localBounds;
-      BVH4::NodeRef node;
-      unsigned mask;
-      int instID;
-      int xfmID;
-      int type;
-      int depth;
-    };
+        __forceinline BBox3fa worldBounds() const {
+          return xfmBounds(local2world,localBounds);
+        }
+
+        friend bool operator< (const BuildRef& a, const BuildRef& b) {
+          return a.localBounds.lower.w < b.localBounds.lower.w;
+        }
+
+      public:
+        AffineSpace3fa local2world;
+        BBox3fa localBounds;
+        NodeRef node;
+        unsigned mask;
+        int instID;
+        int xfmID;
+        int type;
+        int depth;
+      };
       
       /*! Constructor. */
-      BVH4BuilderInstancing (BVH4* bvh, Scene* scene);
+      BVHNBuilderInstancing (BVH* bvh, Scene* scene);
       
       /*! Destructor */
-      ~BVH4BuilderInstancing ();
+      ~BVHNBuilderInstancing ();
       
       /*! builder entry point */
       void build(size_t threadIndex, size_t threadCount);
@@ -82,11 +90,11 @@ namespace embree
       void open(size_t numPrimitives);
 
       size_t numCollapsedTransformNodes;
-      BVH4::NodeRef collapse(BVH4::NodeRef& node);
+      NodeRef collapse(NodeRef& node);
       
     public:
-      BVH4* bvh;
-      std::vector<BVH4*>& objects;
+      BVH* bvh;
+      std::vector<BVH*>& objects;
       std::vector<Builder*> builders;
 
     public:

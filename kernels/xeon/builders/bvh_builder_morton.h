@@ -338,7 +338,7 @@ namespace embree
           return createLargeLeaf(current,alloc);
         }
         
-        /* fill all 4 children by always splitting the one with the largest surface area */
+        /* fill all children by always splitting the one with the largest surface area */
         size_t numChildren = 1;
         children[0] = current;
         
@@ -383,7 +383,7 @@ namespace embree
         auto node = allocNode(current,children,numChildren,alloc);
         
         /* process top parts of tree parallel */
-        BBox3fa bounds[4];
+        BBox3fa bounds[MAX_BRANCHING_FACTOR];
         if (current.size() > SINGLE_THREADED_THRESHOLD)
         {
           SPAWN_BEGIN;

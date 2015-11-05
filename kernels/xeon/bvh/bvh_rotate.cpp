@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_rotate.h"
+#include "bvh_rotate.h"
 
 namespace embree
 {
@@ -27,7 +27,7 @@ namespace embree
       return a[0]+a[1]+a[2];
     }
     
-    size_t BVH4Rotate::rotate(NodeRef parentRef, size_t depth)
+    size_t BVHNRotate<4>::rotate(NodeRef parentRef, size_t depth)
     {
       /*! nothing to rotate if we reached a leaf node. */
       if (parentRef.isBarrier()) return 0;
@@ -36,7 +36,7 @@ namespace embree
       
       /*! rotate all children first */
       vint4 cdepth;
-      for (size_t c=0; c<BVH4::N; c++)
+      for (size_t c=0; c<4; c++)
 	cdepth[c] = (int)rotate(parent->child(c),depth+1);
       
       /* compute current areas of all children */
@@ -54,7 +54,7 @@ namespace embree
 	and child2child. We perform the best such swap. */
       float bestArea = 0;
       int bestChild1 = -1, bestChild2 = -1, bestChild2Child = -1;
-      for (size_t c2=0; c2<BVH4::N; c2++)
+      for (size_t c2=0; c2<4; c2++)
       {
 	/*! ignore leaf nodes as we cannot descent into them */
 	if (parent->child(c2).isBarrier()) continue;
@@ -333,7 +333,7 @@ namespace embree
       size_t numItems;
     };
 
-    void BVH4Rotate::restructure(NodeRef ref, size_t depth)
+    void BVHNRotate<4>::restructure(NodeRef ref, size_t depth)
     {
       if (ref.isLeaf()) return;
       Node* node = ref.node();

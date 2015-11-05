@@ -14,8 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh4_builder_instancing.h"
-#include "../bvh/bvh_statistics.h"
+#include "bvh_builder_instancing.h"
+#include "bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev_mb.h"
@@ -28,10 +28,12 @@ namespace embree
     Builder* BVH4Triangle4MeshBuilderSAH    (void* bvh, TriangleMesh* mesh, size_t mode = 0);
     Builder* BVH4Triangle4vMBMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode = 0);
 
-    BVH4BuilderInstancing::BVH4BuilderInstancing (BVH4* bvh, Scene* scene) 
+    template<int N>
+    BVHNBuilderInstancing<N>::BVHNBuilderInstancing (BVH* bvh, Scene* scene)
       : bvh(bvh), objects(bvh->objects), scene(scene), refs(scene->device), prims(scene->device), nextRef(0) {}
     
-    BVH4BuilderInstancing::~BVH4BuilderInstancing ()
+    template<int N>
+    BVHNBuilderInstancing<N>::~BVHNBuilderInstancing ()
     {
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
@@ -67,25 +69,26 @@ namespace embree
       return 0;
     }
     
-
-    const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, BVH4::NodeRef ref, size_t depth)
+    template<int N>
+    const BBox3fa xfmDeepBounds(const AffineSpace3fa& xfm, const BBox3fa& bounds, typename BVHN<N>::NodeRef ref, size_t depth)
     {
-      if (ref == BVH4::emptyNode) return empty;
+      if (ref == BVHN<N>::emptyNode) return empty;
       if (depth == 0 || !ref.isNode()) return xfmBounds(xfm,bounds);
-      BVH4::Node* node = ref.node();
+      typename BVHN<N>::Node* node = ref.node();
 
       BBox3fa box = empty;
-      for (size_t i=0; i<BVH4::N; i++)
-        box.extend(xfmDeepBounds(xfm,node->bounds(i),node->child(i),depth-1));
+      for (size_t i=0; i<N; i++)
+        box.extend(xfmDeepBounds<N>(xfm,node->bounds(i),node->child(i),depth-1));
       return box;
     }
 
-    void BVH4BuilderInstancing::build(size_t threadIndex, size_t threadCount) 
+    template<int N>
+    void BVHNBuilderInstancing<N>::build(size_t threadIndex, size_t threadCount)
     {
       /* delete some objects */
-      size_t N = scene->size();
-      if (N < objects.size()) {
-        parallel_for(N, objects.size(), [&] (const range<size_t>& r) {
+      size_t num = scene->size();
+      if (num < objects.size()) {
+        parallel_for(num, objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               delete builders[i]; builders[i] = nullptr;
               delete objects[i]; objects[i] = nullptr;
@@ -103,20 +106,20 @@ namespace embree
       numPrimitives += scene->instanced2.numTriangles;
       if (numPrimitives == 0) {
         prims.resize(0);
-        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->set(BVH::emptyNode,empty,0);
         return;
       }
       
-      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH4BuilderInstancing");
+      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderInstancing");
       
       /* resize object array if scene got larger */
-      if (objects.size()  < N) objects.resize(N);
-      if (builders.size() < N) builders.resize(N);
-      if (refs.size()     < N) refs.resize(N);
+      if (objects.size()  < num) objects.resize(num);
+      if (builders.size() < num) builders.resize(num);
+      if (refs.size()     < num) refs.resize(num);
       nextRef = 0;
       
       /* creation of acceleration structures */
-      parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
+      parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
             Geometry* geom = scene->get(objectID);
@@ -160,7 +163,7 @@ namespace embree
         });
       
       /* parallel build of acceleration structures */
-      parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
+      parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
             Geometry* geom = scene->get(objectID);
@@ -173,7 +176,7 @@ namespace embree
         });
 
       /* creates all instances */
-      parallel_for(size_t(0), N, [&] (const range<size_t>& r) {
+      parallel_for(size_t(0), num, [&] (const range<size_t>& r) {
           for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
           {
             Geometry* geom = scene->get(objectID);
@@ -181,11 +184,11 @@ namespace embree
             if (!(geom->getType() & Geometry::INSTANCE)) continue;
             GeometryInstance* instance = (GeometryInstance*) geom;
             if (!instance->isEnabled()) continue;
-            BVH4* object = objects[instance->geom->id];
+            BVH* object = objects[instance->geom->id];
             if (object == nullptr) continue;
             if (object->bounds.empty()) continue;
             int s = slot(geom->getType() & ~Geometry::INSTANCE, geom->numTimeSteps);
-            refs[nextRef++] = BVH4BuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world),s);
+            refs[nextRef++] = BVHNBuilderInstancing::BuildRef(instance->local2world,object->bounds,object->root,instance->mask,objectID,hash(instance->local2world),s);
           }
         });
       refs.resize(nextRef);
@@ -235,26 +238,26 @@ namespace embree
       
       /* skip if all objects where empty */
       if (pinfo.size() == 0)
-        bvh->set(BVH4::emptyNode,empty,0);
+        bvh->set(BVH::emptyNode,empty,0);
       
       else if (pinfo.size() == 1) {
         BuildRef* ref = (BuildRef*) prims[0].ID();
         //const BBox3fa bounds = xfmBounds(ref->local2world,ref->localBounds);
-        const BBox3fa bounds = xfmDeepBounds(ref->local2world,ref->localBounds,ref->node,2);
+        const BBox3fa bounds = xfmDeepBounds<N>(ref->local2world,ref->localBounds,ref->node,2);
         bvh->set(ref->node,bounds,numPrimitives);
       }
 
       /* otherwise build toplevel hierarchy */
       else
       {
-        BVH4::NodeRef root;
-        BVHBuilderBinnedSAH::build<BVH4::NodeRef>
+        NodeRef root;
+        BVHBuilderBinnedSAH::build<NodeRef>
           (root,
            [&] { return bvh->alloc.threadLocal2(); },
-           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t N, FastAllocator::ThreadLocal2* alloc) -> int
+           [&] (const isa::BVHBuilderBinnedSAH::BuildRecord& current, BVHBuilderBinnedSAH::BuildRecord* children, const size_t num, FastAllocator::ThreadLocal2* alloc) -> int
           {
-            BVH4::Node* node = (BVH4::Node*) alloc->alloc0.malloc(sizeof(BVH4::Node)); node->clear();
-            for (size_t i=0; i<N; i++) {
+            Node* node = (Node*) alloc->alloc0.malloc(sizeof(Node)); node->clear();
+            for (size_t i=0; i<num; i++) {
               node->set(i,children[i].pinfo.geomBounds);
               children[i].parent = (size_t*)&node->child(i);
             }
@@ -265,15 +268,15 @@ namespace embree
           {
             assert(current.prims.size() == 1);
             BuildRef* ref = (BuildRef*) prims[current.prims.begin()].ID();
-            BVH4::TransformNode* node = (BVH4::TransformNode*) alloc->alloc0.malloc(sizeof(BVH4::TransformNode)); 
-            new (node) BVH4::TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
-            *current.parent = BVH4::encodeNode(node);
+            TransformNode* node = (TransformNode*) alloc->alloc0.malloc(sizeof(TransformNode));
+            new (node) TransformNode(ref->local2world,ref->localBounds,ref->node,ref->mask,ref->instID,ref->xfmID,ref->type); // FIXME: rcp should be precalculated somewhere
+            *current.parent = BVH::encodeNode(node);
             //*current.parent = ref->node;
-            ((BVH4::NodeRef*)current.parent)->setBarrier();
+            ((NodeRef*)current.parent)->setBarrier();
             return 1;
           },
            [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-           prims.data(),pinfo,BVH4::N,BVH4::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
+           prims.data(),pinfo,N,BVH::maxBuildDepthLeaf,4,1,1,1.0f,1.0f);
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
         numCollapsedTransformNodes = refs.size();
@@ -286,14 +289,16 @@ namespace embree
       bvh->postBuild(t0);
     }
     
-    void BVH4BuilderInstancing::deleteGeometry(size_t geomID)
+    template<int N>
+    void BVHNBuilderInstancing<N>::deleteGeometry(size_t geomID)
     {
       if (geomID >= objects.size()) return;
       delete builders[geomID]; builders[geomID] = nullptr;
       delete objects [geomID]; objects [geomID] = nullptr;
     }
 
-    void BVH4BuilderInstancing::clear()
+    template<int N>
+    void BVHNBuilderInstancing<N>::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 
         if (objects[i]) objects[i]->clear();
@@ -304,7 +309,8 @@ namespace embree
       refs.clear();
     }
     
-    void BVH4BuilderInstancing::open(size_t numInstancedPrimitives)
+    template<int N>
+    void BVHNBuilderInstancing<N>::open(size_t numInstancedPrimitives)
     {
       if (refs.size() == 0)
 	return;
@@ -313,15 +319,15 @@ namespace embree
       if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCED_PRIMITIVES " << numInstancedPrimitives << std::endl; }
       
       /* calculate opening size */
-      size_t N = 0;
-      if      (scene->device->instancing_block_size ) N = numInstancedPrimitives/scene->device->instancing_block_size;
-      else if (scene->device->instancing_open_factor) N = scene->device->instancing_open_factor*refs.size();
-      N = max(N,scene->device->instancing_open_min);
-      N = min(N,scene->device->instancing_open_max);
-      refs.reserve(N);
+      size_t num = 0;
+      if      (scene->device->instancing_block_size ) num = numInstancedPrimitives/scene->device->instancing_block_size;
+      else if (scene->device->instancing_open_factor) num = scene->device->instancing_open_factor*refs.size();
+      num = max(num,scene->device->instancing_open_min);
+      num = min(num,scene->device->instancing_open_max);
+      refs.reserve(num);
 
       std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+BVH4::N-1 <= N)
+      while (refs.size()+N-1 <= num)
       {
         std::pop_heap (refs.begin(),refs.end()); 
         BuildRef ref = refs.back();
@@ -336,18 +342,18 @@ namespace embree
         
         if (ref.node.isNode()) 
         {
-          BVH4::Node* node = ref.node.node();
-          for (size_t i=0; i<BVH4::N; i++) {
-            if (node->child(i) == BVH4::emptyNode) continue;
+          Node* node = ref.node.node();
+          for (size_t i=0; i<N; i++) {
+            if (node->child(i) == BVH::emptyNode) continue;
             refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
         } 
         /*else if (ref.node.isNodeMB()) 
         {
-          BVH4::NodeMB* node = ref.node.nodeMB();
-          for (size_t i=0; i<BVH4::N; i++) {
-            if (node->child(i) == BVH4::emptyNode) continue;
+          NodeMB* node = ref.node.nodeMB();
+          for (size_t i=0; i<N; i++) {
+            if (node->child(i) == BVH::emptyNode) continue;
             refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
             std::push_heap (refs.begin(),refs.end()); 
           }
@@ -361,7 +367,8 @@ namespace embree
       if (scene->device->benchmark) { std::cout << "BENCHMARK_OPENED_INSTANCES " << refs.size() << std::endl; }
     }
     
-    BVH4::NodeRef BVH4BuilderInstancing::collapse(BVH4::NodeRef& node)
+    template<int N>
+    typename BVHNBuilderInstancing<N>::NodeRef BVHNBuilderInstancing<N>::collapse(NodeRef& node)
     {
       if (node.isBarrier()) {
         node.clearBarrier();
@@ -369,19 +376,19 @@ namespace embree
       }
       
       assert(node.isNode());
-      BVH4::Node* n = node.node();
-      BVH4::TransformNode* first = nullptr;
-      for (size_t c=0; c<BVH4::N; c++) {
-        if (n->child(c) == BVH4::emptyNode) continue;
-        BVH4::NodeRef child = n->child(c) = collapse(n->child(c));
+      Node* n = node.node();
+      TransformNode* first = nullptr;
+      for (size_t c=0; c<N; c++) {
+        if (n->child(c) == BVH::emptyNode) continue;
+        NodeRef child = n->child(c) = collapse(n->child(c));
         if (child.isTransformNode()) first = child.transformNode();
       }
       
       bool allEqual = true;
-      for (size_t c=0; c<BVH4::N; c++)  
+      for (size_t c=0; c<N; c++)
       {
-        BVH4::NodeRef child = n->child(c);
-        if (child == BVH4::emptyNode) continue;
+        NodeRef child = n->child(c);
+        if (child == BVH::emptyNode) continue;
         
         if (!child.isTransformNode()) {
           allEqual = false;
@@ -403,9 +410,9 @@ namespace embree
         return node;
       
       BBox3fa bounds = empty;
-      for (size_t c=0; c<BVH4::N; c++) {
-        if (n->child(c) == BVH4::emptyNode) continue;
-        BVH4::TransformNode* child = n->child(c).transformNode();
+      for (size_t c=0; c<N; c++) {
+        if (n->child(c) == BVH::emptyNode) continue;
+        TransformNode* child = n->child(c).transformNode();
         numCollapsedTransformNodes--;
         const BBox3fa cbounds = child->localBounds;
         n->set(c,cbounds,child->child);
@@ -414,11 +421,11 @@ namespace embree
       numCollapsedTransformNodes++;
       first->localBounds = bounds;
       first->child = node;
-      return BVH4::encodeNode(first);
+      return BVH::encodeNode(first);
     }
     
     Builder* BVH4BuilderInstancingSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVH4BuilderInstancing((BVH4*)bvh,scene);
+      return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
     }
   }
 }

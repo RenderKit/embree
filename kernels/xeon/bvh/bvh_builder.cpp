@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 #include "bvh_builder.h"
-#include "../bvh4/bvh4_rotate.h"
+#include "bvh_rotate.h"
 
 #define ROTATE_TREE 0
 
@@ -41,7 +41,7 @@ namespace embree
         for (size_t i=0; i<num; i++) {
           if (counts[i] < 4096) {
             for (int j=0; j<ROTATE_TREE; j++) 
-              BVH4Rotate::rotate(node->child(i)); 
+              BVHNRotate<4>::rotate(node->child(i));
             node->child(i).setBarrier();
           }
         }
@@ -71,9 +71,12 @@ namespace embree
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
-      for (int i=0; i<ROTATE_TREE; i++) 
-        BVHRotate::rotate(bvh->root);
-      bvh->clearBarrier(bvh->root);
+      if (N == 4)
+      {
+        for (int i=0; i<ROTATE_TREE; i++)
+          BVHNRotate<N>::rotate(bvh->root);
+        bvh->clearBarrier(bvh->root);
+      }
 #endif
       
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
@@ -138,9 +141,12 @@ namespace embree
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
-      for (int i=0; i<ROTATE_TREE; i++) 
-        BVHRotate::rotate(bvh->root);
-      bvh->clearBarrier(bvh->root);
+      if (N == 4)
+      {
+        for (int i=0; i<ROTATE_TREE; i++)
+          BVHNRotate<N>::rotate(bvh->root);
+        bvh->clearBarrier(bvh->root);
+      }
 #endif
       
       //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: implement for Mblur nodes and activate
@@ -173,9 +179,12 @@ namespace embree
       bvh->set(root,pinfo.geomBounds,pinfo.size());
       
 #if ROTATE_TREE
-      for (int i=0; i<ROTATE_TREE; i++) 
-        BVHRotate::rotate(bvh->root);
-      bvh->clearBarrier(bvh->root);
+      if (N == 4)
+      {
+        for (int i=0; i<ROTATE_TREE; i++)
+          BVHNRotate<N>::rotate(bvh->root);
+        bvh->clearBarrier(bvh->root);
+      }
 #endif
       
       bvh->layoutLargeNodes(pinfo.size()*0.005f);

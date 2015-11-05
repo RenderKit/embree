@@ -14,27 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+// We cannot compile the same file containing lambda functions for two
+// ISAs, as a lambda name mangling bug of ICC under Windows causes
+// symbols to conflict.
 
-#include "../bvh/bvh.h"
+#include "bvh_builder_instancing.cpp"
 
-namespace embree
-{
-  namespace isa 
-  {
-    /* BVH4 Tree Rotations. */
-    class BVH4Rotate
-    {
-    public:
-      typedef BVH4::Node Node;
-      typedef BVH4::NodeRef NodeRef;
-      
-    public:
-      static size_t rotate(NodeRef parentRef, size_t depth = 1);
-      
-#if defined(__AVX__)
-      static void   restructure(NodeRef ref, size_t depth = 1);
-#endif
-    };
-  }
-}
