@@ -41,10 +41,10 @@ namespace embree
     }
 
     template<int N>
-    __forceinline BBox<Vec3<vfloat<N>>> transpose(BBox3fa bounds[N]);
+    __forceinline BBox<Vec3<vfloat<N>>> transpose(const BBox3fa* bounds);
 
     template<>
-    __forceinline BBox3vf4 transpose<4>(BBox3fa bounds[4])
+    __forceinline BBox3vf4 transpose<4>(const BBox3fa* bounds)
     {
       BBox3vf4 dest;
 
@@ -69,7 +69,7 @@ namespace embree
 
 #if defined(__AVX__)
     template<>
-    __forceinline BBox3vf8 transpose<8>(BBox3fa bounds[8])
+    __forceinline BBox3vf8 transpose<8>(const BBox3fa* bounds)
     {
       BBox3vf8 dest;
 
@@ -102,10 +102,10 @@ namespace embree
 #endif
 
     template<int N>
-    __forceinline BBox3fa merge(BBox3fa bounds[N]);
+    __forceinline BBox3fa merge(const BBox3fa* bounds);
 
     template<>
-    __forceinline BBox3fa merge<4>(BBox3fa bounds[4])
+    __forceinline BBox3fa merge<4>(const BBox3fa* bounds)
     {
       const Vec3fa lower = min(min(bounds[0].lower,bounds[1].lower),
                                min(bounds[2].lower,bounds[3].lower));
@@ -116,7 +116,7 @@ namespace embree
 
 #if defined(__AVX__)
     template<>
-    __forceinline BBox3fa merge<8>(BBox3fa bounds[8])
+    __forceinline BBox3fa merge<8>(const BBox3fa* bounds)
     {
       const Vec3fa lower = min(min(min(bounds[0].lower,bounds[1].lower),min(bounds[2].lower,bounds[3].lower)),
                                min(min(bounds[4].lower,bounds[5].lower),min(bounds[6].lower,bounds[7].lower)));

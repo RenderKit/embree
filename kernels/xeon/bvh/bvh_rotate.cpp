@@ -344,7 +344,5 @@ namespace embree
       }
     }
 #endif
-
-    template class BVHNRotate<4>;
   }
 }
