@@ -355,6 +355,9 @@ namespace embree
         }
       };
 
+#endif
+
+#if defined(__AVX512F__)
 
     /*! Intersects 4 triangle pairs with 1 ray using AVX512KNL */
     template<bool filter>
