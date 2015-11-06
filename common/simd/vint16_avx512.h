@@ -173,6 +173,14 @@ namespace embree
       return _mm512_mask_compress_epi64(v,mask,v);
     }
 
+    static __forceinline vint16 compact(const vboolf16& mask, vint16 &v) {
+      return _mm512_mask_compress_epi32(v,mask,v);
+    }
+
+    static __forceinline vint16 compact(const vboolf16& mask, const vint16 &a, vint16 &b) {
+      return _mm512_mask_compress_epi32(a,mask,b);
+    }
+
     static __forceinline vint16 broadcast64bit(size_t v) {
       return _mm512_set1_epi64(v);
     }
@@ -581,6 +589,14 @@ namespace embree
 
     return v;  
   }
+
+#if defined(__AVX512F__)
+  /* this should use a vbool8 and a vint8_64...*/
+  __forceinline void gather_prefetch64(void const* base_addr,const vbool16 &mask, const vint16& offset, const int scale = 1, const int hint = _MM_HINT_T0)
+  {
+    _mm512_mask_prefetch_i64gather_pd(offset,mask,base_addr,scale,hint);
+  }
+#endif
 
   
   ////////////////////////////////////////////////////////////////////////////////

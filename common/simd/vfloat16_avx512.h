@@ -183,7 +183,15 @@ namespace embree
 #endif
     }
 
+#if defined(__AVX512F__)
+    static __forceinline vfloat16 compact(const vboolf16& mask, vfloat16 &v) {
+      return _mm512_mask_compress_ps(v,mask,v);
+    }
+    static __forceinline vfloat16 compact(const vboolf16& mask, const vfloat16 &a, vfloat16 &b) {
+      return _mm512_mask_compress_ps(a,mask,b);
+    }
 
+#endif
 
 
   /* pass by value to avoid compiler generating inefficient code */
