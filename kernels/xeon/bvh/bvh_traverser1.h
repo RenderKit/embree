@@ -312,25 +312,42 @@ namespace embree
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
 #if 1
+        /* const vint16 tNear_i = (asInt(tNear) & (~7)) | vint16(step); */
+        /* const vint16 dist    = select((vbool16)(int)org_mask,tNear_i,vint16(0xffffffff)); */
+        const vbool16 vmask = (int)org_mask;
+        const vint16 offsets = vint16::load((int*)node->children);
+        gather_prefetch64((void*)(0*64),vmask,offsets);
+        gather_prefetch64((void*)(1*64),vmask,offsets);
+        gather_prefetch64((void*)(2*64),vmask,offsets);
+        gather_prefetch64((void*)(3*64),vmask,offsets);
+
         const size_t hits    = __popcnt(org_mask);
-        const vint16 tNear_i = asInt(tNear);
-        const vint16 dist    = select((vbool16)(int)org_mask,(tNear_i & (~7)) | vint16(step),vint16(0xffffffff));
-        const vint8 order   = sortNetwork((__m256i)dist) & 7;
-        const unsigned int cur_index = toScalar(order);
-        cur = node->child(cur_index);
-        cur.prefetch();
-        // FIXME: replace with scatter
-        for (size_t i=0;i<hits-1;i++) 
+        vint16 tNear_i = vint16(0xffffffff);
+        const vint16 dist = vint16::compact((vbool16)(int)org_mask,(asInt(tNear) & (~7)) | vint16(step),tNear_i);
+
+        
+        /* if (likely(hits <=4)) */
+        /* { */
+        /* } */
+        /* else */
         {
-          r = order[hits-1-i];
-          assert( ((unsigned int)1 << r) & org_mask);
-          const NodeRef c = node->child(r); 
-          assert(c != BVH8::emptyNode);
-          c.prefetch(); 
-          const unsigned int d = *(unsigned int*)&tNear[r]; 
-          stackPtr->ptr = c; 
-          stackPtr->dist = d; 
-          stackPtr++;            
+          const vint8 order = sortNetwork((__m256i)dist) & 7;
+          const unsigned int cur_index = toScalar(order);
+          cur = node->child(cur_index);
+          //cur.prefetch();
+          // FIXME: replace with scatter
+          for (size_t i=0;i<hits-1;i++) 
+          {
+            r = order[hits-1-i];
+            assert( ((unsigned int)1 << r) & org_mask);
+            const NodeRef c = node->child(r); 
+            assert(c != BVH8::emptyNode);
+            //c.prefetch(); 
+            const unsigned int d = *(unsigned int*)&tNear[r]; 
+            stackPtr->ptr = c; 
+            stackPtr->dist = d; 
+            stackPtr++;            
+          }
         }
 
 #else
