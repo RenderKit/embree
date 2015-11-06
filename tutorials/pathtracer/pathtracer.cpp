@@ -124,6 +124,7 @@ namespace embree
         else if (mode == "Ng"      ) g_shader = SHADER_NG;
         else if (mode == "geomID"  ) g_shader = SHADER_GEOMID;
         else if (mode == "primID"  ) g_shader = SHADER_GEOMID_PRIMID;
+        else if (mode == "ao"      ) g_shader = SHADER_AMBIENT_OCCLUSION;
         else throw std::runtime_error("invalid shader:" +mode);
       }
 
@@ -292,6 +293,7 @@ namespace embree
     case SHADER_NG      : key_pressed(GLUT_KEY_F5); break;
     case SHADER_GEOMID  : key_pressed(GLUT_KEY_F6); break;
     case SHADER_GEOMID_PRIMID: key_pressed(GLUT_KEY_F7); break;
+    case SHADER_AMBIENT_OCCLUSION: key_pressed(GLUT_KEY_F11); break;
     };
     
     /* send model */

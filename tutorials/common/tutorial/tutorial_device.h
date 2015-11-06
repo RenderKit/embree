@@ -62,7 +62,8 @@ enum Shader {
   SHADER_UV = 2,
   SHADER_NG = 3,
   SHADER_GEOMID = 4,
-  SHADER_GEOMID_PRIMID = 5
+  SHADER_GEOMID_PRIMID = 5,
+  SHADER_AMBIENT_OCCLUSION = 6
 };
 
 /* standard shading function */
