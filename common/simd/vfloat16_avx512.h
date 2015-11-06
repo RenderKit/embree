@@ -631,6 +631,11 @@ namespace embree
 
   __forceinline float toScalar(const vfloat16& a) { return _mm512_cvtss_f32(a); }
 
+
+#if defined(__AVX512F__)  
+  template<size_t i> __forceinline const vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////

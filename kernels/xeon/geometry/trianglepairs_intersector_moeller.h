@@ -49,7 +49,6 @@ namespace embree
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
         const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
-        //const vfloat<M> flip(-1.0f,-1.0f,-1.0f,-1.0f,1.0f,1.0f,1.0f,1.0f);
         vNg = Vec3<vfloat<M>>(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
       }
 
@@ -447,18 +446,18 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const TrianglePairsMv<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
-                       vfloat8(tri.v1.y,tri.v3.y),
-                       vfloat8(tri.v1.z,tri.v3.z));
-          Vec3vf8 vtx1(vfloat8(tri.v0.x),
-                       vfloat8(tri.v0.y),
-                       vfloat8(tri.v0.z));
-          Vec3vf8 vtx2(vfloat8(tri.v2.x),
-                       vfloat8(tri.v2.y),
-                       vfloat8(tri.v2.z));
-          vint8   geomIDs(tri.geomIDs); 
-          vint8   primIDs(tri.primIDs,tri.primIDs+1);
-          vint8   flags(tri.flags);
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v1.x,tri.v3.x),
+                                 vfloat<2*M>(tri.v1.y,tri.v3.y),
+                                 vfloat<2*M>(tri.v1.z,tri.v3.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v0.x),
+                                 vfloat<2*M>(tri.v0.y),
+                                 vfloat<2*M>(tri.v0.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v2.x),
+                                 vfloat<2*M>(tri.v2.y),
+                                 vfloat<2*M>(tri.v2.z));
+          vint<2*M> geomIDs(tri.geomIDs); 
+          vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
+          vint<2*M> flags(tri.flags);
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx         
 
           //pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
@@ -469,20 +468,19 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const TrianglePairsMv<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),
-                       vfloat8(tri.v1.y,tri.v3.y),
-                       vfloat8(tri.v1.z,tri.v3.z));
-          Vec3vf8 vtx1(vfloat8(tri.v0.x),
-                       vfloat8(tri.v0.y),
-                       vfloat8(tri.v0.z));
-          Vec3vf8 vtx2(vfloat8(tri.v2.x),
-                       vfloat8(tri.v2.y),
-                       vfloat8(tri.v2.z));
-          vint8   geomIDs(tri.geomIDs); 
-          vint8   primIDs(tri.primIDs,tri.primIDs+1);
-          vint8   flags(tri.flags);
-          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx         
-          
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v1.x,tri.v3.x),
+                                 vfloat<2*M>(tri.v1.y,tri.v3.y),
+                                 vfloat<2*M>(tri.v1.z,tri.v3.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v0.x),
+                                 vfloat<2*M>(tri.v0.y),
+                                 vfloat<2*M>(tri.v0.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v2.x),
+                                 vfloat<2*M>(tri.v2.y),
+                                 vfloat<2*M>(tri.v2.z));
+          vint<2*M> geomIDs(tri.geomIDs); 
+          vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
+          vint<2*M> flags(tri.flags);
+          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx                   
           //if (pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
           //if (pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
           return false;

@@ -404,7 +404,11 @@ namespace embree
     return a[0];
 #endif
   }
-  
+
+#if defined(__AVX512F__)  
+  template<size_t i> __forceinline const vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
+#endif
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
