@@ -109,7 +109,10 @@ namespace embree
 #endif
         {
           size_t bits = movemask(active);
-          if (unlikely(__popcnt(bits) <= switchThreshold)) {
+#if FORCE_SINGLE_MODE == 0
+          if (unlikely(__popcnt(bits) <= switchThreshold)) 
+#endif
+          {
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
               BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
             }
@@ -118,7 +121,6 @@ namespace embree
           }
         }
 #endif
-
         while (likely(!cur.isLeaf()))
         {
           /* process nodes */
@@ -203,6 +205,7 @@ namespace embree
           *sptr_near = neg_inf;   sptr_near++;
         }
       }
+
       AVX_ZERO_UPPER();
     }
 

@@ -40,7 +40,7 @@ namespace embree
       struct MoellerTrumborePairsHitM
     {
       __forceinline MoellerTrumborePairsHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const vint<M>& flags, const Vec3<vfloat<M>>& Ng)
-        : U(U), V(V), T(T), absDen(absDen), flags(flags), vNg(Ng) {}
+        : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
       
       __forceinline void finalize() 
       {
