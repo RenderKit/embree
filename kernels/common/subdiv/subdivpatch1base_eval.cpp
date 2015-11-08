@@ -70,15 +70,15 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     void evalGrid(const SubdivPatch1Base& patch,
-                                    const size_t x0, const size_t x1,
-                                    const size_t y0, const size_t y1,
-                                    const size_t swidth, const size_t sheight,
-                                    float *__restrict__ const grid_x,
-                                    float *__restrict__ const grid_y,
-                                    float *__restrict__ const grid_z,
-                                    float *__restrict__ const grid_u,
-                                    float *__restrict__ const grid_v,
-                                    const SubdivMesh* const geom)
+                  const size_t x0, const size_t x1,
+                  const size_t y0, const size_t y1,
+                  const size_t swidth, const size_t sheight,
+                  float *__restrict__ const grid_x,
+                  float *__restrict__ const grid_y,
+                  float *__restrict__ const grid_z,
+                  float *__restrict__ const grid_u,
+                  float *__restrict__ const grid_v,
+                  const SubdivMesh* const geom)
     {
       const size_t dwidth  = x1-x0+1;
       const size_t dheight = y1-y0+1;
@@ -191,10 +191,10 @@ namespace embree
 
     /* eval grid over patch and stich edges when required */      
     BBox3fa evalGridBounds(const SubdivPatch1Base& patch,
-                                                const size_t x0, const size_t x1,
-                                                const size_t y0, const size_t y1,
-                                                const size_t swidth, const size_t sheight,
-                                                const SubdivMesh* const geom)
+                           const size_t x0, const size_t x1,
+                           const size_t y0, const size_t y1,
+                           const size_t swidth, const size_t sheight,
+                           const SubdivMesh* const geom)
     {
       BBox3fa b(empty);
       const size_t dwidth  = x1-x0+1;

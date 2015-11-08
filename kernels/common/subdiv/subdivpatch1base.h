@@ -120,24 +120,23 @@ namespace embree
       size_t subPatch;
     };
 
-      Vec3fa patch_v[4][4];
+    Vec3fa patch_v[4][4];
 
-      const HalfEdge *edge() const {
-        return ((PatchHalfEdge*)patch_v)->edge;
-      }
+    const HalfEdge *edge() const {
+      return ((PatchHalfEdge*)patch_v)->edge;
+    }
 
-      size_t subPatch() const {
-        return ((PatchHalfEdge*)patch_v)->subPatch;
-      }
+    size_t subPatch() const {
+      return ((PatchHalfEdge*)patch_v)->subPatch;
+    }
 
-      void set_edge(const HalfEdge *h) const {
-        ((PatchHalfEdge*)patch_v)->edge = h;
-      }
+    void set_edge(const HalfEdge *h) const {
+      ((PatchHalfEdge*)patch_v)->edge = h;
+    }
 
-      void set_subPatch(const size_t s) const {
-        ((PatchHalfEdge*)patch_v)->subPatch = s;
-      }
-
+    void set_subPatch(const size_t s) const {
+      ((PatchHalfEdge*)patch_v)->subPatch = s;
+    }
   };
 
   namespace isa
