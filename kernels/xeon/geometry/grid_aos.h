@@ -18,6 +18,7 @@
 
 #include "primitive.h"
 #include "discrete_tessellation.h"
+#include "../bvh/bvh.h"
 #include "../../common/subdiv/patch_eval.h"
 #include "../../common/subdiv/subdivpatch1base.h"
 
@@ -476,7 +477,7 @@ namespace embree
         return w*h;
       }
       
-      template<typename Allocator>
+      template<int N, typename Allocator>
       size_t createEagerPrims(Allocator& alloc, PrimRef* prims, 
                               const size_t x0, const size_t x1,
                               const size_t y0, const size_t y1)
@@ -488,7 +489,7 @@ namespace embree
             const size_t ry0 = y-y0, ry1 = min(y+8,y1)-y0;
             EagerLeaf* leaf = new (alloc(sizeof(EagerLeaf))) EagerLeaf(*this);
             const BBox3fa bounds = leaf->init(rx0,rx1,ry0,ry1);
-            prims[i++] = PrimRef(bounds,BVH4::encodeTypedLeaf(leaf,0));
+            prims[i++] = PrimRef(bounds,BVHN<N>::encodeTypedLeaf(leaf,0));
           }
         }
         return i;
@@ -536,10 +537,10 @@ namespace embree
         }
       }
       
-      template<typename Allocator>
+      template<int N, typename Allocator>
       static size_t createEager(const SubdivPatch1Base& patch, Scene* scene, SubdivMesh* mesh, size_t primID, Allocator& alloc, PrimRef* prims)
       {
-        size_t N = 0;
+        size_t num = 0;
         const size_t x0 = 0, x1 = patch.grid_u_res-1;
         const size_t y0 = 0, y1 = patch.grid_v_res-1;
         
@@ -551,20 +552,20 @@ namespace embree
             const size_t ly0 = y, ly1 = min(ly0+16,y1);
             GridAOS* leaf = GridAOS::create(alloc,lx1-lx0+1,ly1-ly0+1,mesh->id,primID);
             leaf->build(scene,mesh,primID,patch,lx0,lx1,ly0,ly1);
-            size_t n = leaf->createEagerPrims(alloc,prims,lx0,lx1,ly0,ly1);
+            size_t n = leaf->createEagerPrims<N>(alloc,prims,lx0,lx1,ly0,ly1);
             prims += n;
-            N += n;
+            num += n;
           }
         }
-        return N;
+        return num;
       }
       
-      template<typename Allocator>
+      template<int N, typename Allocator>
       static void* create(SubdivPatch1Base* const patch, Scene* scene, Allocator& alloc)
       {
         PrimRef prims[32];
-        size_t N = createEager(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
-        assert(N == 1);
+        size_t num = createEager<N>(*patch,scene,scene->getSubdivMesh(patch->geom),patch->prim,alloc,prims);
+        assert(num == 1);
         return (void*) prims[0].ID();
       }
       
