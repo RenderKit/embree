@@ -311,7 +311,7 @@ namespace embree
           if (d0 < d1) { stackPtr->ptr = c1; stackPtr->dist = d1; stackPtr++; cur = c0; return; }
           else         { stackPtr->ptr = c0; stackPtr->dist = d0; stackPtr++; cur = c1; return; }
         }
-#if 1
+#if 0
         /* const vint16 tNear_i = (asInt(tNear) & (~7)) | vint16(step); */
         /* const vint16 dist    = select((vbool16)(int)org_mask,tNear_i,vint16(0xffffffff)); */
         const vbool16 vmask = (int)org_mask;

@@ -108,7 +108,7 @@ namespace embree
         /* perform edge tests */
         const vfloat<M> U = dot(R,Vec3vfM(tri_e2)) ^ sgnDen;
         const vfloat<M> V = dot(R,Vec3vfM(tri_e1)) ^ sgnDen;
-        
+
         /* perform backface culling */
 #if defined(RTCORE_BACKFACE_CULLING)
         vbool<M> valid = (den > vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
@@ -334,6 +334,7 @@ namespace embree
         Vec3vf8 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
         Vec3vf8 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
         Vec3vf8 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
+
         vint8   geomIDs(tri.geomIDs); 
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
         vint8   flags(tri.flags);
@@ -369,19 +370,24 @@ namespace embree
         static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3vf16 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
-          Vec3vf16 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
-          Vec3vf16 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
-          vint16   geomIDs(tri.geomIDs); 
-          vint16   primIDs(vint8(tri.primIDs,tri.primIDs+1));
-          vint16   flags(tri.flags);
-          pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<16,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+          asm nop;
+          Vec3vf16 vtx0(select(0x0f0f,vfloat16(tri.v1.x),vfloat16(tri.v3.x)),
+                        select(0x0f0f,vfloat16(tri.v1.y),vfloat16(tri.v3.y)),
+                        select(0x0f0f,vfloat16(tri.v1.z),vfloat16(tri.v3.z)));
+          Vec3vf16 vtx1(tri.v0.x,tri.v0.y,tri.v0.z);
+          Vec3vf16 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+
+          vint8   geomIDs(tri.geomIDs); 
+          vint8   primIDs(tri.primIDs,tri.primIDs+1);
+          vint8   flags(tri.flags);
+          
+          pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
         
         /*! Test if the ray is occluded by one of M triangles. */
         static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
         {
-          STAT3(shadow.trav_prims,1,1,1);
+          STAT3(shadow.trav_prims,1,1,1); // FIXME !
           Vec3vf16 vtx0(vfloat8(tri.v1.x,tri.v3.x),vfloat8(tri.v1.y,tri.v3.y),vfloat8(tri.v1.z,tri.v3.z));
           Vec3vf16 vtx1(vfloat8(tri.v0.x),vfloat8(tri.v0.y),vfloat8(tri.v0.z));
           Vec3vf16 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
@@ -458,10 +464,7 @@ namespace embree
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
           vint<2*M> flags(tri.flags);
-          pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx         
-
-          //pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
-          //pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+          pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
@@ -480,13 +483,18 @@ namespace embree
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
           vint<2*M> flags(tri.flags);
-          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); //FIXME: 2*M,Mx                   
-          //if (pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
-          //if (pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Occluded1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene))) return true;
-          return false;
+          return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
       };
+
+
+
    }
 }
+
+/*
+  pre.intersect(ray,k,tri.v0,tri.v1,tri.v2,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+  pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
+*/
 
 #endif
