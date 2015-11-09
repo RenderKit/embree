@@ -176,7 +176,7 @@ namespace embree
 {
   ssize_t mapThreadID(ssize_t threadID)
   {
-#if 1
+#if 0
 #warning special affinity settings active    
 #define THREADS_PER_CORE 4
 #define CORES 54
