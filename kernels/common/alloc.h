@@ -28,7 +28,8 @@ namespace embree
     /*! maximal allocation size */
     //static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
     static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
-
+    
+    static const size_t defaultBlockSize = 4096;
   public:
 
     /*! Per thread structure holding the current memory block. */
@@ -39,10 +40,10 @@ namespace embree
 
       /*! Constructor for usage with ThreadLocalData */
       __forceinline ThreadLocal (void* alloc) 
-	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(4096), bytesUsed(0), bytesWasted(0) {}
+	: alloc((FastAllocator*)alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(defaultBlockSize), bytesUsed(0), bytesWasted(0) {}
 
       /*! Default constructor. */
-      __forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
+      __forceinline ThreadLocal (FastAllocator* alloc, const size_t allocBlockSize = defaultBlockSize) 
 	: alloc(alloc), ptr(nullptr), cur(0), end(0), allocBlockSize(allocBlockSize), bytesUsed(0), bytesWasted(0)  {}
 
       /*! resets the allocator */
@@ -125,7 +126,7 @@ namespace embree
         : alloc0(alloc), alloc1(alloc) {}
 
       /*! Default constructor. */
-      __forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = 4096) 
+      __forceinline ThreadLocal2 (FastAllocator* alloc, const size_t allocBlockSize = defaultBlockSize) 
         : alloc0(alloc,allocBlockSize), alloc1(alloc,allocBlockSize) {}
 
       /*! resets the allocator */
@@ -146,7 +147,7 @@ namespace embree
     };
 
     FastAllocator (MemoryMonitorInterface* device) 
-      : device(device), growSize(4096), usedBlocks(nullptr), freeBlocks(nullptr), slotMask(0),
+      : device(device), growSize(defaultBlockSize), usedBlocks(nullptr), freeBlocks(nullptr), slotMask(0),
       thread_local_allocators(this), thread_local_allocators2(this), bytesUsed(0)
     {
       for (size_t i=0; i<4; i++)
@@ -172,14 +173,14 @@ namespace embree
       if (usedBlocks || freeBlocks) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(device,bytesAllocate,bytesReserve);
-      growSize = max(size_t(4096),bytesReserve);
+      growSize = max(size_t(defaultBlockSize),bytesReserve);
     }
 
     /*! initializes the allocator */
     void init_estimate(size_t bytesAllocate) 
     {
       if (usedBlocks || freeBlocks) { reset(); return; }
-      growSize = max(size_t(4096),bytesAllocate);
+      growSize = max(size_t(defaultBlockSize),bytesAllocate);
       if (bytesAllocate > 4*maxAllocationSize) slotMask = 0x1;
       if (bytesAllocate > 16*maxAllocationSize) slotMask = 0x3;
     }
@@ -379,7 +380,7 @@ namespace embree
       Block (size_t bytesAllocate, size_t bytesReserve, Block* next) 
       : cur(0), allocEnd(bytesAllocate), reserveEnd(bytesReserve), next(next) 
       {
-        //for (size_t i=0; i<allocEnd; i+=4096) data[i] = 0;
+        //for (size_t i=0; i<allocEnd; i+=defaultBlockSize) data[i] = 0;
       }
 
       void clear (MemoryMonitorInterface* device) {

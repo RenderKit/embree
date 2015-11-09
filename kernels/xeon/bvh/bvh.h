@@ -162,7 +162,11 @@ namespace embree
         prefetchL1(((char*)ptr)+1*64);
         if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+2*64);
+#if defined(__AVX512F__)
+          prefetchL2(((char*)ptr)+3*64);
+#else
           prefetchL1(((char*)ptr)+3*64);
+#endif
         }
         if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
           prefetchL1(((char*)ptr)+4*64);
@@ -172,7 +176,7 @@ namespace embree
         }
       }
 
-      __forceinline void prefetchL2(int types=0) const {
+      __forceinline void prefetchLLC(int types=0) const {
         embree::prefetchL2(((char*)ptr)+0*64);
         embree::prefetchL2(((char*)ptr)+1*64);
         if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {

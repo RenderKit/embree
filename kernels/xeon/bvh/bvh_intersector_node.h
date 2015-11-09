@@ -258,6 +258,7 @@ namespace embree
       const vfloat16 tFarX  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.farX )), ray.rdir.x, ray.org_rdir.x);
       const vfloat16 tFarY  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.farY )), ray.rdir.y, ray.org_rdir.y);
       const vfloat16 tFarZ  = msub(vfloat16(*(vfloat8*)((const char*)&node->lower_x+ray.farZ )), ray.rdir.z, ray.org_rdir.z);      
+      
       const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,tnear);
       const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,tfar);
       const vbool16 vmask   = le(vbool16(0xff),tNear,tFar);
