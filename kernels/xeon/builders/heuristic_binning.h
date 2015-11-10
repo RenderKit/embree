@@ -45,6 +45,10 @@ namespace embree
           const vfloat4 diag = (vfloat4) pinfo.centBounds.size();
           scale = select(diag > vfloat4(1E-34f),vfloat4(0.99f*num)/diag,vfloat4(0.0f));
           ofs  = (vfloat4) pinfo.centBounds.lower;
+#if defined(__AVX512F__)
+          scale16 = scale;
+          ofs16 = ofs;
+#endif          
         }
         
         /*! returns number of bins */
@@ -64,16 +68,32 @@ namespace embree
 #endif
         }
 
-#if defined(__AVX512F__)
-        __forceinline vint16 bin16(const Vec3fa& p) const {
-          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
-        }
-#endif
-        
         /*! faster but unsafe binning */
         __forceinline Vec3ia bin_unsafe(const Vec3fa& p) const {
           return Vec3ia(floori((vfloat4(p)-ofs)*scale));
         }
+
+#if defined(__AVX512F__)
+        __forceinline vint16 bin16(const Vec3fa& p) const {
+          return vint16(vint4(floori((vfloat4(p)-ofs)*scale)));
+        }
+
+        __forceinline vint16 bin16(const vfloat16& p) const {
+          return floori((p-ofs16)*scale16);
+        }
+
+        __forceinline int bin_unsafe(const PrimRef &ref,
+                                     const vint16  vSplitPos,
+                                     const vbool16 splitDimMask) const
+          {
+            const vfloat16 lower(*(vfloat4*)&ref.lower);
+            const vfloat16 upper(*(vfloat4*)&ref.upper);
+            const vfloat16 p = lower + upper;
+            const vint16 i = floori((p-ofs16)*scale16);
+            return lt(splitDimMask,i,vSplitPos);
+          }
+#endif
+        
         
         /*! returns true if the mapping is invalid in some dimension */
         __forceinline bool invalid(const int dim) const {
@@ -88,6 +108,9 @@ namespace embree
       public:
         size_t num;
         vfloat4 ofs,scale;        //!< linear function that maps to bin ID
+#if defined(__AVX512F__)
+        vfloat16 ofs16,scale16;        //!< linear function that maps to bin ID
+#endif
       };
     
     /*! stores all information to perform some split */
@@ -468,10 +491,10 @@ namespace embree
 	for (size_t i=0; i<N; i++)
         {
           /*! map even and odd primitive to bin */
-          const BBox3fa prim0 = prims[i].bounds(); 
-          const Vec3fa center0 = Vec3fa(center2(prim0)); 
+          const BBox3fa prim0 = prims[i].bounds();
+          const vfloat16 center0 = vfloat16((vfloat4)prim0.lower) + vfloat16((vfloat4)prim0.upper); 
           const vint16 bin = mapping.bin16(center0);
- 
+
           const vfloat16 b_min_x = prims[i].lower.x;
           const vfloat16 b_min_y = prims[i].lower.y;
           const vfloat16 b_min_z = prims[i].lower.z;

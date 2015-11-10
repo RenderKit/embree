@@ -29,6 +29,7 @@
 #include "../geometry/trianglepairsv.h"
 #include "../geometry/object.h"
 
+#define PROFILE 0
 
 namespace embree
 {
@@ -104,6 +105,10 @@ namespace embree
         
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
+#if PROFILE
+        profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
+#endif
+
         /* create primref array */
         const size_t numSplitPrimitives = max(numPrimitives,size_t(presplitFactor*numPrimitives));
         prims.resize(numSplitPrimitives);
@@ -118,6 +123,10 @@ namespace embree
         /* call BVH builder */
         bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
         BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),bvh->scene->progressInterface,prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
+
+#if PROFILE
+          }); 
+#endif	
 
 	/* clear temporary data for static geometry */
 	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
@@ -453,7 +462,6 @@ namespace embree
                                  prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
             
 #if PROFILE
-            dt = timer.avg();
           }); 
 #endif	
         

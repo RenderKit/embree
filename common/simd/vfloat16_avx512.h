@@ -514,25 +514,31 @@ namespace embree
   
   __forceinline vfloat16 floor(const vfloat16& a) {
 #if defined(__AVX512F__)
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF); 
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); 
 #else
     return _mm512_round_ps(a,_MM_ROUND_MODE_DOWN, _MM_EXPADJ_NONE); 
 #endif
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
 #if defined(__AVX512F__)
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF); 
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); 
 #else
     return _mm512_round_ps(a,_MM_ROUND_MODE_UP  , _MM_EXPADJ_NONE); 
 #endif
   }
   __forceinline vfloat16 trunc(const vfloat16& a) {
 #if defined(__AVX512F__)
-    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO); 
+    return _mm512_add_round_ps(a,_mm512_setzero_ps(),_MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC); 
 #else
     return _mm512_trunc_ps(a); 
 #endif
   } 
+
+  __forceinline vint16 floori (const vfloat16& a) {
+    return _mm512_cvt_roundps_epi32(a,_MM_FROUND_TO_NEG_INF |_MM_FROUND_NO_EXC);
+  }
+
+
   __forceinline vfloat16 frac( const vfloat16& a ) { return a-trunc(a); }
 
   __forceinline const vfloat16 rcp_nr  ( const vfloat16& a ) {
