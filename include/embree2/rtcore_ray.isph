@@ -33,7 +33,7 @@ struct RTCRay1
   float tnear;       //!< Start of ray segment
   float tfar;        //!< End of ray segment (set to hit distance)
   float time;        //!< Time of this ray for motion blur
-  int   mask;        //!< Used to mask out objects during traversal
+  unsigned   mask;        //!< Used to mask out objects during traversal
   
   /* hit data */
   float Ng[3];       //!< Unnormalized geometry normal
@@ -42,10 +42,10 @@ struct RTCRay1
   float u;           //!< Barycentric u coordinate of hit
   float v;           //!< Barycentric v coordinate of hit
 
-  int geomID;        //!< geometry ID
-  int primID;        //!< primitive ID
-  int instID;        //!< instance ID
-  varying int align[0];  //!< aligns ray on stack to at least 16 bytes
+  unsigned geomID;        //!< geometry ID
+  unsigned primID;        //!< primitive ID
+  unsigned instID;        //!< instance ID
+  varying unsigned align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
 /*! Ray structure for packets of 4 rays. */
@@ -63,7 +63,7 @@ struct RTCRay
   float tnear; //!< Start of ray segment 
   float tfar;  //!< End of ray segment   
   float time;  //!< Time of this ray for motion blur
-  int   mask;  //!< Used to mask out objects during traversal
+  unsigned   mask;  //!< Used to mask out objects during traversal
   
   /* hit data */
   float Ngx;   //!< x coordinate of geometry normal
@@ -73,9 +73,9 @@ struct RTCRay
   float u;     //!< Barycentric u coordinate of hit
   float v;     //!< Barycentric v coordinate of hit
   
-  int geomID;     //!< geometry ID
-  int primID;     //!< primitive ID
-  int instID;     //!< instance ID
+  unsigned geomID;     //!< geometry ID
+  unsigned primID;     //!< primitive ID
+  unsigned instID;     //!< instance ID
 };
 
 
