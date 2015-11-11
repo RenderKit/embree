@@ -99,7 +99,7 @@ namespace embree
 #endif
 
     /* as the features are cached, this call is fast */
-    if (unlikely(getCPUFeatures() & AVX512KNL))
+    if (unlikely(getCPUFeatures() & CPU_FEATURE_AVX512F))
       enableHugePages = true;
 
     return enableHugePages;
