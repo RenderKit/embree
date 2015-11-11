@@ -3659,6 +3659,8 @@ namespace embree
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //rtcDeleteDevice(g_device); exit(1);
 
+    //exit(0);
+
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());

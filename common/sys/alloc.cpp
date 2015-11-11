@@ -87,6 +87,9 @@ namespace embree
 #define FORCE_HUGE_PAGES 0
 #endif
 
+#define UPGRADE_TO_2M_PAGE_LIMIT (4*1024)
+#define PAGE_SIZE_2M (2*1024*1024)
+
 namespace embree
 {
 
@@ -109,21 +112,22 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
         
-      if (useHugePages())
-        if (bytes > 16*4096) 
-        {
-          flags |= MAP_HUGETLB;
+    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    {
+      flags |= MAP_HUGETLB;
 #if defined(__MIC__)
-          flags |= MAP_POPULATE;
+      flags |= MAP_POPULATE;
 #endif
-          bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
-        } 
-        else 
-        {
-          bytes = (bytes+4095)&ssize_t(-4096);
-        }
+      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
+    } 
+    else 
+    {
+      bytes = (bytes+4095)&ssize_t(-4096);
+    }
 
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+
+    assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
     return ptr;
   }
@@ -132,21 +136,21 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
 
-    if (useHugePages())
-      if (bytes > 16*4096) 
-      {
-        flags |= MAP_HUGETLB;
+    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    {
+      flags |= MAP_HUGETLB;
 #if defined(__MIC__)
-        flags |= MAP_POPULATE;
+      flags |= MAP_POPULATE;
 #endif
-        bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
-      } 
-      else 
-      {
-        bytes = (bytes+4095)&ssize_t(-4096);
-      }
+      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
+    } 
+    else 
+    {
+      bytes = (bytes+4095)&ssize_t(-4096);
+    }
 
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+    assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
     return ptr;
   }
@@ -157,15 +161,21 @@ namespace embree
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = 4096;
-
-    if (useHugePages())
-      if (bytesOld > 16*4096) pageSize = 2*1024*1024;
+    if (bytesOld >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    {
+      //pageSize = PAGE_SIZE_2M;
+      /* can shrink a huge page */
+      return bytesOld;
+    }
 
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
+
     assert(bytesNew <= bytesOld);
     if (bytesNew < bytesOld)
       if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
+      {
         throw std::bad_alloc();
+      }
 
     return bytesNew;
   }
@@ -175,15 +185,16 @@ namespace embree
     if (bytes == 0)
       return;
 
-    if (useHugePages())
-      if (bytes > 16*4096) {
-      bytes = (bytes+2*1024*1024-1)&ssize_t(-2*1024*1024);
+    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) {
+      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
     } else {
       bytes = (bytes+4095)&ssize_t(-4096);
     }
 
     if (munmap(ptr,bytes) == -1)
+    {
       throw std::bad_alloc();
+    }
   }
 }
 
