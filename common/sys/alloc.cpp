@@ -89,6 +89,7 @@ namespace embree
 
 #define UPGRADE_TO_2M_PAGE_LIMIT (4*1024)
 #define PAGE_SIZE_2M (2*1024*1024)
+#define PAGE_SIZE_4K (4*1024)
 
 namespace embree
 {
@@ -122,7 +123,7 @@ namespace embree
     } 
     else 
     {
-      bytes = (bytes+4095)&ssize_t(-4096);
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
     }
 
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
@@ -146,7 +147,7 @@ namespace embree
     } 
     else 
     {
-      bytes = (bytes+4095)&ssize_t(-4096);
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
     }
 
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
@@ -160,7 +161,7 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-    size_t pageSize = 4096;
+    size_t pageSize = PAGE_SIZE_4K;
     if (bytesOld >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
     {
       //pageSize = PAGE_SIZE_2M;
@@ -188,7 +189,7 @@ namespace embree
     if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
     } else {
-      bytes = (bytes+4095)&ssize_t(-4096);
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
     }
 
     if (munmap(ptr,bytes) == -1)
