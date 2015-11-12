@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and      //
 // limitations under the License.                                           //
 // ======================================================================== //
-
+#include "config.h"
 #include "alloc.h"
 #include "intrinsics.h"
 #if defined(TASKING_TBB)
@@ -79,15 +79,14 @@ namespace embree
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sysinfo.h"
 
-#if defined(__MIC__)
+#if defined(RTCORE_HUGE_PAGES_SUPPORT) || defined(__MIC__)
 #define FORCE_HUGE_PAGES 1
 #else
 #define FORCE_HUGE_PAGES 0
 #endif
 
-#define UPGRADE_TO_2M_PAGE_LIMIT (4*1024)
+#define UPGRADE_TO_2M_PAGE_LIMIT (16*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
 #define PAGE_SIZE_4K (4*1024)
 
@@ -97,16 +96,10 @@ namespace embree
   __forceinline bool useHugePages() 
   {
 #if FORCE_HUGE_PAGES
-    bool enableHugePages = true;
+    return true;
 #else
-    bool enableHugePages = false;
+    return false;
 #endif
-
-    /* as the features are cached, this call is fast */
-    if (unlikely(getCPUFeatures() & CPU_FEATURE_AVX512F))
-      enableHugePages = true;
-
-    return enableHugePages;
   }
 
   void* os_malloc(size_t bytes, const int additional_flags)
@@ -165,7 +158,7 @@ namespace embree
     if (bytesOld >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
     {
       //pageSize = PAGE_SIZE_2M;
-      /* can shrink a huge page */
+      /* cannot shrink a huge page to a smaller size*/
       return bytesOld;
     }
 

@@ -8,4 +8,7 @@
 #cmakedefine RTCORE_IGNORE_INVALID_RAYS
 #cmakedefine RTCORE_RAY_PACKETS
 #cmakedefine RTCORE_TRIANGLE_PAIRS
+#cmakedefine RTCORE_HUGE_PAGES_SUPPORT
+
+
 
