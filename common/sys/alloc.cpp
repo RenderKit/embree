@@ -86,7 +86,7 @@ namespace embree
 #define FORCE_HUGE_PAGES 0
 #endif
 
-#define UPGRADE_TO_2M_PAGE_LIMIT (16*1024) 
+#define UPGRADE_TO_2M_PAGE_LIMIT (64*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
 #define PAGE_SIZE_4K (4*1024)
 
