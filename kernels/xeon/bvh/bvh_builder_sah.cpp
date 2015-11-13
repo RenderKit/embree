@@ -410,7 +410,6 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-#if defined(__AVX__)
 
     template<int N, typename Mesh, typename Primitive>
     struct BVHNBuilderSAHTrianglePairs : public Builder
@@ -483,9 +482,9 @@ namespace embree
     /* entry functions for the scene builder */
     Builder* BVH4TrianglePairs4SceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
+#if defined(__AVX__)
     Builder* BVH8TrianglePairs4SceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH8TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
-
 #endif
   }
 }

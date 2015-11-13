@@ -337,7 +337,7 @@ namespace embree
             Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
             vint4   geomIDs(tri.geomIDs); 
             vint4   primIDs(tri.primIDs);
-            vint4   flags( ((vint4*)&tri.flags)[0] );
+            vint4   flags(tri.flag(0));
             pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
           }
           {
@@ -346,7 +346,7 @@ namespace embree
             Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
             vint4   geomIDs(tri.geomIDs); 
             vint4   primIDs(tri.primIDs+1);
-            vint4   flags( ((vint4*)&tri.flags)[1] );
+            vint4   flags(tri.flag(1));
             pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
           }
         }
@@ -361,7 +361,7 @@ namespace embree
             Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
             vint4   geomIDs(tri.geomIDs); 
             vint4   primIDs(tri.primIDs);
-            vint4   flags( ((vint4*)&tri.flags)[0] );
+            vint4   flags(tri.flag(0));
             if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
               return true;
           }
@@ -371,7 +371,7 @@ namespace embree
             Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
             vint4   geomIDs(tri.geomIDs); 
             vint4   primIDs(tri.primIDs+1);
-            vint4   flags( ((vint4*)&tri.flags)[1] );
+            vint4   flags(tri.flag(1));
             if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
               return true;
           }          
@@ -398,7 +398,7 @@ namespace embree
 
         vint8   geomIDs(tri.geomIDs); 
         vint8   primIDs(tri.primIDs,tri.primIDs+1);
-        vint8   flags(tri.flags);
+        vint8   flags(tri.flag());
         pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
         
@@ -411,7 +411,7 @@ namespace embree
           Vec3vf8 vtx2(vfloat8(tri.v2.x),vfloat8(tri.v2.y),vfloat8(tri.v2.z));
           vint8   geomIDs(tri.geomIDs); 
           vint8   primIDs(tri.primIDs,tri.primIDs+1);
-          vint8   flags(tri.flags);
+          vint8   flags(tri.flag());
           return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
       };
@@ -435,10 +435,10 @@ namespace embree
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const unsigned int rotation0 = tri.flags[i];
+            const unsigned int rotation0 = tri.tflags(i);
             pre.intersectK(valid_i,ray,p1,p0,p2,rotation0,-1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs  ,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            const unsigned int rotation1 = tri.flags[4+i];
+            const unsigned int rotation1 = tri.tflags(4+i);
             pre.intersectK(valid_i,ray,p3,p0,p2,rotation1,1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,i,scene));
           }
         }
@@ -455,11 +455,11 @@ namespace embree
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const unsigned int rotation0 = tri.flags[i];
+            const unsigned int rotation0 = tri.tflags(i);
             pre.intersectK(valid0,ray,p0,p1,p2,rotation0,-1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            const unsigned int rotation1 = tri.flags[4+i];
+            const unsigned int rotation1 = tri.tflags(4+i);
             pre.intersectK(valid0,ray,p0,p2,p3,rotation1,1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
@@ -481,7 +481,7 @@ namespace embree
                                  vfloat<2*M>(tri.v2.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
-          vint<2*M> flags(tri.flags);
+          vint<2*M> flags(tri.flag());
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
         
@@ -500,7 +500,7 @@ namespace embree
                                  vfloat<2*M>(tri.v2.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs,tri.primIDs+1);
-          vint<2*M> flags(tri.flags);
+          vint<2*M> flags(tri.flag());
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
       };
@@ -526,8 +526,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   incID(0,0,0,0,1,1,1,1);
           vint8   primIDs(vint8(tri.primIDs)+incID);
-          vint8   flags(tri.flags);
-          
+          vint8   flags(tri.flag());         
           pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
         
@@ -543,7 +542,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   incID(0,0,0,0,1,1,1,1);
           vint8   primIDs(vint8(tri.primIDs)+incID);
-          vint8   flags(tri.flags);
+          vint8   flags(tri.flag());
           return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<16,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
       };
@@ -568,10 +567,10 @@ namespace embree
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const unsigned int rotation0 = tri.flags[i];
+            const unsigned int rotation0 = tri.tflags(i);
             pre.intersectK(valid_i,ray,p1,p0,p2,rotation0,-1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs  ,i,scene));
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            const unsigned int rotation1 = tri.flags[4+i];
+            const unsigned int rotation1 = tri.tflags(4+i);
             pre.intersectK(valid_i,ray,p3,p0,p2,rotation1,1.0f,IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,i,scene));
           }
         }
@@ -588,11 +587,11 @@ namespace embree
             const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const unsigned int rotation0 = tri.flags[i];
+            const unsigned int rotation0 = tri.tflags(i);
             pre.intersectK(valid0,ray,p0,p1,p2,rotation0,-1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            const unsigned int rotation1 = tri.flags[4+i];
+            const unsigned int rotation1 = tri.tflags(4+i);
             pre.intersectK(valid0,ray,p0,p2,p3,rotation1,1.0f,OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
             if (none(valid0)) break;
           }
@@ -611,7 +610,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   incID(0,0,0,0,1,1,1,1);
           vint8   primIDs(vint8(tri.primIDs)+incID);
-          vint8   flags(tri.flags);
+          vint8   flags(tri.flag());
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
         
@@ -627,7 +626,7 @@ namespace embree
           vint8   geomIDs(tri.geomIDs); 
           vint8   incID(0,0,0,0,1,1,1,1);
           vint8   primIDs(vint8(tri.primIDs)+incID);
-          vint8   flags(tri.flags);
+          vint8   flags(tri.flag());
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
       };

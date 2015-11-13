@@ -80,9 +80,21 @@ namespace embree
                                    const Vec3vfM& v2, 
                                    const Vec3vfM& v3, 
                                    const vint<M>& geomIDs, 
+                                   const vint<M>& primIDs)
+      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
+
+    __forceinline TrianglePairsMv (const Vec3vfM& v0, 
+                                   const Vec3vfM& v1, 
+                                   const Vec3vfM& v2, 
+                                   const Vec3vfM& v3, 
+                                   const vint<M>& geomIDs, 
                                    const vint<M>& primIDs,
-                                   const vint<2*M>& flags)
-      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs), flags(flags) {}
+                                   const vint<M>& flags0,
+                                   const vint<M>& flags1)
+      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {
+        flags[0] = flags0;
+        flags[1] = flags1;
+      }
     
     /*! Returns a mask that tells which triangles are valid. */
     __forceinline vbool<M> valid() const { return geomIDs !=  vint<M>(-1); }
@@ -102,8 +114,11 @@ namespace embree
     __forceinline int  primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /*! returns the flags */
-    __forceinline vint<2*M> flag() const { return flags; }
-    __forceinline int  flag(const size_t i) const { assert(i<2*M); return flags[i]; }
+    __forceinline vint<M> flag(const size_t i) const { return flags[i]; }
+#if defined(__AVX__)
+    __forceinline vint<2*M> flag() const { return *(vint<2*M>*)flags; }
+#endif
+    __forceinline int tflags(const size_t i) const { assert(i<2*M); return ((int*)flags)[i]; }
 
     /*! calculate the bounds of the triangles */
     __forceinline BBox3fa bounds() const 
@@ -138,14 +153,15 @@ namespace embree
       vfloat<M>::store_nt(&dst->v3.z,src.v3.z);
       vint<M>::store_nt(&dst->geomIDs,src.geomIDs);
       vint<M>::store_nt(&dst->primIDs,src.primIDs);
-      vint<2*M>::store_nt(&dst->flags,src.flags);
+      vint<M>::store_nt(&dst->flags[0],src.flags[0]);
+      vint<M>::store_nt(&dst->flags[1],src.flags[1]);
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint<M> vgeomID = -1, vprimID = -1;
-      vint<2*M> vflags = 0;
+      vint<M> vgeomID   = -1, vprimID = -1;
+      vint<M> vflags[2] = { 0, 0 };
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && prims; i++, prims++)
@@ -161,7 +177,7 @@ namespace embree
         /* single triangle, degenerate second triangle */
         if (prim.geomID() & ((unsigned int)1 << 31))
         {
-          vflags[i] = (unsigned int)(1 << 31) | encode_order(0,1,2);          
+          vflags[0][i] = (unsigned int)(1 << 31) | encode_order(0,1,2);          
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -189,21 +205,22 @@ namespace embree
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
-          vflags[0+i] = encode_rotation_order_tri0(i0);
+          vflags[0][i] = encode_rotation_order_tri0(i0);
           const unsigned int tri1_shared0 = (opp+1) % 3;
           const unsigned int tri1_shared1 = (opp+2) % 3;
           const bool flip = tri0.v[i0] != tri1.v[tri1_shared0];
-          vflags[M+i] = encode_rotation_flip_order_tri1(opp,flip);
+          vflags[1][i] = encode_rotation_flip_order_tri1(opp,flip);
+          //vflags[M+i] = encode_rotation_flip_order_tri1(opp,flip);
         }
       }
-    TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags));
+      TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags[0],vflags[1]));
     }
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> vgeomID = -1, vprimID = -1;
-      vint<2*M> vflags(zero);
+      vint<M> vflags[2] = { zero,  zero };
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
@@ -219,7 +236,7 @@ namespace embree
         /* single triangle, degenerate second triangle */
         if (prim.geomID() & ((unsigned int)1 << 31))
         {
-          vflags[i] = (unsigned int)(1 << 31) | encode_order(0,1,2);
+          vflags[0][i] = (unsigned int)(1 << 31) | encode_order(0,1,2);
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
           const Vec3fa& p1 = mesh->vertex(tri.v[1]);
@@ -247,16 +264,17 @@ namespace embree
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;          
-          vflags[0+i] = encode_rotation_order_tri0(i0);
+          vflags[0][i] = encode_rotation_order_tri0(i0);
           const unsigned int tri1_shared0 = (opp+1) % 3;
           const unsigned int tri1_shared1 = (opp+2) % 3;
           assert( (tri0.v[i0] == tri1.v[tri1_shared0]) || (tri0.v[i0] == tri1.v[tri1_shared1] ));
           assert( (tri0.v[i2] == tri1.v[tri1_shared0]) || (tri0.v[i2] == tri1.v[tri1_shared1] ));
           const bool flip = tri0.v[i0] != tri1.v[tri1_shared0];
-          vflags[M+i] = encode_rotation_flip_order_tri1(opp,flip);
+          vflags[1][i] = encode_rotation_flip_order_tri1(opp,flip);
+          //vflags[M+i] = encode_rotation_flip_order_tri1(opp,flip);
         }
       }
-    TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags));
+      TrianglePairsMv::store_nt(this,TrianglePairsMv(v0,v1,v2,v3,vgeomID,vprimID,vflags[0],vflags[1]));
     }
 
     /*! updates the primitive */
@@ -272,7 +290,7 @@ namespace embree
         const unsigned int primId = primID(i);
 
         /* single triangle, degenerate second triangle */
-        if (flag(i) & ((unsigned int)1 << 31))
+        if (tflags(i) & ((unsigned int)1 << 31))
         {
           const TriangleMesh::Triangle& tri = mesh->triangle(primId);
           const Vec3fa& p0 = mesh->vertex(tri.v[0]);
@@ -307,7 +325,7 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
         }
       }
-      new (this) TrianglePairsMv(v0,v1,v2,v3,geomIDs,primIDs,flags);
+      new (this) TrianglePairsMv(v0,v1,v2,v3,geomIDs,primIDs);
       return bounds;
     }
    
@@ -318,7 +336,7 @@ namespace embree
     Vec3vfM v3;        //!< 4rd vertex of the triangles.
     vint<M> geomIDs;   //!< geometry ID
     vint<M> primIDs;   //!< primitive ID
-    vint<2*M> flags;   //!< flags
+    vint<M> flags[2];  //!< flags
   };
 
   template<int M>

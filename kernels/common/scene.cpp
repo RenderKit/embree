@@ -172,7 +172,11 @@ namespace embree
 #endif
           {
             if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
-            else                 accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));
+#if defined(RTCORE_TRIANGLE_PAIRS)
+            else accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+#else
+            else accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));            
+#endif
           }
           break;
 
@@ -204,6 +208,8 @@ namespace embree
     else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
     else if (device->tri_accel == "bvh4.triangle4v")      accels.add(device->bvh4_factory->BVH4Triangle4v(this));
     else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+
 #if defined (__TARGET_AVX__)
     else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));

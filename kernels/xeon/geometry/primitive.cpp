@@ -123,17 +123,15 @@ namespace embree
 
   /********************** TrianglePairs4 **************************/
 
-#if defined(__TARGET_AVX__)
 #if !defined(__AVX__)
   template<>
   TrianglePairs4v::Type::Type () 
     : PrimitiveType("trianglepairs4",sizeof(TrianglePairs4v),4) {}
-#else
+
   template<>
   size_t TrianglePairs4v::Type::size(const char* This) const {
     return ((TrianglePairs4v*)This)->size();
   }
-#endif
 #endif
 
   /********************** SubdivPatch1Cached **************************/

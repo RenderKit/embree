@@ -166,7 +166,7 @@ namespace embree
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderSAH);
     SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8MeshBuilderSAH);
-    SELECT_SYMBOL_INIT_AVX   (features,BVH4TrianglePairs4MeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4TrianglePairs4MeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH);
@@ -180,7 +180,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX        (features,BVH4Triangle8MeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitSAH);
-    SELECT_SYMBOL_INIT_AVX(features,BVH4TrianglePairs4MeshRefitSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4TrianglePairs4MeshRefitSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshBuilderMortonGeneral);
     SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8MeshBuilderMortonGeneral);
@@ -193,8 +193,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4Triangle4Intersector1Moeller);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4Triangle4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2         (features,BVH4Triangle8Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4vIntersector1Pluecker);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Triangle4iIntersector1Pluecker);
@@ -202,7 +202,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
+    SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -465,6 +465,7 @@ namespace embree
     default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
     }
   }
+#endif
 
   void BVH4Factory::createTriangleMeshTrianglePairs4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
@@ -478,7 +479,6 @@ namespace embree
     }
   }
 
-#endif
 
   void BVH4Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
@@ -674,16 +674,15 @@ namespace embree
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
     return new AccelInstance(accel,builder,intersectors);
   }
+#endif
 
   Accel* BVH4Factory::BVH4TrianglePairs4Twolevel(Scene* scene)
   {
-    BVH4* accel = new BVH4(Triangle8::type,scene);
+    BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
     Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
     Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTrianglePairs4);
     return new AccelInstance(accel,builder,intersectors);
   }
-
-#endif
 
   Accel* BVH4Factory::BVH4Triangle4vTwolevel(Scene* scene)
   {
@@ -819,7 +818,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-#if defined (__TARGET_AVX__)
   Accel* BVH4Factory::BVH4TrianglePairs4ObjectSplit(Scene* scene)
   {
     BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
@@ -835,7 +833,6 @@ namespace embree
     Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
-#endif
 }
 
 

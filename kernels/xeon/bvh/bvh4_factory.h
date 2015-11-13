@@ -96,8 +96,9 @@ namespace embree
     static void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 #if defined (__TARGET_AVX__)
     static void createTriangleMeshTriangle8(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTrianglePairs4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 #endif
+    static void createTriangleMeshTrianglePairs4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+
     static void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
     static void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 
