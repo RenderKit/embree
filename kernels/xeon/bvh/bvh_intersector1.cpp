@@ -258,8 +258,11 @@ namespace embree
 
     DEFINE_INTERSECTOR1(BVH4Triangle4vMBIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersector1<TriangleMvMBIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
 
+
 #if defined(__AVX__)
     DEFINE_INTERSECTOR1(BVH4TrianglePairs4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TrianglePairsMIntersector1MoellerTrumbore<4 COMMA 8 COMMA true> > >);
+#else
+    DEFINE_INTERSECTOR1(BVH4TrianglePairs4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TrianglePairsMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////

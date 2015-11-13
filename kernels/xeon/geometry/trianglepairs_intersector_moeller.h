@@ -30,8 +30,6 @@
  *  algorithm is similar to the fastest one of the paper "Optimizing
  *  Ray-Triangle Intersection via Automated Search". */
 
-#if defined(__AVX__) // FIXME: implement SSE mode
-
 namespace embree
 {
   namespace isa
@@ -48,7 +46,11 @@ namespace embree
         vt = T * rcpAbsDen;
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
+#if defined(__AVX__)
         const vfloat<M> flip(vfloat<M/2>(-1.0f),vfloat<M/2>(1.0f));
+#else
+        const vfloat<M> flip(1.0f);
+#endif
         vNg = Vec3<vfloat<M>>(tri_Ng.x*flip,tri_Ng.y*flip,tri_Ng.z*flip);
       }
 
@@ -318,6 +320,65 @@ namespace embree
     template<int M, int Mx, bool filter>
       struct TrianglePairsMIntersector1MoellerTrumbore;
 
+    /*! Intersects 4 triangle pairs with 1 ray using SSE */
+    template<bool filter>
+      struct TrianglePairsMIntersector1MoellerTrumbore<4,4,filter>
+      {
+        typedef TrianglePairsMv<4> Primitive;
+        typedef MoellerTrumboreIntersectorPairs1<4> Precalculations;
+        
+        /*! Intersect a ray with the M triangles and updates the hit. */
+        static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(normal.trav_prims,1,1,1);
+          {
+            Vec3vf4 vtx0(tri.v1.x,tri.v1.y,tri.v1.z);
+            Vec3vf4 vtx1(tri.v0.x,tri.v0.y,tri.v0.z);
+            Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+            vint4   geomIDs(tri.geomIDs); 
+            vint4   primIDs(tri.primIDs);
+            vint4   flags( ((vint4*)&tri.flags)[0] );
+            pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+          }
+          {
+            Vec3vf4 vtx0(tri.v3.x,tri.v3.y,tri.v3.z);
+            Vec3vf4 vtx1(tri.v0.x,tri.v0.y,tri.v0.z);
+            Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+            vint4   geomIDs(tri.geomIDs); 
+            vint4   primIDs(tri.primIDs+1);
+            vint4   flags( ((vint4*)&tri.flags)[1] );
+            pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+          }
+        }
+        
+        /*! Test if the ray is occluded by one of M triangles. */
+        static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& tri, Scene* scene, const unsigned* geomID_to_instID)
+        {
+          STAT3(shadow.trav_prims,1,1,1);
+          {
+            Vec3vf4 vtx0(tri.v1.x,tri.v1.y,tri.v1.z);
+            Vec3vf4 vtx1(tri.v0.x,tri.v0.y,tri.v0.z);
+            Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+            vint4   geomIDs(tri.geomIDs); 
+            vint4   primIDs(tri.primIDs);
+            vint4   flags( ((vint4*)&tri.flags)[0] );
+            if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
+              return true;
+          }
+          {
+            Vec3vf4 vtx0(tri.v3.x,tri.v3.y,tri.v3.z);
+            Vec3vf4 vtx1(tri.v0.x,tri.v0.y,tri.v0.z);
+            Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+            vint4   geomIDs(tri.geomIDs); 
+            vint4   primIDs(tri.primIDs+1);
+            vint4   flags( ((vint4*)&tri.flags)[1] );
+            if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
+              return true;
+          }          
+          return false;
+        }
+      };
+
 #if defined(__AVX__)
 
     /*! Intersects 4 triangle pairs with 1 ray using AVX */
@@ -584,4 +645,3 @@ namespace embree
   pre.intersect(ray,k,tri.v0,tri.v2,tri.v3,Intersect1KEpilog<M,K,filter>(ray,k,tri.geomIDs,tri.primIDs,scene));
 */
 
-#endif
