@@ -81,32 +81,40 @@ namespace embree
 #include <string.h>
 
 #if defined(RTCORE_HUGE_PAGES_SUPPORT) || defined(__MIC__)
-#define FORCE_HUGE_PAGES 1
+#define USE_HUGE_PAGES 1
 #else
-#define FORCE_HUGE_PAGES 0
+#define USE_HUGE_PAGES 0
 #endif
 
-#define UPGRADE_TO_2M_PAGE_LIMIT (64*1024) 
+#define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
 #define PAGE_SIZE_4K (4*1024)
 
 namespace embree
 {
 
-  __forceinline bool useHugePages() 
+  __forceinline bool useHugePages(const size_t bytes) 
   {
-#if FORCE_HUGE_PAGES
-    return true;
-#else
-    return false;
+#if USE_HUGE_PAGES
+    /* try to use huge pages for large allocations */
+    if (bytes >= PAGE_SIZE_2M)
+    {
+      /* multiple of page size */
+      if ((bytes % PAGE_SIZE_2M) == 0) 
+        return true;
+      /* multiple of page size with rest >= UPGRADE_TO_2M_PAGE_LIMIT */
+      else if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT)
+        return true;
+    }
 #endif
+    return false;
   }
 
   void* os_malloc(size_t bytes, const int additional_flags)
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
         
-    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    if (useHugePages(bytes)) 
     {
       flags |= MAP_HUGETLB;
 #if defined(__MIC__)
@@ -130,7 +138,7 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
 
-    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    if (useHugePages(bytes)) 
     {
       flags |= MAP_HUGETLB;
 #if defined(__MIC__)
@@ -155,7 +163,7 @@ namespace embree
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
     size_t pageSize = PAGE_SIZE_4K;
-    if (bytesOld >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) 
+    if (useHugePages(bytesOld)) 
     {
       //pageSize = PAGE_SIZE_2M;
       /* cannot shrink a huge page to a smaller size*/
@@ -179,7 +187,7 @@ namespace embree
     if (bytes == 0)
       return;
 
-    if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT && useHugePages()) {
+    if (useHugePages(bytes)) {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
     } else {
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
