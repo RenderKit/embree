@@ -49,6 +49,7 @@ namespace embree
     Accel* BVH4UserGeometry(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
     Accel* BVH4Quad4v(Scene* scene);
+    Accel* BVH4Quad4i(Scene* scene);
 
     Accel* BVH4Triangle4Twolevel(Scene* scene);
     Accel* BVH4Triangle8Twolevel(Scene* scene);
@@ -87,6 +88,7 @@ namespace embree
     Accel::Intersectors BVH4Triangle4vMBIntersectorsHybrid(BVH4* bvh);
     Accel::Intersectors BVH4TrianglePairs4Intersectors(BVH4* bvh);
     Accel::Intersectors BVH4Quad4vIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4Quad4iIntersectors(BVH4* bvh);
 
     static void createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 #if defined (__TARGET_AVX__)
@@ -121,6 +123,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Moeller);
     
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Single);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Single);
@@ -211,6 +214,7 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4TrianglePairs4SceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Quad4iSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -223,6 +227,7 @@ namespace embree
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
     DEFINE_BUILDER2(void,TriangleMesh,size_t,BVH4TrianglePairs4MeshBuilderSAH);
     DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
+    DEFINE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMeshBuilderSAH);
 
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);

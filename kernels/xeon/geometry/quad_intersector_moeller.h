@@ -17,7 +17,6 @@
 #pragma once
 
 #include "quadv.h"
-#include "intersector_epilog.h"
 #include "triangle_intersector_moeller.h"
 
 /*! This intersector implements a modified version of the Moeller

@@ -24,6 +24,7 @@
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
+#include "../geometry/quadi.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
 #include "../geometry/trianglepairsv.h"
@@ -47,6 +48,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Single);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Single);
@@ -116,6 +118,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4TrianglePairs4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4iSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -128,6 +131,7 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4iMeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4TrianglePairs4MeshBuilderSAH);
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
+  DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMeshBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
@@ -164,6 +168,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMBSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4TrianglePairs4SceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Quad4vSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Quad4iSceneBuilderSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8SceneBuilderSpatialSAH);
@@ -176,6 +181,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Quad4vMeshBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Quad4iMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderSAH);
@@ -211,6 +217,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4vIntersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iIntersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -424,6 +431,20 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH4Quad4vIntersector1Moeller;
+    intersectors.intersector4           = NULL;
+    intersectors.intersector4_nofilter  = NULL;
+    intersectors.intersector8           = NULL;
+    intersectors.intersector8_nofilter  = NULL;
+    intersectors.intersector16          = NULL;
+    intersectors.intersector16_nofilter = NULL;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4Quad4iIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = BVH4Quad4iIntersector1Moeller;
     intersectors.intersector4           = NULL;
     intersectors.intersector4_nofilter  = NULL;
     intersectors.intersector8           = NULL;
@@ -854,6 +875,14 @@ namespace embree
     BVH4* accel = new BVH4(Quad4v::type,scene);
     Builder* builder = BVH4Quad4vSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Quad4i(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4i::type,scene);
+    Builder* builder = BVH4Quad4iSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVH4Quad4iIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
 
