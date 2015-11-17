@@ -116,7 +116,9 @@ namespace embree
         
     if (useHugePages(bytes)) 
     {
+#if USE_HUGE_PAGES
       flags |= MAP_HUGETLB;
+#endif
 #if defined(__MIC__)
       flags |= MAP_POPULATE;
 #endif
@@ -140,7 +142,9 @@ namespace embree
 
     if (useHugePages(bytes)) 
     {
+#if USE_HUGE_PAGES
       flags |= MAP_HUGETLB;
+#endif
 #if defined(__MIC__)
       flags |= MAP_POPULATE;
 #endif
