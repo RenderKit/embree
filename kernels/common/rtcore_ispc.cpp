@@ -163,6 +163,10 @@ namespace embree
   extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
     return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
   }
+
+  extern "C" unsigned ispcNewQuadMesh (RTCScene scene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewQuadMesh((RTCScene)scene,flags,numQuads,numVertices,numTimeSteps);
+  }
   
   extern "C" unsigned ispcNewBezierCurves (RTCScene scene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) {
     return rtcNewHairGeometry(scene,flags,numCurves,numVertices,numTimeSteps);

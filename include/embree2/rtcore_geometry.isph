@@ -129,6 +129,26 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,                  //!< t
                                          uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
   );
 
+/*! \brief Creates a new quad mesh. The number of quads
+  (numQuads), number of vertices (numVertices), and number of time
+  steps (1 for normal meshes, and 2 for linear motion blur), have to
+  get specified. The quad indices can be set be mapping and
+  writing to the index buffer (RTC_INDEX_BUFFER) and the quad
+  vertices can be set by mapping and writing into the vertex buffer
+  (RTC_VERTEX_BUFFER). In case of linear motion blur, two vertex
+  buffers have to get filled (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1),
+  one for each time step. The index buffer has the default layout of
+  three 32 bit integer indices for each quad. An index points to
+  the ith vertex. The vertex buffer stores single precision x,y,z
+  floating point coordinates aligned to 16 bytes. The value of the 4th
+  float used for alignment can be arbitrary. */
+uniform unsigned int rtcNewQuadMesh (RTCScene scene,                  //!< the scene the mesh belongs to
+                                     uniform RTCGeometryFlags flags,  //!< geometry flags
+                                     uniform size_t numQuads,         //!< number of quads
+                                     uniform size_t numVertices,      //!< number of vertices
+                                     uniform size_t numTimeSteps = 1  //!< number of motion blur time steps
+  );
+
 /*! \brief Creates a new subdivision mesh. The number of faces
  (numFaces), edges/indices (numEdges), vertices (numVertices), edge
  creases (numEdgeCreases), vertex creases (numVertexCreases), holes

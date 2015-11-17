@@ -593,6 +593,17 @@ namespace embree
     return -1;
   }
 
+  RTCORE_API unsigned rtcNewQuadMesh (RTCScene hscene, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewQuadMesh);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->newQuadMesh(flags,numQuads,numVertices,numTimeSteps);
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
   RTCORE_API unsigned rtcNewHairGeometry (RTCScene hscene, RTCGeometryFlags flags, size_t numCurves, size_t numVertices, size_t numTimeSteps) 
   {
     Scene* scene = (Scene*) hscene;

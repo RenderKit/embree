@@ -51,15 +51,21 @@ extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform
 extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform size_tt numItems);
 extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
+                                                     uniform RTCGeometryFlags flags,
+                                                     uniform size_tt numTriangles,
+                                                     uniform size_tt numVertices,
+                                                     uniform size_tt numTimeSteps);
+extern "C" uniform unsigned int ispcNewQuadMesh (RTCScene scene,
                                                  uniform RTCGeometryFlags flags,
                                                  uniform size_tt numTriangles,
                                                  uniform size_tt numVertices,
                                                  uniform size_tt numTimeSteps);
+
 extern "C" uniform unsigned int ispcNewBezierCurves (RTCScene scene,
-                                                              uniform RTCGeometryFlags flags,
-                                                              uniform size_tt numCurves,
-                                                              uniform size_tt numVertices,
-                                                              uniform size_tt numTimeSteps);
+                                                     uniform RTCGeometryFlags flags,
+                                                     uniform size_tt numCurves,
+                                                     uniform size_tt numVertices,
+                                                     uniform size_tt numTimeSteps);
 
 extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform RTCGeometryFlags flags,
@@ -271,10 +277,10 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,
 }
 
 uniform unsigned int rtcNewHairGeometry (RTCScene scene,
-                                                  uniform RTCGeometryFlags flags,
-                                                  uniform size_t numCurves,
-                                                  uniform size_t numVertices,
-                                                  uniform size_t numTimeSteps)
+                                         uniform RTCGeometryFlags flags,
+                                         uniform size_t numCurves,
+                                         uniform size_t numVertices,
+                                         uniform size_t numTimeSteps)
 {
   return ispcNewBezierCurves (scene,flags,numCurves,numVertices,numTimeSteps);
 }

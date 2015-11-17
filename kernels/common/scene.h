@@ -19,6 +19,7 @@
 #include "default.h"
 #include "device.h"
 #include "scene_triangle_mesh.h"
+#include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
 #include "scene_geometry_instance.h"
@@ -124,6 +125,9 @@ namespace embree
 
     /*! Creates a new triangle mesh. */
     unsigned int newTriangleMesh (RTCGeometryFlags flags, size_t maxTriangles, size_t maxVertices, size_t numTimeSteps);
+
+    /*! Creates a new quad mesh. */
+    unsigned int newQuadMesh (RTCGeometryFlags flags, size_t maxQuads, size_t maxVertices, size_t numTimeSteps);
 
     /*! Creates a new collection of quadratic bezier curves. */
     unsigned int newBezierCurves (RTCGeometryFlags flags, size_t maxCurves, size_t maxVertices, size_t numTimeSteps);
@@ -252,6 +256,8 @@ namespace embree
     RTCAlgorithmFlags aflags;
     bool needTriangleIndices; 
     bool needTriangleVertices; 
+    bool needQuadIndices; 
+    bool needQuadVertices; 
     bool needBezierIndices;
     bool needBezierVertices;
     bool needSubdivIndices;
@@ -291,13 +297,14 @@ namespace embree
     struct GeometryCounts 
     {
       __forceinline GeometryCounts()
-        : numTriangles(0), numBezierCurves(0), numSubdivPatches(0), numUserGeometries(0) {}
+        : numTriangles(0), numQuads(0), numBezierCurves(0), numSubdivPatches(0), numUserGeometries(0) {}
 
       __forceinline size_t size() const {
-        return numTriangles + numBezierCurves + numSubdivPatches + numUserGeometries;
+        return numTriangles + numQuads + numBezierCurves + numSubdivPatches + numUserGeometries;
       }
 
       atomic_t numTriangles;             //!< number of enabled triangles
+      atomic_t numQuads;                 //!< number of enabled quads
       atomic_t numBezierCurves;          //!< number of enabled curves
       atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
       atomic_t numUserGeometries;        //!< number of enabled user geometries
@@ -323,6 +330,8 @@ namespace embree
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return world2.numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,1>() const { return world1.numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,2>() const { return world2.numTriangles; } 
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return world1.numBezierCurves; } 
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return world2.numBezierCurves; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 

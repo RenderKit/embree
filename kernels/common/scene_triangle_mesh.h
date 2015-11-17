@@ -215,7 +215,7 @@ namespace embree
 
 	const vfloat16 v0 = broadcast4to16f(vptr0); 
 	const vfloat16 v1 = broadcast4to16f(vptr1); 
-	const vfloat16 v2 = broadcast4to16f(vptr2); 
+ 	const vfloat16 v2 = broadcast4to16f(vptr2); 
 	return Vec3vf16(v0,v1,v2);
 #else
 	const vint16 stride = vertices[dim].getBufferStride();
@@ -258,5 +258,6 @@ namespace embree
     BufferT<Triangle> triangles;                    //!< array of triangles
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
+
   };
 }

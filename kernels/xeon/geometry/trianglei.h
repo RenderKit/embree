@@ -45,7 +45,7 @@ namespace embree
   public:
 
     /* Default constructor */
-    __forceinline TriangleMi() {}
+    __forceinline TriangleMi() {  }
 
     /* Construction from vertices and IDs */
     __forceinline TriangleMi(Vec3f* base[M], const vint<M>& v1, const vint<M>& v2, const vint<M>& geomIDs, const vint<M>& primIDs)

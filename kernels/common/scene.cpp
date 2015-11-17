@@ -43,6 +43,7 @@ namespace embree
       Accel(AccelData::TY_UNKNOWN),
       flags(sflags), aflags(aflags), numMappedBuffers(0), is_build(false), modified(true), 
       needTriangleIndices(false), needTriangleVertices(false), 
+      needQuadIndices(false), needQuadVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
@@ -65,9 +66,11 @@ namespace embree
 
     if (aflags & RTC_INTERPOLATE) {
       needTriangleIndices = true;
+      needQuadIndices = true;
       needBezierIndices = true;
       //needSubdivIndices = true; // not required for interpolation
       needTriangleVertices = true;
+      needQuadVertices = true;      
       needBezierVertices = true;
       needSubdivVertices = true;
     }
@@ -390,6 +393,22 @@ namespace embree
     }
     
     Geometry* geom = new TriangleMesh(this,gflags,numTriangles,numVertices,numTimeSteps);
+    return geom->id;
+  }
+
+  unsigned Scene::newQuadMesh (RTCGeometryFlags gflags, size_t numQuads, size_t numVertices, size_t numTimeSteps) 
+  {
+    if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
+      throw_RTCError(RTC_INVALID_OPERATION,"static scenes can only contain static geometries");
+      return -1;
+    }
+
+    if (numTimeSteps == 0 || numTimeSteps > 2) {
+      throw_RTCError(RTC_INVALID_OPERATION,"only 1 or 2 time steps supported");
+      return -1;
+    }
+    
+    Geometry* geom = new QuadMesh(this,gflags,numQuads,numVertices,numTimeSteps);
     return geom->id;
   }
 

@@ -14,35 +14,35 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "scene_triangle_mesh.h"
+#include "scene_quad_mesh.h"
 #include "scene.h"
 
 namespace embree
 {
 
-  TriangleMesh::TriangleMesh (Scene* parent, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps)
-    : Geometry(parent,TRIANGLE_MESH,numTriangles,numTimeSteps,flags)
+  QuadMesh::QuadMesh (Scene* parent, RTCGeometryFlags flags, size_t numQuads, size_t numVertices, size_t numTimeSteps)
+    : Geometry(parent,QUAD_MESH,numQuads,numTimeSteps,flags)
   {
-    triangles.init(parent->device,numTriangles,sizeof(Triangle));
+    quads.init(parent->device,numQuads,sizeof(Quad));
     for (size_t i=0; i<numTimeSteps; i++) {
       vertices[i].init(parent->device,numVertices,sizeof(Vec3fa));
     }
     enabling();
   }
   
-  void TriangleMesh::enabling() 
+  void QuadMesh::enabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numTriangles,triangles.size());
-    else                   atomic_add(&parent->world2.numTriangles,triangles.size());
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numQuads,quads.size());
+    else                   atomic_add(&parent->world2.numQuads,quads.size());
   }
   
-  void TriangleMesh::disabling() 
+  void QuadMesh::disabling() 
   { 
-    if (numTimeSteps == 1) atomic_add(&parent->world1.numTriangles,-(ssize_t)triangles.size());
-    else                   atomic_add(&parent->world2.numTriangles,-(ssize_t)triangles.size());
+    if (numTimeSteps == 1) atomic_add(&parent->world1.numQuads,-(ssize_t)quads.size());
+    else                   atomic_add(&parent->world2.numQuads,-(ssize_t)quads.size());
   }
 
-  void TriangleMesh::setMask (unsigned mask) 
+  void QuadMesh::setMask (unsigned mask) 
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -51,7 +51,7 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
+  void QuadMesh::setBuffer(RTCBufferType type, void* ptr, size_t offset, size_t stride) 
   { 
     if (parent->isStatic() && parent->isBuild()) 
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
@@ -62,7 +62,7 @@ namespace embree
 
     switch (type) {
     case RTC_INDEX_BUFFER  : 
-      triangles.set(ptr,offset,stride); 
+      quads.set(ptr,offset,stride); 
       break;
     case RTC_VERTEX_BUFFER0: 
       vertices[0].set(ptr,offset,stride); 
@@ -88,55 +88,56 @@ namespace embree
     }
   }
 
-  void* TriangleMesh::map(RTCBufferType type) 
+  void* QuadMesh::map(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : return triangles.map(parent->numMappedBuffers);
+    case RTC_INDEX_BUFFER  : return quads.map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER0: return vertices[0].map(parent->numMappedBuffers);
     case RTC_VERTEX_BUFFER1: return vertices[1].map(parent->numMappedBuffers);
     default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); return nullptr;
     }
   }
 
-  void TriangleMesh::unmap(RTCBufferType type) 
+  void QuadMesh::unmap(RTCBufferType type) 
   {
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
     switch (type) {
-    case RTC_INDEX_BUFFER  : triangles  .unmap(parent->numMappedBuffers); break;
+    case RTC_INDEX_BUFFER  : quads  .unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER0: vertices[0].unmap(parent->numMappedBuffers); break;
     case RTC_VERTEX_BUFFER1: vertices[1].unmap(parent->numMappedBuffers); break;
     default                : throw_RTCError(RTC_INVALID_ARGUMENT,"unknown buffer type"); break;
     }
   }
 
-  void TriangleMesh::immutable () 
+  void QuadMesh::immutable () 
   {
-    const bool freeTriangles = !parent->needTriangleIndices;
-    const bool freeVertices  = !parent->needTriangleVertices;
-    if (freeTriangles) triangles.free(); 
+    const bool freeQuads = !parent->needQuadIndices;
+    const bool freeVertices  = !parent->needQuadVertices;
+    if (freeQuads) quads.free(); 
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();
   }
 
-  bool TriangleMesh::verify () 
+  bool QuadMesh::verify () 
   {
     /*! verify consistent size of vertex arrays */
     if (numTimeSteps == 2 && vertices[0].size() != vertices[1].size())
         return false;
 
-    /*! verify proper triangle indices */
-    for (size_t i=0; i<triangles.size(); i++) {     
-      if (triangles[i].v[0] >= numVertices()) return false; 
-      if (triangles[i].v[1] >= numVertices()) return false; 
-      if (triangles[i].v[2] >= numVertices()) return false; 
+    /*! verify proper quad indices */
+    for (size_t i=0; i<quads.size(); i++) {     
+      if (quads[i].v[0] >= numVertices()) return false; 
+      if (quads[i].v[1] >= numVertices()) return false; 
+      if (quads[i].v[2] >= numVertices()) return false; 
+      if (quads[i].v[3] >= numVertices()) return false; 
     }
 
-    /*! verify proper triangle vertices */
+    /*! verify proper quad vertices */
     for (size_t j=0; j<numTimeSteps; j++) 
     {
       BufferT<Vec3fa>& verts = vertices[j];
@@ -148,7 +149,7 @@ namespace embree
     return true;
   }
 
-  void TriangleMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)
@@ -174,13 +175,14 @@ namespace embree
     for (size_t i=0; i<numFloats; i+=4)
     {
       size_t ofs = i*sizeof(float);
-      const float w = 1.0f-u-v;
-      const Triangle& tri = triangle(primID);
+      const Quad& tri = quad(primID);
       const vfloat4 p0 = vfloat4::loadu((float*)&src[tri.v[0]*stride+ofs]);
       const vfloat4 p1 = vfloat4::loadu((float*)&src[tri.v[1]*stride+ofs]);
       const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
+      const vfloat4 p3 = vfloat4::loadu((float*)&src[tri.v[3]*stride+ofs]);
       const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
-      if (P   ) vfloat4::storeu(valid,P+i,w*p0 + u*p1 + v*p2);
+      const vfloat4 p = ((1.0f-u)*p0 + u*p1)*(1.0f-v) + v*((1.0f-u)*p3 + u*p2);
+      if (P   ) vfloat4::storeu(valid,P+i,p);
       if (dPdu) vfloat4::storeu(valid,dPdu+i,p1-p0);
       if (dPdv) vfloat4::storeu(valid,dPdv+i,p2-p0);
     }
@@ -192,11 +194,13 @@ namespace embree
       size_t ofs = i*sizeof(float);
       vbool16 mask = (i+16 > numFloats) ? (vbool16)(((unsigned int)1 << (numFloats-i))-1) : vbool16( true );
       const float w = 1.0f-u-v;
-      const Triangle& tri = triangle(primID);
+      const Quad& tri = quad(primID);
       const vfloat16 p0 = vfloat16::loadu(mask,(float*)&src[tri.v[0]*stride+ofs]);
       const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
       const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
-      if (P   ) vfloat16::storeu_compact(mask,P+i,w*p0 + u*p1 + v*p2);
+      const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[tri.v[3]*stride+ofs]);
+      const vfloat16 p = (1.0f-v)((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
+      if (P   ) vfloat16::storeu_compact(mask,P+i,p);
       if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,p1-p0);
       if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,p2-p0);
     }
@@ -204,15 +208,15 @@ namespace embree
 #endif
   }
 
-  void TriangleMesh::write(std::ofstream& file)
+  void QuadMesh::write(std::ofstream& file)
   {
-    int type = TRIANGLE_MESH;
+    int type = QUAD_MESH;
     file.write((char*)&type,sizeof(int));
     file.write((char*)&numTimeSteps,sizeof(int));
     int numVerts = numVertices();
     file.write((char*)&numVerts,sizeof(int));
-    int numTriangles = triangles.size();
-    file.write((char*)&numTriangles,sizeof(int));
+    int numQuads = quads.size();
+    file.write((char*)&numQuads,sizeof(int));
 
     for (size_t j=0; j<numTimeSteps; j++) {
       while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
@@ -220,7 +224,7 @@ namespace embree
     }
 
     while ((file.tellp() % 16) != 0) { char c = 0; file.write(&c,1); }
-    for (size_t i=0; i<numTriangles; i++) file.write((char*)&triangle(i),sizeof(Triangle));  
+    for (size_t i=0; i<numQuads; i++) file.write((char*)&quad(i),sizeof(Quad));  
 
   }
 }
