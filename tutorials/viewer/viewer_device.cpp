@@ -176,7 +176,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
-#if 1
+#if 0
   PING;
   /* test path for quad/tri mixed input meshes */
   PRINT(mesh->numFaces);
@@ -184,6 +184,8 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   Quad *q = (Quad *)rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
 
+  size_t quads = 0;
+  size_t tris  = 0;
   size_t index = 0;
   for (size_t f=0;f<mesh->numFaces;f++)
   {
@@ -193,6 +195,7 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
       q[f].v1 = mesh->position_indices[index+1];
       q[f].v2 = mesh->position_indices[index+2];
       q[f].v3 = mesh->position_indices[index+3];
+      quads++;
     }
     else if (mesh->verticesPerFace[f] == 3)
     {
@@ -200,6 +203,7 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
       q[f].v1 = mesh->position_indices[index+1];
       q[f].v2 = mesh->position_indices[index+2];
       q[f].v3 = mesh->position_indices[index+2]; // degenerate second triangle
+      tris++;
     }
     else
       FATAL("only 3 or 4 vertices per face supported");
@@ -207,7 +211,8 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   }
 
   rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
-
+  PRINT(quads);
+  PRINT(tris);
 #else
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
