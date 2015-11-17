@@ -38,6 +38,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vMBIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridAOSIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);
@@ -248,6 +249,20 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH8Factory::BVH8Quad4vIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = BVH8Quad4vIntersector1Moeller;
+    intersectors.intersector4           = NULL;
+    intersectors.intersector4_nofilter  = NULL;
+    intersectors.intersector8           = NULL;
+    intersectors.intersector8_nofilter  = NULL;
+    intersectors.intersector16          = NULL;
+    intersectors.intersector16_nofilter = NULL;
+    return intersectors;
+  }
+
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene, bool highQuality)
   {
     BVH8* accel = new BVH8(Bezier1v::type,scene);
@@ -333,7 +348,7 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH8Factory::BVH8TrianglePairs4ObjectSplit(Scene* scene)
+  Accel* BVH8Factory::BVH8TrianglePairs4(Scene* scene)
   {
     BVH8* accel = new BVH8(TrianglePairs4v::type,scene);
     Accel::Intersectors intersectors = BVH8TrianglePairs4Intersectors(accel);
@@ -358,6 +373,18 @@ namespace embree
     BVH8* accel = new BVH8(Triangle8::type,scene);
     Accel::Intersectors intersectors= BVH8Triangle8Intersectors(accel);
     Builder* builder = BVH8Triangle8SceneBuilderSpatialSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8Quad4v(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Quad4v::type,scene);
+    Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
+
+    Builder* builder = nullptr;
+    if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Quad4v>");
+
     return new AccelInstance(accel,builder,intersectors);
   }
 

@@ -40,13 +40,14 @@ namespace embree
 
     Accel* BVH8Triangle8(Scene* scene);
     //Accel* BVH8Triangle8v(Scene* scene);
-    Accel* BVH8TrianglePairs4ObjectSplit(Scene* scene);
+    Accel* BVH8TrianglePairs4(Scene* scene);
     Accel* BVH8Triangle8ObjectSplit(Scene* scene);
     Accel* BVH8Triangle8SpatialSplit(Scene* scene);
     //Accel* BVH8Triangle8vObjectSplit(Scene* scene);
     //Accel* BVH8Triangle8vSpatialSplit(Scene* scene);
     Accel* BVH8Triangle4vMB(Scene* scene);
     Accel* BVH8SubdivGridEager(Scene* scene);
+    Accel* BVH8Quad4v(Scene* scene);
     
   private:
     Accel::Intersectors BVH8Bezier1vIntersectors_OBB(BVH8* bvh);
@@ -56,6 +57,7 @@ namespace embree
     Accel::Intersectors BVH8Triangle8Intersectors(BVH8* bvh);
     Accel::Intersectors BVH8Triangle4vMBIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8TrianglePairs4Intersectors(BVH8* bvh);
+    Accel::Intersectors BVH8Quad4vIntersectors(BVH8* bvh);
 
   private:
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Bezier1vIntersector1_OBB);
@@ -66,6 +68,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8Triangle4vMBIntersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8GridAOSIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);

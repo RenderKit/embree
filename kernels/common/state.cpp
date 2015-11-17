@@ -52,6 +52,10 @@ namespace embree
     tri_builder = "default";
     tri_traverser = "default";
     tri_builder_replication_factor = 2.0f;
+
+    quad_accel = "default";
+    quad_builder = "default";
+    quad_traverser = "default";
     
     tri_accel_mb = "default";
     tri_builder_mb = "default";
@@ -229,6 +233,13 @@ namespace embree
         tri_traverser = cin->get().Identifier();
       else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
         tri_builder_replication_factor = cin->get().Int();
+
+      else if ((tok == Token::Id("quad_accel")) && cin->trySymbol("="))
+        quad_accel = cin->get().Identifier();
+      else if ((tok == Token::Id("quad_builder")) && cin->trySymbol("="))
+        quad_builder = cin->get().Identifier();
+      else if ((tok == Token::Id("quad_traverser")) && cin->trySymbol("="))
+        quad_traverser = cin->get().Identifier();
       
       else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
         tri_accel_mb = cin->get().Identifier();

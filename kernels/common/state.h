@@ -57,6 +57,11 @@ namespace embree
     double      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
+    std::string quad_accel;                 //!< acceleration structure to use for quads
+    std::string quad_builder;               //!< builder to use for quads
+    std::string quad_traverser;             //!< traverser to use for quads
+
+  public:
     std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
     std::string tri_builder_mb;            //!< builder to use for motion blur triangles
     std::string tri_traverser_mb;          //!< traverser to use for triangles

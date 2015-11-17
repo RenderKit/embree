@@ -142,6 +142,7 @@ namespace embree
     createHairAccel();
     createHairMBAccel();
     createSubdivAccel();
+    createQuadAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
@@ -165,7 +166,7 @@ namespace embree
 	  {
             if (isHighQuality()) accels.add(device->bvh8_factory->BVH8Triangle4SpatialSplit(this));
 #if defined(RTCORE_TRIANGLE_PAIRS)
-            else                 accels.add(device->bvh8_factory->BVH8TrianglePairs4ObjectSplit(this));
+            else                 accels.add(device->bvh8_factory->BVH8TrianglePairs4(this));
 #else
             else                 accels.add(device->bvh8_factory->BVH8Triangle4ObjectSplit(this));
 #endif
@@ -176,7 +177,7 @@ namespace embree
           {
             if (isHighQuality()) accels.add(device->bvh4_factory->BVH4Triangle4SpatialSplit(this));
 #if defined(RTCORE_TRIANGLE_PAIRS)
-            else accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+            else accels.add(device->bvh4_factory->BVH4TrianglePairs4(this));
 #else
             else accels.add(device->bvh4_factory->BVH4Triangle4ObjectSplit(this));            
 #endif
@@ -211,17 +212,34 @@ namespace embree
     else if (device->tri_accel == "bvh4.triangle4")       accels.add(device->bvh4_factory->BVH4Triangle4(this));
     else if (device->tri_accel == "bvh4.triangle4v")      accels.add(device->bvh4_factory->BVH4Triangle4v(this));
     else if (device->tri_accel == "bvh4.triangle4i")      accels.add(device->bvh4_factory->BVH4Triangle4i(this));
-    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4(this));
 
 #if defined (__TARGET_AVX__)
-    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh4.trianglepairs4")  accels.add(device->bvh4_factory->BVH4TrianglePairs4(this));
     else if (device->tri_accel == "bvh4.triangle8")       accels.add(device->bvh4_factory->BVH4Triangle8(this));
     else if (device->tri_accel == "bvh8.triangle4")       accels.add(device->bvh8_factory->BVH8Triangle4(this));
     else if (device->tri_accel == "bvh8.triangle8")       accels.add(device->bvh8_factory->BVH8Triangle8(this));
-    else if (device->tri_accel == "bvh8.trianglepairs4")  accels.add(device->bvh8_factory->BVH8TrianglePairs4ObjectSplit(this));
+    else if (device->tri_accel == "bvh8.trianglepairs4")  accels.add(device->bvh8_factory->BVH8TrianglePairs4(this));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
   }
+
+
+  void Scene::createQuadAccel()
+  {
+    if (device->quad_accel == "default") 
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX))
+        accels.add(device->bvh8_factory->BVH8Quad4v(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Quad4v(this));
+
+    }
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
+  }
+
 
   void Scene::createTriangleMBAccel()
   {

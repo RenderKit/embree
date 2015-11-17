@@ -33,6 +33,7 @@
 #include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
 #include "../geometry/trianglepairs_intersector_moeller.h"
+#include "../geometry/quad_intersector_moeller.h"
 
 namespace embree
 { 
@@ -261,8 +262,10 @@ namespace embree
 
 #if defined(__AVX__)
     DEFINE_INTERSECTOR1(BVH4TrianglePairs4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TrianglePairsMIntersector1MoellerTrumbore<4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4Quad4vIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA 8 COMMA true> > >);
 #else
     DEFINE_INTERSECTOR1(BVH4TrianglePairs4Intersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<TrianglePairsMIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR1(BVH4Quad4vIntersector1Moeller,BVHNIntersector1<4 COMMA BVH_AN1 COMMA true COMMA ArrayIntersector1<QuadMvIntersector1MoellerTrumbore<4 COMMA 4 COMMA true> > >);
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////

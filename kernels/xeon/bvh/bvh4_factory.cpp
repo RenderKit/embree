@@ -23,6 +23,7 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
+#include "../geometry/quadv.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
 #include "../geometry/trianglepairsv.h"
@@ -45,6 +46,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4GridAOSIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Single);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Single);
@@ -208,6 +210,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4vIntersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -415,6 +418,21 @@ namespace embree
     intersectors.intersector16_nofilter = BVH4TrianglePairs4Intersector16HybridMoellerNoFilter;
     return intersectors;
   }
+
+  Accel::Intersectors BVH4Factory::BVH4Quad4vIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = BVH4Quad4vIntersector1Moeller;
+    intersectors.intersector4           = NULL;
+    intersectors.intersector4_nofilter  = NULL;
+    intersectors.intersector8           = NULL;
+    intersectors.intersector8_nofilter  = NULL;
+    intersectors.intersector16          = NULL;
+    intersectors.intersector16_nofilter = NULL;
+    return intersectors;
+  }
+
 
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
@@ -823,11 +841,19 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4TrianglePairs4ObjectSplit(Scene* scene)
+  Accel* BVH4Factory::BVH4TrianglePairs4(Scene* scene)
   {
     BVH4* accel = new BVH4(TrianglePairs4v::type,scene);
     Builder* builder = BVH4TrianglePairs4SceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4TrianglePairs4Intersectors(accel);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Quad4v(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4v::type,scene);
+    Builder* builder = BVH4Quad4vSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVH4Quad4vIntersectors(accel);
     return new AccelInstance(accel,builder,intersectors);
   }
 
