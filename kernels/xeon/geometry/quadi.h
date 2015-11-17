@@ -176,8 +176,7 @@ namespace embree
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
     transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
-    transpose(d0,d1,d3,d3,p3.x,p3.y,p3.z);
-
+    transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
 
   template<int M>
