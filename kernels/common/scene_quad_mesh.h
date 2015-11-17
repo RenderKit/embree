@@ -93,7 +93,8 @@ namespace embree
       const Vec3fa v0  = vertex(q.v[0]);
       const Vec3fa v1  = vertex(q.v[1]);
       const Vec3fa v2  = vertex(q.v[2]);
-      return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
+      const Vec3fa v3  = vertex(q.v[3]);
+      return BBox3fa(min(v0,v1,v2,v3),max(v0,v1,v2,v3));
     }
 
     /*! check if the i'th primitive is valid */

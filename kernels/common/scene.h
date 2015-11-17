@@ -349,8 +349,8 @@ namespace embree
 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,1>() const { return world1.numTriangles; } 
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,2>() const { return world2.numTriangles; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,1>() const { return world1.numTriangles; } 
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,2>() const { return world2.numTriangles; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,1>() const { return world1.numQuads; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,2>() const { return world2.numQuads; } 
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,1>() const { return world1.numBezierCurves; } 
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return world2.numBezierCurves; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 

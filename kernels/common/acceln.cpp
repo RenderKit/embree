@@ -146,6 +146,7 @@ namespace embree
 
     /* create list of non-empty acceleration structures */
     validAccels.clear();
+    PRINT(accels.size());
     for (size_t i=0; i<accels.size(); i++) {
       if (accels[i]->bounds.empty()) continue;
       validAccels.push_back(accels[i]);

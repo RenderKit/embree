@@ -49,7 +49,7 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline QuadMv(const Vec3vfM& v0, const Vec3vfM& v1, const Vec3vfM& v2, const Vec3vfM& v3, const vint<M>& geomIDs, const vint<M>& primIDs)
-      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
+      : v0(v0), v1(v1), v2(v2), v3(v3), geomIDs(geomIDs), primIDs(primIDs) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline vbool<M> valid() const { return geomIDs != vint<M>(-1); }
@@ -115,11 +115,11 @@ namespace embree
 	const size_t geomID = prim.geomID();
         const size_t primID = prim.primID();
         const QuadMesh* __restrict__ const mesh = scene->getQuadMesh(geomID);
-        const QuadMesh::Quad& tri = mesh->quad(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        const Vec3fa& p3 = mesh->vertex(tri.v[3]);
+        const QuadMesh::Quad& quad = mesh->quad(primID);
+        const Vec3fa& p0 = mesh->vertex(quad.v[0]);
+        const Vec3fa& p1 = mesh->vertex(quad.v[1]);
+        const Vec3fa& p2 = mesh->vertex(quad.v[2]);
+        const Vec3fa& p3 = mesh->vertex(quad.v[3]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -142,11 +142,11 @@ namespace embree
         const size_t geomID = prim.geomID();
         const size_t primID = prim.primID();
         const QuadMesh* __restrict__ const mesh = scene->getQuadMesh(geomID);
-        const QuadMesh::Quad& tri = mesh->quad(primID);
-        const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-        const Vec3fa& p3 = mesh->vertex(tri.v[3]);
+        const QuadMesh::Quad& quad = mesh->quad(primID);
+        const Vec3fa& p0 = mesh->vertex(quad.v[0]);
+        const Vec3fa& p1 = mesh->vertex(quad.v[1]);
+        const Vec3fa& p2 = mesh->vertex(quad.v[2]);
+        const Vec3fa& p3 = mesh->vertex(quad.v[3]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
         v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
@@ -169,11 +169,11 @@ namespace embree
         if (primID(i) == -1) break;
         const unsigned geomId = geomID(i);
         const unsigned primId = primID(i);
-        const QuadMesh::Quad& tri = mesh->quad(primId);
-        const Vec3fa p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        const Vec3fa p3 = mesh->vertex(tri.v[3]);
+        const QuadMesh::Quad& quad = mesh->quad(primId);
+        const Vec3fa p0 = mesh->vertex(quad.v[0]);
+        const Vec3fa p1 = mesh->vertex(quad.v[1]);
+        const Vec3fa p2 = mesh->vertex(quad.v[2]);
+        const Vec3fa p3 = mesh->vertex(quad.v[3]);
         bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2),BBox3fa(p3)));
         vgeomID [i] = geomId;
         vprimID [i] = primId;

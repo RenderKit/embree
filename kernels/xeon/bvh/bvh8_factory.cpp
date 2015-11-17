@@ -118,6 +118,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Triangle4vMBIntersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8TrianglePairs4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vIntersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -251,6 +252,7 @@ namespace embree
 
   Accel::Intersectors BVH8Factory::BVH8Quad4vIntersectors(BVH8* bvh)
   {
+    PING;
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH8Quad4vIntersector1Moeller;
@@ -378,6 +380,7 @@ namespace embree
 
   Accel* BVH8Factory::BVH8Quad4v(Scene* scene)
   {
+    PING;
     BVH8* accel = new BVH8(Quad4v::type,scene);
     Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
 
