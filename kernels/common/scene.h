@@ -200,6 +200,22 @@ namespace embree
       if (geometries[i]->getType() != Geometry::TRIANGLE_MESH) return nullptr;
       else return (TriangleMesh*) geometries[i]; 
     }
+
+    /* get quad mesh by ID */
+    __forceinline QuadMesh* getQuadMesh(size_t i) { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]);
+      assert(geometries[i]->getType() == Geometry::QUAD_MESH);
+      return (QuadMesh*) geometries[i]; 
+    }
+    __forceinline const QuadMesh* getQuadMesh(size_t i) const { 
+      assert(i < geometries.size()); 
+      assert(geometries[i]);
+      assert(geometries[i]->getType() == Geometry::QUAD_MESH);
+      return (QuadMesh*) geometries[i]; 
+    }
+
+    /* get subdiv mesh by ID */
     __forceinline SubdivMesh* getSubdivMesh(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
@@ -212,6 +228,8 @@ namespace embree
       assert(geometries[i]->getType() == Geometry::SUBDIV_MESH);
       return (SubdivMesh*) geometries[i]; 
     }
+
+    /* get user geometry by ID */
     __forceinline AccelSet* getUserGeometrySafe(size_t i) { 
       assert(i < geometries.size()); 
       if (geometries[i] == nullptr) return nullptr;

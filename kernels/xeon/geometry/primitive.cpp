@@ -22,6 +22,7 @@
 #include "trianglei.h"
 #include "trianglev_mb.h"
 #include "trianglepairsv.h"
+#include "quadv.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
 
@@ -126,11 +127,24 @@ namespace embree
 #if !defined(__AVX__)
   template<>
   TrianglePairs4v::Type::Type () 
-    : PrimitiveType("trianglepairs4",sizeof(TrianglePairs4v),4) {}
+    : PrimitiveType("trianglepairs4v",sizeof(TrianglePairs4v),4) {}
 
   template<>
   size_t TrianglePairs4v::Type::size(const char* This) const {
     return ((TrianglePairs4v*)This)->size();
+  }
+#endif
+
+  /********************** Quad4 **************************/
+
+#if !defined(__AVX__)
+  template<>
+  Quad4v::Type::Type () 
+    : PrimitiveType("quad4v",sizeof(Quad4v),4) {}
+
+  template<>
+  size_t Quad4v::Type::size(const char* This) const {
+    return ((Quad4v*)This)->size();
   }
 #endif
 
