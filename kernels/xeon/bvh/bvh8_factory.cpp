@@ -24,6 +24,7 @@
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglepairsv.h"
+#include "../geometry/quadv.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../../common/accelinstance.h"
 
@@ -82,6 +83,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4vMBSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8TrianglePairs4SceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH8Quad4vSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH8Triangle8SceneBuilderSpatialSAH);
@@ -99,6 +101,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle8SceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Triangle4vMBSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8TrianglePairs4SceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4vSceneBuilderSAH);
 
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
