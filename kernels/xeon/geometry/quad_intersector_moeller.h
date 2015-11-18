@@ -151,7 +151,7 @@ namespace embree
         {
           Vec3vf4 vtx0(tri.v0.x,tri.v0.y,tri.v0.z);
           Vec3vf4 vtx1(tri.v1.x,tri.v1.y,tri.v1.z);
-          Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+          Vec3vf4 vtx2(tri.v3.x,tri.v3.y,tri.v3.z);
           vint4   geomIDs(tri.geomIDs); 
           vint4   primIDs(tri.primIDs);
           pre.intersect(ray,vtx0,vtx1,vtx2,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
@@ -173,7 +173,7 @@ namespace embree
         {
           Vec3vf4 vtx0(tri.v0.x,tri.v0.y,tri.v0.z);
           Vec3vf4 vtx1(tri.v1.x,tri.v1.y,tri.v1.z);
-          Vec3vf4 vtx2(tri.v2.x,tri.v2.y,tri.v2.z);
+          Vec3vf4 vtx2(tri.v3.x,tri.v3.y,tri.v3.z);
           vint4   geomIDs(tri.geomIDs); 
           vint4   primIDs(tri.primIDs);
           if (pre.intersect(ray,vtx0,vtx1,vtx2,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
