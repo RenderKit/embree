@@ -181,10 +181,12 @@ namespace embree
       const vfloat4 p2 = vfloat4::loadu((float*)&src[tri.v[2]*stride+ofs]);
       const vfloat4 p3 = vfloat4::loadu((float*)&src[tri.v[3]*stride+ofs]);
       const vbool4 valid = vint4(i)+vint4(step) < vint4(numFloats);
-      const vfloat4 p = ((1.0f-u)*p0 + u*p1)*(1.0f-v) + v*((1.0f-u)*p3 + u*p2);
+      const vfloat4 p  = ((1.0f-u)*p0 + u*p1)*(1.0f-v) + v*((1.0f-u)*p3 + u*p2);
+      const vfloat4 du = (1.0f-v) * (p1-p0) + v * (p2-p3);
+      const vfloat4 dv = (1.0f-u) * (p3-p0) + u * (p2-p1);
       if (P   ) vfloat4::storeu(valid,P+i,p);
-      if (dPdu) vfloat4::storeu(valid,dPdu+i,p1-p0);
-      if (dPdv) vfloat4::storeu(valid,dPdv+i,p2-p0);
+      if (dPdu) vfloat4::storeu(valid,dPdu+i,du);
+      if (dPdv) vfloat4::storeu(valid,dPdv+i,dv);
     }
 
 #else
@@ -199,12 +201,13 @@ namespace embree
       const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
       const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
       const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[tri.v[3]*stride+ofs]);
-      const vfloat16 p = (1.0f-v)((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
+      const vfloat16 p  = (1.0f-v)((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
+      const vfloat16 du = (1.0f-v) * (p1-p0) + v * (p2-p3);
+      const vfloat16 dv = (1.0f-u) * (p3-p0) + u * (p2-p1);
       if (P   ) vfloat16::storeu_compact(mask,P+i,p);
-      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,p1-p0);
-      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,p2-p0);
+      if (dPdu) vfloat16::storeu_compact(mask,dPdu+i,du);
+      if (dPdv) vfloat16::storeu_compact(mask,dPdv+i,dv);
     }
-
 #endif
   }
 
