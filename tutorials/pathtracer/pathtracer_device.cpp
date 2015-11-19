@@ -1027,6 +1027,15 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+
+#if 0
+  static size_t sizeVertexBuffers = 0;
+  PRINT(mesh->numTriangles);
+  PRINT(mesh->numVertices);
+  PRINT(sizeof(Vec3fa) * mesh->numVertices / (1024.0f * 1024.0f));
+  sizeVertexBuffers += sizeof(Vec3fa) * mesh->numVertices;
+  PRINT(sizeVertexBuffers / (1024.0f * 1024.0f));
+#endif
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
@@ -1046,10 +1055,14 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
 #if SUBDIV_TO_QUAD_MESH == 1
+  static size_t sizeVertexBuffers = 0;
   PING;
   /* test path for quad/tri mixed input meshes */
   PRINT(mesh->numFaces);
   unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numVertices, 1);
+  PRINT(mesh->numFaces);
+  PRINT(mesh->numVertices);
+
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
   Quad *q = (Quad *)rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
 
@@ -1075,13 +1088,18 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
       tris++;
     }
     else
-      FATAL("only 3 or 4 vertices per face supported");
+    {
+      //WARNING("only 3 or 4 vertices per face supported");
+    }
     index+=mesh->verticesPerFace[f];
   }
 
   rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
   PRINT(quads);
   PRINT(tris);
+  PRINT(sizeof(Vec3fa) * mesh->numVertices / (1024.0f * 1024.0f));
+  sizeVertexBuffers += sizeof(Vec3fa) * mesh->numVertices;
+  PRINT(sizeVertexBuffers / (1024.0f * 1024.0f));
 
 #else
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 

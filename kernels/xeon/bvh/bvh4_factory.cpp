@@ -216,8 +216,8 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4GridAOSIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL(features,BVH4TrianglePairs4Intersector1Moeller);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4vIntersector1Moeller);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX     (features,BVH4Quad4iIntersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector1Moeller);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Moeller);
 
 #if defined (RTCORE_RAY_PACKETS)
 
