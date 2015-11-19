@@ -543,7 +543,7 @@ namespace embree
           vint8   incID(0,0,0,0,1,1,1,1);
           vint8   primIDs(vint8(tri.primIDs)+incID);
           vint8   flags(tri.flag());
-          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<16,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+          return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
       };
 
