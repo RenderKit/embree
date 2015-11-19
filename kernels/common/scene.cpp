@@ -229,12 +229,21 @@ namespace embree
   {
     if (device->quad_accel == "default") 
     {
+      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      switch (mode) {
+      case /*0b00*/ 0:
+      case /*0b01*/ 1:
 #if defined (__TARGET_AVX__)
-      if (device->hasISA(AVX))
-        accels.add(device->bvh8_factory->BVH8Quad4v(this));
-      else
+        if (device->hasISA(AVX))
+          accels.add(device->bvh8_factory->BVH8Quad4v(this));
+        else
 #endif
-        accels.add(device->bvh4_factory->BVH4Quad4v(this));
+          accels.add(device->bvh4_factory->BVH4Quad4v(this));
+        break;
+
+      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
+      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4i(this)); break;
+      }
     }
     else if (device->quad_accel == "bvh4.quad4v")       accels.add(device->bvh4_factory->BVH4Quad4v(this));
     else if (device->quad_accel == "bvh4.quad4i")       accels.add(device->bvh4_factory->BVH4Quad4i(this));
