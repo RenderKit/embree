@@ -169,43 +169,36 @@ namespace embree
                                          const Scene *const scene) const
   {
     const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
-    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0]));
-    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0]));
-    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0]));
-    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0]));
-
     const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
-    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1]));
-    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1]));
-    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1]));
-    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1]));
-
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
-    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2]));
-    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2]));
-    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2]));
-    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2]));
-
     const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
+
+    const vfloat4 a0 = vfloat4::loadu(mesh0->vertexPtr(v0[0]));
+    const vfloat4 a1 = vfloat4::loadu(mesh1->vertexPtr(v0[1]));
+    const vfloat4 a2 = vfloat4::loadu(mesh2->vertexPtr(v0[2]));
     const vfloat4 a3 = vfloat4::loadu(mesh3->vertexPtr(v0[3]));
+
+    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
+
+    const vfloat4 b0 = vfloat4::loadu(mesh0->vertexPtr(v1[0]));
+    const vfloat4 b1 = vfloat4::loadu(mesh1->vertexPtr(v1[1]));
+    const vfloat4 b2 = vfloat4::loadu(mesh2->vertexPtr(v1[2]));
     const vfloat4 b3 = vfloat4::loadu(mesh3->vertexPtr(v1[3]));
+
+    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
+
+    const vfloat4 c0 = vfloat4::loadu(mesh0->vertexPtr(v2[0]));
+    const vfloat4 c1 = vfloat4::loadu(mesh1->vertexPtr(v2[1]));
+    const vfloat4 c2 = vfloat4::loadu(mesh2->vertexPtr(v2[2]));
     const vfloat4 c3 = vfloat4::loadu(mesh3->vertexPtr(v2[3]));
+
+    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+
+    const vfloat4 d0 = vfloat4::loadu(mesh0->vertexPtr(v3[0]));
+    const vfloat4 d1 = vfloat4::loadu(mesh1->vertexPtr(v3[1]));
+    const vfloat4 d2 = vfloat4::loadu(mesh2->vertexPtr(v3[2]));
     const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3]));
 
-
-#if 0
-    const int* base0 = (const int*) v0_ptr[0];
-    const int* base1 = (const int*) v0_ptr[1];
-    const int* base2 = (const int*) v0_ptr[2];
-    const int* base3 = (const int*) v0_ptr[3];
-    const vfloat4 a0 = vfloat4::loadu(base0      ), a1 = vfloat4::loadu(base1      ), a2 = vfloat4::loadu(base2      ), a3 = vfloat4::loadu(base3      );
-    const vfloat4 b0 = vfloat4::loadu(base0+v1[0]), b1 = vfloat4::loadu(base1+v1[1]), b2 = vfloat4::loadu(base2+v1[2]), b3 = vfloat4::loadu(base3+v1[3]);
-    const vfloat4 c0 = vfloat4::loadu(base0+v2[0]), c1 = vfloat4::loadu(base1+v2[1]), c2 = vfloat4::loadu(base2+v2[2]), c3 = vfloat4::loadu(base3+v2[3]);
-    const vfloat4 d0 = vfloat4::loadu(base0+v3[0]), d1 = vfloat4::loadu(base1+v3[1]), d2 = vfloat4::loadu(base2+v3[2]), d3 = vfloat4::loadu(base3+v3[3]);
-#endif
-    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
 
