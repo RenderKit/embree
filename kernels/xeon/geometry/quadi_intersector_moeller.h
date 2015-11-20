@@ -45,14 +45,14 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
+        vint4   geomIDs(quad.geomIDs); 
+        vint4   primIDs(quad.primIDs);
         Vec3vf4 v0, v1, v2, v3; 
-        quad.gather(v0,v1,v2,v3);
+        quad.gather(v0,v1,v2,v3,scene);
         {
           Vec3vf4 vtx0(v0.x,v0.y,v0.z);
           Vec3vf4 vtx1(v1.x,v1.y,v1.z);
           Vec3vf4 vtx2(v3.x,v3.y,v3.z);
-          vint4   geomIDs(quad.geomIDs); 
-          vint4   primIDs(quad.primIDs);
           const vbool4 flags( false );
           pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
@@ -60,8 +60,6 @@ namespace embree
           Vec3vf4 vtx0(v2.x,v2.y,v2.z);
           Vec3vf4 vtx1(v3.x,v3.y,v3.z);
           Vec3vf4 vtx2(v1.x,v1.y,v1.z);
-          vint4   geomIDs(quad.geomIDs); 
-          vint4   primIDs(quad.primIDs);
           const vbool4 flags( true );
           pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
         }
@@ -71,14 +69,14 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
+        vint4   geomIDs(quad.geomIDs); 
+        vint4   primIDs(quad.primIDs);
         Vec3vf4 v0, v1, v2, v3; 
-        quad.gather(v0,v1,v2,v3);
+        quad.gather(v0,v1,v2,v3,scene);
         {
           Vec3vf4 vtx0(v0.x,v0.y,v0.z);
           Vec3vf4 vtx1(v1.x,v1.y,v1.z);
           Vec3vf4 vtx2(v3.x,v3.y,v3.z);
-          vint4   geomIDs(quad.geomIDs); 
-          vint4   primIDs(quad.primIDs);
           const vbool4 flags( false );
           if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
             return true;
@@ -87,8 +85,6 @@ namespace embree
           Vec3vf4 vtx0(v2.x,v2.y,v2.z);
           Vec3vf4 vtx1(v3.x,v3.y,v3.z);
           Vec3vf4 vtx2(v1.x,v1.y,v1.z);
-          vint4   geomIDs(quad.geomIDs); 
-          vint4   primIDs(quad.primIDs);
           const vbool4 flags( true );
           if (pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)))
             return true;
@@ -111,8 +107,7 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf4 v0, v1, v2, v3; 
-        quad.gather(v0,v1,v2,v3);
-
+        quad.gather(v0,v1,v2,v3,scene);
         Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
         Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
@@ -127,8 +122,7 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf4 v0, v1, v2, v3; 
-        quad.gather(v0,v1,v2,v3);
-
+        quad.gather(v0,v1,v2,v3,scene);
         Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
         Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));

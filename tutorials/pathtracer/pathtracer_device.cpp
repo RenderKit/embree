@@ -40,7 +40,7 @@
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
-#define SUBDIV_TO_QUAD_MESH 0
+#define SUBDIV_TO_QUAD_MESH 1
 
 struct DifferentialGeometry
 {
