@@ -240,6 +240,13 @@ uniform unsigned int rtcNewHairGeometry (RTCScene scene,                    //!<
                                          uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
   );
 
+uniform unsigned int rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
+                                         uniform RTCGeometryFlags flags,    //!< geometry flags
+                                         uniform size_t numSegments,        //!< number of line segments
+                                         uniform size_t numVertices,        //!< number of vertices
+                                         uniform size_t numTimeSteps = 1    //!< number of motion blur time steps
+  );
+
 /*! \brief Sets 32 bit ray mask. */
 void rtcSetMask (RTCScene scene, uniform unsigned int geomID, uniform int mask);
 

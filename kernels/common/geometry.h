@@ -29,7 +29,7 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8, INSTANCE = 16, QUAD_MESH = 32 };
+    enum Type { TRIANGLE_MESH = 1, USER_GEOMETRY = 2, BEZIER_CURVES = 4, SUBDIV_MESH = 8, INSTANCE = 16, QUAD_MESH = 32, LINE_SEGMENTS = 64 };
 
   public:
     

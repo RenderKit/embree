@@ -67,6 +67,12 @@ extern "C" uniform unsigned int ispcNewBezierCurves (RTCScene scene,
                                                      uniform size_tt numVertices,
                                                      uniform size_tt numTimeSteps);
 
+extern "C" uniform unsigned int ispcNewLineSegments (RTCScene scene,
+                                                     uniform RTCGeometryFlags flags,
+                                                     uniform size_tt numSegments,
+                                                     uniform size_tt numVertices,
+                                                     uniform size_tt numTimeSteps);
+
 extern "C" uniform unsigned int ispcNewSubdivisionMesh (RTCScene scene,
                                                         uniform RTCGeometryFlags flags,
                                                         uniform size_tt numFaces,

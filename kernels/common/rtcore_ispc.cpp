@@ -172,6 +172,10 @@ namespace embree
     return rtcNewHairGeometry(scene,flags,numCurves,numVertices,numTimeSteps);
   }
 
+  extern "C" unsigned ispcNewLineSegments (RTCScene scene, RTCGeometryFlags flags, size_t numSegments, size_t numVertices, size_t numTimeSteps) {
+    return rtcNewLineSegments(scene,flags,numSegments,numVertices,numTimeSteps);
+  }
+
   extern "C" unsigned ispcNewSubdivisionMesh (RTCScene scene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, 
                                               size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {
