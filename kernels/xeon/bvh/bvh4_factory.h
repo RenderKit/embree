@@ -123,7 +123,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Moeller);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Pluecker);
     
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Bezier1vIntersector4Single);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Bezier1iIntersector4Single);

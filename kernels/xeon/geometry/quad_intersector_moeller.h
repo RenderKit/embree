@@ -32,9 +32,9 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct MoellerTrumboreQuadHitM
+      struct QuadHitM
       {
-        __forceinline MoellerTrumboreQuadHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3<vfloat<M>>& Ng, const vbool<M>& flags)
+        __forceinline QuadHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3<vfloat<M>>& Ng, const vbool<M>& flags)
           : U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng) {}
       
         __forceinline void finalize() 
@@ -122,7 +122,7 @@ namespace embree
           if (likely(none(valid))) return false;
 
           /* update hit information */
-          MoellerTrumboreQuadHitM<M> hit(U,V,T,absDen,tri_Ng, flags);
+          QuadHitM<M> hit(U,V,T,absDen,tri_Ng, flags);
           return epilog(valid,hit);
         }
       

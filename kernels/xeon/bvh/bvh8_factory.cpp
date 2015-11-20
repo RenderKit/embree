@@ -40,7 +40,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8TrianglePairs4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridAOSIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Moeller);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);
@@ -123,7 +123,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8TrianglePairs4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vIntersector1Moeller);
-    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Moeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -273,7 +273,7 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1           = BVH8Quad4iIntersector1Moeller;
+    intersectors.intersector1           = BVH8Quad4iIntersector1Pluecker;
     intersectors.intersector4           = NULL;
     intersectors.intersector4_nofilter  = NULL;
     intersectors.intersector8           = NULL;
