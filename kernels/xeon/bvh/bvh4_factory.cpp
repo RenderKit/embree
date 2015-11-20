@@ -447,7 +447,6 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH4Quad4iIntersector1Pluecker;
-    //intersectors.intersector1           = BVH4Quad4iIntersector1Moeller;
     intersectors.intersector4           = NULL;
     intersectors.intersector4_nofilter  = NULL;
     intersectors.intersector8           = NULL;
