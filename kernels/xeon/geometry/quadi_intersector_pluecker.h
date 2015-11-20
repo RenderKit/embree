@@ -19,13 +19,12 @@
 #include "quadi.h"
 #include "quad_intersector_moeller.h"
 
-/*! This intersector implements a modified version of the Moeller
- *  Trumbore intersector from the paper "Fast, Minimum Storage
- *  Ray-Triangle Intersection". In contrast to the paper we
- *  precalculate some factors and factor the calculations differently
- *  to allow precalculating the cross product e1 x e2. The resulting
- *  algorithm is similar to the fastest one of the paper "Optimizing
- *  Ray-Triangle Intersection via Automated Search". */
+/*! Modified Pluecker ray/triangle intersector. The test first shifts
+ *  the ray origin into the origin of the coordinate system and then
+ *  uses Pluecker coordinates for the intersection. Due to the shift,
+ *  the Pluecker coordinate calculation simplifies and the tests get
+ *  numerically stable. The edge equations are watertight along the
+ *  edge for neighboring triangles. */
 
 namespace embree
 {
@@ -89,12 +88,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
-          const vfloat<M> rcpDen = rcp(den);
-          const vfloat<M> t = T * rcpDen;
-          const vfloat<M> u = U * rcpDen;
-          const vfloat<M> v = V * rcpDen;
-
-          QuadHitM<M> hit(u,v,t,absDen,Ng,flags);
+          QuadHitM<M> hit(U,V,T,den,Ng,flags);
           return epilog(valid,hit);
         }
       
