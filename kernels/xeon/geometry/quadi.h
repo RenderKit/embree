@@ -79,7 +79,7 @@ namespace embree
                               const Scene *const scene) const;
     
     /* Calculate the bounds of the quads */
-    __forceinline const BBox3fa bounds() const 
+    /*__forceinline const BBox3fa bounds() const 
     {
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i) != -1; i++)
@@ -96,7 +96,7 @@ namespace embree
 	bounds.extend(p3);
       }
       return bounds;
-    }
+      }*/
     
     
     /* Fill quad from quad list */
