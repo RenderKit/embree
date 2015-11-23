@@ -89,6 +89,7 @@ extern "C" void ispcDisable (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcDeleteGeometry (RTCScene scene, uniform unsigned int geomID);
 
 extern "C" void ispcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, void* uniform bounds);
+extern "C" void ispcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, void* uniform bounds, void* uniform userPtr);
 extern "C" void ispcSetUserData (RTCScene scene, uniform unsigned int geomID, void* uniform ptr);
 extern "C" void* uniform ispcGetUserData (RTCScene scene, uniform unsigned int geomID);
 
@@ -358,6 +359,10 @@ void* uniform rtcGetUserData (RTCScene scene, uniform unsigned int geomID) {
 
 void rtcSetBoundsFunction (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc bounds) {
   ispcSetBoundsFunction(scene,geomID,bounds);
+}
+
+void rtcSetBoundsFunction2 (RTCScene scene, uniform unsigned int geomID, uniform RTCBoundsFunc bounds, void* uniform userPtr) {
+  ispcSetBoundsFunction2(scene,geomID,bounds,userPtr);
 }
 
 void rtcSetIntersectFunction1 (RTCScene scene, uniform unsigned int geomID, uniform RTCIntersectFuncUniform intersect) {

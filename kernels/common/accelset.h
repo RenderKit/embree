@@ -150,7 +150,8 @@ namespace embree
       {
         BBox3fa box; 
         assert(item < size());
-        boundsFunc(intersectors.ptr,item,(RTCBounds&)box);
+        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds&)box);
+        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box);
         return box;
       }
       
@@ -290,7 +291,9 @@ namespace embree
 #endif
       
     public:
-      RTCBoundsFunc boundsFunc;
+      RTCBoundsFunc  boundsFunc;
+      RTCBoundsFunc2 boundsFunc2;
+      void* boundsFunc2UserPtr;
 
       struct Intersectors 
       {

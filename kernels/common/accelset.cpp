@@ -20,7 +20,7 @@
 namespace embree
 {
   AccelSet::AccelSet (Scene* parent, size_t numItems) 
-    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC)
+    : Geometry(parent,Geometry::USER_GEOMETRY,numItems,1,RTC_GEOMETRY_STATIC), boundsFunc(nullptr), boundsFunc2(nullptr), boundsFunc2UserPtr(nullptr)
   {
     intersectors.ptr = nullptr; 
     enabling();
