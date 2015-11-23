@@ -885,6 +885,7 @@ namespace embree
     BVH4* accel = new BVH4(Quad4i::type,scene);
     Builder* builder = BVH4Quad4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Quad4iIntersectors(accel);
+    scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
