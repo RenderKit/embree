@@ -124,6 +124,18 @@ namespace embree
     }
   }
 
+  void SceneGraph::QuadMeshNode::verify() const
+  {
+    const size_t numVertices = v.size();
+    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (vn.size() && vn.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    if (vt.size() && vt.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto quad : quads) {
+      if (size_t(quad.v0) >= numVertices || size_t(quad.v1) >= numVertices || size_t(quad.v2) >= numVertices || size_t(quad.v3) >= numVertices)
+        THROW_RUNTIME_ERROR("invalid quad");
+    }
+  }
+
   void SceneGraph::SubdivMeshNode::verify() const
   {
     for (auto i : position_indices) 
@@ -180,6 +192,22 @@ namespace embree
     else if (Ref<SceneGraph::TriangleMeshNode> mesh0 = node0.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
       if (Ref<SceneGraph::TriangleMeshNode> mesh1 = node1.dynamicCast<SceneGraph::TriangleMeshNode>())
+      {
+        if (mesh0->v.size() != mesh1->v.size())
+          THROW_RUNTIME_ERROR("incompatible scene graph");
+
+        bool different = false;
+        for (size_t i=0; i<mesh0->v.size(); i++) 
+          different |= mesh0->v[i] != mesh1->v[i];
+        
+        if (different)
+          mesh0->v2 = mesh1->v;
+      } 
+      else THROW_RUNTIME_ERROR("incompatible scene graph"); 
+    }
+    else if (Ref<SceneGraph::QuadMeshNode> mesh0 = node0.dynamicCast<SceneGraph::QuadMeshNode>()) 
+    {
+      if (Ref<SceneGraph::QuadMeshNode> mesh1 = node1.dynamicCast<SceneGraph::QuadMeshNode>())
       {
         if (mesh0->v.size() != mesh1->v.size())
           THROW_RUNTIME_ERROR("incompatible scene graph");

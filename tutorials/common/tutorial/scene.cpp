@@ -72,6 +72,26 @@ namespace embree
       return objmesh;
     }
 
+    Ref<TutorialScene::Geometry> convertQuadMesh(Ref<SceneGraph::QuadMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    {
+      int materialID = convert(mesh->material);
+      
+      TutorialScene::QuadMesh* objmesh = new TutorialScene::QuadMesh();
+      const LinearSpace3fa nspace0 = rcp(space0.l).transposed();
+      objmesh->v. resize(mesh->v. size()); for (size_t i=0; i<mesh->v. size(); i++) objmesh->v [i] = xfmPoint ( space0,mesh->v [i]);
+      objmesh->v2.resize(mesh->v2.size()); for (size_t i=0; i<mesh->v2.size(); i++) objmesh->v2[i] = xfmPoint ( space1,mesh->v2[i]);
+      objmesh->vn.resize(mesh->vn.size()); for (size_t i=0; i<mesh->vn.size(); i++) objmesh->vn[i] = xfmVector(nspace0,mesh->vn[i]);
+      objmesh->vt = mesh->vt;
+      
+      objmesh->quads.resize(mesh->quads.size());
+      for (size_t i=0; i<mesh->quads.size(); i++) {
+        SceneGraph::QuadMeshNode::Quad& quad = mesh->quads[i];
+        objmesh->quads[i] = TutorialScene::Quad(quad.v0,quad.v1,quad.v2,quad.v3);
+      }
+      objmesh->meshMaterialID = materialID;
+      return objmesh;
+    }
+
     Ref<TutorialScene::Geometry> convertSubdivMesh(Ref<SceneGraph::SubdivMeshNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       int materialID = convert(mesh->material);
@@ -162,6 +182,9 @@ namespace embree
       }
       else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
         group.push_back(convertTriangleMesh(mesh,space0,space1));
+      }
+      else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+        group.push_back(convertQuadMesh(mesh,space0,space1));
       }
       else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
         group.push_back(convertSubdivMesh(mesh,space0,space1));

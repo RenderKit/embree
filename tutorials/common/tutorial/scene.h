@@ -49,6 +49,8 @@ namespace embree
     struct Quad 
     {
     public:
+      Quad () {}
+
       Quad (int v0, int v1, int v2, int v3) 
       : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
@@ -58,7 +60,7 @@ namespace embree
 
     struct Geometry : public RefCount
     {
-      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH };
       Type type;
 
       Geometry (Type type) : type(type) {}
@@ -71,9 +73,20 @@ namespace embree
       avector<Vec3fa> v;
       avector<Vec3fa> v2;
       avector<Vec3fa> vn;
-
       std::vector<Vec2f> vt;
       std::vector<Triangle> triangles;
+      std::vector<Quad> quads; // FIXME: remove
+      int meshMaterialID;
+    };
+
+    /*! Quad Mesh. */
+    struct QuadMesh : public Geometry
+    {
+      QuadMesh () : Geometry(QUAD_MESH) {}
+      avector<Vec3fa> v;
+      avector<Vec3fa> v2;
+      avector<Vec3fa> vn;
+      std::vector<Vec2f> vt;
       std::vector<Quad> quads;
       int meshMaterialID;
     };

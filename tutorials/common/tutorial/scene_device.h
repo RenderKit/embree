@@ -40,7 +40,7 @@ namespace embree
     int id;
   };
   
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH };
   
   struct ISPCAmbientLight
   {
@@ -114,14 +114,42 @@ namespace embree
       Vec3fa* normals;       //!< vertex normal array
       Vec2f* texcoords;     //!< vertex texcoord array
       ISPCTriangle* triangles;  //!< list of triangles
-      ISPCQuad* quads;      //!< list of quads
+      ISPCQuad* quads;      //!< list of quads // FIXME: remove
       int numVertices;
       int numTriangles;
       int numQuads;
       int geomID;
       int meshMaterialID;
     };
-    
+
+    struct ISPCQuadMesh
+    {
+      ISPCQuadMesh (Ref<TutorialScene::QuadMesh> in) : geom(QUAD_MESH) 
+      {
+        positions = in->v.size() ? &in->v[0] : nullptr;
+        positions2 = in->v2.size() ? &in->v2[0] : nullptr;
+        normals = in->vn.size() ? &in->vn[0] : nullptr;
+        texcoords = in->vt.size() ? &in->vt[0] : nullptr;
+        quads = (ISPCQuad*) (in->quads.size() ? &in->quads[0] : nullptr);
+        numVertices = in->v.size();
+        numQuads = in->quads.size();   
+        geomID = -1;
+        meshMaterialID = in->meshMaterialID;
+      }
+      
+    public:
+      ISPCGeometry geom;
+      Vec3fa* positions;    //!< vertex position array
+      Vec3fa* positions2;    //!< vertex position array
+      Vec3fa* normals;       //!< vertex normal array
+      Vec2f* texcoords;     //!< vertex texcoord array
+      ISPCQuad* quads;      //!< list of quads
+      int numVertices;
+      int numQuads;
+      int geomID;
+      int meshMaterialID;
+    };
+
     struct ISPCSubdivMesh
     {
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH) 

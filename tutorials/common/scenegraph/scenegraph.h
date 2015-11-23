@@ -142,7 +142,35 @@ namespace embree
       std::vector<Triangle> triangles;
       Ref<MaterialNode> material;
     };
-    
+
+    /*! Mesh. */
+    struct QuadMeshNode : public Node
+    {
+      struct Quad
+      {
+      public:
+        Quad() {}
+        Quad (int v0, int v1, int v2, int v3) 
+        : v0(v0), v1(v1), v2(v2), v3(v3) {}
+      public:
+        int v0, v1, v2, v3;
+      };
+      
+    public:
+      QuadMeshNode (Ref<MaterialNode> material) 
+        : Node(true), material(material) {}
+      
+      void verify() const;
+
+    public:
+      avector<Vec3fa> v;
+      avector<Vec3fa> v2;
+      avector<Vec3fa> vn;
+      std::vector<Vec2f> vt;
+      std::vector<Quad> quads;
+      Ref<MaterialNode> material;
+    };
+
     /*! Subdivision Mesh. */
     struct SubdivMeshNode : public Node
     {

@@ -1041,6 +1041,30 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   return geomID;
 }
 
+uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScene scene_out)
+{
+  uniform unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numQuads, mesh->numVertices, mesh->positions2 ? 2 : 1);
+  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(uniform Vec3fa      ));
+  if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(uniform Vec3fa      ));
+  rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad));
+  mesh->geomID = geomID;
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+  
+  uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
+  //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
+  //  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterReject);
+  //else 
+  if (material.ty == MATERIAL_OBJ) 
+  {
+    uniform OBJMaterial& obj = (uniform OBJMaterial&) material;
+    if (obj.d != 1.0f || obj.map_d) {
+      rtcSetIntersectionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&intersectionFilterOBJ);
+      rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
+    }
+  }
+  return geomID;
+}
+
 uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTCScene scene_out)
 {
   uniform unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
@@ -1079,6 +1103,8 @@ void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
       convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+    else if (geometry->type == QUAD_MESH)
+      convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
     else
@@ -1145,6 +1171,11 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == QUAD_MESH) {
+        uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == HAIR_SET) {
         uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i); 
@@ -1174,6 +1205,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
       else if (geometry->type == TRIANGLE_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == QUAD_MESH) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1210,6 +1247,10 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
       }
       else if (geometry->type == TRIANGLE_MESH) {
         uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+        assert(geomID == i);
+      }
+      else if (geometry->type == QUAD_MESH) {
+        uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
@@ -1275,6 +1316,12 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
       dg.u = st.x;
       dg.v = st.y;
     } 
+  }
+  else if (geometry->type == QUAD_MESH) 
+  {
+    uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
+    materialID = mesh->meshMaterialID;
+    // FIXME: implement texcoord interpolation
   }
   else if (geometry->type == SUBDIV_MESH) 
   {

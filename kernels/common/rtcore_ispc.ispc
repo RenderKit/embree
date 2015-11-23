@@ -57,7 +57,7 @@ extern "C" uniform unsigned int ispcNewTriangleMesh (RTCScene scene,
                                                      uniform size_tt numTimeSteps);
 extern "C" uniform unsigned int ispcNewQuadMesh (RTCScene scene,
                                                  uniform RTCGeometryFlags flags,
-                                                 uniform size_tt numTriangles,
+                                                 uniform size_tt numQuads,
                                                  uniform size_tt numVertices,
                                                  uniform size_tt numTimeSteps);
 
@@ -274,6 +274,15 @@ uniform unsigned int rtcNewTriangleMesh (RTCScene scene,
                                          uniform size_t numTimeSteps)
 {
   return ispcNewTriangleMesh(scene,flags,numTriangles,numVertices,numTimeSteps);
+}
+
+uniform unsigned int rtcNewQuadMesh (RTCScene scene,
+                                     uniform RTCGeometryFlags flags,
+                                     uniform size_t numQuads,
+                                     uniform size_t numVertices,
+                                     uniform size_t numTimeSteps)
+{
+  return ispcNewQuadMesh(scene,flags,numQuads,numVertices,numTimeSteps);
 }
 
 uniform unsigned int rtcNewHairGeometry (RTCScene scene,

@@ -236,6 +236,7 @@ namespace embree
     Ref<SceneGraph::Node> loadHDRILight(const Ref<XML>& xml);
     
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadHairSet(const Ref<XML>& xml);
 
@@ -863,6 +864,25 @@ namespace embree
     return mesh;
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadQuadMesh(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    std::vector<Vec3f> positions = loadVec3fArray(xml->childOpt("positions"));
+    std::vector<Vec3f> positions2= loadVec3fArray(xml->childOpt("positions2"));
+    std::vector<Vec3f> normals   = loadVec3fArray(xml->childOpt("normals"  ));
+    std::vector<Vec2f> texcoords = loadVec2fArray(xml->childOpt("texcoords"));
+    std::vector<Vec4i> indices   = loadVec4iArray(xml->childOpt("indices"));
+
+    SceneGraph::QuadMeshNode* mesh = new SceneGraph::QuadMeshNode(material);
+    for (size_t i=0; i<positions.size(); i++) mesh->v.push_back(positions[i]);
+    for (size_t i=0; i<positions2.size();i++) mesh->v2.push_back(positions2[i]);
+    for (size_t i=0; i<normals.size();   i++) mesh->vn.push_back(normals[i]);
+    for (size_t i=0; i<texcoords.size(); i++) mesh->vt.push_back(texcoords[i]);
+    for (size_t i=0; i<indices.size();   i++) mesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(indices[i].x,indices[i].y,indices[i].z,indices[i].w));
+    mesh->verify();
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadSubdivMesh(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -975,6 +995,7 @@ namespace embree
       else if (xml->name == "TriangleLight"   ) return sceneMap[id] = loadTriangleLight   (xml);
       else if (xml->name == "QuadLight"       ) return sceneMap[id] = loadQuadLight       (xml);
       else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
+      else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);

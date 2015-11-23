@@ -32,7 +32,7 @@ struct ISPCQuad
   int v3;                /*< fourth triangle vertex */
 };
 
-enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH };
 
 struct ISPCGeometry
 {
@@ -47,9 +47,23 @@ struct ISPCTriangleMesh
   uniform Vec3fa* normals;       //!< vertex normal array
   uniform Vec2f* texcoords;     //!< vertex texcoord array
   uniform ISPCTriangle* triangles;  //!< list of triangles
-  uniform ISPCQuad* quads;  //!< list of triangles
+  uniform ISPCQuad* quads;  //!< list of triangles // FIXME: remove
   int numVertices;
   int numTriangles;
+  int numQuads;
+  int geomID;
+  int meshMaterialID;
+};
+
+struct ISPCQuadMesh
+{
+  uniform ISPCGeometry geom;
+  uniform Vec3fa* positions;    //!< vertex position array
+  uniform Vec3fa* positions2;    //!< vertex position array
+  uniform Vec3fa* normals;       //!< vertex normal array
+  uniform Vec2f* texcoords;     //!< vertex texcoord array
+  uniform ISPCQuad* quads;  //!< list of triangles
+  int numVertices;
   int numQuads;
   int geomID;
   int meshMaterialID;
