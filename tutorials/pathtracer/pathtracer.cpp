@@ -42,6 +42,7 @@ namespace embree
   static bool g_anim_mode = false;
   extern "C" int g_instancing_mode = 0;
   static Shader g_shader = SHADER_DEFAULT;
+  static bool convert_tris_to_quads = false;
 
   /* scene */
   TutorialScene g_obj_scene;
@@ -67,6 +68,11 @@ namespace embree
       /* load OBJ model*/
       else if (tag == "-i") {
         filename = path + cin->getFileName();
+      }
+
+      /* convert triangles to quads */
+      else if (tag == "-convert-triangles-to-quads") {
+        convert_tris_to_quads = true;
       }
 
       /* parse camera parameters */
@@ -279,7 +285,11 @@ namespace embree
     /* load keyframes */
     if (keyframeList.size())
       loadKeyFrameAnimation(keyframeList);
-    
+
+    /* convert triangles to quads */
+    if (convert_tris_to_quads)
+        g_scene->triangles_to_quads();
+
     /* initialize ray tracing core */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 
     g_scene = nullptr;

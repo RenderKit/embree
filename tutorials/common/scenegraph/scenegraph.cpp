@@ -259,4 +259,76 @@ namespace embree
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
   }
+
+  std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
+  {
+    if      (b0 == a0) return std::make_pair(p-1,b1);
+    else if (b0 == a1) return std::make_pair(p+0,b1);
+    else if (b1 == a0) return std::make_pair(p-1,b0);
+    else if (b1 == a1) return std::make_pair(p+0,b0);
+    else return std::make_pair(0,-1);
+  }
+  
+  std::pair<int,int> quad_index3(int a0, int a1, int a2, int b0, int b1, int b2)
+  {
+    if      (b0 == a0) return quad_index2(0,a2,a1,b1,b2);
+    else if (b0 == a1) return quad_index2(1,a0,a2,b1,b2);
+    else if (b0 == a2) return quad_index2(2,a1,a0,b1,b2);
+    else if (b1 == a0) return quad_index2(0,a2,a1,b0,b2);
+    else if (b1 == a1) return quad_index2(1,a0,a2,b0,b2);
+    else if (b1 == a2) return quad_index2(2,a1,a0,b0,b2);
+    else if (b2 == a0) return quad_index2(0,a2,a1,b0,b1);
+    else if (b2 == a1) return quad_index2(1,a0,a2,b0,b1);
+    else if (b2 == a2) return quad_index2(2,a1,a0,b0,b1);
+    else return std::make_pair(0,-1);
+  }
+  
+  Ref<SceneGraph::Node> SceneGraph::convert_triangles_to_quads(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_triangles_to_quads(xfmNode->child);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_triangles_to_quads(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::TriangleMeshNode> tmesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
+    {
+      SceneGraph::QuadMeshNode* qmesh = new SceneGraph::QuadMeshNode(tmesh->material);
+      qmesh->v = tmesh->v;
+      qmesh->v2 = tmesh->v2;
+      qmesh->vn = tmesh->vn;
+      qmesh->vt = tmesh->vt;
+      for (size_t i=0; i<tmesh->triangles.size(); i++)
+      {
+        const int a0 = tmesh->triangles[i+0].v0;
+        const int a1 = tmesh->triangles[i+0].v1;
+        const int a2 = tmesh->triangles[i+0].v2;
+        if (i+1 == tmesh->triangles.size()) {
+          qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+          continue;
+        }
+
+        const int b0 = tmesh->triangles[i+1].v0;
+        const int b1 = tmesh->triangles[i+1].v1;
+        const int b2 = tmesh->triangles[i+1].v2;
+        const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+        const int a3 = q.second;
+        if (a3 == -1) {
+          qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a2));
+          continue;
+        }
+
+        if      (q.first == -1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
+        else if (q.first ==  0) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a3,a1,a2));
+        else if (q.first ==  1) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a3,a2));
+        else if (q.first ==  2) qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(a0,a1,a2,a3));
+        i++;
+      }
+      return qmesh;
+    }
+    
+    return node;
+  }
 }

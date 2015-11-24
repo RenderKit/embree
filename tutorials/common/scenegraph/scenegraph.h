@@ -86,6 +86,12 @@ namespace embree
         children[i] = node;
       }
 
+      void triangles_to_quads()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_triangles_to_quads(children[i]);
+      }
+
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
@@ -226,5 +232,6 @@ namespace embree
     static Ref<Node> load(const FileName& fname);
     static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
+    static Ref<SceneGraph::Node> convert_triangles_to_quads(Ref<SceneGraph::Node> node);
   };
 }

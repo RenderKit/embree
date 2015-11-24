@@ -149,6 +149,11 @@ namespace embree
         g_scene->add(SceneGraph::load(path + cin->getFileName()));
       }
 
+      /* convert triangles to quads */
+      else if (tag == "-convert-triangles-to-quads") {
+        g_scene->triangles_to_quads();
+      }
+
       /* load terrain */
       else if (tag == "-terrain") 
       {
