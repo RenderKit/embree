@@ -134,6 +134,7 @@ namespace embree
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4TrianglePairs4MeshBuilderSAH);
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4vMeshBuilderSAH);
   DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMeshBuilderSAH);
+  DECLARE_BUILDER2(void,QuadMesh,size_t,BVH4Quad4iMBMeshBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
