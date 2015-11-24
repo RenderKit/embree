@@ -17,6 +17,7 @@
 #pragma once
 
 #include "quadi.h"
+#include "quadi_mb.h"
 #include "quad_intersector_moeller.h"
 
 /*! Modified Pluecker ray/triangle intersector. The test first shifts
@@ -130,6 +131,47 @@ namespace embree
         return false;
       }
     };
+
+
+    /*! Intersects M motion blur quads with 1 ray */
+    template<int M, int Mx, bool filter>
+      struct QuadMiMBIntersector1Pluecker;
+
+
+    /*! Intersects 4 motion blur quads with 1 ray using SSE */
+
+    template<bool filter>
+      struct QuadMiMBIntersector1Pluecker<4,4,filter>
+    {
+      typedef QuadMiMB<4> Primitive;
+      typedef PlueckerIntersectorQuad1<4> Precalculations;
+        
+      /*! Intersect a ray with the M quads and updates the hit. */
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene,ray.time);
+        const vint4 geomIDs(quad.geomIDs); 
+        const vint4 primIDs(quad.primIDs);
+        pre.intersect(ray,v0,v1,v3,vbool4(false),Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+        pre.intersect(ray,v2,v3,v1,vbool4( true),Intersect1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+      }
+        
+      /*! Test if the ray is occluded by one of M quads. */
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene,ray.time);
+        const vint4 geomIDs(quad.geomIDs); 
+        const vint4 primIDs(quad.primIDs);
+        if (pre.intersect(ray,v0,v1,v3,vbool4(false),Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID))) return true;
+        if (pre.intersect(ray,v2,v3,v1,vbool4(true ),Occluded1Epilog<4,4,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID))) return true;
+        return false;
+      }
+    };
+
 
 #if defined(__AVX__)
 
