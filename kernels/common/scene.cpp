@@ -144,6 +144,7 @@ namespace embree
     createTriangleMBAccel();
     createHairAccel();
     createHairMBAccel();
+    createLineAccel();
     createSubdivAccel();
     createQuadAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
@@ -349,6 +350,11 @@ namespace embree
     else if (device->hair_accel_mb == "bvh8obb.bezier1imb") accels.add(device->bvh8_factory->BVH8OBBBezier1iMB(this,false));
 #endif
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur hair acceleration structure "+device->tri_accel_mb);
+  }
+
+  void Scene::createLineAccel()
+  {
+    accels.add(device->bvh4_factory->BVH4Line4i(this));
   }
 
   void Scene::createSubdivAccel()

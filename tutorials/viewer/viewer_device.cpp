@@ -194,10 +194,25 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 
 unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
+#if 0
   unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
+#else
+  unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs*3, hair->numVertices, hair->v2 ? 2 : 1);
+
+  ISPCHair* indexBuffer = new ISPCHair[hair->numHairs*3];
+  for (int i = 0; i < hair->numHairs; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      indexBuffer[i*3+j].vertex = hair->hairs[i].vertex+j;
+      indexBuffer[i*3+j].id = hair->hairs[i].id;
+    }
+  }
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,indexBuffer,0,sizeof(ISPCHair));
+#endif
   rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,hair->v,0,sizeof(Vertex));
   if (hair->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,hair->v2,0,sizeof(Vertex));
-  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,hair->hairs,0,sizeof(ISPCHair));
   return geomID;
 }
 

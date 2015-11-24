@@ -71,6 +71,11 @@ namespace embree
       return vertices[j][i];
     }
 
+    /*! returns i'th vertex of j'th timestep */
+    __forceinline const char* vertexPtr(size_t i, size_t j = 0) const {
+      return vertices[j].getPtr(i);
+    }
+
     /*! returns i'th radius of j'th timestep */
     __forceinline float radius(size_t i, size_t j = 0) const {
       return vertices[j][i].w;
@@ -158,7 +163,7 @@ namespace embree
 #endif
 
   public:
-    BufferT<int> segments;                            //!< array of line segment indices
+    BufferT<int> segments;                          //!< array of line segment indices
     array_t<BufferT<Vec3fa>,2> vertices;            //!< vertex array
     array_t<std::unique_ptr<Buffer>,2> userbuffers; //!< user buffers
   };

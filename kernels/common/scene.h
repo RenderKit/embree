@@ -108,6 +108,7 @@ namespace embree
     void createTriangleMBAccel();
     void createHairAccel();
     void createHairMBAccel();
+    void createLineAccel();
     void createSubdivAccel();
 
     /*! Scene destruction */
