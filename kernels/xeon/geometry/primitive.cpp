@@ -24,6 +24,7 @@
 #include "trianglepairsv.h"
 #include "quadv.h"
 #include "quadi.h"
+#include "quadi_mb.h"
 #include "subdivpatch1cached.h"
 #include "object.h"
 
@@ -159,6 +160,19 @@ namespace embree
   template<>
   size_t Quad4i::Type::size(const char* This) const {
     return ((Quad4i*)This)->size();
+  }
+#endif
+
+  /********************** Quad4iMB **************************/
+
+#if !defined(__AVX__)
+  template<>
+  Quad4iMB::Type::Type () 
+  : PrimitiveType("quad4imb",sizeof(Quad4iMB),4) {} 
+  
+  template<>
+  size_t Quad4iMB::Type::size(const char* This) const {
+    return ((Quad4iMB*)This)->size();
   }
 #endif
 
