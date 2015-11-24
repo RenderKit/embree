@@ -343,6 +343,7 @@ namespace embree
   
   typedef ISPCScene::ISPCGeometry ISPCGeometry;
   typedef ISPCScene::ISPCTriangleMesh ISPCTriangleMesh;
+  typedef ISPCScene::ISPCQuadMesh ISPCQuadMesh;
   typedef ISPCScene::ISPCSubdivMesh ISPCSubdivMesh;
   typedef ISPCScene::ISPCSubdivMeshKeyFrame ISPCSubdivMeshKeyFrame;
   typedef ISPCScene::ISPCHairSet ISPCHairSet;
