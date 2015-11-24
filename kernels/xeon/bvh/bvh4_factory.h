@@ -47,6 +47,7 @@ namespace embree
     Accel* BVH4SubdivPatch1Cached(Scene* scene);
     Accel* BVH4SubdivGridEager(Scene* scene);
     Accel* BVH4UserGeometry(Scene* scene);
+    Accel* BVH4UserGeometryMB(Scene* scene);
     Accel* BVH4InstancedBVH4Triangle4ObjectSplit(Scene* scene);
     Accel* BVH4Quad4v(Scene* scene);
     Accel* BVH4Quad4i(Scene* scene);
@@ -124,6 +125,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Subdivpatch1CachedIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4GridAOSIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4TrianglePairs4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Pluecker);
@@ -239,6 +241,7 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
     
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4SubdivGridEagerBuilderBinnedSAH);

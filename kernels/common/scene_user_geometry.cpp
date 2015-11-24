@@ -19,8 +19,8 @@
 
 namespace embree
 {
-  UserGeometry::UserGeometry (Scene* parent, size_t items) 
-    : AccelSet(parent,items) {}
+  UserGeometry::UserGeometry (Scene* parent, size_t items, size_t numTimeSteps) 
+    : AccelSet(parent,items,numTimeSteps) {}
   
   void UserGeometry::setUserData (void* ptr) {
     intersectors.ptr = ptr;

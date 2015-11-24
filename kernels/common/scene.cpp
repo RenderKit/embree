@@ -146,6 +146,7 @@ namespace embree
     createQuadMBAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
+    accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
 
     /* increment number of scenes */
@@ -421,12 +422,12 @@ namespace embree
   void Scene::clear() {
   }
 
-  unsigned Scene::newUserGeometry (size_t items) 
+  unsigned Scene::newUserGeometry (size_t items, size_t numTimeSteps) 
   {
-    Geometry* geom = new UserGeometry(this,items);
+    Geometry* geom = new UserGeometry(this,items,numTimeSteps);
     return geom->id;
   }
-  
+
   unsigned Scene::newInstance (Scene* scene) {
     Geometry* geom = new Instance(this,scene);
     return geom->id;
