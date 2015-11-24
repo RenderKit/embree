@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "linearspace2.h"
 #include "linearspace3.h"
 #include "quaternion.h"
 #include "bbox.h"
@@ -57,18 +58,21 @@ namespace embree
       __forceinline AffineSpaceT( OneTy )  : l(one),  p(zero) {}
 
       /*! return matrix for scaling */
-      static __forceinline AffineSpaceT scale(const VectorT& s) { return AffineSpaceT(L::scale(s),zero); }
+      static __forceinline AffineSpaceT scale(const VectorT& s) { return L::scale(s); }
 
       /*! return matrix for translation */
       static __forceinline AffineSpaceT translate(const VectorT& p) { return AffineSpaceT(one,p); }
 
-      /*! return matrix for rotation around arbitrary axis */
-      static __forceinline AffineSpaceT rotate(const VectorT& u, const ScalarT& r) { return AffineSpaceT(L::rotate(u,r),zero); }
+      /*! return matrix for rotation, only in 2D */
+      static __forceinline AffineSpaceT rotate(const ScalarT& r) { return L::rotate(r); }
 
-      /*! return matrix for rotation around arbitrary axis and point */
+      /*! return matrix for rotation around arbitrary point (2D) or axis (3D) */
+      static __forceinline AffineSpaceT rotate(const VectorT& u, const ScalarT& r) { return L::rotate(u,r); }
+
+      /*! return matrix for rotation around arbitrary axis and point, only in 3D */
       static __forceinline AffineSpaceT rotate(const VectorT& p, const VectorT& u, const ScalarT& r) { return translate(+p) * rotate(u,r) * translate(-p);  }
 
-      /*! return matrix for looking at given point */
+      /*! return matrix for looking at given point, only in 3D */
       static __forceinline AffineSpaceT lookat(const VectorT& eye, const VectorT& point, const VectorT& up) {
         VectorT Z = normalize(point-eye);
         VectorT U = normalize(cross(up,Z));
@@ -140,9 +144,14 @@ namespace embree
   // Template Instantiations
   ////////////////////////////////////////////////////////////////////////////////
 
+  typedef AffineSpaceT<LinearSpace2f> AffineSpace2f;
   typedef AffineSpaceT<LinearSpace3f> AffineSpace3f;
   typedef AffineSpaceT<LinearSpace3fa> AffineSpace3fa;
   typedef AffineSpaceT<Quaternion3f > OrthonormalSpace3f;
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /*! Template Specialization for 2D: return matrix for rotation around point (rotation around arbitrarty vector is not meaningful in 2D) */
+  template<> __forceinline AffineSpace2f AffineSpace2f::rotate(const Vec2f& p, const float& r) { return translate(+p) * AffineSpace2f(LinearSpace2f::rotate(r)) * translate(-p); }
 
   #undef VectorT
   #undef ScalarT
