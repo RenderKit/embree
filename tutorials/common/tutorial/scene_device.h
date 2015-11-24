@@ -304,6 +304,8 @@ namespace embree
     {
       if (in->type == TutorialScene::Geometry::TRIANGLE_MESH)
         return (ISPCGeometry*) new ISPCTriangleMesh(in.dynamicCast<TutorialScene::TriangleMesh>());
+      else if (in->type == TutorialScene::Geometry::QUAD_MESH)
+        return (ISPCGeometry*) new ISPCQuadMesh(in.dynamicCast<TutorialScene::QuadMesh>());
       else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
         return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
       else if (in->type == TutorialScene::Geometry::HAIR_SET)
