@@ -973,8 +973,11 @@ namespace embree
         materialMap[xml->parm("id")] = material;
         return nullptr;
       }
-      else if (xml->parm("type") == "scene") 
-        return sceneMap[xml->parm("id")] = loadNode(xml->child(0));
+      else if (xml->parm("type") == "scene")
+      {
+        sceneMap[xml->parm("id")] = loadNode(xml->child(0));
+        return nullptr;
+      }
       else 
         THROW_RUNTIME_ERROR(xml->loc.str()+": unknown type: "+xml->parm("type"));
     }
