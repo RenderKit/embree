@@ -41,6 +41,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8GridAOSIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iIntersector1Pluecker);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8Quad4iMBIntersector1Pluecker);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1vIntersector4Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8Bezier1iIntersector4Single_OBB);
@@ -126,6 +127,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8GridAOSIntersector1);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4vIntersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iIntersector1Pluecker);
+    SELECT_SYMBOL_INIT_AVX_AVX2_AVX512KNL(features,BVH8Quad4iMBIntersector1Pluecker);
 
 #if defined (RTCORE_RAY_PACKETS)
 
@@ -285,6 +287,20 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH8Factory::BVH8Quad4iMBIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = BVH8Quad4iMBIntersector1Pluecker;
+    intersectors.intersector4           = NULL;
+    intersectors.intersector4_nofilter  = NULL;
+    intersectors.intersector8           = NULL;
+    intersectors.intersector8_nofilter  = NULL;
+    intersectors.intersector16          = NULL;
+    intersectors.intersector16_nofilter = NULL;
+    return intersectors;
+  }
+
   Accel* BVH8Factory::BVH8OBBBezier1v(Scene* scene, bool highQuality)
   {
     BVH8* accel = new BVH8(Bezier1v::type,scene);
@@ -415,6 +431,7 @@ namespace embree
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4iSceneBuilderSAH(accel,scene,0);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Quad4i>");
+    scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 

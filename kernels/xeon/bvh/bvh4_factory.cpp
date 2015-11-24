@@ -461,6 +461,21 @@ namespace embree
   }
 
 
+  Accel::Intersectors BVH4Factory::BVH4Quad4iMBIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1           = BVH4Quad4iMBIntersector1Pluecker;
+    intersectors.intersector4           = NULL;
+    intersectors.intersector4_nofilter  = NULL;
+    intersectors.intersector8           = NULL;
+    intersectors.intersector8_nofilter  = NULL;
+    intersectors.intersector16          = NULL;
+    intersectors.intersector16_nofilter = NULL;
+    return intersectors;
+  }
+
+
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
@@ -889,6 +904,15 @@ namespace embree
     BVH4* accel = new BVH4(Quad4i::type,scene);
     Builder* builder = BVH4Quad4iSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Quad4iIntersectors(accel);
+    scene->needQuadVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Quad4iMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Quad4i::type,scene);
+    Builder* builder = BVH4Quad4iMBSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVH4Quad4iMBIntersectors(accel);
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
