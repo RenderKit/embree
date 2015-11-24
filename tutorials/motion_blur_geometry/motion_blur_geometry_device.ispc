@@ -80,16 +80,29 @@ uniform unsigned int cube_indices[36] = {
   1, 3, 5,  3, 7, 5
 };
 
-uniform unsigned int cube_faces[12] = { 
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+unsigned int cube_quad_indices[24] = { 
+  0, 1, 3, 6,
+  4, 5, 7, 6, 
+  0, 1, 5, 4, 
+  2, 3, 7, 6, 
+  0, 2, 6, 4, 
+  1, 3, 7, 5,
 };
+
+#define USE_QUADS 1
 
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene)
 {
+#if USE_QUADS == 1
+  /* create a quad cube with 6 quads and 8 vertices */
+  uniform unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, 2);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
+#else
   /* create a triangulated cube with 12 triangles and 8 vertices */
   uniform unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 2);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(uniform unsigned int));
+#endif
 
   uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,3,0),make_Vec3f(1,1,0),0.44f);
   uniform Vec3fa* uniform vertex0 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
@@ -104,6 +117,15 @@ uniform unsigned int addCube (RTCScene scene)
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
   
   /* create face color array */
+#if USE_QUADS == 1
+  face_colors = uniform new uniform Vec3f[6];
+  face_colors[0] = make_Vec3f(1,0,0);
+  face_colors[1] = make_Vec3f(0,1,0);
+  face_colors[2] = make_Vec3f(0.5f);
+  face_colors[3] = make_Vec3f(1.0f);
+  face_colors[4] = make_Vec3f(0,0,1);
+  face_colors[5] = make_Vec3f(1,1,0);
+#else
   face_colors = uniform new uniform Vec3f[12];
   face_colors[0] = make_Vec3f(1,0,0);
   face_colors[1] = make_Vec3f(1,0,0);
@@ -117,7 +139,7 @@ uniform unsigned int addCube (RTCScene scene)
   face_colors[9] = make_Vec3f(0,0,1);
   face_colors[10] = make_Vec3f(1,1,0);
   face_colors[11] = make_Vec3f(1,1,0);
-
+#endif
   return geomID;
 }
 

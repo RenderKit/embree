@@ -61,14 +61,14 @@ void error_handler(const RTCError code, const char* str = nullptr)
 
 __aligned(16) float cube_vertices[8][4] = 
 {
-  { -1.0f, -1.0f, -1.0f, 0.0f },
-  { -1.0f, -1.0f, +1.0f, 0.0f },
-  { -1.0f, +1.0f, -1.0f, 0.0f },
-  { -1.0f, +1.0f, +1.0f, 0.0f },
-  { +1.0f, -1.0f, -1.0f, 0.0f },
-  { +1.0f, -1.0f, +1.0f, 0.0f },
-  { +1.0f, +1.0f, -1.0f, 0.0f },
-  { +1.0f, +1.0f, +1.0f, 0.0f }
+  { -1.0f, -1.0f, -1.0f, 0.0f }, // 0
+  { -1.0f, -1.0f, +1.0f, 0.0f }, // 1
+  { -1.0f, +1.0f, -1.0f, 0.0f }, // 2
+  { -1.0f, +1.0f, +1.0f, 0.0f }, // 3
+  { +1.0f, -1.0f, -1.0f, 0.0f }, // 4
+  { +1.0f, -1.0f, +1.0f, 0.0f }, // 5
+  { +1.0f, +1.0f, -1.0f, 0.0f }, // 6
+  { +1.0f, +1.0f, +1.0f, 0.0f }  // 7
 };
 
 unsigned int cube_indices[36] = { 
@@ -80,16 +80,30 @@ unsigned int cube_indices[36] = {
   1, 3, 5,  3, 7, 5
 };
 
-unsigned int cube_faces[12] = { 
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+unsigned int cube_quad_indices[24] = { 
+  0, 1, 3, 6,
+  4, 5, 7, 6, 
+  0, 1, 5, 4, 
+  2, 3, 7, 6, 
+  0, 2, 6, 4, 
+  1, 3, 7, 5,
 };
+
+
+#define USE_QUADS 1
 
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene)
 {
+#if USE_QUADS == 1
+  /* create a quad cube with 6 quads and 8 vertices */
+  unsigned int geomID = rtcNewQuadMesh (scene, RTC_GEOMETRY_STATIC, 6, 8, 2);
+  rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_quad_indices , 0, 4*sizeof(unsigned int));
+#else
   /* create a triangulated cube with 12 triangles and 8 vertices */
   unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 2);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
+#endif  
 
   AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,3,0),Vec3fa(1,1,0),0.44f);
   Vec3fa* vertex0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
@@ -102,8 +116,16 @@ unsigned int addCube (RTCScene scene)
   }
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
-  
   /* create face color array */
+#if USE_QUADS == 1
+  face_colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));
+  face_colors[0] = Vec3fa(1,0,0);
+  face_colors[1] = Vec3fa(0,1,0);
+  face_colors[2] = Vec3fa(0.5f);
+  face_colors[3] = Vec3fa(1.0f);
+  face_colors[4] = Vec3fa(0,0,1);
+  face_colors[5] = Vec3fa(1,1,0);
+#else
   face_colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa));
   face_colors[0] = Vec3fa(1,0,0);
   face_colors[1] = Vec3fa(1,0,0);
@@ -117,7 +139,7 @@ unsigned int addCube (RTCScene scene)
   face_colors[9] = Vec3fa(0,0,1);
   face_colors[10] = Vec3fa(1,1,0);
   face_colors[11] = Vec3fa(1,1,0);
-
+#endif
   return geomID;
 }
 
