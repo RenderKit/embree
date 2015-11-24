@@ -201,7 +201,7 @@ namespace embree
       const vfloat16 p1 = vfloat16::loadu(mask,(float*)&src[tri.v[1]*stride+ofs]);
       const vfloat16 p2 = vfloat16::loadu(mask,(float*)&src[tri.v[2]*stride+ofs]);
       const vfloat16 p3 = vfloat16::loadu(mask,(float*)&src[tri.v[3]*stride+ofs]);
-      const vfloat16 p  = (1.0f-v)((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
+      const vfloat16 p  = (1.0f-v)*((1.0f-u)*p0 + u*p1) + v*((1.0f-u)*p3 + u*p2);
       const vfloat16 du = (1.0f-v) * (p1-p0) + v * (p2-p3);
       const vfloat16 dv = (1.0f-u) * (p3-p0) + u * (p2-p1);
       if (P   ) vfloat16::storeu_compact(mask,P+i,p);
