@@ -49,6 +49,7 @@ namespace embree
     Accel* BVH8SubdivGridEager(Scene* scene);
     Accel* BVH8Quad4v(Scene* scene);
     Accel* BVH8Quad4i(Scene* scene);
+    Accel* BVH8Quad4iMB(Scene* scene);
     
   private:
     Accel::Intersectors BVH8Bezier1vIntersectors_OBB(BVH8* bvh);

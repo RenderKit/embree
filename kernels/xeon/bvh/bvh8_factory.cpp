@@ -26,6 +26,7 @@
 #include "../geometry/trianglepairsv.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
+#include "../geometry/quadi_mb.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../../common/accelinstance.h"
 
@@ -110,6 +111,7 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8TrianglePairs4SceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4vSceneBuilderSAH);
     SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iSceneBuilderSAH);
+    SELECT_SYMBOL_INIT_AVX_AVX512KNL(features,BVH8Quad4iMBSceneBuilderSAH);
 
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle8SceneBuilderSpatialSAH);
@@ -420,7 +422,7 @@ namespace embree
     Accel::Intersectors intersectors = BVH8Quad4vIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4vSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Quad4v>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4v>");
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -430,7 +432,18 @@ namespace embree
     Accel::Intersectors intersectors = BVH8Quad4iIntersectors(accel);
     Builder* builder = nullptr;
     if      (scene->device->quad_builder == "default"     ) builder = BVH8Quad4iSceneBuilderSAH(accel,scene,0);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH8<Quad4i>");
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder+" for BVH8<Quad4i>");
+    scene->needQuadVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8Quad4iMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Quad4iMB::type,scene);
+    Accel::Intersectors intersectors = BVH8Quad4iMBIntersectors(accel);
+    Builder* builder = nullptr;
+    if      (scene->device->quad_builder_mb == "default"     ) builder = BVH8Quad4iMBSceneBuilderSAH(accel,scene,0);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->quad_builder_mb+" for BVH8<Quad4i>");
     scene->needQuadVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }

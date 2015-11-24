@@ -143,6 +143,7 @@ namespace embree
     createHairMBAccel();
     createSubdivAccel();
     createQuadAccel();
+    createQuadMBAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
 #endif
@@ -251,6 +252,30 @@ namespace embree
     else if (device->quad_accel == "bvh8.quad4v")       accels.add(device->bvh8_factory->BVH8Quad4v(this));
     else if (device->quad_accel == "bvh8.quad4i")       accels.add(device->bvh8_factory->BVH8Quad4i(this));
 #endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
+  }
+
+
+  void Scene::createQuadMBAccel()
+  {
+    if (device->quad_accel_mb == "default") 
+    {
+      int mode =  2*(int)isCompact() + 1*(int)isRobust(); 
+      switch (mode) {
+      case /*0b00*/ 0:
+      case /*0b01*/ 1:
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX))
+          accels.add(device->bvh8_factory->BVH8Quad4iMB(this));
+        else
+#endif
+          accels.add(device->bvh4_factory->BVH4Quad4iMB(this));
+        break;
+
+      case /*0b10*/ 2: accels.add(device->bvh4_factory->BVH4Quad4iMB(this)); break;
+      case /*0b11*/ 3: accels.add(device->bvh4_factory->BVH4Quad4iMB(this)); break;
+      }
+    }
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
   }
 

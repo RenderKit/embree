@@ -67,6 +67,11 @@ namespace embree
     std::string tri_traverser_mb;          //!< traverser to use for triangles
 
   public:
+    std::string quad_accel_mb;             //!< acceleration structure to use for motion blur quads
+    std::string quad_builder_mb;           //!< builder to use for motion blur quads
+    std::string quad_traverser_mb;         //!< traverser to use for motion blur quads
+
+  public:
     std::string hair_accel;                //!< hair acceleration structure to use
     std::string hair_builder;              //!< builder to use for hair
     std::string hair_traverser;            //!< traverser to use for hair

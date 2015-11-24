@@ -25,6 +25,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
+#include "../geometry/quadi_mb.h"
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object.h"
 #include "../geometry/trianglepairsv.h"
@@ -910,7 +911,7 @@ namespace embree
 
   Accel* BVH4Factory::BVH4Quad4iMB(Scene* scene)
   {
-    BVH4* accel = new BVH4(Quad4i::type,scene);
+    BVH4* accel = new BVH4(Quad4iMB::type,scene);
     Builder* builder = BVH4Quad4iMBSceneBuilderSAH(accel,scene,0);
     Accel::Intersectors intersectors = BVH4Quad4iMBIntersectors(accel);
     scene->needQuadVertices = true;

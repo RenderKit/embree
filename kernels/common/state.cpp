@@ -60,6 +60,10 @@ namespace embree
     tri_accel_mb = "default";
     tri_builder_mb = "default";
     tri_traverser_mb = "default";
+
+    quad_accel_mb = "default";
+    quad_builder_mb = "default";
+    quad_traverser_mb = "default";
     
     hair_accel = "default";
     hair_builder = "default";
@@ -240,6 +244,13 @@ namespace embree
         quad_builder = cin->get().Identifier();
       else if ((tok == Token::Id("quad_traverser")) && cin->trySymbol("="))
         quad_traverser = cin->get().Identifier();
+
+      else if ((tok == Token::Id("quad_accel_mb")) && cin->trySymbol("="))
+        quad_accel_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("quad_builder_mb")) && cin->trySymbol("="))
+        quad_builder_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("quad_traverser_mb")) && cin->trySymbol("="))
+        quad_traverser_mb = cin->get().Identifier();
       
       else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
         tri_accel_mb = cin->get().Identifier();

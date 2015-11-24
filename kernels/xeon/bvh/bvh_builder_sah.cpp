@@ -372,6 +372,7 @@ namespace embree
       {
 	/* skip build for empty scene */
 	const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,2>();
+
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
