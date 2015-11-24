@@ -120,6 +120,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4TrianglePairs4SceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4iSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Quad4iMBSceneBuilderSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4SceneBuilderSpatialSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle8SceneBuilderSpatialSAH);
