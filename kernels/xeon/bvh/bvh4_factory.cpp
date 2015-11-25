@@ -174,6 +174,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4TrianglePairs4SceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Quad4vSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4Quad4iSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Quad4iMBSceneBuilderSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSpatialSAH);
     SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8SceneBuilderSpatialSAH);

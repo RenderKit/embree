@@ -83,8 +83,8 @@ namespace embree
         Vec3vf4 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
         const vint8   geomIDs(quad.geomIDs); 
         const vint8   primIDs(quad.primIDs);
         const vbool8 flags(0,0,0,0,1,1,1,1);
@@ -98,8 +98,8 @@ namespace embree
         Vec3vf4 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
         const vint8   geomIDs(quad.geomIDs); 
         const vint8   primIDs(quad.primIDs);
         const vbool8 flags(0,0,0,0,1,1,1,1);

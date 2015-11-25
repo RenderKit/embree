@@ -189,8 +189,8 @@ namespace embree
         Vec3vf4 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
         const vint8   geomIDs(quad.geomIDs); 
         const vint8   primIDs(quad.primIDs);
         const vbool8 flags(0,0,0,0,1,1,1,1);
@@ -204,8 +204,48 @@ namespace embree
         Vec3vf4 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
-        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
+        const vint8   geomIDs(quad.geomIDs); 
+        const vint8   primIDs(quad.primIDs);
+        const vbool8 flags(0,0,0,0,1,1,1,1);
+        return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+      }
+    };
+
+
+    /*! Intersects 4 motion blur quads with 1 ray using AVX */
+
+    template<bool filter>
+      struct QuadMiMBIntersector1Pluecker<4,8,filter>
+    {
+      typedef QuadMiMB<4> Primitive;
+      typedef PlueckerIntersectorQuad1<8> Precalculations;
+        
+      /*! Intersect a ray with the M quads and updates the hit. */
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene,ray.time);
+        const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
+        const vint8   geomIDs(quad.geomIDs); 
+        const vint8   primIDs(quad.primIDs);
+        const vbool8 flags(0,0,0,0,1,1,1,1);
+        pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,8,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+      }
+        
+      /*! Test if the ray is occluded by one of M quads. */
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene,ray.time);
+        const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
         const vint8   geomIDs(quad.geomIDs); 
         const vint8   primIDs(quad.primIDs);
         const vbool8 flags(0,0,0,0,1,1,1,1);

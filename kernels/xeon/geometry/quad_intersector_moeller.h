@@ -45,9 +45,17 @@ namespace embree
           const vfloat<M> v = V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-          vu = select(flags,u1,u);
+#if !defined(__AVX__)
+          vu = select(flags,u1,u); 
           vv = select(flags,v1,v);
           vNg = Vec3<vfloat<M>>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
+
+#else
+          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
+          vv = select(flags,u1,v);
+          vu = select(flags,v1,u);
+          vNg = Vec3<vfloat<M>>(flip*tri_Ng.x,flip*tri_Ng.y,flip*tri_Ng.z);
+#endif
         }
 
         __forceinline Vec2f uv (const size_t i) 
@@ -177,9 +185,15 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
+#if 1
         const Vec3vf8 vtx0(vfloat8(quad.v0.x,quad.v2.x),vfloat8(quad.v0.y,quad.v2.y),vfloat8(quad.v0.z,quad.v2.z));
+        const Vec3vf8 vtx1(vfloat8(quad.v1.x),vfloat8(quad.v1.y),vfloat8(quad.v1.z));
+        const Vec3vf8 vtx2(vfloat8(quad.v3.x),vfloat8(quad.v3.y),vfloat8(quad.v3.z));
+#else
+        const Vec3vf8 vtx0(vfloat8(quad.v0.x,quad.v2.x),vfloat8(quad.v0.y,quad.v2.y),vfloat8(quad.v0.z,quad.v2.z)); // FIXME: remove
         const Vec3vf8 vtx1(vfloat8(quad.v1.x,quad.v3.x),vfloat8(quad.v1.y,quad.v3.y),vfloat8(quad.v1.z,quad.v3.z));
         const Vec3vf8 vtx2(vfloat8(quad.v3.x,quad.v1.x),vfloat8(quad.v3.y,quad.v1.y),vfloat8(quad.v3.z,quad.v1.z));
+#endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
         pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,8,filter>(ray,vint8(quad.geomIDs),vint8(quad.primIDs),scene,geomID_to_instID)); 
       }
@@ -188,9 +202,15 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
+#if 1
         const Vec3vf8 vtx0(vfloat8(quad.v0.x,quad.v2.x),vfloat8(quad.v0.y,quad.v2.y),vfloat8(quad.v0.z,quad.v2.z));
+        const Vec3vf8 vtx1(vfloat8(quad.v1.x),vfloat8(quad.v1.y),vfloat8(quad.v1.z));
+        const Vec3vf8 vtx2(vfloat8(quad.v3.x),vfloat8(quad.v3.y),vfloat8(quad.v3.z));
+#else
+        const Vec3vf8 vtx0(vfloat8(quad.v0.x,quad.v2.x),vfloat8(quad.v0.y,quad.v2.y),vfloat8(quad.v0.z,quad.v2.z)); // FIXME: remove
         const Vec3vf8 vtx1(vfloat8(quad.v1.x,quad.v3.x),vfloat8(quad.v1.y,quad.v3.y),vfloat8(quad.v1.z,quad.v3.z));
         const Vec3vf8 vtx2(vfloat8(quad.v3.x,quad.v1.x),vfloat8(quad.v3.y,quad.v1.y),vfloat8(quad.v3.z,quad.v1.z));
+#endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
         return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,8,filter>(ray,vint8(quad.geomIDs),vint8(quad.primIDs),scene,geomID_to_instID)); 
       }
@@ -214,12 +234,8 @@ namespace embree
           Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
                         select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
                         select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
-          Vec3vf16 vtx1(select(0x0f0f,vfloat16(quad.v1.x),vfloat16(quad.v3.x)),
-                        select(0x0f0f,vfloat16(quad.v1.y),vfloat16(quad.v3.y)),
-                        select(0x0f0f,vfloat16(quad.v1.z),vfloat16(quad.v3.z)));
-          Vec3vf16 vtx2(select(0x0f0f,vfloat16(quad.v3.x),vfloat16(quad.v1.x)),
-                        select(0x0f0f,vfloat16(quad.v3.y),vfloat16(quad.v1.y)),
-                        select(0x0f0f,vfloat16(quad.v3.z),vfloat16(quad.v1.z)));
+          Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
+          Vec3vf16 vtx2(vfloat16(quad.v2.x),vfloat16(quad.v2.y),vfloat16(quad.v2.z));
           vint8   geomIDs(quad.geomIDs); 
           vint8   primIDs(quad.primIDs);        
           const vbool16 flags(0xf0f0);
@@ -233,12 +249,8 @@ namespace embree
           Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
                         select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
                         select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
-          Vec3vf16 vtx1(select(0x0f0f,vfloat16(quad.v1.x),vfloat16(quad.v3.x)),
-                        select(0x0f0f,vfloat16(quad.v1.y),vfloat16(quad.v3.y)),
-                        select(0x0f0f,vfloat16(quad.v1.z),vfloat16(quad.v3.z)));
-          Vec3vf16 vtx2(select(0x0f0f,vfloat16(quad.v3.x),vfloat16(quad.v1.x)),
-                        select(0x0f0f,vfloat16(quad.v3.y),vfloat16(quad.v1.y)),
-                        select(0x0f0f,vfloat16(quad.v3.z),vfloat16(quad.v1.z)));
+          Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
+          Vec3vf16 vtx2(vfloat16(quad.v2.x),vfloat16(quad.v2.y),vfloat16(quad.v2.z));
           vint8   geomIDs(quad.geomIDs); 
           vint8   primIDs(quad.primIDs);        
           const vbool16 flags(0xf0f0);
