@@ -242,13 +242,21 @@ namespace embree
       if (geometries[i]->getType() != Geometry::USER_GEOMETRY) return nullptr;
       else return (AccelSet*) geometries[i]; 
     }
+
     __forceinline BezierCurves* getBezierCurves(size_t i) { 
       assert(i < geometries.size()); 
       assert(geometries[i]);
       assert(geometries[i]->getType() == Geometry::BEZIER_CURVES);
       return (BezierCurves*) geometries[i]; 
     }
+
     __forceinline LineSegments* getLineSegments(size_t i) {
+      assert(i < geometries.size());
+      assert(geometries[i]);
+      assert(geometries[i]->getType() == Geometry::LINE_SEGMENTS);
+      return (LineSegments*) geometries[i];
+    }
+    __forceinline const LineSegments* getLineSegments(size_t i) const {
       assert(i < geometries.size());
       assert(geometries[i]);
       assert(geometries[i]->getType() == Geometry::LINE_SEGMENTS);

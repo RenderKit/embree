@@ -47,12 +47,8 @@ namespace embree
     __forceinline LineMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline LineMi(Vec3fa* base[M], const vint<M>& geomIDs, const vint<M>& primIDs)
-      : geomIDs(geomIDs), primIDs(primIDs)
-    {
-      for (size_t i=0; i<M; i++)
-        v0[i] = base[i];
-    }
+    __forceinline LineMi(const vint<M>& v0, const vint<M>& geomIDs, const vint<M>& primIDs)
+      : v0(v0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
@@ -72,27 +68,26 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1) const;
+    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene) const;
 
     /* Fill line segment from line segment list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
       vint<M> geomID = -1, primID = -1;
-      Vec3fa* v0[M];
+      vint<M> v0;
       PrimRef& prim = *prims;
 
       for (size_t i=0; i<M; i++)
       {
-        const LineSegments* in = scene->getLineSegments(prim.geomID());
-        const unsigned vertexID = in->segment(primID);
+        const LineSegments* geom = scene->getLineSegments(prim.geomID());
         if (prims) {
           geomID[i] = prim.geomID();
           primID[i] = prim.primID();
-          v0[i] = (Vec3fa*)in->vertexPtr(vertexID);
+          v0[i] = geom->segment(primID);
           prims++;
         } else {
           assert(i);
-          geomID[i] = -1;
+          geomID[i] = geomID[i-1];
           primID[i] = -1;
           v0[i] = v0[i-1];
         }
@@ -106,21 +101,20 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> geomID = -1, primID = -1;
-      Vec3fa* v0[M];
+      vint<M> v0;
       const PrimRef* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {
-        const LineSegments* in = scene->getLineSegments(prim->geomID());
-        const unsigned vertexID = in->segment(prim->primID());
+        const LineSegments* geom = scene->getLineSegments(prim->geomID());
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
-          v0[i] = (Vec3fa*)in->vertexPtr(vertexID);
+          v0[i] = geom->segment(prim->primID());
           begin++;
         } else {
           assert(i);
-          geomID[i] = -1;
+          geomID[i] = geomID[i-1];
           primID[i] = -1;
           v0[i] = v0[i-1];
         }
@@ -131,17 +125,31 @@ namespace embree
     }
 
   public:
-    const Vec3fa* v0[M]; // pointer to 1st vertex
-    vint<M> geomIDs;     // geometry ID of mesh
-    vint<M> primIDs;     // primitive ID of primitive inside mesh
+    vint<M> v0;      // index of start vertex
+    vint<M> geomIDs; // geometry ID
+    vint<M> primIDs; // primitive ID
   };
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1) const
+  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene) const
   {
-    const vfloat4 a0 = vfloat4::loadu(v0[0]  ), a1 = vfloat4::loadu(v0[1]  ), a2 = vfloat4::loadu(v0[2]  ), a3 = vfloat4::loadu(v0[3]  );
-    const vfloat4 b0 = vfloat4::loadu(v0[0]+1), b1 = vfloat4::loadu(v0[1]+1), b2 = vfloat4::loadu(v0[2]+1), b3 = vfloat4::loadu(v0[3]+1);
+    const LineSegments* geom0 = scene->getLineSegments(geomIDs[0]);
+    const LineSegments* geom1 = scene->getLineSegments(geomIDs[1]);
+    const LineSegments* geom2 = scene->getLineSegments(geomIDs[2]);
+    const LineSegments* geom3 = scene->getLineSegments(geomIDs[3]);
+
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3]));
+
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
+
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1));
+
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
   }
 
