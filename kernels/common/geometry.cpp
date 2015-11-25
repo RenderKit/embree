@@ -104,7 +104,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
     
     intersectionFilter1 = filter;
@@ -115,7 +115,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters4,intersectionFilter4 != nullptr);
@@ -129,7 +129,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
     
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters8,intersectionFilter8 != nullptr);
@@ -143,7 +143,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters16,intersectionFilter16 != nullptr);
@@ -157,7 +157,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     occlusionFilter1 = filter;
@@ -168,7 +168,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters4,occlusionFilter4 != nullptr);
@@ -182,7 +182,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH)
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH)
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters8,occlusionFilter8 != nullptr);
@@ -196,7 +196,7 @@ namespace embree
     if (parent->isStatic() && parent->isBuild())
       throw_RTCError(RTC_INVALID_OPERATION,"static scenes cannot get modified");
 
-    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != BEZIER_CURVES && type != SUBDIV_MESH) 
+    if (type != TRIANGLE_MESH && type != QUAD_MESH && type != LINE_SEGMENTS && type != BEZIER_CURVES && type != SUBDIV_MESH) 
       throw_RTCError(RTC_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     atomic_sub(&parent->numIntersectionFilters16,occlusionFilter16 != nullptr);

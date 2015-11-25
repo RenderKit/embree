@@ -42,6 +42,7 @@ namespace embree
   static bool g_anim_mode = false;
   extern "C" int g_instancing_mode = 0;
   static Shader g_shader = SHADER_DEFAULT;
+  static bool convert_bezier_to_lines = false;
 
   /* scene */
   TutorialScene g_obj_scene;
@@ -67,6 +68,11 @@ namespace embree
       /* load OBJ model*/
       else if (tag == "-i") {
         filename = path + cin->getFileName();
+      }
+
+      /* convert bezier to lines */
+      else if (tag == "-convert-bezier-to-lines") {
+        convert_bezier_to_lines = true;
       }
 
       /* parse camera parameters */
@@ -275,6 +281,10 @@ namespace embree
     }
     else if (filename.ext() != "")
       THROW_RUNTIME_ERROR("invalid scene type: "+toLowerCase(filename.ext()));
+
+    /* convert bezier to lines */
+    if (convert_bezier_to_lines)
+        g_scene->bezier_to_lines();
 
     /* load keyframes */
     if (keyframeList.size())

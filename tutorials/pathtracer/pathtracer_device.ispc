@@ -1060,6 +1060,16 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTC
   return geomID;
 } 
 
+uniform unsigned int convertLineSegments(uniform ISPCLineSegments* uniform mesh, RTCScene scene_out)
+{
+  uniform unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, mesh->numSegments, mesh->numVertices, mesh->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->v,0,sizeof(uniform Vertex));
+  if (mesh->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->v2,0,sizeof(uniform Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(uniform int));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterHair);
+  return geomID;
+}
+
 uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
   uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
@@ -1079,6 +1089,8 @@ void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
       convertSubdivMesh((uniform ISPCSubdivMesh* uniform) geometry, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+    else if (geometry->type == LINE_SEGMENTS)
+      convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
     else
@@ -1145,6 +1157,11 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == LINE_SEGMENTS) {
+        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == HAIR_SET) {
         uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i); 
@@ -1174,6 +1191,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
       else if (geometry->type == TRIANGLE_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertLineSegments((uniform ISPCLineSegments* uniform) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1210,6 +1233,10 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in,const uniform Vec3fa& 
       }
       else if (geometry->type == TRIANGLE_MESH) {
         uniform unsigned int geomID = convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
+        assert(geomID == i);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
@@ -1283,6 +1310,19 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
+  }
+  else if (geometry->type == LINE_SEGMENTS) 
+  {
+    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
+    materialID = mesh->materialID;
+    const Vec3f dx = normalize(dg.Ng);
+    const Vec3f dy = normalize(cross(neg(ray.dir),dx));
+    const Vec3f dz = normalize(cross(dy,dx));
+    dg.Tx = dx;
+    dg.Ty = dy;
+    dg.Ng = dg.Ns = dz;
+    int vtx = mesh->indices[ray.primID];
+    dg.tnear_eps = 1.1f*mesh->v[vtx].w;
   }
   else if (geometry->type == HAIR_SET) 
   {
@@ -1405,7 +1445,16 @@ void occlusionFilterHair(void* uniform ptr, RTCRay& ray)
   foreach_unique(geomID in ray.geomID)
   {
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[geomID];
-    if (geometry->type == HAIR_SET) 
+    if (geometry->type == LINE_SEGMENTS) 
+    {
+      uniform int materialID = ((ISPCLineSegments* uniform)geometry)->materialID;
+      ISPCMaterial* uniform material = &g_ispc_scene->materials[materialID];
+      switch (material->ty) {
+      case MATERIAL_HAIR: Kt = make_Vec3f(((uniform HairMaterial* uniform)material)->Kt); break;
+      default: break;
+      }
+    }
+    else if (geometry->type == HAIR_SET) 
     {
       uniform int materialID = ((ISPCHairSet* uniform)geometry)->materialID;
       ISPCMaterial* uniform material = &g_ispc_scene->materials[materialID];

@@ -40,8 +40,6 @@
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
-#define SUBDIV_TO_QUAD_MESH 0
-
 struct DifferentialGeometry
 {
   int geomID;
@@ -1027,15 +1025,6 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
-
-#if 0
-  static size_t sizeVertexBuffers = 0;
-  PRINT(mesh->numTriangles);
-  PRINT(mesh->numVertices);
-  PRINT(sizeof(Vec3fa) * mesh->numVertices / (1024.0f * 1024.0f));
-  sizeVertexBuffers += sizeof(Vec3fa) * mesh->numVertices;
-  PRINT(sizeVertexBuffers / (1024.0f * 1024.0f));
-#endif
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
   //if (material.ty == MATERIAL_DIELECTRIC || material.ty == MATERIAL_THIN_DIELECTRIC)
@@ -1054,54 +1043,6 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 
 unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
 {
-#if SUBDIV_TO_QUAD_MESH == 1
-  static size_t sizeVertexBuffers = 0;
-  PING;
-  /* test path for quad/tri mixed input meshes */
-  PRINT(mesh->numFaces);
-  unsigned int geomID = rtcNewQuadMesh (scene_out, RTC_GEOMETRY_STATIC, mesh->numFaces, mesh->numVertices, 1);
-  PRINT(mesh->numFaces);
-  PRINT(mesh->numVertices);
-
-  rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER, mesh->positions, 0, sizeof(Vec3fa  ));
-  Quad *q = (Quad *)rtcMapBuffer(scene_out, geomID, RTC_INDEX_BUFFER);
-
-  size_t quads = 0;
-  size_t tris  = 0;
-  size_t index = 0;
-  for (size_t f=0;f<mesh->numFaces;f++)
-  {
-    if (mesh->verticesPerFace[f] == 4)
-    {
-      q[f].v0 = mesh->position_indices[index+0];
-      q[f].v1 = mesh->position_indices[index+1];
-      q[f].v2 = mesh->position_indices[index+2];
-      q[f].v3 = mesh->position_indices[index+3];
-      quads++;
-    }
-    else if (mesh->verticesPerFace[f] == 3)
-    {
-      q[f].v0 = mesh->position_indices[index+0];
-      q[f].v1 = mesh->position_indices[index+1];
-      q[f].v2 = mesh->position_indices[index+2];
-      q[f].v3 = mesh->position_indices[index+2]; // degenerate second triangle
-      tris++;
-    }
-    else
-    {
-      //WARNING("only 3 or 4 vertices per face supported");
-    }
-    index+=mesh->verticesPerFace[f];
-  }
-
-  rtcUnmapBuffer(scene_out,geomID,RTC_INDEX_BUFFER); 
-  PRINT(quads);
-  PRINT(tris);
-  PRINT(sizeof(Vec3fa) * mesh->numVertices / (1024.0f * 1024.0f));
-  sizeVertexBuffers += sizeof(Vec3fa) * mesh->numVertices;
-  PRINT(sizeVertexBuffers / (1024.0f * 1024.0f));
-
-#else
   unsigned int geomID = rtcNewSubdivisionMesh(scene_out, RTC_GEOMETRY_DYNAMIC, mesh->numFaces, mesh->numEdges, mesh->numVertices, 
                                                       mesh->numEdgeCreases, mesh->numVertexCreases, mesh->numHoles);
   mesh->geomID = geomID;												
@@ -1116,9 +1057,18 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
-#endif
   return geomID;
 } 
+
+unsigned int convertLineSegments(ISPCLineSegments* mesh, RTCScene scene_out)
+{
+  unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, mesh->numSegments, mesh->numVertices, mesh->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->v,0,sizeof(Vertex));
+  if (mesh->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->v2,0,sizeof(Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(int));
+  rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterHair);
+  return geomID;
+}
 
 unsigned int convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 {
@@ -1139,6 +1089,8 @@ void convertGroup(ISPCGroup* group, RTCScene scene_out)
       convertSubdivMesh((ISPCSubdivMesh*) geometry, scene_out);
     else if (geometry->type == TRIANGLE_MESH)
       convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+    else if (geometry->type == LINE_SEGMENTS)
+      convertLineSegments((ISPCLineSegments*) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((ISPCHairSet*) geometry, scene_out);
     else
@@ -1205,6 +1157,11 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == LINE_SEGMENTS) {
+        unsigned int geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == HAIR_SET) {
         unsigned int geomID = convertHairSet((ISPCHairSet*) geometry, scene_out);
         assert(geomID == i); 
@@ -1234,6 +1191,12 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       else if (geometry->type == TRIANGLE_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertTriangleMesh((ISPCTriangleMesh*) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertLineSegments((ISPCLineSegments*) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -1270,6 +1233,10 @@ RTCScene convertScene(ISPCScene* scene_in,const Vec3fa& cam_org)
       }
       else if (geometry->type == TRIANGLE_MESH) {
         unsigned int geomID = convertTriangleMesh((ISPCTriangleMesh*) geometry, scene_out);
+        assert(geomID == i);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        unsigned int geomID = convertLineSegments((ISPCLineSegments*) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
@@ -1343,6 +1310,19 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
     const Vec2f st = getTextureCoordinatesSubdivMesh(mesh,ray.primID,ray.u,ray.v);
     dg.u = st.x;
     dg.v = st.y;
+  }
+  else if (geometry->type == LINE_SEGMENTS) 
+  {
+    ISPCLineSegments* mesh = (ISPCLineSegments*) geometry;
+    materialID = mesh->materialID;
+    const Vec3fa dx = normalize(dg.Ng);
+    const Vec3fa dy = normalize(cross(neg(ray.dir),dx));
+    const Vec3fa dz = normalize(cross(dy,dx));
+    dg.Tx = dx;
+    dg.Ty = dy;
+    dg.Ng = dg.Ns = dz;
+    int vtx = mesh->indices[ray.primID];
+    dg.tnear_eps = 1.1f*mesh->v[vtx].w;
   }
   else if (geometry->type == HAIR_SET) 
   {
@@ -1465,7 +1445,16 @@ void occlusionFilterHair(void* ptr, RTCRay& ray)
   int geomID = ray.geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
-    if (geometry->type == HAIR_SET) 
+    if (geometry->type == LINE_SEGMENTS) 
+    {
+      int materialID = ((ISPCLineSegments*)geometry)->materialID;
+      ISPCMaterial* material = &g_ispc_scene->materials[materialID];
+      switch (material->ty) {
+      case MATERIAL_HAIR: Kt = Vec3fa(((HairMaterial*)material)->Kt); break;
+      default: break;
+      }
+    }
+    else if (geometry->type == HAIR_SET) 
     {
       int materialID = ((ISPCHairSet*)geometry)->materialID;
       ISPCMaterial* material = &g_ispc_scene->materials[materialID];
@@ -1800,12 +1789,12 @@ extern "C" void device_render (int* pixels,
   if (g_scene == nullptr)
    {
      g_scene = convertScene(g_ispc_scene,cam_org);
-#if SUBDIV_TO_QUAD_MESH == 0
+
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode)
       updateEdgeLevels(g_ispc_scene, cam_org);
 #endif
-#endif
+
    }
 
   /* create accumulator */
@@ -1826,9 +1815,7 @@ extern "C" void device_render (int* pixels,
 
   if (g_animation && g_ispc_scene->numSubdivMeshKeyFrames)
     {
-#if SUBDIV_TO_QUAD_MESH == 0
       updateKeyFrame(g_ispc_scene);
-#endif
       rtcCommit(g_scene);
       g_changed = true;
     }
@@ -1841,7 +1828,7 @@ extern "C" void device_render (int* pixels,
     g_accu_count=0;
     memset(g_accu,0,width*height*sizeof(Vec3fa));
 
-#if !defined(FORCE_FIXED_EDGE_TESSELLATION) && SUBDIV_TO_QUAD_MESH == 0
+#if !defined(FORCE_FIXED_EDGE_TESSELLATION)
     if (g_subdiv_mode)
       {
        updateEdgeLevels(g_ispc_scene, cam_org);

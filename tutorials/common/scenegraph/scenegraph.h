@@ -86,6 +86,12 @@ namespace embree
         children[i] = node;
       }
 
+      void bezier_to_lines()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = convert_bezier_to_lines(children[i]);
+      }
+
       virtual void resetNode(std::set<Ref<Node>>& done);
       virtual void calculateInDegree();
       virtual bool calculateClosed();
@@ -166,7 +172,23 @@ namespace embree
       std::vector<float> vertex_crease_weights; //!< weight for each vertex crease
       Ref<MaterialNode> material;
     };
-    
+
+    /*! Line Segments */
+    struct LineSegmentsNode : public Node
+    {
+    public:
+      LineSegmentsNode (Ref<MaterialNode> material)
+        : Node(true), material(material) {}
+      
+      void verify() const;
+
+    public:
+      avector<Vec3fa> v;        //!< control points (x,y,z,r)
+      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
+      std::vector<int> indices; //!< list of line segments
+      Ref<MaterialNode> material;
+    };
+
     /*! Hair Set. */
     struct HairSetNode : public Node
     {
@@ -198,5 +220,6 @@ namespace embree
     static Ref<Node> load(const FileName& fname);
     static void store(Ref<SceneGraph::Node> root, const FileName& fname, bool embedTextures);
     static void set_motion_blur(Ref<Node> node0, Ref<Node> node1);
+    static Ref<SceneGraph::Node> convert_bezier_to_lines(Ref<SceneGraph::Node> node);
   };
 }

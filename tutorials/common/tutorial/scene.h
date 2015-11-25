@@ -58,7 +58,7 @@ namespace embree
 
     struct Geometry : public RefCount
     {
-      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP };
+      enum Type { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, LINE_SEGMENTS };
       Type type;
 
       Geometry (Type type) : type(type) {}
@@ -105,6 +105,16 @@ namespace embree
       : vertex(vertex), id(id) {}
     public:
       int vertex,id;  //!< index of first control point and hair ID
+    };
+
+    /*! Line segments. */
+    struct LineSegments : public Geometry
+    {
+      LineSegments () : Geometry(LINE_SEGMENTS) {}
+      avector<Vec3fa> v;        //!< control points (x,y,z,r)
+      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
+      std::vector<int> indices; //!< index buffer
+      int materialID;
     };
 
     /*! Hair Set. */

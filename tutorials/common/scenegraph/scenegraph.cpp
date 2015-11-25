@@ -144,6 +144,16 @@ namespace embree
       THROW_RUNTIME_ERROR("invalid vertex crease weight array");
   }
 
+  void SceneGraph::LineSegmentsNode::verify() const
+  {
+    const size_t numVertices = v.size();
+    if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+    for (auto i : indices) {
+      if (size_t(i) >= numVertices)
+        THROW_RUNTIME_ERROR("invalid line segment");
+    }
+  }
+
   void SceneGraph::HairSetNode::verify() const
   {
     const size_t numVertices = v.size();
@@ -230,5 +240,30 @@ namespace embree
       }
       else THROW_RUNTIME_ERROR("incompatible scene graph"); 
     }
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_lines(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_bezier_to_lines(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = convert_bezier_to_lines(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
+    {
+      SceneGraph::LineSegmentsNode* lmesh = new SceneGraph::LineSegmentsNode(hmesh->material);
+      lmesh->v  = hmesh->v;
+      lmesh->v2 = hmesh->v2;
+      for (auto hair : hmesh->hairs) {
+        lmesh->indices.push_back(hair.vertex+0);
+        lmesh->indices.push_back(hair.vertex+1);
+        lmesh->indices.push_back(hair.vertex+2);
+      }
+      return lmesh;
+    }
+    return node;
   }
 }

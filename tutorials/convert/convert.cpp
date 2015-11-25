@@ -24,7 +24,7 @@ namespace embree
   /* name of the tutorial */
   const char* tutorialName = "convert";
   bool embedTextures = true;
-
+  
   struct HeightField : public RefCount
   {
     HeightField (Ref<Image> texture, const BBox3fa& bounds)
@@ -147,6 +147,11 @@ namespace embree
       /* load model */
       else if (tag == "-i") {
         g_scene->add(SceneGraph::load(path + cin->getFileName()));
+      }
+
+      /* convert bezier to lines */
+      else if (tag == "-convert-bezier-to-lines") {
+        g_scene->bezier_to_lines();
       }
 
       /* load terrain */
