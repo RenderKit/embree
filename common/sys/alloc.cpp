@@ -125,6 +125,7 @@ namespace embree
       {
 #if defined(DEBUG)
         PRINT("2M PATH");
+        PRINT(bytes);
         PRINT(ptr);
 #endif
         return ptr;
@@ -134,7 +135,9 @@ namespace embree
     if (hbw_posix_memalign(&ptr,PAGE_SIZE_4K,bytes) == 0)
       return ptr;
 
+#if defined(DEBUG)
     PRINT("could not allocate hbw memory");
+#endif
     return NULL;
   }
 
