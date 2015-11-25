@@ -43,7 +43,7 @@ namespace embree
   }
 
   Instance::Instance (Scene* parent, Accel* object) 
-    : AccelSet(parent,1), local2world(one), world2local(one), object(object)
+    : AccelSet(parent,1,1), local2world(one), world2local(one), object(object)
   {
     intersectors.ptr = this;
     boundsFunc = parent->device->instance_factory->InstanceBoundsFunc;

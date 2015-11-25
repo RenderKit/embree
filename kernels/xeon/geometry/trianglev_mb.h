@@ -145,7 +145,7 @@ namespace embree
     }
     
     /* Fill triangle from triangle list */
-    __forceinline std::pair<BBox3fa,BBox3fa> fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM va0 = zero, vb0 = zero, vc0 = zero;

@@ -137,7 +137,7 @@ namespace embree
     public:
       
       /*! construction */
-      AccelSet (Scene* parent, size_t items);
+      AccelSet (Scene* parent, size_t items, size_t numTimeSteps);
       
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
@@ -148,13 +148,23 @@ namespace embree
       /*! Calculates the bounds of an item */
       __forceinline BBox3fa bounds (size_t item) const
       {
-        BBox3fa box; 
+        BBox3fa box[2]; // have to always use 2 boxes as the geometry might have motion blur
         assert(item < size());
-        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds&)box);
-        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box);
-        return box;
+        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box);
+        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
+        return box[0];
       }
-      
+
+      /*! Calculates the bounds of an item */
+      __forceinline std::pair<BBox3fa,BBox3fa> bounds_mblur (size_t item) const
+      {
+        BBox3fa box[2]; 
+        assert(item < size());
+        if (boundsFunc2) boundsFunc2(boundsFunc2UserPtr,intersectors.ptr,item,(RTCBounds*)box);
+        else             boundsFunc(intersectors.ptr,item,(RTCBounds&)box[0]);
+        return std::make_pair(box[0],box[1]);
+      }
+
       /*! check if the i'th primitive is valid */
       __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
       {

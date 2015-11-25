@@ -29,7 +29,7 @@ typedef void (*RTCBoundsFunc)(void* ptr,              /*!< pointer to user data 
 typedef void (*RTCBoundsFunc2)(void* userPtr,         /*!< pointer to user data */
                                void* geomUserPtr,     /*!< pointer to geometry user data */
                                size_t item,           /*!< item to calculate bounds for */
-                               RTCBounds& bounds_o    /*!< returns calculated bounds */);
+                               RTCBounds* bounds_o    /*!< returns calculated bounds */);
 
 /*! Type of intersect function pointer for single rays. */
 typedef void (*RTCIntersectFunc)(void* ptr,           /*!< pointer to user data */
@@ -90,8 +90,12 @@ typedef void (*RTCOccludedFunc16) (const void* valid, /*! pointer to valid mask 
  *  representation of the geometry, is passed to each intersect and
  *  occluded function invokation, as well as the index of the geometry
  *  of the set to intersect. */
-RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,        /*!< the scene the user geometry set is created in */
-                                        size_t numGeometries   /*!< the number of geometries contained in the set */);
+RTCORE_API unsigned rtcNewUserGeometry (RTCScene scene,           /*!< the scene the user geometry set is created in */
+                                        size_t numGeometries      /*!< the number of geometries contained in the set */);
+
+RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene scene,          /*!< the scene the user geometry set is created in */
+                                         size_t numGeometries,    /*!< the number of geometries contained in the set */
+                                         size_t numTimeSteps = 1  /*!< number of motion blur time steps */);
 
 /*! Sets the bounding function to calculate bounding boxes of the user
  *  geometry items when building spatial index structures. The

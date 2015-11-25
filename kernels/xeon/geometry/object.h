@@ -44,10 +44,21 @@ namespace embree
     : accel(accel), item(item) {}
 
     /*! fill triangle from triangle list */
-    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list) // FIXME: use nontemporal stores
+    __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i]; i++;
       new (this) Object((AccelSet*) scene->get(prim.geomID()), prim.primID());
+    }
+
+    /*! fill triangle from triangle list */
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
+    {
+      const PrimRef& prim = prims[i]; i++;
+      const size_t geomID = prim.geomID();
+      const size_t primID = prim.primID();
+      AccelSet* obj = (AccelSet*) scene->get(geomID);
+      new (this) Object(obj, primID);
+      return obj->bounds_mblur(primID);
     }
 
   public:

@@ -117,7 +117,7 @@ namespace embree
     void clear();
 
     /*! Creates new user geometry. */
-    unsigned int newUserGeometry (size_t items);
+    unsigned int newUserGeometry (size_t items, size_t numTimeSteps);
 
     /*! Creates a new scene instance. */
     unsigned int newInstance (Scene* scene);
@@ -357,4 +357,5 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return world2.numSubdivPatches; } 
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return world1.numUserGeometries; } 
+  template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,2>() const { return world2.numUserGeometries; } 
 }

@@ -577,7 +577,18 @@ namespace embree
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcNewUserGeometry);
     RTCORE_VERIFY_HANDLE(hscene);
-    return scene->newUserGeometry(numItems);
+    return scene->newUserGeometry(numItems,1);
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
+  RTCORE_API unsigned rtcNewUserGeometry2 (RTCScene hscene, size_t numItems, size_t numTimeSteps) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewUserGeometry2);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->newUserGeometry(numItems,numTimeSteps);
     RTCORE_CATCH_END(scene->device);
     return -1;
   }

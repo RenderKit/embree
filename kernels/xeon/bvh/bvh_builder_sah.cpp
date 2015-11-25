@@ -337,7 +337,7 @@ namespace embree
 	BBox3fa bounds0 = empty;
 	BBox3fa bounds1 = empty;
         for (size_t i=0; i<items; i++) {
-          auto bounds = accel[i].fill(prims,start,current.prims.end(),bvh->scene,false);
+          auto bounds = accel[i].fill_mblur(prims,start,current.prims.end(),bvh->scene,false);
 	  bounds0.extend(bounds.first);
 	  bounds1.extend(bounds.second);
         }
@@ -410,7 +410,7 @@ namespace embree
 
     Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
     Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-
+    Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,1,1); }
 
     Builder* BVH4Quad4iMBSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
     Builder* BVH4Quad4iMBMeshBuilderSAH  (void* bvh, QuadMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }

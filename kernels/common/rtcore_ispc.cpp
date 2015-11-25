@@ -159,7 +159,11 @@ namespace embree
   extern "C" unsigned ispcNewUserGeometry (RTCScene scene, size_t numItems) {
     return rtcNewUserGeometry(scene,numItems);
   }
-  
+
+  extern "C" unsigned ispcNewUserGeometry2 (RTCScene scene, size_t numItems, size_t numTimeSteps) {
+    return rtcNewUserGeometry2(scene,numItems,numTimeSteps);
+  }
+
   extern "C" unsigned ispcNewTriangleMesh (RTCScene scene, RTCGeometryFlags flags, size_t numTriangles, size_t numVertices, size_t numTimeSteps) {
     return rtcNewTriangleMesh((RTCScene)scene,flags,numTriangles,numVertices,numTimeSteps);
   }
