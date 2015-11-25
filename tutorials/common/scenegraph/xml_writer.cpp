@@ -61,7 +61,9 @@ namespace embree
     void store(Ref<SceneGraph::MaterialNode> material);
 
     void store(Ref<SceneGraph::TriangleMeshNode> mesh, ssize_t id);
+    void store(Ref<SceneGraph::QuadMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id);
+    void store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
@@ -394,6 +396,18 @@ namespace embree
     close("TriangleMesh");
   }
 
+  void XMLWriter::store(Ref<SceneGraph::QuadMeshNode> mesh, ssize_t id) 
+  {
+    open("QuadMesh",id);
+    store(mesh->material);
+    store("positions",mesh->v);
+    if (mesh->v2.size()) store("positions2",mesh->v2);
+    store("normals",mesh->vn);
+    store("texcoords",mesh->vt);
+    store("indices",mesh->quads);
+    close("QuadMesh");
+  }
+
   void XMLWriter::store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id)
   {
     open("SubdivisionMesh",id);
@@ -412,6 +426,16 @@ namespace embree
     store("vertex_creases",mesh->vertex_creases);
     store("vertex_crease_weights",mesh->vertex_crease_weights);
     close("SubdivisionMesh");
+  }
+
+  void XMLWriter::store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id)
+  {
+    open("LineSegments",id);
+    store(mesh->material);
+    store4f("positions",mesh->v);
+    if (mesh->v2.size()) store4f("positions2",mesh->v2);
+    store("indices",mesh->indices);
+    close("LineSegments");
   }
 
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> hair, ssize_t id)
@@ -467,7 +491,9 @@ namespace embree
     else if (Ref<SceneGraph::LightNode<QuadLight>> cnode = node.dynamicCast<SceneGraph::LightNode<QuadLight>>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::LineSegmentsNode> cnode = node.dynamicCast<SceneGraph::LineSegmentsNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);
     else if (Ref<SceneGraph::GroupNode> cnode = node.dynamicCast<SceneGraph::GroupNode>()) store(cnode,id);
