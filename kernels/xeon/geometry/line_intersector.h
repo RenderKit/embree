@@ -85,10 +85,9 @@ namespace embree
 #endif
 */
           /* update hit information */
-          const float uu = float(i)+u[i];
           Vec3fa T = Vec3fa(v1.x[i], v1.y[i], v1.z[i]) - Vec3fa(v0.x[i], v0.y[i], v0.z[i]);
           if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
-          ray.u = uu;
+          ray.u = u[i];
           ray.v = 0.0f;
           ray.tfar = t[i];
           ray.Ng = T;
