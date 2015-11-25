@@ -123,8 +123,10 @@ namespace embree
     {
       if (hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB) == 0)
       {
+#if defined(DEBUG)
         PRINT("2M PATH");
         PRINT(ptr);
+#endif
         return ptr;
       }
     }
