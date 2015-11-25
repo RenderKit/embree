@@ -80,7 +80,11 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(RTCORE_HUGE_PAGES_SUPPORT) || defined(__MIC__)
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+#include <hbwmalloc.h>
+#endif
+
+#if defined(__MIC__)
 #define USE_HUGE_PAGES 1
 #else
 #define USE_HUGE_PAGES 0
@@ -110,10 +114,43 @@ namespace embree
     return false;
   }
 
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+  void* mk_malloc(size_t bytes)
+  {
+    assert(hbw_check_available());
+    void *ptr = NULL;
+    if ((bytes / PAGE_SIZE_2M) >= 1 && ((bytes % PAGE_SIZE_2M) == 0))
+    {
+      if (hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB) == 0)
+      {
+        PRINT("2M PATH");
+        PRINT(ptr);
+        return ptr;
+      }
+    }
+    /* standard 4k allocation */
+    if (hbw_posix_memalign(&ptr,PAGE_SIZE_4K,bytes) == 0)
+      return ptr;
+
+    PRINT("could not allocate hbw memory");
+    return NULL;
+  }
+
+  void mk_free(void* ptr) 
+  {
+    hbw_free(ptr);
+  }
+#endif
+  
   void* os_malloc(size_t bytes, const int additional_flags)
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
-        
+    
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    char *memkind_ptr = (char*)mk_malloc(bytes);
+    if (memkind_ptr) return memkind_ptr;
+#endif
+    
     if (useHugePages(bytes)) 
     {
 #if USE_HUGE_PAGES
@@ -139,6 +176,11 @@ namespace embree
   void* os_reserve(size_t bytes)
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
+
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    char *memkind_ptr = (char*)mk_malloc(bytes);
+    if (memkind_ptr) return memkind_ptr;
+#endif
 
     if (useHugePages(bytes)) 
     {
@@ -166,6 +208,10 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    return bytesOld;
+#endif
+
     size_t pageSize = PAGE_SIZE_4K;
     if (useHugePages(bytesOld)) 
     {
@@ -190,6 +236,11 @@ namespace embree
   {
     if (bytes == 0)
       return;
+
+#if defined(RTCORE_MEMKIND_ALLOCATOR)
+    mk_free(ptr);
+    return;
+#endif
 
     if (useHugePages(bytes)) {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
