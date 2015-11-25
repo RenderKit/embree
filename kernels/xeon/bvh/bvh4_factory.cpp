@@ -19,6 +19,7 @@
 
 #include "../geometry/bezier1v.h"
 #include "../geometry/bezier1i.h"
+#include "../geometry/linei.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
@@ -38,6 +39,7 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1vIntersector1_OBB);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
@@ -141,6 +143,7 @@ namespace embree
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
+  DECLARE_BUILDER2(void,Scene,size_t,BVH4Line4iSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
 
@@ -193,6 +196,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Quad4iMBMeshBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iSceneBuilderSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualSceneBuilderSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4VirtualMBSceneBuilderSAH);
 
@@ -216,6 +220,7 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1vIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iIntersector1_OBB);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Bezier1iMBIntersector1_OBB);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4Line4iIntersector1);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4Triangle4Intersector1Moeller);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL(features,BVH4XfmTriangle4Intersector1Moeller);
     SELECT_SYMBOL_INIT_AVX_AVX2         (features,BVH4Triangle8Intersector1Moeller);
@@ -320,6 +325,17 @@ namespace embree
     intersectors.intersector4  = BVH4Bezier1iIntersector4Single;
     intersectors.intersector8  = BVH4Bezier1iIntersector8Single;
     intersectors.intersector16 = BVH4Bezier1iIntersector16Single;
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4Line4iIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4Line4iIntersector1;
+    intersectors.intersector4  = NULL;
+    intersectors.intersector8  = NULL;
+    intersectors.intersector16 = NULL;
     return intersectors;
   }
 
@@ -590,6 +606,15 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Bezier1iIntersectors(accel);
     Builder* builder = BVH4Bezier1iSceneBuilderSAH(accel,scene,0);
     scene->needBezierVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Line4i(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Line4i::type,scene);
+    Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
+    Builder* builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 

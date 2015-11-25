@@ -61,14 +61,14 @@ void error_handler(const RTCError code, const char* str = nullptr)
 
 __aligned(16) float cube_vertices[8][4] = 
 {
-  { -1.0f, -1.0f, -1.0f, 0.0f }, // 0
-  { -1.0f, -1.0f, +1.0f, 0.0f }, // 1
-  { -1.0f, +1.0f, -1.0f, 0.0f }, // 2
-  { -1.0f, +1.0f, +1.0f, 0.0f }, // 3
-  { +1.0f, -1.0f, -1.0f, 0.0f }, // 4
-  { +1.0f, -1.0f, +1.0f, 0.0f }, // 5
-  { +1.0f, +1.0f, -1.0f, 0.0f }, // 6
-  { +1.0f, +1.0f, +1.0f, 0.0f }  // 7
+  { -1.0f, -1.0f, -1.0f, 0.0f },
+  { -1.0f, -1.0f, +1.0f, 0.0f },
+  { -1.0f, +1.0f, -1.0f, 0.0f },
+  { -1.0f, +1.0f, +1.0f, 0.0f },
+  { +1.0f, -1.0f, -1.0f, 0.0f },
+  { +1.0f, -1.0f, +1.0f, 0.0f },
+  { +1.0f, +1.0f, -1.0f, 0.0f },
+  { +1.0f, +1.0f, +1.0f, 0.0f }
 };
 
 unsigned int cube_indices[36] = { 
@@ -89,7 +89,6 @@ unsigned int cube_quad_indices[24] = {
   1, 3, 7, 5,
 };
 
-
 #define USE_QUADS 1
 
 /* adds a cube to the scene */
@@ -103,7 +102,7 @@ unsigned int addCube (RTCScene scene)
   /* create a triangulated cube with 12 triangles and 8 vertices */
   unsigned int geomID = rtcNewTriangleMesh (scene, RTC_GEOMETRY_STATIC, 12, 8, 2);
   rtcSetBuffer(scene, geomID, RTC_INDEX_BUFFER,  cube_indices , 0, 3*sizeof(unsigned int));
-#endif  
+#endif
 
   AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,3,0),Vec3fa(1,1,0),0.44f);
   Vec3fa* vertex0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
@@ -116,6 +115,7 @@ unsigned int addCube (RTCScene scene)
   }
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
   rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+  
   /* create face color array */
 #if USE_QUADS == 1
   face_colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));

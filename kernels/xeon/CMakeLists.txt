@@ -66,6 +66,7 @@ SET(EMBREE_LIBRARY_FILES
   ../common/scene_triangle_mesh.cpp
   ../common/scene_quad_mesh.cpp
   ../common/scene_bezier_curves.cpp
+  ../common/scene_line_segments.cpp
   ../common/scene_subdiv_mesh.cpp
   ../common/raystream_log.cpp
   ../common/subdiv/tessellation_cache.cpp

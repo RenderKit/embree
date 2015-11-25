@@ -73,16 +73,16 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-     static __forceinline Vec3fa load( const void* const a ) {
-       return Vec3fa(_mm_and_ps(_mm_load_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
-     }
-     
-     static __forceinline Vec3fa loadu( const void* const a ) {
-       return Vec3fa(_mm_and_ps(_mm_loadu_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
-     }
+    static __forceinline Vec3fa load( const void* const a ) {
+      return Vec3fa(_mm_and_ps(_mm_load_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
+    }
 
-     static __forceinline void storeu ( void* ptr, const Vec3fa& v ) {
-       _mm_storeu_ps((float*)ptr,v);
+    static __forceinline Vec3fa loadu( const void* const a ) {
+      return Vec3fa(_mm_and_ps(_mm_loadu_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
+    }
+
+    static __forceinline void storeu ( void* ptr, const Vec3fa& v ) {
+      _mm_storeu_ps((float*)ptr,v);
     }
 
     ////////////////////////////////////////////////////////////////////////////////

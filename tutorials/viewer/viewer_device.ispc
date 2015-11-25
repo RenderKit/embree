@@ -202,6 +202,15 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTC
   return geomID;
 } 
 
+uniform unsigned int convertLineSegments(uniform ISPCLineSegments* uniform mesh, RTCScene scene_out)
+{
+  uniform unsigned int geomID = rtcNewLineSegments (scene_out, RTC_GEOMETRY_STATIC, mesh->numSegments, mesh->numVertices, mesh->v2 ? 2 : 1);
+  rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER,mesh->v,0,sizeof(uniform Vertex));
+  if (mesh->v2) rtcSetBuffer(scene_out,geomID,RTC_VERTEX_BUFFER1,mesh->v2,0,sizeof(uniform Vertex));
+  rtcSetBuffer(scene_out,geomID,RTC_INDEX_BUFFER,mesh->indices,0,sizeof(uniform int));
+  return geomID;
+}
+
 uniform unsigned int convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
 {
   uniform unsigned int geomID = rtcNewHairGeometry (scene_out, RTC_GEOMETRY_STATIC, hair->numHairs, hair->numVertices, hair->v2 ? 2 : 1);
@@ -222,6 +231,8 @@ void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
       convertTriangleMesh((uniform ISPCTriangleMesh* uniform) geometry, scene_out);
     else if (geometry->type == QUAD_MESH)
       convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
+    else if (geometry->type == LINE_SEGMENTS)
+      convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
     else if (geometry->type == HAIR_SET)
       convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
     else
@@ -289,6 +300,11 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
         assert(geomID == i); 
         rtcDisable(scene_out,geomID);
       }
+      else if (geometry->type == LINE_SEGMENTS) {
+        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
+        assert(geomID == i); 
+        rtcDisable(scene_out,geomID);
+      }
       else if (geometry->type == HAIR_SET) {
         uniform unsigned int geomID = convertHairSet((uniform ISPCHairSet* uniform) geometry, scene_out);
         assert(geomID == i); 
@@ -324,6 +340,12 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
       else if (geometry->type == QUAD_MESH) {
         RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
         convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, objscene);
+        geomID_to_scene[i] = objscene;
+        rtcCommit(objscene);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        RTCScene objscene = rtcDeviceNewScene(g_device, (RTCSceneFlags)scene_flags,(RTCAlgorithmFlags) scene_aflags);
+        convertLineSegments((uniform ISPCLineSegments* uniform) geometry, objscene);
         geomID_to_scene[i] = objscene;
         rtcCommit(objscene);
       }
@@ -364,6 +386,10 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
       }
       else if (geometry->type == QUAD_MESH) {
         uniform unsigned int geomID = convertQuadMesh((uniform ISPCQuadMesh* uniform) geometry, scene_out);
+        assert(geomID == i);
+      }
+      else if (geometry->type == LINE_SEGMENTS) {
+        uniform unsigned int geomID = convertLineSegments((uniform ISPCLineSegments* uniform) geometry, scene_out);
         assert(geomID == i);
       }
       else if (geometry->type == HAIR_SET) {
@@ -408,6 +434,11 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
     materialID = mesh->materialID; 
+  }
+  else if (geometry->type == LINE_SEGMENTS) 
+  {
+    uniform ISPCLineSegments* uniform mesh = (uniform ISPCLineSegments* uniform) geometry;
+    materialID = mesh->materialID;
   }
   else if (geometry->type == HAIR_SET) 
   {

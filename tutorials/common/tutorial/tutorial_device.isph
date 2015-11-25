@@ -21,7 +21,7 @@
 #define TILE_SIZE_Y 16
 
 /* vertex and triangle layout */
-struct Vertex   { float x,y,z,r;  };
+struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
 /* include optional vector library */

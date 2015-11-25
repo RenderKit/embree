@@ -43,6 +43,7 @@ namespace embree
   extern "C" int g_instancing_mode = 0;
   static Shader g_shader = SHADER_DEFAULT;
   static bool convert_tris_to_quads = false;
+  static bool convert_bezier_to_lines = false;
 
   /* scene */
   TutorialScene g_obj_scene;
@@ -73,6 +74,11 @@ namespace embree
       /* convert triangles to quads */
       else if (tag == "-convert-triangles-to-quads") {
         convert_tris_to_quads = true;
+      }
+
+      /* convert bezier to lines */
+      else if (tag == "-convert-bezier-to-lines") {
+        convert_bezier_to_lines = true;
       }
 
       /* parse camera parameters */
@@ -289,6 +295,10 @@ namespace embree
     /* convert triangles to quads */
     if (convert_tris_to_quads)
         g_scene->triangles_to_quads();
+
+    /* convert bezier to lines */
+    if (convert_bezier_to_lines)
+        g_scene->bezier_to_lines();
 
     /* initialize ray tracing core */
     g_obj_scene.add(g_scene.dynamicCast<SceneGraph::Node>(),(TutorialScene::InstancingMode)g_instancing_mode); 

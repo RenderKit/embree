@@ -17,6 +17,7 @@
 #include "primitive.h"
 #include "bezier1v.h"
 #include "bezier1i.h"
+#include "linei.h"
 #include "triangle.h"
 #include "trianglev.h"
 #include "trianglei.h"
@@ -55,6 +56,19 @@ namespace embree
   }
 
   Bezier1i::Type Bezier1i::type;
+#endif
+
+  /********************** Line4i **************************/
+
+#if !defined(__AVX__)
+  template<>
+  Line4i::Type::Type ()
+    : PrimitiveType("line4i",sizeof(Line4i),4) {}
+
+  template<>
+  size_t Line4i::Type::size(const char* This) const {
+    return ((Line4i*)This)->size();
+  }
 #endif
   
   /********************** Triangle4 **************************/

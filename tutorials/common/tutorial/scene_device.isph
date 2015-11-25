@@ -32,7 +32,7 @@ struct ISPCQuad
   int v3;                /*< fourth triangle vertex */
 };
 
-enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH };
+enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS };
 
 struct ISPCGeometry
 {
@@ -100,6 +100,17 @@ struct ISPCHair
 {
   int vertex;
   int id;
+};
+
+struct ISPCLineSegments
+{
+  uniform ISPCGeometry geom;
+  Vec3fa* v;        //!< control points (x,y,z,r)
+  Vec3fa* v2;       //!< hair control points (x,y,z,r)
+  int* indices;     //!< for each segment, index to first control point
+  int numVertices;
+  int numSegments;
+  int materialID;
 };
 
 struct ISPCHairSet

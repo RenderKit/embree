@@ -24,7 +24,7 @@ namespace embree
   /* name of the tutorial */
   const char* tutorialName = "convert";
   bool embedTextures = true;
-
+  
   struct HeightField : public RefCount
   {
     HeightField (Ref<Image> texture, const BBox3fa& bounds)
@@ -152,6 +152,11 @@ namespace embree
       /* convert triangles to quads */
       else if (tag == "-convert-triangles-to-quads") {
         g_scene->triangles_to_quads();
+      }
+
+      /* convert bezier to lines */
+      else if (tag == "-convert-bezier-to-lines") {
+        g_scene->bezier_to_lines();
       }
 
       /* load terrain */

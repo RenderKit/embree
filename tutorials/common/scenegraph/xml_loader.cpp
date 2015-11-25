@@ -238,6 +238,7 @@ namespace embree
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadHairSet(const Ref<XML>& xml);
 
   private:
@@ -908,12 +909,27 @@ namespace embree
     return mesh;
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadLineSegments(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    std::vector<int>    indices    = loadIntArray(xml->childOpt("indices"));
+
+    SceneGraph::LineSegmentsNode* mesh = new SceneGraph::LineSegmentsNode(material);
+    mesh->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) mesh->v [i] = positions [i];
+    mesh->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) mesh->v2[i] = positions2[i];
+    mesh->indices.resize(indices.size()); for (size_t i=0; i<indices.size(); i++) mesh->indices[i] = indices[i];
+    mesh->verify();
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadHairSet(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    std::vector<Vec3fa> positions = loadVec4fArray(xml->childOpt("positions"));
-    std::vector<Vec3fa> positions2= loadVec4fArray(xml->childOpt("positions2"));
-    std::vector<Vec2i> indices   = loadVec2iArray(xml->childOpt("indices"));
+    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+    std::vector<Vec2i> indices     = loadVec2iArray(xml->childOpt("indices"));
 
     SceneGraph::HairSetNode* hair = new SceneGraph::HairSetNode(material);
     hair->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) hair->v [i] = positions [i];
@@ -1000,6 +1016,7 @@ namespace embree
       else if (xml->name == "TriangleMesh"    ) return sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "LineSegments"    ) return sceneMap[id] = loadLineSegments    (xml);
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);

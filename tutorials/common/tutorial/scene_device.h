@@ -40,7 +40,7 @@ namespace embree
     int id;
   };
   
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, HAIR_SET, INSTANCE, GROUP, QUAD_MESH, LINE_SEGMENTS };
   
   struct ISPCAmbientLight
   {
@@ -154,7 +154,7 @@ namespace embree
     {
       ISPCSubdivMesh (Ref<TutorialScene::SubdivMesh> in) : geom(SUBDIV_MESH) 
       {
-        positions = in->positions.size() ? &in->positions[0] : nullptr;
+        positions = in->positions.size() ? &in->positions[0] : nullptr; // FIXME: use c++11 data() function 
         normals = in->normals.size() ? &in->normals[0] : nullptr;
         texcoords = in->texcoords.size() ? &in->texcoords[0] : nullptr;
         position_indices = in->position_indices.size()   ? &in->position_indices[0] : nullptr;
@@ -219,7 +219,28 @@ namespace embree
       ISPCSubdivMesh** subdiv;                   //!< list of subdiv meshes
       int numSubdivMeshes;                       //!< number of subdiv meshes
     };
- 
+
+    struct ISPCLineSegments
+    {
+      ISPCLineSegments (Ref<TutorialScene::LineSegments> in) : geom(LINE_SEGMENTS) 
+      {
+        v = in->v.data();
+        v2 = in->v2.data();
+        indices = in->indices.data();
+        numVertices = in->v.size();
+        numSegments = in->indices.size();
+        materialID = in->materialID;
+      }
+      
+      ISPCGeometry geom;
+      Vec3fa* v;        //!< control points (x,y,z,r)
+      Vec3fa* v2;       //!< control points (x,y,z,r)
+      int* indices;     //!< for each segment, index to first control point
+      int numVertices;
+      int numSegments;
+      int materialID;
+    };
+
     struct ISPCHairSet
     {
       ISPCHairSet (Ref<TutorialScene::HairSet> in) : geom(HAIR_SET) 
@@ -308,6 +329,8 @@ namespace embree
         return (ISPCGeometry*) new ISPCQuadMesh(in.dynamicCast<TutorialScene::QuadMesh>());
       else if (in->type == TutorialScene::Geometry::SUBDIV_MESH)
         return (ISPCGeometry*) new ISPCSubdivMesh(in.dynamicCast<TutorialScene::SubdivMesh>());
+      else if (in->type == TutorialScene::Geometry::LINE_SEGMENTS)
+        return (ISPCGeometry*) new ISPCLineSegments(in.dynamicCast<TutorialScene::LineSegments>());
       else if (in->type == TutorialScene::Geometry::HAIR_SET)
         return (ISPCGeometry*) new ISPCHairSet(in.dynamicCast<TutorialScene::HairSet>());
       else if (in->type == TutorialScene::Geometry::INSTANCE)
@@ -346,6 +369,7 @@ namespace embree
   typedef ISPCScene::ISPCQuadMesh ISPCQuadMesh;
   typedef ISPCScene::ISPCSubdivMesh ISPCSubdivMesh;
   typedef ISPCScene::ISPCSubdivMeshKeyFrame ISPCSubdivMeshKeyFrame;
+  typedef ISPCScene::ISPCLineSegments ISPCLineSegments;
   typedef ISPCScene::ISPCHairSet ISPCHairSet;
   typedef ISPCScene::ISPCInstance ISPCInstance;
   typedef ISPCScene::ISPCGroup ISPCGroup;

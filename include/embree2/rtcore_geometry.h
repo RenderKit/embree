@@ -271,6 +271,13 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
+                                        RTCGeometryFlags flags,            //!< geometry flags
+                                        size_t numSegments,                //!< number of line segments
+                                        size_t numVertices,                //!< number of vertices
+                                        size_t numTimeSteps = 1            //!< number of motion blur time steps
+  );
+
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 

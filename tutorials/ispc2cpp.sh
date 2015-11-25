@@ -48,8 +48,10 @@ sed -i.backup  's/RTCOccludedFuncVarying/RTCOccludedFunc/g' $2
 sed -i.backup  's/RTCFilterFuncVarying/RTCFilterFunc/g' $2
 sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
 
-sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
+sed -i.backup  's/new Vec3fa\[6\]/(Vec3fa\*) alignedMalloc(6\*sizeof(Vec3fa))/g' $2
 sed -i.backup  's/new Vec3fa\[8\]/(Vec3fa\*) alignedMalloc(8\*sizeof(Vec3fa))/g' $2
+sed -i.backup  's/new Vec3fa\[12\]/(Vec3fa\*) alignedMalloc(12\*sizeof(Vec3fa))/g' $2
+
 sed -i.backup  's/delete\[\] colors/alignedFree(colors)/g' $2
 sed -i.backup  's/delete\[\] face_colors/alignedFree(face_colors)/g' $2
 sed -i.backup  's/delete\[\] vertex_colors/alignedFree(vertex_colors)/g' $2
