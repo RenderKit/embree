@@ -235,7 +235,7 @@ namespace embree
                         select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
                         select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
           Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
-          Vec3vf16 vtx2(vfloat16(quad.v2.x),vfloat16(quad.v2.y),vfloat16(quad.v2.z));
+          Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
           vint8   geomIDs(quad.geomIDs); 
           vint8   primIDs(quad.primIDs);        
           const vbool16 flags(0xf0f0);
@@ -250,7 +250,7 @@ namespace embree
                         select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
                         select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
           Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
-          Vec3vf16 vtx2(vfloat16(quad.v2.x),vfloat16(quad.v2.y),vfloat16(quad.v2.z));
+          Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
           vint8   geomIDs(quad.geomIDs); 
           vint8   primIDs(quad.primIDs);        
           const vbool16 flags(0xf0f0);
