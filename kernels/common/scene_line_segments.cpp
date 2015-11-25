@@ -125,8 +125,8 @@ namespace embree
 
   void LineSegments::immutable ()
   {
-    const bool freeIndices = !parent->needLineIndices;
-    const bool freeVertices  = !parent->needLineVertices;
+    const bool freeIndices  = !parent->needLineIndices;
+    const bool freeVertices = !parent->needLineVertices;
     if (freeIndices) segments.free();
     if (freeVertices ) vertices[0].free();
     if (freeVertices ) vertices[1].free();

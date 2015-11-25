@@ -586,7 +586,7 @@ namespace embree
     BVH4* accel = new BVH4(Line4i::type,scene);
     Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
     Builder* builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
-    scene->needBezierVertices = true;
+    scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
 
