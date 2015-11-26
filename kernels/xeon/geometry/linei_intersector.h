@@ -34,16 +34,14 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf4 v0,v1; line.gather(v0,v1,scene);
-        const vbool<M> valid = line.primIDs != vint<M>(-1);
-        LineIntersector1<Mx>::intersect(ray,pre,valid,v0,v1,Intersect1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
+        LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,Intersect1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
 
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf4 v0,v1; line.gather(v0,v1,scene);
-        const vbool<M> valid = line.primIDs != vint<M>(-1);
-        return LineIntersector1<Mx>::intersect(ray,pre,valid,v0,v1,Occluded1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
+        return LineIntersector1<Mx>::intersect(ray,pre,line.valid(),v0,v1,Occluded1Epilog<M,Mx,filter>(ray,line.geomIDs,line.primIDs,scene,geomID_to_instID));
       }
     };
   }
