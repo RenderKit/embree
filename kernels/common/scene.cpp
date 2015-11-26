@@ -145,6 +145,7 @@ namespace embree
     createHairAccel();
     createHairMBAccel();
     createLineAccel();
+    createLineMBAccel();
     createSubdivAccel();
     createQuadAccel();
     createQuadMBAccel();
@@ -381,6 +382,11 @@ namespace embree
   void Scene::createLineAccel()
   {
     accels.add(device->bvh4_factory->BVH4Line4i(this));
+  }
+
+  void Scene::createLineMBAccel()
+  {
+    accels.add(device->bvh4_factory->BVH4Line4iMB(this));
   }
 
   void Scene::createSubdivAccel()

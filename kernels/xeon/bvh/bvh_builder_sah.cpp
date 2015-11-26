@@ -410,6 +410,8 @@ namespace embree
       }
     };
 
+    Builder* BVH4Line4iMBSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,LineSegments,Line4i>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
+
     Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
     Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,1,1); }

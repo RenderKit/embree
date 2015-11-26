@@ -54,7 +54,7 @@ namespace embree
     __forceinline vbool<M> valid() const { return primIDs != vint<M>(-1); }
 
     /* Returns if the specified line segment is valid */
-    __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
+    __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
 
     /* Returns the number of stored line segments */
     __forceinline size_t size() const { return __bsf(~movemask(valid())); }
@@ -69,11 +69,46 @@ namespace embree
 
     /* gather the line segments */
     __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t j = 0) const;
+    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, float t) const;
+
+    /* Calculate the bounds of the line segments */
+    __forceinline const BBox3fa bounds(const Scene* scene, size_t j = 0) const
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const LineSegments* geom = scene->getLineSegments(geomID(i));
+        const Vec3fa& p0 = geom->vertex(v0[i]+0,j);
+        const Vec3fa& p1 = geom->vertex(v0[i]+1,j);
+        BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
+        b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
+        bounds.extend(b);
+      }
+      return bounds;
+    }
+
+    /* Calculate the bounds of the line segments at t0 */
+    __forceinline BBox3fa bounds0(const Scene* scene) const
+    {
+      return bounds(scene,0);
+    }
+
+    /* Calculate the bounds of the line segments at t1 */
+    __forceinline BBox3fa bounds1(const Scene* scene) const
+    {
+      return bounds(scene,1);
+    }
+
+    /* Calculate primitive bounds */
+    __forceinline std::pair<BBox3fa,BBox3fa> bounds(const Scene* scene)
+    {
+      return std::make_pair(bounds0(scene), bounds1(scene));
+    }
 
     /* Fill line segment from line segment list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
     {
-      vint<M> geomID = -1, primID = -1;
+      vint<M> geomID, primID;
       vint<M> v0;
       PrimRef& prim = *prims;
 
@@ -100,7 +135,7 @@ namespace embree
     /* Fill line segment from line segment list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
-      vint<M> geomID = -1, primID = -1;
+      vint<M> geomID, primID;
       vint<M> v0;
       const PrimRef* prim = &prims[begin];
 
@@ -122,6 +157,13 @@ namespace embree
       }
 
       new (this) LineMi(v0,geomID,primID); // FIXME: use non temporal store
+    }
+
+    /* Fill line segment from line segment list */
+    __forceinline std::pair<BBox3fa,BBox3fa> fill_mblur(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
+    {
+      fill(prims,begin,end,scene,list);
+      return bounds(scene);
     }
 
   public:
@@ -151,6 +193,19 @@ namespace embree
     const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,j));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
+  }
+
+  template<>
+  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, float t) const
+  {
+    const vfloat4 t0 = 1.0f - t;
+    const vfloat4 t1 = t;
+    Vec4vf4 a0,a1;
+    gather(a0,a1,scene,(size_t)0);
+    Vec4vf4 b0,b1;
+    gather(b0,b1,scene,(size_t)1);
+    p0 = t0 * a0 + t1 * b0;
+    p1 = t0 * a1 + t1 * b1;
   }
 
   template<int M>

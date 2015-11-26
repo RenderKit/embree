@@ -35,6 +35,7 @@ namespace embree
     Accel* BVH4Bezier1v(Scene* scene);
     Accel* BVH4Bezier1i(Scene* scene);
     Accel* BVH4Line4i(Scene* scene);
+    Accel* BVH4Line4iMB(Scene* scene);
 
     Accel* BVH4OBBBezier1v(Scene* scene, bool highQuality);
     Accel* BVH4OBBBezier1i(Scene* scene, bool highQuality);
@@ -80,6 +81,7 @@ namespace embree
     Accel::Intersectors BVH4Bezier1iIntersectors_OBB(BVH4* bvh);
     Accel::Intersectors BVH4Bezier1iMBIntersectors_OBB(BVH4* bvh);
     Accel::Intersectors BVH4Line4iIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4Line4iMBIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4IntersectorsChunk(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4IntersectorsHybrid(BVH4* bvh);
     Accel::Intersectors BVH4Triangle4IntersectorsInstancing(BVH4* bvh);
@@ -119,6 +121,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Bezier1iMBIntersector1_OBB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Line4iIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4Line4iMBIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4XfmTriangle4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle8Intersector1Moeller);
@@ -244,6 +247,7 @@ namespace embree
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1vSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Bezier1iSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iSceneBuilderSAH);
+    DEFINE_BUILDER2(void,Scene,size_t,BVH4Line4iMBSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualSceneBuilderSAH);
     DEFINE_BUILDER2(void,Scene,size_t,BVH4VirtualMBSceneBuilderSAH);
     
