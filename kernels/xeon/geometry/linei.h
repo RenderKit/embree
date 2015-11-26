@@ -68,7 +68,7 @@ namespace embree
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* gather the line segments */
-    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene) const;
+    __forceinline void gather(Vec4<vfloat<M>>& p0, Vec4<vfloat<M>>& p1, const Scene* scene, size_t j = 0) const;
 
     /* Fill line segment from line segment list */
     __forceinline void fill(atomic_set<PrimRefBlock>::block_iterator_unsafe& prims, Scene* scene, const bool list)
@@ -131,24 +131,24 @@ namespace embree
   };
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene) const
+  __forceinline void LineMi<4>::gather(Vec4vf4& p0, Vec4vf4& p1, const Scene* scene, size_t j) const
   {
     const LineSegments* geom0 = scene->getLineSegments(geomIDs[0]);
     const LineSegments* geom1 = scene->getLineSegments(geomIDs[1]);
     const LineSegments* geom2 = scene->getLineSegments(geomIDs[2]);
     const LineSegments* geom3 = scene->getLineSegments(geomIDs[3]);
 
-    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3]));
+    const vfloat4 a0 = vfloat4::loadu(geom0->vertexPtr(v0[0],j));
+    const vfloat4 a1 = vfloat4::loadu(geom1->vertexPtr(v0[1],j));
+    const vfloat4 a2 = vfloat4::loadu(geom2->vertexPtr(v0[2],j));
+    const vfloat4 a3 = vfloat4::loadu(geom3->vertexPtr(v0[3],j));
 
     transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
 
-    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1));
-    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1));
-    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1));
-    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1));
+    const vfloat4 b0 = vfloat4::loadu(geom0->vertexPtr(v0[0]+1,j));
+    const vfloat4 b1 = vfloat4::loadu(geom1->vertexPtr(v0[1]+1,j));
+    const vfloat4 b2 = vfloat4::loadu(geom2->vertexPtr(v0[2]+1,j));
+    const vfloat4 b3 = vfloat4::loadu(geom3->vertexPtr(v0[3]+1,j));
 
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
   }
