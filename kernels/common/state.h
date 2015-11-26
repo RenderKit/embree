@@ -57,19 +57,29 @@ namespace embree
     double      tri_builder_replication_factor; //!< maximally factor*N many primitives in accel
 
   public:
-    std::string quad_accel;                 //!< acceleration structure to use for quads
-    std::string quad_builder;               //!< builder to use for quads
-    std::string quad_traverser;             //!< traverser to use for quads
-
-  public:
     std::string tri_accel_mb;              //!< acceleration structure to use for motion blur triangles
     std::string tri_builder_mb;            //!< builder to use for motion blur triangles
     std::string tri_traverser_mb;          //!< traverser to use for triangles
 
   public:
+    std::string quad_accel;                 //!< acceleration structure to use for quads
+    std::string quad_builder;               //!< builder to use for quads
+    std::string quad_traverser;             //!< traverser to use for quads
+
+  public:
     std::string quad_accel_mb;             //!< acceleration structure to use for motion blur quads
     std::string quad_builder_mb;           //!< builder to use for motion blur quads
     std::string quad_traverser_mb;         //!< traverser to use for motion blur quads
+
+  public:
+    std::string line_accel;                 //!< acceleration structure to use for line segments
+    std::string line_builder;               //!< builder to use for line segments
+    std::string line_traverser;             //!< traverser to use for line segments
+
+  public:
+    std::string line_accel_mb;             //!< acceleration structure to use for motion blur line segments
+    std::string line_builder_mb;           //!< builder to use for motion blur line segments
+    std::string line_traverser_mb;         //!< traverser to use for motion blur line segments
 
   public:
     std::string hair_accel;                //!< hair acceleration structure to use

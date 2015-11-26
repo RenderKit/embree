@@ -53,17 +53,25 @@ namespace embree
     tri_traverser = "default";
     tri_builder_replication_factor = 2.0f;
 
-    quad_accel = "default";
-    quad_builder = "default";
-    quad_traverser = "default";
-    
     tri_accel_mb = "default";
     tri_builder_mb = "default";
     tri_traverser_mb = "default";
 
+    quad_accel = "default";
+    quad_builder = "default";
+    quad_traverser = "default";
+
     quad_accel_mb = "default";
     quad_builder_mb = "default";
     quad_traverser_mb = "default";
+
+    line_accel = "default";
+    line_builder = "default";
+    line_traverser = "default";
+
+    line_accel_mb = "default";
+    line_builder_mb = "default";
+    line_traverser_mb = "default";
     
     hair_accel = "default";
     hair_builder = "default";
@@ -238,6 +246,13 @@ namespace embree
       else if (tok == Token::Id("tri_builder_replication_factor") && cin->trySymbol("="))
         tri_builder_replication_factor = cin->get().Int();
 
+      else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
+        tri_accel_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_builder_mb") || tok == Token::Id("builder_mb")) && cin->trySymbol("="))
+        tri_builder_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("tri_traverser_mb") || tok == Token::Id("traverser_mb")) && cin->trySymbol("="))
+        tri_traverser_mb = cin->get().Identifier();
+
       else if ((tok == Token::Id("quad_accel")) && cin->trySymbol("="))
         quad_accel = cin->get().Identifier();
       else if ((tok == Token::Id("quad_builder")) && cin->trySymbol("="))
@@ -251,13 +266,20 @@ namespace embree
         quad_builder_mb = cin->get().Identifier();
       else if ((tok == Token::Id("quad_traverser_mb")) && cin->trySymbol("="))
         quad_traverser_mb = cin->get().Identifier();
-      
-      else if ((tok == Token::Id("tri_accel_mb") || tok == Token::Id("accel_mb")) && cin->trySymbol("="))
-        tri_accel_mb = cin->get().Identifier();
-      else if ((tok == Token::Id("tri_builder_mb") || tok == Token::Id("builder_mb")) && cin->trySymbol("="))
-        tri_builder_mb = cin->get().Identifier();
-      else if ((tok == Token::Id("tri_traverser_mb") || tok == Token::Id("traverser_mb")) && cin->trySymbol("="))
-        tri_traverser_mb = cin->get().Identifier();
+
+      else if ((tok == Token::Id("line_accel")) && cin->trySymbol("="))
+        line_accel = cin->get().Identifier();
+      else if ((tok == Token::Id("line_builder")) && cin->trySymbol("="))
+        line_builder = cin->get().Identifier();
+      else if ((tok == Token::Id("line_traverser")) && cin->trySymbol("="))
+        line_traverser = cin->get().Identifier();
+
+      else if ((tok == Token::Id("line_accel_mb")) && cin->trySymbol("="))
+        line_accel_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("line_builder_mb")) && cin->trySymbol("="))
+        line_builder_mb = cin->get().Identifier();
+      else if ((tok == Token::Id("line_traverser_mb")) && cin->trySymbol("="))
+        line_traverser_mb = cin->get().Identifier();
       
       else if (tok == Token::Id("hair_accel") && cin->trySymbol("="))
         hair_accel = cin->get().Identifier();
@@ -342,6 +364,26 @@ namespace embree
     std::cout << "  accel         = " << tri_accel_mb << std::endl;
     std::cout << "  builder       = " << tri_builder_mb << std::endl;
     std::cout << "  traverser     = " << tri_traverser_mb << std::endl;
+
+    std::cout << "quads:" << std::endl;
+    std::cout << "  accel         = " << quad_accel << std::endl;
+    std::cout << "  builder       = " << quad_builder << std::endl;
+    std::cout << "  traverser     = " << quad_traverser << std::endl;
+
+    std::cout << "motion blur quads:" << std::endl;
+    std::cout << "  accel         = " << quad_accel_mb << std::endl;
+    std::cout << "  builder       = " << quad_builder_mb << std::endl;
+    std::cout << "  traverser     = " << quad_traverser_mb << std::endl;
+
+    std::cout << "line segments:" << std::endl;
+    std::cout << "  accel         = " << line_accel << std::endl;
+    std::cout << "  builder       = " << line_builder << std::endl;
+    std::cout << "  traverser     = " << line_traverser << std::endl;
+
+    std::cout << "motion blur line segments:" << std::endl;
+    std::cout << "  accel         = " << line_accel_mb << std::endl;
+    std::cout << "  builder       = " << line_builder_mb << std::endl;
+    std::cout << "  traverser     = " << line_traverser_mb << std::endl;
     
     std::cout << "hair:" << std::endl;
     std::cout << "  accel         = " << hair_accel << std::endl;
