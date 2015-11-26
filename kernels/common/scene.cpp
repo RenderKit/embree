@@ -381,12 +381,38 @@ namespace embree
 
   void Scene::createLineAccel()
   {
-    accels.add(device->bvh4_factory->BVH4Line4i(this));
+    if (device->line_accel == "default")
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX) && !isCompact())
+        accels.add(device->bvh8_factory->BVH8Line4i(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Line4i(this));
+    }
+    else if (device->line_accel == "bvh4.line4i") accels.add(device->bvh4_factory->BVH4Line4i(this));
+#if defined (__TARGET_AVX__)
+    else if (device->line_accel == "bvh8.line4i") accels.add(device->bvh8_factory->BVH8Line4i(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown line segment acceleration structure "+device->line_accel);
   }
 
   void Scene::createLineMBAccel()
   {
-    accels.add(device->bvh4_factory->BVH4Line4iMB(this));
+    if (device->line_accel_mb == "default")
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX) && !isCompact())
+        accels.add(device->bvh8_factory->BVH8Line4iMB(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Line4iMB(this));
+    }
+    else if (device->line_accel_mb == "bvh4.line4imb") accels.add(device->bvh4_factory->BVH4Line4iMB(this));
+#if defined (__TARGET_AVX__)
+    else if (device->line_accel_mb == "bvh8.line4imb") accels.add(device->bvh8_factory->BVH8Line4iMB(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
   }
 
   void Scene::createSubdivAccel()
