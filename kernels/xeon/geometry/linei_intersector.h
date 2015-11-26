@@ -25,9 +25,9 @@ namespace embree
   namespace isa
   {
     template<int M, int Mx, bool filter>
-    struct Line4iIntersector1
+    struct LineMiIntersector1
     {
-      typedef Line4i Primitive;
+      typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
@@ -46,9 +46,9 @@ namespace embree
     };
 
     template<int M, int Mx, bool filter>
-    struct Line4iMBIntersector1
+    struct LineMiMBIntersector1
     {
-      typedef Line4i Primitive;
+      typedef LineMi<M> Primitive;
       typedef typename LineIntersector1<Mx>::Precalculations Precalculations;
 
       static __forceinline void intersect(Precalculations& pre, Ray& ray, const Primitive& line, Scene* scene, const unsigned* geomID_to_instID)
