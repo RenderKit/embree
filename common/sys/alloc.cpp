@@ -90,6 +90,8 @@ namespace embree
 #define USE_HUGE_PAGES 0
 #endif
 
+#define USE_MADVISE 1
+
 #define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
 #define PAGE_SIZE_4K (4*1024)
@@ -106,13 +108,14 @@ namespace embree
       /* multiple of page size */
       if ((bytes % PAGE_SIZE_2M) == 0) 
         return true;
-      /* multiple of page size with rest >= UPGRADE_TO_2M_PAGE_LIMIT */
-      else if (bytes >= UPGRADE_TO_2M_PAGE_LIMIT)
-        return true;
     }
 #endif
     return false;
   }
+
+// ============================================
+// ============================================
+// ============================================
 
 #if defined(RTCORE_MEMKIND_ALLOCATOR)
   void* mk_malloc(size_t bytes)
@@ -121,23 +124,38 @@ namespace embree
     void *ptr = NULL;
     if ((bytes / PAGE_SIZE_2M) >= 1 && ((bytes % PAGE_SIZE_2M) == 0))
     {
-      if (hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB) == 0)
+#if defined(DEBUG)
+      PRINT(ptr);
+#endif
+
+#if 1
+      if (int res = hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB) == 0)
       {
 #if defined(DEBUG)
         PRINT("2M PATH");
-        PRINT(bytes);
         PRINT(ptr);
 #endif
         return ptr;
       }
-    }
-    /* standard 4k allocation */
-    if (hbw_posix_memalign(&ptr,PAGE_SIZE_4K,bytes) == 0)
-      return ptr;
-
+      else
+      {
 #if defined(DEBUG)
-    PRINT("could not allocate hbw memory");
+        PRINT("NO 2M ALLOC");
+        PRINT(res);
 #endif
+      }
+#endif
+    }
+
+    /* standard 2M allocation */
+    if (hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes) == 0)
+    {
+#if defined(DEBUG)
+      PRINT("HBW FALLBACK PATH");
+      PRINT(ptr); 
+#endif     
+      return ptr;
+    }
     return NULL;
   }
 
@@ -146,6 +164,20 @@ namespace embree
     hbw_free(ptr);
   }
 #endif
+
+// ============================================
+// ============================================
+// ============================================
+
+  void os_madvise(void *ptr, size_t bytes)
+  {
+    assert((size_t)ptr % PAGE_SIZE_2M == 0);
+    int res = madvise(ptr,bytes,MADV_HUGEPAGE); 
+#if defined(DEBUG)
+    if (res)
+      perror("madvise failed: ");
+#endif
+  }
   
   void* os_malloc(size_t bytes, const int additional_flags)
   {
@@ -172,9 +204,13 @@ namespace embree
     }
 
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
-
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
+
+#if USE_MADVISE == 1
+    os_madvise(ptr,bytes);
+#endif
+
     return ptr;
   }
 
@@ -205,6 +241,11 @@ namespace embree
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
+
+#if USE_MADVISE == 1
+    os_madvise(ptr,bytes);
+#endif
+
     return ptr;
   }
 
@@ -213,7 +254,7 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
+#if defined(RTCORE_MEMKIND_ALLOCATOR) || USE_MADVISE == 1
     return bytesOld;
 #endif
 
@@ -274,6 +315,17 @@ namespace embree
 //#if defined(TASKING_TBB) // FIXME: have to disable this for now as the TBB allocator itself seems to access some uninitialized value when using valgrind
 //    return scalable_aligned_malloc(size,align);
 //#else
+
+// #if USE_MADVISE == 1
+//     if (size >= 16*PAGE_SIZE_2M) 
+//     {
+//       align = PAGE_SIZE_2M;
+//       void *ptr = _mm_malloc(size,align);
+//       os_madvise(ptr,size);
+//       return ptr;
+//      }
+// #endif
+
     return _mm_malloc(size,align);
 //#endif
   }

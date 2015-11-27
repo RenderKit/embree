@@ -27,9 +27,9 @@ namespace embree
 
     /*! maximal allocation size */
     //static const size_t maxAllocationSize = 2*1024*1024-maxAlignment;
+    static const size_t defaultBlockSize = 4096;
     static const size_t maxAllocationSize = 4*1024*1024-maxAlignment;
     
-    static const size_t defaultBlockSize = 4096;
   public:
 
     /*! Per thread structure holding the current memory block. */
@@ -369,8 +369,8 @@ namespace embree
       static Block* create(MemoryMonitorInterface* device, size_t bytesAllocate, size_t bytesReserve, Block* next = nullptr)
       {
         const size_t sizeof_Header = offsetof(Block,data[0]);
-        bytesAllocate = ((sizeof_Header+bytesAllocate+4095) & ~(4095)); // always consume full pages
-        bytesReserve  = ((sizeof_Header+bytesReserve +4095) & ~(4095)); // always consume full pages
+        bytesAllocate = ((sizeof_Header+bytesAllocate+defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
+        bytesReserve  = ((sizeof_Header+bytesReserve +defaultBlockSize-1) & ~(defaultBlockSize-1)); // always consume full pages
         if (device) device->memoryMonitor(bytesAllocate,false);
         void* ptr = os_reserve(bytesReserve);
         os_commit(ptr,bytesAllocate);
