@@ -271,6 +271,23 @@ RTCORE_API unsigned rtcNewHairGeometry (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+/*! \brief Creates a new line segment geometry, consisting of multiple
+  segments with varying radii. The number of line segments (numSegments),
+  number of vertices (numVertices), and number of time steps (1 for
+  normal line segments, and 2 for linear motion blur), have to get
+  specified at construction time. Further, the segment index buffer
+  (RTC_INDEX_BUFFER) and the segment vertex buffer (RTC_VERTEX_BUFFER)
+  have to get set by mapping and writing to the appropiate buffers. In
+  case of linear motion blur, two vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step. The
+  index buffer has the default layout of a single 32 bit integer index
+  for each line segment, that references the start vertex of the segment.
+  The vertex buffer stores 2 end points per line segment, each such point
+  consists of a single precision (x,y,z) position and radius, stored in
+  that order in memory. Individual segments are considered to be subpixel
+  sized which allows the implementation to approximate the intersection
+  calculation. This in particular means that zooming onto one line segment
+  might show geometric artefacts. */
 RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< the scene the line segments belong to
                                         RTCGeometryFlags flags,            //!< geometry flags
                                         size_t numSegments,                //!< number of line segments
