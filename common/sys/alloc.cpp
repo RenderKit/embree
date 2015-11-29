@@ -90,7 +90,11 @@ namespace embree
 #define USE_HUGE_PAGES 0
 #endif
 
+#if defined(__MACOSX__)
+#define USE_MADVISE 0
+#else
 #define USE_MADVISE 1
+#endif
 
 #define UPGRADE_TO_2M_PAGE_LIMIT (256*1024) 
 #define PAGE_SIZE_2M (2*1024*1024)
@@ -169,6 +173,7 @@ namespace embree
 // ============================================
 // ============================================
 
+#if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
   {
     assert((size_t)ptr % PAGE_SIZE_2M == 0);
@@ -178,6 +183,7 @@ namespace embree
       perror("madvise failed: ");
 #endif
   }
+#endif
   
   void* os_malloc(size_t bytes, const int additional_flags)
   {
@@ -207,7 +213,7 @@ namespace embree
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
-#if USE_MADVISE == 1
+#if USE_MADVISE
     os_madvise(ptr,bytes);
 #endif
 
@@ -242,7 +248,7 @@ namespace embree
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
-#if USE_MADVISE == 1
+#if USE_MADVISE
     os_madvise(ptr,bytes);
 #endif
 
@@ -254,7 +260,7 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-#if defined(RTCORE_MEMKIND_ALLOCATOR) || USE_MADVISE == 1
+#if defined(RTCORE_MEMKIND_ALLOCATOR) || USE_MADVISE
     return bytesOld;
 #endif
 
@@ -316,7 +322,7 @@ namespace embree
 //    return scalable_aligned_malloc(size,align);
 //#else
 
-// #if USE_MADVISE == 1
+// #if USE_MADVISE
 //     if (size >= 16*PAGE_SIZE_2M) 
 //     {
 //       align = PAGE_SIZE_2M;
