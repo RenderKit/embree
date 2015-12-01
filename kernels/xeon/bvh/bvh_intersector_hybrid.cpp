@@ -37,7 +37,7 @@
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 0
+#define FORCE_SINGLE_MODE 1
 
 namespace embree
 {

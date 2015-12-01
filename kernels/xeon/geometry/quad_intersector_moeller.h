@@ -483,15 +483,15 @@ namespace embree
         static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& tri, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v1.x,tri.v3.x),
-                                 vfloat<2*M>(tri.v1.y,tri.v3.y),
-                                 vfloat<2*M>(tri.v1.z,tri.v3.z));
-          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v0.x),
-                                 vfloat<2*M>(tri.v0.y),
-                                 vfloat<2*M>(tri.v0.z));
-          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v2.x),
-                                 vfloat<2*M>(tri.v2.y),
-                                 vfloat<2*M>(tri.v2.z));
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v0.x,tri.v2.x),
+                                 vfloat<2*M>(tri.v0.y,tri.v2.y),
+                                 vfloat<2*M>(tri.v0.z,tri.v2.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v1.x),
+                                 vfloat<2*M>(tri.v1.y),
+                                 vfloat<2*M>(tri.v1.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v3.x),
+                                 vfloat<2*M>(tri.v3.y),
+                                 vfloat<2*M>(tri.v3.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs);
           vbool<2*M> flags(0,0,0,0,1,1,1,1);
@@ -502,15 +502,15 @@ namespace embree
         static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& tri, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v1.x,tri.v3.x),
-                                 vfloat<2*M>(tri.v1.y,tri.v3.y),
-                                 vfloat<2*M>(tri.v1.z,tri.v3.z));
-          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v0.x),
-                                 vfloat<2*M>(tri.v0.y),
-                                 vfloat<2*M>(tri.v0.z));
-          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v2.x),
-                                 vfloat<2*M>(tri.v2.y),
-                                 vfloat<2*M>(tri.v2.z));
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v0.x,tri.v2.x),
+                                 vfloat<2*M>(tri.v0.y,tri.v2.y),
+                                 vfloat<2*M>(tri.v0.z,tri.v2.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v1.x),
+                                 vfloat<2*M>(tri.v1.y),
+                                 vfloat<2*M>(tri.v1.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v3.x),
+                                 vfloat<2*M>(tri.v3.y),
+                                 vfloat<2*M>(tri.v3.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs);
           vbool<2*M> flags(0,0,0,0,1,1,1,1);
