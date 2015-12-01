@@ -147,8 +147,13 @@ namespace embree
     template<int K>
       struct MoellerTrumborePairsHitK
     {
-      __forceinline MoellerTrumborePairsHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& absDen, const Vec3<vfloat<K>>& tri_Ng,
-                                             const unsigned int rotation, const float flipNg)
+      __forceinline MoellerTrumborePairsHitK(const vfloat<K>& U, 
+                                             const vfloat<K>& V, 
+                                             const vfloat<K>& T, 
+                                             const vfloat<K>& absDen, 
+                                             const Vec3<vfloat<K>>& tri_Ng,
+                                             const unsigned int rotation, 
+                                             const float flipNg)
         : U(U), V(V), T(T), absDen(absDen), tri_Ng(tri_Ng), rotation(rotation), flipNg(flipNg) {}
       
       __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3<vfloat<K>>> operator() () const
