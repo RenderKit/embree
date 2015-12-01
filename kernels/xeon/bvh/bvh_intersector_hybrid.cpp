@@ -37,7 +37,7 @@
 #include "../geometry/object_intersector.h"
 
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
-#define FORCE_SINGLE_MODE 1
+#define FORCE_SINGLE_MODE 0
 
 namespace embree
 {
@@ -114,6 +114,7 @@ namespace embree
           if (unlikely(__popcnt(bits) <= switchThreshold)) 
 #endif
           {
+            PING;
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
               BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
             }

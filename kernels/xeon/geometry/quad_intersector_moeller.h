@@ -494,7 +494,7 @@ namespace embree
                                  vfloat<2*M>(tri.v3.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs);
-          vbool<2*M> flags(0,0,0,0,1,1,1,1);
+          vbool<2*M> flags(0,1);
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
         
@@ -513,7 +513,7 @@ namespace embree
                                  vfloat<2*M>(tri.v3.z));
           vint<2*M> geomIDs(tri.geomIDs); 
           vint<2*M> primIDs(tri.primIDs);
-          vbool<2*M> flags(0,0,0,0,1,1,1,1);
+          vbool<2*M> flags(0,1);
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
       };
