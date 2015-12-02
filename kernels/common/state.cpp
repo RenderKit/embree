@@ -412,6 +412,14 @@ namespace embree
     
     std::cout << "subdivision surfaces:" << std::endl;
     std::cout << "  accel         = " << subdiv_accel << std::endl;
+
+    std::cout << "object_accel:" << std::endl;
+    std::cout << "  min_leaf_size = " << object_accel_min_leaf_size << std::endl;
+    std::cout << "  max_leaf_size = " << object_accel_max_leaf_size << std::endl;
+
+    std::cout << "object_accel_mb:" << std::endl;
+    std::cout << "  min_leaf_size = " << object_accel_mb_min_leaf_size << std::endl;
+    std::cout << "  max_leaf_size = " << object_accel_mb_max_leaf_size << std::endl;
     
 #if defined(__MIC__)
     std::cout << "memory allocation:" << std::endl;
