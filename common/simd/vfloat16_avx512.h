@@ -59,6 +59,13 @@ namespace embree
       v = _mm512_broadcast_f32x4(i);
     }
 
+    __forceinline vfloat(const vfloat4 &a, const vfloat4 &b, const vfloat4 &c, const vfloat4 &d) {
+      v = _mm512_broadcast_f32x4(a);
+      v = _mm512_insertf32x4(v, b, 1);
+      v = _mm512_insertf32x4(v, c, 2);
+      v = _mm512_insertf32x4(v, d, 3);
+    }
+
     __forceinline vfloat(const vfloat8 &i) {
       v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i)));
     }

@@ -85,7 +85,15 @@ namespace embree
                               Vec3<vfloat<M>>& p2, 
                               Vec3<vfloat<M>>& p3,
                               const Scene *const scene) const;       
-    
+
+#if defined(__AVX512F__)
+    __forceinline void gather(Vec3vf16& p0, 
+                              Vec3vf16& p1, 
+                              Vec3vf16& p2, 
+                              Vec3vf16& p3,
+                              const Scene *const scene) const;       
+#endif    
+
     /* Fill quad from quad list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
     {
@@ -150,11 +158,11 @@ namespace embree
   };
 
   template<>
-    __forceinline void QuadMi<4>::gather(Vec3vf4& p0, 
-                                         Vec3vf4& p1, 
-                                         Vec3vf4& p2, 
-                                         Vec3vf4& p3,
-                                         const Scene *const scene) const
+  __forceinline void QuadMi<4>::gather(Vec3vf4& p0, 
+                                       Vec3vf4& p1, 
+                                       Vec3vf4& p2, 
+                                       Vec3vf4& p3,
+                                       const Scene *const scene) const
   {
     const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
     const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
@@ -189,6 +197,67 @@ namespace embree
 
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
   }
+
+
+#if defined(__AVX512F__)
+  template<>
+  __forceinline void QuadMi<4>::gather(Vec3vf16& p0, 
+                                       Vec3vf16& p1, 
+                                       Vec3vf16& p2, 
+                                       Vec3vf16& p3,
+                                       const Scene *const scene) const
+  {
+    const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
+    const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
+    const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);
+    const QuadMesh* mesh3 = scene->getQuadMesh(geomIDs[3]);
+
+    const vfloat4 &a0 = *(vfloat4*)(mesh0->vertexPtr(v0[0]));
+    const vfloat4 &a1 = *(vfloat4*)(mesh1->vertexPtr(v0[1]));
+    const vfloat4 &a2 = *(vfloat4*)(mesh2->vertexPtr(v0[2]));
+    const vfloat4 &a3 = *(vfloat4*)(mesh3->vertexPtr(v0[3]));
+
+    const vfloat16 _p0(a0,a1,a2,a3);
+
+    const vfloat4 &b0 = *(vfloat4*)(mesh0->vertexPtr(v1[0]));
+    const vfloat4 &b1 = *(vfloat4*)(mesh1->vertexPtr(v1[1]));
+    const vfloat4 &b2 = *(vfloat4*)(mesh2->vertexPtr(v1[2]));
+    const vfloat4 &b3 = *(vfloat4*)(mesh3->vertexPtr(v1[3]));
+
+    const vfloat16 _p1(b0,b1,b2,b3);
+
+    const vfloat4 &c0 = *(vfloat4*)(mesh0->vertexPtr(v2[0]));
+    const vfloat4 &c1 = *(vfloat4*)(mesh1->vertexPtr(v2[1]));
+    const vfloat4 &c2 = *(vfloat4*)(mesh2->vertexPtr(v2[2]));
+    const vfloat4 &c3 = *(vfloat4*)(mesh3->vertexPtr(v2[3]));
+
+    const vfloat16 _p2(c0,c1,c2,c3);
+
+    const vfloat4 &d0 = *(vfloat4*)(mesh0->vertexPtr(v3[0]));
+    const vfloat4 &d1 = *(vfloat4*)(mesh1->vertexPtr(v3[1]));
+    const vfloat4 &d2 = *(vfloat4*)(mesh2->vertexPtr(v3[2]));
+    const vfloat4 &d3 = *(vfloat4*)(mesh3->vertexPtr(v3[3]));
+
+    const vfloat16 _p3(d0,d1,d2,d3);
+
+    p0.x = shuffle<0>(_p0);
+    p0.y = shuffle<1>(_p0);
+    p0.z = shuffle<2>(_p0);
+
+    p1.x = shuffle<0>(_p1);
+    p1.y = shuffle<1>(_p1);
+    p1.z = shuffle<2>(_p1);
+
+    p2.x = shuffle<0>(_p2);
+    p2.y = shuffle<1>(_p2);
+    p2.z = shuffle<2>(_p2);
+
+    p3.x = shuffle<0>(_p3);
+    p3.y = shuffle<1>(_p3);
+    p3.z = shuffle<2>(_p3);
+  }
+
+#endif
 
   template<int M>
   typename QuadMi<M>::Type QuadMi<M>::type;

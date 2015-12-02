@@ -269,7 +269,7 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(normal.trav_prims,1,1,1);
-        Vec3vf4 v0, v1, v2, v3; 
+        Vec3vf16 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
                       select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
@@ -286,7 +286,7 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        Vec3vf4 v0, v1, v2, v3; 
+        Vec3vf16 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
         Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
                       select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
