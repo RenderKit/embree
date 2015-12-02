@@ -45,13 +45,14 @@ namespace embree
     {
       AVX_ZERO_UPPER();
       vbool4 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
-      prim.accel->intersect4(valid,(RTCRay4&)ray,prim.item);
+      accel->intersect4(valid,(RTCRay4&)ray,prim.primID);
     }
 
     template<>
@@ -59,13 +60,14 @@ namespace embree
     {
       AVX_ZERO_UPPER();
       vbool4 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
 
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif
-      prim.accel->occluded4(valid,(RTCRay4&)ray,prim.item);
+      accel->occluded4(valid,(RTCRay4&)ray,prim.primID);
       return ray.geomID == 0;
     }
 
@@ -74,24 +76,28 @@ namespace embree
     __forceinline void ObjectIntersector8::intersect(const vbool8& valid_i, const Precalculations& pre, Ray8& ray, const Primitive& prim, Scene* scene)
     {
       vbool8 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
-      prim.accel->intersect8(valid,(RTCRay8&)ray,prim.item);
+      accel->intersect8(valid,(RTCRay8&)ray,prim.primID);
     }
 
     template<>
     __forceinline vbool8 ObjectIntersector8::occluded(const vbool8& valid_i, const Precalculations& pre, const Ray8& ray, const Primitive& prim, Scene* scene)
     {
       vbool8 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif
-      prim.accel->occluded8(valid,(RTCRay8&)ray,prim.item);
+      accel->occluded8(valid,(RTCRay8&)ray,prim.primID);
       return ray.geomID == 0;
     }
 #endif
@@ -101,24 +107,28 @@ namespace embree
     __forceinline void ObjectIntersector16::intersect(const vbool16& valid_i, const Precalculations& pre, Ray16& ray, const Primitive& prim, Scene* scene)
     {
       vbool16 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return;
 #endif
-      prim.accel->intersect16(valid,(RTCRay16&)ray,prim.item);
+      accel->intersect16(valid,(RTCRay16&)ray,prim.primID);
     }
 
     template<>
     __forceinline vbool16 ObjectIntersector16::occluded(const vbool16& valid_i, const Precalculations& pre, const Ray16& ray, const Primitive& prim, Scene* scene)
     {
       vbool16 valid = valid_i;
+      AccelSet* accel = (AccelSet*) scene->get(prim.geomID);
+
       /* perform ray mask test */
 #if defined(RTCORE_RAY_MASK)
-      valid &= (ray.mask & prim.accel->mask) != 0;
+      valid &= (ray.mask & accel->mask) != 0;
       if (none(valid)) return false;
 #endif
-      prim.accel->occluded16(valid,(RTCRay16&)ray,prim.item);
+      accel->occluded16(valid,(RTCRay16&)ray,prim.primID);
       return ray.geomID == 0;
     }
 #endif

@@ -40,14 +40,14 @@ namespace embree
   public:
 
     /*! constructs a virtual object */
-    Object (AccelSet* accel, unsigned item) 
-    : accel(accel), item(item) {}
+    Object (unsigned geomID, unsigned primID) 
+    : geomID(geomID), primID(primID) {}
 
     /*! fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene, const bool list)
     {
       const PrimRef& prim = prims[i]; i++;
-      new (this) Object((AccelSet*) scene->get(prim.geomID()), prim.primID());
+      new (this) Object(prim.geomID(), prim.primID());
     }
 
     /*! fill triangle from triangle list */
@@ -56,13 +56,13 @@ namespace embree
       const PrimRef& prim = prims[i]; i++;
       const size_t geomID = prim.geomID();
       const size_t primID = prim.primID();
-      AccelSet* obj = (AccelSet*) scene->get(geomID);
-      new (this) Object(obj, primID);
-      return obj->bounds_mblur(primID);
+      new (this) Object(geomID, primID);
+      AccelSet* accel = (AccelSet*) scene->get(geomID);
+      return accel->bounds_mblur(primID);
     }
 
   public:
-    AccelSet* accel; //!< array of acceleration structure
-    unsigned item;   //!< the nth acceleration structure referenced
+    unsigned geomID;  //!< geometry ID
+    unsigned primID;  //!< primitive ID
   };
 }
