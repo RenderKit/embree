@@ -103,7 +103,7 @@ namespace embree
 
 #if defined(__AVX512F__)
 
-    /*! Intersects 4 quads with 1 ray using AVX */
+    /*! Intersects 4 quads with 1 ray using AVX512 */
     template<bool filter>
       struct QuadMiIntersector1MoellerTrumbore<4,16,filter>
     {
@@ -116,11 +116,11 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Vec3vf16 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
-        Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
-                      select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
-                      select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
-        Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
-        Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
+                      select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
+                      select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+        Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
+        Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
         vint8   geomIDs(quad.geomIDs); 
         vint8   primIDs(quad.primIDs);        
         const vbool16 flags(0xf0f0);
@@ -133,11 +133,11 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec3vf16 v0, v1, v2, v3; 
         quad.gather(v0,v1,v2,v3,scene);
-        Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
-                      select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
-                      select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
-        Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
-        Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
+                      select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
+                      select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+        Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
+        Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
         vint8   geomIDs(quad.geomIDs); 
         vint8   primIDs(quad.primIDs);        
         const vbool16 flags(0xf0f0);
@@ -235,6 +235,90 @@ namespace embree
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
       };
+
+
+#if defined(__AVX512F__)
+
+    template<bool filter>
+      struct QuadMiIntersectorKMoellerTrumbore<4,16,filter>
+    {
+      static const int M = 4;
+      static const int K = 16;
+      typedef QuadMi<M> Primitive;
+      typedef MoellerTrumboreIntersectorQuadMvK<K,K> Precalculations;
+        
+      /*! Intersects K rays with M triangles. */
+      static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMi<M>& quad, Scene* scene)
+      {
+        for (size_t i=0; i<QuadMi<M>::max_size(); i++)
+        {
+          if (!quad.valid(i)) break;
+          STAT3(normal.trav_prims,1,popcnt(valid_i),K);
+          const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
+          const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
+          const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
+          const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+          pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+          pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+        }
+      }
+        
+      /*! Test for K rays if they are occluded by any of the M triangles. */
+      static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMi<M>& quad, Scene* scene)
+      {
+        vbool<K> valid0 = valid_i;
+        for (size_t i=0; i<QuadMi<M>::max_size(); i++)
+        {
+          if (!quad.valid(i)) break;
+          STAT3(shadow.trav_prims,1,popcnt(valid0),K);
+          const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
+          const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
+          const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
+          const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+          pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
+          if (none(valid0)) break;
+          pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
+          if (none(valid0)) break;
+        }
+        return !valid0;
+      }
+        
+      /*! Intersect a ray with M triangles and updates the hit. */
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMi<M>& quad, Scene* scene)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Vec3vf16 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene);
+
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
+                      select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
+                      select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+        Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
+        Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
+        vint8   geomIDs(quad.geomIDs); 
+        vint8   primIDs(quad.primIDs);        
+        const vbool16 flags(0xf0f0);
+        pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,K,K,filter>(ray,k,geomIDs,primIDs,scene)); 
+      }
+        
+      /*! Test if the ray is occluded by one of the M triangles. */
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMi<M>& quad, Scene* scene)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        Vec3vf16 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene);
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(v0.x),vfloat16(v2.x)),
+                      select(0x0f0f,vfloat16(v0.y),vfloat16(v2.y)),
+                      select(0x0f0f,vfloat16(v0.z),vfloat16(v2.z)));
+        Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
+        Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
+        vint8   geomIDs(quad.geomIDs); 
+        vint8   primIDs(quad.primIDs);        
+        const vbool16 flags(0xf0f0);
+        return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,K,K,filter>(ray,k,geomIDs,primIDs,scene)); 
+      }
+    };
+#endif
 
   }
 }
