@@ -80,7 +80,7 @@ namespace embree
     __forceinline bool valid(size_t i, BBox3fa* bbox = nullptr) const 
     {
       const int index = curve(i);
-      if (index >= 0 && index+3 >= numVertices()) return false;
+      if (index < 0 || index+3 >= numVertices()) return false;
       
       for (size_t j=0; j<numTimeSteps; j++) 
       {
