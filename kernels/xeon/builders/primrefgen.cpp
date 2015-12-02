@@ -153,7 +153,7 @@ namespace embree
         for (size_t j=r.begin(); j<r.end(); j++)
         {
           const int ofs = mesh->curve(j);
-          if (ofs+3 >= mesh->numVertices())
+          if (ofs < 0 || ofs+3 >= mesh->numVertices())
             continue;
 
 	  Vec3fa p0 = mesh->vertex(ofs+0,0);
@@ -188,7 +188,7 @@ namespace embree
           for (size_t j=r.begin(); j<r.end(); j++)
           {
             const int ofs = mesh->curve(j);
-            if (ofs+3 >= mesh->numVertices())
+            if (ofs < 0 || ofs+3 >= mesh->numVertices())
               continue;
 
             Vec3fa p0 = mesh->vertex(ofs+0,0);
