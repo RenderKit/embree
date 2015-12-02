@@ -176,10 +176,12 @@ namespace embree
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
   {
+#ifdef MADV_HUGEPAGE
     int res = madvise(ptr,bytes,MADV_HUGEPAGE); 
 #if defined(DEBUG)
     if (res)
       perror("madvise failed: ");
+#endif
 #endif
   }
 #endif
