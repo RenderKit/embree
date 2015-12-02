@@ -19,14 +19,6 @@
 #include "quadv.h"
 #include "triangle_intersector_moeller.h"
 
-/*! This intersector implements a modified version of the Moeller
- *  Trumbore intersector from the paper "Fast, Minimum Storage
- *  Ray-Triangle Intersection". In contrast to the paper we
- *  precalculate some factors and factor the calculations differently
- *  to allow precalculating the cross product e1 x e2. The resulting
- *  algorithm is similar to the fastest one of the paper "Optimizing
- *  Ray-Triangle Intersection via Automated Search". */
-
 namespace embree
 {
   namespace isa
@@ -252,7 +244,8 @@ namespace embree
 
 #if defined(__AVX512F__)
 
-    /*! Intersects 4 triangle pairs with 1 ray using AVX512KNL */
+    /*! Intersects 4 quads with 1 ray using AVX512KNL */
+
     template<bool filter>
       struct QuadMvIntersector1MoellerTrumbore<4,16,filter>
       {
@@ -443,76 +436,76 @@ namespace embree
         typedef MoellerTrumboreIntersectorQuadMvK<2*M,K> Precalculations;
         
         /*! Intersects K rays with M triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& tri, Scene* scene)
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
         {
           for (size_t i=0; i<QuadMv<M>::max_size(); i++)
           {
-            if (!tri.valid(i)) break;
+            if (!quad.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs  ,i,scene));
-            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,tri.geomIDs,tri.primIDs+1,i,scene));
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
         }
         
         /*! Test for K rays if they are occluded by any of the M triangles. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& tri, Scene* scene)
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
         {
           vbool<K> valid0 = valid_i;
           
           for (size_t i=0; i<QuadMv<M>::max_size(); i++)
           {
-            if (!tri.valid(i)) break;
+            if (!quad.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(tri.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(tri.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(tri.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(tri.v3,i);
-            pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
             if (none(valid0)) break;
-            pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,tri.geomIDs,tri.primIDs,i,scene));
+            pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
             if (none(valid0)) break;
           }
           return !valid0;
         }
         
         /*! Intersect a ray with M triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& tri, Scene* scene)
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
         {
           STAT3(normal.trav_prims,1,1,1);
-          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v0.x,tri.v2.x),
-                                 vfloat<2*M>(tri.v0.y,tri.v2.y),
-                                 vfloat<2*M>(tri.v0.z,tri.v2.z));
-          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v1.x),
-                                 vfloat<2*M>(tri.v1.y),
-                                 vfloat<2*M>(tri.v1.z));
-          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v3.x),
-                                 vfloat<2*M>(tri.v3.y),
-                                 vfloat<2*M>(tri.v3.z));
-          vint<2*M> geomIDs(tri.geomIDs); 
-          vint<2*M> primIDs(tri.primIDs);
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(quad.v0.x,quad.v2.x),
+                                 vfloat<2*M>(quad.v0.y,quad.v2.y),
+                                 vfloat<2*M>(quad.v0.z,quad.v2.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(quad.v1.x),
+                                 vfloat<2*M>(quad.v1.y),
+                                 vfloat<2*M>(quad.v1.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(quad.v3.x),
+                                 vfloat<2*M>(quad.v3.y),
+                                 vfloat<2*M>(quad.v3.z));
+          vint<2*M> geomIDs(quad.geomIDs); 
+          vint<2*M> primIDs(quad.primIDs);
           vbool<2*M> flags(0,1);
           pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Intersect1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
         
         /*! Test if the ray is occluded by one of the M triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& tri, Scene* scene)
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
         {
           STAT3(shadow.trav_prims,1,1,1);
-          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(tri.v0.x,tri.v2.x),
-                                 vfloat<2*M>(tri.v0.y,tri.v2.y),
-                                 vfloat<2*M>(tri.v0.z,tri.v2.z));
-          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(tri.v1.x),
-                                 vfloat<2*M>(tri.v1.y),
-                                 vfloat<2*M>(tri.v1.z));
-          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(tri.v3.x),
-                                 vfloat<2*M>(tri.v3.y),
-                                 vfloat<2*M>(tri.v3.z));
-          vint<2*M> geomIDs(tri.geomIDs); 
-          vint<2*M> primIDs(tri.primIDs);
+          Vec3<vfloat<2*M>> vtx0(vfloat<2*M>(quad.v0.x,quad.v2.x),
+                                 vfloat<2*M>(quad.v0.y,quad.v2.y),
+                                 vfloat<2*M>(quad.v0.z,quad.v2.z));
+          Vec3<vfloat<2*M>> vtx1(vfloat<2*M>(quad.v1.x),
+                                 vfloat<2*M>(quad.v1.y),
+                                 vfloat<2*M>(quad.v1.z));
+          Vec3<vfloat<2*M>> vtx2(vfloat<2*M>(quad.v3.x),
+                                 vfloat<2*M>(quad.v3.y),
+                                 vfloat<2*M>(quad.v3.z));
+          vint<2*M> geomIDs(quad.geomIDs); 
+          vint<2*M> primIDs(quad.primIDs);
           vbool<2*M> flags(0,1);
           return pre.intersect1(ray,k,vtx0,vtx1,vtx2,flags,Occluded1KEpilog<2*M,2*M,K,filter>(ray,k,geomIDs,primIDs,scene)); 
         }
@@ -533,7 +526,7 @@ namespace embree
         /*! Intersects K rays with M triangles. */
         static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
         {
-          for (size_t i=0; i<TrianglePairsMv<M>::max_size(); i++)
+          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
           {
             if (!quad.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
@@ -541,8 +534,8 @@ namespace embree
             const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
             const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
             const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs  ,i,scene));
-            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs+1,i,scene));
+            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
         }
         
@@ -551,7 +544,7 @@ namespace embree
         {
           vbool<K> valid0 = valid_i;
           
-          for (size_t i=0; i<TrianglePairsMv<M>::max_size(); i++)
+          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
           {
             if (!quad.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);

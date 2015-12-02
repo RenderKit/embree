@@ -112,6 +112,8 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8GridAOSIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4vIntersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4vIntersector8HybridMoellerNoFilter);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4iIntersector8HybridMoeller);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8Quad4iIntersector8HybridMoellerNoFilter);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1vIntersector16Single_OBB);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iIntersector16Single_OBB);

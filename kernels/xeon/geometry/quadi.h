@@ -71,33 +71,20 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    template<int K>
+    __forceinline Vec3<vfloat<K>> getVertexK(const vint<M> &v, const size_t index, const Scene *const scene) const
+    {
+      const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
+      const Vec3fa *const v_ptr = (Vec3fa*)mesh->vertexPtr(v[index]);
+      return Vec3<vfloat<K>>( vfloat<K>(v_ptr->x), vfloat<K>(v_ptr->y), vfloat<K>(v_ptr->z) );
+    }
+
     /* gather the quads */
     __forceinline void gather(Vec3<vfloat<M>>& p0, 
                               Vec3<vfloat<M>>& p1, 
                               Vec3<vfloat<M>>& p2, 
                               Vec3<vfloat<M>>& p3,
-                              const Scene *const scene) const;
-    
-    /* Calculate the bounds of the quads */
-    /*__forceinline const BBox3fa bounds() const 
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M && valid(i) != -1; i++)
-      {
-	const QuadMesh* mesh = scene->getQuadMesh(geomIDs(i));
-        const Vec3fa* const vtx = (Vec3fa*)mesh->vertexPtr(0); 
-	const Vec3fa &p0 = mesh->vertex(v0[i]);
-	const Vec3fa &p1 = mesh->vertex(v1[i]);
-	const Vec3fa &p2 = mesh->vertex(v2[i]);
-	const Vec3fa &p3 = mesh->vertex(v3[i]);
-	bounds.extend(p0);
-	bounds.extend(p1);
-	bounds.extend(p2);
-	bounds.extend(p3);
-      }
-      return bounds;
-      }*/
-    
+                              const Scene *const scene) const;       
     
     /* Fill quad from quad list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, const bool list)
@@ -151,6 +138,7 @@ namespace embree
       }
       return bounds;
     }
+
     
   public:
     vint<M> v0;         // offset to 2nd vertex
