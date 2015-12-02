@@ -473,6 +473,10 @@ namespace embree
 
     DEFINE_INTERSECTOR4(BVH8Quad4vIntersector4HybridMoellerNoFilter,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMvIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
 
+    DEFINE_INTERSECTOR4(BVH8Quad4iIntersector4HybridMoeller,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMiIntersectorKMoellerTrumbore<4 COMMA 4 COMMA true> > >);
+
+    DEFINE_INTERSECTOR4(BVH8Quad4iIntersector4HybridMoellerNoFilter,BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA QuadMiIntersectorKMoellerTrumbore<4 COMMA 4 COMMA false> > >);
+
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -519,6 +523,10 @@ namespace embree
 
     DEFINE_INTERSECTOR16(BVH8Quad4vIntersector16HybridMoeller, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMvIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
     DEFINE_INTERSECTOR16(BVH8Quad4vIntersector16HybridMoellerNoFilter, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMvIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
+
+    DEFINE_INTERSECTOR16(BVH8Quad4iIntersector16HybridMoeller, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMiIntersectorKMoellerTrumbore<4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Quad4iIntersector16HybridMoellerNoFilter, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMiIntersectorKMoellerTrumbore<4 COMMA 16 COMMA false> > >);
+
 
 #endif
   }

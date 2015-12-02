@@ -256,6 +256,52 @@ namespace embree
 #endif
 
 
+#if defined(__AVX512F__)
+
+    /*! Intersects 4 quads with 1 ray using AVX */
+    template<bool filter>
+      struct QuadMiIntersector1Pluecker<4,16,filter>
+    {
+      typedef QuadMi<4> Primitive;
+      typedef PlueckerIntersectorQuad1<16> Precalculations;
+        
+      /*! Intersect a ray with the M quads and updates the hit. */
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene);
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
+                      select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
+                      select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
+        Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
+        Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
+        vint8   geomIDs(quad.geomIDs); 
+        vint8   primIDs(quad.primIDs);        
+        const vbool16 flags(0xf0f0);
+        pre.intersect(ray,vtx0,vtx1,vtx2,flags,Intersect1Epilog<8,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+      }
+        
+      /*! Test if the ray is occluded by one of M quads. */
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& quad, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        Vec3vf4 v0, v1, v2, v3; 
+        quad.gather(v0,v1,v2,v3,scene);
+        Vec3vf16 vtx0(select(0x0f0f,vfloat16(quad.v0.x),vfloat16(quad.v2.x)),
+                      select(0x0f0f,vfloat16(quad.v0.y),vfloat16(quad.v2.y)),
+                      select(0x0f0f,vfloat16(quad.v0.z),vfloat16(quad.v2.z)));
+        Vec3vf16 vtx1(vfloat16(quad.v1.x),vfloat16(quad.v1.y),vfloat16(quad.v1.z));
+        Vec3vf16 vtx2(vfloat16(quad.v3.x),vfloat16(quad.v3.y),vfloat16(quad.v3.z));
+        vint8   geomIDs(quad.geomIDs); 
+        vint8   primIDs(quad.primIDs);        
+        const vbool16 flags(0xf0f0);
+        return pre.intersect(ray,vtx0,vtx1,vtx2,flags,Occluded1Epilog<8,16,filter>(ray,geomIDs,primIDs,scene,geomID_to_instID)); 
+      }
+    };
+
+#endif
+
   }
 }
 
