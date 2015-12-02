@@ -34,6 +34,7 @@
 #include "../geometry/object.h"
 
 #define PROFILE 0
+#define PROFILE_RUNS 20
 
 namespace embree
 {
@@ -110,7 +111,7 @@ namespace embree
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
-        profile(2,20,numPrimitives,[&] (ProfileTimer& timer) {
+        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
         /* create primref array */
@@ -472,7 +473,7 @@ namespace embree
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
-        profile(2,20,numOriginalPrimitives,[&] (ProfileTimer& timer) {
+        profile(2,PROFILE_RUNS,numOriginalPrimitives,[&] (ProfileTimer& timer) {
 #endif
             
             auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };

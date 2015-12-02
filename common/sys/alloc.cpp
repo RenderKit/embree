@@ -176,7 +176,6 @@ namespace embree
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
   {
-    assert((size_t)ptr % PAGE_SIZE_2M == 0);
     int res = madvise(ptr,bytes,MADV_HUGEPAGE); 
 #if defined(DEBUG)
     if (res)
