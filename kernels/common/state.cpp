@@ -80,6 +80,12 @@ namespace embree
 
     hair_accel_mb = "default";
 
+    object_accel_min_leaf_size = 1;
+    object_accel_max_leaf_size = 1;
+
+    object_accel_mb_min_leaf_size = 1;
+    object_accel_mb_max_leaf_size = 1;
+
     memory_preallocation_factor     = 1.0f; 
 
     tessellation_cache_size = 128*1024*1024;
@@ -292,6 +298,16 @@ namespace embree
 
       else if (tok == Token::Id("hair_accel_mb") && cin->trySymbol("="))
         hair_accel_mb = cin->get().Identifier();
+
+      else if (tok == Token::Id("object_accel_min_leaf_size") && cin->trySymbol("="))
+        object_accel_min_leaf_size = cin->get().Int();
+      else if (tok == Token::Id("object_accel_max_leaf_size") && cin->trySymbol("="))
+        object_accel_max_leaf_size = cin->get().Int();
+
+      else if (tok == Token::Id("object_accel_mb_min_leaf_size") && cin->trySymbol("="))
+        object_accel_mb_min_leaf_size = cin->get().Int();
+      else if (tok == Token::Id("object_accel_mb_max_leaf_size") && cin->trySymbol("="))
+        object_accel_mb_max_leaf_size = cin->get().Int();
 
       else if (tok == Token::Id("instancing_open_min") && cin->trySymbol("="))
         instancing_open_min = cin->get().Int();

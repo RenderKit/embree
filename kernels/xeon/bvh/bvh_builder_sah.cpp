@@ -155,7 +155,11 @@ namespace embree
     Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
+    Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
+      int minLeafSize = scene->device->object_accel_min_leaf_size;
+      int maxLeafSize = scene->device->object_accel_max_leaf_size;
+      return new BVHNBuilderSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,mode);
+    }
     Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
     Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
 
@@ -416,7 +420,11 @@ namespace embree
 
     Builder* BVH4Triangle4vMBMeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
     Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene,       size_t mode) { return new BVHNBuilderMblurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,1,1); }
+    Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
+      int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
+      int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
+      return new BVHNBuilderMblurSAH<4,AccelSet,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+    }
 
     Builder* BVH4Quad4iMBSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,scene ,4,1.0f,4,inf); }
     Builder* BVH4Quad4iMBMeshBuilderSAH  (void* bvh, QuadMesh* mesh, size_t mode) { return new BVHNBuilderMblurSAH<4,QuadMesh,Quad4iMB>((BVH4*)bvh,mesh ,4,1.0f,4,inf); }
