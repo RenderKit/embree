@@ -89,7 +89,7 @@ unsigned int cube_quad_indices[24] = {
   1, 3, 7, 5,
 };
 
-#define USE_QUADS 1
+#define USE_QUADS 0
 
 /* adds a cube to the scene */
 uniform unsigned int addCube (RTCScene scene)
