@@ -196,6 +196,7 @@ namespace embree
     const vfloat4 d3 = vfloat4::loadu(mesh3->vertexPtr(v3[3]));
 
     transpose(d0,d1,d2,d3,p3.x,p3.y,p3.z);
+
   }
 
 
@@ -218,28 +219,28 @@ namespace embree
     const vfloat4 &a2 = *(vfloat4*)(mesh2->vertexPtr(v0[2]));
     const vfloat4 &a3 = *(vfloat4*)(mesh3->vertexPtr(v0[3]));
 
-    const vfloat16 _p0(permute16f(perm,vfloat16(a0,a1,a2,a3)));
+    const vfloat16 _p0(permute(vfloat16(a0,a1,a2,a3),perm));
 
     const vfloat4 &b0 = *(vfloat4*)(mesh0->vertexPtr(v1[0]));
     const vfloat4 &b1 = *(vfloat4*)(mesh1->vertexPtr(v1[1]));
     const vfloat4 &b2 = *(vfloat4*)(mesh2->vertexPtr(v1[2]));
     const vfloat4 &b3 = *(vfloat4*)(mesh3->vertexPtr(v1[3]));
 
-    const vfloat16 _p1(permute16f(perm,vfloat16(b0,b1,b2,b3)));
+    const vfloat16 _p1(permute(vfloat16(b0,b1,b2,b3),perm));
 
     const vfloat4 &c0 = *(vfloat4*)(mesh0->vertexPtr(v2[0]));
     const vfloat4 &c1 = *(vfloat4*)(mesh1->vertexPtr(v2[1]));
     const vfloat4 &c2 = *(vfloat4*)(mesh2->vertexPtr(v2[2]));
     const vfloat4 &c3 = *(vfloat4*)(mesh3->vertexPtr(v2[3]));
 
-    const vfloat16 _p2(permute16f(perm,vfloat16(c0,c1,c2,c3)));
+    const vfloat16 _p2(permute(vfloat16(c0,c1,c2,c3),perm));
 
     const vfloat4 &d0 = *(vfloat4*)(mesh0->vertexPtr(v3[0]));
     const vfloat4 &d1 = *(vfloat4*)(mesh1->vertexPtr(v3[1]));
     const vfloat4 &d2 = *(vfloat4*)(mesh2->vertexPtr(v3[2]));
     const vfloat4 &d3 = *(vfloat4*)(mesh3->vertexPtr(v3[3]));
 
-    const vfloat16 _p3(permute16f(perm,vfloat16(d0,d1,d2,d3)));
+    const vfloat16 _p3(permute(vfloat16(d0,d1,d2,d3),perm));
 
     p0.x = shuffle4<0>(_p0);
     p0.y = shuffle4<1>(_p0);
@@ -256,6 +257,7 @@ namespace embree
     p3.x = shuffle4<0>(_p3);
     p3.y = shuffle4<1>(_p3);
     p3.z = shuffle4<2>(_p3);
+
   }
 
 #endif

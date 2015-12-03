@@ -51,7 +51,7 @@ namespace embree
     }
     
     __forceinline vint(const int a, const int b, const int c, const int d) {
-      v = _mm512_set_4to16_epi32(a,b,c,d);      
+      v = _mm512_set_4to16_epi32(d,c,b,a);      
     }
 
     __forceinline vint(const int a0 , const int a1 , const int a2 , const int a3, 
@@ -59,7 +59,7 @@ namespace embree
                        const int a8 , const int a9 , const int a10, const int a11, 
                        const int a12, const int a13, const int a14, const int a15)
     {
-      v = _mm512_set_16to16_epi32(a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15);
+      v = _mm512_set_16to16_epi32(a15,a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1,a0);
     }
 
 #if defined(__AVX512F__)
