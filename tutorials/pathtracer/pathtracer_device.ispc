@@ -32,6 +32,8 @@
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
+#define ENABLE_FILTER_FUNCTION 0
+
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
@@ -1015,6 +1017,10 @@ export void device_init (uniform int8* uniform cfg)
   //  renderPixel = renderPixelEyeLight;
   key_pressed_handler = device_key_pressed;
 
+#if ENABLE_FILTER_FUNCTION == 0
+  print("Warning: filter functions disabled\n");
+#endif
+
 } // device_init
 
 uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
@@ -1024,6 +1030,7 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(uniform Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(uniform ISPCTriangle));
   mesh->geomID = geomID;
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
   
   uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
@@ -1038,6 +1045,7 @@ uniform unsigned int convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh,
       rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
     }
   }
+#endif
   return geomID;
 }
 
@@ -1048,6 +1056,7 @@ uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScen
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(uniform Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(uniform ISPCQuad));
   mesh->geomID = geomID;
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
   
   uniform ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
@@ -1062,6 +1071,7 @@ uniform unsigned int convertQuadMesh(uniform ISPCQuadMesh* uniform mesh, RTCScen
       rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOBJ);
     }
   }
+#endif
   return geomID;
 }
 
@@ -1080,7 +1090,9 @@ uniform unsigned int convertSubdivMesh(uniform ISPCSubdivMesh* uniform mesh, RTC
   rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(uniform float));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(uniform unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(uniform float));
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFuncVarying)&occlusionFilterOpaque);
+#endif
   return geomID;
 } 
 

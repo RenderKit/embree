@@ -337,7 +337,7 @@ namespace embree
     intersectors.intersector4_nofilter  = BVH8Quad4vIntersector4HybridMoellerNoFilter;
     intersectors.intersector8           = BVH8Quad4vIntersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH8Quad4vIntersector8HybridMoellerNoFilter;
-#if 0
+#if 1
     intersectors.intersector16          = BVH8Quad4vIntersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH8Quad4vIntersector16HybridMoellerNoFilter;
 #else

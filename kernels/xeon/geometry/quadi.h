@@ -164,6 +164,9 @@ namespace embree
                                        Vec3vf4& p3,
                                        const Scene *const scene) const
   {
+    prefetchL1(((char*)this)+0*64);
+    prefetchL1(((char*)this)+1*64);
+
     const QuadMesh* mesh0 = scene->getQuadMesh(geomIDs[0]);
     const QuadMesh* mesh1 = scene->getQuadMesh(geomIDs[1]);
     const QuadMesh* mesh2 = scene->getQuadMesh(geomIDs[2]);

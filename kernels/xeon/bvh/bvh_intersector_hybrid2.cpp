@@ -74,11 +74,95 @@ namespace embree
       nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
       vbool<K> m_active = ray_tnear <= ray_tfar;
+      while(m_active)
+      {
+        size_t first = __bsf(m_active);
+        vbool<K> m_samesign = \
+          (nearXYZ.x[first] == nearXYZ.x) &
+          (nearXYZ.y[first] == nearXYZ.y) &
+          (nearXYZ.z[first] == nearXYZ.z);
+        assert(m_samesign);
 
-      size_t bits = movemask(m_active);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        NodeRef cur = bvh->root;      
-        BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+        m_active &=~m_samesign;
+
+#if 1
+        while(1)
+        {
+          StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
+          StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
+          StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
+          stack[0].ptr  = bvh->root;
+          stack[0].mask = m_samesign;
+          stack[0].dist = neg_inf;
+
+          const size_t nearX = nearXYZ.x[first];
+          const size_t nearY = nearXYZ.y[first];
+          const size_t nearZ = nearXYZ.z[first];
+          const size_t farX  = nearX ^ sizeof(vfloat<8>);
+          const size_t farY  = nearY ^ sizeof(vfloat<8>);
+          const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
+
+          while (1) pop:
+          {
+            /*! pop next node */
+            if (unlikely(stackPtr == stack)) break;
+            stackPtr--;
+            NodeRef cur = NodeRef(stackPtr->ptr);
+            vbool16 m_trav_active = stackPtr->mask;
+	  
+            /*! if popped node is too far, pop next one */
+            if (unlikely(none(lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
+
+            while (likely(!cur.isLeaf()))
+            {
+              const Node* __restrict__ const node = cur.node();
+
+              const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
+              const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_y+nearY));
+              const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_z+nearZ));
+              const vfloat16 bmaxX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farX));
+              const vfloat16 bmaxY = vfloat16(*(vfloat8*)((const char*)&node->lower_y+farY));
+              const vfloat16 bmaxZ = vfloat16(*(vfloat8*)((const char*)&node->lower_z+farZ));
+
+              vfloat16 dist(pos_inf);
+              size_t bits = movemask(m_trav_active);
+              vint16 mask16( zero );
+
+              for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+              {                                              
+                const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]);
+                const vfloat16 tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
+                const vfloat16 tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
+                const vfloat16 tFarX  = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
+                const vfloat16 tFarY  = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
+                const vfloat16 tFarZ  = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);      
+                const vint16 bitmask( (unsigned int)1 << i );
+                const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,vfloat16(ray_tnear[i]));
+                const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat16(ray_tfar[i]));
+                const vbool16 vmask   = le(tNear,tFar);
+                dist   = select(vmask,min(tNear,dist),dist);
+                mask16 = select(vmask,mask16 | bitmask,mask16);
+              }
+
+              const vbool16 vmask   = lt(vbool16(0xff),dist,pos_inf);
+              if (unlikely(none(vmask))) goto pop;
+
+              
+              
+            }            
+          }
+
+
+        }
+        
+#else
+        size_t bits = movemask(m_samesign);
+
+        for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+          NodeRef cur = bvh->root;      
+          BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect1(bvh, cur, i, pre, ray, ray_org, ray_dir, rdir, ray_tnear, ray_tfar, nearXYZ);
+        }
+#endif
       }
       AVX_ZERO_UPPER();
     }
