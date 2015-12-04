@@ -86,8 +86,11 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Bezier1iMBIntersector16Single_OBB);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
-  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller2);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter2);
+
+  //DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
+  //DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
@@ -200,6 +203,8 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Bezier1iMBIntersector16Single_OBB);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoeller2);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4Intersector16HybridMoellerNoFilter2);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8Triangle4vMBIntersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoeller);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
