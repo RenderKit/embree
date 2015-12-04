@@ -85,7 +85,7 @@ namespace embree
 
         m_active &=~m_samesign;
 
-#if 1
+#if defined(__AVX512F__)
         while(1)
         {
           StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
