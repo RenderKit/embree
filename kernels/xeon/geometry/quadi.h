@@ -71,12 +71,10 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-    template<int K>
-    __forceinline Vec3<vfloat<K>> getVertexK(const vint<M> &v, const size_t index, const Scene *const scene) const
+    __forceinline Vec3fa &getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
-      const Vec3fa *const v_ptr = (Vec3fa*)mesh->vertexPtr(v[index]);
-      return Vec3<vfloat<K>>( vfloat<K>(v_ptr->x), vfloat<K>(v_ptr->y), vfloat<K>(v_ptr->z) );
+      return *(Vec3fa*)mesh->vertexPtr(v[index]);
     }
 
     /* gather the quads */

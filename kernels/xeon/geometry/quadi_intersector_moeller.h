@@ -162,10 +162,14 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
-            const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
-            const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
-            const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+            const Vec3fa & _p0 = quad.getVertex(quad.v0,i,scene);
+            const Vec3fa & _p1 = quad.getVertex(quad.v1,i,scene);
+            const Vec3fa & _p2 = quad.getVertex(quad.v2,i,scene);
+            const Vec3fa & _p3 = quad.getVertex(quad.v3,i,scene);            
+            const Vec3<vfloat<K>> p0(_p0.x,_p0.y,_p0.z);
+            const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
+            const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
+            const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
             pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
             pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           }
@@ -179,10 +183,14 @@ namespace embree
           {
             if (!quad.valid(i)) break;
             STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
-            const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
-            const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
-            const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+            const Vec3fa & _p0 = quad.getVertex(quad.v0,i,scene);
+            const Vec3fa & _p1 = quad.getVertex(quad.v1,i,scene);
+            const Vec3fa & _p2 = quad.getVertex(quad.v2,i,scene);
+            const Vec3fa & _p3 = quad.getVertex(quad.v3,i,scene);            
+            const Vec3<vfloat<K>> p0(_p0.x,_p0.y,_p0.z);
+            const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
+            const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
+            const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
             pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
             if (none(valid0)) break;
             pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
@@ -254,10 +262,14 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
-          const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
-          const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
-          const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+          const Vec3fa & _p0 = quad.getVertex(quad.v0,i,scene);
+          const Vec3fa & _p1 = quad.getVertex(quad.v1,i,scene);
+          const Vec3fa & _p2 = quad.getVertex(quad.v2,i,scene);
+          const Vec3fa & _p3 = quad.getVertex(quad.v3,i,scene);            
+          const Vec3<vfloat<K>> p0(_p0.x,_p0.y,_p0.z);
+          const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
+          const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
+          const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
           pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
           pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
         }
@@ -271,10 +283,14 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          const Vec3<vfloat<K>> p0 = quad.getVertexK<K>(quad.v0,i,scene);
-          const Vec3<vfloat<K>> p1 = quad.getVertexK<K>(quad.v1,i,scene);
-          const Vec3<vfloat<K>> p2 = quad.getVertexK<K>(quad.v2,i,scene);
-          const Vec3<vfloat<K>> p3 = quad.getVertexK<K>(quad.v3,i,scene);
+          const Vec3fa & _p0 = quad.getVertex(quad.v0,i,scene);
+          const Vec3fa & _p1 = quad.getVertex(quad.v1,i,scene);
+          const Vec3fa & _p2 = quad.getVertex(quad.v2,i,scene);
+          const Vec3fa & _p3 = quad.getVertex(quad.v3,i,scene);            
+          const Vec3<vfloat<K>> p0(_p0.x,_p0.y,_p0.z);
+          const Vec3<vfloat<K>> p1(_p1.x,_p1.y,_p1.z);
+          const Vec3<vfloat<K>> p2(_p2.x,_p2.y,_p2.z);
+          const Vec3<vfloat<K>> p3(_p3.x,_p3.y,_p3.z);
           pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
           if (none(valid0)) break;
           pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
