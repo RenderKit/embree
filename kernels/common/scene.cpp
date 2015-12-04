@@ -142,13 +142,13 @@ namespace embree
 #else
     createTriangleAccel();
     createTriangleMBAccel();
+    createQuadAccel();
+    createQuadMBAccel();
     createHairAccel();
     createHairMBAccel();
     createLineAccel();
     createLineMBAccel();
     createSubdivAccel();
-    createQuadAccel();
-    createQuadMBAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
     accels.add(device->bvh4_factory->BVH4UserGeometryMB(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
