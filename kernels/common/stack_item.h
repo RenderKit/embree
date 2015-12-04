@@ -25,7 +25,7 @@ namespace embree
     struct __aligned(16) StackItemT
   {
     /*! assert that the xchg function works */
-    static_assert(sizeof(T) < 12, "sizeof(T) < 12 failed");
+    static_assert(sizeof(T) <= 12, "sizeof(T) <= 12 failed");
 
     /*! use SSE instructions to swap stack items */
     __forceinline static void xchg(StackItemT& a, StackItemT& b) 

@@ -604,19 +604,16 @@ namespace embree
     return shuffle(x,_MM_SWIZ_REG_DDDD);
   }
 
-  __forceinline vfloat16 _mm512_permutev_ps(__m512i index, vfloat16 v)
-  {
-    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
-  }
-
+#if !defined(__AVX512F__)
   __forceinline vfloat16 permute16f(__m512i index, vfloat16 v)
   {
     return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
   }
+#endif
 
   __forceinline vfloat16 permute(vfloat16 v,__m512i index)
   {
-    return _mm512_castsi512_ps(_mm512_permutev_epi32(index,_mm512_castps_si512(v)));  
+    return _mm512_castsi512_ps(_mm512_permutevar_epi32(index,_mm512_castps_si512(v)));  
   }
 
   __forceinline vfloat16 reverse(const vfloat16 &a)

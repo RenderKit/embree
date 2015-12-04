@@ -508,6 +508,7 @@ namespace embree
           hit.finalize();
           if (Mx > M) valid &= (1<<M)-1;
           size_t i = select_min(valid,hit.vt);
+          assert(i<M);
           int geomID = geomIDs[i];
           
           /* intersection filter test */
@@ -517,7 +518,7 @@ namespace embree
           {
             if (unlikely(none(valid))) return false;
             i = select_min(valid,hit.vt);
-            
+            assert(i<M);            
             geomID = geomIDs[i];
           entry:
             Geometry* geometry = scene->get(geomID);
@@ -534,6 +535,7 @@ namespace embree
             /* call intersection filter function */
             if (filter) {
               if (unlikely(geometry->hasIntersectionFilter<vfloat<K>>())) {
+                assert(i<M);
                 const Vec2f uv = hit.uv(i);
                 if (runIntersectionFilter(geometry,ray,k,uv.x,uv.y,hit.t(i),hit.Ng(i),geomID,primIDs[i])) return true;
                 clear(valid,i);
@@ -544,7 +546,7 @@ namespace embree
             break;
           }
 #endif
-          
+          assert(i<M);
           /* update hit information */
           const Vec2f uv = hit.uv(i);
           ray.u[k] = uv.x;
