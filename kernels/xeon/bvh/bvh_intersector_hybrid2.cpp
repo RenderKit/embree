@@ -41,6 +41,9 @@
 #define SWITCH_DURING_DOWN_TRAVERSAL 1
 #define FORCE_SINGLE_MODE 0
 
+#define DBG(x) 
+//PRINT(x)
+
 namespace embree
 {
   namespace isa
@@ -75,6 +78,7 @@ namespace embree
       vbool<K> m_active = ray_tnear <= ray_tfar;
       while(m_active)
       {
+        DBG(m_active);
         size_t first = __bsf(m_active);
         vbool<K> m_samesign = \
           (nearXYZ.x[first] == nearXYZ.x) &
@@ -83,8 +87,9 @@ namespace embree
         assert(m_samesign);
 
         m_active &=~m_samesign;
+        DBG(m_samesign);
 
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) && 1
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
@@ -98,7 +103,6 @@ namespace embree
         const size_t farX  = nearX ^ sizeof(vfloat<8>);
         const size_t farY  = nearY ^ sizeof(vfloat<8>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
-
         while (1) pop:
         {
           /*! pop next node */
@@ -106,28 +110,36 @@ namespace embree
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           vbool16 m_trav_active = stackPtr->mask;
-	  
+          DBG("pop");
+          DBG(cur);
+          DBG(m_trav_active);
+	  DBG( lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar));
+
           /*! if popped node is too far, pop next one */
           if (unlikely(none(lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
 
           while (likely(!cur.isLeaf()))
           {
+            DBG("TRAVERSAL");
+            DBG(cur);
             const Node* __restrict__ const node = cur.node();
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
             const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
-            const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_y+nearY));
-            const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_z+nearZ));
+            const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearY));
+            const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearZ));
             const vfloat16 bmaxX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farX));
-            const vfloat16 bmaxY = vfloat16(*(vfloat8*)((const char*)&node->lower_y+farY));
-            const vfloat16 bmaxZ = vfloat16(*(vfloat8*)((const char*)&node->lower_z+farZ));
+            const vfloat16 bmaxY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farY));
+            const vfloat16 bmaxZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farZ));
 
             vfloat16 dist(inf);
             size_t bits = movemask(m_trav_active);
             vint16 mask16( zero );
 
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-            {                                              
-              const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]);
+            {                    
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i'
               const vfloat16 tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
               const vfloat16 tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
               const vfloat16 tFarX  = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
@@ -140,17 +152,26 @@ namespace embree
               dist   = select(vmask,min(tNear,dist),dist);
               mask16 = select(vmask,mask16 | bitmask,mask16);
             }
-
             const vbool16 vmask   = lt(vbool16(0xff),dist,inf);
+            DBG(dist);
+            DBG(mask16);
+            DBG(vmask);
             if (unlikely(none(vmask))) goto pop;
 
-            m_trav_active = BVHNNodeTraverserKHit<types>::traverseClosestHit(cur, m_trav_active,dist,mask16,stackPtr,stackEnd);              
+            DBG("SORT");
+
+            m_trav_active = BVHNNodeTraverserKHit<types>::traverseClosestHit(cur, vmask,dist,mask16,stackPtr,stackEnd);              
+            DBG(m_trav_active);
           }          
+
+          DBG("INTERSECTION");
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = movemask(m_trav_active);
@@ -172,6 +193,8 @@ namespace embree
         }
 #endif
       }
+      DBG(ray);
+      //exit(0);
       AVX_ZERO_UPPER();
     }
 
