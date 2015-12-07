@@ -273,13 +273,13 @@ namespace embree
       {
         DBG(m_active);
         size_t first = __bsf(m_active);
-        vbool<K> m_samesign = \
+        vbool<K> m_chunk_active = \
           (nearXYZ.x[first] == nearXYZ.x) &
           (nearXYZ.y[first] == nearXYZ.y) &
           (nearXYZ.z[first] == nearXYZ.z);
-        assert(m_samesign);
+        assert(m_chunk_active);
 
-        m_active &=~m_samesign;
+        m_active &=~m_chunk_active;
         DBG(m_samesign);
 
 #if 1
@@ -287,7 +287,7 @@ namespace embree
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
         stack[0].ptr  = bvh->root;
-        stack[0].mask = m_samesign;
+        stack[0].mask = m_chunk_active;
         stack[0].dist = neg_inf;
 
         const size_t nearX = nearXYZ.x[first];
@@ -316,14 +316,13 @@ namespace embree
           if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          vbool16 m_trav_active = stackPtr->mask;
+          vbool16 m_trav_active = vbool16(stackPtr->mask) & !terminated;
           DBG("pop");
           DBG(cur);
           DBG(m_trav_active);
-	  DBG( lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar));
 
           /*! if popped node is too far, pop next one */
-          if (unlikely(none(lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
+          //if (unlikely(none(lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
 
           while (likely(!cur.isLeaf()))
           {
@@ -401,12 +400,14 @@ namespace embree
           STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
-          size_t bits = movemask(m_trav_active);
+          size_t bits = movemask(m_trav_active & !terminated);
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
             if (PrimitiveIntersectorK::occluded(pre,ray,i,prim,num,bvh->scene,lazy_node)) 
               set(terminated, i);
               
-          if (all(terminated)) break;
+          m_chunk_active &= ~terminated;
+
+          if (unlikely(none(m_chunk_active))) break;
           ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
 
         } // traversal + intersection
@@ -420,7 +421,7 @@ namespace embree
             set(terminated, i);
         }
 #endif
-        if (all(terminated)) break;
+        m_active &= !terminated;
       }
 
 
