@@ -201,6 +201,72 @@ namespace embree
         stackPtr--;
         return mm;
       }
+
+
+      static __forceinline int traverseAnyHit(NodeRef& cur,
+                                              size_t mask,
+                                              const vfloat16& tNear,
+                                              const vint16& tMask,
+                                              StackItemMaskT<NodeRef>*& stackPtr,
+                                              StackItemMaskT<NodeRef>* stackEnd)
+      {
+        assert(mask != 0);
+        const BaseNode* node = cur.baseNode(types);
+
+        /*! one child is hit, continue with that child */
+        size_t r = __bscf(mask);
+        cur = node->child(r);         
+        cur.prefetch(types);
+        
+        if (likely(mask == 0)) {
+          assert(cur != BVH::emptyNode);
+          return tMask[r];
+        }
+
+        /*! two children are hit, push far child, and continue with closer child */
+        NodeRef c0 = cur; // node->child(r); 
+        const unsigned int d0 = ((unsigned int*)&tNear)[r];
+        const int m0 = tMask[r];
+        r = __bscf(mask);
+        NodeRef c1 = node->child(r); 
+        c1.prefetch(types); 
+        const unsigned int d1 = ((unsigned int*)&tNear)[r];
+        const int m1 = tMask[r];
+
+        assert(c0 != BVH::emptyNode);
+        assert(c1 != BVH::emptyNode);
+        if (likely(mask == 0)) {
+          assert(stackPtr < stackEnd);
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = m1; stackPtr++; cur = c0; return m0; }
+          else         { stackPtr->ptr = c0; stackPtr->mask = m0; stackPtr++; cur = c1; return m1; }
+        }
+
+        /*! Here starts the slow path for 3+ hit children. */
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c0; stackPtr->mask = m0; stackPtr++;
+        assert(stackPtr < stackEnd);
+        stackPtr->ptr = c1; stackPtr->mask = m1; stackPtr++;
+
+        StackItemMaskT<NodeRef>* stackFirst = stackPtr-2;
+        while (1)
+        {
+          assert(stackPtr < stackEnd);
+          r = __bscf(mask);
+          NodeRef c = node->child(r); 
+          c.prefetch(types); 
+          int m = tMask[r];
+          stackPtr->ptr  = c; 
+          stackPtr->mask = m;
+          stackPtr++;
+          assert(c != BVH::emptyNode);
+          if (unlikely(mask == 0)) break;
+        }
+        cur = (NodeRef) stackPtr[-1].ptr; 
+        unsigned int mm = stackPtr[-1].mask;
+        stackPtr--;
+        return mm;
+      }
+
     };
 
       /*! BVH hybrid packet intersector. Switches between packet and single ray traversal (optional). */

@@ -51,6 +51,8 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
+#if defined(__AVX512F__)
+
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -89,7 +91,7 @@ namespace embree
         m_active &=~m_samesign;
         DBG(m_samesign);
 
-#if defined(__AVX512F__) && 1
+#if 1
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
@@ -229,6 +231,7 @@ namespace embree
       DBG(ray);
       //exit(0);
       AVX_ZERO_UPPER();
+#endif
     }
 
     // ===================================================================================================================================================================
@@ -240,6 +243,8 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
+#if defined(__AVX512F__)
+
       /* verify correct input */
       vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -250,35 +255,178 @@ namespace embree
 
       /* load ray */
       vbool<K> terminated = !valid;
-      Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
-      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
-      const Vec3vfK rdir = rcp_safe(ray_dir);
-      const Vec3vfK org(ray_org), org_rdir = org * rdir;
-      ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
-      ray_tfar  = select(valid,ray_tfar ,vfloat<K>(neg_inf));
+      const Vec3vfK rdir = rcp_safe(ray.dir);
+      const Vec3vfK org(ray.org), org_rdir = org * rdir;
+      const vfloat<K> ray_tnear = select(valid,ray.tnear,vfloat<K>(pos_inf));
+            vfloat<K> ray_tfar  = select(valid,ray.tfar ,vfloat<K>(neg_inf));
       const vfloat<K> inf = vfloat<K>(pos_inf);
       Precalculations pre(valid,ray);
 
       /* compute near/far per ray */
       Vec3viK nearXYZ;
-      if (single)
-      {
-        nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
-        nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
-        nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
-      }
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
       vbool<K> m_active = ray_tnear <= ray_tfar;
+      while(m_active)
+      {
+        DBG(m_active);
+        size_t first = __bsf(m_active);
+        vbool<K> m_samesign = \
+          (nearXYZ.x[first] == nearXYZ.x) &
+          (nearXYZ.y[first] == nearXYZ.y) &
+          (nearXYZ.z[first] == nearXYZ.z);
+        assert(m_samesign);
 
-      size_t bits = movemask(m_active);
-      for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
-        NodeRef cur = bvh->root;      
-        if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,cur,i,pre,ray,ray_org,ray_dir,rdir,ray_tnear,ray_tfar,nearXYZ))
-          set(terminated, i);
+        m_active &=~m_samesign;
+        DBG(m_samesign);
+
+#if 1
+        StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
+        StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
+        StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
+        stack[0].ptr  = bvh->root;
+        stack[0].mask = m_samesign;
+        stack[0].dist = neg_inf;
+
+        const size_t nearX = nearXYZ.x[first];
+        const size_t nearY = nearXYZ.y[first];
+        const size_t nearZ = nearXYZ.z[first];
+#if 1
+        const vint<K> id( step );
+        const vint<K> id2 = align_shift_right<8>(id,id);
+ 
+        const vint<K> permX = select(vfloat<K>(rdir.x[first]) >= 0.0f,id,id2);
+        const vint<K> permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
+        const vint<K> permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
+
+#else
+
+        const size_t farX  = nearX ^ sizeof(vfloat<8>);
+        const size_t farY  = nearY ^ sizeof(vfloat<8>);
+        const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
+
+#endif
+
+
+        while (1) pop:
+        {
+          /*! pop next node */
+          if (unlikely(stackPtr == stack)) break;
+          stackPtr--;
+          NodeRef cur = NodeRef(stackPtr->ptr);
+          vbool16 m_trav_active = stackPtr->mask;
+          DBG("pop");
+          DBG(cur);
+          DBG(m_trav_active);
+	  DBG( lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar));
+
+          /*! if popped node is too far, pop next one */
+          if (unlikely(none(lt(m_trav_active,vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
+
+          while (likely(!cur.isLeaf()))
+          {
+            DBG("TRAVERSAL");
+            DBG(cur);
+            const Node* __restrict__ const node = cur.node();
+            //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
+#if 0
+            const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
+            const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearY));
+            const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearZ));
+            const vfloat16 bmaxX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farX));
+            const vfloat16 bmaxY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farY));
+            const vfloat16 bmaxZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farZ));
+#else
+
+            const vfloat16 bminmaxX = permute(vfloat16::load((float*)&node->lower_x),permX);
+            const vfloat16 bminmaxY = permute(vfloat16::load((float*)&node->lower_y),permY);
+            const vfloat16 bminmaxZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
+
+
+#endif
+            vfloat16 dist(inf);
+            size_t bits = movemask(m_trav_active);
+            vint16 mask16( zero );
+            do
+            {                    
+              STAT3(normal.trav_nodes,1,1,1);                          
+              size_t i = __bscf(bits);
+#if 0            
+              const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
+              const vfloat16 tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
+              const vfloat16 tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
+              const vfloat16 tFarX  = msub(bmaxX, rdir.x[i], org_rdir.x[i]);
+              const vfloat16 tFarY  = msub(bmaxY, rdir.y[i], org_rdir.y[i]);
+              const vfloat16 tFarZ  = msub(bmaxZ, rdir.z[i], org_rdir.z[i]);      
+              const vint16 bitmask( (unsigned int)1 << i );
+              const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,vfloat16(ray_tnear[i]));
+              const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat16(ray_tfar[i]));
+              const vbool16 vmask   = le(tNear,tFar);
+#else
+              const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[i], org_rdir.x[i]);
+              const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[i], org_rdir.y[i]);
+              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[i], org_rdir.z[i]);
+              const vint16 bitmask( (unsigned int)1 << i );
+              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tnear[i]));
+              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tfar[i]));
+              const vbool16 vmask      = le(tNear,align_shift_right<8>(tFar,tFar));              
+#endif
+
+              dist   = select(vmask,min(tNear,dist),dist);
+              mask16 = select(vmask,mask16 | bitmask,mask16); // optimize
+            } while(bits);
+            
+            const vbool16 vmask   = lt(vbool16(0xff),dist,inf);
+            DBG(dist);
+            DBG(mask16);
+            DBG(vmask);
+            if (unlikely(none(vmask))) goto pop;
+
+            DBG("SORT");
+
+            m_trav_active = BVHNNodeTraverserKHit<types>::traverseAnyHit(cur, vmask,dist,mask16,stackPtr,stackEnd);              
+            DBG(m_trav_active);
+          }          
+
+          DBG("INTERSECTION");
+
+          /*! this is a leaf node */
+          assert(cur != BVH::emptyNode);
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+
+          size_t lazy_node = 0;
+          size_t bits = movemask(m_trav_active);
+          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+            if (PrimitiveIntersectorK::occluded(pre,ray,i,prim,num,bvh->scene,lazy_node)) 
+              set(terminated, i);
+              
+          if (all(terminated)) break;
+          ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
+
+        } // traversal + intersection
+
+        
+#else
+        size_t bits = movemask(m_samesign);
+        for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) {
+          NodeRef cur = bvh->root;      
+          if (BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded1(bvh,cur,i,pre,ray,ray.org,ray.dir,rdir,ray_tnear,ray_tfar,nearXYZ))
+            set(terminated, i);
+        }
+#endif
         if (all(terminated)) break;
       }
+
+
       vint<K>::store(valid & terminated,&ray.geomID,0);
       AVX_ZERO_UPPER();
+#endif
     }
 
 
