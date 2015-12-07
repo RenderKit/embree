@@ -330,7 +330,7 @@ namespace embree
             DBG("TRAVERSAL");
             DBG(cur);
             const Node* __restrict__ const node = cur.node();
-            //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+            //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
 #if 0
             const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
@@ -352,7 +352,7 @@ namespace embree
             vint16 mask16( zero );
             do
             {                    
-              STAT3(normal.trav_nodes,1,1,1);                          
+              STAT3(shadow.trav_nodes,1,1,1);                          
               size_t i = __bscf(bits);
 #if 0            
               const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
@@ -395,10 +395,10 @@ namespace embree
 
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
-          STAT3(normal.trav_leaves, 1, 1, 1);
+          STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = movemask(m_trav_active);
@@ -498,7 +498,7 @@ namespace embree
           {
             if (unlikely(cur0.isLeaf())) break;
             {
-              STAT3(normal.trav_nodes,1,1,1);
+              STAT3(shadow.trav_nodes,1,1,1);
               const typename BVH8::Node* node = cur0.node();
 
               const vfloat16 nodeX = vfloat16::load((float*)((const char*)&node->lower_x));
@@ -538,7 +538,7 @@ namespace embree
           }
         
           assert(cur != BVH::emptyNode);
-	  STAT3(normal.trav_leaves, 1, 1, 1);
+	  STAT3(shadow.trav_leaves, 1, 1, 1);
 	  size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
           size_t lazy_node = 0;
