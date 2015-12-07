@@ -31,7 +31,7 @@
 #include "../geometry/subdivpatch1cached.h"
 #include "../../common/accelinstance.h"
 
-#define EXPERIMENTAL_INTERSECTOR16 1
+#define EXPERIMENTAL_INTERSECTOR16 0
 
 namespace embree
 {
