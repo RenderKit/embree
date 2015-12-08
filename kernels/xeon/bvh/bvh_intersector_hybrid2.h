@@ -100,12 +100,12 @@ namespace embree
     public:
 
       // FIXME: optimize sequence
-      static __forceinline int traverseClosestHit(NodeRef& cur,
-                                                  size_t mask,
-                                                  const vfloat16& tNear,
-                                                  const vint16& tMask,
-                                                  StackItemMaskT<NodeRef>*& stackPtr,
-                                                  StackItemMaskT<NodeRef>* stackEnd)
+      static __forceinline unsigned int traverseClosestHit(NodeRef& cur,
+                                                           size_t mask,
+                                                           const vfloat16& tNear,
+                                                           const vint16& tMask,
+                                                           StackItemMaskT<NodeRef>*& stackPtr,
+                                                           StackItemMaskT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
