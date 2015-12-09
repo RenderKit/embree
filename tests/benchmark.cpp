@@ -1261,6 +1261,7 @@ namespace embree
     benchmarks.push_back(new update_scenes ("refit_scenes_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+    benchmarks.push_back(new update_scenes ("refit_scenes_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1420,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
 #if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
@@ -1278,6 +1279,8 @@ namespace embree
     benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
     benchmarks.push_back(new update_scenes ("update_scenes_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+    benchmarks.push_back(new update_scenes ("update_scenes_8000k_1",  RTC_GEOMETRY_DYNAMIC,1420,1));
+
     benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
 #if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
