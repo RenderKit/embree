@@ -197,6 +197,12 @@ namespace embree
     {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
     }
+
+    static __forceinline vint4 extract128bit(const vint16& v)
+    {
+      return _mm512_castsi512_si128(v);
+    }
+
 #endif
 
 

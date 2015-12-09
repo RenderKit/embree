@@ -47,14 +47,13 @@ namespace embree
   {
 
 #if 1
-
-    /* bread-first traversal suffers under poor utilization, most of the time only a single ray is active during tracersal */
+    /* two rays traversal + refill */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
 #if defined(__AVX512F__)
 
-      StackItemMaskT<NodeRef>  stacks[16][stackSizeSingle];  //!< stack of nodes 
+      StackItemT<NodeRef>  stacks[2][stackSizeSingle];  //!< stack of nodes 
 
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
@@ -64,7 +63,6 @@ namespace embree
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
-      //STAT3(normal.trav_hit_boxes[__popcnt(valid0)],1,1,1);                          
 
       /* load ray */
       Vec3vfK &ray_org = ray.org;
@@ -81,17 +79,11 @@ namespace embree
       nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
       nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
-      NodeRef current[16];
-      StackItemMaskT<NodeRef>* stackPtrs[16]; 
-      StackItemMaskT<NodeRef>* stackEnds[16]; 
-      for (size_t i=0;i<16;i++)
+      /* sentinel */
+      for (size_t i=0;i<2;i++)
       {
-        current[i]      = bvh->root;
         stacks[i]->ptr  = BVH::invalidNode;
-        stacks[i]->mask = (unsigned int)1 << i;
-        stacks[i]->dist = 0;
-        stackPtrs[i]    = stacks[i] + 1;
-        stackEnds[i]    = stacks[i] + stackSizeSingle;
+        stacks[i]->dist = neg_inf;
       }
 
       vbool<K> m_active = ray_tnear <= ray_tfar;
@@ -99,14 +91,17 @@ namespace embree
       {
         DBG(m_active);
         const size_t first = __bsf(m_active);
-        vbool<K> m_samesign = \
+        vbool<K> m_samesign =                   \
           (nearXYZ.x[first] == nearXYZ.x) &
           (nearXYZ.y[first] == nearXYZ.y) &
           (nearXYZ.z[first] == nearXYZ.z);
         assert(m_samesign);
 
         m_active &=~m_samesign;
+        size_t m_active_chunk = movemask(m_samesign);
         DBG(m_samesign);
+
+        STAT3(normal.trav_hit_boxes[__popcnt(m_active_chunk)],1,1,1);                          
 
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<8>(id,id);
@@ -114,99 +109,192 @@ namespace embree
         const vint<K> permX = select(vfloat<K>(rdir.x[first]) >= 0.0f,id,id2);
         const vint<K> permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
         const vint<K> permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
-        const vint<K> one(1);
 
-        size_t m_trav_active = m_samesign;
-        while(m_trav_active)
+        struct Context {
+          size_t rayID;
+          NodeRef cur;
+          StackItemT<NodeRef>* stackPtr;
+          StackItemT<NodeRef>* stack;
+        } context[2];
+
+        const size_t ID0 = __bscf(m_active_chunk);
+        const size_t ID1 = m_active_chunk ? __bscf(m_active_chunk) : (size_t)-1;
+
+        context[0].rayID    = ID0;
+        context[0].cur      = bvh->root;
+        context[0].stackPtr = stacks[0] + 1;
+        context[0].stack    = stacks[0];
+        context[1].rayID    = ID1;
+        context[1].cur      = bvh->root;
+        context[1].stackPtr = stacks[1] + 1;
+        context[1].stackPtr = stacks[1];
+
+        size_t trav_mode = ID1 != (size_t)-1 ? 2 : 0;
+
+        while(1)
         {
-          size_t bits = m_trav_active;
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
-          DBG(bits);
-          while(bits)
-          {                    
-            STAT3(normal.trav_nodes,1,1,1);                          
-            const size_t i = __bscf(bits);
-            NodeRef cur = current[i];
-            DBG(i);
-            DBG(cur);
-            if (likely(!cur.isLeaf()))
+          if (unlikely(trav_mode < 2))
+          {
+            /* single ray path */
+            assert(context[0].cur != BVH::invalidNode || context[0].cur != BVH::invalidNode);
+            const size_t contextID        = trav_mode;
+            NodeRef cur                   = context[contextID].cur;
+            StackItemT<NodeRef>* stackPtr = context[contextID].stackPtr;
+            const size_t rayID            = context[contextID].rayID;
+
+            while(1)
             {
-              DBG("NODE");
-              assert(cur != BVH::invalidNode);
+              if (unlikely(cur.isLeaf())) break;
+              STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node = cur.node();
-              const vfloat16 bminmaxX = permute(vfloat16::load((float*)&node->lower_x),permX);
-              const vfloat16 bminmaxY = permute(vfloat16::load((float*)&node->lower_y),permY);
-              const vfloat16 bminmaxZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
-              const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[i], org_rdir.x[i]);
-              const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[i], org_rdir.y[i]);
-              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[i], org_rdir.z[i]);
-              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tnear[i]));
-              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tfar[i]));
+              const vfloat16 bminmaxX  = permute(vfloat16::load((float*)&node->lower_x),permX);
+              const vfloat16 bminmaxY  = permute(vfloat16::load((float*)&node->lower_y),permY);
+              const vfloat16 bminmaxZ  = permute(vfloat16::load((float*)&node->lower_z),permZ);
+              const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[rayID], org_rdir.x[rayID]);
+              const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[rayID], org_rdir.y[rayID]);
+              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[rayID], org_rdir.z[rayID]);
+              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tnear[rayID]));
+              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tfar[rayID]));
               const vbool16 vmask      = le(vbool16(0xff),tNear,align_shift_right<8>(tFar,tFar));
-              DBG(vmask);
+
               if (unlikely(none(vmask)))
               {
-                /* pop */
-                DBG("POP");
-
-                while(1)
-                {
-                  stackPtrs[i]--;
-                  cur = NodeRef(stackPtrs[i]->ptr);
-                  if (unlikely(cur == BVH::invalidNode)) {
-                    DBG("TERMINATE");
-                    m_trav_active &= ~((size_t)1 << i);
-                    break;
-                  }
-                  if (likely(*(float*)&stackPtrs[i]->dist <= ray.tfar[i])) break;
-                }
-                current[i] = cur;
-                DBG(current[i]);
+                stackPtr--;
+                cur = stackPtr->ptr;
               }
-              else
+              else 
               {
-                /* >= 1 hits */
-                DBG("sort");
-                DBG(stackPtrs[i]);
-                BVHNNodeTraverserKHit<types>::traverseClosestHit(cur,vmask,tNear,one,stackPtrs[i],stackEnds[i]);                
-                current[i] = cur;
-                DBG(current[i]);
-                DBG(stackPtrs[i]);
+                BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur,vmask,tNear,stackPtr,context[contextID].stack+stackSizeSingle);                
               }
+            }
+            context[contextID].stackPtr = stackPtr;
+            context[contextID].cur      = cur;
+          }
+          else
+          {
+            /* two rays path */
+            StackItemT<NodeRef>* stackPtr0 = context[0].stackPtr;
+            const size_t rayID0            = context[0].rayID;
+            NodeRef cur0                   = context[0].cur;
+
+            StackItemT<NodeRef>* stackPtr1 = context[1].stackPtr;
+            const size_t rayID1            = context[1].rayID;
+            NodeRef cur1                   = context[1].cur;
+
+            while(1)
+            {
+              if (unlikely(cur0.isLeaf())) break;
+              if (unlikely(cur1.isLeaf())) break;
+
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const Node* __restrict__ const node0 = cur0.node();
+              const vfloat16 bminmaxX0 = permute(vfloat16::load((float*)&node0->lower_x),permX);
+              const vfloat16 bminmaxY0 = permute(vfloat16::load((float*)&node0->lower_y),permY);
+              const vfloat16 bminmaxZ0 = permute(vfloat16::load((float*)&node0->lower_z),permZ);
+              const vfloat16 tNearFarX0 = msub(bminmaxX0, rdir.x[rayID0], org_rdir.x[rayID0]);
+              const vfloat16 tNearFarY0 = msub(bminmaxY0, rdir.y[rayID0], org_rdir.y[rayID0]);
+              const vfloat16 tNearFarZ0 = msub(bminmaxZ0, rdir.z[rayID0], org_rdir.z[rayID0]);
+              const vfloat16 tNear0     = max(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat16(ray_tnear[rayID0]));
+              const vfloat16 tFar0      = min(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat16(ray_tfar[rayID0]));
+              const vbool16 vmask0      = le(vbool16(0xff),tNear0,align_shift_right<8>(tFar0,tFar0));
+
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const Node* __restrict__ const node1 = cur1.node();
+              const vfloat16 bminmaxX1 = permute(vfloat16::load((float*)&node1->lower_x),permX);
+              const vfloat16 bminmaxY1 = permute(vfloat16::load((float*)&node1->lower_y),permY);
+              const vfloat16 bminmaxZ1 = permute(vfloat16::load((float*)&node1->lower_z),permZ);
+              const vfloat16 tNearFarX1 = msub(bminmaxX1, rdir.x[rayID1], org_rdir.x[rayID1]);
+              const vfloat16 tNearFarY1 = msub(bminmaxY1, rdir.y[rayID1], org_rdir.y[rayID1]);
+              const vfloat16 tNearFarZ1 = msub(bminmaxZ1, rdir.z[rayID1], org_rdir.z[rayID1]);
+              const vfloat16 tNear1     = max(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tnear[rayID1]));
+              const vfloat16 tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tfar[rayID1]));
+              const vbool16 vmask1      = le(vbool16(0xff),tNear1,align_shift_right<8>(tFar1,tFar1));
+
+              if (unlikely(none(vmask0)))
+              {
+                stackPtr0--;
+                cur0 = stackPtr0->ptr;
+              }
+              else 
+              {
+                BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur0,vmask0,tNear0,stackPtr0,context[0].stack+stackSizeSingle);                
+              }
+
+              if (unlikely(none(vmask1)))
+              {
+                stackPtr1--;
+                cur1 = stackPtr1->ptr;
+              }
+              else 
+              {
+                BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur1,vmask1,tNear1,stackPtr1,context[1].stack+stackSizeSingle);                
+              }              
+            } /* traversal */           
+
+            context[0].stackPtr = stackPtr0;
+            context[0].cur      = cur0;
+            context[1].stackPtr = stackPtr1;
+            context[1].cur      = cur1;
+          } /* two rays */
+
+          NodeRef cur0           = context[0].cur;
+          NodeRef cur1           = context[1].cur;
+          
+          if (unlikely(cur0 == BVH::invalidNode ||
+                       cur1 == BVH::invalidNode))
+          {
+            /* all rays have terminated */
+            if (unlikely(cur0 == BVH::invalidNode && cur1 == BVH::invalidNode)) break;
+
+            /* reset context for new ray */
+            const size_t contextID = cur0 == BVH::invalidNode ? 0 : 1;            
+            if (m_active_chunk)
+            {
+              context[contextID].rayID    = __bscf(m_active_chunk);
+              context[contextID].cur      = bvh->root;
+              context[contextID].stackPtr = context[contextID].stack + 1;
             }
             else
-            {
-              DBG("LEAF");
+              trav_mode = 1- contextID;
 
-              /* intersection */
-              assert(cur != BVH::emptyNode);
-              STAT3(normal.trav_leaves, 1, 1, 1);
-              size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
-              size_t lazy_node = 0;
-              PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
-              ray_tfar = min(ray_tfar,ray.tfar);     
-             /* pop */
-              DBG("POP");
-              while(1)
-              {
-                assert(stackPtrs[i] != stacks[i]);
-                stackPtrs[i]--;
-                cur = NodeRef(stackPtrs[i]->ptr);
-                DBG(cur);
-                assert(cur);
-                if (unlikely(cur == BVH::invalidNode)) {
-                  DBG("TERMINATE");
-                  m_trav_active &= ~((size_t)1 << i);
-                  break;
-                }
-                if (likely(*(float*)&stackPtrs[i]->dist <= ray.tfar[i])) break;
-              }
-              current[i] = cur;         
-            }
-            
+            continue;
           }
-        }
 
+          /*! this is a leaf node */
+          STAT3(normal.trav_leaves, 1, 1, 1);
+          const size_t contextID = cur0.isLeaf() ? 0 : 1;
+          NodeRef            cur = context[contextID].cur;
+          const size_t rayID     = context[contextID].rayID;
+          size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+
+          size_t lazy_node = 0;
+          PrimitiveIntersectorK::intersect(pre, ray, rayID, prim, num, bvh->scene, lazy_node);
+
+          /* stack compaction */
+          if (unlikely(ray.tfar[rayID] < ray_tfar[rayID]))
+          {
+            StackItemT<NodeRef>* stackPtr = context[contextID].stackPtr;
+            StackItemT<NodeRef>* stack    = context[contextID].stack;
+            StackItemT<NodeRef>* left     = stack + 1;
+            for (StackItemT<NodeRef>* right = stack+1; right<stackPtr; right++) 
+              {
+                /* optimize */
+                if (unlikely(*(float*)&right->dist < ray.tfar[rayID]))
+                {
+                  *(vint4*)left = *(vint4*)right; 
+                  left++;
+                }
+              }
+            context[contextID].stackPtr = left;            
+          }
+
+          ray_tfar = min(ray_tfar,ray.tfar);
+          /* update cur from stack */
+          context[contextID].stackPtr--;
+          context[contextID].cur = context[contextID].stackPtr->ptr;
+
+        } /* main traversal + intersection loop */
+            
         
       }
 #endif
@@ -262,18 +350,21 @@ namespace embree
 
 #if 1
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
-        StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
+        StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
-        stack[0].ptr  = bvh->root;
-        stack[0].mask = m_samesign;
+        stack[0].ptr  = BVH::invalidNode;
+        stack[0].mask = 0;
         stack[0].dist = neg_inf;
+        stack[1].ptr  = bvh->root;
+        stack[1].mask = m_samesign;
+        stack[1].dist = neg_inf;
 
         const size_t nearX = nearXYZ.x[first];
         const size_t nearY = nearXYZ.y[first];
         const size_t nearZ = nearXYZ.z[first];
         const vint<K> one(1);
 
-#if 0
+#if 1
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<8>(id,id);
  
@@ -292,17 +383,17 @@ namespace embree
         while (1) pop:
         {
           /*! pop next node */
-          if (unlikely(stackPtr == stack)) break;
+          //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           size_t m_trav_active = stackPtr->mask;
+
           DBG("pop");
           DBG(cur);
           DBG(m_trav_active);
-	  DBG( lt(vbool16(m_trav_active),vfloat16(*(float*)&stackPtr->dist),ray.tfar));
 
           /*! if popped node is too far, pop next one */
-          if (unlikely(none(lt(vbool16((unsigned int)m_trav_active),vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
+          //if (unlikely(none(lt(vbool16((unsigned int)m_trav_active),vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
 
           if (likely(__popcnt(m_trav_active) == 1))
           {            
@@ -321,7 +412,7 @@ namespace embree
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node = cur.node();
               //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
-#if 1
+#if 0
               const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
               const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearY));
               const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearZ));
@@ -362,7 +453,7 @@ namespace embree
               const Node* __restrict__ const node = cur.node();
               //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
-#if 1
+#if 0
               const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
               const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearY));
               const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearZ));
@@ -381,7 +472,7 @@ namespace embree
               {                    
                 STAT3(normal.trav_nodes,1,1,1);                          
                 size_t i = __bscf(bits);
-#if 1            
+#if 0            
                 const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
                 const vfloat16 tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
                 const vfloat16 tNearZ = msub(bminZ, rdir.z[i], org_rdir.z[i]);
@@ -423,6 +514,8 @@ namespace embree
           }
           DBG("INTERSECTION");
 
+          if (unlikely(cur == BVH::invalidNode)) break;
+
           /*! this is a leaf node */
           assert(cur != BVH::emptyNode);
           STAT3(normal.trav_leaves, 1, 1, 1);
@@ -436,6 +529,32 @@ namespace embree
           {                                              
             PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
           }
+
+          if (unlikely((lt(vbool16((unsigned int)m_trav_active),ray.tfar,ray_tfar))))
+          {
+#if 1
+            /* stack compaction */
+            StackItemMaskT<NodeRef>* left = stack + 1;
+            for (StackItemMaskT<NodeRef>* right = stack+1; right<stackPtr; right++) 
+              {
+                /* optimize */
+#if 1
+                const vint4 r = *(vint4*)right; 
+                const vbool16 m_valid = lt(vbool16(right->mask),vfloat16(*(float*)&right->dist),ray.tfar);
+                *(vint4*)left = r;
+                left +=  m_valid ? 1 : 0;
+#else
+                if (unlikely(lt(vbool16(right->mask),vfloat16(*(float*)&right->dist),ray.tfar)))
+                {
+                  *(vint4*)left = *(vint4*)right; 
+                  left++;
+                }
+#endif
+              }
+            stackPtr = left;            
+#endif
+          }
+
           ray_tfar = min(ray_tfar,ray.tfar);
 
         } // traversal + intersection
@@ -1418,3 +1537,177 @@ namespace embree
     // ===================================================================================================================================================================
     // ===================================================================================================================================================================
     // ===================================================================================================================================================================
+
+
+#if 0
+
+    /* bread-first traversal suffers under poor utilization, most of the time only a single ray is active during tracersal */
+    template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
+    void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
+    {
+#if defined(__AVX512F__)
+
+      StackItemMaskT<NodeRef>  stacks[16][stackSizeSingle];  //!< stack of nodes 
+
+      /* verify correct input */
+      vbool<K> valid0 = *valid_i == -1;
+#if defined(RTCORE_IGNORE_INVALID_RAYS)
+      valid0 &= ray.valid();
+#endif
+      assert(all(valid0,ray.tnear >= 0.0f));
+      assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
+
+      //STAT3(normal.trav_hit_boxes[__popcnt(valid0)],1,1,1);                          
+
+      /* load ray */
+      Vec3vfK &ray_org = ray.org;
+      Vec3vfK &ray_dir = ray.dir;
+      const Vec3vfK rdir = rcp_safe(ray_dir);
+      const Vec3vfK org(ray_org), org_rdir = org * rdir;
+      const vfloat16 ray_tnear = select(valid0,ray.tnear,vfloat<K>(pos_inf));
+            vfloat16 ray_tfar  = select(valid0,ray.tfar ,vfloat<K>(neg_inf));
+      const vfloat<K> inf = vfloat<K>(pos_inf);
+      Precalculations pre(valid0,ray);
+
+      Vec3viK nearXYZ;
+      nearXYZ.x = select(rdir.x >= 0.0f,vint<K>(0*(int)sizeof(vfloat<N>)),vint<K>(1*(int)sizeof(vfloat<N>)));
+      nearXYZ.y = select(rdir.y >= 0.0f,vint<K>(2*(int)sizeof(vfloat<N>)),vint<K>(3*(int)sizeof(vfloat<N>)));
+      nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
+
+      NodeRef current[16];
+      StackItemMaskT<NodeRef>* stackPtrs[16]; 
+      StackItemMaskT<NodeRef>* stackEnds[16]; 
+      for (size_t i=0;i<16;i++)
+      {
+        current[i]      = bvh->root;
+        stacks[i]->ptr  = BVH::invalidNode;
+        stacks[i]->mask = (unsigned int)1 << i;
+        stacks[i]->dist = 0;
+        stackPtrs[i]    = stacks[i] + 1;
+        stackEnds[i]    = stacks[i] + stackSizeSingle;
+      }
+
+      vbool<K> m_active = ray_tnear <= ray_tfar;
+      while(m_active)
+      {
+        DBG(m_active);
+        const size_t first = __bsf(m_active);
+        vbool<K> m_samesign = \
+          (nearXYZ.x[first] == nearXYZ.x) &
+          (nearXYZ.y[first] == nearXYZ.y) &
+          (nearXYZ.z[first] == nearXYZ.z);
+        assert(m_samesign);
+
+        m_active &=~m_samesign;
+        DBG(m_samesign);
+
+        const vint<K> id( step );
+        const vint<K> id2 = align_shift_right<8>(id,id);
+ 
+        const vint<K> permX = select(vfloat<K>(rdir.x[first]) >= 0.0f,id,id2);
+        const vint<K> permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
+        const vint<K> permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
+        const vint<K> one(1);
+
+        size_t m_trav_active = m_samesign;
+        while(m_trav_active)
+        {
+          size_t bits = m_trav_active;
+          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          DBG(bits);
+          while(bits)
+          {                    
+            STAT3(normal.trav_nodes,1,1,1);                          
+            const size_t i = __bscf(bits);
+            NodeRef cur = current[i];
+            DBG(i);
+            DBG(cur);
+            if (likely(!cur.isLeaf()))
+            {
+              DBG("NODE");
+              assert(cur != BVH::invalidNode);
+              const Node* __restrict__ const node = cur.node();
+              const vfloat16 bminmaxX = permute(vfloat16::load((float*)&node->lower_x),permX);
+              const vfloat16 bminmaxY = permute(vfloat16::load((float*)&node->lower_y),permY);
+              const vfloat16 bminmaxZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
+              const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[i], org_rdir.x[i]);
+              const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[i], org_rdir.y[i]);
+              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[i], org_rdir.z[i]);
+              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tnear[i]));
+              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tfar[i]));
+              const vbool16 vmask      = le(vbool16(0xff),tNear,align_shift_right<8>(tFar,tFar));
+              DBG(vmask);
+              if (unlikely(none(vmask)))
+              {
+                /* pop */
+                DBG("POP");
+
+                while(1)
+                {
+                  stackPtrs[i]--;
+                  cur = NodeRef(stackPtrs[i]->ptr);
+                  if (unlikely(cur == BVH::invalidNode)) {
+                    DBG("TERMINATE");
+                    m_trav_active &= ~((size_t)1 << i);
+                    break;
+                  }
+                  if (likely(*(float*)&stackPtrs[i]->dist <= ray.tfar[i])) break;
+                }
+                current[i] = cur;
+                DBG(current[i]);
+              }
+              else
+              {
+                /* >= 1 hits */
+                DBG("sort");
+                DBG(stackPtrs[i]);
+                BVHNNodeTraverserKHit<types>::traverseClosestHit(cur,vmask,tNear,one,stackPtrs[i],stackEnds[i]);                
+                current[i] = cur;
+                DBG(current[i]);
+                DBG(stackPtrs[i]);
+              }
+            }
+            else
+            {
+              DBG("LEAF");
+
+              /* intersection */
+              assert(cur != BVH::emptyNode);
+              STAT3(normal.trav_leaves, 1, 1, 1);
+              size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
+              size_t lazy_node = 0;
+              PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
+              ray_tfar = min(ray_tfar,ray.tfar);     
+             /* pop */
+              DBG("POP");
+              while(1)
+              {
+                assert(stackPtrs[i] != stacks[i]);
+                stackPtrs[i]--;
+                cur = NodeRef(stackPtrs[i]->ptr);
+                DBG(cur);
+                assert(cur);
+                if (unlikely(cur == BVH::invalidNode)) {
+                  DBG("TERMINATE");
+                  m_trav_active &= ~((size_t)1 << i);
+                  break;
+                }
+                if (likely(*(float*)&stackPtrs[i]->dist <= ray.tfar[i])) break;
+              }
+              current[i] = cur;         
+            }
+            
+          }
+        }
+
+        
+      }
+#endif
+      DBG(ray);
+      //exit(0);
+      AVX_ZERO_UPPER();
+
+    }
+
+
+#endif
