@@ -735,6 +735,61 @@ namespace embree
   };
 
 
+
+  class update_keyframe_scenes : public Benchmark
+  {
+  public:
+    RTCGeometryFlags flags; size_t numPhi; size_t numMeshes;
+    update_keyframe_scenes(const std::string& name, RTCGeometryFlags flags, size_t numPhi, size_t numMeshes)
+      : Benchmark(name,"Mtris/s"), flags(flags), numPhi(numPhi), numMeshes(numMeshes) {}
+  
+    double run(size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      Mesh mesh; 
+      createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
+      std::vector<RTCScene> scenes;
+      
+      const size_t sizeVertexData = mesh.vertices.size()*sizeof(Vertex);
+      Vertex *key_frame_vertices[2];
+      key_frame_vertices[0] = (Vertex*)os_malloc(sizeVertexData);
+      key_frame_vertices[1] = (Vertex*)os_malloc(sizeVertexData);
+      memcpy(key_frame_vertices[0],&mesh.vertices[0],sizeVertexData);
+      memcpy(key_frame_vertices[1],&mesh.vertices[0],sizeVertexData);
+
+      RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
+      unsigned geom = rtcNewTriangleMesh (scene, flags, mesh.triangles.size(), mesh.vertices.size());
+      rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,key_frame_vertices[1],0,sizeof(Vec3fa));
+
+      memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+      rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+      rtcCommit (scene);
+      
+      static const size_t anim_runs = 4;
+
+      double t0 = getSeconds();
+      for (size_t i=0;i<anim_runs;i++)
+      {
+        rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,key_frame_vertices[i%2],0,sizeof(Vec3fa));
+        rtcUpdate(scene,0);
+        rtcCommit(scene);
+      }
+      
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+      
+      os_free(key_frame_vertices[0],sizeVertexData);
+      os_free(key_frame_vertices[1],sizeVertexData);
+      
+      size_t numTriangles = mesh.triangles.size() * numMeshes;
+      return 1E-6*double(numTriangles)*anim_runs/((t1-t0));;
+    }
+  };
+
+
   class benchmark_rtcore_intersect1_throughput : public Benchmark
   {
   public:
@@ -1261,7 +1316,9 @@ namespace embree
     benchmarks.push_back(new update_scenes ("refit_scenes_10k",      RTC_GEOMETRY_DEFORMABLE,51,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_100k",     RTC_GEOMETRY_DEFORMABLE,159,1));
     benchmarks.push_back(new update_scenes ("refit_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+#if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("refit_scenes_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1420,1));
+#endif
     benchmarks.push_back(new update_scenes ("refit_scenes_100k_10",  RTC_GEOMETRY_DEFORMABLE,159,10));
 #if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("refit_scenes_10k_100",  RTC_GEOMETRY_DEFORMABLE,51,100));
@@ -1272,15 +1329,19 @@ namespace embree
 
 #endif
 
-    
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_keyframe_scenes ("refit_keyframe_scenes_1000k_1",  RTC_GEOMETRY_DEFORMABLE,501,1));
+    benchmarks.push_back(new update_keyframe_scenes ("refit_keyframe_scenes_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1420,1));
+#endif    
 
     benchmarks.push_back(new update_scenes ("update_scenes_120",      RTC_GEOMETRY_DYNAMIC,6,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1k" ,      RTC_GEOMETRY_DYNAMIC,17,1));
     benchmarks.push_back(new update_scenes ("update_scenes_10k",      RTC_GEOMETRY_DYNAMIC,51,1));
     benchmarks.push_back(new update_scenes ("update_scenes_100k",     RTC_GEOMETRY_DYNAMIC,159,1));
     benchmarks.push_back(new update_scenes ("update_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+#if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("update_scenes_8000k_1",  RTC_GEOMETRY_DYNAMIC,1420,1));
-
+#endif
     benchmarks.push_back(new update_scenes ("update_scenes_100k_10",  RTC_GEOMETRY_DYNAMIC,159,10));
 #if !defined(__MIC__)
     benchmarks.push_back(new update_scenes ("update_scenes_10k_100",  RTC_GEOMETRY_DYNAMIC,51,100));
@@ -1288,7 +1349,14 @@ namespace embree
 #if defined(__X86_64__)
     benchmarks.push_back(new update_scenes ("update_scenes_120_10000",RTC_GEOMETRY_DYNAMIC,6,8334));
 #endif
+
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_keyframe_scenes ("update_keyframe_scenes_1000k_1",  RTC_GEOMETRY_DYNAMIC,501,1));
+    benchmarks.push_back(new update_keyframe_scenes ("update_keyframe_scenes_8000k_1",  RTC_GEOMETRY_DYNAMIC,1420,1));
+#endif    
+
 #endif
+
 #endif
   }
 
