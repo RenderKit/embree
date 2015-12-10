@@ -314,7 +314,7 @@ namespace embree
 
       /* remember exception to throw */
       std::exception_ptr except = nullptr;
-      if (cancellingException) except = cancellingException;
+      if (cancellingException != nullptr) except = cancellingException;
 
       /* wait for all threads to terminate */
       atomic_add(&threadCounter,-1);
