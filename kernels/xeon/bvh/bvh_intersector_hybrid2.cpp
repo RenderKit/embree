@@ -38,22 +38,24 @@
 #include "../geometry/subdivpatch1cached.h"
 #include "../geometry/object_intersector.h"
 
-#define DBG(x)
-// PRINT(x)
+#define BLANK  
+//std::cout << std::endl
+#define DBG(x) 
+//PRINT(x)
 
 namespace embree
 {
   namespace isa
   {
 
-#if 1
+#if 0
     /* two rays traversal + refill */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
 #if defined(__AVX512F__)
 
-      StackItemT<NodeRef>  stacks[2][stackSizeSingle];  //!< stack of nodes 
+      __aligned(64) StackItemT<NodeRef>  stacks[2][stackSizeSingle];  //!< stack of nodes 
 
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
@@ -89,6 +91,8 @@ namespace embree
       vbool<K> m_active = ray_tnear <= ray_tfar;
       while(m_active)
       {
+        BLANK;
+        DBG("NEW CHUNK");
         DBG(m_active);
         const size_t first = __bsf(m_active);
         vbool<K> m_samesign =                   \
@@ -101,7 +105,6 @@ namespace embree
         size_t m_active_chunk = movemask(m_samesign);
         DBG(m_samesign);
 
-        STAT3(normal.trav_hit_boxes[__popcnt(m_active_chunk)],1,1,1);                          
 
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<8>(id,id);
@@ -127,24 +130,36 @@ namespace embree
         context[1].rayID    = ID1;
         context[1].cur      = bvh->root;
         context[1].stackPtr = stacks[1] + 1;
-        context[1].stackPtr = stacks[1];
+        context[1].stack    = stacks[1];
 
-        size_t trav_mode = ID1 != (size_t)-1 ? 2 : 0;
+        if (unlikely(ID1 == (size_t)-1)) context[1].cur = BVH::invalidNode;
+        DBG(ID0);
+        DBG(ID1);
+        DBG(context[0].stack);
+        DBG(context[1].stack);
 
-        while(1)
+        size_t contextID = 0;
+        
+        while(1)        
         {
-          if (unlikely(trav_mode < 2))
+          BLANK;
+          DBG("START TRAVERSAL");
+          DBG(contextID);
+
+          /* test whether we have 1 or 2 active rays */
+          if (unlikely(context[1-contextID].cur == BVH::invalidNode))
           {
+            DBG("SINGLE RAY TRAVERSAL");
+
             /* single ray path */
-            assert(context[0].cur != BVH::invalidNode || context[0].cur != BVH::invalidNode);
-            const size_t contextID        = trav_mode;
+            assert(context[1-contextID].cur == BVH::invalidNode);
             NodeRef cur                   = context[contextID].cur;
             StackItemT<NodeRef>* stackPtr = context[contextID].stackPtr;
             const size_t rayID            = context[contextID].rayID;
-
             while(1)
             {
               if (unlikely(cur.isLeaf())) break;
+              STAT3(normal.trav_hit_boxes[1],1,1,1);                          
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node = cur.node();
               const vfloat16 bminmaxX  = permute(vfloat16::load((float*)&node->lower_x),permX);
@@ -172,6 +187,8 @@ namespace embree
           }
           else
           {
+            DBG("TWO RAYS TRAVERSAL");
+
             /* two rays path */
             StackItemT<NodeRef>* stackPtr0 = context[0].stackPtr;
             const size_t rayID0            = context[0].rayID;
@@ -181,10 +198,23 @@ namespace embree
             const size_t rayID1            = context[1].rayID;
             NodeRef cur1                   = context[1].cur;
 
+            DBG(cur0);
+            DBG(cur1);
+
             while(1)
             {
+              DBG(cur0);
+              DBG(cur1);
+
+              contextID = 0;
+              DBG(contextID);
               if (unlikely(cur0.isLeaf())) break;
+              contextID = 1;
+              DBG(contextID);
               if (unlikely(cur1.isLeaf())) break;
+              DBG("NODE INTERSECTION");
+
+              STAT3(normal.trav_hit_boxes[2],1,1,1);                          
 
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node0 = cur0.node();
@@ -210,23 +240,35 @@ namespace embree
               const vfloat16 tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tfar[rayID1]));
               const vbool16 vmask1      = le(vbool16(0xff),tNear1,align_shift_right<8>(tFar1,tFar1));
 
+
+              DBG(vmask0);
+              DBG(vmask1);
+
               if (unlikely(none(vmask0)))
               {
+                DBG("STACK POP");
                 stackPtr0--;
                 cur0 = stackPtr0->ptr;
+                DBG(cur0);
               }
               else 
               {
+                DBG("SORT");
+                DBG(stackPtr0-context[0].stack);
                 BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur0,vmask0,tNear0,stackPtr0,context[0].stack+stackSizeSingle);                
               }
 
               if (unlikely(none(vmask1)))
               {
+                DBG("STACK POP");
                 stackPtr1--;
                 cur1 = stackPtr1->ptr;
+                DBG(cur1);
               }
               else 
               {
+                DBG("SORT");
+                DBG(stackPtr1-context[1].stack);
                 BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur1,vmask1,tNear1,stackPtr1,context[1].stack+stackSizeSingle);                
               }              
             } /* traversal */           
@@ -235,34 +277,46 @@ namespace embree
             context[0].cur      = cur0;
             context[1].stackPtr = stackPtr1;
             context[1].cur      = cur1;
+            DBG(context[0].cur);
+            DBG(context[1].cur);
+
           } /* two rays */
-
-          NodeRef cur0           = context[0].cur;
-          NodeRef cur1           = context[1].cur;
+          BLANK;
+          DBG("PRE-LEAF -> termination?");
+          DBG(contextID);
+          DBG(context[contextID].cur);
+          DBG(context[1-contextID].cur);
           
-          if (unlikely(cur0 == BVH::invalidNode ||
-                       cur1 == BVH::invalidNode))
+          if (unlikely(context[contextID].cur == BVH::invalidNode))
           {
-            /* all rays have terminated */
-            if (unlikely(cur0 == BVH::invalidNode && cur1 == BVH::invalidNode)) break;
+            DBG("ACTIVE RAY TERMINATED");
+            /* all rays are terminated */
+            if (unlikely(context[1-contextID].cur == BVH::invalidNode && m_active_chunk == 0)) break;
 
-            /* reset context for new ray */
-            const size_t contextID = cur0 == BVH::invalidNode ? 0 : 1;            
-            if (m_active_chunk)
-            {
+            DBG(m_active_chunk);
+
+            /* can we refill the context with a new ray */
+            if (likely(m_active_chunk))
+            {              
               context[contextID].rayID    = __bscf(m_active_chunk);
               context[contextID].cur      = bvh->root;
-              context[contextID].stackPtr = context[contextID].stack + 1;
+              context[contextID].stackPtr = context[contextID].stack + 1;              
+              DBG(context[contextID].rayID);
+
             }
             else
-              trav_mode = 1- contextID;
+              /* continue with the remaining valid context */
+              contextID = 1 - contextID;
+
+            DBG(contextID);
 
             continue;
           }
 
+          DBG("LEAF");
+
           /*! this is a leaf node */
           STAT3(normal.trav_leaves, 1, 1, 1);
-          const size_t contextID = cur0.isLeaf() ? 0 : 1;
           NodeRef            cur = context[contextID].cur;
           const size_t rayID     = context[contextID].rayID;
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
@@ -273,6 +327,7 @@ namespace embree
           /* stack compaction */
           if (unlikely(ray.tfar[rayID] < ray_tfar[rayID]))
           {
+            DBG("STACK COMPACTION");
             StackItemT<NodeRef>* stackPtr = context[contextID].stackPtr;
             StackItemT<NodeRef>* stack    = context[contextID].stack;
             StackItemT<NodeRef>* left     = stack + 1;
@@ -290,8 +345,14 @@ namespace embree
 
           ray_tfar = min(ray_tfar,ray.tfar);
           /* update cur from stack */
+          DBG("STACK POP");
           context[contextID].stackPtr--;
           context[contextID].cur = context[contextID].stackPtr->ptr;
+
+          DBG(context[contextID].cur);
+          DBG(context[contextID].stack);
+          DBG(context[contextID].stackPtr);
+          DBG(context[1-contextID].cur);
 
         } /* main traversal + intersection loop */
             
@@ -309,7 +370,6 @@ namespace embree
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
 #if defined(__AVX512F__)
-
       /* verify correct input */
       vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
@@ -348,7 +408,7 @@ namespace embree
         m_active &=~m_samesign;
         DBG(m_samesign);
 
-#if 1
+#if 0
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;

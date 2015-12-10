@@ -562,12 +562,14 @@ task void renderTile(uniform int* uniform pixels,
                      const uniform int numTilesX, 
                      const uniform int numTilesY)
 {
-  const uniform int tileY = taskIndex / numTilesX;
-  const uniform int tileX = taskIndex - tileY * numTilesX;
+  const uniform int t = taskIndex;
+  const uniform int tileY = t / numTilesX;
+  const uniform int tileX = t - tileY * numTilesX;
   const uniform int x0 = tileX * TILE_SIZE_X;
   const uniform int x1 = min(x0+TILE_SIZE_X,width);
   const uniform int y0 = tileY * TILE_SIZE_Y;
   const uniform int y1 = min(y0+TILE_SIZE_Y,height);
+
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
