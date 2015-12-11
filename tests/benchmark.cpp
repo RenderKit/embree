@@ -768,6 +768,7 @@ namespace embree
       rtcCommit (scene);
       
       static const size_t anim_runs = 4;
+      //static const size_t anim_runs = 4000000;
 
       double t0 = getSeconds();
       for (size_t i=0;i<anim_runs;i++)

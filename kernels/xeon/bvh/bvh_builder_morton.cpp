@@ -367,6 +367,7 @@ namespace embree
         /* We have to clear the allocator to guarantee that we can
          * temporarily use the first allocation block for sorting the
          * morton codes. */
+
         const size_t numNewPrimitives = mesh->size();
         if (numNewPrimitives != numPrimitives) bvh->alloc.clear();
         numPrimitives = numNewPrimitives;
@@ -384,7 +385,7 @@ namespace embree
         size_t bytesAllocated = numPrimitives*sizeof(Node)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
-        
+
         /* compute scene bounds */
         ParallelPrefixSumState<size_t> pstate;
         const BBox3fa centBounds = parallel_reduce 
@@ -394,7 +395,7 @@ namespace embree
               for (size_t i=r.begin(); i<r.end(); i++) bounds.extend(center2(mesh->bounds(i)));
               return bounds;
             }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
-        
+
         /* compute morton codes */
         MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
         MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
@@ -410,7 +411,7 @@ namespace embree
             }
             return num;
           }, std::plus<size_t>());
-        
+
         /* fallback in case some primitives were invalid */
         if (numPrimitivesGen != numPrimitives)
         {
@@ -427,7 +428,7 @@ namespace embree
               return num;
             }, std::plus<size_t>());
         }
-        
+
         /* create BVH */
         AllocBVHNNode<N> allocNode;
         SetBVHNBounds<N> setBounds(bvh);
@@ -448,7 +449,7 @@ namespace embree
           bvh->clearBarrier(bvh->root);
         }
 #endif
-        
+
         /* clear temporary data for static geometry */
         if (mesh->isStatic()) 
         {

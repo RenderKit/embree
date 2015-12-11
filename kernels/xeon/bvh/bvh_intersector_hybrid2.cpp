@@ -48,7 +48,7 @@ namespace embree
   namespace isa
   {
 
-#if 0
+#if 1
     /* two rays traversal + refill */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
@@ -153,9 +153,18 @@ namespace embree
 
             /* single ray path */
             assert(context[1-contextID].cur == BVH::invalidNode);
+            const size_t rayID            = context[contextID].rayID;
             NodeRef cur                   = context[contextID].cur;
             StackItemT<NodeRef>* stackPtr = context[contextID].stackPtr;
-            const size_t rayID            = context[contextID].rayID;
+            const vfloat16 rdir_x         = rdir.x[rayID];
+            const vfloat16 rdir_y         = rdir.y[rayID];
+            const vfloat16 rdir_z         = rdir.z[rayID];
+            const vfloat16 org_rdir_x     = org_rdir.x[rayID];
+            const vfloat16 org_rdir_y     = org_rdir.y[rayID];
+            const vfloat16 org_rdir_z     = org_rdir.z[rayID];
+            const vfloat16 tnear          = ray_tnear[rayID];
+            const vfloat16 tfar           = ray_tfar[rayID];
+
             while(1)
             {
               if (unlikely(cur.isLeaf())) break;
@@ -165,13 +174,12 @@ namespace embree
               const vfloat16 bminmaxX  = permute(vfloat16::load((float*)&node->lower_x),permX);
               const vfloat16 bminmaxY  = permute(vfloat16::load((float*)&node->lower_y),permY);
               const vfloat16 bminmaxZ  = permute(vfloat16::load((float*)&node->lower_z),permZ);
-              const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[rayID], org_rdir.x[rayID]);
-              const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[rayID], org_rdir.y[rayID]);
-              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[rayID], org_rdir.z[rayID]);
-              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tnear[rayID]));
-              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,vfloat16(ray_tfar[rayID]));
+              const vfloat16 tNearFarX = msub(bminmaxX, rdir_x, org_rdir_x);
+              const vfloat16 tNearFarY = msub(bminmaxY, rdir_y, org_rdir_y);
+              const vfloat16 tNearFarZ = msub(bminmaxZ, rdir_z, org_rdir_z);
+              const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,tnear);
+              const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,tfar);
               const vbool16 vmask      = le(vbool16(0xff),tNear,align_shift_right<8>(tFar,tFar));
-
               if (unlikely(none(vmask)))
               {
                 stackPtr--;
@@ -228,21 +236,7 @@ namespace embree
               const vfloat16 tFar0      = min(tNearFarX0,tNearFarY0,tNearFarZ0,vfloat16(ray_tfar[rayID0]));
               const vbool16 vmask0      = le(vbool16(0xff),tNear0,align_shift_right<8>(tFar0,tFar0));
 
-              STAT3(normal.trav_nodes,1,1,1);                          
-              const Node* __restrict__ const node1 = cur1.node();
-              const vfloat16 bminmaxX1 = permute(vfloat16::load((float*)&node1->lower_x),permX);
-              const vfloat16 bminmaxY1 = permute(vfloat16::load((float*)&node1->lower_y),permY);
-              const vfloat16 bminmaxZ1 = permute(vfloat16::load((float*)&node1->lower_z),permZ);
-              const vfloat16 tNearFarX1 = msub(bminmaxX1, rdir.x[rayID1], org_rdir.x[rayID1]);
-              const vfloat16 tNearFarY1 = msub(bminmaxY1, rdir.y[rayID1], org_rdir.y[rayID1]);
-              const vfloat16 tNearFarZ1 = msub(bminmaxZ1, rdir.z[rayID1], org_rdir.z[rayID1]);
-              const vfloat16 tNear1     = max(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tnear[rayID1]));
-              const vfloat16 tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tfar[rayID1]));
-              const vbool16 vmask1      = le(vbool16(0xff),tNear1,align_shift_right<8>(tFar1,tFar1));
-
-
               DBG(vmask0);
-              DBG(vmask1);
 
               if (unlikely(none(vmask0)))
               {
@@ -257,6 +251,21 @@ namespace embree
                 DBG(stackPtr0-context[0].stack);
                 BVHNNodeTraverser1<8,16,types>::traverseClosestHit(cur0,vmask0,tNear0,stackPtr0,context[0].stack+stackSizeSingle);                
               }
+
+              STAT3(normal.trav_nodes,1,1,1);                          
+              const Node* __restrict__ const node1 = cur1.node();
+              const vfloat16 bminmaxX1 = permute(vfloat16::load((float*)&node1->lower_x),permX);
+              const vfloat16 bminmaxY1 = permute(vfloat16::load((float*)&node1->lower_y),permY);
+              const vfloat16 bminmaxZ1 = permute(vfloat16::load((float*)&node1->lower_z),permZ);
+              const vfloat16 tNearFarX1 = msub(bminmaxX1, rdir.x[rayID1], org_rdir.x[rayID1]);
+              const vfloat16 tNearFarY1 = msub(bminmaxY1, rdir.y[rayID1], org_rdir.y[rayID1]);
+              const vfloat16 tNearFarZ1 = msub(bminmaxZ1, rdir.z[rayID1], org_rdir.z[rayID1]);
+              const vfloat16 tNear1     = max(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tnear[rayID1]));
+              const vfloat16 tFar1      = min(tNearFarX1,tNearFarY1,tNearFarZ1,vfloat16(ray_tfar[rayID1]));
+              const vbool16 vmask1      = le(vbool16(0xff),tNear1,align_shift_right<8>(tFar1,tFar1));
+
+
+              DBG(vmask1);
 
               if (unlikely(none(vmask1)))
               {

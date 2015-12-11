@@ -156,7 +156,7 @@ namespace embree
       BBox3fa bounds = empty;
       vint<M> vgeomID = -1, vprimID = -1;
       Vec3vfM v0 = zero, v1 = zero, v2 = zero;
-	
+      
       for (size_t i=0; i<M; i++)
       {
         if (primID(i) == -1) break;

@@ -160,6 +160,7 @@ namespace embree
       static const size_t MIN_LARGE_LEAF_LEVELS = 8;         //!< create balanced tree of we are that many levels before the maximal tree depth
       static const size_t SINGLE_THREADED_THRESHOLD = 4096;  //!< threshold to switch to single threaded build
 
+
     public:
       
       GeneralBVHBuilderMorton (const ReductionTy& identity, 
