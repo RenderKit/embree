@@ -18,6 +18,7 @@
 #include "intrinsics.h"
 #if defined(TASKING_TBB)
 #  define __TBB_NO_IMPLICIT_LINKAGE 1
+#  define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
 #  include "tbb/scalable_allocator.h"
 #endif
 

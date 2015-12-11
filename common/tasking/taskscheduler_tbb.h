@@ -35,6 +35,7 @@
 #  endif
 #endif
 #define __TBB_NO_IMPLICIT_LINKAGE 1
+#define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
 #include "tbb/tbb.h"
 #endif
 
