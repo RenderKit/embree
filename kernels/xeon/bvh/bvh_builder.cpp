@@ -190,14 +190,14 @@ namespace embree
       bvh->layoutLargeNodes(pinfo.size()*0.005f);
     }
 
-    template class BVHNBuilder<4>;
-    template class BVHNBuilderMblur<4>;    
-    template class BVHNBuilderSpatial<4>;
+    template struct BVHNBuilder<4>;
+    template struct BVHNBuilderMblur<4>;    
+    template struct BVHNBuilderSpatial<4>;
 
 #if defined(__AVX__)
-    template class BVHNBuilder<8>;
-    template class BVHNBuilderMblur<8>;
-    template class BVHNBuilderSpatial<8>;
+    template struct BVHNBuilder<8>;
+    template struct BVHNBuilderMblur<8>;
+    template struct BVHNBuilderSpatial<8>;
 #endif
   }
 }

@@ -21,9 +21,9 @@
 
 namespace embree
 {
-  struct BVH4Factory;
-  struct BVH8Factory;
-  struct InstanceFactory;
+  class BVH4Factory;
+  class BVH8Factory;
+  class InstanceFactory;
 
   class Device : public State, public MemoryMonitorInterface
   {
