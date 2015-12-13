@@ -81,10 +81,6 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
-#include <hbwmalloc.h>
-#endif
-
 #if defined(__MIC__)
 #define USE_HUGE_PAGES 1
 #else
@@ -122,58 +118,6 @@ namespace embree
 // ============================================
 // ============================================
 
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
-  void* mk_malloc(size_t bytes)
-  {
-    assert(hbw_check_available());
-    void *ptr = NULL;
-    if ((bytes / PAGE_SIZE_2M) >= 1 && ((bytes % PAGE_SIZE_2M) == 0))
-    {
-#if defined(DEBUG)
-      PRINT(ptr);
-#endif
-
-#if 1
-      if (int res = hbw_posix_memalign_psize(&ptr,PAGE_SIZE_2M,bytes,HBW_PAGESIZE_2MB) == 0)
-      {
-#if defined(DEBUG)
-        PRINT("2M PATH");
-        PRINT(ptr);
-#endif
-        return ptr;
-      }
-      else
-      {
-#if defined(DEBUG)
-        PRINT("NO 2M ALLOC");
-        PRINT(res);
-#endif
-      }
-#endif
-    }
-
-    /* standard 2M allocation */
-    if (hbw_posix_memalign(&ptr,PAGE_SIZE_2M,bytes) == 0)
-    {
-#if defined(DEBUG)
-      PRINT("HBW FALLBACK PATH");
-      PRINT(ptr); 
-#endif     
-      return ptr;
-    }
-    return NULL;
-  }
-
-  void mk_free(void* ptr) 
-  {
-    hbw_free(ptr);
-  }
-#endif
-
-// ============================================
-// ============================================
-// ============================================
-
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
   {
@@ -190,12 +134,7 @@ namespace embree
   void* os_malloc(size_t bytes, const int additional_flags)
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
-    
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
-    char *memkind_ptr = (char*)mk_malloc(bytes);
-    if (memkind_ptr) return memkind_ptr;
-#endif
-    
+        
     if (useHugePages(bytes)) 
     {
 #if USE_HUGE_PAGES
@@ -225,11 +164,6 @@ namespace embree
   void* os_reserve(size_t bytes)
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
-
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
-    char *memkind_ptr = (char*)mk_malloc(bytes);
-    if (memkind_ptr) return memkind_ptr;
-#endif
 
     if (useHugePages(bytes)) 
     {
@@ -262,7 +196,7 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-#if defined(RTCORE_MEMKIND_ALLOCATOR) || USE_MADVISE
+#if USE_MADVISE
     return bytesOld;
 #endif
 
@@ -290,11 +224,6 @@ namespace embree
   {
     if (bytes == 0)
       return;
-
-#if defined(RTCORE_MEMKIND_ALLOCATOR)
-    mk_free(ptr);
-    return;
-#endif
 
     if (useHugePages(bytes)) {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
