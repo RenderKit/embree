@@ -694,14 +694,14 @@ namespace embree
     RTCORE_CATCH_END(scene->device);
   }
 
-  RTCORE_API void rtcSetBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type, void* ptr, size_t offset, size_t stride)
+  RTCORE_API void rtcSetBuffer(RTCScene hscene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride)
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
     RTCORE_TRACE(rtcSetBuffer);
     RTCORE_VERIFY_HANDLE(hscene);
     RTCORE_VERIFY_GEOMID(geomID);
-    scene->get_locked(geomID)->setBuffer(type,ptr,offset,stride);
+    scene->get_locked(geomID)->setBuffer(type,(void*)ptr,offset,stride);
     RTCORE_CATCH_END(scene->device);
   }
 

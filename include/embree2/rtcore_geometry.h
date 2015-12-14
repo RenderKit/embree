@@ -324,7 +324,7 @@ RTCORE_API void rtcUnmapBuffer(RTCScene scene, unsigned geomID, RTCBufferType ty
  *  called, Embree will allocate and manage buffers of the default
  *  layout. */
 RTCORE_API void rtcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, 
-                             void* ptr, size_t byteOffset, size_t byteStride);
+                             const void* ptr, size_t byteOffset, size_t byteStride);
 
 /*! \brief Enable geometry. Enabled geometry can be hit by a ray. */
 RTCORE_API void rtcEnable (RTCScene scene, unsigned geomID);

@@ -28,18 +28,22 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
       Vec3vfK ray_org = ray.org;
       Vec3vfK ray_dir = ray.dir;
-      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
       const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
@@ -65,18 +69,22 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
       vbool<K> terminated = !valid;
       Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
-      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
       const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));

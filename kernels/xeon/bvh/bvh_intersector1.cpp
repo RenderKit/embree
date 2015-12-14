@@ -65,6 +65,7 @@ namespace embree
 #endif
 
       /* verify correct input */
+      assert(ray.valid());
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
@@ -72,8 +73,8 @@ namespace embree
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N,Nx> vray(ray.org,ray.dir);
-      vfloat<Nx> ray_near(ray.tnear);
-      vfloat<Nx> ray_far (ray.tfar);
+      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
+      vfloat<Nx> ray_far  = max(ray.tfar ,0.0f);
 
       /*! initialize the node traverser */
       BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);
@@ -161,6 +162,7 @@ namespace embree
 #endif
 
       /* verify correct input */
+      assert(ray.valid());
       assert(ray.tnear >= 0.0f);
       assert(!(types & BVH_MB) || (ray.time >= 0.0f && ray.time <= 1.0f));
 
@@ -168,8 +170,8 @@ namespace embree
       size_t leafType = 0;
       const unsigned int* geomID_to_instID = nullptr;
       TravRay<N,Nx> vray(ray.org,ray.dir);
-      const vfloat<Nx> ray_near(ray.tnear);
-      vfloat<Nx> ray_far (ray.tfar);
+      vfloat<Nx> ray_near = max(ray.tnear,0.0f);
+      vfloat<Nx> ray_far  = max(ray.tfar ,0.0f);
 
       /*! initialize the node traverser */
       BVHNNodeTraverser1<N,Nx,types> nodeTraverser(vray);

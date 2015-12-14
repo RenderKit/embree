@@ -683,16 +683,27 @@ namespace embree
   __forceinline vfloat16 vreduce_add8(vfloat16 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
   __forceinline vfloat16 vreduce_add (vfloat16 x) { x = vreduce_add8(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline size_t select_min(const vfloat16& v) { return __bsf(movemask(v == vreduce_min(v))); }
-  __forceinline size_t select_max(const vfloat16& v) { return __bsf(movemask(v == vreduce_max(v))); }
+  __forceinline size_t select_min(const vfloat16& v) { 
+    return __bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_min(v)),_MM_CMPINT_EQ)));
+  }
 
-  __forceinline size_t select_min(const vboolf16& valid, const vfloat16& v, const vfloat16 &max_value) { const vfloat16 a = select(valid,v,max_value); return __bsf(movemask(a == vreduce_min(a))); }
+  __forceinline size_t select_max(const vfloat16& v) { 
+    return __bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_max(v)),_MM_CMPINT_EQ)));
+  }
 
-  __forceinline size_t select_max(const vboolf16& valid, const vfloat16& v, const vfloat16 &min_value) { const vfloat16 a = select(valid,v,min_value); return __bsf(movemask(a == vreduce_max(a))); }
+  __forceinline size_t select_min(const vboolf16& valid, const vfloat16& v) 
+  { 
+    const vfloat16 a = select(valid,v,vfloat16(pos_inf)); 
+    const vbool16 valid_min = valid & (a == vreduce_min(a));
+    return __bsf(movemask(any(valid_min) ? valid_min : valid)); 
+  }
 
-  __forceinline size_t select_max(const vboolf16& valid, const vfloat16& v) { const vfloat16 a = select(valid,v,vfloat16(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
-
-  __forceinline size_t select_min(const vboolf16& valid, const vfloat16& v) { const vfloat16 a = select(valid,v,vfloat16(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
+  __forceinline size_t select_max(const vboolf16& valid, const vfloat16& v) 
+  { 
+    const vfloat16 a = select(valid,v,vfloat16(neg_inf)); 
+    const vbool16 valid_max = valid & (a == vreduce_max(a));
+    return __bsf(movemask(any(valid_max) ? valid_max : valid)); 
+  }
   
   __forceinline vfloat16 prefix_sum(const vfloat16& a)
   {
