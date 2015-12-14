@@ -28,11 +28,14 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
@@ -65,11 +68,14 @@ namespace embree
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK>
     void BVHNIntersectorKSingle<N,K,types,robust,PrimitiveIntersectorK>::occluded(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid,ray.valid()));
       assert(all(valid,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 

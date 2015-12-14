@@ -57,14 +57,16 @@ namespace embree
 
       __aligned(64) StackItemT<NodeRef>  stacks[2][stackSizeSingle];  //!< stack of nodes 
 
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid0,ray.valid()));
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
-
 
       /* load ray */
       Vec3vfK &ray_org = ray.org;
@@ -379,11 +381,14 @@ namespace embree
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
 #if defined(__AVX512F__)
-      /* verify correct input */
+      /* filter out invalid rays */
       vbool<K> valid0 = *valid_i == -1;
 #if defined(RTCORE_IGNORE_INVALID_RAYS)
       valid0 &= ray.valid();
 #endif
+
+      /* verify correct input */
+      assert(all(valid0,ray.valid()));
       assert(all(valid0,ray.tnear >= 0.0f));
       assert(!(types & BVH_MB) || all(valid0,ray.time >= 0.0f & ray.time <= 1.0f));
 
