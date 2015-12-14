@@ -202,7 +202,7 @@ namespace embree
     rtcUnmapBuffer(scene,geomID,type);
   }
 
-  extern "C" void ispcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, void* ptr, size_t offset, size_t stride) {
+  extern "C" void ispcSetBuffer(RTCScene scene, unsigned geomID, RTCBufferType type, const void* ptr, size_t offset, size_t stride) {
     rtcSetBuffer(scene,geomID,type,ptr,offset,stride);
   }
 
