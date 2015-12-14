@@ -18,9 +18,9 @@
 
 RTCDevice g_device = nullptr;
 
-const int numPhi = 20;
+const int numPhi = 400;
 const int numTheta = 2*numPhi;
-const int numSpheres = 64;
+const int numSpheres = 8;
 
 /* render function to use */
 renderPixelFunc renderPixel;
@@ -138,6 +138,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
 void lazyCreate(LazyGeometry* instance)
 {
+#if 1
   /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
   if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0) 
   {
@@ -157,6 +158,7 @@ void lazyCreate(LazyGeometry* instance)
       // instead of actively spinning here, best use a condition to let the thread sleep, or let it help in the creation stage
     }
   }
+#endif
 
   /* multiple threads might enter the rtcCommit function to jointly
    * build the internal data structures */
@@ -203,6 +205,8 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   rtcSetBoundsFunction(scene,instance->geometry,(RTCBoundsFunc)&instanceBoundsFunc);
   rtcSetIntersectFunction(scene,instance->geometry,(RTCIntersectFunc)&instanceIntersectFunc);
   rtcSetOccludedFunction (scene,instance->geometry,(RTCOccludedFunc )&instanceOccludedFunc);
+  //instance->object = rtcDeviceNewScene(g_device,RTC_SCENE_STATIC,RTC_INTERSECT1);
+  //createTriangulatedSphere(instance->object,instance->center,instance->radius);
   return instance;
 }
 

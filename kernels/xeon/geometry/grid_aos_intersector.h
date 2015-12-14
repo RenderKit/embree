@@ -84,7 +84,7 @@ namespace embree
 
           /* ray masking test */
           Geometry* geometry = scene->get(prim.grid.geomID);
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
           if ((geometry->mask & ray.mask[k]) == 0) return;
 #endif
 
@@ -281,7 +281,7 @@ namespace embree
 
         /* ray masking test */
         Geometry* geometry = scene->get(prim.grid.geomID);
-#if defined(__USE_RAY_MASK__)
+#if defined(RTCORE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0) return false;
 #endif
 
