@@ -62,7 +62,8 @@ namespace embree
       /* load ray */
       Vec3vfK ray_org = ray.org;
       Vec3vfK ray_dir = ray.dir;
-      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
       const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid0,ray_tnear,vfloat<K>(pos_inf));
@@ -238,7 +239,8 @@ namespace embree
       /* load ray */
       vbool<K> terminated = !valid;
       Vec3vfK ray_org = ray.org, ray_dir = ray.dir;
-      vfloat<K> ray_tnear = ray.tnear, ray_tfar  = ray.tfar;
+      vfloat<K> ray_tnear = max(ray.tnear,0.0f);
+      vfloat<K> ray_tfar  = max(ray.tfar ,0.0f);
       const Vec3vfK rdir = rcp_safe(ray_dir);
       const Vec3vfK org(ray_org), org_rdir = org * rdir;
       ray_tnear = select(valid,ray_tnear,vfloat<K>(pos_inf));
