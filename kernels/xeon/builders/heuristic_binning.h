@@ -630,7 +630,7 @@ namespace embree
           if (any(sah < vfloat16(bestSAH))) 
           {
             const size_t index = select_min(sah);            
-            assert(index != 15);
+            assert(index < 15);
             assert(sah[index] < bestSAH);
             bestDim = dim;
             bestPos = index+1;

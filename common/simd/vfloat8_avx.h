@@ -474,11 +474,20 @@ namespace embree
   __forceinline float reduce_max(const vfloat8& v) { return toScalar(vreduce_max(v)); }
   __forceinline float reduce_add(const vfloat8& v) { return toScalar(vreduce_add(v)); }
 
-  __forceinline size_t select_min(const vfloat8& v) { return __bsf(movemask(v == vreduce_min(v))); }
-  __forceinline size_t select_max(const vfloat8& v) { return __bsf(movemask(v == vreduce_max(v))); }
+  __forceinline size_t select_min(const vboolf8& valid, const vfloat8& v) 
+  { 
+    const vfloat8 a = select(valid,v,vfloat8(pos_inf)); 
+    const vbool8 valid_min = valid & (a == vreduce_min(a));
+    return __bsf(movemask(any(valid_min) ? valid_min : valid)); 
+  }
 
-  __forceinline size_t select_min(const vboolf8& valid, const vfloat8& v) { const vfloat8 a = select(valid,v,vfloat8(pos_inf)); return __bsf(movemask(valid & (a == vreduce_min(a)))); }
-  __forceinline size_t select_max(const vboolf8& valid, const vfloat8& v) { const vfloat8 a = select(valid,v,vfloat8(neg_inf)); return __bsf(movemask(valid & (a == vreduce_max(a)))); }
+  __forceinline size_t select_max(const vboolf8& valid, const vfloat8& v) 
+  { 
+    const vfloat8 a = select(valid,v,vfloat8(neg_inf)); 
+    const vbool8 valid_max = valid & (a == vreduce_max(a));
+    return __bsf(movemask(any(valid_max) ? valid_max : valid)); 
+  }
+
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
