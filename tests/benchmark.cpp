@@ -612,10 +612,31 @@ namespace embree
       
       double t0 = getSeconds();
       RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
+
+      const size_t sizeVertexData = mesh.vertices.size()*sizeof(Vertex);
+
+      Vertex* vertices[numMeshes];
+      for (size_t i=0; i<numMeshes; i++) 
+      {
+        vertices[i] = (Vertex*)os_malloc(sizeVertexData);
+        assert(vertices[i]);
+        for (size_t j=0;j<mesh.vertices.size();j++)
+        {
+          Vertex &v = vertices[i][j];
+          v.x = mesh.vertices[j].x * (float)i;
+          v.y = mesh.vertices[j].y * (float)i;
+          v.z = mesh.vertices[j].z * (float)i;
+          v.a = 0.0f;
+        }
+      }
       
       for (size_t i=0; i<numMeshes; i++) 
       {
 	unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
+#if 1
+        rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,&vertices[i][0] ,0,sizeof(Vertex));
+        rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER ,&mesh.triangles[0],0,sizeof(Triangle));
+#else
 	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
 	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
 	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
@@ -625,11 +646,15 @@ namespace embree
 	  mesh.vertices[i].y += 1.0f;
 	  mesh.vertices[i].z += 1.0f;
 	}
+#endif
       }
       rtcCommit (scene);
       double t1 = getSeconds();
       rtcDeleteScene(scene);
       rtcDeleteDevice(device);
+
+      for (size_t i=0; i<numMeshes; i++) 
+        os_free(vertices[i],sizeVertexData);
       
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
