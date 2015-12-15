@@ -95,8 +95,8 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoeller2);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4Intersector16HybridMoellerNoFilter2);
 
-  //DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
-  //DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle8Intersector16HybridMoellerNoFilter);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8Triangle4vMBIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8TrianglePairs4Intersector16HybridMoellerNoFilter);
@@ -314,8 +314,8 @@ namespace embree
     intersectors.intersector4_nofilter  = BVH8Triangle8Intersector4HybridMoellerNoFilter;
     intersectors.intersector8_filter    = BVH8Triangle8Intersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH8Triangle8Intersector8HybridMoellerNoFilter;
-    intersectors.intersector16_filter   = NULL; // FIXME: implement
-    intersectors.intersector16_nofilter = NULL;
+    intersectors.intersector16_filter   = BVH8Triangle8Intersector16HybridMoeller;
+    intersectors.intersector16_nofilter = BVH8Triangle8Intersector16HybridMoellerNoFilter;
     return intersectors;
   }
 
