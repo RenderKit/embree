@@ -268,13 +268,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1           = BVH8Line4iIntersector1;
-    intersectors.intersector4           = BVH8Line4iIntersector4;
-    intersectors.intersector4_nofilter  = BVH8Line4iIntersector4;
-    intersectors.intersector8           = BVH8Line4iIntersector8;
-    intersectors.intersector8_nofilter  = BVH8Line4iIntersector8;
-    intersectors.intersector16          = BVH8Line4iIntersector16;
-    intersectors.intersector16_nofilter = BVH8Line4iIntersector16;
+    intersectors.intersector1  = BVH8Line4iIntersector1;
+    intersectors.intersector4  = BVH8Line4iIntersector4;
+    intersectors.intersector8  = BVH8Line4iIntersector8;
+    intersectors.intersector16 = BVH8Line4iIntersector16;
     return intersectors;
   }
 
@@ -282,13 +279,10 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1           = BVH8Line4iMBIntersector1;
-    intersectors.intersector4           = BVH8Line4iMBIntersector4;
-    intersectors.intersector4_nofilter  = BVH8Line4iMBIntersector4;
-    intersectors.intersector8           = BVH8Line4iMBIntersector8;
-    intersectors.intersector8_nofilter  = BVH8Line4iMBIntersector8;
-    intersectors.intersector16          = BVH8Line4iMBIntersector16;
-    intersectors.intersector16_nofilter = BVH8Line4iMBIntersector16;
+    intersectors.intersector1  = BVH8Line4iMBIntersector1;
+    intersectors.intersector4  = BVH8Line4iMBIntersector4;
+    intersectors.intersector8  = BVH8Line4iMBIntersector8;
+    intersectors.intersector16 = BVH8Line4iMBIntersector16;
     return intersectors;
   }
 

@@ -202,7 +202,6 @@ namespace embree
     public:
       AccelData* ptr;
       Intersector1 intersector1;
-      Intersector4 intersector1_nofilter;
       Intersector4 intersector4;
       Intersector4 intersector4_filter;
       Intersector4 intersector4_nofilter;
