@@ -609,9 +609,6 @@ namespace embree
       error_handler(rtcDeviceGetError(device));
 
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
-      
-      double t0 = getSeconds();
-      RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
 
       const size_t sizeVertexData = mesh.vertices.size()*sizeof(Vertex);
 
@@ -629,6 +626,9 @@ namespace embree
           v.a = 0.0f;
         }
       }
+      
+      double t0 = getSeconds();
+      RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
       
       for (size_t i=0; i<numMeshes; i++) 
       {
