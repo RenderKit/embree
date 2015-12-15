@@ -233,8 +233,9 @@ namespace embree
         threadUsedBlocks[i] = nullptr;
      
       /* reusing the first used block */
-      if (usedBlocks) threadUsedBlocks[0] = usedBlocks;
-     
+      // decreases performance, reason unknown
+      //if (usedBlocks) threadUsedBlocks[0] = usedBlocks;
+      
       /* reset all thread local allocators */
       thread_local_allocators.reset();
       thread_local_allocators2.reset();
