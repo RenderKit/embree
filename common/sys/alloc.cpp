@@ -105,9 +105,9 @@ namespace embree
     {
       /* multiple of page size */
       if ((bytes % PAGE_SIZE_2M) == 0) 
-      {
         return true;
-      }
+      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 3% overhead */
+        return true;
     }
     return false;
   }
@@ -199,7 +199,7 @@ namespace embree
           tryDirectHugePageAllocation = false;     
         }
         else
-          return ptr;
+          return ptr;          
       }
 #endif
     } 
