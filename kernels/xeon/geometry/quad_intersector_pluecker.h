@@ -66,7 +66,7 @@ namespace embree
           
           /* calculate geometry normal and denominator */
           const Vec3vfM Ng1 = cross(e1,e0);
-          //const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0);
+          //const Vec3vfM Ng1 = stable_triangle_normal(e2,e1,e0); // FIXME: enable
           const Vec3vfM Ng = Ng1+Ng1;
           const vfloat<M> den = dot(Ng,D);
           const vfloat<M> absDen = abs(den);
@@ -94,24 +94,21 @@ namespace embree
     {
       __forceinline QuadMIntersector1Pluecker(const Ray& ray, const void* ptr) {}
 
-      template<typename Epilog>
-        __forceinline bool intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, const Epilog& epilog) const
-      {
-        if (PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog)) return true;
-        if (PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog)) return true;
-        return false;
-      }
-      
-      __forceinline bool intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
+      __forceinline void intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
                                    const vint<M>& geomID, const vint<M>& primID, Scene* scene, const unsigned* geomID_to_instID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Intersect1Epilog<M,M,filter>(ray,geomID,primID,scene,geomID_to_instID));
+        Intersect1Epilog<M,M,filter> epilog(ray,geomID,primID,scene,geomID_to_instID);
+        PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog);
+        PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog);
       }
       
       __forceinline bool occluded(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, 
                                   const vint<M>& geomID, const vint<M>& primID, Scene* scene, const unsigned* geomID_to_instID) const
       {
-        return intersect(ray,v0,v1,v2,v3,Occluded1Epilog<M,M,filter>(ray,geomID,primID,scene,geomID_to_instID));
+        Occluded1Epilog<M,M,filter> epilog(ray,geomID,primID,scene,geomID_to_instID);
+        if (PlueckerIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog)) return true;
+        if (PlueckerIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog)) return true;
+        return false;
       }
     };
 
