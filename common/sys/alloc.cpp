@@ -142,6 +142,7 @@ namespace embree
 #endif
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
 
+#if !defined(__MACOSX__)
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
@@ -156,6 +157,7 @@ namespace embree
         else
           return ptr;
       }
+#endif
     } 
     else
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
@@ -184,6 +186,7 @@ namespace embree
 #endif
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
 
+#if !defined(__MACOSX__)
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
@@ -198,6 +201,7 @@ namespace embree
         else
           return ptr;
       }
+#endif
     } 
     else
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
