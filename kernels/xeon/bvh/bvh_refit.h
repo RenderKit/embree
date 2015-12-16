@@ -81,7 +81,7 @@ namespace embree
       NodeRef subTrees[MAX_NUM_SUB_TREES];
     };
 
-    template<int N, typename Primitive>
+    template<int N, typename Mesh, typename Primitive>
     class BVHNRefitT : public Builder, public BVHNRefitter<N>::LeafBoundsInterface
     {
       ALIGNED_CLASS;
@@ -93,7 +93,7 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       
     public:
-      BVHNRefitT (BVH* bvh, Builder* builder, TriangleMesh* mesh, size_t mode);
+      BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode);
       ~BVHNRefitT();
 
       virtual void build(size_t threadIndex, size_t threadCount);
@@ -111,7 +111,7 @@ namespace embree
       }
       
     private:
-      TriangleMesh* mesh;
+      Mesh* mesh;
       Builder* builder;
       BVHNRefitter<N>* refitter;
       BVH* bvh;
