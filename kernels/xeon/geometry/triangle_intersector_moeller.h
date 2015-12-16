@@ -38,7 +38,7 @@ namespace embree
       __forceinline MoellerTrumboreHitM() {}
 
       __forceinline MoellerTrumboreHitM(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3<vfloat<M>>& Ng)
-        : valid(valid), U(U), V(V), T(T), absDen(absDen), vNg(Ng) {}
+        : valid(valid), U(U), V(V), T(T), absDen(absDen), ng(Ng) {}
       
       __forceinline void finalize() 
       {
@@ -46,6 +46,7 @@ namespace embree
         vt = T * rcpAbsDen;
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
+        vNg = ng;
       }
       
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
@@ -57,6 +58,7 @@ namespace embree
       vfloat<M> V;
       vfloat<M> T;
       vfloat<M> absDen;
+      Vec3<vfloat<M>> ng;
       
     public:
       vbool<M> valid;
