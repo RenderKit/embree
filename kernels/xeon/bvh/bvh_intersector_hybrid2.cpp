@@ -22,15 +22,12 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglepairsv.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/triangle_intersector_moeller.h"
-#include "../geometry/trianglepairs_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
-#include "../geometry/trianglepairs_intersector_moeller.h"
 #include "../geometry/quad_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
 #include "../geometry/quadi_intersector_pluecker.h"
@@ -48,7 +45,7 @@ namespace embree
   namespace isa
   {
 
-#if 1
+#if 0
     /* two rays traversal + refill */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
@@ -422,7 +419,7 @@ namespace embree
         m_active &=~m_samesign;
         DBG(m_samesign);
 
-#if 0
+#if 1
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 2;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;

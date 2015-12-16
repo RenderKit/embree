@@ -81,12 +81,7 @@ namespace embree
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__MIC__)
-#define USE_HUGE_PAGES 1
-#else
-#define USE_HUGE_PAGES 0
-#endif
-
+/* hint for transparent huge pages (THP) */
 #if defined(__MACOSX__)
 #define USE_MADVISE 0
 #else
@@ -100,23 +95,28 @@ namespace embree
 namespace embree
 {
 
-  __forceinline bool useHugePages(const size_t bytes) 
+  __forceinline bool isHugePageCandidate(const size_t bytes) 
   {
-#if USE_HUGE_PAGES
+#if defined(__MIC__)
+    return true;
+#endif
     /* try to use huge pages for large allocations */
     if (bytes >= PAGE_SIZE_2M)
     {
       /* multiple of page size */
       if ((bytes % PAGE_SIZE_2M) == 0) 
         return true;
+      else if (bytes >= 64 * PAGE_SIZE_2M) /* will only introduce a 3% overhead */
+        return true;
     }
-#endif
     return false;
   }
 
 // ============================================
 // ============================================
 // ============================================
+
+  bool tryDirectHugePageAllocation = true;
 
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
@@ -135,26 +135,40 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | additional_flags;
         
-    if (useHugePages(bytes)) 
+    if (isHugePageCandidate(bytes)) 
     {
-#if USE_HUGE_PAGES
-      flags |= MAP_HUGETLB;
-#endif
 #if defined(__MIC__)
       flags |= MAP_POPULATE;
 #endif
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-    } 
-    else 
-    {
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
-    }
 
-    char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
+#if !defined(__MACOSX__)
+      /* try direct huge page allocation first */
+      if (tryDirectHugePageAllocation)
+      {
+        const int hugePageFlags = MAP_ANONYMOUS | MAP_PRIVATE | MAP_HUGETLB;
+        void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, hugePageFlags, -1, 0);
+        
+        if (ptr == nullptr || ptr == MAP_FAILED)
+        {
+          /* direct huge page allocation failed, disable it for the future */
+          tryDirectHugePageAllocation = false;     
+        }
+        else
+          return ptr;
+      }
+#endif
+    } 
+    else
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
+
+    /* standard mmap call */
+    void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
 #if USE_MADVISE
+    /* advise huge page hint for THP */
     os_madvise(ptr,bytes);
 #endif
 
@@ -165,26 +179,40 @@ namespace embree
   {
     int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
 
-    if (useHugePages(bytes)) 
+    if (isHugePageCandidate(bytes)) 
     {
-#if USE_HUGE_PAGES
-      flags |= MAP_HUGETLB;
-#endif
 #if defined(__MIC__)
       flags |= MAP_POPULATE;
 #endif
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-    } 
-    else 
-    {
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
-    }
 
+#if !defined(__MACOSX__)
+      /* try direct huge page allocation first */
+      if (tryDirectHugePageAllocation)
+      {
+        const int hugePageFlags = MAP_ANONYMOUS | MAP_PRIVATE | MAP_HUGETLB;
+        void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, hugePageFlags, -1, 0);
+      
+        if (ptr == nullptr || ptr == MAP_FAILED)
+        {
+          /* direct huge page allocation failed, disable it for the future */
+          tryDirectHugePageAllocation = false;     
+        }
+        else
+          return ptr;          
+      }
+#endif
+    } 
+    else
+      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
+
+    /* standard mmap call */
     char* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, flags, -1, 0);
     assert( ptr != MAP_FAILED );
     if (ptr == nullptr || ptr == MAP_FAILED) throw std::bad_alloc();
 
 #if USE_MADVISE
+    /* advise huge page hint for THP */
     os_madvise(ptr,bytes);
 #endif
 
@@ -201,7 +229,7 @@ namespace embree
 #endif
 
     size_t pageSize = PAGE_SIZE_4K;
-    if (useHugePages(bytesOld)) 
+    if (isHugePageCandidate(bytesOld)) 
     {
       //pageSize = PAGE_SIZE_2M;
       /* cannot shrink a huge page to a smaller size*/
@@ -225,7 +253,7 @@ namespace embree
     if (bytes == 0)
       return;
 
-    if (useHugePages(bytes)) {
+    if (isHugePageCandidate(bytes)) {
       bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
     } else {
       bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);

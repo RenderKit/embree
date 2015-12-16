@@ -27,7 +27,6 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglei.h"
 #include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglepairsv.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/quadi_mb.h"
@@ -441,87 +440,5 @@ namespace embree
 
 #endif
 
-
-    /************************************************************************************/ 
-    /************************************************************************************/
-    /************************************************************************************/
-    /************************************************************************************/
-
-
-    template<int N, typename Mesh, typename Primitive>
-    struct BVHNBuilderSAHTrianglePairs : public Builder
-    {
-      typedef BVHN<N> BVH;
-      BVH* bvh;
-      Scene* scene;
-      Mesh* mesh;
-      mvector<PrimRef> prims;
-      const size_t sahBlockSize;
-      const float intCost;
-      const size_t minLeafSize;
-      const size_t maxLeafSize;
-
-      BVHNBuilderSAHTrianglePairs (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks))
-      {}
-
-      BVHNBuilderSAHTrianglePairs (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
-
-      void build(size_t, size_t) 
-      {
-        /* skip build for empty scene */
-        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,1>();
-        if (numOriginalPrimitives == 0) {
-          prims.resize(numOriginalPrimitives);
-          bvh->set(BVH::emptyNode,empty,0);
-          return;
-        }
-
-      
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
-
-#if PROFILE
-        profile(2,PROFILE_RUNS,numOriginalPrimitives,[&] (ProfileTimer& timer) {
-#endif
-            
-            auto progress = [&] (size_t dn) { bvh->scene->progressMonitor(dn); };
-            auto virtualprogress = BuildProgressMonitorFromClosure(progress);
-            
-            PrimInfo pinfo = mesh ? 
-              createPrimRefArrayTrianglePairs<Mesh>(mesh,prims,virtualprogress) : 
-              createPrimRefArrayTrianglePairs<Mesh,1>(scene,prims,virtualprogress);
-            
-            bvh->alloc.init_estimate(pinfo.size()*sizeof(PrimRef));
-            
-            BVHNBuilder<N>::build(bvh,CreateLeaf<N,Primitive>(bvh,prims.data()),virtualprogress,
-                                 prims.data(),pinfo,sahBlockSize,minLeafSize,maxLeafSize,travCost,intCost);
-            
-#if PROFILE
-          }); 
-#endif	
-        
-        /* clear temporary data for static geometry */
-	bool staticGeom = mesh ? mesh->isStatic() : scene->isStatic();
-	if (staticGeom) {
-          prims.clear();
-          bvh->shrink();
-        }
-	bvh->cleanup();
-        bvh->postBuild(t0);
-      }
-
-      void clear() {
-        prims.clear();
-      }
-    };
-
-    /* entry functions for the scene builder */
-    Builder* BVH4TrianglePairs4SceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<4,TriangleMesh,TrianglePairs4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-#if defined(__AVX__)
-    Builder* BVH8TrianglePairs4SceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8TrianglePairs4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAHTrianglePairs<8,TriangleMesh,TrianglePairs4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
-#endif
   }
 }

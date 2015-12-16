@@ -171,13 +171,17 @@ namespace embree
     }
 
     /*! initializes the allocator */
-    void init(size_t bytesAllocate, size_t bytesReserve = 0) {
-      if (usedBlocks || freeBlocks) { reset(); return; }
+    void init(size_t bytesAllocate, size_t bytesReserve = 0) 
+    {     
+      /* distribute the allocation to multiple thread block slots */
+      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
+      if (usedBlocks || freeBlocks) { 
+        reset();
+        return; 
+      }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
       usedBlocks = Block::create(device,bytesAllocate,bytesReserve);
       growSize = max(size_t(defaultBlockSize),bytesReserve);
-      slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;
-      //if (usedBlocks) PRINT(usedBlocks->getFreeBytes());
     }
 
     /*! initializes the allocator */
@@ -208,6 +212,7 @@ namespace embree
       if (freeBlocks) freeBlocks->clear(device); freeBlocks = nullptr;
     }
 
+
     /*! resets the allocator, memory blocks get reused */
     void reset () 
     {
@@ -223,9 +228,14 @@ namespace embree
         freeBlocks = usedBlocks;
         usedBlocks = nextUsedBlock;
       }
+
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) 
         threadUsedBlocks[i] = nullptr;
      
+      /* reusing the first used block */
+      // decreases performance, reason unknown
+      //if (usedBlocks) threadUsedBlocks[0] = usedBlocks;
+      
       /* reset all thread local allocators */
       thread_local_allocators.reset();
       thread_local_allocators2.reset();
@@ -257,6 +267,7 @@ namespace embree
           void* ptr = myUsedBlocks->malloc(device,bytes,align); 
           if (ptr) return ptr;
         }
+        
 
         /* throw error if allocation is too large */
         if (bytes > maxAllocationSize)
@@ -274,7 +285,6 @@ namespace embree
 	      usedBlocks = freeBlocks;
               threadUsedBlocks[slot] = freeBlocks;
 	      freeBlocks = nextFreeBlock;
-              //if (freeBlocks) PRINT(freeBlocks->getFreeBytes());
 	    } else {
 	      growSize = min(2*growSize,size_t(maxAllocationSize+maxAlignment));
 	      usedBlocks = threadUsedBlocks[slot] = Block::create(device,growSize-maxAlignment, growSize-maxAlignment, usedBlocks);
@@ -466,21 +476,6 @@ namespace embree
       char data[1];              //!< here starts memory to use for allocations
     };
 
-    /*! returns the next free block from the free block list */
-    Block* getNextFreeBlock()
-    {
-      Block *block = nullptr;
-      if (freeBlocks)
-      {
-        Block* nextFreeBlock = freeBlocks->next;
-        freeBlocks->next = usedBlocks;
-        __memory_barrier();
-        usedBlocks = freeBlocks;
-        block = freeBlocks;
-        freeBlocks = nextFreeBlock;        
-      }
-      return block;
-    }
 
   private:
     MemoryMonitorInterface* device;
