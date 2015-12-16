@@ -461,12 +461,11 @@ namespace embree
       }
     };
 
-#if 0
 #if defined(__AVX512F__)
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<int K, bool filter>
-      struct QuadMIntersectorKMoellerTrumbore<4,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
+      struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
     {
       __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray)
         : QuadMIntersectorKMoellerTrumboreBase<4,K,filter>(valid,ray) {}
@@ -480,19 +479,19 @@ namespace embree
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
         const vbool16 flags(0xf0f0);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,vtx0,vtx1,vtx2,flags,epilog);
+        return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog);
       }
       
       __forceinline bool intersect1(RayK<K>& ray, size_t k, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                    const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilog<8,16,filter>(ray,k,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilog<8,16,K,filter>(ray,k,vint8(geomID),vint8(primID),scene));
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
                                   const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilog<8,16,filter>(ray,k,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilog<8,16,K,filter>(ray,k,vint8(geomID),vint8(primID),scene));
       }
     };
 
@@ -500,7 +499,7 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX */
      template<int K, bool filter>
-      struct QuadMIntersectorKMoellerTrumbore<4,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
+       struct QuadMIntersectorKMoellerTrumbore<4,K,filter> : public QuadMIntersectorKMoellerTrumboreBase<4,K,filter>
     {
       __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray)
         : QuadMIntersectorKMoellerTrumboreBase<4,K,filter>(valid,ray) {}
@@ -512,23 +511,22 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
         const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
         const vbool8 flags(0,0,0,0,1,1,1,1);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
+        return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
       }
       
       __forceinline bool intersect1(RayK<K>& ray, size_t k, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                   const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                   const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect1(ray,v0,v1,v2,v3,Intersect1KEpilog<8,8,filter>(ray,k,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Intersect1KEpilog<8,8,K,filter>(ray,k,vint8(geomID),vint8(primID),scene));
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
-                                  const vint4& geomID, const vint4& primID, Scene* scene, const unsigned* geomID_to_instID) const
+                                  const vint4& geomID, const vint4& primID, Scene* scene) const
       {
-        return intersect1(ray,v0,v1,v2,v3,Occluded1KEpilog<8,8,filter>(ray,k,vint8(geomID),vint8(primID),scene));
+        return intersect1(ray,k,v0,v1,v2,v3,Occluded1KEpilog<8,8,K,filter>(ray,k,vint8(geomID),vint8(primID),scene));
       }
     };
 
-#endif
 #endif
   }
 }
