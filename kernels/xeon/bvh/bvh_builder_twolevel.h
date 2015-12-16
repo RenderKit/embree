@@ -17,13 +17,12 @@
 #pragma once
 
 #include "bvh.h"
-#include "../../common/scene_triangle_mesh.h"
 
 namespace embree
 {
   namespace isa
   {
-    template<int N>
+    template<int N, typename Mesh>
     class BVHNBuilderTwoLevel : public Builder
     {
       ALIGNED_CLASS;
@@ -33,6 +32,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
 
     public:
+
+      typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
 
       struct BuildRef
       {
@@ -63,7 +64,7 @@ namespace embree
       };
       
       /*! Constructor. */
-      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel);
+      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel);
       
       /*! Destructor */
       ~BVHNBuilderTwoLevel ();
@@ -82,7 +83,7 @@ namespace embree
       
     public:
       Scene* scene;
-      createTriangleMeshAccelTy createTriangleMeshAccel;
+      createMeshAccelTy createMeshAccel;
       
       mvector<BuildRef> refs;
       mvector<PrimRef> prims;

@@ -112,8 +112,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
 
-  DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
-  DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingSAH);
+  DECLARE_BUILDER2(void,Scene,const createLineSegmentsAccelTy,BVH4BuilderTwoLevelLineSegmentsSAH);
+  DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelTriangleMeshSAH);
+  DECLARE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingTriangleMeshSAH);
 
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1vBuilder_OBB_New);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Bezier1iBuilder_OBB_New);
@@ -133,6 +134,8 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4vSceneBuilderSpatialSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4Triangle4iSceneBuilderSpatialSAH);
 
+  DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshBuilderSAH);
+  DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMBMeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle8MeshBuilderSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshBuilderSAH);
@@ -151,6 +154,7 @@ namespace embree
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivPatch1CachedBuilderBinnedSAH);
   DECLARE_BUILDER2(void,Scene,size_t,BVH4SubdivGridEagerBuilderBinnedSAH);
 
+  DECLARE_BUILDER2(void,LineSegments,size_t,BVH4Line4iMeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4MeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle8MeshRefitSAH);
   DECLARE_BUILDER2(void,TriangleMesh,size_t,BVH4Triangle4vMeshRefitSAH);
@@ -164,8 +168,9 @@ namespace embree
   BVH4Factory::BVH4Factory (int features)
   {
     /* select builders */
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelSAH);
-    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderInstancingSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelLineSegmentsSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelTriangleMeshSAH);
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderInstancingTriangleMeshSAH);
 
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1vBuilder_OBB_New);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Bezier1iBuilder_OBB_New);
@@ -202,8 +207,9 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4SubdivPatch1CachedBuilderBinnedSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivGridEagerBuilderBinnedSAH);
 
+    SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Line4iMeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4MeshRefitSAH);
-    SELECT_SYMBOL_INIT_AVX        (features,BVH4Triangle8MeshRefitSAH);
+    SELECT_SYMBOL_INIT_AVX   (features,BVH4Triangle8MeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vMeshRefitSAH);
     SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4iMeshRefitSAH);
 
@@ -490,6 +496,18 @@ namespace embree
   }
 
 
+  void BVH4Factory::createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder)
+  {
+    BVH4Factory* factory = mesh->parent->device->bvh4_factory;
+    accel = new BVH4(Line4i::type,mesh->parent);
+    switch (mesh->flags) {
+    case RTC_GEOMETRY_STATIC:     builder = factory->BVH4Line4iMeshBuilderSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DEFORMABLE: builder = factory->BVH4Line4iMeshRefitSAH(accel,mesh,0); break;
+    case RTC_GEOMETRY_DYNAMIC:    builder = factory->BVH4Line4iMeshBuilderSAH(accel,mesh,0); break;
+    default: throw_RTCError(RTC_UNKNOWN_ERROR,"invalid geometry flag");
+    }
+  }
+
   void BVH4Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = mesh->parent->device->bvh4_factory;
@@ -591,7 +609,13 @@ namespace embree
   {
     BVH4* accel = new BVH4(Line4i::type,scene);
     Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
-    Builder* builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+
+    Builder* builder = nullptr;
+    if      (scene->device->line_builder == "default"     ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->line_builder == "sah"         ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->line_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH4<Line4i>");
+
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -602,6 +626,14 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Line4iMBIntersectors(accel);
     Builder* builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
     scene->needLineVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Line4iTwolevel(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Line4i::type,scene);
+    Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
+    Builder* builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -645,8 +677,8 @@ namespace embree
     else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4SceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
-    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4Morton);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4Morton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -667,8 +699,8 @@ namespace embree
     else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle8SceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle8SceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle8SceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
-    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8Morton);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle8);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle8Morton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle8>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -689,8 +721,8 @@ namespace embree
     else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4vSceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4vSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
-    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4vMorton);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4v);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4vMorton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4v>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -710,8 +742,8 @@ namespace embree
     else if (scene->device->tri_builder == "sah"         ) builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_spatial" ) builder = BVH4Triangle4iSceneBuilderSpatialSAH(accel,scene,0);
     else if (scene->device->tri_builder == "sah_presplit") builder = BVH4Triangle4iSceneBuilderSAH(accel,scene,MODE_HIGH_QUALITY);
-    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
-    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
+    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4i);
+    else if (scene->device->tri_builder == "morton"      ) builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4iMorton);
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Triangle4i>");
 
     scene->needTriangleVertices = true;
@@ -738,7 +770,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsInstancing(accel);
-    Builder* builder = BVH4BuilderInstancingSAH(accel,scene,&createTriangleMeshTriangle4);
+    Builder* builder = BVH4BuilderInstancingTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -746,7 +778,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4IntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4);
+    Builder* builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -755,7 +787,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle8::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle8IntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle8);
+    Builder* builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle8);
     return new AccelInstance(accel,builder,intersectors);
   }
 #endif
@@ -764,7 +796,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4v::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4vIntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4v);
+    Builder* builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4v);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -772,7 +804,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(Triangle4i::type,scene);
     Accel::Intersectors intersectors = BVH4Triangle4iIntersectorsHybrid(accel);
-    Builder* builder = BVH4BuilderTwoLevelSAH(accel,scene,&createTriangleMeshTriangle4i);
+    Builder* builder = BVH4BuilderTwoLevelTriangleMeshSAH(accel,scene,&createTriangleMeshTriangle4i);
     return new AccelInstance(accel,builder,intersectors);
   }
 

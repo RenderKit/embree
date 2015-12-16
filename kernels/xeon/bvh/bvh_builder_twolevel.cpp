@@ -17,6 +17,8 @@
 #include "bvh_builder_twolevel.h"
 #include "bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"
+#include "../../common/scene_line_segments.h"
+#include "../../common/scene_triangle_mesh.h"
 
 #define PROFILE 0
 #define MAX_OPEN_SIZE 10000
@@ -25,19 +27,19 @@ namespace embree
 {
   namespace isa
   {
-    template<int N>
-    BVHNBuilderTwoLevel<N>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel)
-      : bvh(bvh), objects(bvh->objects), scene(scene), createTriangleMeshAccel(createTriangleMeshAccel), refs(scene->device), prims(scene->device) {}
+    template<int N, typename Mesh>
+    BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel)
+      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device), prims(scene->device) {}
     
-    template<int N>
-    BVHNBuilderTwoLevel<N>::~BVHNBuilderTwoLevel ()
+    template<int N, typename Mesh>
+    BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel ()
     {
       for (size_t i=0; i<builders.size(); i++) 
 	delete builders[i];
     }
 
-    template<int N>
-    void BVHNBuilderTwoLevel<N>::build(size_t threadIndex, size_t threadCount)
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::build(size_t threadIndex, size_t threadCount)
     {
       /* delete some objects */
       size_t num = scene->size();
@@ -54,7 +56,7 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene->getNumPrimitives<TriangleMesh,1>();
+      const size_t numPrimitives = scene->getNumPrimitives<Mesh,1>();
       if (numPrimitives == 0) {
         prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
@@ -79,7 +81,7 @@ namespace embree
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
-          TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
           
           /* verify meshes got deleted properly */
           if (mesh == nullptr || mesh->numTimeSteps != 1) {
@@ -90,7 +92,7 @@ namespace embree
           
           /* create BVH and builder for new meshes */
           if (objects[objectID] == nullptr)
-            createTriangleMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
+            createMeshAccel(mesh,(AccelData*&)objects[objectID],builders[objectID]);
         }
       });
 
@@ -100,7 +102,7 @@ namespace embree
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
           /* ignore if no triangle mesh or not enabled */
-          TriangleMesh* mesh = scene->getTriangleMeshSafe(objectID);
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
         
@@ -188,16 +190,16 @@ namespace embree
       bvh->postBuild(t0);
     }
 
-    template<int N>
-    void BVHNBuilderTwoLevel<N>::deleteGeometry(size_t geomID)
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::deleteGeometry(size_t geomID)
     {
       if (geomID >= objects.size()) return;
       delete builders[geomID]; builders[geomID] = nullptr;
       delete objects [geomID]; objects [geomID] = nullptr;
     }
 
-    template<int N>
-    void BVHNBuilderTwoLevel<N>::clear()
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::clear()
     {
       for (size_t i=0; i<objects.size(); i++) 
         if (objects[i]) objects[i]->clear();
@@ -208,8 +210,8 @@ namespace embree
       refs.clear();
     }
 
-    template<int N>
-    void BVHNBuilderTwoLevel<N>::open_sequential(size_t numPrimitives)
+    template<int N, typename Mesh>
+    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(size_t numPrimitives)
     {
       if (refs.size() == 0)
 	return;
@@ -234,13 +236,17 @@ namespace embree
       }
     }
     
-    Builder* BVH4BuilderTwoLevelSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVHNBuilderTwoLevel<4>((BVH4*)bvh,scene,createTriangleMeshAccel);
+    Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
+    }
+
+    Builder* BVH4BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);
     }
 
 #if defined(__AVX__)
-    Builder* BVH8BuilderTwoLevelSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
-      return new BVHNBuilderTwoLevel<8>((BVH8*)bvh,scene,createTriangleMeshAccel);
+    Builder* BVH8BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
   }

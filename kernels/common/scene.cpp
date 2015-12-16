@@ -362,12 +362,19 @@ namespace embree
   {
     if (device->line_accel == "default")
     {
+      if (isStatic())
+      {
 #if defined (__TARGET_AVX__)
-      if (device->hasISA(AVX) && !isCompact())
-        accels.add(device->bvh8_factory->BVH8Line4i(this));
-      else
+        if (device->hasISA(AVX) && !isCompact())
+          accels.add(device->bvh8_factory->BVH8Line4i(this));
+        else
 #endif
-        accels.add(device->bvh4_factory->BVH4Line4i(this));
+          accels.add(device->bvh4_factory->BVH4Line4i(this));
+      }
+      else
+      {
+        accels.add(device->bvh4_factory->BVH4Line4iTwolevel(this));
+      }
     }
     else if (device->line_accel == "bvh4.line4i") accels.add(device->bvh4_factory->BVH4Line4i(this));
 #if defined (__TARGET_AVX__)
