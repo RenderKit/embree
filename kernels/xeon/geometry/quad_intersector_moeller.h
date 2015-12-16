@@ -355,6 +355,22 @@ namespace embree
         const Vec3vfK Ng = cross(e1,e2);
         return intersectK(valid0,ray,tri_v0,e1,e2,Ng,flags,epilog);
       }
+
+      /*! Intersects K rays with one of M quads. */
+      template<typename Epilog>
+      __forceinline bool intersectK(const vbool<K>& valid0, 
+                                    RayK<K>& ray, 
+                                    const Vec3<vfloat<K>>& v0, 
+                                    const Vec3<vfloat<K>>& v1, 
+                                    const Vec3<vfloat<K>>& v2, 
+                                    const Vec3<vfloat<K>>& v3, 
+                                    const Epilog& epilog) const
+      {
+        intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),epilog);
+        if (none(valid0)) return true;
+        intersectK(valid0,ray,v2,v3,v1,vbool<K>(true ),epilog);
+        return none(valid0);
+      }
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<typename Epilog>
