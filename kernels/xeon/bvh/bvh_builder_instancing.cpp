@@ -424,7 +424,7 @@ namespace embree
       return BVH::encodeNode(first);
     }
     
-    Builder* BVH4BuilderInstancingSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
+    Builder* BVH4BuilderInstancingTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
       return new BVHNBuilderInstancing<4>((BVH4*)bvh,scene);
     }
   }

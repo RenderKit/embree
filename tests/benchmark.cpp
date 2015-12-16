@@ -596,6 +596,60 @@ namespace embree
     return geom;
   }
 
+  struct LineSegments {
+    std::vector<Vec3fa> vertices;
+    std::vector<int> lines;
+  };
+
+  Vec3fa uniformSampleSphere(const float& u, const float& v)
+  {
+    const float phi = float(two_pi) * u;
+    const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
+    return Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+  }
+
+  inline unsigned int rngInt(unsigned int& state)
+  {
+    const unsigned int m = 1664525;
+    const unsigned int n = 1013904223;
+
+    state = state * m + n;
+    return state;
+  }
+
+  inline float rngFloat(unsigned int& state)
+  {
+    rngInt(state);
+    return (float)(int)(state >> 1) * 4.656612873077392578125e-10f;
+  }
+
+  void createHairball(const Vec3f pos, const float r, size_t numLines, LineSegments& hairset_o)
+  {
+    const float thickness = 0.001f*r;
+
+    unsigned int state = 1;
+
+    for (size_t t=0; t<numLines/3; t++)
+    {
+      Vec3fa dp = uniformSampleSphere(rngFloat(state), rngFloat(state));
+
+      Vec3fa l0 = pos + r*(dp + 0.00f*dp); l0.w = thickness;
+      Vec3fa l1 = pos + r*(dp + 0.25f*dp); l1.w = thickness;
+      Vec3fa l2 = pos + r*(dp + 0.50f*dp); l2.w = thickness;
+      Vec3fa l3 = pos + r*(dp + 0.75f*dp); l3.w = thickness;
+
+      const unsigned int v_index = hairset_o.vertices.size();
+      hairset_o.vertices.push_back(l0);
+      hairset_o.vertices.push_back(l1);
+      hairset_o.vertices.push_back(l2);
+      hairset_o.vertices.push_back(l3);
+
+      hairset_o.lines.push_back(v_index);
+      hairset_o.lines.push_back(v_index+1);
+      hairset_o.lines.push_back(v_index+2);
+    }
+  }
+
   class create_geometry : public Benchmark
   {
   public:
@@ -613,7 +667,7 @@ namespace embree
       const size_t sizeVertexData = mesh.vertices.size()*sizeof(Vertex);
 
       Vertex* vertices[numMeshes];
-      for (size_t i=0; i<numMeshes; i++) 
+      for (size_t i=0; i<numMeshes; i++)
       {
         vertices[i] = (Vertex*)os_malloc(sizeVertexData);
         assert(vertices[i]);
@@ -626,26 +680,26 @@ namespace embree
           v.a = 0.0f;
         }
       }
-      
+
       double t0 = getSeconds();
       RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
-      
-      for (size_t i=0; i<numMeshes; i++) 
+
+      for (size_t i=0; i<numMeshes; i++)
       {
-	unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
+        unsigned geom = rtcNewTriangleMesh (scene, gflags, mesh.triangles.size(), mesh.vertices.size());
 #if 1
         rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,&vertices[i][0] ,0,sizeof(Vertex));
         rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER ,&mesh.triangles[0],0,sizeof(Triangle));
 #else
-	memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
-	memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
-	rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
-	rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
-	for (size_t i=0; i<mesh.vertices.size(); i++) {
-	  mesh.vertices[i].x += 1.0f;
-	  mesh.vertices[i].y += 1.0f;
-	  mesh.vertices[i].z += 1.0f;
-	}
+        memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &mesh.vertices[0], mesh.vertices.size()*sizeof(Vertex));
+        memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &mesh.triangles[0], mesh.triangles.size()*sizeof(Triangle));
+        rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+        rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+        for (size_t i=0; i<mesh.vertices.size(); i++) {
+          mesh.vertices[i].x += 1.0f;
+          mesh.vertices[i].y += 1.0f;
+          mesh.vertices[i].z += 1.0f;
+        }
 #endif
       }
       rtcCommit (scene);
@@ -653,11 +707,76 @@ namespace embree
       rtcDeleteScene(scene);
       rtcDeleteDevice(device);
 
-      for (size_t i=0; i<numMeshes; i++) 
+      for (size_t i=0; i<numMeshes; i++)
         os_free(vertices[i],sizeVertexData);
-      
+
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
+    }
+  };
+
+  class create_geometry_line : public Benchmark
+  {
+  public:
+    RTCSceneFlags sflags; RTCGeometryFlags gflags; size_t numLines; size_t numMeshes;
+    create_geometry_line (const std::string& name, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numLines, size_t numMeshes)
+      : Benchmark(name,"Mlines/s"), sflags(sflags), gflags(gflags), numLines(numLines), numMeshes(numMeshes) {}
+
+    double run(size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      LineSegments hairset; createHairball (Vec3f(0,0,0), 1, numLines, hairset);
+
+      const size_t sizeVertexData = hairset.vertices.size()*sizeof(Vec3fa);
+
+      Vec3fa* vertices[numMeshes];
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        vertices[i] = (Vec3fa*)os_malloc(sizeVertexData);
+        assert(vertices[i]);
+        for (size_t j=0;j<hairset.vertices.size();j++)
+        {
+          Vec3fa &v = vertices[i][j];
+          v.x = hairset.vertices[j].x * (float)i;
+          v.y = hairset.vertices[j].y * (float)i;
+          v.z = hairset.vertices[j].z * (float)i;
+          v.a = hairset.vertices[j].a;
+        }
+      }
+
+      double t0 = getSeconds();
+      RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
+
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        unsigned geom = rtcNewLineSegments (scene, gflags, hairset.lines.size(), hairset.vertices.size());
+#if 1
+        rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,&vertices[i][0],0,sizeof(Vec3fa));
+        rtcSetBuffer(scene,geom,RTC_INDEX_BUFFER ,&hairset.lines[0],0,sizeof(int));
+#else
+        memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &hairset.vertices[0], hairset.vertices.size()*sizeof(Vec3fa));
+        memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &hairset.lines[0], hairset.lines.size()*sizeof(int));
+        rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+        rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+        for (size_t i=0; i<hairset.vertices.size(); i++) {
+          mesh.vertices[i].x += 1.0f;
+          mesh.vertices[i].y += 1.0f;
+          mesh.vertices[i].z += 1.0f;
+        }
+#endif
+      }
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+
+      for (size_t i=0; i<numMeshes; i++)
+        os_free(vertices[i],sizeVertexData);
+
+      size_t numLines = hairset.lines.size() * numMeshes;
+      return 1E-6*double(numLines)/(t1-t0);
     }
   };
   
@@ -700,6 +819,48 @@ namespace embree
       //return 1000.0f*(t1-t0);
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
+    }
+  };
+
+  class update_geometry_line : public Benchmark
+  {
+  public:
+    RTCGeometryFlags flags; size_t numLines; size_t numMeshes;
+    update_geometry_line(const std::string& name, RTCGeometryFlags flags, size_t numLines, size_t numMeshes)
+      : Benchmark(name,"Mlines/s"), flags(flags), numLines(numLines), numMeshes(numMeshes) {}
+
+    double run(size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      LineSegments hairset; createHairball (Vec3f(0,0,0), 1, numLines, hairset);
+      RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
+
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        unsigned geom = rtcNewLineSegments (scene, flags, hairset.lines.size(), hairset.vertices.size());
+        memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &hairset.vertices[0], hairset.vertices.size()*sizeof(Vec3fa));
+        memcpy(rtcMapBuffer(scene,geom,RTC_INDEX_BUFFER ), &hairset.lines[0], hairset.lines.size()*sizeof(int));
+        rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+        rtcUnmapBuffer(scene,geom,RTC_INDEX_BUFFER);
+        for (size_t i=0; i<hairset.vertices.size(); i++) {
+          hairset.vertices[i].x += 1.0f;
+          hairset.vertices[i].y += 1.0f;
+          hairset.vertices[i].z += 1.0f;
+        }
+      }
+      rtcCommit (scene);
+      double t0 = getSeconds();
+      for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+
+      //return 1000.0f*(t1-t0);
+      size_t numLines = hairset.lines.size() * numMeshes;
+      return 1E-6*double(numLines)/(t1-t0);
     }
   };
 
@@ -1383,6 +1544,32 @@ namespace embree
 
 #endif
 
+#endif
+
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,1));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,1));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_100k",     RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,1));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1000k_1",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1000*1000,1));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_100k_10",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,10));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_10k_100",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,100));
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1k_1000" , RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_120_10000",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,10000));
+#endif
+
+
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_120",      RTC_GEOMETRY_DEFORMABLE,120,1));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1k" ,      RTC_GEOMETRY_DEFORMABLE,1*1000,1));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_10k",      RTC_GEOMETRY_DEFORMABLE,10*1000,1));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_100k",     RTC_GEOMETRY_DEFORMABLE,100*1000,1));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1000k_1",  RTC_GEOMETRY_DEFORMABLE,1000*1000,1));
+
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_100k_10",  RTC_GEOMETRY_DEFORMABLE,100*1000,10));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_10k_100",  RTC_GEOMETRY_DEFORMABLE,10*1000,100));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1k_1000" , RTC_GEOMETRY_DEFORMABLE,1*1000,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_120_10000",RTC_GEOMETRY_DEFORMABLE,120,10000));
 #endif
   }
 

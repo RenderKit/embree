@@ -55,7 +55,10 @@ namespace embree
     return ProgressMonitorClosure<Closure>(closure);
   }
 
+  struct LineSegments;
   struct TriangleMesh;
   class Scene;
-  typedef void     (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder); 
+
+  typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 }
