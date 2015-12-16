@@ -55,6 +55,7 @@ namespace embree
     Accel* BVH4Quad4iMB(Scene* scene);
 
 
+    Accel* BVH4Line4iTwolevel(Scene* scene);
     Accel* BVH4Triangle4Twolevel(Scene* scene);
     Accel* BVH4Triangle8Twolevel(Scene* scene);
     Accel* BVH4Triangle4vTwolevel(Scene* scene);

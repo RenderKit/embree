@@ -611,10 +611,10 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
 
     Builder* builder = nullptr;
-    if      (scene->device->tri_builder == "default"     ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "sah"         ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
-    else if (scene->device->tri_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
-    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->tri_builder+" for BVH4<Line4i>");
+    if      (scene->device->line_builder == "default"     ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->line_builder == "sah"         ) builder = BVH4Line4iSceneBuilderSAH(accel,scene,0);
+    else if (scene->device->line_builder == "dynamic"     ) builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown builder "+scene->device->line_builder+" for BVH4<Line4i>");
 
     scene->needLineVertices = true;
     return new AccelInstance(accel,builder,intersectors);
@@ -626,6 +626,14 @@ namespace embree
     Accel::Intersectors intersectors = BVH4Line4iMBIntersectors(accel);
     Builder* builder = BVH4Line4iMBSceneBuilderSAH(accel,scene,0);
     scene->needLineVertices = true;
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4Line4iTwolevel(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Line4i::type,scene);
+    Accel::Intersectors intersectors = BVH4Line4iIntersectors(accel);
+    Builder* builder = BVH4BuilderTwoLevelLineSegmentsSAH(accel,scene,&createLineSegmentsLine4i);
     return new AccelInstance(accel,builder,intersectors);
   }
 
