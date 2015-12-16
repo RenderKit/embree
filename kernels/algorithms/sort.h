@@ -29,6 +29,7 @@
 
 #define RADIX_SORT_MIN_BLOCK_SIZE 4096
 
+
 namespace embree
 {
   template<class T>
@@ -460,6 +461,7 @@ namespace embree
           const Ty elt = src[i];
           const Key index = ((Key)src[i] >> shift) & mask;
           dst[offset[index]++] = elt;
+          prefetchEX(((char*)&dst[offset[index]]) + 64);
         }
       }
       
@@ -474,8 +476,9 @@ namespace embree
       void tbbRadixSort(const size_t numTasks)
       {
         assert(parent->radixCount == nullptr);
+
         parent->radixCount = (TyRadixCount*) alignedMalloc(MAX_TASKS*sizeof(TyRadixCount));
-        
+
         if (sizeof(Key) == sizeof(uint32_t)) {
           tbbRadixIteration(0*BITS,0,src,tmp,numTasks);
           tbbRadixIteration(1*BITS,0,tmp,src,numTasks);
