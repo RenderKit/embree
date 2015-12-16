@@ -24,7 +24,7 @@ namespace embree
   namespace isa
   {
     template<int M>
-      struct QuadHitM
+      struct QuadHitM 
       {
         __forceinline QuadHitM(const vfloat<M>& U, 
                                const vfloat<M>& V, 
@@ -189,8 +189,24 @@ namespace embree
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, const Epilog& epilog) const
       {
-        if (MoellerTrumboreIntersectorTriangle1::intersect(ray,v0,v1,v3,vbool<M>(false),epilog)) return true;
-        if (MoellerTrumboreIntersectorTriangle1::intersect(ray,v2,v3,v1,vbool<M>(true ),epilog)) return true;
+        MoellerTrumboreHitM<M> hit;
+        MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
+
+        /* intersect first triangle */
+        if (intersector.intersect(ray,v0,v1,v3,hit)) 
+        {
+          if (epilog(hit.valid,hit))
+            return true;
+        }
+
+        /* intersect second triangle */
+        if (intersector.intersect(ray,v2,v3,v1,hit)) 
+        {
+          hit.U = hit.absDen - hit.U;
+          hit.V = hit.absDen - hit.V;
+          if (epilog(hit.valid,hit))
+            return true;
+        }
         return false;
       }
       

@@ -52,14 +52,14 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
       
-    private:
-      const vfloat<M> U;
-      const vfloat<M> V;
-      const vfloat<M> T;
-      const vfloat<M> absDen;
+    public:
+      vfloat<M> U;
+      vfloat<M> V;
+      vfloat<M> T;
+      vfloat<M> absDen;
       
     public:
-      const vbool<M> valid;
+      vbool<M> valid;
       vfloat<M> vu;
       vfloat<M> vv;
       vfloat<M> vt;
