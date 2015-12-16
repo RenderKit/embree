@@ -28,7 +28,7 @@
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 #include "../geometry/triangle4i_intersector_pluecker.h"
-#include "../geometry/quad_intersector_moeller.h"
+#include "../geometry/quadv_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
 #include "../geometry/quadi_intersector_pluecker.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"

@@ -32,7 +32,7 @@
 #include "../geometry/subdivpatch1cached_intersector1.h"
 #include "../geometry/grid_aos_intersector1.h"
 #include "../geometry/object_intersector1.h"
-#include "../geometry/quad_intersector_moeller.h"
+#include "../geometry/quadv_intersector_moeller.h"
 #include "../geometry/quadi_intersector_moeller.h"
 #include "../geometry/quadi_intersector_pluecker.h"
 
