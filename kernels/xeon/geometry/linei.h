@@ -166,6 +166,21 @@ namespace embree
       return bounds(scene);
     }
 
+    /* Updates the primitive */
+    __forceinline BBox3fa update(LineSegments* geom)
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const Vec3fa& p0 = geom->vertex(v0[i]+0);
+        const Vec3fa& p1 = geom->vertex(v0[i]+1);
+        BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
+        b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
+        bounds.extend(b);
+      }
+      return bounds;
+    }
+
   public:
     vint<M> v0;      // index of start vertex
     vint<M> geomIDs; // geometry ID
