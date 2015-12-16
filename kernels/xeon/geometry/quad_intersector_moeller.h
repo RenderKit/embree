@@ -23,6 +23,45 @@ namespace embree
 {
   namespace isa
   {
+#if 0
+    template<int M>
+      struct QuadHitM : public MoellerTrumboreHitM<M>
+      {
+        __forceinline QuadHitM(const vbool<M>& valid, 
+                               const vfloat<M>& U, 
+                               const vfloat<M>& V, 
+                               const vfloat<M>& T, 
+                               const vfloat<M>& absDen, 
+                               const Vec3<vfloat<M>>& Ng, 
+                               const vbool<M>& flags)
+          : MoellerTrumboreHitM<M>(valid,U,V,T,absDen,Ng), flags(flags) {}
+      
+        __forceinline void finalize() 
+        {
+          const vfloat<M> rcpAbsDen = rcp(MoellerTrumboreHitM<M>::absDen);
+          MoellerTrumboreHitM<M>::vt = MoellerTrumboreHitM<M>::T * rcpAbsDen;
+          const vfloat<M> u = MoellerTrumboreHitM<M>::U * rcpAbsDen;
+          const vfloat<M> v = MoellerTrumboreHitM<M>::V * rcpAbsDen;
+          const vfloat<M> u1 = vfloat<M>(1.0f) - u;
+          const vfloat<M> v1 = vfloat<M>(1.0f) - v;
+#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
+          MoellerTrumboreHitM<M>::vu = select(flags,u1,u); 
+          MoellerTrumboreHitM<M>::vv = select(flags,v1,v);
+          MoellerTrumboreHitM<M>::vNg = Vec3<vfloat<M>>(MoellerTrumboreHitM<M>::ng.x,MoellerTrumboreHitM<M>::ng.y,MoellerTrumboreHitM<M>::ng.z);
+#else
+          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
+          MoellerTrumboreHitM<M>::vv = select(flags,u1,v);
+          MoellerTrumboreHitM<M>::vu = select(flags,v1,u);
+          MoellerTrumboreHitM<M>::vNg = Vec3<vfloat<M>>(flip*MoellerTrumboreHitM<M>::ng.x,flip*MoellerTrumboreHitM<M>::ng.y,flip*MoellerTrumboreHitM<M>::ng.z);
+#endif
+        }
+      
+      private:
+        const vbool<M> flags;
+      };
+
+#else
+
     template<int M>
       struct QuadHitM 
       {
@@ -78,7 +117,7 @@ namespace embree
         vfloat<M> vt;
         Vec3<vfloat<M>> vNg;
       };
-
+#endif
 
     template<int K>
       struct QuadHitK
