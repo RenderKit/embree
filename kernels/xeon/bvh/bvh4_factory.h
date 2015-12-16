@@ -145,6 +145,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4GridAOSIntersector4);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoeller);
     
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
@@ -164,6 +165,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4GridAOSIntersector8);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualMBIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4Quad4vIntersector8HybridMoeller);
     
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Line4iMBIntersector16);
@@ -183,6 +185,7 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridAOSIntersector16);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4Quad4vIntersector16HybridMoeller);
     
     DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderTwoLevelSAH);
     DEFINE_BUILDER2(void,Scene,const createTriangleMeshAccelTy,BVH4BuilderInstancingSAH);

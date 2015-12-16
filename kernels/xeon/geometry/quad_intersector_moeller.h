@@ -494,6 +494,73 @@ namespace embree
         }
       };
 
+
+
+    /*! Intersects M triangles with 4 rays, SSE-only path */
+    template<int M, bool filter>
+      struct QuadMvIntersector4MoellerTrumbore
+      {
+        static const int K = 4;
+        typedef QuadMv<M> Primitive;
+        typedef MoellerTrumboreIntersectorQuadMvK<M,M> Precalculations;
+        
+        /*! Intersects K rays with M triangles. */
+        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
+        {
+          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
+          {
+            if (!quad.valid(i)) break;
+            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
+          }
+        }
+        
+        /*! Test for K rays if they are occluded by any of the M triangles. */
+        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
+        {
+          vbool<K> valid0 = valid_i;
+          
+          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
+          {
+            if (!quad.valid(i)) break;
+            STAT3(shadow.trav_prims,1,popcnt(valid0),K);
+            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
+            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
+            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
+            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
+            pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
+            if (none(valid0)) break;
+            pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
+            if (none(valid0)) break;
+          }
+          return !valid0;
+        }
+        
+        /*! Intersect a ray with M triangles and updates the hit. */
+        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
+        {
+          STAT3(normal.trav_prims,1,1,1);
+          pre.intersect1(ray,k,quad.v0,quad.v1,quad.v3,vbool4(false),Intersect1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene));
+          pre.intersect1(ray,k,quad.v2,quad.v3,quad.v1,vbool4(true),Intersect1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene));
+        }
+        
+        /*! Test if the ray is occluded by one of the M triangles. */
+        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
+        {
+          STAT3(shadow.trav_prims,1,1,1);
+          if (pre.intersect1(ray,k,quad.v0,quad.v1,quad.v3,vbool4(false),Occluded1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene))) return true;
+          if (pre.intersect1(ray,k,quad.v2,quad.v3,quad.v1,vbool4(true ),Occluded1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene))) return true;
+          return false;
+        }
+      };
+
+
+
 #if defined(__AVX512F__)
 
     /*! Intersects M triangles with K rays. */
