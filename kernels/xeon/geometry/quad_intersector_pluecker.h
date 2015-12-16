@@ -90,9 +90,9 @@ namespace embree
 
     /*! Intersects M quads with 1 ray */
     template<int M, bool filter>
-      struct PlueckerIntersectorQuad1
+      struct QuadMIntersector1Pluecker
     {
-      __forceinline PlueckerIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1Pluecker(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, const Epilog& epilog) const
@@ -119,9 +119,9 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<bool filter>
-      struct PlueckerIntersectorQuad1<4,filter>
+      struct QuadMIntersector1Pluecker<4,filter>
     {
-      __forceinline PlueckerIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1Pluecker(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
@@ -152,9 +152,9 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX */
     template<bool filter>
-      struct PlueckerIntersectorQuad1<4,filter>
+      struct QuadMIntersector1Pluecker<4,filter>
     {
-      __forceinline PlueckerIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1Pluecker(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const

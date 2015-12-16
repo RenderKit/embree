@@ -42,7 +42,7 @@ namespace embree
           const vfloat<M> v = V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for MoellerTrumboreIntersectorQuad1
+#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
           vu = select(flags,u1,u); 
           vv = select(flags,v1,v);
           vNg = Vec3<vfloat<M>>(tri_Ng.x,tri_Ng.y,tri_Ng.z);
@@ -178,13 +178,13 @@ namespace embree
       };
 
     template<int M, bool filter>
-      struct MoellerTrumboreIntersectorQuad1;
+      struct QuadMIntersector1MoellerTrumbore;
 
     /*! Intersects M quads with 1 ray */
     template<int M, bool filter>
-      struct MoellerTrumboreIntersectorQuad1
+      struct QuadMIntersector1MoellerTrumbore
     {
-      __forceinline MoellerTrumboreIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3<vfloat<M>>& v0, const Vec3<vfloat<M>>& v1, const Vec3<vfloat<M>>& v2, const Vec3<vfloat<M>>& v3, const Epilog& epilog) const
@@ -211,9 +211,9 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX512 */
     template<bool filter>
-      struct MoellerTrumboreIntersectorQuad1<4,filter>
+      struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
-      __forceinline MoellerTrumboreIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
 
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
@@ -244,9 +244,9 @@ namespace embree
 
     /*! Intersects 4 quads with 1 ray using AVX */
     template<bool filter>
-      struct MoellerTrumboreIntersectorQuad1<4,filter>
+      struct QuadMIntersector1MoellerTrumbore<4,filter>
     {
-      __forceinline MoellerTrumboreIntersectorQuad1(const Ray& ray, const void* ptr) {}
+      __forceinline QuadMIntersector1MoellerTrumbore(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
         __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const Epilog& epilog) const
@@ -340,9 +340,9 @@ namespace embree
     };
 
     template<int M, int K, bool filter>
-    struct MoellerTrumboreIntersectorQuadMvK
+    struct QuadMIntersectorKMoellerTrumbore
     {
-      __forceinline MoellerTrumboreIntersectorQuadMvK(const vbool<K>& valid, const RayK<K>& ray) {}
+      __forceinline QuadMIntersectorKMoellerTrumbore(const vbool<K>& valid, const RayK<K>& ray) {}
             
       /*! Intersects K rays with one of M triangles. */
       template<typename Epilog>
