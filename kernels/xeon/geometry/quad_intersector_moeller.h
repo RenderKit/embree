@@ -17,7 +17,7 @@
 #pragma once
 
 #include "quadv.h"
-#include "triangle_intersector_moeller.h"
+#include "intersector_epilog.h"
 
 namespace embree
 {
