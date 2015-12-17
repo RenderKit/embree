@@ -665,8 +665,8 @@ namespace embree
       Mesh mesh; createSphereMesh (Vec3f(0,0,0), 1, numPhi, mesh);
 
       const size_t sizeVertexData = mesh.vertices.size()*sizeof(Vertex);
-
-      Vertex* vertices[numMeshes];
+      
+      Vertex** vertices = new Vertex*[numMeshes];
       for (size_t i=0; i<numMeshes; i++)
       {
         vertices[i] = (Vertex*)os_malloc(sizeVertexData);
@@ -710,6 +710,8 @@ namespace embree
       for (size_t i=0; i<numMeshes; i++)
         os_free(vertices[i],sizeVertexData);
 
+      delete[] vertices;
+
       size_t numTriangles = mesh.triangles.size() * numMeshes;
       return 1E-6*double(numTriangles)/(t1-t0);
     }
@@ -731,7 +733,7 @@ namespace embree
 
       const size_t sizeVertexData = hairset.vertices.size()*sizeof(Vec3fa);
 
-      Vec3fa* vertices[numMeshes];
+      Vec3fa** vertices = new Vec3fa*[numMeshes];
       for (size_t i=0; i<numMeshes; i++)
       {
         vertices[i] = (Vec3fa*)os_malloc(sizeVertexData);
@@ -774,6 +776,8 @@ namespace embree
 
       for (size_t i=0; i<numMeshes; i++)
         os_free(vertices[i],sizeVertexData);
+
+      delete[] vertices;
 
       size_t numLines = hairset.lines.size() * numMeshes;
       return 1E-6*double(numLines)/(t1-t0);
