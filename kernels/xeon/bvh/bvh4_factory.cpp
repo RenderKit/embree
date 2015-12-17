@@ -52,7 +52,6 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4vIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Pluecker);
-  DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Quad4iMBIntersector1Pluecker);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Line4iIntersector4);
@@ -250,7 +249,6 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualMBIntersector1);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4vIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Pluecker);
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iIntersector1Moeller);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Quad4iMBIntersector1Pluecker);
 
 #if defined (RTCORE_RAY_PACKETS)
@@ -482,11 +480,11 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH4Quad4vIntersector1Moeller;
-    intersectors.intersector4           = BVH4Quad4vIntersector4HybridMoeller;
+    intersectors.intersector4_filter    = BVH4Quad4vIntersector4HybridMoeller;
     intersectors.intersector4_nofilter  = BVH4Quad4vIntersector4HybridMoellerNoFilter;
-    intersectors.intersector8           = BVH4Quad4vIntersector8HybridMoeller;
+    intersectors.intersector8_filter    = BVH4Quad4vIntersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH4Quad4vIntersector8HybridMoellerNoFilter;
-    intersectors.intersector16          = BVH4Quad4vIntersector16HybridMoeller;
+    intersectors.intersector16_filter   = BVH4Quad4vIntersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Quad4vIntersector16HybridMoellerNoFilter;
     return intersectors;
   }
