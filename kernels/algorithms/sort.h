@@ -461,7 +461,7 @@ namespace embree
           const Ty elt = src[i];
           const Key index = ((Key)src[i] >> shift) & mask;
           dst[offset[index]++] = elt;
-          prefetchEX(((char*)&dst[offset[index]]) + 64);
+          //prefetchEX(((char*)&dst[offset[index]]) + 64);
         }
       }
       
