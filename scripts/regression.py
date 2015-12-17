@@ -294,7 +294,9 @@ import shutil
 import subprocess 
 def compareImages(image0,image1):
   if os.path.isfile(image0) and os.path.isfile(image1):
-    line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
+    try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
+    except subprocess.CalledProcessError, e: line = e.output
+    print(line)
     error = float(line[line.index('(')+1:line.index(')')])
     return error < 0.001
   elif os.path.isfile(image1):
