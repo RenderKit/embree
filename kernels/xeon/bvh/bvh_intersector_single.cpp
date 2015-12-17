@@ -130,8 +130,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR4(BVH4Line4iIntersector8,  BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Line4iMBIntersector8,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Line4iIntersector8,  BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Line4iMBIntersector8,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
    
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
@@ -181,8 +181,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX__)
-    DEFINE_INTERSECTOR4(BVH8Line4iIntersector8,  BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector8,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Line4iIntersector8,  BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Line4iMBIntersector8,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
    
     DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
