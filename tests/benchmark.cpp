@@ -1524,9 +1524,9 @@ namespace embree
 
 #endif
 
-    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,1));
-    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1));
-    benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,1));
+    //benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,1));
+    //benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1));
+    //benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,1));
     benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_100k",     RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,1));
     benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_1000k_1",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1000*1000,1));
     benchmarks.push_back(new create_geometry_line ("create_static_geometry_line_100k_10",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,10));
@@ -1537,11 +1537,12 @@ namespace embree
 #endif
 
 
-    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_120",      RTC_GEOMETRY_DEFORMABLE,120,1));
-    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1k" ,      RTC_GEOMETRY_DEFORMABLE,1*1000,1));
-    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_10k",      RTC_GEOMETRY_DEFORMABLE,10*1000,1));
+    //benchmarks.push_back(new update_geometry_line ("refit_geometry_line_120",      RTC_GEOMETRY_DEFORMABLE,120,1));
+    //benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1k" ,      RTC_GEOMETRY_DEFORMABLE,1*1000,1));
+    //benchmarks.push_back(new update_geometry_line ("refit_geometry_line_10k",      RTC_GEOMETRY_DEFORMABLE,10*1000,1));
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_100k",     RTC_GEOMETRY_DEFORMABLE,100*1000,1));
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1000k_1",  RTC_GEOMETRY_DEFORMABLE,1000*1000,1));
+    benchmarks.push_back(new update_geometry_line ("refit_geometry_line_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1000*1000*8,1));
 
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_100k_10",  RTC_GEOMETRY_DEFORMABLE,100*1000,10));
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_10k_100",  RTC_GEOMETRY_DEFORMABLE,10*1000,100));
