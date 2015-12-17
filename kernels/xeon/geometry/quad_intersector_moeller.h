@@ -23,45 +23,6 @@ namespace embree
 {
   namespace isa
   {
-#if 0
-    template<int M>
-      struct QuadHitM : public MoellerTrumboreHitM<M>
-      {
-        __forceinline QuadHitM(const vbool<M>& valid, 
-                               const vfloat<M>& U, 
-                               const vfloat<M>& V, 
-                               const vfloat<M>& T, 
-                               const vfloat<M>& absDen, 
-                               const Vec3<vfloat<M>>& Ng, 
-                               const vbool<M>& flags)
-          : MoellerTrumboreHitM<M>(valid,U,V,T,absDen,Ng), flags(flags) {}
-      
-        __forceinline void finalize() 
-        {
-          const vfloat<M> rcpAbsDen = rcp(this->absDen);
-          this->vt = this->T * rcpAbsDen;
-          const vfloat<M> u = this->U * rcpAbsDen;
-          const vfloat<M> v = this->V * rcpAbsDen;
-          const vfloat<M> u1 = vfloat<M>(1.0f) - u;
-          const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
-          this->vu = select(flags,u1,u); 
-          this->vv = select(flags,v1,v);
-          this->vNg = Vec3<vfloat<M>>(this->ng.x,this->ng.y,this->ng.z);
-#else
-          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
-          this->vv = select(flags,u1,v);
-          this->vu = select(flags,v1,u);
-          this->vNg = Vec3<vfloat<M>>(flip*this->ng.x,flip*this->ng.y,flip*this->ng.z);
-#endif
-        }
-      
-      private:
-        const vbool<M> flags;
-      };
-
-#else
-
     template<int M>
       struct QuadHitM 
       {
@@ -121,7 +82,6 @@ namespace embree
       public:
         const vbool<M> flags;
       };
-#endif
 
     template<int K>
       struct QuadHitK
@@ -295,20 +255,19 @@ namespace embree
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
         const vbool16 flags(0xf0f0);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,vtx0,vtx1,vtx2,flags,epilog);
 
-        /*MoellerTrumboreHitM<16> hit;
+        MoellerTrumboreHitM<16> hit;
         MoellerTrumboreIntersector1<16> intersector(ray,nullptr);
-        if (intersector.intersect(ray,vtx0,vtx1,vtx2,hit)) 
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit))) 
         {
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat16(-1.0f),vfloat16(1.0f)); // FIXME: use XOR
-          if (epilog(hit.valid,hit))
+          if (likely(epilog(hit.valid,hit)))
             return true;
         }
-        return false;*/
+        return false;
       }
       
       __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
@@ -337,22 +296,20 @@ namespace embree
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
-        const vbool8 flags(0,0,0,0,1,1,1,1);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,vtx0,vtx1,vtx2,flags,epilog);
-        
-        /*MoellerTrumboreHitM<8> hit;
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));        
+        MoellerTrumboreHitM<8> hit;
         MoellerTrumboreIntersector1<8> intersector(ray,nullptr);
-        if (likely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
+        const vbool8 flags(0,0,0,0,1,1,1,1);
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
-          if (likely(epilog(hit.valid,hit)))
+          if (unlikely(epilog(hit.valid,hit)))
             return true;
         }
-        return false;*/
+        return false;
       }
       
       __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
@@ -554,6 +511,7 @@ namespace embree
         return false;
       }
     };
+
 
 #if defined(__AVX512F__)
 
