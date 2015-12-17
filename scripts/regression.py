@@ -377,7 +377,7 @@ def renderLoop(OS):
             for tasking in ['tbb','internal']:
               if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
                 models = []
-                if platform == 'win32': models += models_small_win32
+                if platform == 'Win32': models += models_small_win32
                 else:                   models += models_small_x64
                 if platform == 'x64' and OS != 'macosx':
                   models += models_large
