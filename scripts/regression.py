@@ -82,7 +82,8 @@ builds = []
 #ISAs_win  = ['AVX2']
 ISAs_win  = ['SSE2', 'AVX', 'AVX2']
 #ISAs_unix = ['AVX2']
-ISAs_unix = ['SSE2', 'AVX', 'AVX512']
+ISAs_unix = ['SSE2', 'AVX', 'AVX2']
+#ISAs_unix = ['SSE2', 'AVX', 'AVX512']
 ISAs = []
 
 supported_configurations = [
@@ -358,11 +359,12 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       for model in models:
         for flag in ['static','dynamic','high_quality','robust','compact']:
           render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -rtcore flags="+flag+" -c " + modelDir + dash + model,model,"triangles_"+flag)
-          render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -rtcore flags="+flag+" -c " + modelDir + dash + model + " -convert-triangles-to-quads -convert-bezier-to-lines",model,"quads_lines_"+flag)
+          render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -rtcore flags="+flag+" -c " + modelDir + dash + model + " -convert-triangles-to-quads",model,"quads_"+flag)
+# -convert-bezier-to-lines
 
       for model in models:
         render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + model,model,'triangles')
-        render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + model + " -convert-triangles-to-quads -convert-bezier-to-lines",model,'quads_lines')
+        render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + model + " -convert-triangles-to-quads",model,'quads')
 
 			    
 def renderLoop(OS):
