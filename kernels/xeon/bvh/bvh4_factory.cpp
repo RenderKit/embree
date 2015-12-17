@@ -78,9 +78,6 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
 
-  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoeller);
-  //DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4iIntersector4HybridMoeller);
-
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Line4iMBIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Bezier1vIntersector8Single);
@@ -486,16 +483,11 @@ namespace embree
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH4Quad4vIntersector1Moeller;
     intersectors.intersector4           = BVH4Quad4vIntersector4HybridMoeller;
-<<<<<<< HEAD
-    intersectors.intersector8           = NULL;
-    intersectors.intersector16          = NULL;
-=======
     intersectors.intersector4_nofilter  = BVH4Quad4vIntersector4HybridMoellerNoFilter;
     intersectors.intersector8           = BVH4Quad4vIntersector8HybridMoeller;
     intersectors.intersector8_nofilter  = BVH4Quad4vIntersector8HybridMoellerNoFilter;
     intersectors.intersector16          = BVH4Quad4vIntersector16HybridMoeller;
     intersectors.intersector16_nofilter = BVH4Quad4vIntersector16HybridMoellerNoFilter;
->>>>>>> 13276d4ca4c7e608ec5a8fefad3ffb04d98559b7
     return intersectors;
   }
 

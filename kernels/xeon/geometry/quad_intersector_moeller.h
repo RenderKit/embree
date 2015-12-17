@@ -23,45 +23,6 @@ namespace embree
 {
   namespace isa
   {
-#if 0
-    template<int M>
-      struct QuadHitM : public MoellerTrumboreHitM<M>
-      {
-        __forceinline QuadHitM(const vbool<M>& valid, 
-                               const vfloat<M>& U, 
-                               const vfloat<M>& V, 
-                               const vfloat<M>& T, 
-                               const vfloat<M>& absDen, 
-                               const Vec3<vfloat<M>>& Ng, 
-                               const vbool<M>& flags)
-          : MoellerTrumboreHitM<M>(valid,U,V,T,absDen,Ng), flags(flags) {}
-      
-        __forceinline void finalize() 
-        {
-          const vfloat<M> rcpAbsDen = rcp(this->absDen);
-          this->vt = this->T * rcpAbsDen;
-          const vfloat<M> u = this->U * rcpAbsDen;
-          const vfloat<M> v = this->V * rcpAbsDen;
-          const vfloat<M> u1 = vfloat<M>(1.0f) - u;
-          const vfloat<M> v1 = vfloat<M>(1.0f) - v;
-#if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
-          this->vu = select(flags,u1,u); 
-          this->vv = select(flags,v1,v);
-          this->vNg = Vec3<vfloat<M>>(this->ng.x,this->ng.y,this->ng.z);
-#else
-          const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
-          this->vv = select(flags,u1,v);
-          this->vu = select(flags,v1,u);
-          this->vNg = Vec3<vfloat<M>>(flip*this->ng.x,flip*this->ng.y,flip*this->ng.z);
-#endif
-        }
-      
-      private:
-        const vbool<M> flags;
-      };
-
-#else
-
     template<int M>
       struct QuadHitM 
       {
@@ -121,7 +82,6 @@ namespace embree
       public:
         const vbool<M> flags;
       };
-#endif
 
     template<int K>
       struct QuadHitK
@@ -295,20 +255,19 @@ namespace embree
         const Vec3vf16 vtx1(vfloat16(v1.x),vfloat16(v1.y),vfloat16(v1.z));
         const Vec3vf16 vtx2(vfloat16(v3.x),vfloat16(v3.y),vfloat16(v3.z));
         const vbool16 flags(0xf0f0);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,vtx0,vtx1,vtx2,flags,epilog);
 
-        /*MoellerTrumboreHitM<16> hit;
+        MoellerTrumboreHitM<16> hit;
         MoellerTrumboreIntersector1<16> intersector(ray,nullptr);
-        if (intersector.intersect(ray,vtx0,vtx1,vtx2,hit)) 
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit))) 
         {
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat16(-1.0f),vfloat16(1.0f)); // FIXME: use XOR
-          if (epilog(hit.valid,hit))
+          if (likely(epilog(hit.valid,hit)))
             return true;
         }
-        return false;*/
+        return false;
       }
       
       __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
@@ -337,22 +296,20 @@ namespace embree
       {
         const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
         const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
-        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
-        const vbool8 flags(0,0,0,0,1,1,1,1);
-        return MoellerTrumboreIntersectorTriangle1::intersect(ray,vtx0,vtx1,vtx2,flags,epilog);
-        
-        /*MoellerTrumboreHitM<8> hit;
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));        
+        MoellerTrumboreHitM<8> hit;
         MoellerTrumboreIntersector1<8> intersector(ray,nullptr);
-        if (likely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
+        const vbool8 flags(0,0,0,0,1,1,1,1);
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
           hit.U = select(flags,absDen-V,U);
           hit.V = select(flags,absDen-U,V);
           hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); // FIXME: use XOR
-          if (likely(epilog(hit.valid,hit)))
+          if (unlikely(epilog(hit.valid,hit)))
             return true;
         }
-        return false;*/
+        return false;
       }
       
       __forceinline bool intersect(Ray& ray, const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
@@ -554,72 +511,6 @@ namespace embree
         return false;
       }
     };
-
-
-
-    /*! Intersects M triangles with 4 rays, SSE-only path */
-    template<int M, bool filter>
-      struct QuadMvIntersector4MoellerTrumbore
-      {
-        static const int K = 4;
-        typedef QuadMv<M> Primitive;
-        typedef MoellerTrumboreIntersectorQuadMvK<M,M> Precalculations;
-        
-        /*! Intersects K rays with M triangles. */
-        static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
-        {
-          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
-          {
-            if (!quad.valid(i)) break;
-            STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid_i,ray,p0,p1,p3,vbool<K>(false),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
-            pre.intersectK(valid_i,ray,p2,p3,p1,vbool<K>(true ),IntersectKEpilog<M,K,filter>(ray,quad.geomIDs,quad.primIDs,i,scene));
-          }
-        }
-        
-        /*! Test for K rays if they are occluded by any of the M triangles. */
-        static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const QuadMv<M>& quad, Scene* scene)
-        {
-          vbool<K> valid0 = valid_i;
-          
-          for (size_t i=0; i<QuadMv<M>::max_size(); i++)
-          {
-            if (!quad.valid(i)) break;
-            STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-            const Vec3<vfloat<K>> p0 = broadcast<vfloat<K>>(quad.v0,i);
-            const Vec3<vfloat<K>> p1 = broadcast<vfloat<K>>(quad.v1,i);
-            const Vec3<vfloat<K>> p2 = broadcast<vfloat<K>>(quad.v2,i);
-            const Vec3<vfloat<K>> p3 = broadcast<vfloat<K>>(quad.v3,i);
-            pre.intersectK(valid0,ray,p0,p1,p3,vbool<K>(false),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
-            if (none(valid0)) break;
-            pre.intersectK(valid0,ray,p2,p3,p1,vbool<K>(true ),OccludedKEpilog<M,K,filter>(valid0,ray,quad.geomIDs,quad.primIDs,i,scene));
-            if (none(valid0)) break;
-          }
-          return !valid0;
-        }
-        
-        /*! Intersect a ray with M triangles and updates the hit. */
-        static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
-        {
-          STAT3(normal.trav_prims,1,1,1);
-          pre.intersect1(ray,k,quad.v0,quad.v1,quad.v3,vbool4(false),Intersect1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene));
-          pre.intersect1(ray,k,quad.v2,quad.v3,quad.v1,vbool4(true),Intersect1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene));
-        }
-        
-        /*! Test if the ray is occluded by one of the M triangles. */
-        static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, size_t k, const QuadMv<M>& quad, Scene* scene)
-        {
-          STAT3(shadow.trav_prims,1,1,1);
-          if (pre.intersect1(ray,k,quad.v0,quad.v1,quad.v3,vbool4(false),Occluded1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene))) return true;
-          if (pre.intersect1(ray,k,quad.v2,quad.v3,quad.v1,vbool4(true ),Occluded1KEpilog<M,M,M,filter>(ray,k,quad.geomIDs,quad.primIDs,scene))) return true;
-          return false;
-        }
-      };
-
 
 
 #if defined(__AVX512F__)
