@@ -131,7 +131,8 @@ supported_configurations = [
   ]
 
 models_subdiv = []
-models_small = []
+models_small_win32 = []
+models_small_x64 = []
 models_large = []
 modelDir  = ''
 testDir = ''
@@ -376,7 +377,8 @@ def renderLoop(OS):
             for tasking in ['tbb','internal']:
               if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
                 models = []
-                models += models_small
+                if platform == 'win32': models += models_small_win32
+                else:                   models += models_small_x64
                 if platform == 'x64' and OS != 'macosx':
                   models += models_large
                 processConfiguration(OS, compiler, platform, build, isa, tasking, models)
@@ -396,11 +398,13 @@ def readLines(fileName):
 
 def loadModelList(modelDir):
   global models_subdiv
-  global models_small
+  global models_small_win32
+  global models_small_x64
   global models_large
-  models_subdiv = readLines(modelDir+dash+'embree-models-subdiv.txt')
-  models_small  = readLines(modelDir+dash+'embree-models-small.txt')
-  models_large  = readLines(modelDir+dash+'embree-models-large.txt')
+  models_subdiv      = readLines(modelDir+dash+'embree-models-subdiv.txt')
+  models_small_win32 = readLines(modelDir+dash+'embree-models-small-win32.txt')
+  models_small_x64   = readLines(modelDir+dash+'embree-models-small-x64.txt')
+  models_large       = readLines(modelDir+dash+'embree-models-large.txt')
 
 if len(sys.argv) < 3: printUsage()
 mode = sys.argv[1]
