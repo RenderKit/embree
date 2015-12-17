@@ -38,21 +38,21 @@ namespace embree
       
         __forceinline void finalize() 
         {
-          const vfloat<M> rcpAbsDen = rcp(MoellerTrumboreHitM<M>::absDen);
-          MoellerTrumboreHitM<M>::vt = MoellerTrumboreHitM<M>::T * rcpAbsDen;
-          const vfloat<M> u = MoellerTrumboreHitM<M>::U * rcpAbsDen;
-          const vfloat<M> v = MoellerTrumboreHitM<M>::V * rcpAbsDen;
+          const vfloat<M> rcpAbsDen = rcp(this->absDen);
+          this->vt = this->T * rcpAbsDen;
+          const vfloat<M> u = this->U * rcpAbsDen;
+          const vfloat<M> v = this->V * rcpAbsDen;
           const vfloat<M> u1 = vfloat<M>(1.0f) - u;
           const vfloat<M> v1 = vfloat<M>(1.0f) - v;
 #if !defined(__AVX__) // FIXME: incorrect for default template instantiation for QuadMIntersector1MoellerTrumbore
-          MoellerTrumboreHitM<M>::vu = select(flags,u1,u); 
-          MoellerTrumboreHitM<M>::vv = select(flags,v1,v);
-          MoellerTrumboreHitM<M>::vNg = Vec3<vfloat<M>>(MoellerTrumboreHitM<M>::ng.x,MoellerTrumboreHitM<M>::ng.y,MoellerTrumboreHitM<M>::ng.z);
+          this->vu = select(flags,u1,u); 
+          this->vv = select(flags,v1,v);
+          this->vNg = Vec3<vfloat<M>>(this->ng.x,this->ng.y,this->ng.z);
 #else
           const vfloat<M> flip = select(flags,vfloat<M>(-1.0f),vfloat<M>(1.0f));
-          MoellerTrumboreHitM<M>::vv = select(flags,u1,v);
-          MoellerTrumboreHitM<M>::vu = select(flags,v1,u);
-          MoellerTrumboreHitM<M>::vNg = Vec3<vfloat<M>>(flip*MoellerTrumboreHitM<M>::ng.x,flip*MoellerTrumboreHitM<M>::ng.y,flip*MoellerTrumboreHitM<M>::ng.z);
+          this->vv = select(flags,u1,v);
+          this->vu = select(flags,v1,u);
+          this->vNg = Vec3<vfloat<M>>(flip*this->ng.x,flip*this->ng.y,flip*this->ng.z);
 #endif
         }
       
@@ -65,13 +65,14 @@ namespace embree
     template<int M>
       struct QuadHitM 
       {
-        __forceinline QuadHitM(const vfloat<M>& U, 
+        __forceinline QuadHitM(const vbool<M>& valid,
+                               const vfloat<M>& U, 
                                const vfloat<M>& V, 
                                const vfloat<M>& T, 
                                const vfloat<M>& absDen, 
                                const Vec3<vfloat<M>>& Ng, 
                                const vbool<M>& flags)
-          : U(U), V(V), T(T), absDen(absDen), flags(flags), tri_Ng(Ng) {}
+          : valid(valid), U(U), V(V), T(T), absDen(absDen), tri_Ng(Ng), flags(flags) {}
       
         __forceinline void finalize() 
         {
@@ -104,18 +105,21 @@ namespace embree
         __forceinline Vec3fa Ng(const size_t i) { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
       
       private:
-        const vfloat<M> U;
-        const vfloat<M> V;
-        const vfloat<M> T;
-        const vfloat<M> absDen;
-        const vbool<M> flags;
-        const Vec3<vfloat<M>> tri_Ng;
+        vfloat<M> U;
+        vfloat<M> V;
+        vfloat<M> T;
+        vfloat<M> absDen;
+        Vec3<vfloat<M>> tri_Ng;
       
       public:
+        vbool<M> valid;
         vfloat<M> vu;
         vfloat<M> vv;
         vfloat<M> vt;
         Vec3<vfloat<M>> vNg;
+
+      public:
+        const vbool<M> flags;
       };
 #endif
 
@@ -196,7 +200,7 @@ namespace embree
           if (likely(none(valid))) return false;
           
           /* update hit information */
-          QuadHitM<M> hit(U,V,T,absDen,tri_Ng, flags);
+          QuadHitM<M> hit(valid,U,V,T,absDen,tri_Ng, flags);
           return epilog(valid,hit);
         }
         
@@ -412,7 +416,7 @@ namespace embree
         if (likely(none(valid))) return false;
         
         /* calculate hit information */
-        QuadHitM<M> hit(U,V,T,absDen,tri_Ng,flags);
+        QuadHitM<M> hit(valid,U,V,T,absDen,tri_Ng,flags);
         return epilog(valid,hit);
       }
       

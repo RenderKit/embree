@@ -83,7 +83,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
-          QuadHitM<M> hit(U,V,T,den,Ng,flags);
+          QuadHitM<M> hit(valid,U,V,T,den,Ng,flags);
           return epilog(valid,hit);
         }  
       };
