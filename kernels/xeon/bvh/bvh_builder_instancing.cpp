@@ -214,9 +214,6 @@ namespace embree
         return;
         }*/
       
-      /* open all large nodes */  
-      open(numPrimitives); 
-
       /* fast path for small geometries */
       /*if (refs.size() == 1) { 
         bvh->set(refs[0].node,refs[0].bounds(),numPrimitives);
@@ -280,9 +277,9 @@ namespace embree
         
         bvh->set(root,pinfo.geomBounds,numPrimitives);
         numCollapsedTransformNodes = refs.size();
-        bvh->root = collapse(bvh->root);
-        if (scene->device->verbosity(1))
-          std::cout << "collapsing from " << refs.size() << " to " << numCollapsedTransformNodes << " minimally possible " << nextRef << std::endl;
+        //bvh->root = collapse(bvh->root);
+        //if (scene->device->verbosity(1))
+        //  std::cout << "collapsing from " << refs.size() << " to " << numCollapsedTransformNodes << " minimally possible " << nextRef << std::endl;
       }
             
       bvh->alloc.cleanup();
@@ -307,121 +304,6 @@ namespace embree
 	if (builders[i]) builders[i]->clear();
       
       refs.clear();
-    }
-    
-    template<int N>
-    void BVHNBuilderInstancing<N>::open(size_t numInstancedPrimitives)
-    {
-      if (refs.size() == 0)
-	return;
-     
-      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCES " << refs.size() << std::endl; }
-      if (scene->device->benchmark) { std::cout << "BENCHMARK_INSTANCED_PRIMITIVES " << numInstancedPrimitives << std::endl; }
-      
-      /* calculate opening size */
-      size_t num = 0;
-      if      (scene->device->instancing_block_size ) num = numInstancedPrimitives/scene->device->instancing_block_size;
-      else if (scene->device->instancing_open_factor) num = scene->device->instancing_open_factor*refs.size();
-      num = max(num,scene->device->instancing_open_min);
-      num = min(num,scene->device->instancing_open_max);
-      refs.reserve(num);
-
-      std::make_heap(refs.begin(),refs.end());
-      while (refs.size()+N-1 <= num)
-      {
-        std::pop_heap (refs.begin(),refs.end()); 
-        BuildRef ref = refs.back();
-        refs.pop_back();    
-
-        if (ref.depth >= scene->device->instancing_open_max_depth) {
-          ref.clearArea();
-          refs.push_back(ref);
-          std::push_heap (refs.begin(),refs.end()); 
-          continue;
-        }
-        
-        if (ref.node.isNode()) 
-        {
-          Node* node = ref.node.node();
-          for (size_t i=0; i<N; i++) {
-            if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
-            std::push_heap (refs.begin(),refs.end()); 
-          }
-        } 
-        /*else if (ref.node.isNodeMB()) 
-        {
-          NodeMB* node = ref.node.nodeMB();
-          for (size_t i=0; i<N; i++) {
-            if (node->child(i) == BVH::emptyNode) continue;
-            refs.push_back(BuildRef(ref.local2world,node->bounds(i),node->child(i),ref.mask,ref.instID,ref.xfmID,ref.type,ref.depth+1));
-            std::push_heap (refs.begin(),refs.end()); 
-          }
-        }*/
-        else {
-          refs.push_back(ref);
-          break;
-        }
-      }
-
-      if (scene->device->benchmark) { std::cout << "BENCHMARK_OPENED_INSTANCES " << refs.size() << std::endl; }
-    }
-    
-    template<int N>
-    typename BVHNBuilderInstancing<N>::NodeRef BVHNBuilderInstancing<N>::collapse(NodeRef& node)
-    {
-      if (node.isBarrier()) {
-        node.clearBarrier();
-        return node;
-      }
-      
-      assert(node.isNode());
-      Node* n = node.node();
-      TransformNode* first = nullptr;
-      for (size_t c=0; c<N; c++) {
-        if (n->child(c) == BVH::emptyNode) continue;
-        NodeRef child = n->child(c) = collapse(n->child(c));
-        if (child.isTransformNode()) first = child.transformNode();
-      }
-      
-      bool allEqual = true;
-      for (size_t c=0; c<N; c++)
-      {
-        NodeRef child = n->child(c);
-        if (child == BVH::emptyNode) continue;
-        
-        if (!child.isTransformNode()) {
-          allEqual = false;
-          break;
-        }
-        
-        if (child.transformNode()->world2local != first->world2local) {
-          allEqual = false;
-          break;
-        }
-        
-        if (child.transformNode()->instID != first->instID) {
-          allEqual = false;
-          break;
-        }
-      }
-      
-      if (!allEqual) 
-        return node;
-      
-      BBox3fa bounds = empty;
-      for (size_t c=0; c<N; c++) {
-        if (n->child(c) == BVH::emptyNode) continue;
-        TransformNode* child = n->child(c).transformNode();
-        numCollapsedTransformNodes--;
-        const BBox3fa cbounds = child->localBounds;
-        n->set(c,cbounds,child->child);
-        bounds.extend(cbounds);
-      }
-      numCollapsedTransformNodes++;
-      first->localBounds = bounds;
-      first->child = node;
-      return BVH::encodeNode(first);
     }
     
     Builder* BVH4BuilderInstancingTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createTriangleMeshAccel) {
