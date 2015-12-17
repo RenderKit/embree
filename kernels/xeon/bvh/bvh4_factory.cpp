@@ -69,6 +69,10 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vIntersector4HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4iIntersector4HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4vMBIntersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4vIntersector4HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4iIntersector4HybridPluecker);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4Quad4iMBIntersector4HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Subdivpatch1CachedIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4GridAOSIntersector4);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
@@ -88,6 +92,10 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vIntersector8HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4iIntersector8HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4vMBIntersector8HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4vIntersector8HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4vIntersector8HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4iIntersector8HybridPluecker);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4Quad4iMBIntersector8HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Subdivpatch1CachedIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4GridAOSIntersector8);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
@@ -107,6 +115,10 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vIntersector16HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4iIntersector16HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4vMBIntersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4vIntersector16HybridMoeller);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4vIntersector16HybridMoellerNoFilter);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4iIntersector16HybridPluecker);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4Quad4iMBIntersector16HybridPluecker);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Subdivpatch1CachedIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4GridAOSIntersector16);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
@@ -258,6 +270,10 @@ namespace embree
     SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,BVH4Triangle4vIntersector4HybridPluecker);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,BVH4Triangle4iIntersector4HybridPluecker);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Triangle4vMBIntersector4HybridMoeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoeller);
+    SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,BVH4Quad4vIntersector4HybridMoellerNoFilter);
+    SELECT_SYMBOL_DEFAULT_AVX     (features,BVH4Quad4iIntersector4HybridPluecker);
+    SELECT_SYMBOL_DEFAULT_AVX     (features,BVH4Quad4iMBIntersector4HybridPluecker);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector4);
     SELECT_SYMBOL_DEFAULT_AVX_AVX2      (features,BVH4GridAOSIntersector4);
     SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,BVH4VirtualIntersector4Chunk);
@@ -278,6 +294,10 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX     (features,BVH4Triangle4vIntersector8HybridPluecker);
     SELECT_SYMBOL_INIT_AVX     (features,BVH4Triangle4iIntersector8HybridPluecker);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Triangle4vMBIntersector8HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Quad4vIntersector8HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Quad4vIntersector8HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX     (features,BVH4Quad4iIntersector8HybridPluecker);
+    SELECT_SYMBOL_INIT_AVX     (features,BVH4Quad4iMBIntersector8HybridPluecker);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4Subdivpatch1CachedIntersector8);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4GridAOSIntersector8);
     SELECT_SYMBOL_INIT_AVX_AVX2(features,BVH4VirtualIntersector8Chunk);
@@ -298,6 +318,10 @@ namespace embree
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vIntersector16HybridPluecker);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4iIntersector16HybridPluecker);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Triangle4vMBIntersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Quad4vIntersector16HybridMoeller);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Quad4vIntersector16HybridMoellerNoFilter);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Quad4iIntersector16HybridPluecker);
+    SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Quad4iMBIntersector16HybridPluecker);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4Subdivpatch1CachedIntersector16);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4GridAOSIntersector16);
     SELECT_SYMBOL_INIT_AVX512KNL(features,BVH4VirtualIntersector16Chunk);
@@ -457,12 +481,12 @@ namespace embree
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
     intersectors.intersector1           = BVH4Quad4vIntersector1Moeller;
-    intersectors.intersector4           = NULL;
-    intersectors.intersector4_nofilter  = NULL;
-    intersectors.intersector8           = NULL;
-    intersectors.intersector8_nofilter  = NULL;
-    intersectors.intersector16          = NULL;
-    intersectors.intersector16_nofilter = NULL;
+    intersectors.intersector4           = BVH4Quad4vIntersector4HybridMoeller;
+    intersectors.intersector4_nofilter  = BVH4Quad4vIntersector4HybridMoellerNoFilter;
+    intersectors.intersector8           = BVH4Quad4vIntersector8HybridMoeller;
+    intersectors.intersector8_nofilter  = BVH4Quad4vIntersector8HybridMoellerNoFilter;
+    intersectors.intersector16          = BVH4Quad4vIntersector16HybridMoeller;
+    intersectors.intersector16_nofilter = BVH4Quad4vIntersector16HybridMoellerNoFilter;
     return intersectors;
   }
 
@@ -470,31 +494,23 @@ namespace embree
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1           = BVH4Quad4iIntersector1Pluecker;
-    intersectors.intersector4           = NULL;
-    intersectors.intersector4_nofilter  = NULL;
-    intersectors.intersector8           = NULL;
-    intersectors.intersector8_nofilter  = NULL;
-    intersectors.intersector16          = NULL;
-    intersectors.intersector16_nofilter = NULL;
+    intersectors.intersector1 = BVH4Quad4iIntersector1Pluecker;
+    intersectors.intersector4 = BVH4Quad4iIntersector4HybridPluecker;
+    intersectors.intersector8 = BVH4Quad4iIntersector8HybridPluecker;
+    intersectors.intersector16= BVH4Quad4iIntersector16HybridPluecker;
     return intersectors;
   }
-
 
   Accel::Intersectors BVH4Factory::BVH4Quad4iMBIntersectors(BVH4* bvh)
   {
     Accel::Intersectors intersectors;
     intersectors.ptr = bvh;
-    intersectors.intersector1           = BVH4Quad4iMBIntersector1Pluecker;
-    intersectors.intersector4           = NULL;
-    intersectors.intersector4_nofilter  = NULL;
-    intersectors.intersector8           = NULL;
-    intersectors.intersector8_nofilter  = NULL;
-    intersectors.intersector16          = NULL;
-    intersectors.intersector16_nofilter = NULL;
+    intersectors.intersector1 = BVH4Quad4iMBIntersector1Pluecker;
+    intersectors.intersector4 = BVH4Quad4iMBIntersector4HybridPluecker;
+    intersectors.intersector8 = BVH4Quad4iMBIntersector8HybridPluecker;
+    intersectors.intersector16= BVH4Quad4iMBIntersector16HybridPluecker;
     return intersectors;
   }
-
 
   void BVH4Factory::createLineSegmentsLine4i(LineSegments* mesh, AccelData*& accel, Builder*& builder)
   {
