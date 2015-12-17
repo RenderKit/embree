@@ -61,8 +61,8 @@ dash = '/'
 #compilers_win = ['ICC']
 compilers_win  = ['ICC', 'V110', 'V120']
 #compilers_win  = ['ICC', 'V110', 'V120', 'V140']
-compilers_unix = ['ICC']
-#compilers_unix = ['GCC', 'CLANG', 'ICC']
+#compilers_unix = ['ICC']
+compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
@@ -129,39 +129,9 @@ supported_configurations = [
   'CLANG_x64_RelWithDebInfo_AVX2',  
   ]
 
-models = {}
-#models['Win32'] = [ 'conference/conference.ecs' ]
-#models['x64'  ] = [ 'crown/crown.ecs' ]
-models['Win32'] = [ 
-  'conference/conference.ecs', 
-  'headlight/headlight.ecs', 
-  'sponza/sponza.ecs', 
-  'RoadBike/RoadBike.ecs',
-  'barbarian/barbarian_subdiv.ecs',
-  'barbarian/barbarian_mblur.ecs',
-]
-models['x64'] = models['Win32'] + [   
-  'crown/crown.ecs', 
-  'xyz_dragon/xyz_dragon.ecs', 
-  'powerplant/powerplant.ecs', 
-  'tighten/tighten.ecs' 
-]
-models_large = [
-  'sophie/sophie.ecs', 
-  'sophie_mblur/sophie_mblur.ecs'
-]
-models_subdiv = [
-  'subdiv/subdiv0.ecs',
-  'subdiv/subdiv1.ecs',
-  'subdiv/subdiv2.ecs',
-  'subdiv/subdiv3.ecs',
-  'subdiv/subdiv4.ecs',
-  'subdiv/subdiv5.ecs',
-  'subdiv/subdiv6.ecs',
-  'subdiv/subdiv7.ecs',
-  'subdiv/subdiv8.ecs',
-  'subdiv/subdiv9.ecs'
-]
+models_subdiv = []
+models_small = []
+models_large = []
 modelDir  = ''
 testDir = ''
 
@@ -359,30 +329,30 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
 
     render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
-
     render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
     for ty in ['','_ispc']:
       render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'user_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
+
+      for model in models_subdiv:
+        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
+
       for model in models:
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
         render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
-      for model in models_subdiv:
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
-
-      render(OS, compiler, platform, build, isa, tasking, 'instanced_geometry'+ty, '', '', 'default')
-      render(OS, compiler, platform, build, isa, tasking, 'intersection_filter'+ty, '', '', 'default')
 
       for model in models:
         render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
 
-      render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
-      render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
-      render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
 			    
 def renderLoop(OS):
     for compiler in compilers:
@@ -391,20 +361,37 @@ def renderLoop(OS):
           for isa in ISAs:
             for tasking in ['tbb','internal']:
               if (compiler + '_' + platform + '_' + build + '_' + isa) in supported_configurations:
-                model_list = models[platform]
-                if OS != 'macosx': model_list += models_large
-                processConfiguration(OS, compiler, platform, build, isa, tasking, model_list)
+                models = []
+                models += models_small
+                if platform == 'x64' and OS != 'macosx':
+                  models += models_large
+                processConfiguration(OS, compiler, platform, build, isa, tasking, models)
 
 ########################## command line parsing ##########################
 
 def printUsage():
   sys.stderr.write('Usage: ' + sys.argv[0] + ' compile <os> <testDir>\n')
   sys.stderr.write('       ' + sys.argv[0] + ' run     <os> <testDir> <modelDir>\n')
+  sys.stderr.write('         <os> = linux, windows, or macosx\n')
   sys.exit(1)
+
+def readLines(fileName):
+  lines = open(fileName).read().split('\n')
+  lines = [x for x in lines if x != ""]
+  return lines
+
+def loadModelList(modelDir):
+  global models_subdiv
+  global models_small
+  global models_large
+  models_subdiv = readLines(modelDir+dash+'embree-models-subdiv.txt')
+  models_small  = readLines(modelDir+dash+'embree-models-small.txt')
+  models_large  = readLines(modelDir+dash+'embree-models-large.txt')
 
 if len(sys.argv) < 3: printUsage()
 mode = sys.argv[1]
 OS = sys.argv[2]
+if OS != 'linux' and OS != 'windows' and OS != 'macosx': printUsage();
 
 if OS == 'windows':
   dash = '\\'
@@ -412,7 +399,7 @@ if OS == 'windows':
   platforms = platforms_win
   builds = builds_win
   ISAs = ISAs_win
-  modelDir = '%HOMEPATH%\\models\\embree'
+  modelDir = '%HOMEPATH%\\models\\embree-models'
 
 else:
   dash = '/'
@@ -420,7 +407,7 @@ else:
   platforms = platforms_unix
   builds = builds_unix
   ISAs = ISAs_unix
-  modelDir = '~/models/embree'
+  modelDir = '~/models/embree-models'
 
 if mode == 'run':
   if len(sys.argv) < 4: printUsage()
@@ -429,6 +416,7 @@ if mode == 'run':
     os.system('mkdir '+testDir)
   if len(sys.argv) > 4: 
     modelDir = sys.argv[4]
+  loadModelList(modelDir)
   renderLoop(OS)
   sys.exit(1)
 
