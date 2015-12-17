@@ -71,7 +71,7 @@ namespace embree
     __forceinline vint<M> primID() const { return primIDs; }
     __forceinline int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
-    __forceinline Vec3fa &getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
+    __forceinline Vec3fa& getVertex(const vint<M> &v, const size_t index, const Scene *const scene) const
     {
       const QuadMesh* mesh = scene->getQuadMesh(geomID(index));
       return *(Vec3fa*)mesh->vertexPtr(v[index]);
