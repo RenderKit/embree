@@ -289,12 +289,12 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
-def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, flags):
+def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, name):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
-  if flags != '' and flags != 'default': sys.stdout.write(' '+flags)
+  if name != '' and name != 'default': sys.stdout.write(' '+name)
   sys.stdout.flush()
-  base = configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags)
+  base = configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, name)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
   if os.path.exists(logFile):
@@ -304,20 +304,11 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, f
     else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
     if tutorial != 'verify' and tutorial != 'benchmark':
       command += '-rtcore verbose=2'
-    if flags != "": 
-      if flags != "default":
-        command += ",flags=" + flags
       command += ' -size 512 512 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
-
-def render_viewer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + scene,scene,flags)
-
-def render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, scene, flags):
-  render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + scene,scene,flags)
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -341,17 +332,16 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
 
       for model in models_subdiv:
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
+        render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + model,model,'default')
 
       for model in models:
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'static')
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'dynamic')
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'high_quality')
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'robust')
-        render_viewer(OS, compiler, platform, build, isa, tasking, ty, model, 'compact')
+        for flag in ['static','dynamic','high_quality','robust','compact']:
+          render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -rtcore flags="+flag+" -c " + modelDir + dash + model,model,"triangles_"+flag)
+          render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -rtcore flags="+flag+" -c " + modelDir + dash + model + " -convert-triangles-to-quads -convert-bezier-to-lines",model,"quads_lines_"+flag)
 
       for model in models:
-        render_pathtracer(OS, compiler, platform, build, isa, tasking, ty, model, 'default')
+        render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + model,model,'triangles')
+        render(OS,compiler,platform,build,isa,tasking,"pathtracer"+ty," -c " + modelDir + dash + model + " -convert-triangles-to-quads -convert-bezier-to-lines",model,'quads_lines')
 
 			    
 def renderLoop(OS):

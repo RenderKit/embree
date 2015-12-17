@@ -68,7 +68,7 @@ namespace embree
       
       /* rtcore configuration */
       else if (tag == "-rtcore")
-        g_rtcore = cin->getString();
+        g_rtcore += "," + cin->getString();
 
       /* number of threads to use */
       else if (tag == "-threads")

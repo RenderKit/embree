@@ -71,7 +71,7 @@ namespace embree
 	  }
       
       /*! Embree configuration. */
-      else if (term == "-rtcore") g_rtcore = cin->getString();
+      else if (term == "-rtcore") g_rtcore += "," + cin->getString();
 
       /*! Window size. */
       else if (term == "-size") { g_width = cin->getInt();  g_height = cin->getInt(); }
