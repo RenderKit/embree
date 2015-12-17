@@ -289,6 +289,17 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
+import shutil
+import subprocess 
+def compareImages(image0,image1):
+  if os.path.isfile(image0) and os.path.isfile(image1):
+    line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
+    error = float(line[line.index('(')+1:line.index(')')])
+    return error < 0.001
+  elif os.path.isfile(image1):
+     shutil.copy(image1,image0)
+     return True
+
 def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, name):
   sys.stdout.write("  "+tutorial)
   if scene != '': sys.stdout.write(' '+scene)
@@ -297,16 +308,26 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
   base = configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, name)
   logFile = testDir + dash + base + '.log'
   imageFile = testDir + dash + base + '.tga'
+  refImageFile = modelDir + dash + "reference" + dash + tutorial.replace('_ispc','')
+  if (scene != ''): refImageFile += '_' +  scene.replace('/','_').replace('.ecs','')
+  refImageFile += '.tga'
+#  if os.path.isfile(refImageFile):
+#    sys.stdout.write(" [skipped]\n")
+#    return
   if os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
   else:
     if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
     else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
-    if tutorial != 'verify' and tutorial != 'benchmark':
+    if tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder':
       command += '-rtcore verbose=2'
       command += ' -size 512 512 -o ' + imageFile
     command += ' > ' + logFile
     ret = os.system(command)
+    if tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder':
+      if not compareImages(refImageFile,imageFile):
+        sys.stdout.write(" [failed] (image compare)\n")
+        return
     if ret == 0: sys.stdout.write(" [passed]\n")
     else       : sys.stdout.write(" [failed]\n")
 
