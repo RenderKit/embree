@@ -606,7 +606,7 @@ namespace embree
 	int   bestPos = 0;
 	int   bestLeft = 0;
 	const vint16 blocks_add = (1 << blocks_shift)-1;
-
+        const vfloat16 inf(pos_inf);
 	for (size_t dim=0; dim<3; dim++) 
         {
           /* ignore zero sized dimensions */
@@ -625,12 +625,27 @@ namespace embree
           const vint16 rC = shift_right1_zero_extend(rCount16);
           const vint16 leftCount  = ( lC + blocks_add) >> blocks_shift;
           const vint16 rightCount = ( rC + blocks_add) >> blocks_shift;
-          const vfloat16 sah = select(0x7fff,leftArea*vfloat16(leftCount) + rightArea*vfloat16(rightCount),vfloat16(pos_inf));
+          const vbool16 valid = (leftArea < inf) & (rightArea < inf) & vbool16(0x7fff); // handles inf entries
+          const vfloat16 sah = select(valid,leftArea*vfloat16(leftCount) + rightArea*vfloat16(rightCount),vfloat16(pos_inf));
           /* test if this is a better dimension */
           if (any(sah < vfloat16(bestSAH))) 
           {
             const size_t index = select_min(sah);            
             assert(index < 15);
+            if (sah[index] >= bestSAH || isnan(sah[index]) || isinf(sah[index]))
+            {
+              PRINT(lArea16);
+              PRINT(rArea16);
+              PRINT(leftArea);
+              PRINT(rightArea);
+              PRINT(lC);
+              PRINT(rC);
+
+              PRINT(index);
+              PRINT(sah);
+              PRINT(bestSAH);
+              PRINT(dim);
+            }
             assert(sah[index] < bestSAH);
             bestDim = dim;
             bestPos = index+1;
