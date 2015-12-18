@@ -63,12 +63,7 @@ struct BRDF
   Vec3fa Kd;              /*< diffuse reflectivity */
   Vec3fa Ks;              /*< specular reflectivity */
   Vec3fa Kt;              /*< transmission filter */
-  float dummy0;
-  float dummy1;
-  float dummy2;
-  float dummy3;
-  float dummy4;
-  float dummy5;
+  float dummy[30];
 };
 
 struct Medium
@@ -430,13 +425,13 @@ inline DielectricLayerLambertian make_DielectricLayerLambertian(const Vec3fa& T,
 /*! Anisotropic power cosine microfacet distribution. */
 struct AnisotropicBlinn {
   Vec3fa dx;       //!< x-direction of the distribution.
-  float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.
   Vec3fa dy;       //!< y-direction of the distribution.
-  float ny;        //!< Exponent that determines the glossiness in y direction.
   Vec3fa dz;       //!< z-direction of the distribution.
+  Vec3fa Kr,Kt; 
+  float nx;        //!< Glossiness in x direction with range [0,infinity[ where 0 is a diffuse surface.  
+  float ny;        //!< Exponent that determines the glossiness in y direction.
   float norm1;     //!< Normalization constant for calculating the pdf for sampling.
   float norm2;     //!< Normalization constant for calculating the distribution.
-  Vec3fa Kr,Kt; 
   float side;
 };
 
