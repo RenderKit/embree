@@ -69,9 +69,9 @@ namespace embree
     int ty;
     int align[3];
     Vec3fa transmission;
+    Vec3fa transmissionFactor;
     float eta;
     float thickness;
-    Vec3fa transmissionFactor;
   };
   
   /*! OBJ material */
