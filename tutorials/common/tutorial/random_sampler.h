@@ -86,5 +86,7 @@ inline float RandomSampler_get1D(RandomSampler& self)
 
 inline Vec2f RandomSampler_get2D(RandomSampler& self)
 {
-  return Vec2f(RandomSampler_get1D(self), RandomSampler_get1D(self));
+  float u = RandomSampler_get1D(self);
+  float v = RandomSampler_get1D(self);
+  return Vec2f(u,v);
 }
