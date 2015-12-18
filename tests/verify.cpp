@@ -3659,7 +3659,6 @@ namespace embree
     //POSITIVE("regression_garbage_geom",   rtcore_regression_garbage());
     //rtcDeleteDevice(g_device); exit(1);
 
-
     POSITIVE("empty_static",              rtcore_empty(RTC_SCENE_STATIC));
     POSITIVE("empty_dynamic",             rtcore_empty(RTC_SCENE_DYNAMIC));
     POSITIVE("bary_distance_robust",      rtcore_bary_distance_robust());
@@ -3794,7 +3793,7 @@ namespace embree
     POSITIVE("regression_static_build_join", rtcore_regression(rtcore_regression_static_thread,2));
     POSITIVE("regression_dynamic_build_join", rtcore_regression(rtcore_regression_dynamic_thread,2));
 #endif
-
+      
 #if defined(TASKING_TBB) || defined(TASKING_TBB_INTERNAL)
     POSITIVE("regression_static_memory_monitor",  rtcore_regression_memory_monitor(rtcore_regression_static_thread));
     POSITIVE("regression_dynamic_memory_monitor", rtcore_regression_memory_monitor(rtcore_regression_dynamic_thread));
