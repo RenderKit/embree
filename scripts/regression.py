@@ -24,6 +24,7 @@
 
 # Prerequisites:
 #   Install Python 3.2+
+#   Install ImageMagick
 #   Install Visual Studio 2013
 #   Install Intel C++ Compiler
 #   Check out Embree into <embree_dir>
@@ -39,6 +40,7 @@
 
 # Prerequisites:
 #   Install Python 2.6+
+#   Install ImageMagick
 #   Install Intel C++ Compiler
 #   Check out Embree into <embree_dir>
 
@@ -83,7 +85,7 @@ builds = []
 ISAs_win  = ['SSE2', 'AVX', 'AVX2']
 #ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX2']
-#ISAs_unix = ['SSE2', 'AVX', 'AVX512']
+#ISAs_unix = ['SSE2', 'AVX', 'AVX512KNL']
 ISAs = []
 
 supported_configurations = [
@@ -117,7 +119,7 @@ supported_configurations = [
   'ICC_x64_RelWithDebInfo_SSE4.2',
   'ICC_x64_RelWithDebInfo_AVX',
   'ICC_x64_RelWithDebInfo_AVX2',
-  'ICC_x64_RelWithDebInfo_AVX512',
+  'ICC_x64_RelWithDebInfo_AVX512KNL',
   
   'GCC_x64_RelWithDebInfo_SSE2',
   'GCC_x64_RelWithDebInfo_SSE4.2',
@@ -136,13 +138,14 @@ models_small_x64 = []
 models_large = []
 modelDir  = ''
 testDir = ''
+generateReferenceImages = False
 
 def configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, flags):
   cfg = OS + '_' + compiler + '_' + platform + '_' + build + '_' + isa + '_' + tasking
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
-    cfg += '_' + scene.replace('/','_')
+    cfg += '_' + scene.replace('/','_').replace('.ecs','')
   if flags != '':
     cfg += '_' + flags
   return cfg
@@ -291,17 +294,17 @@ def compileLoop(OS):
 
 ########################## rendering ##########################
 
+def tutorialGeneratesImage(tutorial):
+  return tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder'
+
 import shutil
 import subprocess 
 def compareImages(image0,image1):
-  if os.path.isfile(image0) and os.path.isfile(image1):
-    try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
-    except subprocess.CalledProcessError, e: line = e.output
-    error = float(line[line.index('(')+1:line.index(')')])
-    return error < 0.001
-  elif os.path.isfile(image1):
-     shutil.copy(image1,image0)
-     return True
+  if not os.path.isfile(image0) or not os.path.isfile(image1): return False
+  try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
+  except subprocess.CalledProcessError, e: line = e.output
+  error = float(line[line.index('(')+1:line.index(')')])
+  return error < 0.001
 
 def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, name):
   sys.stdout.write("  "+tutorial)
@@ -314,25 +317,37 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
   refImageFile = modelDir + dash + "reference" + dash + tutorial.replace('_ispc','')
   if (scene != ''): refImageFile += '_' +  scene.replace('/','_').replace('.ecs','')
   refImageFile += '.tga'
-#  if os.path.isfile(refImageFile):
-#    sys.stdout.write(" [skipped]\n")
-#    return
-  if os.path.exists(logFile):
+
+  if generateReferenceImages:
+    if os.path.isfile(refImageFile):
+      sys.stdout.write(" [skipped]\n")
+      return
+  elif os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
-  else:
-    if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
-    else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
-    if tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder':
-      command += '-rtcore verbose=2'
-      command += ' -size 512 512 -o ' + imageFile
-    command += ' > ' + logFile
-    ret = os.system(command)
-    if tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder':
-      if not compareImages(refImageFile,imageFile):
-        sys.stdout.write(" [failed] (image compare)\n")
-        return
-    if ret == 0: sys.stdout.write(" [passed]\n")
-    else       : sys.stdout.write(" [failed]\n")
+    return
+
+  if OS == 'windows': command = 'build' + '\\' + build + '\\' + tutorial + ' ' + args + ' '
+  else:               command = 'build' + '/' + tutorial + ' ' + args + ' '
+  if tutorialGeneratesImage(tutorial):
+    command += '-rtcore verbose=2'
+    command += ' -size 512 512 -o ' + imageFile
+  elif generateReferenceImages:
+    sys.stdout.write(" [skipped]\n")
+    return
+  command += ' > ' + logFile
+  ret = os.system(command)
+
+  if tutorialGeneratesImage(tutorial):
+    if generateReferenceImages and os.path.isfile(imageFile):
+      shutil.copy(imageFile,refImageFile)
+      sys.stdout.write(" [generated]\n")
+      return
+    if not compareImages(refImageFile,imageFile):
+      sys.stdout.write(" [failed] (image compare)\n")
+      return
+
+  if ret == 0: sys.stdout.write(" [passed]\n")
+  else       : sys.stdout.write(" [failed]\n")
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
@@ -354,6 +369,9 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
       render(OS, compiler, platform, build, isa, tasking, 'hair_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'subdivision_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'displacement_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'lazy_geometry'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'interpolation'+ty, '', '', 'default')
+      render(OS, compiler, platform, build, isa, tasking, 'motion_blur_geometry'+ty, '', '', 'default')
 
       for model in models_subdiv:
         render(OS,compiler,platform,build,isa,tasking,"viewer"+ty," -c " + modelDir + dash + model,model,'default')
@@ -382,12 +400,14 @@ def renderLoop(OS):
                 if platform == 'x64' and OS != 'macosx':
                   models += models_large
                 processConfiguration(OS, compiler, platform, build, isa, tasking, models)
+                if generateReferenceImages: return
 
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile <os> <testDir>\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' run     <os> <testDir> <modelDir>\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile  <os> <testDir>                # only tests compilation\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' generate <os> <testDir> <modelDir>     # generates missing reference images\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' run      <os> <testDir> <modelDir>     # compiles and runs all tests\n')
   sys.stderr.write('         <os> = linux, windows, or macosx\n')
   sys.exit(1)
 
@@ -427,7 +447,8 @@ else:
   ISAs = ISAs_unix
   modelDir = '~/models/embree-models'
 
-if mode == 'run':
+if mode == 'run' or mode == 'generate':
+  generateReferenceImages = mode == 'generate'
   if len(sys.argv) < 4: printUsage()
   testDir = sys.argv[3]
   if not os.path.exists(testDir):

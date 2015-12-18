@@ -32,6 +32,8 @@
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
+#define ENABLE_FILTER_FUNCTION 1
+
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
 #define LEVEL_FACTOR    64.0f
@@ -1015,6 +1017,10 @@ extern "C" void device_init (char* cfg)
   //  renderPixel = renderPixelEyeLight;
   key_pressed_handler = device_key_pressed;
 
+#if ENABLE_FILTER_FUNCTION == 0
+  printf("Warning: filter functions disabled\n");
+#endif
+
 } // device_init
 
 unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
@@ -1024,6 +1030,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->triangles, 0, sizeof(ISPCTriangle));
   mesh->geomID = geomID;
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
@@ -1038,6 +1045,7 @@ unsigned int convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
       rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFunc)&occlusionFilterOBJ);
     }
   }
+#endif
   return geomID;
 }
 
@@ -1048,6 +1056,7 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   if (mesh->positions2) rtcSetBuffer(scene_out, geomID, RTC_VERTEX_BUFFER1, mesh->positions2, 0, sizeof(Vec3fa      ));
   rtcSetBuffer(scene_out, geomID, RTC_INDEX_BUFFER,  mesh->quads, 0, sizeof(ISPCQuad));
   mesh->geomID = geomID;
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
   
   ISPCMaterial& material = g_ispc_scene->materials[mesh->meshMaterialID];
@@ -1062,6 +1071,7 @@ unsigned int convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
       rtcSetOcclusionFilterFunction   (scene_out,geomID,(RTCFilterFunc)&occlusionFilterOBJ);
     }
   }
+#endif
   return geomID;
 }
 
@@ -1080,7 +1090,9 @@ unsigned int convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetBuffer(scene_out, geomID, RTC_EDGE_CREASE_WEIGHT_BUFFER,   mesh->edge_crease_weights,   0, sizeof(float));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_INDEX_BUFFER,  mesh->vertex_creases,        0, sizeof(unsigned int));
   rtcSetBuffer(scene_out, geomID, RTC_VERTEX_CREASE_WEIGHT_BUFFER, mesh->vertex_crease_weights, 0, sizeof(float));
+#if ENABLE_FILTER_FUNCTION == 1
   rtcSetOcclusionFilterFunction(scene_out,geomID,(RTCFilterFunc)&occlusionFilterOpaque);
+#endif
   return geomID;
 } 
 
@@ -1126,12 +1138,13 @@ void convertGroup(ISPCGroup* group, RTCScene scene_out)
 
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
-  if (g_instancing_mode == 1) {
+  /*if (g_instancing_mode == 1) {
     unsigned int geom_inst = instance->geomID;
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
+    } else */
+  {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
@@ -1348,7 +1361,24 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, ISPCGeom
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
     materialID = mesh->meshMaterialID;
-    // FIXME: implement texcoord interpolation
+    if (mesh->texcoords) {
+      ISPCQuad* quad = &mesh->quads[ray.primID];
+      const Vec2f st0 = Vec2f(mesh->texcoords[quad->v0]);
+      const Vec2f st1 = Vec2f(mesh->texcoords[quad->v1]);
+      const Vec2f st2 = Vec2f(mesh->texcoords[quad->v2]);
+      const Vec2f st3 = Vec2f(mesh->texcoords[quad->v3]);
+      if (ray.u+ray.v < 1.0f) {
+        const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st0 + u*st1 + v*st3;
+        dg.u = st.x;
+        dg.v = st.y;
+      } else {
+        const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st2 + u*st3 + v*st1;
+        dg.u = st.x;
+        dg.v = st.y;
+      }
+    } 
   }
   else if (geometry->type == SUBDIV_MESH) 
   {
@@ -1397,7 +1427,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
-  dg.tnear_eps = 0.001f;
+  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   int geomID = ray_geomID; 
   {
     /* get instance and geometry pointers */

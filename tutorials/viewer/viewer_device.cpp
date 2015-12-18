@@ -100,8 +100,8 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
     ISPCGeometry* geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    if (mesh->numFaces < 10000) continue;
 #if defined(ISPC)
+    if (mesh->numFaces < 10000) continue;
     launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); 	           
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -242,12 +242,13 @@ void convertGroup(ISPCGroup* group, RTCScene scene_out)
 
 unsigned int convertInstance(ISPCInstance* instance, int meshID, RTCScene scene_out)
 {
-  if (g_instancing_mode == 1) {
+  /*if (g_instancing_mode == 1) {
     unsigned int geom_inst = instance->geomID;
     unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
+    } else */
+  {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
@@ -562,12 +563,14 @@ void renderTile(int taskIndex, int* pixels,
                      const int numTilesX, 
                      const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
+  const int t = taskIndex;
+  const int tileY = t / numTilesX;
+  const int tileX = t - tileY * numTilesX;
   const int x0 = tileX * TILE_SIZE_X;
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {

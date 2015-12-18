@@ -89,7 +89,7 @@ unsigned int cube_quad_indices[24] = {
   1, 3, 7, 5,
 };
 
-#define USE_QUADS 1
+#define USE_QUADS 0
 
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene)
@@ -238,7 +238,7 @@ extern "C" void device_init (char* cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-int frameID = 0;
+int frameID = 50;
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)

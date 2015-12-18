@@ -93,7 +93,7 @@ namespace embree
     unsigned int  leftRemainderBlockIDs[MAX_TASKS]; 
     unsigned int rightRemainderBlockIDs[MAX_TASKS];
 
-    V leftReductions[MAX_TASKS]; 
+    V leftReductions[MAX_TASKS]; // FIXME: remove explicit storage
     V rightReductions[MAX_TASKS];
 
 
@@ -916,6 +916,7 @@ namespace embree
   template<size_t BLOCK_SIZE, typename T, typename V, typename Compare, typename Reduction_T, typename Reduction_V>
     class __aligned(64) parallel_partition_static_task
   {
+    ALIGNED_CLASS;
   private:
 
     static const size_t MAX_TASKS = 512;
@@ -1179,8 +1180,9 @@ namespace embree
                                                                const size_t numThreads = TaskSchedulerTBB::threadCount())
   {
 #if defined(__X86_64__) 
-    parallel_partition_static_task<BLOCK_SIZE, T,V,Compare,Reduction_T,Reduction_V> p(array,N,numThreads,init,cmp,reduction_t,reduction_v);
-    return p.partition(leftReduction,rightReduction);    
+    typedef parallel_partition_static_task<BLOCK_SIZE, T,V,Compare,Reduction_T,Reduction_V> partition_task;
+    std::unique_ptr<partition_task> p(new partition_task(array,N,numThreads,init,cmp,reduction_t,reduction_v));
+    return p->partition(leftReduction,rightReduction);    
 #else
     return serial_partitioning(array,size_t(0),N,leftReduction,rightReduction,cmp,reduction_t);
 #endif

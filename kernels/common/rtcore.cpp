@@ -517,7 +517,7 @@ namespace embree
     return -1;
   }
 
-  RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
+  /*RTCORE_API unsigned rtcNewGeometryInstance (RTCScene hscene, unsigned geomID) 
   {
     Scene* scene = (Scene*) hscene;
     RTCORE_CATCH_BEGIN;
@@ -527,7 +527,7 @@ namespace embree
     return scene->newGeometryInstance(scene->get_locked(geomID));
     RTCORE_CATCH_END(scene->device);
     return -1;
-  }
+    }*/
 
   RTCORE_API void rtcSetTransform (RTCScene hscene, unsigned geomID, RTCMatrixType layout, const float* xfm) 
   {

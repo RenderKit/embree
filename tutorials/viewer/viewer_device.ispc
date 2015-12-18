@@ -100,8 +100,8 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
     uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[g];
     if (geometry->type != SUBDIV_MESH) continue;
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    if (mesh->numFaces < 10000) continue;
 #if defined(ISPC)
+    if (mesh->numFaces < 10000) continue;
     launch[ getNumHWThreads() ] updateSubMeshEdgeLevelBufferTask(mesh,cam_pos); sync;	           
 #else
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
@@ -242,12 +242,13 @@ void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
 
 uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
 {
-  if (g_instancing_mode == 1) {
+  /*if (g_instancing_mode == 1) {
     uniform unsigned int geom_inst = instance->geomID;
     uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
+    } else */
+  {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);

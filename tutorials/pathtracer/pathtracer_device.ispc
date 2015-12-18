@@ -32,7 +32,7 @@
 //#define FORCE_FIXED_EDGE_TESSELLATION
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#define ENABLE_FILTER_FUNCTION 0
+#define ENABLE_FILTER_FUNCTION 1
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -1138,12 +1138,13 @@ void convertGroup(uniform ISPCGroup* uniform group, RTCScene scene_out)
 
 uniform unsigned int convertInstance(uniform ISPCInstance* uniform instance, uniform int meshID, RTCScene scene_out)
 {
-  if (g_instancing_mode == 1) {
+  /*if (g_instancing_mode == 1) {
     uniform unsigned int geom_inst = instance->geomID;
     uniform unsigned int geomID = rtcNewGeometryInstance(scene_out, geom_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
     return geomID;
-  } else {
+    } else */
+  {
     RTCScene scene_inst = geomID_to_scene[instance->geomID];
     uniform unsigned int geomID = rtcNewInstance(scene_out, scene_inst);
     rtcSetTransform(scene_out,geomID,RTC_MATRIX_COLUMN_MAJOR_ALIGNED16,&instance->space.l.vx.x);
@@ -1360,7 +1361,24 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
     materialID = mesh->meshMaterialID;
-    // FIXME: implement texcoord interpolation
+    if (mesh->texcoords) {
+      ISPCQuad* quad = &mesh->quads[ray.primID];
+      const Vec2f st0 = make_Vec2f(mesh->texcoords[quad->v0]);
+      const Vec2f st1 = make_Vec2f(mesh->texcoords[quad->v1]);
+      const Vec2f st2 = make_Vec2f(mesh->texcoords[quad->v2]);
+      const Vec2f st3 = make_Vec2f(mesh->texcoords[quad->v3]);
+      if (ray.u+ray.v < 1.0f) {
+        const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st0 + u*st1 + v*st3;
+        dg.u = st.x;
+        dg.v = st.y;
+      } else {
+        const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st2 + u*st3 + v*st1;
+        dg.u = st.x;
+        dg.v = st.y;
+      }
+    } 
   }
   else if (geometry->type == SUBDIV_MESH) 
   {
@@ -1409,7 +1427,7 @@ inline int postIntersect(const RTCRay& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned ray_geomID = g_instancing_mode >= 2 ? ray.instID : ray.geomID;
-  dg.tnear_eps = 0.001f;
+  dg.tnear_eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
   foreach_unique (geomID in ray_geomID) 
   {
     /* get instance and geometry pointers */

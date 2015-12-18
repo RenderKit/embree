@@ -238,7 +238,7 @@ export void device_init (uniform int8* uniform cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-uniform int frameID = 0;
+uniform int frameID = 50;
 
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const uniform Vec3f& vy, const uniform Vec3f& vz, const uniform Vec3f& p)

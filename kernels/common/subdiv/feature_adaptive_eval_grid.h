@@ -278,10 +278,17 @@ namespace embree
       
       const size_t y0s = stitch(y0,fine_y,coarse_y);
       const size_t y1s = stitch(y1,fine_y,coarse_y);
-      assert(y1s-y0s < 4097);
-      
-      float px[4097], py[4097], pz[4097], u[4097], v[4097], nx[4097], ny[4097], nz[4097]; // FIXME: limits maximal level
-      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx?nx:nullptr,Ny?ny:nullptr,Nz?nz:nullptr, 1,4097);
+      const size_t M = y1s-y0s+1;
+
+      dynamic_large_stack_array(float,px,M,64*sizeof(float));
+      dynamic_large_stack_array(float,py,M,64*sizeof(float));
+      dynamic_large_stack_array(float,pz,M,64*sizeof(float));
+      dynamic_large_stack_array(float,u,M,64*sizeof(float));
+      dynamic_large_stack_array(float,v,M,64*sizeof(float));
+      dynamic_large_stack_array(float,nx,M,64*sizeof(float));
+      dynamic_large_stack_array(float,ny,M,64*sizeof(float));
+      dynamic_large_stack_array(float,nz,M,64*sizeof(float));
+      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx ? (float*)nx : nullptr,Ny ? (float*)ny : nullptr ,Nz ? (float*)nz : nullptr, 1,4097);
       
       for (int y=y0; y<=y1; y++) {
         const size_t ys = stitch(y,fine_y,coarse_y)-y0s;
@@ -310,10 +317,17 @@ namespace embree
       
       const size_t x0s = stitch(x0,fine_x,coarse_x);
       const size_t x1s = stitch(x1,fine_x,coarse_x);
-      assert(x1s-x0s < 4097);
-      
-      float px[4097], py[4097], pz[4097], u[4097], v[4097], nx[4097], ny[4097], nz[4097]; // FIXME: limits maximal level
-      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx?nx:nullptr,Ny?ny:nullptr,Nz?nz:nullptr, 4097,1);
+      const size_t M = x1s-x0s+1;
+
+      dynamic_large_stack_array(float,px,M,64*sizeof(float));
+      dynamic_large_stack_array(float,py,M,64*sizeof(float));
+      dynamic_large_stack_array(float,pz,M,64*sizeof(float));
+      dynamic_large_stack_array(float,u,M,64*sizeof(float));
+      dynamic_large_stack_array(float,v,M,64*sizeof(float));
+      dynamic_large_stack_array(float,nx,M,64*sizeof(float));
+      dynamic_large_stack_array(float,ny,M,64*sizeof(float));
+      dynamic_large_stack_array(float,nz,M,64*sizeof(float));
+      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx ? (float*)nx :nullptr,Ny ? (float*)ny : nullptr , Nz ? (float*)nz : nullptr, 4097,1);
       
       for (int x=x0; x<=x1; x++) {
 	const size_t xs = stitch(x,fine_x,coarse_x)-x0s;
