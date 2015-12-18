@@ -238,7 +238,7 @@ extern "C" void device_init (char* cfg)
   key_pressed_handler = device_key_pressed_default;
 }
 
-int frameID = 0;
+int frameID = 50;
 
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy, const Vec3fa& vz, const Vec3fa& p)
