@@ -93,7 +93,7 @@ namespace embree
     unsigned int  leftRemainderBlockIDs[MAX_TASKS]; 
     unsigned int rightRemainderBlockIDs[MAX_TASKS];
 
-    V leftReductions[MAX_TASKS]; 
+    V leftReductions[MAX_TASKS]; // FIXME: remove explicit storage
     V rightReductions[MAX_TASKS];
 
 
