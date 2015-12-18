@@ -177,7 +177,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   rtcUnmapBuffer(scene_i, geomID, RTC_LEVEL_BUFFER);
   
   /* create face color array */
-  colors = new Vec3fa[6];
+  colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa));
   colors[0] = Vec3fa(1,0,0); // left side
   colors[1] = Vec3fa(0,1,0); // right side
   colors[2] = Vec3fa(0.5f);  // bottom side

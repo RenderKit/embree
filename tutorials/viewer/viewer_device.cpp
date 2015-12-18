@@ -563,12 +563,14 @@ void renderTile(int taskIndex, int* pixels,
                      const int numTilesX, 
                      const int numTilesY)
 {
-  const int tileY = taskIndex / numTilesX;
-  const int tileX = taskIndex - tileY * numTilesX;
+  const int t = taskIndex;
+  const int tileY = t / numTilesX;
+  const int tileX = t - tileY * numTilesX;
   const int x0 = tileX * TILE_SIZE_X;
   const int x1 = min(x0+TILE_SIZE_X,width);
   const int y0 = tileY * TILE_SIZE_Y;
   const int y1 = min(y0+TILE_SIZE_Y,height);
+
 
   for (int y = y0; y<y1; y++) for (int x = x0; x<x1; x++)
   {
