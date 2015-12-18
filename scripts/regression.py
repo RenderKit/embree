@@ -318,11 +318,11 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
   if (scene != ''): refImageFile += '_' +  scene.replace('/','_').replace('.ecs','')
   refImageFile += '.tga'
 
-  if generateReferenceImages and os.path.isfile(refImageFile):
-    sys.stdout.write(" [skipped]\n")
-    return
-
-  if os.path.exists(logFile):
+  if generateReferenceImages:
+    if os.path.isfile(refImageFile):
+      sys.stdout.write(" [skipped]\n")
+      return
+  elif os.path.exists(logFile):
     sys.stdout.write(" [skipped]\n")
     return
 
