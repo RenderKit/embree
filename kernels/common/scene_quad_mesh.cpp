@@ -149,7 +149,7 @@ namespace embree
     return true;
   }
 
-  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats) 
+  void QuadMesh::interpolate(unsigned primID, float u, float v, RTCBufferType buffer, float* P, float* dPdu, float* dPdv, size_t numFloats)  // FIXME: do not interpolate bilinearly here!
   {
     /* test if interpolation is enabled */
 #if defined(DEBUG)

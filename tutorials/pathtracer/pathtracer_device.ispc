@@ -1361,7 +1361,24 @@ void postIntersectGeometry(const RTCRay& ray, DifferentialGeometry& dg, uniform 
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
     materialID = mesh->meshMaterialID;
-    // FIXME: implement texcoord interpolation
+    if (mesh->texcoords) {
+      ISPCQuad* quad = &mesh->quads[ray.primID];
+      const Vec2f st0 = make_Vec2f(mesh->texcoords[quad->v0]);
+      const Vec2f st1 = make_Vec2f(mesh->texcoords[quad->v1]);
+      const Vec2f st2 = make_Vec2f(mesh->texcoords[quad->v2]);
+      const Vec2f st3 = make_Vec2f(mesh->texcoords[quad->v3]);
+      if (ray.u+ray.v < 1.0f) {
+        const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st0 + u*st1 + v*st3;
+        dg.u = st.x;
+        dg.v = st.y;
+      } else {
+        const float u = 1.0f-ray.u, v = 1.0f-ray.v; const float w = 1.0f-u-v;
+        const Vec2f st = w*st2 + u*st3 + v*st1;
+        dg.u = st.x;
+        dg.v = st.y;
+      }
+    } 
   }
   else if (geometry->type == SUBDIV_MESH) 
   {
