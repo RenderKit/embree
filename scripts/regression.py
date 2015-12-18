@@ -68,8 +68,8 @@ compilers_unix = ['GCC', 'CLANG', 'ICC']
 compilers      = []
 
 #platforms_win  = ['Win32']
-platforms_win  = ['x64']
-#platforms_win  = ['Win32', 'x64']
+#platforms_win  = ['x64']
+platforms_win  = ['Win32', 'x64']
 platforms_unix = ['x64']
 platforms      = []
 
