@@ -122,7 +122,7 @@ namespace embree
       else if (tag == "-instancing") {
         std::string mode = cin->getString();
         if      (mode == "none"    ) g_instancing_mode = TutorialScene::INSTANCING_NONE;
-        else if (mode == "geometry") g_instancing_mode = TutorialScene::INSTANCING_GEOMETRY;
+        //else if (mode == "geometry") g_instancing_mode = TutorialScene::INSTANCING_GEOMETRY;
         else if (mode == "scene_geometry") g_instancing_mode = TutorialScene::INSTANCING_SCENE_GEOMETRY;
         else if (mode == "scene_group"   ) g_instancing_mode = TutorialScene::INSTANCING_SCENE_GROUP;
         else throw std::runtime_error("unknown instancing mode: "+mode);

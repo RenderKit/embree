@@ -47,7 +47,7 @@ extern "C" void ispcOccluded8 (void* uniform valid, RTCScene scene, void* unifor
 extern "C" void ispcOccluded16 (void* uniform valid, RTCScene scene, void* uniform ray);
 extern "C" void ispcDeleteScene (RTCScene scene);
 extern "C" uniform unsigned int ispcNewInstance (RTCScene target, RTCScene source);
-extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform unsigned int geomID);
+//extern "C" uniform unsigned int ispcNewGeometryInstance (RTCScene scene, uniform unsigned int geomID);
 extern "C" void ispcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm);
 extern "C" uniform unsigned int ispcNewUserGeometry (RTCScene scene, uniform size_tt numItems);
 extern "C" uniform unsigned int ispcNewUserGeometry2 (RTCScene scene, uniform size_tt numItems, uniform size_tt numTimeSteps);
@@ -263,9 +263,9 @@ uniform unsigned int rtcNewInstance (RTCScene target, RTCScene source) {
   return ispcNewInstance(target,source);
 }
 
-uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
+/*uniform unsigned int rtcNewGeometryInstance(RTCScene scene, uniform unsigned int geomID) {
   return ispcNewGeometryInstance(scene,geomID);
-}
+  }*/
 
 void rtcSetTransform (RTCScene scene, uniform unsigned int geomID, uniform RTCMatrixType layout, const uniform float* uniform xfm) {
   ispcSetTransform(scene,geomID,layout,xfm);
