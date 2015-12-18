@@ -145,7 +145,7 @@ def configName(OS, compiler, platform, build, isa, tasking, tutorial, scene, fla
   if tutorial != '':
     cfg += '_' + tutorial
   if scene != '':
-    cfg += '_' + scene.replace('/','_')
+    cfg += '_' + scene.replace('/','_').replace('.ecs','')
   if flags != '':
     cfg += '_' + flags
   return cfg
