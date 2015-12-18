@@ -25,4 +25,4 @@ ADD_LIBRARY(scenegraph STATIC
     scenegraph.cpp)
 
 TARGET_LINK_LIBRARIES(scenegraph sys lexers)
-SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)
