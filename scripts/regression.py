@@ -85,7 +85,7 @@ builds = []
 ISAs_win  = ['SSE2', 'AVX', 'AVX2']
 #ISAs_unix = ['AVX2']
 ISAs_unix = ['SSE2', 'AVX', 'AVX2']
-#ISAs_unix = ['SSE2', 'AVX', 'AVX512']
+#ISAs_unix = ['SSE2', 'AVX', 'AVX512KNL']
 ISAs = []
 
 supported_configurations = [
@@ -119,7 +119,7 @@ supported_configurations = [
   'ICC_x64_RelWithDebInfo_SSE4.2',
   'ICC_x64_RelWithDebInfo_AVX',
   'ICC_x64_RelWithDebInfo_AVX2',
-  'ICC_x64_RelWithDebInfo_AVX512',
+  'ICC_x64_RelWithDebInfo_AVX512KNL',
   
   'GCC_x64_RelWithDebInfo_SSE2',
   'GCC_x64_RelWithDebInfo_SSE4.2',
