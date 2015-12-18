@@ -632,20 +632,6 @@ namespace embree
           {
             const size_t index = select_min(sah);            
             assert(index < 15);
-            if (sah[index] >= bestSAH || isnan(sah[index]) || isinf(sah[index]))
-            {
-              PRINT(lArea16);
-              PRINT(rArea16);
-              PRINT(leftArea);
-              PRINT(rightArea);
-              PRINT(lC);
-              PRINT(rC);
-
-              PRINT(index);
-              PRINT(sah);
-              PRINT(bestSAH);
-              PRINT(dim);
-            }
             assert(sah[index] < bestSAH);
             bestDim = dim;
             bestPos = index+1;
