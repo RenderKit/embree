@@ -597,8 +597,8 @@ namespace embree
   }
 
   struct LineSegments {
-    std::vector<Vec3fa> vertices;
-    std::vector<int> lines;
+    avector<Vec3fa> vertices;
+    avector<int> lines;
   };
 
   Vec3fa uniformSampleSphere(const float& u, const float& v)
