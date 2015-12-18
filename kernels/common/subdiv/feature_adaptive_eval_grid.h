@@ -288,7 +288,7 @@ namespace embree
       dynamic_large_stack_array(float,nx,M,64*sizeof(float));
       dynamic_large_stack_array(float,ny,M,64*sizeof(float));
       dynamic_large_stack_array(float,nz,M,64*sizeof(float));
-      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx ? nx.data() : nullptr,Ny ? ny.data() : nullptr ,Nz ? nz.data() : nullptr, 1,4097);
+      Eval(patch,subPatch, right,right, y0s,y1s, 2,coarse_y+1, px,py,pz,u,v, Nx ? (float*)nx : nullptr,Ny ? (float*)ny : nullptr ,Nz ? (float*)nz : nullptr, 1,4097);
       
       for (int y=y0; y<=y1; y++) {
         const size_t ys = stitch(y,fine_y,coarse_y)-y0s;
@@ -327,7 +327,7 @@ namespace embree
       dynamic_large_stack_array(float,nx,M,64*sizeof(float));
       dynamic_large_stack_array(float,ny,M,64*sizeof(float));
       dynamic_large_stack_array(float,nz,M,64*sizeof(float));
-      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx ? nx.data() :nullptr,Ny ? ny.data() : nullptr , Nz ? nz.data() : nullptr, 4097,1);
+      Eval(patch,subPatch, x0s,x1s, bottom,bottom, coarse_x+1,2, px,py,pz,u,v, Nx ? (float*)nx :nullptr,Ny ? (float*)ny : nullptr , Nz ? (float*)nz : nullptr, 4097,1);
       
       for (int x=x0; x<=x1; x++) {
 	const size_t xs = stitch(x,fine_x,coarse_x)-x0s;
