@@ -251,51 +251,33 @@ float noise(float x, float y, float z)
     scene.geometries.push_back(mesh);
     //generateHairOnTriangleMesh(scene,mesh,0.5f*r,0.001f*r,80);
 
-#if 0
-    const float thickness = 0.01f*r;
-    TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
-    srand48(123456789);
-    for (size_t t=0; t<16; t++) 
-      {
-	Vec3fa dp = uniformSampleSphere(drand48(),drand48());
-
-	Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
-	Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
-	Vec3fa l2 = p + r*noise3D(dp + 0.50f*dp); l2.w = thickness;
-	Vec3fa l3 = p + r*noise3D(dp + 0.75f*dp); l3.w = thickness;
-
-	const unsigned int v_index = hairset->v.size();
-	hairset->v.push_back(l0);
-	hairset->v.push_back(l1);
-	hairset->v.push_back(l2);
-	hairset->v.push_back(l3);
-
-	hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
-      }
-    scene.geometries.push_back(hairset);
-#else
     const float thickness = 0.001f*r;
     TutorialScene::HairSet* hairset = new TutorialScene::HairSet;
 
-    for (size_t t=0; t<100000; t++) 
+    int s = 0;
+    for (size_t iy=0; iy<300; iy++)
     {
-      Vec3fa dp = uniformSampleSphere(drand48(),drand48());
-
-      Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
-      Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
-      Vec3fa l2 = p + r*noise3D(dp + 0.50f*dp); l2.w = thickness;
-      Vec3fa l3 = p + r*noise3D(dp + 0.75f*dp); l3.w = thickness;
+      for (size_t ix=0; ix<300; ix++)
+      {
+        float fx = (float(ix)+2.0f*g2[s])/300.0f; s=(s+1)%255;
+        float fy = (float(iy)+2.0f*g2[s])/300.0f; s=(s+1)%255;
+        Vec3fa dp = uniformSampleSphere(fx,fy);
         
-      const unsigned int v_index = hairset->v.size();
-      hairset->v.push_back(l0);
-      hairset->v.push_back(l1);
-      hairset->v.push_back(l2);
-      hairset->v.push_back(l3);
+        Vec3fa l0 = p + r*       (dp + 0.00f*dp); l0.w = thickness;
+        Vec3fa l1 = p + r*       (dp + 0.25f*dp); l1.w = thickness;
+        Vec3fa l2 = p + r*noise3D(dp + 0.50f*dp); l2.w = thickness;
+        Vec3fa l3 = p + r*noise3D(dp + 0.75f*dp); l3.w = thickness;
+        
+        const unsigned int v_index = hairset->v.size();
+        hairset->v.push_back(l0);
+        hairset->v.push_back(l1);
+        hairset->v.push_back(l2);
+        hairset->v.push_back(l3);
 	
-      hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
+        hairset->hairs.push_back( TutorialScene::Hair(v_index,hairset->hairs.size()) );
+      }
     }
     scene.geometries.push_back(hairset);
-#endif
   }
 
   void addGroundPlane (TutorialScene& scene, const Vec3fa& p00, const Vec3fa& p01, const Vec3fa& p10, const Vec3fa& p11)
