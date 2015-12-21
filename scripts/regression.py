@@ -175,8 +175,8 @@ def compile(OS,compiler,platform,build,isa,tasking):
       full_compiler = 'V140'
     elif (compiler == 'ICC'):
       generator = 'Visual Studio 12 2013'
-#      full_compiler = '"Intel C++ Compiler XE 15.0" '
-      full_compiler = '"Intel C++ Compiler 16.0" '
+      full_compiler = '"Intel C++ Compiler XE 15.0" '
+#      full_compiler = '"Intel C++ Compiler 16.0" '
     else:
       sys.stderr.write('unknown compiler: ' + compiler + '\n')
       sys.exit(1)
