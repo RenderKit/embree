@@ -378,7 +378,7 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 {
   /*! refract ray into medium */
   float cosThetaO = dot(wo,dg.Ns);
-  if (cosThetaO <= 0.0f) return Vec3fa(0.f);
+  if (cosThetaO <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   float cosThetaO1; Sample3f wo1 = refract(wo,dg.Ns,This->etait,cosThetaO,cosThetaO1);
   
   /*! sample ground BRDF */
@@ -387,11 +387,11 @@ inline Vec3fa DielectricLayerLambertian__sample(const DielectricLayerLambertian*
 
   /*! refract ray out of medium */
   float cosThetaI1 = dot(wi1.v,dg.Ns);
-  if (cosThetaI1 <= 0.0f) return Vec3fa(0.f);
+  if (cosThetaI1 <= 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   
   float cosThetaI; 
   Sample3f wi0 = refract(neg(wi1.v),neg(dg.Ns),This->etati,cosThetaI1,cosThetaI);
-  if (wi0.pdf == 0.0f) return Vec3fa(0.f);
+  if (wi0.pdf == 0.0f) { wi = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   
   /*! accumulate contribution of path */
   wi = Sample3f(wi0.v,wi1.pdf);
@@ -582,7 +582,7 @@ void OBJMaterial__preprocess(OBJMaterial* material, BRDF& brdf, const Vec3fa& wo
 
 Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi) 
 {
-  Vec3fa R = Vec3fa(0.0f,0.0f,0.0f);
+  Vec3fa R = Vec3fa(0.0f);
   const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
@@ -689,9 +689,9 @@ Vec3fa MetalMaterial__sample(MetalMaterial* This, const BRDF& brdf, const Vec3fa
 {
   const PowerCosineDistribution distribution = make_PowerCosineDistribution(rcp(This->roughness));
 
-  if (dot(wo,dg.Ns) <= 0.0f) return Vec3fa(0.0f);
+  if (dot(wo,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   sample(distribution,wo,dg.Ns,wi_o,s);
-  if (dot(wi_o.v,dg.Ns) <= 0.0f) return Vec3fa(0.0f);
+  if (dot(wi_o.v,dg.Ns) <= 0.0f) { wi_o = Sample3f(Vec3fa(0.0f),0.0f); return Vec3fa(0.f); }
   return MetalMaterial__eval(This,brdf,wo,dg,wi_o.v);
 }
 
@@ -916,7 +916,7 @@ inline Vec3fa Material__sample(ISPCMaterial* materials, int materialID, int numM
       case MATERIAL_MIRROR: c = MirrorMaterial__sample((MirrorMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_THIN_DIELECTRIC: c = ThinDielectricMaterial__sample((ThinDielectricMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
       case MATERIAL_HAIR: c = HairMaterial__sample((HairMaterial*)material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-      default: c = Vec3fa(0.0f); 
+      default: wi_o = Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
       }
     }
   }
@@ -1715,7 +1715,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
 {
   RandomSampler sampler;
 
-  Vec3fa L = Vec3fa(0.0f,0.0f,0.0f);
+  Vec3fa L = Vec3fa(0.0f);
 
   for (int i=0; i<SAMPLES_PER_PIXEL; i++)
   {
