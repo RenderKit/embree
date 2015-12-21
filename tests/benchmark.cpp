@@ -623,7 +623,7 @@ namespace embree
     return (float)(int)(state >> 1) * 4.656612873077392578125e-10f;
   }
 
-  void createHairball(const Vec3fa pos, const float r, size_t numLines, LineSegments& hairset_o)
+  void createHairball(const Vec3fa& pos, const float r, size_t numLines, LineSegments& hairset_o)
   {
     const float thickness = 0.001f*r;
 

@@ -27,6 +27,8 @@ namespace embree
   
   struct HeightField : public RefCount
   {
+    ALIGNED_STRUCT;
+
     HeightField (Ref<Image> texture, const BBox3fa& bounds)
       : texture(texture), bounds(bounds) {}
     
