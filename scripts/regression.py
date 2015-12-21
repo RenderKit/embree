@@ -411,10 +411,9 @@ def renderLoop(OS):
 ########################## command line parsing ##########################
 
 def printUsage():
-  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile  <os> <testDir>                # only tests compilation\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' generate <os> <testDir> <modelDir>     # generates missing reference images\n')
-  sys.stderr.write('       ' + sys.argv[0] + ' run      <os> <testDir> <modelDir>     # compiles and runs all tests\n')
-  sys.stderr.write('         <os> = linux, windows, or macosx\n')
+  sys.stderr.write('Usage: ' + sys.argv[0] + ' compile  <testDir>                # only tests compilation\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' generate <testDir> <modelDir>     # generates missing reference images\n')
+  sys.stderr.write('       ' + sys.argv[0] + ' run      <testDir> <modelDir>     # compiles and runs all tests\n')
   sys.exit(1)
 
 def readLines(fileName):
@@ -432,47 +431,55 @@ def loadModelList(modelDir):
   models_small_x64   = readLines(modelDir+dash+'embree-models-small-x64.txt')
   models_large       = readLines(modelDir+dash+'embree-models-large.txt')
 
+# detect platform
+import ctypes
 if sys.platform.startswith("win"):
-  import ctypes
-  SEM_NOGPFAULTERRORBOX = 0x0002
-  ctypes.windll.kernel32.SetErrorMode(SEM_NOGPFAULTERRORBOX);
-
-if len(sys.argv) < 3: printUsage()
-mode = sys.argv[1]
-OS = sys.argv[2]
-if OS != 'linux' and OS != 'windows' and OS != 'macosx': printUsage();
-
-if OS == 'windows':
+  OS = "windows"
   dash = '\\'
   compilers = compilers_win
   platforms = platforms_win
   builds = builds_win
   ISAs = ISAs_win
   modelDir = '%HOMEPATH%\\models\\embree-models'
-
-else:
+  ctypes.windll.kernel32.SetErrorMode(0x0002);  # enable SEM_NOGPFAULTERRORBOX
+elif sys.platform.startswith("linux"):
+  OS = "linux"
   dash = '/'
   compilers = compilers_unix
   platforms = platforms_unix
   builds = builds_unix
   ISAs = ISAs_unix
   modelDir = '~/models/embree-models'
+elif sys.platform.startswith("darwin"):
+  OS = "macosx"
+  dash = '/'
+  compilers = compilers_unix
+  platforms = platforms_unix
+  builds = builds_unix
+  ISAs = ISAs_unix
+  modelDir = '~/models/embree-models'
+else
+  print("unknown platform: "+ sys.platform);
+  sys.exit(1)
+  
+if len(sys.argv) < 2: printUsage()
+mode = sys.argv[1]
 
 if mode == 'run' or mode == 'generate':
   generateReferenceImages = mode == 'generate'
-  if len(sys.argv) < 4: printUsage()
-  testDir = sys.argv[3]
+  if len(sys.argv) < 3: printUsage()
+  testDir = sys.argv[2]
   if not os.path.exists(testDir):
     os.system('mkdir '+testDir)
-  if len(sys.argv) > 4: 
-    modelDir = sys.argv[4]
+  if len(sys.argv) > 3: 
+    modelDir = sys.argv[3]
   loadModelList(modelDir)
   renderLoop(OS)
   sys.exit(1)
 
 if mode == 'compile':
-  if len(sys.argv) < 4: printUsage()
-  testDir = sys.argv[3]
+  if len(sys.argv) < 3: printUsage()
+  testDir = sys.argv[2]
   if not os.path.exists(testDir):
     os.system('mkdir '+testDir)
   compileLoop(OS)
