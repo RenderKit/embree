@@ -367,7 +367,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'bvh_access', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
-    sys.exit(1);
+
     for ty in ['','_ispc']:
       render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', 'default')
