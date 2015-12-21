@@ -3631,6 +3631,8 @@ namespace embree
   /* main function in embree namespace */
   int main(int argc, char** argv) 
   {
+    *(char*)NULL = 0;
+
     const Vec3fa pos = Vec3fa(148376.0f,1234.0f,-223423.0f);
 
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */

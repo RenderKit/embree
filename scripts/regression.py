@@ -334,7 +334,7 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
   elif generateReferenceImages:
     sys.stdout.write(" [skipped]\n")
     return
-  command += ' > ' + logFile
+  command += ' > ' + logFile + ' 2>&1'
   ret = os.system(command)
 
   if tutorialGeneratesImage(tutorial):
@@ -343,16 +343,18 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
       sys.stdout.write(" [generated]\n")
       return
     if not compareImages(refImageFile,imageFile):
-      sys.stdout.write(" [failed] (image compare)\n")
+      sys.stdout.write(" [failed] [images differ]\n")
       return
 
-  if ret == 0: sys.stdout.write(" [passed]\n")
-  else       : sys.stdout.write(" [failed]\n")
+  if   ret == 0          : sys.stdout.write(" [passed]\n")
+  elif ret == -1073741819: sys.stdout.write(" [failed] [segfault]\n");
+  elif ret == -1073740791: sys.stdout.write(" [failed] [assertion]\n");
+  else                   : sys.stdout.write(" [failed]\n")
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
   sys.stdout.flush()
-  ret = compile(OS,compiler,platform,build,isa,tasking)
+  ret = 0 #compile(OS,compiler,platform,build,isa,tasking)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else:        
     sys.stdout.write(" [passed]\n")
@@ -360,6 +362,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
     render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
+    sys.exit(1);
     for ty in ['','_ispc']:
       render(OS, compiler, platform, build, isa, tasking, 'triangle_geometry'+ty, '', '', 'default')
       render(OS, compiler, platform, build, isa, tasking, 'dynamic_scene'+ty, '', '', 'default')
@@ -425,6 +428,12 @@ def loadModelList(modelDir):
   models_small_win32 = readLines(modelDir+dash+'embree-models-small-win32.txt')
   models_small_x64   = readLines(modelDir+dash+'embree-models-small-x64.txt')
   models_large       = readLines(modelDir+dash+'embree-models-large.txt')
+
+print(sys.platform);
+if sys.platform.startswith("win"):
+  import ctypes
+  SEM_NOGPFAULTERRORBOX = 0x0002
+  ctypes.windll.kernel32.SetErrorMode(SEM_NOGPFAULTERRORBOX);
 
 if len(sys.argv) < 3: printUsage()
 mode = sys.argv[1]
