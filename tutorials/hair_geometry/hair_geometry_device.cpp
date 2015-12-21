@@ -439,7 +439,10 @@ Vec3fa renderPixelPathTrace(float x, float y, const Vec3fa& vx, const Vec3fa& vy
 #if 1
     /* sample BRDF */
     Vec3fa wi;
-    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,RandomSampler_get1D(sampler),RandomSampler_get1D(sampler),RandomSampler_get1D(sampler));
+    float ru = RandomSampler_get1D(sampler);
+    float rv = RandomSampler_get1D(sampler);
+    float rw = RandomSampler_get1D(sampler);
+    c = AnisotropicBlinn__sample(&brdf,neg(ray.dir),wi,ru,rv,rw);
     if (wi.w <= 0.0f) return color;
 
     /* calculate secondary ray and offset it out of the hair */

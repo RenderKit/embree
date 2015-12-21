@@ -60,7 +60,7 @@ namespace embree
     ALIGNED_STRUCT;
     friend class Device;
 
-    static const size_t TASK_STACK_SIZE = 1024;           //!< task structure stack
+    static const size_t TASK_STACK_SIZE = 2*1024;           //!< task structure stack, FIXME: gcc-baxsed run throws assertion
     static const size_t CLOSURE_STACK_SIZE = 256*1024;    //!< stack for task closures
 
     struct Thread;
@@ -128,7 +128,7 @@ namespace embree
 
       /*! construction of new task */
       __forceinline Task (TaskFunction* closure, Task* parent, size_t stackPtr, size_t N) 
-        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1), N(N)
+        : closure(closure), parent(parent), stackPtr(stackPtr), dependencies(1), stealable(true), N(N)
       {
         if (parent) parent->add_dependencies(+1);
 	switch_state(DONE,INITIALIZED);
@@ -136,7 +136,7 @@ namespace embree
 
       /*! construction of stolen task, stealing thread will decrement initial dependency */
       __forceinline Task (TaskFunction* closure, Task* parent) 
-        : closure(closure), parent(parent), stackPtr(-1), dependencies(1) 
+        : closure(closure), parent(parent), stackPtr(-1), dependencies(1), stealable(false), N(1)
       {
 	switch_state(DONE,INITIALIZED);
       }
@@ -144,6 +144,7 @@ namespace embree
       /*! try to steal this task */
       bool try_steal(Task& child)
       {
+        if (!stealable) return false;
 	if (!try_switch_state(INITIALIZED,DONE)) return false;
 	new (&child) Task(closure, this);
         return true;
@@ -155,6 +156,7 @@ namespace embree
     public:
       volatile atomic32_t state;         //!< state this task is in
       volatile atomic32_t dependencies;  //!< dependencies to wait for
+      volatile bool stealable;           //!< true if task can be stolen
       TaskFunction* closure;             //!< the closure to execute
       Task* parent;                      //!< parent task to signal when we are finished
       size_t stackPtr;                   //!< stack location where closure is stored
