@@ -279,7 +279,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     ret = os.system(command)
     if ret != 0: return ret
 
-    command  = 'cd build && make clean && make -j ' + multiprocessing.cpu_count()
+    command  = 'cd build && make clean && make -j ' + str(multiprocessing.cpu_count())
     command += ' 2>> ../' + logFile + ' >> ../' + logFile
     return os.system(command)
 
