@@ -347,8 +347,10 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
       return
 
   if   ret == 0          : sys.stdout.write(" [passed]\n")
-  elif ret == -1073741819: sys.stdout.write(" [failed] [segfault]\n");
-  elif ret == -1073740791: sys.stdout.write(" [failed] [assertion]\n");
+  elif ret == -1073741819: sys.stdout.write(" [failed] [segfault]\n");  # segfault under windows
+  elif ret == -1073740791: sys.stdout.write(" [failed] [assertion]\n"); # assertion under windows
+  elif ret == 35584      : sys.stdout.write(" [failed] [segfault]\n");  # segfault under linux
+  elif ret == 34304      : sys.stdout.write(" [failed] [assertion]\n"); # assertion under linux
   else                   : sys.stdout.write(" [failed]\n")
 
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
