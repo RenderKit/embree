@@ -90,7 +90,7 @@ namespace embree
         }
         
         /*! finds the best split */
-        const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
+        __noinline const Split parallel_find(const Set& set, const PrimInfo& pinfo, const size_t logBlockSize)
         {
           Binner binner(empty);
           const BinMapping<BINS> mapping(pinfo);
@@ -163,7 +163,7 @@ namespace embree
         }
         
         /*! array partitioning */
-        void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
+        __noinline void parallel_split(const Split& split, const Set& set, PrimInfo& left, Set& lset, PrimInfo& right, Set& rset)
         {
           if (!split.valid()) {
             deterministic_order(set);
