@@ -1675,7 +1675,6 @@ namespace embree
 
 int main(int argc, char** argv)
 {
-  assert(false);
   try {
     return embree::main(argc, argv);
   }

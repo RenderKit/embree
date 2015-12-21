@@ -142,7 +142,6 @@ namespace embree
 
 int main(int argc, char** argv)
 {
-  return 1;
   try {
     return embree::main(argc, argv);
   }

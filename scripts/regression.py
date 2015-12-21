@@ -356,7 +356,7 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
 def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
   sys.stdout.write('compiling configuration ' + compiler + ' ' + platform + ' ' + build + ' ' + isa + ' ' + tasking)
   sys.stdout.flush()
-  ret = 0 #compile(OS,compiler,platform,build,isa,tasking)
+  ret = compile(OS,compiler,platform,build,isa,tasking)
   if ret != 0: sys.stdout.write(" [failed]\n")
   else:        
     sys.stdout.write(" [passed]\n")
@@ -431,7 +431,6 @@ def loadModelList(modelDir):
   models_small_x64   = readLines(modelDir+dash+'embree-models-small-x64.txt')
   models_large       = readLines(modelDir+dash+'embree-models-large.txt')
 
-print(sys.platform);
 if sys.platform.startswith("win"):
   import ctypes
   SEM_NOGPFAULTERRORBOX = 0x0002
