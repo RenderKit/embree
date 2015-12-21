@@ -553,12 +553,11 @@ task void renderTile(uniform int* uniform pixels,
     //Vec3f color = renderPixelTestEyeLight(x,y,vx,vy,vz,p);
 
     /* write color to framebuffer */
-    Vec3fa* dst = &g_accu[y*width+x];
-    *dst = *dst + make_Vec3fa(color.x,color.y,color.z,1.0f);
-    float f = rcp(max(0.001f,dst->w));
-    unsigned int r = (unsigned int) (255.0f * clamp(dst->x*f,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(dst->y*f,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(dst->z*f,0.0f,1.0f));
+    Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    float f = rcp(max(0.001f,accu_color.w));
+    unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 }
