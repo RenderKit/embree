@@ -54,6 +54,10 @@
 import sys
 import os
 import re
+import ctypes
+import shutil
+import subprocess 
+import multiprocessing
 
 dash = '/'
 
@@ -275,7 +279,7 @@ def compile(OS,compiler,platform,build,isa,tasking):
     ret = os.system(command)
     if ret != 0: return ret
 
-    command  = 'cd build && make clean && make -j 8 '
+    command  = 'cd build && make clean && make -j ' + multiprocessing.cpu_count()
     command += ' 2>> ../' + logFile + ' >> ../' + logFile
     return os.system(command)
 
@@ -297,8 +301,6 @@ def compileLoop(OS):
 def tutorialGeneratesImage(tutorial):
   return tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_access' and tutorial != "bvh_builder"
 
-import shutil
-import subprocess 
 def compareImages(image0,image1):
   if not os.path.isfile(image0) or not os.path.isfile(image1): return False
   try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
@@ -432,7 +434,6 @@ def loadModelList(modelDir):
   models_large       = readLines(modelDir+dash+'embree-models-large.txt')
 
 # detect platform
-import ctypes
 if sys.platform.startswith("win"):
   OS = "windows"
   dash = '\\'
@@ -458,7 +459,7 @@ elif sys.platform.startswith("darwin"):
   builds = builds_unix
   ISAs = ISAs_unix
   modelDir = '~/models/embree-models'
-else
+else:
   print("unknown platform: "+ sys.platform);
   sys.exit(1)
   
