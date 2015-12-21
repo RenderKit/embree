@@ -295,7 +295,7 @@ def compileLoop(OS):
 ########################## rendering ##########################
 
 def tutorialGeneratesImage(tutorial):
-  return tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_builder'
+  return tutorial != 'verify' and tutorial != 'benchmark' and tutorial != 'bvh_access' and tutorial != "bvh_builder"
 
 import shutil
 import subprocess 
@@ -363,6 +363,7 @@ def processConfiguration(OS, compiler, platform, build, isa, tasking, models):
 
     render(OS, compiler, platform, build, isa, tasking, 'verify', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'benchmark', '', '', '')
+    render(OS, compiler, platform, build, isa, tasking, 'bvh_access', '', '', '')
     render(OS, compiler, platform, build, isa, tasking, 'bvh_builder', '', '', '')
     sys.exit(1);
     for ty in ['','_ispc']:
