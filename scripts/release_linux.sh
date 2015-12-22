@@ -58,7 +58,7 @@ cmake \
 -D TBB_ROOT=/usr ..
 make -j 16 preinstall
 
-check_symbols libembree.so GLIBC 2 3
+check_symbols libembree.so GLIBC 2 4
 check_symbols libembree.so GLIBCXX 3 4
 check_symbols libembree.so CXXABI 1 3
 make -j 16 package
@@ -82,7 +82,7 @@ cmake \
 -D TBB_ROOT=$TBB_PATH_LOCAL ..
 make -j 16 preinstall
 
-check_symbols libembree.so GLIBC 2 3
+check_symbols libembree.so GLIBC 2 4
 check_symbols libembree.so GLIBCXX 3 4
 check_symbols libembree.so CXXABI 1 3
 make -j 16 package
