@@ -340,7 +340,7 @@ def render(OS, compiler, platform, build, isa, tasking, tutorial, args, scene, n
   command += ' > ' + logFile + ' 2>&1'
   ret = os.system(command)
 
-  if tutorialGeneratesImage(tutorial):
+  if ret == 0 and tutorialGeneratesImage(tutorial):
     if generateReferenceImages and os.path.isfile(imageFile):
       shutil.copy(imageFile,refImageFile)
       sys.stdout.write(" [generated]\n")
