@@ -1101,7 +1101,7 @@ namespace embree
     static RTCScene scene;
 
     benchmark_rtcore_intersect16_throughput () 
-      : Benchmark(intersect ? "incoherent_intersect16_throughput" : "occluded_intersect16_throughput","MRays/s (all HW threads)") {}
+      : Benchmark(intersect ? "incoherent_intersect16_throughput" : "incoherent_occluded16_throughput","MRays/s (all HW threads)") {}
 
     static double benchmark_rtcore_intersect16_throughput_thread(void* arg) 
     {
