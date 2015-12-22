@@ -295,7 +295,8 @@ namespace embree
       if (useThreadPool) startThreads();
       
       size_t threadIndex = allocThreadIndex();
-      Thread thread(threadIndex,this);
+      std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
+      Thread& thread = *mthread;
       assert(threadLocal[threadIndex] == nullptr);
       threadLocal[threadIndex] = &thread;
       Thread* oldThread = swapThread(&thread);

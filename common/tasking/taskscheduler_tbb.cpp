@@ -343,7 +343,8 @@ namespace embree
   std::exception_ptr TaskSchedulerTBB::thread_loop(size_t threadIndex)
   {
     /* allocate thread structure */
-    Thread thread(threadIndex,this);
+    std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
+    Thread& thread = *mthread;
     threadLocal[threadIndex] = &thread;
     Thread* oldThread = swapThread(&thread);
 
