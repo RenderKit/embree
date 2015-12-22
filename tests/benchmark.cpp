@@ -980,6 +980,7 @@ namespace embree
     }
   };
 
+  template<bool intersect>
   class benchmark_rtcore_intersect1_throughput : public Benchmark
   {
   public:
@@ -987,7 +988,7 @@ namespace embree
     static RTCScene scene;
 
     benchmark_rtcore_intersect1_throughput () 
-      : Benchmark("incoherent_intersect1_throughput","MRays/s (all HW threads)") {}
+      : Benchmark(intersect ? "incoherent_intersect1_throughput" : "incoherent_occluded1_throughput","MRays/s (all HW threads)") {}
 
     virtual void trace(Vec3f* numbers)
     {
@@ -1033,7 +1034,10 @@ namespace embree
       
       for (size_t i=0; i<N; i++) {
         RTCRay ray = makeRay(zero,numbers[i]);
-        rtcIntersect(scene,ray);
+        if (intersect)
+          rtcIntersect(scene,ray);
+        else
+          rtcOccluded(scene,ray);
       }        
 
       g_barrier_active.wait(threadIndex);
@@ -1081,13 +1085,15 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect1_throughput::scene;
+  RTCScene benchmark_rtcore_intersect1_throughput<true>::scene;
+  RTCScene benchmark_rtcore_intersect1_throughput<false>::scene;
 
 
 
 
 #if HAS_INTERSECT16
 
+  template<bool intersect>
   class benchmark_rtcore_intersect16_throughput : public Benchmark
   {
   public:
@@ -1095,7 +1101,7 @@ namespace embree
     static RTCScene scene;
 
     benchmark_rtcore_intersect16_throughput () 
-      : Benchmark("incoherent_intersect16_throughput","MRays/s (all HW threads)") {}
+      : Benchmark(intersect ? "incoherent_intersect16_throughput" : "occluded_intersect16_throughput","MRays/s (all HW threads)") {}
 
     static double benchmark_rtcore_intersect16_throughput_thread(void* arg) 
     {
@@ -1120,7 +1126,11 @@ namespace embree
         RTCRay16 ray16;
         for (size_t j=0;j<16;j++)        
           setRay(ray16,j,makeRay(zero,numbers[i+j]));
-        rtcIntersect16(valid16,scene,ray16);
+        if (intersect)
+          rtcIntersect16(valid16,scene,ray16);
+        else
+          rtcOccluded16(valid16,scene,ray16);
+
       }        
       if (threadIndex != 0) g_barrier_active.wait(threadIndex);
       double t1 = getSeconds();
@@ -1165,7 +1175,9 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect16_throughput::scene;
+  RTCScene benchmark_rtcore_intersect16_throughput<true>::scene;
+  RTCScene benchmark_rtcore_intersect16_throughput<false>::scene;
+
 #endif
 
 
@@ -1405,11 +1417,13 @@ namespace embree
   void create_benchmarks()
   {
 #if 1
-    benchmarks.push_back(new benchmark_rtcore_intersect1_throughput());
+    benchmarks.push_back(new benchmark_rtcore_intersect1_throughput<true>());
+    benchmarks.push_back(new benchmark_rtcore_intersect1_throughput<false>());
 
 #if HAS_INTERSECT16
     if (hasISA(AVX512KNL) || hasISA(KNC)) {
-      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput());
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<true>());
+      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
     }
 #endif
 
