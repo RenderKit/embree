@@ -1,6 +1,15 @@
 Version History
 ---------------
 
+### New Features in Embree 2.8.0
+
+-   Added support for line segment geometry.
+-   Added support for quad geometry (replaces triangle-pairs feature).
+-   Added support for linear motion blur of user geometries.
+-   Improved performance through AVX512 optimizations.
+-   Improved performance of lazy scene build (when using TBB 4.4 update 2).
+-   Improved performance through huge page support under linux.
+
 ### New Features in Embree 2.7.1
 
 -   Internal tasking system supports cancellation of build operations.
@@ -8,7 +17,7 @@ Version History
     (implemented hybrid traversal for bvh4.triangle4v and bvh4.triangle4i).
 -   Hair rendering got faster as we fixed some issues with the SAH
     heuristic cost factors.
--   BVH8 got slight faster for single ray traversal (improves sorting
+-   BVH8 got slight faster for single ray traversal (improved sorting
     when hitting more than 4 boxes).
 -   BVH build performance got up to 30% faster on CPUs with high core
     counts (improved parallel partition code).

@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 2.7.1
+% Embree: High Performance Ray Tracing Kernels 2.8.0
 % Intel Corporation
 
 Embree Overview
@@ -92,14 +92,14 @@ Windows Installer
 
 You can install the 64\ bit version of the Embree library using the
 Windows installer application
-[embree-2.7.1-x64.exe](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x64.exe). This
+[embree-2.8.0-x64.exe](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x64.exe). This
 will install the 64 bit Embree version by default in `Program
-Files\Intel\Embree v2.7.1 x64`. To install the 32\ bit
+Files\Intel\Embree v2.8.0 x64`. To install the 32\ bit
 Embree library use the
-[embree-2.7.1-win32.exe](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.win32.exe)
+[embree-2.8.0-win32.exe](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.win32.exe)
 installer. This will install the 32\ bit Embree version by default in
-`Program Files\Intel\Embree v2.7.1 win32` on 32\ bit
-systems and `Program Files (x86)\Intel\Embree v2.7.1 win32`
+`Program Files\Intel\Embree v2.8.0 win32` on 32\ bit
+systems and `Program Files (x86)\Intel\Embree v2.8.0 win32`
 on 64\ bit systems.
 
 You have to set the path to the `lib` folder manually to your `PATH`
@@ -111,15 +111,15 @@ Embree installation.
 To uninstall Embree again open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-2.7.1` and uninstall it.
+2.8.0` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree is also delivered as a ZIP file for 64 bit
-[embree-2.7.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x64.windows.zip)
+[embree-2.8.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x64.windows.zip)
 and 32 bit
-[embree-2.7.1.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.win32.windows.zip). After
+[embree-2.8.0.win32.windows.zip](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.win32.windows.zip). After
 unpacking this ZIP file you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree you also have to set the
@@ -133,24 +133,24 @@ Linux RPMs
 ----------
 
 Uncompress the 'tar.gz' file
-[embree-2.7.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x86_64.rpm.tar.gz)
+[embree-2.8.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.rpm.tar.gz)
 to
 obtain the individual RPM files:
 
-    tar xzf embree-2.7.1.x86_64.rpm.tar.gz
+    tar xzf embree-2.8.0.x86_64.rpm.tar.gz
 
 To install the Embree using the RPM packages on your Linux system type
 the following:
 
-    sudo rpm --install embree-lib-2.7.1-1.x86_64.rpm
-    sudo rpm --install embree-devel-2.7.1-1.x86_64.rpm
-    sudo rpm --install embree-examples-2.7.1-1.x86_64.rpm
+    sudo rpm --install embree-lib-2.8.0-1.x86_64.rpm
+    sudo rpm --install embree-devel-2.8.0-1.x86_64.rpm
+    sudo rpm --install embree-examples-2.8.0-1.x86_64.rpm
 
 To also install the Intel® Xeon Phi™ version of Embree additionally
 install the following Xeon Phi™ RPMs:
 
-    sudo rpm --install --nodeps embree-lib_xeonphi-2.7.1-1.x86_64.rpm
-    sudo rpm --install --nodeps embree-examples_xeonphi-2.7.1-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-lib_xeonphi-2.8.0-1.x86_64.rpm
+    sudo rpm --install --nodeps embree-examples_xeonphi-2.8.0-1.x86_64.rpm
 
 To use the Xeon Phi™ version of Embree you additionally have configure your
 `SINK_LD_LIBRARY_PATH` to point to `/usr/lib`:
@@ -180,32 +180,32 @@ install using the tar.gz files, which always ship with the latest TBB version.
 Under Linux Embree is installed by default in the `/usr/lib` and
 `/usr/include` directories. This way applications will find Embree
 automatically. The Embree tutorials are installed into the
-`/usr/bin/embree-2.7.1` folder. Specify the full path to
+`/usr/bin/embree2` folder. Specify the full path to
 the tutorials to start them.
 
 To uninstall Embree again just execute the following:
 
-    sudo rpm --erase embree-lib-2.7.1-1.x86_64
-    sudo rpm --erase embree-devel-2.7.1-1.x86_64
-    sudo rpm --erase embree-examples-2.7.1-1.x86_64
+    sudo rpm --erase embree-lib-2.8.0-1.x86_64
+    sudo rpm --erase embree-devel-2.8.0-1.x86_64
+    sudo rpm --erase embree-examples-2.8.0-1.x86_64
 
 If you also installed the Xeon Phi™ RPMs you have to uninstall them
 too:
 
-    sudo rpm --erase embree-lib_xeonphi-2.7.1-1.x86_64
-    sudo rpm --erase embree-examples_xeonphi-2.7.1-1.x86_64
+    sudo rpm --erase embree-lib_xeonphi-2.8.0-1.x86_64
+    sudo rpm --erase embree-examples_xeonphi-2.8.0-1.x86_64
 
 Linux tar.gz files
 ------------------
 
 The Linux version of Embree is also delivered as a tar.gz file
-[embree-2.7.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x86_64.linux.tar.gz). Unpack
+[embree-2.8.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.7.1.x64.linux.tar.gz
-    source embree-2.7.1.x64.linux/embree-vars.sh
+    tar xzf embree-2.8.0.x64.linux.tar.gz
+    source embree-2.8.0.x64.linux/embree-vars.sh
 
 If you want to ship Embree with your application best use the Embree
 version provided through the tar.gz file.
@@ -215,7 +215,7 @@ Mac OS X PKG Installer
 
 To install the Embree library on your Mac\ OS\ X system use the
 provided package installer inside
-[embree-2.7.1.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x86_64.dmg). This
+[embree-2.8.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.dmg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree2` folder.
@@ -231,19 +231,19 @@ and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
 To uninstall Embree again execute the uninstaller script
-`/Applications/embree-2.7.1/uninstall.command`.
+`/Applications/Embree2/uninstall.command`.
 
 Mac OS X tar.gz file
 ---------------------
 
 The Mac\ OS\ X version of Embree is also delivered as a tar.gz file
-[embree-2.7.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.7.1/embree-2.7.1.x86_64.macosx.tar.gz). Unpack
+[embree-2.8.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v2.8.0/embree-2.8.0.x86_64.macosx.tar.gz). Unpack
 this file using `tar` and and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to setup the environment properly:
 
-    tar xzf embree-2.7.1.x64.macosx.tar.gz
-    source embree-2.7.1.x64.macosx/embree-vars.sh
+    tar xzf embree-2.8.0.x64.macosx.tar.gz
+    source embree-2.8.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application please use the Embree
 library of the provided tar.gz file. The library name of that Embree
@@ -525,6 +525,9 @@ parameters that can be configured in CMake:
   RTCORE_INTERSECTION_FILTER   Enables the intersection filter  ON
                                feature.
 
+  RTCORE_INTERSECTION_FILTER   Restore previous hit when        ON
+  _RESTORE                     ignoring hits.
+
   RTCORE_RAY_MASK              Enables the ray masking feature. OFF
 
   RTCORE_RAY_PACKETS           Enables ray packet support.      ON
@@ -540,14 +543,10 @@ parameters that can be configured in CMake:
                                internal tasking system
                                (INTERNAL).
 
-  RTCORE_TRIANGLE_PAIRS        Enables fusing of adjacent triangles OFF
-  			       sharing a common edge into a single 
-			       primitive.  
-
   XEON_ISA                     Select highest supported ISA on  AVX2
                                Intel® Xeon® CPUs (SSE2, SSE3,
                                SSSE3, SSE4.1, SSE4.2, AVX,
-                               AVX-I, AVX2, or AVX512).
+                               AVX-I, AVX2, or AVX512KNL).
   ---------------------------- -------------------------------- --------
   : CMake build options for Embree.
 
@@ -620,11 +619,6 @@ This way the configuration for the application can be changed globally
 the application folder) and each user has the option to modify the
 configuration to fit its needs.
 
-The threads calling the API functions should have at least 4MB of
-stack space allocated. Also every Intel® Threading Building Blocks
-(TBB) worker thread needs at least 4MB of stack space (which is the
-default for TBB).
-
 API calls that access geometries are only thread safe as long as
 different geometries are accessed. Accesses to one geometry have to
 get sequenced by the application. All other API calls are thread
@@ -661,6 +655,12 @@ Possible error codes returned by `rtcDeviceGetError` are:
                           Progress Monitor Callback function.
   ----------------------- ---------------------------------------------
   : Return values of `rtcDeviceGetError`.
+
+When the device construction fails `rtcNewDevice` returns NULL as
+device. To detect the error code of a such a failed device
+construction pass NULL as device to the `rtcDeviceGetError`
+function. For all other invokations of `rtcDeviceGetError` a proper
+device pointer has to get specified.
 
 Using the `rtcDeviceSetErrorFunction` call, it is also possible to set
 a callback function that is called whenever an error occurs for a
@@ -823,41 +823,25 @@ pointer `ptr` to its own geometry representation, and later read out
 this pointer again using the `void* rtcGetUserData (RTCScene scene,
 unsigned geomID)` function.
 
-
-### Triangle Meshes
-
-Triangle meshes are created using the `rtcNewTriangleMesh` function
-call, and potentially deleted using the `rtcDeleteGeometry` function
-call.
-
-The number of triangles, the number of vertices, and optionally the
-number of time steps (1 for normal meshes, and 2 for linear motion
-blur) have to get specified at construction time of the mesh. The user
-can also specify additional flags that choose the strategy to handle
-that mesh in dynamic scenes. The following example demonstrates how to
-create a triangle mesh without motion blur:
-
-    unsigned geomID = rtcNewTriangleMesh(scene, geomFlags, numTriangles, numVertices);
-
 The following geometry flags can be specified at construction time of
-the triangle mesh:
+most geometries:
 
   ------------------------ ---------------------------------------------
   Geometry Flag            Description
   ------------------------ ---------------------------------------------
-  RTC_GEOMETRY_STATIC      The mesh is considered static and should get
+  RTC_GEOMETRY_STATIC      The geometry is considered static and should get
                            modified rarely by the application. This
                            flag has to get used in static scenes.
 
-  RTC_GEOMETRY_DEFORMABLE  The mesh is considered to deform in a
+  RTC_GEOMETRY_DEFORMABLE  The geometry is considered to deform in a
                            coherent way, e.g. a skinned character. The
-                           connectivity of the mesh has to stay
+                           connectivity of the geometry has to stay
                            constant, thus modifying the index array is
                            not allowed. The implementation is free to
                            choose a BVH refitting approach for handling
                            meshes tagged with that flag.
 
-  RTC_GEOMETRY_DYNAMIC     The mesh is considered highly dynamic and
+  RTC_GEOMETRY_DYNAMIC     The geometry is considered highly dynamic and
                            changes frequently, possibly in an
                            unstructured way. Embree will rebuild data
                            structures from scratch for this type of
@@ -865,6 +849,22 @@ the triangle mesh:
   ------------------------ ---------------------------------------------
   : Flags for the creation of new geometries.
 
+
+### Triangle Meshes
+
+Triangle meshes are created using the `rtcNewTriangleMesh` function
+call, and potentially deleted using the `rtcDeleteGeometry` function
+call.
+
+The number of triangles, number of vertices, and optionally the
+number of time steps (1 for normal meshes, and 2 for linear motion
+blur) have to get specified at construction time of the mesh. The user
+can also specify additional flags that choose the strategy to handle
+that mesh in dynamic scenes. The following example demonstrates how to
+create a triangle mesh without motion blur:
+
+    unsigned geomID = rtcNewTriangleMesh(scene, geomFlags,
+       numTriangles, numVertices, 1);
 
 The triangle indices can be set by mapping and writing to the index
 buffer (`RTC_INDEX_BUFFER`) and the triangle vertices can be set by
@@ -900,6 +900,49 @@ the triangle the following way:
 
     t_uv = (1-u-v)*t0 + u*(t1-t0) + v*(t2-t0)
 
+### Quad Meshes
+
+Quad meshes are created using the `rtcNewQuadMesh` function
+call, and potentially deleted using the `rtcDeleteGeometry` function
+call.
+
+The number of quads, number of vertices, and optionally the
+number of time steps (1 for normal meshes, and 2 for linear motion
+blur) have to get specified at construction time of the mesh. The user
+can also specify additional flags that choose the strategy to handle
+that mesh in dynamic scenes. The following example demonstrates how to
+create a quad mesh without motion blur:
+
+    unsigned geomID = rtcNewQuadMesh(scene, geomFlags,
+       numTriangles, numVertices, 1);
+
+The quad indices can be set by mapping and writing to the index
+buffer (`RTC_INDEX_BUFFER`) and the quad vertices can be set by
+mapping and writing into the vertex buffer (`RTC_VERTEX_BUFFER`). The
+index buffer contains an array of four 32\ bit indices, while the
+vertex buffer contains an array of three float values aligned to 16
+bytes. The 4th component of the aligned vertices can be arbitrary. All
+buffers have to get unmapped before an `rtcCommit` call to the scene.
+
+    struct Vertex { float x, y, z, a; };
+    struct Quad   { int v0, v1, v2, v3; };
+
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+    // fill vertices here
+    rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+
+    Quad* quads = (Quad*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+    // fill quad indices here
+    rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+
+The quad is internally handled as a pair of two triangles `v0,v1,v3`
+and `v2,v3,v1`, with the u'/v' coordinates of the second triangle
+corrected by `u = 1-u'` and `v = 1-v'` to make a parametrization where
+u and v go from 0 to 1.
+
+Te encode a triangle as quad just replicate the last triangle
+vertex (`v0,v1,v2` -> `v0,v1,v2,v2`). This way the quad mesh can be
+used to represent a mesh with triangles and quads.
 
 ### Subdivision Surfaces
 
@@ -1021,8 +1064,56 @@ which can get configured to some desired size (see [Configuring Embree]).
 Also see tutorial [Subdivision Geometry] for an example of how to create
 subdivision surfaces.
 
+### Line Segment Hair Geometry
 
-### Hair Geometry
+Line segments are supported to render hair geometry. A line segment
+consists of a start and and point, and start and end
+radius. Individual line segments are considered to be subpixel sized which
+allows the implementation to approximate the intersection
+calculation. This in particular means that zooming onto one line segment might
+show geometric artifacts.
+
+Line segments are created using the `rtcNewLineSegments` function
+call, and potentially deleted using the `rtcDeleteGeometry` function
+call.
+
+The number of line segments, the number of vertices, and optionally the
+number of time steps (1 for normal curves, and 2 for linear motion blur)
+have to get specified at construction time of the line segment geometry.
+
+The segment indices can be set by mapping and writing to the index buffer
+(`RTC_INDEX_BUFFER`) and the vertices can be set by mapping and
+writing into the vertex buffer (`RTC_VERTEX_BUFFER`). In case of linear
+motion blur, two vertex buffers (`RTC_VERTEX_BUFFER0` and
+`RTC_VERTEX_BUFFER1`) have to get filled, one for each time step.
+
+The index buffer contains an array of 32\ bit indices pointing to the
+ID of the first of two vertices, while the vertex buffer
+stores all control points in the form of a single precision position
+and radius stored in `x`, `y`, `z`, `r` order in memory. The
+radii have to be greater or equal zero. All buffers have to get
+unmapped before an `rtcCommit` call to the scene.
+
+Like for triangle meshes, the user can also specify a geometry mask and
+additional flags that choose the strategy to handle that mesh in dynamic
+scenes.
+
+The following example demonstrates how to create some line segment geometry:
+
+    unsigned geomID = rtcNewLineSegments(scene, geomFlags, numCurves,
+      numVertices, 1);
+
+    struct Vertex { float x, y, z, r; };
+
+    Vertex* vertices = (Vertex*) rtcMapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+    // fill vertices here
+    rtcUnmapBuffer(scene, geomID, RTC_VERTEX_BUFFER);
+
+    int* curves = (int*) rtcMapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+    // fill indices here
+    rtcUnmapBuffer(scene, geomID, RTC_INDEX_BUFFER);
+
+### Bezier Curve Hair Geometry
 
 Hair geometries are supported, which consist of multiple hairs
 represented as cubic Bézier curves with varying radius per control
@@ -1079,12 +1170,13 @@ User defined geometries make it possible to extend Embree with arbitrary
 types of geometry. This is achieved by introducing arrays of user
 geometries as a special geometry type. These objects do not contain a
 single user geometry, but a set of such geometries, each specified by an
-index. The user has to provide a user data pointer, bounding function as
+index. The user has to provide a data pointer per user geometry, a
+bounding function closure (function and user pointer) as
 well as user defined intersect and occluded functions to create a set of
 user geometries. The user geometry to process is specified by passing
-its user data pointer and index to each invocation of the bounding,
+its geometry user data pointer and index to each invocation of the bounding,
 intersect, and occluded function. The bounding function is used to query
-the bounds of each user geometry. When performing ray queries, Embree
+the bounds of all timesteps of each user geometry. When performing ray queries, Embree
 will invoke the user intersect (and occluded) functions to test rays for
 intersection (and occlusion) with the specified user defined geometry.
 
@@ -1098,37 +1190,52 @@ function pointers.
 
 User geometries are created using the `rtcNewUserGeometry` function
 call, and potentially deleted using the `rtcDeleteGeometry` function
-call. The following example illustrates creating an array with two user
-geometries:
+call. The the `rtcNewUserGeometry2` function additionally gets a
+numTimeSteps paramter, which specifies the number of timesteps for
+motion blur. The following example illustrates creating an array with
+two user geometries:
 
+    int numTimeSteps = 2;
     struct UserObject { ... };
 
-    void userBoundsFunction(UserObject* userGeom, size_t i, RTCBounds& bounds) {
-      bounds = <bounds of userGeom[i]>;
+    void userBoundsFunction(void* userPtr, UserObject* userGeomPtr, size_t i, RTCBounds* bounds)
+    {
+      for (size_t i=0; i<numTimeSteps; i++)
+        bounds[i] = <bounds of userGeomPtr[i] at time i>;
     }
 
-    void userIntersectFunction(UserObject* userGeom, RTCRay& ray, size_t i) {
-      if (<ray misses userGeom[i]>)
+    void userIntersectFunction(UserObject* userGeomPtr, RTCRay& ray, size_t i)
+    {
+      if (<ray misses userGeomPtr[i] at time ray.time>)
         return;
       <update ray hit information>;
     }
 
-    void userOccludedFunction(UserObject* userGeom, RTCRay& ray, size_t i) {
-      if (<ray misses userGeom[i]>)
+    void userOccludedFunction(UserObject* userGeomPtr, RTCRay& ray, size_t i)
+    {
+      if (<ray misses userGeomPtr[i] at time ray.time>)
         return;
       geomID = 0;
     }
 
     ...
 
-    UserObject* userGeom = new UserObject[2];
-    userGeom[0] = ...
-    userGeom[1] = ...
-    unsigned geomID = rtcNewUserGeometry(scene, 2);
-    rtcSetUserData(scene, geomID, userGeom);
-    rtcSetBoundsFunction(scene, geomID, userBoundsFunction);
+    UserObject* userGeomPtr = new UserObject[2];
+    userGeomPtr[0] = ...
+    userGeomPtr[1] = ...
+    unsigned geomID = rtcNewUserGeometry2(scene, 2, numTimeSteps);
+    rtcSetUserData(scene, geomID, userGeomPtr);
+    rtcSetBoundsFunction2(scene, geomID, userBoundsFunction, userPtr);
     rtcSetIntersectFunction(scene, geomID, userIntersectFunction);
     rtcSetOccludedFunction(scene, geomID, userOccludedFunction);
+
+
+The user bounds function (`userBoundsFunction`) get as input the
+pointer provided at the `rtcSetBoundsFunction2` function call, the
+geometry user pointer provided through the `rtcSetUserData` function
+call, the i'th geometry to calculate the bounds for, and a pointer to
+an array of bounds to fill (one bound for each timestep specified when
+creating the user geometry).
 
 The user intersect function (`userIntersectFunction`) and user occluded
 function (`userOccludedFunction`) get as input the pointer provided
