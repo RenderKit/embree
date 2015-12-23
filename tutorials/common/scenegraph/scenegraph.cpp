@@ -166,6 +166,12 @@ namespace embree
     }
   }
 
+  void SceneGraph::PointsNode::verify() const
+  {
+	  const size_t numVertices = v.size();
+	  if (v2.size() && v2.size() != numVertices) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
+  }
+
   void SceneGraph::HairSetNode::verify() const
   {
     const size_t numVertices = v.size();

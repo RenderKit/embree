@@ -147,6 +147,28 @@ namespace embree
       return out;
     }
 
+    Ref<TutorialScene::Geometry> convertPoints(Ref<SceneGraph::PointsNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
+    {
+      int materialID = convert(mesh->material);
+      
+      TutorialScene::Points* out = new TutorialScene::Points;
+      
+      out->v.resize(mesh->v.size()); 
+      for (size_t i=0; i<mesh->v.size(); i++) {
+        out->v[i] = xfmPoint(space0,mesh->v[i]);
+        out->v[i].w = mesh->v[i].w;
+      }
+      
+      out->v2.resize(mesh->v2.size()); 
+      for (size_t i=0; i<mesh->v2.size(); i++) {
+        out->v2[i] = xfmPoint(space1,mesh->v2[i]);
+        out->v2[i].w = mesh->v2[i].w;
+      }
+
+      out->materialID = materialID;
+      return out;
+    }
+
     Ref<TutorialScene::Geometry> convertHairSet(Ref<SceneGraph::HairSetNode> mesh, const AffineSpace3fa& space0, const AffineSpace3fa& space1)
     {
       int materialID = convert(mesh->material);

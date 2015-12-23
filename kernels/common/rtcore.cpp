@@ -637,6 +637,17 @@ namespace embree
     return -1;
   }
 
+  RTCORE_API unsigned rtcNewPoints (RTCScene hscene, RTCGeometryFlags flags, size_t numPoints, size_t numTimeSteps)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTCORE_CATCH_BEGIN;
+    RTCORE_TRACE(rtcNewPoints);
+    RTCORE_VERIFY_HANDLE(hscene);
+    return scene->newPoints(flags,numPoints,numTimeSteps);
+    RTCORE_CATCH_END(scene->device);
+    return -1;
+  }
+
   RTCORE_API unsigned rtcNewSubdivisionMesh (RTCScene hscene, RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, 
                                              size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps) 
   {

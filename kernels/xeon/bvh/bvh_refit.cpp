@@ -18,6 +18,7 @@
 #include "bvh_statistics.h"
 
 #include "../geometry/linei.h"
+#include "../geometry/pointi.h"
 #include "../geometry/triangle.h"
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglei.h"
@@ -426,6 +427,7 @@ namespace embree
 #endif
     
     Builder* BVH4Line4iMeshBuilderSAH (void* bvh, LineSegments* mesh, size_t mode);
+    Builder* BVH4Point4iMeshBuilderSAH (void* bvh, Points* mesh, size_t mode);
     Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
 #if defined(__AVX__)
     Builder* BVH4Triangle8MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
@@ -434,6 +436,7 @@ namespace embree
     Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
 
     Builder* BVH4Line4iMeshRefitSAH (void* accel, LineSegments* mesh, size_t mode) { return new BVHNRefitT<4,LineSegments,Line4i>((BVH4*)accel,BVH4Line4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Point4iMeshRefitSAH (void* accel, Points* mesh, size_t mode) { return new BVHNRefitT<4,Points,Point4i>((BVH4*)accel,BVH4Point4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
     Builder* BVH4Triangle4MeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4>((BVH4*)accel,BVH4Triangle4MeshBuilderSAH(accel,mesh,mode),mesh,mode); }
 
 #if defined(__AVX__)

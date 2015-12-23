@@ -25,6 +25,7 @@
 #include "scene_geometry_instance.h"
 #include "scene_bezier_curves.h"
 #include "scene_line_segments.h"
+#include "scene_points.h"
 #include "scene_subdiv_mesh.h"
 
 #include "subdiv/tessellation_cache.h"
@@ -111,6 +112,8 @@ namespace embree
     void createHairMBAccel();
     void createLineAccel();
     void createLineMBAccel();
+    void createPointAccel();
+    void createPointMBAccel();
     void createSubdivAccel();
 
     /*! Scene destruction */
@@ -139,6 +142,9 @@ namespace embree
 
     /*! Creates a new collection of line segments. */
     unsigned int newLineSegments (RTCGeometryFlags flags, size_t maxSegments, size_t maxVertices, size_t numTimeSteps);
+
+    /*! Creates a new collection of points. */
+    unsigned int newPoints (RTCGeometryFlags flags, size_t maxPoints, size_t numTimeSteps);
 
     /*! Creates a new subdivision mesh. */
     unsigned int newSubdivisionMesh (RTCGeometryFlags flags, size_t numFaces, size_t numEdges, size_t numVertices, size_t numEdgeCreases, size_t numVertexCreases, size_t numHoles, size_t numTimeSteps);
@@ -273,6 +279,19 @@ namespace embree
       return (LineSegments*) geometries[i];
     }
 
+    __forceinline Points* getPoints(size_t i) {
+      assert(i < geometries.size());
+      assert(geometries[i]);
+      assert(geometries[i]->getType() == Geometry::POINTS);
+      return (Points*) geometries[i];
+    }
+    __forceinline const Points* getPoints(size_t i) const {
+      assert(i < geometries.size());
+      assert(geometries[i]);
+      assert(geometries[i]->getType() == Geometry::POINTS);
+      return (Points*) geometries[i];
+    }
+
     /* test if this is a static scene */
     __forceinline bool isStatic() const { return embree::isStatic(flags); }
 
@@ -310,6 +329,7 @@ namespace embree
     bool needBezierVertices;
     bool needLineIndices;
     bool needLineVertices;
+    bool needPointVertices;
     bool needSubdivIndices;
     bool needSubdivVertices;
     bool is_build;
@@ -347,16 +367,17 @@ namespace embree
     struct GeometryCounts 
     {
       __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0) {}
+        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numPoints(0), numSubdivPatches(0), numUserGeometries(0) {}
 
       __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries;
+        return numTriangles + numQuads + numBezierCurves + numLineSegments + numPoints + numSubdivPatches + numUserGeometries;
       }
 
       atomic_t numTriangles;             //!< number of enabled triangles
       atomic_t numQuads;                 //!< number of enabled quads
       atomic_t numBezierCurves;          //!< number of enabled curves
       atomic_t numLineSegments;          //!< number of enabled line segments
+      atomic_t numPoints;                //!< number of enabled points
       atomic_t numSubdivPatches;         //!< number of enabled subdivision patches
       atomic_t numUserGeometries;        //!< number of enabled user geometries
     };
@@ -387,6 +408,8 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<BezierCurves,2>() const { return world2.numBezierCurves; } 
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,1>() const { return world1.numLineSegments; }
   template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,2>() const { return world2.numLineSegments; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Points,1>() const { return world1.numPoints; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Points,2>() const { return world2.numPoints; }
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,1>() const { return world1.numSubdivPatches; } 
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,2>() const { return world2.numSubdivPatches; } 
   template<> __forceinline size_t Scene::getNumPrimitives<AccelSet,1>() const { return world1.numUserGeometries; } 

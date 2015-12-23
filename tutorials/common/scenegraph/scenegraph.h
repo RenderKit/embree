@@ -223,6 +223,21 @@ namespace embree
       Ref<MaterialNode> material;
     };
 
+    /*! Points */
+    struct PointsNode : public Node
+    {
+    public:
+      PointsNode (Ref<MaterialNode> material)
+        : Node(true), material(material) {}
+      
+      void verify() const;
+
+    public:
+      avector<Vec3fa> v;        //!< control points (x,y,z,r)
+      avector<Vec3fa> v2;       //!< control points (x,y,z,r)
+      Ref<MaterialNode> material;
+    };
+
     /*! Hair Set. */
     struct HairSetNode : public Node
     {

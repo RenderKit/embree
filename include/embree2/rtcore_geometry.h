@@ -284,6 +284,26 @@ RTCORE_API unsigned rtcNewLineSegments (RTCScene scene,                    //!< 
                                         size_t numTimeSteps = 1            //!< number of motion blur time steps
   );
 
+/*! \brief Creates a new point geometry, consisting of multiple
+  points with varying radii. The number of points (numPoints),
+  and number of time steps (1 for normal line segments, and 2 for 
+  linear motion blur), have to get specified at construction time. 
+  Further, the point vertex buffer (RTC_VERTEX_BUFFER)
+  have to get set by mapping and writing to the appropiate buffers. In
+  case of linear motion blur, two vertex buffers have to get filled
+  (RTC_VERTEX_BUFFER0, RTC_VERTEX_BUFFER1), one for each time step.
+  The vertex buffer stores 1 point per point, each such point
+  consists of a single precision (x,y,z) position and radius, stored in
+  that order in memory. Points are considered to be subpixel
+  sized which allows the implementation to approximate the intersection
+  calculation. This in particular means that zooming onto one point
+  might show geometric artefacts. */
+RTCORE_API unsigned rtcNewPoints (RTCScene scene,                    //!< the scene the points belong to
+                                        RTCGeometryFlags flags,            //!< geometry flags
+                                        size_t numPoints,                  //!< number of points
+                                        size_t numTimeSteps = 1            //!< number of motion blur time steps
+  );
+
 /*! \brief Sets 32 bit ray mask. */
 RTCORE_API void rtcSetMask (RTCScene scene, unsigned geomID, int mask);
 

@@ -46,6 +46,7 @@ namespace embree
       needQuadIndices(false), needQuadVertices(false), 
       needBezierIndices(false), needBezierVertices(false),
       needLineIndices(false), needLineVertices(false),
+      needPointVertices(false),
       needSubdivIndices(false), needSubdivVertices(false),
       numIntersectionFilters4(0), numIntersectionFilters8(0), numIntersectionFilters16(0),
       commitCounter(0), commitCounterSubdiv(0), 
@@ -148,6 +149,8 @@ namespace embree
     createHairMBAccel();
     createLineAccel();
     createLineMBAccel();
+    createPointAccel();
+    createPointMBAccel();
     createSubdivAccel();
     accels.add(device->bvh4_factory->BVH4InstancedBVH4Triangle4ObjectSplit(this));
     accels.add(device->bvh4_factory->BVH4UserGeometry(this)); // has to be the last as the instID field of a hit instance is not invalidated by other hit geometry
@@ -401,6 +404,49 @@ namespace embree
     else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur line segment acceleration structure "+device->line_accel_mb);
   }
 
+  void Scene::createPointAccel()
+  {
+    if (device->line_accel == "default")
+    {
+      if (isStatic())
+      {
+#if defined (__TARGET_AVX__)
+        if (device->hasISA(AVX) && !isCompact())
+          accels.add(device->bvh8_factory->BVH8Point4i(this));
+        else
+#endif
+          accels.add(device->bvh4_factory->BVH4Point4i(this));
+      }
+      else
+      {
+        accels.add(device->bvh4_factory->BVH4Point4iTwolevel(this));
+      }
+    }
+    else if (device->line_accel == "bvh4.point4i") accels.add(device->bvh4_factory->BVH4Point4i(this));
+#if defined (__TARGET_AVX__)
+    else if (device->line_accel == "bvh8.point4i") accels.add(device->bvh8_factory->BVH8Point4i(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown point acceleration structure "+device->line_accel);
+  }
+
+  void Scene::createPointMBAccel()
+  {
+    if (device->line_accel_mb == "default")
+    {
+#if defined (__TARGET_AVX__)
+      if (device->hasISA(AVX) && !isCompact())
+        accels.add(device->bvh8_factory->BVH8Point4iMB(this));
+      else
+#endif
+        accels.add(device->bvh4_factory->BVH4Point4iMB(this));
+    }
+    else if (device->line_accel_mb == "bvh4.point4imb") accels.add(device->bvh4_factory->BVH4Point4iMB(this));
+#if defined (__TARGET_AVX__)
+    else if (device->line_accel_mb == "bvh8.point4imb") accels.add(device->bvh8_factory->BVH8Point4iMB(this));
+#endif
+    else throw_RTCError(RTC_INVALID_ARGUMENT,"unknown motion blur point acceleration structure "+device->line_accel_mb);
+  }
+
   void Scene::createSubdivAccel()
   {
     if (device->subdiv_accel == "default") 
@@ -550,6 +596,22 @@ namespace embree
 
     Geometry* geom = new LineSegments(this,gflags,numSegments,numVertices,numTimeSteps);
     return geom->id;
+  }
+
+  unsigned Scene::newPoints(RTCGeometryFlags gflags, size_t numPoints, size_t numTimeSteps)
+  {
+	  if (isStatic() && (gflags != RTC_GEOMETRY_STATIC)) {
+		  throw_RTCError(RTC_INVALID_OPERATION, "static scenes can only contain static geometries");
+		  return -1;
+	  }
+
+	  if (numTimeSteps == 0 || numTimeSteps > 2) {
+		  throw_RTCError(RTC_INVALID_OPERATION, "only 1 or 2 time steps supported");
+		  return -1;
+	  }
+
+	  Geometry* geom = new Points(this, gflags, numPoints, numTimeSteps);
+	  return geom->id;
   }
 
   unsigned Scene::add(Geometry* geometry) 

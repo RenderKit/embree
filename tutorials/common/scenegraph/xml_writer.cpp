@@ -64,6 +64,7 @@ namespace embree
     void store(Ref<SceneGraph::QuadMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::SubdivMeshNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::LineSegmentsNode> mesh, ssize_t id);
+    void store(Ref<SceneGraph::PointsNode> mesh, ssize_t id);
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
@@ -436,6 +437,15 @@ namespace embree
     if (mesh->v2.size()) store4f("positions2",mesh->v2);
     store("indices",mesh->indices);
     close("LineSegments");
+  }
+
+  void XMLWriter::store(Ref<SceneGraph::PointsNode> mesh, ssize_t id)
+  {
+    open("Points",id);
+    store(mesh->material);
+    store4f("positions",mesh->v);
+    if (mesh->v2.size()) store4f("positions2",mesh->v2);
+    close("Points");
   }
 
   void XMLWriter::store(Ref<SceneGraph::HairSetNode> hair, ssize_t id)

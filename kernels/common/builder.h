@@ -56,9 +56,11 @@ namespace embree
   }
 
   struct LineSegments;
+  struct Points;
   struct TriangleMesh;
   class Scene;
 
   typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createPointsAccelTy)(Points* mesh, AccelData*& accel, Builder*& builder);
   typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 }
