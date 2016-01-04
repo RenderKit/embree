@@ -101,6 +101,7 @@ namespace embree
 #if defined(__MIC__)
     return true;
 #endif
+
     /* try to use huge pages for large allocations */
     if (bytes >= PAGE_SIZE_2M)
     {
@@ -117,7 +118,7 @@ namespace embree
 // ============================================
 // ============================================
 
-  bool tryDirectHugePageAllocation = true;
+  static bool tryDirectHugePageAllocation = true;
 
 #if USE_MADVISE
   void os_madvise(void *ptr, size_t bytes)
@@ -125,8 +126,7 @@ namespace embree
 #ifdef MADV_HUGEPAGE
     int res = madvise(ptr,bytes,MADV_HUGEPAGE); 
 #if defined(DEBUG)
-    if (res)
-      perror("madvise failed: ");
+    if (res) perror("madvise failed: ");
 #endif
 #endif
   }
@@ -147,8 +147,7 @@ namespace embree
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        const int hugePageFlags = MAP_ANONYMOUS | MAP_PRIVATE | MAP_HUGETLB;
-        void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, hugePageFlags, -1, 0);
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, flags | MAP_HUGETLB, -1, 0);
         
         if (ptr == nullptr || ptr == MAP_FAILED)
         {
@@ -191,8 +190,7 @@ namespace embree
       /* try direct huge page allocation first */
       if (tryDirectHugePageAllocation)
       {
-        const int hugePageFlags = MAP_ANONYMOUS | MAP_PRIVATE | MAP_HUGETLB;
-        void* ptr = (char*) mmap(0, bytes, PROT_READ | PROT_WRITE, hugePageFlags, -1, 0);
+        void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, flags | MAP_HUGETLB, -1, 0);
       
         if (ptr == nullptr || ptr == MAP_FAILED)
         {
@@ -225,26 +223,18 @@ namespace embree
 
   size_t os_shrink(void* ptr, size_t bytesNew, size_t bytesOld) 
   {
-#if USE_MADVISE
-    return bytesOld;
-#endif
-
     size_t pageSize = PAGE_SIZE_4K;
     if (isHugePageCandidate(bytesOld)) 
-    {
-      //pageSize = PAGE_SIZE_2M;
-      /* cannot shrink a huge page to a smaller size*/
-      return bytesOld;
-    }
+      pageSize = PAGE_SIZE_2M;
 
     bytesNew = (bytesNew+pageSize-1) & ~(pageSize-1);
 
     assert(bytesNew <= bytesOld);
-    if (bytesNew < bytesOld)
-      if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
-      {
-        throw std::bad_alloc();
-      }
+    if (bytesNew >= bytesOld)
+      return bytesOld;
+
+    if (munmap((char*)ptr+bytesNew,bytesOld-bytesNew) == -1)
+      throw std::bad_alloc();
 
     return bytesNew;
   }
@@ -254,16 +244,13 @@ namespace embree
     if (bytes == 0)
       return;
 
-    if (isHugePageCandidate(bytes)) {
-      bytes = (bytes+PAGE_SIZE_2M-1)&ssize_t(-PAGE_SIZE_2M);
-    } else {
-      bytes = (bytes+PAGE_SIZE_4K-1)&ssize_t(-PAGE_SIZE_4K);
-    }
+    size_t pageSize = PAGE_SIZE_4K;
+    if (isHugePageCandidate(bytes)) 
+      pageSize = PAGE_SIZE_2M;
 
+    bytes = (bytes+pageSize-1)&ssize_t(-pageSize);
     if (munmap(ptr,bytes) == -1)
-    {
       throw std::bad_alloc();
-    }
   }
 }
 
