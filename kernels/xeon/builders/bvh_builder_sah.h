@@ -257,7 +257,9 @@ namespace embree
         {
           //BuildRecord br(record);
           record.split = find(record); 
-          return recurse(record,nullptr,true);
+          ReductionTy ret = recurse(record,nullptr,true);
+          _mm_mfence(); // to allow non-temporal stores during build
+          return ret;
         }
         
       private:

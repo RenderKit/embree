@@ -71,7 +71,9 @@ namespace embree
        
       /*! entry point into builder */
       NodeRef operator() (const PrimInfo& pinfo) {
-        return recurse(1,pinfo,nullptr,true);
+        NodeRef root = recurse(1,pinfo,nullptr,true);
+        _mm_mfence(); // to allow non-temporal stores during build
+        return root;
       }
       
     private:

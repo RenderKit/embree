@@ -419,6 +419,7 @@ namespace embree
         MortonBuildRecord<NodeRef> br(0,numPrimitives,&root,1);
         
         const BBox3fa bounds = recurse(br, nullptr, true);
+        _mm_mfence(); // to allow non-temporal stores during build
         return std::make_pair(root,bounds);
       }
       
