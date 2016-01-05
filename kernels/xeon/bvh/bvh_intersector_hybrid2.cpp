@@ -167,7 +167,7 @@ namespace embree
             while(1)
             {
               if (unlikely(cur.isLeaf())) break;
-              STAT3(normal.trav_hit_boxes[1],1,1,1);                          
+              //STAT3(normal.trav_hit_boxes[1],1,1,1);                          
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node = cur.node();
               const vfloat16 bminmaxX  = permute(vfloat16::load((float*)&node->lower_x),permX);
@@ -215,13 +215,13 @@ namespace embree
 
               contextID = 0;
               DBG(contextID);
-              if (unlikely(cur0.isLeaf())) break;
+              if (unlikely(cur0.isLeaf())) { break; }
               contextID = 1;
               DBG(contextID);
-              if (unlikely(cur1.isLeaf())) break;
+              if (unlikely(cur1.isLeaf())) { break; }
               DBG("NODE INTERSECTION");
 
-              STAT3(normal.trav_hit_boxes[2],1,1,1);                          
+              //STAT3(normal.trav_hit_boxes[2],1,1,1);                          
 
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node0 = cur0.node();
@@ -306,6 +306,8 @@ namespace embree
             /* can we refill the context with a new ray */
             if (likely(m_active_chunk))
             {              
+              STAT3(normal.trav_hit_boxes[contextID],1,1,1); 
+
               context[contextID].rayID    = __bscf(m_active_chunk);
               context[contextID].cur      = bvh->root;
               context[contextID].stackPtr = context[contextID].stack + 1;              
@@ -374,6 +376,7 @@ namespace embree
     }
 
 #else
+    /* loop-based ray traversal */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
     {
@@ -457,7 +460,7 @@ namespace embree
           //if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          size_t m_trav_active = stackPtr->mask;
+          unsigned int m_trav_active = stackPtr->mask;
 
           DBG("pop");
           DBG(cur);
@@ -465,7 +468,7 @@ namespace embree
 
           /*! if popped node is too far, pop next one */
           //if (unlikely(none(lt(vbool16((unsigned int)m_trav_active),vfloat16(*(float*)&stackPtr->dist),ray.tfar)))) continue;
-
+#if 0
           if (likely(__popcnt(m_trav_active) == 1))
           {            
             const size_t rayID = __bsf(m_trav_active);
@@ -516,13 +519,14 @@ namespace embree
             }          
           }
           else
+#endif
           {
             while (likely(!cur.isLeaf()))
             {
               DBG("TRAVERSAL");
               DBG(cur);
               const Node* __restrict__ const node = cur.node();
-              //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
 #if 0
               const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
@@ -579,7 +583,7 @@ namespace embree
 
               DBG("SORT");
 
-              m_trav_active = BVHNNodeTraverserKHit<types>::traverseClosestHit(cur, vmask,dist,mask16,stackPtr,stackEnd);              
+              BVHNNodeTraverserKHit<types>::traverseClosestHit(cur, m_trav_active, vmask,dist,mask16,stackPtr,stackEnd);              
               DBG(m_trav_active);
             }          
           }
@@ -592,7 +596,7 @@ namespace embree
           STAT3(normal.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-          STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
@@ -694,7 +698,7 @@ namespace embree
         m_active &=~m_chunk_active;
         DBG(m_chunk_active);
 
-#if 0
+#if 1
         StackItemMaskT<NodeRef>  stack[stackSizeSingle];  //!< stack of nodes 
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;    //!< current stack pointer
         StackItemMaskT<NodeRef>* stackEnd = stack + stackSizeSingle;
@@ -729,6 +733,8 @@ namespace embree
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
           vbool16 m_trav_active = vbool16(stackPtr->mask) & !terminated;
+          if (unlikely(none(m_trav_active))) continue;
+
           DBG("pop");
           DBG(cur);
           DBG(m_trav_active);
@@ -741,7 +747,7 @@ namespace embree
             DBG("TRAVERSAL");
             DBG(cur);
             const Node* __restrict__ const node = cur.node();
-            //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+            STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
 #if 0
             const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
@@ -789,7 +795,7 @@ namespace embree
               dist   = select(vmask,min(tNear,dist),dist);
               mask16 = select(vmask,mask16 | bitmask,mask16); // optimize
             } while(bits);
-            
+
             const vbool16 vmask   = lt(vbool16(0xff),dist,inf);
             DBG(dist);
             DBG(mask16);
@@ -809,18 +815,21 @@ namespace embree
           STAT3(shadow.trav_leaves, 1, 1, 1);
           size_t num; Primitive* prim = (Primitive*)cur.leaf(num);
 
-          STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
+          //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
           size_t bits = movemask(m_trav_active & !terminated);
+          DBG(bits);
           for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
             if (PrimitiveIntersectorK::occluded(pre,ray,i,prim,num,bvh->scene,lazy_node)) 
               set(terminated, i);
               
           m_chunk_active &= ~terminated;
+          DBG(m_chunk_active);
 
           if (unlikely(none(m_chunk_active))) break;
           ray_tfar = select(terminated,vfloat<K>(neg_inf),ray_tfar);
+          DBG(ray_tfar);
 
         } // traversal + intersection
 

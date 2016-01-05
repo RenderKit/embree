@@ -100,24 +100,29 @@ namespace embree
     public:
 
       // FIXME: optimize sequence
-      static __forceinline unsigned int traverseClosestHit(NodeRef& cur,
-                                                           size_t mask,
-                                                           const vfloat16& tNear,
-                                                           const vint16& tMask,
-                                                           StackItemMaskT<NodeRef>*& stackPtr,
-                                                           StackItemMaskT<NodeRef>* stackEnd)
+      static __forceinline void traverseClosestHit(NodeRef& cur,
+                                                   unsigned int &m_trav_active,
+                                                   size_t mask,
+                                                   const vfloat16& tNear,
+                                                   const vint16& tMask,
+                                                   StackItemMaskT<NodeRef>*& stackPtr,
+                                                   StackItemMaskT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
         const BaseNode* node = cur.baseNode(types);
+
+        vint16 ttMask = tMask;
+        //unsigned int firstMask = toScalar(vint16::compact(vbool16((unsigned int)mask),ttMask));
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         cur = node->child(r);         
         cur.prefetch(types);
-        
+        m_trav_active = tMask[r]; //firstMask;
         if (likely(mask == 0)) {
           assert(cur != BVH::emptyNode);
-          return tMask[r];
+          //return tMask[r];
+          return;
         }
 
         /*! two children are hit, push far child, and continue with closer child */
@@ -134,8 +139,8 @@ namespace embree
         assert(c1 != BVH::emptyNode);
         if (likely(mask == 0)) {
           assert(stackPtr < stackEnd);
-          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = m1; stackPtr->dist = d1; stackPtr++; cur = c0; return m0; }
-          else         { stackPtr->ptr = c0; stackPtr->mask = m0; stackPtr->dist = d0; stackPtr++; cur = c1; return m1; }
+          if (d0 < d1) { stackPtr->ptr = c1; stackPtr->mask = m1; stackPtr->dist = d1; stackPtr++; cur = c0; m_trav_active = m0; return; }
+          else         { stackPtr->ptr = c0; stackPtr->mask = m0; stackPtr->dist = d0; stackPtr++; cur = c1; m_trav_active = m1; return; }
         }
 
         /*! Here starts the slow path for 3 or 4 hit children. We push
@@ -158,7 +163,8 @@ namespace embree
           cur = (NodeRef) stackPtr[-1].ptr; 
           unsigned int mm = stackPtr[-1].mask;
           stackPtr--;
-          return mm;
+          m_trav_active = mm;
+          return;
         }
 
         /*! four children are hit, push all onto stack and sort 4 stack items, continue with closest child */
@@ -175,7 +181,8 @@ namespace embree
           cur = (NodeRef) stackPtr[-1].ptr; 
           unsigned int mm = stackPtr[-1].mask;
           stackPtr--;
-          return mm;
+          m_trav_active = mm;
+          return;
         }
 
         /*! fallback case if more than 4 children are hit */
@@ -198,9 +205,11 @@ namespace embree
         sort(stackFirst,stackPtr);
         cur = (NodeRef) stackPtr[-1].ptr; 
         unsigned int mm = stackPtr[-1].mask;
-        stackPtr--;
-        return mm;
+        stackPtr--;          
+        m_trav_active = mm;
+        return;
       }
+
 
 
       static __forceinline int traverseAnyHit(NodeRef& cur,
