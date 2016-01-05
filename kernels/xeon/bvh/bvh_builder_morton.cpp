@@ -383,7 +383,8 @@ namespace embree
         /* preallocate arrays */
         morton.resize(numPrimitives);
         size_t bytesAllocated = numPrimitives*sizeof(Node)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
-        bytesAllocated = max(bytesAllocated,numPrimitives*sizeof(MortonID32Bit)); // the first allocation block is reused to sort the morton codes
+        size_t bytesMortonCodes = numPrimitives*sizeof(MortonID32Bit);
+        bytesAllocated = max(bytesAllocated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesAllocated,2*bytesAllocated);
 
         /* compute scene bounds */
@@ -397,7 +398,7 @@ namespace embree
             }, [] (const BBox3fa& a, const BBox3fa& b) { return merge(a,b); });
 
         /* compute morton codes */
-        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.ptr();
+        MortonID32Bit* dest = (MortonID32Bit*) bvh->alloc.specialAlloc(bytesMortonCodes);
         MortonCodeGenerator::MortonCodeMapping mapping(centBounds);
         size_t numPrimitivesGen = parallel_prefix_sum( pstate, size_t(0), numPrimitives, size_t(BLOCK_SIZE), size_t(0), [&](const range<size_t>& r, const size_t base) -> size_t {
             size_t num = 0;

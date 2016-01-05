@@ -287,7 +287,13 @@ namespace embree
       }
     }
 
-    void* ptr() {
+    /* special allocation only used from morton builder only a single time for each build */
+    void* specialAlloc(size_t bytes) 
+    {
+      /* create a new block if the first free block is too small */
+      if (freeBlocks == nullptr || freeBlocks->getBlockAllocatedBytes() < bytes)
+        freeBlocks = Block::create(device,bytes,bytes,freeBlocks);
+
       return freeBlocks->ptr();
     }
 
