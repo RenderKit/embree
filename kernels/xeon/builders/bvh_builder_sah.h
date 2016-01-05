@@ -231,7 +231,10 @@ namespace embree
             SPAWN_BEGIN;
             //for (size_t i=0; i<numChildren; i++) 
             for (ssize_t i=numChildren-1; i>=0; i--)
-              SPAWN(([&,i] { values[i] = recurse(children[i],nullptr,true); }));
+              SPAWN(([&,i] { 
+                    values[i] = recurse(children[i],nullptr,true); 
+                    _mm_mfence(); // to allow non-temporal stores during build
+                  }));
             SPAWN_END;
             
             /* perform reduction */
