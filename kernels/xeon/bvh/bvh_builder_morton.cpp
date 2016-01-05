@@ -107,7 +107,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
 
-      void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -164,7 +164,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -220,7 +220,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
@@ -274,7 +274,7 @@ namespace embree
       __forceinline CreateMortonLeaf (TriangleMesh* mesh, MortonID32Bit* morton)
         : mesh(mesh), morton(morton) {}
       
-      void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
+      __noinline void operator() (MortonBuildRecord<NodeRef>& current, FastAllocator::ThreadLocal2* alloc, BBox3fa& box_o)
       {
         vfloat4 lower(pos_inf);
         vfloat4 upper(neg_inf);
