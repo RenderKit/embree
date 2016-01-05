@@ -175,12 +175,9 @@ namespace embree
     {     
       /* distribute the allocation to multiple thread block slots */
       slotMask = MAX_THREAD_USED_BLOCK_SLOTS-1;      
-      if (usedBlocks || freeBlocks) { 
-        reset();
-        return; 
-      }
+      if (usedBlocks || freeBlocks) { reset(); return; }
       if (bytesReserve == 0) bytesReserve = bytesAllocate;
-      usedBlocks = Block::create(device,bytesAllocate,bytesReserve);
+      freeBlocks = Block::create(device,bytesAllocate,bytesReserve);
       growSize = max(size_t(defaultBlockSize),bytesReserve);
     }
 
@@ -221,8 +218,8 @@ namespace embree
       /* first reset all used blocks */
       if (usedBlocks) usedBlocks->reset();
 
-      /* move all used blocks (except last) to begin of free block list */
-      while (usedBlocks && usedBlocks->next) {
+      /* move all used blocks to begin of free block list */
+      while (usedBlocks) {
         Block* nextUsedBlock = usedBlocks->next;
         usedBlocks->next = freeBlocks;
         freeBlocks = usedBlocks;
@@ -232,10 +229,6 @@ namespace embree
       for (size_t i=0; i<MAX_THREAD_USED_BLOCK_SLOTS; i++) 
         threadUsedBlocks[i] = nullptr;
      
-      /* reusing the first used block */
-      // decreases performance, reason unknown
-      //if (usedBlocks) threadUsedBlocks[0] = usedBlocks;
-      
       /* reset all thread local allocators */
       thread_local_allocators.reset();
       thread_local_allocators2.reset();
@@ -295,7 +288,7 @@ namespace embree
     }
 
     void* ptr() {
-      return usedBlocks->ptr();
+      return freeBlocks->ptr();
     }
 
     size_t getAllocatedBytes() const 
