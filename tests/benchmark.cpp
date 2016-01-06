@@ -1085,11 +1085,8 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect1_throughput<true>::scene;
-  RTCScene benchmark_rtcore_intersect1_throughput<false>::scene;
-
-
-
+  template<> RTCScene benchmark_rtcore_intersect1_throughput<true>::scene = nullptr;
+  template<> RTCScene benchmark_rtcore_intersect1_throughput<false>::scene = nullptr;
 
 #if HAS_INTERSECT16
 
@@ -1175,8 +1172,8 @@ namespace embree
     }
   };
 
-  RTCScene benchmark_rtcore_intersect16_throughput<true>::scene;
-  RTCScene benchmark_rtcore_intersect16_throughput<false>::scene;
+  template<> RTCScene benchmark_rtcore_intersect16_throughput<true>::scene = nullptr;
+  template<> RTCScene benchmark_rtcore_intersect16_throughput<false>::scene = nullptr;
 
 #endif
 
