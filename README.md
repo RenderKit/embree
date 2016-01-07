@@ -17,7 +17,7 @@ to get the highest benefit from future improvements. Embree is released
 as Open Source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
-Embree supports applications written with the Intel SPMD Programm
+Embree supports applications written with the Intel SPMD Program
 Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
 interface to the core ray tracing algorithms. This makes it possible to
 write a renderer in ISPC that leverages SSE, AVX, AVX2, AVX512, and Xeon Phi
