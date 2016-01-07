@@ -132,7 +132,7 @@ namespace embree
           const vfloat<M> u0 = Oz+t0*dOz;
           const vfloat<M> t = t0;
           const vfloat<M> u = u0*rl;
-          valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
+          valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f); // FIXME: should not do uv test
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
@@ -143,7 +143,19 @@ namespace embree
           Ng_o = Pr-Pl;
           return valid;
         }
-        
+
+        static __forceinline std::pair<vfloat<M>,vfloat<M>> intersect_half_plane(Ray& ray, const Vec3<vfloat<M>>& N, const Vec3<vfloat<M>>& P)
+        {
+          Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray.org) - P;
+          Vec3<vfloat<M>> D = Vec3<vfloat<M>>(ray.dir);
+          vfloat<M> ON = dot(O,N);
+          vfloat<M> DN = dot(D,N);
+          vfloat<M> t = -ON*rcp(DN);
+          vfloat<M> lower = select(DN < 0.0f, float(neg_inf), t);
+          vfloat<M> upper = select(DN < 0.0f, t, float(pos_inf));
+          return std::make_pair(lower,upper);
+        }
+
         template<typename Epilog>
         static __forceinline bool intersect(Ray& ray, const Precalculations& pre,
                                             const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1, const Vec4vfM& v2, const Vec4vfM& v3, 
@@ -177,9 +189,21 @@ namespace embree
           LineIntersectorHitM<M> hit(u,zero,t,T);
           return epilog(valid,hit);
 #else
-          vfloat<M> t0 = inf,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v1,v2,t0,u0,Ng0);
+          Vec3<vfloat<M>> q0(v0.x,v0.y,v0.z);
+          Vec3<vfloat<M>> q1(v1.x,v1.y,v1.z);
+          Vec3<vfloat<M>> q2(v2.x,v2.y,v2.z);
+          Vec3<vfloat<M>> q3(v3.x,v3.y,v3.z);
+          
+          auto tpl = intersect_half_plane(ray,q0-q2,q1);
+          auto tpr = intersect_half_plane(ray,q3-q1,q2);
+
           vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
+          validl &= tpl.first <= tl & tl <= tpl.second;
+
+          vfloat<M> t0 = inf,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v1,v2,t0,u0,Ng0);
+
           vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
+          validr &= tpr.first <= tr & tr <= tpr.second;
 
           //if (none(validr)) return false;
           //LineIntersectorHitM<M> hitr(ur,zero,tr,Ngr);
