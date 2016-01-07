@@ -146,13 +146,13 @@ namespace embree
         
         template<typename Epilog>
         static __forceinline bool intersect(Ray& ray, const Precalculations& pre,
-                                            const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1,
+                                            const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1, const Vec4vfM& v2, const Vec4vfM& v3, 
                                             const Epilog& epilog)
         {
 #if 0
           /* transform end points into ray space */
-          Vec4vfM p0(xfmVector(pre.ray_space,v0.xyz()-Vec3vfM(ray.org)), v0.w);
-          Vec4vfM p1(xfmVector(pre.ray_space,v1.xyz()-Vec3vfM(ray.org)), v1.w);
+          Vec4vfM p0(xfmVector(pre.ray_space,v1.xyz()-Vec3vfM(ray.org)), v1.w);
+          Vec4vfM p1(xfmVector(pre.ray_space,v2.xyz()-Vec3vfM(ray.org)), v2.w);
 
           /* approximative intersection with cone */
           const Vec4vfM v = p1-p0;
@@ -169,7 +169,7 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* ignore denormalized segments */
-          const Vec3vfM T = v1.xyz()-v0.xyz();
+          const Vec3vfM T = v2.xyz()-v1.xyz();
           valid &= T.x != vfloat<M>(zero) | T.y != vfloat<M>(zero) | T.z != vfloat<M>(zero);
           if (unlikely(none(valid))) return false;
           
@@ -177,9 +177,9 @@ namespace embree
           LineIntersectorHitM<M> hit(u,zero,t,T);
           return epilog(valid,hit);
 #else
-          vfloat<M> t0 = inf,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v0,v1,t0,u0,Ng0);
-          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v0,tl,Ngl); ul = 0.0f;
-          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v1,tr,Ngr); ur = 1.0f;
+          vfloat<M> t0 = inf,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v1,v2,t0,u0,Ng0);
+          vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
+          vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
 
           //if (none(validr)) return false;
           //LineIntersectorHitM<M> hitr(ur,zero,tr,Ngr);
