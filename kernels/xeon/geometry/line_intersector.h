@@ -194,16 +194,19 @@ namespace embree
           Vec3<vfloat<M>> q2(v2.x,v2.y,v2.z);
           Vec3<vfloat<M>> q3(v3.x,v3.y,v3.z);
           
-          auto tpl = intersect_half_plane(ray,q0-q2,q1);
-          auto tpr = intersect_half_plane(ray,q3-q1,q2);
+          auto tpl0 = intersect_half_plane(ray,q2-q0,q1);
+          auto tpl1 = intersect_half_plane(ray,q1-q2,q1);
+
+          auto tpr0 = intersect_half_plane(ray,q1-q3,q2);
+          auto tpr1 = intersect_half_plane(ray,q2-q1,q2);
 
           vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
-          validl &= tpl.first <= tl & tl <= tpl.second;
+          validl &= max(tpl0.first,tpl1.first) <= tl & tl <= min(tpl0.second,tpl1.second);
 
           vfloat<M> t0 = inf,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v1,v2,t0,u0,Ng0);
 
           vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
-          validr &= tpr.first <= tr & tr <= tpr.second;
+          validr &= max(tpr0.first,tpr1.first) <= tr & tr <= min(tpr0.second,tpr1.second);
 
           //if (none(validr)) return false;
           //LineIntersectorHitM<M> hitr(ur,zero,tr,Ngr);

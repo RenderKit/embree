@@ -233,10 +233,10 @@ namespace embree
 
     transpose(b0,b1,b2,b3,p2.x,p2.y,p2.z,p2.w);
 
-    const bool extend_left0 = (primIDs[0] > 0) && (geom0->segment(primIDs[0]-1)+2 == geom0->segment(primIDs[0]));
-    const bool extend_left1 = (primIDs[1] > 0) && (geom1->segment(primIDs[1]-1)+2 == geom1->segment(primIDs[1]));
-    const bool extend_left2 = (primIDs[2] > 0) && (geom2->segment(primIDs[2]-1)+2 == geom2->segment(primIDs[2]));
-    const bool extend_left3 = (primIDs[3] > 0) && (geom3->segment(primIDs[3]-1)+2 == geom3->segment(primIDs[3]));
+    const bool extend_left0 = (primIDs[0] > 0) && (geom0->segment(primIDs[0]-1)+1 == geom0->segment(primIDs[0]));
+    const bool extend_left1 = (primIDs[1] > 0) && (geom1->segment(primIDs[1]-1)+1 == geom1->segment(primIDs[1]));
+    const bool extend_left2 = (primIDs[2] > 0) && (geom2->segment(primIDs[2]-1)+1 == geom2->segment(primIDs[2]));
+    const bool extend_left3 = (primIDs[3] > 0) && (geom3->segment(primIDs[3]-1)+1 == geom3->segment(primIDs[3]));
 
     const vfloat4 l0 = extend_left0 ? vfloat4::loadu(geom0->vertexPtr(v0[0]-1,j)) : a0;
     const vfloat4 l1 = extend_left1 ? vfloat4::loadu(geom1->vertexPtr(v0[1]-1,j)) : a1;
@@ -245,10 +245,10 @@ namespace embree
 
     transpose(l0,l1,l2,l3,p0.x,p0.y,p0.z,p0.w);
 
-    const bool extend_right0 = primIDs[0] != -1 && ((primIDs[0]+1) < geom0->size()) && (geom0->segment(primIDs[0]+1) == geom0->segment(primIDs[0])+2);
-    const bool extend_right1 = primIDs[1] != -1 && ((primIDs[1]+1) < geom1->size()) && (geom1->segment(primIDs[1]+1) == geom1->segment(primIDs[1])+2);
-    const bool extend_right2 = primIDs[2] != -1 && ((primIDs[2]+1) < geom2->size()) && (geom2->segment(primIDs[2]+1) == geom2->segment(primIDs[2])+2);
-    const bool extend_right3 = primIDs[3] != -1 && ((primIDs[3]+1) < geom3->size()) && (geom3->segment(primIDs[3]+1) == geom3->segment(primIDs[3])+2);
+    const bool extend_right0 = primIDs[0] != -1 && ((primIDs[0]+1) < geom0->size()) && (geom0->segment(primIDs[0]+1) == geom0->segment(primIDs[0])+1);
+    const bool extend_right1 = primIDs[1] != -1 && ((primIDs[1]+1) < geom1->size()) && (geom1->segment(primIDs[1]+1) == geom1->segment(primIDs[1])+1);
+    const bool extend_right2 = primIDs[2] != -1 && ((primIDs[2]+1) < geom2->size()) && (geom2->segment(primIDs[2]+1) == geom2->segment(primIDs[2])+1);
+    const bool extend_right3 = primIDs[3] != -1 && ((primIDs[3]+1) < geom3->size()) && (geom3->segment(primIDs[3]+1) == geom3->segment(primIDs[3])+1);
 
     const vfloat4 r0 = extend_right0 ? vfloat4::loadu(geom0->vertexPtr(v0[0]+2,j)) : b0;
     const vfloat4 r1 = extend_right1 ? vfloat4::loadu(geom1->vertexPtr(v0[1]+2,j)) : b1;
