@@ -206,8 +206,8 @@ namespace embree
           vfloat<M> t0,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v0,v1,t0,u0,Ng0);
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid_i,ray,v1,v2,t1,u1,Ng1);
           vfloat<M> t2,u2; Vec3<vfloat<M>> Ng2; vbool<M> valid2 = intersect_cone(valid_i,ray,v2,v3,t2,u2,Ng2);
-          valid1 &= !valid0 | (t0 < ray.tnear) | (t0 > t1);
-          valid1 &= !valid2 | (t2 < ray.tnear) | (t2 > t1);
+          valid1 &= !valid0 | (t0 > t1);
+          valid1 &= !valid2 | (t2 > t1);
           valid1 &= (ray.tnear < t1) & (t1 < ray.tfar);
 
           vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
