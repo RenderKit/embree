@@ -103,16 +103,15 @@ namespace embree
           const vfloat<M> rl = rcp_length(b3-a3);
           const Vec3<vfloat<M>> P0 = a3, dP = (b3-a3)*rl;
           const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl;
-          const Vec3<vfloat<M>> org = ray.org, dO = ray.dir;
+          const Vec3<vfloat<M>> O = Vec3<vfloat<M>>(ray.org)-P0, dO = ray.dir;
           
-          const Vec3<vfloat<M>> O = org-P0;
-          const vfloat<M> OO = dot(O,O);
           const vfloat<M> dOdO = dot(dO,dO);
+          const vfloat<M> OdO = dot(dO,O);
+          const vfloat<M> OO = dot(O,O);
           const vfloat<M> dOz = dot(dP,dO);
           const vfloat<M> Oz = dot(dP,O);
-          const vfloat<M> OdO = dot(dO,O);
-          const vfloat<M> R = r0 + Oz*dr;
-          
+
+          const vfloat<M> R = r0 + Oz*dr;          
           const vfloat<M> A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
           const vfloat<M> B = 2.0f * (OdO - dOz*(Oz + R*dr));
           const vfloat<M> C = OO - (sqr(Oz) + sqr(R));
