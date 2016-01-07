@@ -99,11 +99,10 @@ namespace embree
           Vec3<vfloat<M>> a3(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> b3(v1.x,v1.y,v1.z);
 
-          const vfloat<M> rl0 = 1.0f/length(b3-a3); // FIXME: multiply equation with this
+          const vfloat<M> rl0 = rcp_length(b3-a3);
           const Vec3<vfloat<M>> p0 = a3, d0 = (b3-a3)*rl0;
           const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl0;
-          const float rl1 = 1.0f/length(ray.dir); // FIXME: normalization not required
-          const Vec3<vfloat<M>> p1 = ray.org, d1 = ray.dir*rl1;
+          const Vec3<vfloat<M>> p1 = ray.org, d1 = ray.dir;
           
           const Vec3<vfloat<M>> dp = p1-p0;
           const vfloat<M> dpdp = dot(dp,dp);
@@ -126,7 +125,7 @@ namespace embree
           //const vfloat<M> t1 = (-B+Q)*rcp2A;
           const vfloat<M> t0 = (-B-Q)/(2.0f*A);
           const vfloat<M> u0 = d0dp+t0*d0d1;
-          const vfloat<M> t = t0*rl1;
+          const vfloat<M> t = t0;
           const vfloat<M> u = u0*rl0;
           valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
           if (unlikely(none(valid))) return false;
