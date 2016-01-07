@@ -66,10 +66,11 @@ namespace embree
                                             const vbool<M>& valid_i, const Vec4vfM& v0, const Vec4vfM& v1,
                                             const Epilog& epilog)
         {
+#if 0    
           /* transform end points into ray space */
           Vec4vfM p0(xfmVector(pre.ray_space,v0.xyz()-Vec3vfM(ray.org)), v0.w);
           Vec4vfM p1(xfmVector(pre.ray_space,v1.xyz()-Vec3vfM(ray.org)), v1.w);
-          
+
           /* approximative intersection with cone */
           const Vec4vfM v = p1-p0;
           const Vec4vfM w = -p0;
@@ -92,6 +93,51 @@ namespace embree
           /* update hit information */
           LineIntersectorHitM<M> hit(u,zero,t,T);
           return epilog(valid,hit);
+#else
+          Vec4<vfloat<M>> a = v0;
+          Vec4<vfloat<M>> b = v1;
+          Vec3<vfloat<M>> a3(v0.x,v0.y,v0.z);
+          Vec3<vfloat<M>> b3(v1.x,v1.y,v1.z);
+
+          const vfloat<M> rl0 = 1.0f/length(b3-a3); // FIXME: multiply equation with this
+          const Vec3<vfloat<M>> p0 = a3, d0 = (b3-a3)*rl0;
+          const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl0;
+          const float rl1 = 1.0f/length(ray.dir); // FIXME: normalization not required
+          const Vec3<vfloat<M>> p1 = ray.org, d1 = ray.dir*rl1;
+          
+          const Vec3<vfloat<M>> dp = p1-p0;
+          const vfloat<M> dpdp = dot(dp,dp);
+          const vfloat<M> d1d1 = dot(d1,d1);
+          const vfloat<M> d0d1 = dot(d0,d1);
+          const vfloat<M> d0dp = dot(d0,dp);
+          const vfloat<M> d1dp = dot(d1,dp);
+          const vfloat<M> R = r0 + d0dp*dr;
+          
+          const vfloat<M> A = d1d1 - sqr(d0d1) * (1.0f+sqr(dr));
+          const vfloat<M> B = 2.0f * (d1dp - d0d1*(d0dp + R*dr));
+          const vfloat<M> C = dpdp - (sqr(d0dp) + sqr(R));
+          
+          const vfloat<M> D = B*B - 4.0f*A*C;
+          vbool<M> valid = D >= 0.0f;
+          if (none(valid)) return false;
+          
+          const vfloat<M> Q = sqrt(D);
+          //const vfloat<M> t0 = (-B-Q)*rcp2A;
+          //const vfloat<M> t1 = (-B+Q)*rcp2A;
+          const vfloat<M> t0 = (-B-Q)/(2.0f*A);
+          const vfloat<M> u0 = d0dp+t0*d0d1;
+          const vfloat<M> t = t0*rl1;
+          const vfloat<M> u = u0*rl0;
+          valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
+          if (unlikely(none(valid))) return false;
+          
+          /* update hit information */
+          const Vec3<vfloat<M>> Pr = Vec3<vfloat<M>>(ray.org) + t*Vec3<vfloat<M>>(ray.dir);
+          const Vec3<vfloat<M>> Pl = a3 + u*(b3-a3);
+          LineIntersectorHitM<M> hit(u,zero,t,Pr-Pl);
+          return epilog(valid,hit);
+
+#endif
         }
       };
     
