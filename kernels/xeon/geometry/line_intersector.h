@@ -94,27 +94,28 @@ namespace embree
           LineIntersectorHitM<M> hit(u,zero,t,T);
           return epilog(valid,hit);
 #else
+
           Vec4<vfloat<M>> a = v0;
           Vec4<vfloat<M>> b = v1;
           Vec3<vfloat<M>> a3(v0.x,v0.y,v0.z);
           Vec3<vfloat<M>> b3(v1.x,v1.y,v1.z);
 
-          const vfloat<M> rl0 = rcp_length(b3-a3);
-          const Vec3<vfloat<M>> p0 = a3, d0 = (b3-a3)*rl0;
-          const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl0;
-          const Vec3<vfloat<M>> p1 = ray.org, d1 = ray.dir;
+          const vfloat<M> rl = rcp_length(b3-a3);
+          const Vec3<vfloat<M>> P0 = a3, dP = (b3-a3)*rl;
+          const vfloat<M> r0 = a.w, dr = (b.w-a.w)*rl;
+          const Vec3<vfloat<M>> org = ray.org, dO = ray.dir;
           
-          const Vec3<vfloat<M>> dp = p1-p0;
-          const vfloat<M> dpdp = dot(dp,dp);
-          const vfloat<M> d1d1 = dot(d1,d1);
-          const vfloat<M> d0d1 = dot(d0,d1);
-          const vfloat<M> d0dp = dot(d0,dp);
-          const vfloat<M> d1dp = dot(d1,dp);
-          const vfloat<M> R = r0 + d0dp*dr;
+          const Vec3<vfloat<M>> O = org-P0;
+          const vfloat<M> OO = dot(O,O);
+          const vfloat<M> dOdO = dot(dO,dO);
+          const vfloat<M> dOz = dot(dP,dO);
+          const vfloat<M> Oz = dot(dP,O);
+          const vfloat<M> OdO = dot(dO,O);
+          const vfloat<M> R = r0 + Oz*dr;
           
-          const vfloat<M> A = d1d1 - sqr(d0d1) * (1.0f+sqr(dr));
-          const vfloat<M> B = 2.0f * (d1dp - d0d1*(d0dp + R*dr));
-          const vfloat<M> C = dpdp - (sqr(d0dp) + sqr(R));
+          const vfloat<M> A = dOdO - sqr(dOz) * (1.0f+sqr(dr));
+          const vfloat<M> B = 2.0f * (OdO - dOz*(Oz + R*dr));
+          const vfloat<M> C = OO - (sqr(Oz) + sqr(R));
           
           const vfloat<M> D = B*B - 4.0f*A*C;
           vbool<M> valid = D >= 0.0f;
@@ -124,9 +125,9 @@ namespace embree
           //const vfloat<M> t0 = (-B-Q)*rcp2A;
           //const vfloat<M> t1 = (-B+Q)*rcp2A;
           const vfloat<M> t0 = (-B-Q)/(2.0f*A);
-          const vfloat<M> u0 = d0dp+t0*d0d1;
+          const vfloat<M> u0 = Oz+t0*dOz;
           const vfloat<M> t = t0;
-          const vfloat<M> u = u0*rl0;
+          const vfloat<M> u = u0*rl;
           valid &= (ray.tnear < t) & (t < ray.tfar) & (0.0f <= u) & (u <= 1.0f);
           if (unlikely(none(valid))) return false;
           
