@@ -204,7 +204,7 @@ inline Vec3fa Minneart__eval(const Minneart* This,
                      const Vec3fa &wo, const DifferentialGeometry &dg, const Vec3fa &wi) 
 {
   const float cosThetaI = clamp(dot(wi,dg.Ns));
-  const float backScatter = pow(clamp(dot(wo,wi)), This->b);
+  const float backScatter = powf(clamp(dot(wo,wi)), This->b);
   return (backScatter * cosThetaI * float(one_over_pi)) * This->R;
 }
 
@@ -251,7 +251,7 @@ inline Vec3fa Velvety__eval(const Velvety* This,
   const float cosThetaO = clamp(dot(wo,dg.Ns));
   const float cosThetaI = clamp(dot(wi,dg.Ns));
   const float sinThetaO = sqrt(1.0f - cosThetaO * cosThetaO);
-  const float horizonScatter = pow(sinThetaO, This->f);
+  const float horizonScatter = powf(sinThetaO, This->f);
   return (horizonScatter * cosThetaI * float(one_over_pi)) * This->R;
 }
 
@@ -461,7 +461,7 @@ inline float AnisotropicBlinn__eval(const AnisotropicBlinn* This, const Vec3fa& 
   const float R = sqr(cosPhiH)+sqr(sinPhiH);
   if (R == 0.0f) return This->norm2;
   const float n = (This->nx*sqr(cosPhiH)+This->ny*sqr(sinPhiH))*rcp(R);
-  return This->norm2 * pow(abs(cosThetaH), n);
+  return This->norm2 * powf(abs(cosThetaH), n);
 }
 
 /*! Samples the distribution. \param s is the sample location
@@ -592,7 +592,7 @@ Vec3fa OBJMaterial__eval(OBJMaterial* material, const BRDF& brdf, const Vec3fa& 
   if (Ms > 0.0f) {
     const Sample3f refl = reflect_(wo,dg.Ns);
     if (dot(refl.v,wi) > 0.0f) 
-      R = R + (brdf.Ns+2) * float(one_over_two_pi) * pow(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
+      R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
   }
   if (Mt > 0.0f) {
   }
@@ -614,7 +614,7 @@ Vec3fa OBJMaterial__sample(OBJMaterial* material, const BRDF& brdf, const Vec3fa
   {
     const Sample3f refl = reflect_(wo,dg.Ns);
     wis = powerCosineSampleHemisphere(s.x,s.y,refl.v,brdf.Ns);
-    cs = (brdf.Ns+2) * float(one_over_two_pi) * pow(dot(refl.v,wis.v),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
+    cs = (brdf.Ns+2) * float(one_over_two_pi) * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
   }
 
   Vec3fa ct = Vec3fa(0.0f); 
