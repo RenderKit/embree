@@ -132,7 +132,7 @@ namespace embree
           const vfloat<M> u0 = Oz+t0*dOz;
           const vfloat<M> t = t0;
           const vfloat<M> u = u0*rl;
-          valid &= /*(ray.tnear < t) & (t < ray.tfar) &*/ (0.0f <= u) & (u <= 1.0f); // FIXME: should not do uv test
+          //valid &= /*(ray.tnear < t) & (t < ray.tfar) &*/ (0.0f <= u) & (u <= 1.0f); // FIXME: should not do uv test
           if (unlikely(none(valid))) return false;
           
           /* update hit information */
@@ -203,12 +203,22 @@ namespace embree
           vfloat<M> tl,ul; Vec3<vfloat<M>> Ngl; vbool<M> validl = intersect_sphere(valid_i,ray,v1,tl,Ngl); ul = 0.0f;
           validl &= max(tpl0.first,tpl1.first) <= tl & tl <= min(tpl0.second,tpl1.second);
 
-          vfloat<M> t0,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v0,v1,t0,u0,Ng0);
+          //vfloat<M> t0,u0; Vec3<vfloat<M>> Ng0; vbool<M> valid0 = intersect_cone(valid_i,ray,v0,v1,t0,u0,Ng0);
           vfloat<M> t1,u1; Vec3<vfloat<M>> Ng1; vbool<M> valid1 = intersect_cone(valid_i,ray,v1,v2,t1,u1,Ng1);
-          vfloat<M> t2,u2; Vec3<vfloat<M>> Ng2; vbool<M> valid2 = intersect_cone(valid_i,ray,v2,v3,t2,u2,Ng2);
-          valid1 &= !valid0 | (t0 > t1);
-          valid1 &= !valid2 | (t2 > t1);
+          //vfloat<M> t2,u2; Vec3<vfloat<M>> Ng2; vbool<M> valid2 = intersect_cone(valid_i,ray,v2,v3,t2,u2,Ng2);
+          //valid1 &= !valid0 | (t0 > t1);
+          //valid1 &= !valid2 | (t2 > t1);
           valid1 &= (ray.tnear < t1) & (t1 < ray.tfar);
+
+          auto thl = intersect_half_plane(ray,normalize_safe(q1-q0) + normalize_safe(q2-q1),q1);
+          //valid1 &= thl.first <= t1 & t1 <= thl.second;
+          auto thr = intersect_half_plane(ray,normalize_safe(q1-q2) + normalize_safe(q2-q3),q2);
+          //valid1 &= thr.first <= t1 & t1 <= thr.second;
+          valid1 &= max(thl.first,thr.first) <= t1 & t1 <= min(thl.second,thr.second);
+          
+          if (none(valid1)) return false;
+          LineIntersectorHitM<M> hit1(u1,zero,t1,Ng1);
+          return epilog(valid1,hit1);
 
           vfloat<M> tr,ur; Vec3<vfloat<M>> Ngr; vbool<M> validr = intersect_sphere(valid_i,ray,v2,tr,Ngr); ur = 1.0f;
           validr &= max(tpr0.first,tpr1.first) <= tr & tr <= min(tpr0.second,tpr1.second);
