@@ -539,14 +539,15 @@ namespace embree
               const vfloat16 bminmaxX = permute(vfloat16::load((float*)&node->lower_x),permX);
               const vfloat16 bminmaxY = permute(vfloat16::load((float*)&node->lower_y),permY);
               const vfloat16 bminmaxZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
+
 #endif
-              vfloat16 dist(inf);
+              vfloat16 dist( inf );
               size_t bits = m_trav_active;
               vint16 mask16( zero );
               do
-              {                    
+              {            
                 STAT3(normal.trav_nodes,1,1,1);                          
-                size_t i = __bscf(bits);
+                const size_t i = __bscf(bits);
 #if 0            
                 const vfloat16 tNearX = msub(bminX, rdir.x[i], org_rdir.x[i]); // optimize loading of 'i
                 const vfloat16 tNearY = msub(bminY, rdir.y[i], org_rdir.y[i]);
@@ -570,11 +571,9 @@ namespace embree
                 const vbool16 vmask      = le(tNear,align_shift_right<8>(tFar,tFar));              
                 dist   = select(vmask,min(tNear,dist),dist);
                 mask16 = mask_or(vmask,mask16,mask16,bitmask); 
-
 #endif
 
               } while(bits);
-            
               const vbool16 vmask   = lt(vbool16(0xff),dist,inf);
               DBG(dist);
               DBG(mask16);
@@ -600,10 +599,13 @@ namespace embree
 
           size_t lazy_node = 0;
           size_t bits = m_trav_active;
-          for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
-          {                                              
-            PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
-          }
+          if (unlikely(__popcnt(bits) >= 4))
+            PrimitiveIntersectorK::intersect(m_trav_active,pre,ray,prim,num,bvh->scene,lazy_node);
+          else
+            for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
+            {                                              
+              PrimitiveIntersectorK::intersect(pre, ray, i, prim, num, bvh->scene, lazy_node);
+            }
 
           if (unlikely((lt(vbool16((unsigned int)m_trav_active),ray.tfar,ray_tfar))))
           {

@@ -212,6 +212,7 @@ namespace embree
 
 
 
+
       static __forceinline int traverseAnyHit(NodeRef& cur,
                                               size_t mask,
                                               const vfloat16& tNear,

@@ -1420,7 +1420,7 @@ namespace embree
 #if HAS_INTERSECT16
     if (hasISA(AVX512KNL) || hasISA(KNC)) {
       benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<true>());
-      benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
+      //benchmarks.push_back(new benchmark_rtcore_intersect16_throughput<false>());
     }
 #endif
 
