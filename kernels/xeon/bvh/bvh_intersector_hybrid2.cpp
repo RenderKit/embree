@@ -485,24 +485,7 @@ namespace embree
             {
               STAT3(normal.trav_nodes,1,1,1);                          
               const Node* __restrict__ const node = cur.node();
-              //STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
-#if 0
-              const vfloat16 bminX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearX));
-              const vfloat16 bminY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearY));
-              const vfloat16 bminZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+nearZ));
-              const vfloat16 bmaxX = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farX));
-              const vfloat16 bmaxY = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farY));
-              const vfloat16 bmaxZ = vfloat16(*(vfloat8*)((const char*)&node->lower_x+farZ));
-              const vfloat16 tNearX = msub(bminX, rdir_x, org_rdir_x); 
-              const vfloat16 tNearY = msub(bminY, rdir_y, org_rdir_y);
-              const vfloat16 tNearZ = msub(bminZ, rdir_z, org_rdir_z);
-              const vfloat16 tFarX  = msub(bmaxX, rdir_x, org_rdir_x);
-              const vfloat16 tFarY  = msub(bmaxY, rdir_y, org_rdir_y);
-              const vfloat16 tFarZ  = msub(bmaxZ, rdir_z, org_rdir_z);      
-              const vfloat16 tNear  = max(tNearX,tNearY,tNearZ,vfloat16(tnear));
-              const vfloat16 tFar   = min(tFarX ,tFarY ,tFarZ ,vfloat16(tfar));
-              const vbool16 vmask   = le(vbool16(0xff),tNear,tFar);
- #else
+              STAT3(normal.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                         
               const vfloat16 bminmaxX = permute(vfloat16::load((float*)&node->lower_x),permX);
               const vfloat16 bminmaxY = permute(vfloat16::load((float*)&node->lower_y),permY);
               const vfloat16 bminmaxZ = permute(vfloat16::load((float*)&node->lower_z),permZ);
@@ -511,11 +494,10 @@ namespace embree
               const vfloat16 tNearFarZ = msub(bminmaxZ, rdir_z, org_rdir_z);
               const vfloat16 tNear     = max(tNearFarX,tNearFarY,tNearFarZ,tnear);
               const vfloat16 tFar      = min(tNearFarX,tNearFarY,tNearFarZ,tfar);
-              const vbool16 vmask      = le(vbool16(0xff),tNear,align_shift_right<8>(tFar,tFar));
-#endif
+              const vbool16 vmask      = le(tNear,align_shift_right<8>(tFar,tFar));
               if (unlikely(none(vmask))) goto pop;
 
-              BVHNNodeTraverserKHit<types>::traverseClosestHit(cur,vmask,tNear,mask16,stackPtr,stackEnd);
+              BVHNNodeTraverserKHit<types>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
             }          
           }
           else
@@ -561,7 +543,7 @@ namespace embree
                 const vbool16 vmask   = le(tNear,tFar);
                 dist   = select(vmask,min(tNear,dist),dist);
                 mask16 = select(vmask,mask16 | bitmask,mask16); // optimize
-#else
+#else 
                 const vfloat16 tNearFarX = msub(bminmaxX, rdir.x[i], org_rdir.x[i]);
                 const vfloat16 tNearFarY = msub(bminmaxY, rdir.y[i], org_rdir.y[i]);
                 const vfloat16 tNearFarZ = msub(bminmaxZ, rdir.z[i], org_rdir.z[i]);

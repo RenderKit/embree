@@ -48,10 +48,17 @@ namespace embree
     cout << "    #stack pop    = " << float(cntrs.code.normal.trav_stack_pop )*1E-6 << "M" << std::endl;
 
     size_t normal_box_hits = 0;
-    for (size_t i=0;i<=16;i++) normal_box_hits += cntrs.code.normal.trav_hit_boxes[i];
+    size_t weighted_box_hits = 0;
+    for (size_t i=0;i<=16;i++) { 
+      normal_box_hits += cntrs.code.normal.trav_hit_boxes[i];
+      weighted_box_hits += cntrs.code.normal.trav_hit_boxes[i]*i;
+    }
     cout << "    #hit_boxes    = ";
     for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i] / normal_box_hits << " ";
     cout << std::endl;
+    for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.normal.trav_hit_boxes[i]*i / weighted_box_hits << " ";
+    cout << std::endl;
+
 #endif
     if (cntrs.code.shadow.travs) {
       cout << "  #shadow_travs = " << float(cntrs.code.shadow.travs         )*1E-6 << "M" << std::endl;
@@ -66,10 +73,18 @@ namespace embree
       cout << "    #stack pop   = " << float(cntrs.code.shadow.trav_stack_pop )*1E-6 << "M" << std::endl;
 
       size_t shadow_box_hits = 0;
-      for (size_t i=0;i<=16;i++) shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i];
+      size_t weighted_shadow_box_hits = 0;
+
+      for (size_t i=0;i<=16;i++) {        
+        shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i];
+        weighted_shadow_box_hits += cntrs.code.shadow.trav_hit_boxes[i]*i;
+      }
       cout << "    #hit_boxes    = ";
       for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i] / shadow_box_hits << " ";
       cout << std::endl;
+      for (size_t i=0;i<=16;i++) cout << "[" << i << "] " << 100.0f * cntrs.code.shadow.trav_hit_boxes[i]*i / weighted_shadow_box_hits << " ";
+      cout << std::endl;
+
 #endif
 
     }
