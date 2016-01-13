@@ -16,6 +16,8 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
+extern "C" bool g_userGeometry;
+
 /* scene data */
 RTCDevice g_device = nullptr;
 RTCScene g_scene = nullptr;
@@ -48,42 +50,151 @@ void error_handler(const RTCError code, const char* str = nullptr)
   exit(1);
 }
 
+// ======================================================================== //
+//                     User defined point geometry                         //
+// ======================================================================== //
+
+struct Point
+{
+	ALIGNED_STRUCT
+	Vec3fa p;                      //!< position, radius of the point
+	unsigned int geomID;
+};
+
+void pointBoundsFunc(const Point* points, size_t item, RTCBounds* bounds_o)
+{
+	const Point& point = points[item];
+	bounds_o->lower_x = point.p.x - point.p.w;
+	bounds_o->lower_y = point.p.y - point.p.w;
+	bounds_o->lower_z = point.p.z - point.p.w;
+	bounds_o->upper_x = point.p.x + point.p.w;
+	bounds_o->upper_y = point.p.y + point.p.w;
+	bounds_o->upper_z = point.p.z + point.p.w;
+}
+
+void pointIntersectFunc(const Point* points, RTCRay& ray, size_t item)
+{
+	const Point& point = points[item];
+	const float depth_scale = rsqrt(dot(ray.dir, ray.dir));
+	LinearSpace3<Vec3<float>> ray_space = frame(depth_scale*ray.dir).transposed();
+
+	/* transform point into ray space */
+	Vec4<float> p0(xfmVector(ray_space, Vec3<float>(point.p - ray.org)), point.p.w);
+
+	/* approximate the point with a disk facing the ray */
+	const float t = p0.z*depth_scale;
+	const float d2 = p0.x*p0.x + p0.y*p0.y;
+	const float r = p0.w;
+	const float r2 = r*r;
+	if (d2 <= r2 && ray.tnear < t && t < ray.tfar)
+	{
+		ray.u = 0.0f;
+		ray.v = 0.0f;
+		ray.tfar = t;
+		ray.geomID = point.geomID;
+		ray.primID = item;
+		ray.Ng = -ray.dir;
+	}
+}
+
+void pointOccludedFunc(const Point* points, RTCRay& ray, size_t item)
+{
+	const Point& point = points[item];
+	const float depth_scale = rsqrt(dot(ray.dir, ray.dir));
+	LinearSpace3<Vec3<float>> ray_space = frame(depth_scale*ray.dir).transposed();
+
+	/* transform point into ray space */
+	Vec4<float> p0(xfmVector(ray_space, Vec3<float>(point.p - ray.org)), point.p.w);
+
+	/* approximate the point with a disk facing the ray */
+	const float t = p0.z*depth_scale;
+	const float d2 = p0.x*p0.x + p0.y*p0.y;
+	const float r = p0.w;
+	const float r2 = r*r;
+	if (d2 <= r2 && ray.tnear < t && t < ray.tfar)
+	{
+		ray.geomID = point.geomID;
+	}
+}
+
+Point* createPoints(RTCScene scene, size_t N)
+{
+	unsigned int geomID = rtcNewUserGeometry(scene, N);
+	Point* points = new Point[N];
+	for (int i = 0; i<N; i++) points[i].geomID = geomID;
+	rtcSetUserData(scene, geomID, points);
+	rtcSetBoundsFunction(scene, geomID, (RTCBoundsFunc)&pointBoundsFunc);
+	rtcSetIntersectFunction(scene, geomID, (RTCIntersectFunc)&pointIntersectFunc);
+	rtcSetOccludedFunction(scene, geomID, (RTCOccludedFunc)&pointOccludedFunc);
+	return points;
+}
+
 /* adds points to the scene */
 unsigned int addPoints (RTCScene scene_i, unsigned int numPoints)
 {
   /* create a Lorenz attractor */
-  unsigned int mesh = rtcNewPoints (scene_i, RTC_GEOMETRY_STATIC, numPoints);
+  if (g_userGeometry)
+  {
+    Point* vertices = createPoints (scene_i, numPoints);
 
-  /* create vertex color arrays */
-  vertex_colors = (Vec3f*)alignedMalloc(numPoints*sizeof(Vec3f));
+	/* create vertex color arrays */
+	vertex_colors = (Vec3f*)alignedMalloc(numPoints*sizeof(Vec3f));
+	/* set vertices and vertex colors */
+	float x0, y0, z0, x1, y1, z1;
+	const float dt = 0.001f;
+	const float a = 10.0f;
+	const float b = 28.0f;
+	const float c = 8.0f / 3.0f;
 
-  /* set vertices and vertex colors */
-  Vertex* vertices = (Vertex*) rtcMapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER);
+	x0 = 0.1f;
+	y0 = 0.0f;
+	z0 = 0.0f;
 
-  float x0, y0, z0, x1, y1, z1;
-  const float dt = 0.001f;
-  const float a = 10.0f;
-  const float b = 28.0f;
-  const float c = 8.0f / 3.0f;
-
-  x0 = 0.1f;
-  y0 = 0.0f;
-  z0 = 0.0f;
-
-  for (unsigned int i = 0; i < numPoints; i++) {
-    vertex_colors[i] = Vec3fa(1,(float)i/numPoints,0); 
-	x1 = x0 + dt * a * (y0 - x0);
-	y1 = y0 + dt * (x0 * (b - z0) - y0);
-	z1 = z0 + dt * (x0 * y0 - c * z0);
-	x0 = x1;
-	y0 = y1;
-	z0 = z1;
-	vertices[i].x = x0; vertices[i].y = y0; vertices[i].z = z0; vertices[i].r = 0.05f;
+	for (unsigned int i = 0; i < numPoints; i++) {
+		vertex_colors[i] = Vec3fa(1, (float)i / numPoints, 0);
+		x1 = x0 + dt * a * (y0 - x0);
+		y1 = y0 + dt * (x0 * (b - z0) - y0);
+		z1 = z0 + dt * (x0 * y0 - c * z0);
+		x0 = x1;
+		y0 = y1;
+		z0 = z1;
+		vertices[i].p.x = x0; vertices[i].p.y = y0; vertices[i].p.z = z0; vertices[i].p.w = 0.05f;
+	}
+    return vertices[0].geomID;
   }
+  else 
+  {
+	unsigned int mesh = rtcNewPoints(scene_i, RTC_GEOMETRY_STATIC, numPoints);
 
-  rtcUnmapBuffer(scene_i,mesh,RTC_VERTEX_BUFFER); 
+	Vertex* vertices = (Vertex*)rtcMapBuffer(scene_i, mesh, RTC_VERTEX_BUFFER);
 
-  return mesh;
+	/* create vertex color arrays */
+	vertex_colors = (Vec3f*)alignedMalloc(numPoints*sizeof(Vec3f));
+	/* set vertices and vertex colors */
+	float x0, y0, z0, x1, y1, z1;
+	const float dt = 0.001f;
+	const float a = 10.0f;
+	const float b = 28.0f;
+	const float c = 8.0f / 3.0f;
+
+	x0 = 0.1f;
+	y0 = 0.0f;
+	z0 = 0.0f;
+
+	for (unsigned int i = 0; i < numPoints; i++) {
+		vertex_colors[i] = Vec3fa(1, (float)i / numPoints, 0);
+		x1 = x0 + dt * a * (y0 - x0);
+		y1 = y0 + dt * (x0 * (b - z0) - y0);
+		z1 = z0 + dt * (x0 * y0 - c * z0);
+		x0 = x1;
+		y0 = y1;
+		z0 = z1;
+		vertices[i].x = x0; vertices[i].y = y0; vertices[i].z = z0; vertices[i].r = 0.05f;
+	}
+    rtcUnmapBuffer(scene_i, mesh, RTC_VERTEX_BUFFER);
+
+    return mesh;
+  }
 }
 
 /* adds a ground plane to the scene */

@@ -17,6 +17,8 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/image/image.h"
 
+extern "C" bool g_userGeometry = false;
+
 namespace embree
 {
   /* name of the tutorial */
@@ -70,11 +72,15 @@ namespace embree
       else if (tag == "-rtcore")
         g_rtcore = cin->getString();
 
-      /* number of threads to use */
-      else if (tag == "-threads")
-        g_numThreads = cin->getInt();
+	  /* number of threads to use */
+	  else if (tag == "-threads")
+		  g_numThreads = cin->getInt();
 
-      /* skip unknown command line parameter */
+	  /* number of threads to use */
+	  else if (tag == "-user_geometry")
+		  g_userGeometry = true;
+
+	  /* skip unknown command line parameter */
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
         while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
