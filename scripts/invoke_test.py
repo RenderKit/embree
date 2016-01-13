@@ -76,7 +76,7 @@ executable = parseArgs(sys.argv[1:len(sys.argv)])
 refImageFile = modeldir + dash + "reference" + dash + name + ".tga"
 imageFile    = name + ".tga"
 
-executable = executable + " -rtcore verbose=2"
+#executable = executable + " -rtcore verbose=2"
 
 if (model != "" and model != "default"):
   executable = executable + " -c " + modeldir + dash + model
