@@ -84,6 +84,9 @@ IF (ENABLE_XEON_PHI_SUPPORT)
   SET(ENABLE_ISPC_SUPPORT ON CACHE BOOL "Build Embree with support for ISPC applications." FORCE)
 ENDIF ()
 
+##############################################################################
+# Configurations (add configurations also to common/cmake/embree-config-default.cmake)
+
 OPTION(RTCORE_RAY_MASK "Enables ray mask support.")
 OPTION(RTCORE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(RTCORE_BACKFACE_CULLING "Enables backface culling.")
@@ -98,6 +101,8 @@ OPTION(RTCORE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 SET(RTCORE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 SET_PROPERTY(CACHE RTCORE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL)
+
+###############################################################################
 
 IF (RTCORE_TASKING_SYSTEM STREQUAL "TBB")
   SET(TASKING_TBB ON)
