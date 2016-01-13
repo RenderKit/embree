@@ -14,7 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-INCLUDE(tutorial)
-ADD_TUTORIAL(triangle_geometry)
-ADD_TEST(NAME triangle_geometry COMMAND triangle_geometry -o triangle_geometry.tga)
-ADD_TEST(NAME triangle_geometry_ispc COMMAND triangle_geometry_ispc -o triangle_geometry_ispc.tga)
+set(CTEST_PROJECT_NAME "Embree")
+set(CTEST_NIGHTLY_START_TIME "01:00:00 UTC")
+
+set(CTEST_DROP_METHOD "http")
+set(CTEST_DROP_SITE "woop")
+set(CTEST_DROP_LOCATION "/cdash/submit.php?project=Embree")
+set(CTEST_DROP_SITE_CDASH TRUE)
