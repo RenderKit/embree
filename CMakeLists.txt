@@ -53,9 +53,7 @@ MARK_AS_ADVANCED(GLUT_cocoa_LIBRARY)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
 
-# Enable CTest
-ENABLE_TESTING()
-INCLUDE(CTest)
+INCLUDE(test)
 
 ##############################################################
 # Create Binary Packages
