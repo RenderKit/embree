@@ -87,6 +87,8 @@ if (model != ""):
 ret = os.system(executable)
 
 if ret == 0 and model != "":
+  if os.path.isfile(imageFile):
+    os.system("convert -quality 10 " + imageFile + " " + name + ".jpg")
   if not compareImages(refImageFile,imageFile):
     sys.stdout.write(" [failed] [images differ]\n")
     sys.exit(2)

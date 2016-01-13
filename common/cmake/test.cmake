@@ -47,7 +47,6 @@ MACRO (ADD_EMBREE_TEST name executable)
                    --model default
                    --execute ${PROJECT_BINARY_DIR}/${executable})
 
-#SET_TESTS_PROPERTIES(triangle_geometry PROPERTIES ATTACHED_FILES "triangle_geometry.tga")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_MODELS_TEST name executable)
@@ -62,4 +61,5 @@ MACRO (ADD_EMBREE_MODELS_TEST name executable)
                      --model ${model}
                      --execute ${PROJECT_BINARY_DIR}/${executable})
   ENDFOREACH()
+  SET_TESTS_PROPERTIES("${name}_${modelname}" PROPERTIES ATTACHED_FILES "${name}_${modelname}.jpg")
 ENDMACRO()
