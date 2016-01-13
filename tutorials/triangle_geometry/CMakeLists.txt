@@ -16,5 +16,9 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(triangle_geometry)
-ADD_TEST(NAME triangle_geometry COMMAND triangle_geometry -o triangle_geometry.tga)
-ADD_TEST(NAME triangle_geometry_ispc COMMAND triangle_geometry_ispc -o triangle_geometry_ispc.tga)
+
+ADD_TEST(NAME triangle_geometry WORKING_DIRECTORY ${PROJECT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py --name triangle_geometry --modeldir /Users/swoop/Work/models/embree-models --model default --execute ${PROJECT_BINARY_DIR}/triangle_geometry)
+
+#SET_TESTS_PROPERTIES(triangle_geometry PROPERTIES ATTACHED_FILES "triangle_geometry.tga")
+
+#ADD_TEST(NAME triangle_geometry_ispc COMMAND triangle_geometry_ispc -o triangle_geometry_ispc.tga)
