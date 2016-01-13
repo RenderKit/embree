@@ -68,6 +68,11 @@ extern "C" uniform unsigned int ispcNewLineSegments (RTCScene scene,
                                                      uniform size_tt numVertices,
                                                      uniform size_tt numTimeSteps);
 
+extern "C" uniform unsigned int ispcNewPoints (RTCScene scene,
+                                                     uniform RTCGeometryFlags flags,
+                                                     uniform size_tt numPoints,
+                                                     uniform size_tt numTimeSteps);
+
 extern "C" uniform unsigned int ispcNewHairGeometry (RTCScene scene,
                                                      uniform RTCGeometryFlags flags,
                                                      uniform size_tt numCurves,
@@ -304,6 +309,14 @@ uniform unsigned int rtcNewLineSegments (RTCScene scene,
                                          uniform size_t numTimeSteps)
 {
   return ispcNewLineSegments (scene,flags,numSegments,numVertices,numTimeSteps);
+}
+
+uniform unsigned int rtcNewPoints (RTCScene scene,
+                                   uniform RTCGeometryFlags flags,
+                                   uniform size_t numPoints,
+                                   uniform size_t numTimeSteps)
+{
+  return ispcNewPoints (scene,flags,numPoints,numTimeSteps);
 }
 
 uniform unsigned int rtcNewHairGeometry (RTCScene scene,

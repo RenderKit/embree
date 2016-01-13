@@ -179,6 +179,33 @@ unsigned int addHair (RTCScene scene)
   return geomID;
 }
 
+/* add point geometry */
+unsigned int addPoints (RTCScene scene)
+{
+  unsigned int geomID = rtcNewPoints (scene, RTC_GEOMETRY_STATIC, 4, 2);
+
+  AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,3,0),Vec3fa(1,1,0),0.44f);
+  Vec3fa* vertices0 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  Vec3fa* vertices1 = (Vec3fa*) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+  Vec3fa p0 = Vec3fa(cube_vertices[2][0],cube_vertices[2][1],cube_vertices[2][2]);
+  Vec3fa p1 = Vec3fa(cube_vertices[3][0],cube_vertices[3][1],cube_vertices[3][2]);
+  Vec3fa p2 = Vec3fa(cube_vertices[6][0],cube_vertices[6][1],cube_vertices[6][2]);
+  Vec3fa p3 = Vec3fa(cube_vertices[7][0],cube_vertices[7][1],cube_vertices[7][2]);
+  vertices0[0] = Vec3fa(p0,0.05f);
+  vertices0[1] = Vec3fa(p1,0.05f);
+  vertices0[2] = Vec3fa(p2,0.05f);
+  vertices0[3] = Vec3fa(p3,0.05f);
+  vertices1[0] = Vec3fa(xfmPoint(rotation,p0),0.05f);
+  vertices1[1] = Vec3fa(xfmPoint(rotation,p1),0.05f);
+  vertices1[2] = Vec3fa(xfmPoint(rotation,p2),0.05f);
+  vertices1[3] = Vec3fa(xfmPoint(rotation,p3),0.05f);
+
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
+  
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 unsigned int addGroundPlane (RTCScene scene)
 {
@@ -227,6 +254,9 @@ extern "C" void device_init (char* cfg)
   /* add hair */
   addHair(g_scene);
 
+  /* add points */
+  addPoints(g_scene);
+
   /* add ground plane */
   addGroundPlane(g_scene);
 
@@ -266,6 +296,7 @@ Vec3fa renderPixelStandard(float x, float y, const Vec3fa& vx, const Vec3fa& vy,
     Vec3fa diffuse;
     if (ray.geomID == 0) diffuse = face_colors[ray.primID];
     else if (ray.geomID == 1) diffuse = Vec3fa(0.0f,1.0f,0.0f);
+    else if (ray.geomID == 2) diffuse = Vec3fa(1.0f,0.0f,0.0f);
     else diffuse = Vec3fa(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-4,-1));

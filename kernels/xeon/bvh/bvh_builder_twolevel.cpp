@@ -239,6 +239,10 @@ namespace embree
     Builder* BVH4BuilderTwoLevelLineSegmentsSAH (void* bvh, Scene* scene, const createLineSegmentsAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,LineSegments>((BVH4*)bvh,scene,createMeshAccel);
     }
+    
+    Builder* BVH4BuilderTwoLevelPointsSAH (void* bvh, Scene* scene, const createPointsAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,Points>((BVH4*)bvh,scene,createMeshAccel);
+    }
 
     Builder* BVH4BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
       return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);

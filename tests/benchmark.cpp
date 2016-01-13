@@ -650,6 +650,26 @@ namespace embree
     }
   }
 
+  struct Points {
+    avector<Vec3fa> vertices;
+  };
+
+  void createPointball(const Vec3fa& pos, const float r, size_t numPoints, Points& pointset_o)
+  {
+    const float thickness = 0.001f*r;
+
+    unsigned int state = 1;
+
+    for (size_t t=0; t<numPoints; t++)
+    {
+      Vec3fa dp = uniformSampleSphere(rngFloat(state), rngFloat(state));
+
+      Vec3fa l0 = pos + r*dp; l0.w = thickness;
+
+      pointset_o.vertices.push_back(l0);
+    }
+  }
+
   class create_geometry : public Benchmark
   {
   public:
@@ -784,6 +804,71 @@ namespace embree
     }
   };
   
+
+  class create_geometry_point : public Benchmark
+  {
+  public:
+    RTCSceneFlags sflags; RTCGeometryFlags gflags; size_t numPoints; size_t numMeshes;
+    create_geometry_point (const std::string& name, RTCSceneFlags sflags, RTCGeometryFlags gflags, size_t numPoints, size_t numMeshes)
+      : Benchmark(name,"Mpoints/s"), sflags(sflags), gflags(gflags), numPoints(numPoints), numMeshes(numMeshes) {}
+
+    double run(size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      Points pointset; createPointball (Vec3f(0,0,0), 1, numPoints, pointset);
+
+      const size_t sizeVertexData = pointset.vertices.size()*sizeof(Vec3fa);
+
+      Vec3fa** vertices = new Vec3fa*[numMeshes];
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        vertices[i] = (Vec3fa*)os_malloc(sizeVertexData);
+        assert(vertices[i]);
+        for (size_t j=0;j<pointset.vertices.size();j++)
+        {
+          Vec3fa &v = vertices[i][j];
+          v.x = pointset.vertices[j].x * (float)i;
+          v.y = pointset.vertices[j].y * (float)i;
+          v.z = pointset.vertices[j].z * (float)i;
+          v.a = pointset.vertices[j].a;
+        }
+      }
+
+      double t0 = getSeconds();
+      RTCScene scene = rtcDeviceNewScene(device,sflags,aflags);
+
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        unsigned geom = rtcNewPoints (scene, gflags, pointset.vertices.size());
+#if 1
+        rtcSetBuffer(scene,geom,RTC_VERTEX_BUFFER,&vertices[i][0],0,sizeof(Vec3fa));
+#else
+        memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &pointset.vertices[0], pointset.vertices.size()*sizeof(Vec3fa));
+        rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+        for (size_t i=0; i<pointset.vertices.size(); i++) {
+          mesh.vertices[i].x += 1.0f;
+          mesh.vertices[i].y += 1.0f;
+          mesh.vertices[i].z += 1.0f;
+        }
+#endif
+      }
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+
+      for (size_t i=0; i<numMeshes; i++)
+        os_free(vertices[i],sizeVertexData);
+
+      delete[] vertices;
+
+      size_t numPoints = pointset.vertices.size() * numMeshes;
+      return 1E-6*double(numPoints)/(t1-t0);
+    }
+  };
+
   class update_geometry : public Benchmark
   {
   public:
@@ -865,6 +950,46 @@ namespace embree
       //return 1000.0f*(t1-t0);
       size_t numLines = hairset.lines.size() * numMeshes;
       return 1E-6*double(numLines)/(t1-t0);
+    }
+  };
+
+  class update_geometry_point : public Benchmark
+  {
+  public:
+    RTCGeometryFlags flags; size_t numPoints; size_t numMeshes;
+    update_geometry_point(const std::string& name, RTCGeometryFlags flags, size_t numPoints, size_t numMeshes)
+      : Benchmark(name,"Mpoints/s"), flags(flags), numPoints(numPoints), numMeshes(numMeshes) {}
+
+    double run(size_t numThreads)
+    {
+      RTCDevice device = rtcNewDevice((g_rtcore+",threads="+toString(numThreads)).c_str());
+      error_handler(rtcDeviceGetError(device));
+
+      Points pointset; createPointball (Vec3f(0,0,0), 1, numPoints, pointset);
+      RTCScene scene = rtcDeviceNewScene(device,RTC_SCENE_DYNAMIC,aflags);
+
+      for (size_t i=0; i<numMeshes; i++)
+      {
+        unsigned geom = rtcNewPoints (scene, flags, pointset.vertices.size());
+        memcpy(rtcMapBuffer(scene,geom,RTC_VERTEX_BUFFER), &pointset.vertices[0], pointset.vertices.size()*sizeof(Vec3fa));
+        rtcUnmapBuffer(scene,geom,RTC_VERTEX_BUFFER);
+        for (size_t i=0; i<pointset.vertices.size(); i++) {
+          pointset.vertices[i].x += 1.0f;
+          pointset.vertices[i].y += 1.0f;
+          pointset.vertices[i].z += 1.0f;
+        }
+      }
+      rtcCommit (scene);
+      double t0 = getSeconds();
+      for (size_t i=0; i<numMeshes; i++) rtcUpdate(scene,i);
+      rtcCommit (scene);
+      double t1 = getSeconds();
+      rtcDeleteScene(scene);
+      rtcDeleteDevice(device);
+
+      //return 1000.0f*(t1-t0);
+      size_t numPoints = pointset.vertices.size() * numMeshes;
+      return 1E-6*double(numPoints)/(t1-t0);
     }
   };
 
@@ -1553,6 +1678,33 @@ namespace embree
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_1k_1000" , RTC_GEOMETRY_DEFORMABLE,1*1000,1000));
 #if defined(__X86_64__)
     benchmarks.push_back(new update_geometry_line ("refit_geometry_line_120_10000",RTC_GEOMETRY_DEFORMABLE,120,10000));
+#endif
+
+    //benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_120",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,1));
+    //benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_1k" ,      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1));
+    //benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_10k",      RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,1));
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_100k",     RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,1));
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_1000k_1",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1000*1000,1));
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_100k_10",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,100*1000,10));
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_10k_100",  RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,10*1000,100));
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_1k_1000" , RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,1*1000,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new create_geometry_point ("create_static_geometry_point_120_10000",RTC_SCENE_STATIC,RTC_GEOMETRY_STATIC,120,10000));
+#endif
+
+
+    //benchmarks.push_back(new update_geometry_point ("refit_geometry_point_120",      RTC_GEOMETRY_DEFORMABLE,120,1));
+    //benchmarks.push_back(new update_geometry_point ("refit_geometry_point_1k" ,      RTC_GEOMETRY_DEFORMABLE,1*1000,1));
+    //benchmarks.push_back(new update_geometry_point ("refit_geometry_point_10k",      RTC_GEOMETRY_DEFORMABLE,10*1000,1));
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_100k",     RTC_GEOMETRY_DEFORMABLE,100*1000,1));
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_1000k_1",  RTC_GEOMETRY_DEFORMABLE,1000*1000,1));
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_8000k_1",  RTC_GEOMETRY_DEFORMABLE,1000*1000*8,1));
+
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_100k_10",  RTC_GEOMETRY_DEFORMABLE,100*1000,10));
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_10k_100",  RTC_GEOMETRY_DEFORMABLE,10*1000,100));
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_1k_1000" , RTC_GEOMETRY_DEFORMABLE,1*1000,1000));
+#if defined(__X86_64__)
+    benchmarks.push_back(new update_geometry_point ("refit_geometry_point_120_10000",RTC_GEOMETRY_DEFORMABLE,120,10000));
 #endif
   }
 

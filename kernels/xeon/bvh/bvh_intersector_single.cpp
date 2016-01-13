@@ -17,6 +17,7 @@
 #include "bvh_intersector_single.h"
 #include "../geometry/intersector_iterators.h"
 #include "../geometry/linei_intersector.h"
+#include "../geometry/pointi_intersector.h"
 #include "../geometry/bezier1v_intersector.h"
 #include "../geometry/bezier1i_intersector.h"
 #include "../geometry/subdivpatch1cached_intersector1.h"
@@ -115,6 +116,9 @@ namespace embree
 
     DEFINE_INTERSECTOR4(BVH4Line4iIntersector4,  BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH4Line4iMBIntersector4,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 4 COMMA true> > >);
+
+    DEFINE_INTERSECTOR4(BVH4Point4iIntersector4,  BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH4Point4iMBIntersector4,BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 4 COMMA true> > >);
    
     DEFINE_INTERSECTOR4(BVH4Bezier1vIntersector4Single, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH4Bezier1iIntersector4Single, BVHNIntersectorKSingle<4 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
@@ -133,6 +137,9 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH4Line4iIntersector8,  BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH4Line4iMBIntersector8,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
    
+    DEFINE_INTERSECTOR8(BVH4Point4iIntersector8,  BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH4Point4iMBIntersector8,BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
+   
     DEFINE_INTERSECTOR8(BVH4Bezier1vIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH4Bezier1iIntersector8Single, BVHNIntersectorKSingle<4 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
 
@@ -148,8 +155,11 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
-    DEFINE_INTERSECTOR4(BVH4Line4iIntersector16,  BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH4Line4iMBIntersector16,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Line4iIntersector16,  BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Line4iMBIntersector16,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
+   
+    DEFINE_INTERSECTOR16(BVH4Point4iIntersector16,  BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH4Point4iMBIntersector16,BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
    
     DEFINE_INTERSECTOR16(BVH4Bezier1vIntersector16Single, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH4Bezier1iIntersector16Single, BVHNIntersectorKSingle<4 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);
@@ -169,6 +179,9 @@ namespace embree
     DEFINE_INTERSECTOR4(BVH8Line4iIntersector4,  BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 4 COMMA true> > >);
     DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector4,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 4 COMMA true> > >);
    
+    DEFINE_INTERSECTOR4(BVH8Point4iIntersector4,  BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 4 COMMA true> > >);
+    DEFINE_INTERSECTOR4(BVH8Point4iMBIntersector4,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 4 COMMA true> > >);
+   
     DEFINE_INTERSECTOR4(BVH8Bezier1vIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1vIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH8Bezier1iIntersector4Single_OBB, BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorK<4> > >);
     DEFINE_INTERSECTOR4(BVH8Bezier1iMBIntersector4Single_OBB,BVHNIntersectorKSingle<8 COMMA 4 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<4 COMMA Bezier1iIntersectorKMB<4> > >);
@@ -184,6 +197,9 @@ namespace embree
     DEFINE_INTERSECTOR8(BVH8Line4iIntersector8,  BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
     DEFINE_INTERSECTOR8(BVH8Line4iMBIntersector8,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
    
+    DEFINE_INTERSECTOR8(BVH8Point4iIntersector8,  BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 8 COMMA true> > >);
+    DEFINE_INTERSECTOR8(BVH8Point4iMBIntersector8,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 8 COMMA true> > >);
+   
     DEFINE_INTERSECTOR8(BVH8Bezier1vIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1vIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH8Bezier1iIntersector8Single_OBB, BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorK<8> > >);
     DEFINE_INTERSECTOR8(BVH8Bezier1iMBIntersector8Single_OBB,BVHNIntersectorKSingle<8 COMMA 8 COMMA BVH_AN2_UN2 COMMA false COMMA ArrayIntersectorK_1<8 COMMA Bezier1iIntersectorKMB<8> > >);
@@ -196,8 +212,11 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512F__)
-    DEFINE_INTERSECTOR4(BVH8Line4iIntersector16,  BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
-    DEFINE_INTERSECTOR4(BVH8Line4iMBIntersector16,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Line4iIntersector16,  BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Line4iMBIntersector16,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA LineMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
+   
+    DEFINE_INTERSECTOR16(BVH8Point4iIntersector16,  BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA PointMiIntersectorK  <4 COMMA 4 COMMA 16 COMMA true> > >);
+    DEFINE_INTERSECTOR16(BVH8Point4iMBIntersector16,BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN2 COMMA false COMMA ArrayIntersectorK_1<16 COMMA PointMiMBIntersectorK<4 COMMA 4 COMMA 16 COMMA true> > >);
    
     DEFINE_INTERSECTOR16(BVH8Bezier1vIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1vIntersectorK<16> > >);
     DEFINE_INTERSECTOR16(BVH8Bezier1iIntersector16Single_OBB, BVHNIntersectorKSingle<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA Bezier1iIntersectorK<16> > >);

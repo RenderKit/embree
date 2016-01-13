@@ -179,6 +179,33 @@ uniform unsigned int addHair (RTCScene scene)
   return geomID;
 }
 
+/* add point geometry */
+uniform unsigned int addPoints (RTCScene scene)
+{
+  uniform unsigned int geomID = rtcNewPoints (scene, RTC_GEOMETRY_STATIC, 4, 2);
+
+  uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,3,0),make_Vec3f(1,1,0),0.44f);
+  uniform Vec3fa* uniform vertices0 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  uniform Vec3fa* uniform vertices1 = (uniform Vec3fa* uniform) rtcMapBuffer(scene,geomID,RTC_VERTEX_BUFFER1);
+  uniform Vec3f p0 = make_Vec3f(cube_vertices[2][0],cube_vertices[2][1],cube_vertices[2][2]);
+  uniform Vec3f p1 = make_Vec3f(cube_vertices[3][0],cube_vertices[3][1],cube_vertices[3][2]);
+  uniform Vec3f p2 = make_Vec3f(cube_vertices[6][0],cube_vertices[6][1],cube_vertices[6][2]);
+  uniform Vec3f p3 = make_Vec3f(cube_vertices[7][0],cube_vertices[7][1],cube_vertices[7][2]);
+  vertices0[0] = make_Vec3fa(p0,0.05f);
+  vertices0[1] = make_Vec3fa(p1,0.05f);
+  vertices0[2] = make_Vec3fa(p2,0.05f);
+  vertices0[3] = make_Vec3fa(p3,0.05f);
+  vertices1[0] = make_Vec3fa(xfmPoint(rotation,p0),0.05f);
+  vertices1[1] = make_Vec3fa(xfmPoint(rotation,p1),0.05f);
+  vertices1[2] = make_Vec3fa(xfmPoint(rotation,p2),0.05f);
+  vertices1[3] = make_Vec3fa(xfmPoint(rotation,p3),0.05f);
+
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER0);
+  rtcUnmapBuffer(scene,geomID,RTC_VERTEX_BUFFER1); 
+  
+  return geomID;
+}
+
 /* adds a ground plane to the scene */
 uniform unsigned int addGroundPlane (RTCScene scene)
 {
@@ -227,6 +254,9 @@ export void device_init (uniform int8* uniform cfg)
   /* add hair */
   addHair(g_scene);
 
+  /* add points */
+  addPoints(g_scene);
+
   /* add ground plane */
   addGroundPlane(g_scene);
 
@@ -266,6 +296,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform Vec3f& vx, const unifo
     Vec3f diffuse;
     if (ray.geomID == 0) diffuse = face_colors[ray.primID];
     else if (ray.geomID == 1) diffuse = make_Vec3f(0.0f,1.0f,0.0f);
+    else if (ray.geomID == 2) diffuse = make_Vec3f(1.0f,0.0f,0.0f);
     else diffuse = make_Vec3f(0.5f,0.5f,0.5f);
     color = color + diffuse*0.5f;
     Vec3f lightDir = normalize(make_Vec3f(-1,-4,-1));

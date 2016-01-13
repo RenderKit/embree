@@ -239,6 +239,7 @@ namespace embree
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadLineSegments(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadPoints(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadHairSet(const Ref<XML>& xml);
 
   private:
@@ -924,6 +925,19 @@ namespace embree
     return mesh;
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadPoints(const Ref<XML>& xml) 
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    std::vector<Vec3fa> positions  = loadVec4fArray(xml->childOpt("positions"));
+    std::vector<Vec3fa> positions2 = loadVec4fArray(xml->childOpt("positions2"));
+
+    SceneGraph::PointsNode* mesh = new SceneGraph::PointsNode(material);
+    mesh->v .resize(positions .size()); for (size_t i=0; i<positions .size(); i++) mesh->v [i] = positions [i];
+    mesh->v2.resize(positions2.size()); for (size_t i=0; i<positions2.size(); i++) mesh->v2[i] = positions2[i];
+    mesh->verify();
+    return mesh;
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadHairSet(const Ref<XML>& xml) 
   {
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
@@ -1017,6 +1031,7 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) return sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) return sceneMap[id] = loadSubdivMesh      (xml);
       else if (xml->name == "LineSegments"    ) return sceneMap[id] = loadLineSegments    (xml);
+      else if (xml->name == "Points"          ) return sceneMap[id] = loadPoints          (xml);
       else if (xml->name == "Hair"            ) return sceneMap[id] = loadHairSet         (xml);
       else if (xml->name == "Group"           ) return sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) return sceneMap[id] = loadTransformNode   (xml);
