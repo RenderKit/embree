@@ -47,7 +47,7 @@ namespace embree
         Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
-#if defined (__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
         
         /* subdivide 3 levels at once */ 
         const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
@@ -150,7 +150,7 @@ namespace embree
         Vec3fa w3 = xfmVector(pre.ray_space,v3-ray.org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
-#if defined (__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
         
         /* subdivide 3 levels at once */ 
         const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
@@ -276,7 +276,7 @@ namespace embree
         Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
-#if defined (__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
         
         /* subdivide 3 levels at once */ 
         const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
@@ -387,7 +387,7 @@ namespace embree
         Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
-#if defined (__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
         
         /* subdivide 3 levels at once */ 
         const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);

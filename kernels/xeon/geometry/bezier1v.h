@@ -105,7 +105,7 @@ namespace embree
     {
 #if 1
       const BezierCurve3fa curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
-#if defined(__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
       const Vec4vf8 pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 #else
       const Vec4vf4 pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
@@ -129,7 +129,7 @@ namespace embree
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
 #if 1
       const BezierCurve3fa curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
-#if defined(__AVX__)
+#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
       const Vec4vf8 pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
 #else
       const Vec4vf4 pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
