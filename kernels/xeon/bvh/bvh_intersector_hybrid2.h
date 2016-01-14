@@ -109,31 +109,76 @@ namespace embree
                                                    StackItemMaskT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
+        vint16 _tMask = tMask;
+        const vbool16 vmask = vbool16((unsigned int)mask);
+        vint16 cmask = vint16::compact(vmask,_tMask);
+        m_trav_active = toScalar(cmask);
         const BaseNode* node = cur.baseNode(types);
-
-        vint16 ttMask = tMask;
         //unsigned int firstMask = toScalar(vint16::compact(vbool16((unsigned int)mask),ttMask));
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
         cur = node->child(r);         
         cur.prefetch(types);
-        m_trav_active = tMask[r]; //firstMask;
-        if (likely(mask == 0)) {
-          assert(cur != BVH::emptyNode);
-          //return tMask[r];
-          return;
+        //m_trav_active = tMask[r]; //firstMask;
+        assert(cur != BVH::emptyNode);
+        if (unlikely(mask == 0)) return;
+
+#if 0
+        //vint16 cdist = (asInt(tNear) & 0xfffffff8) | vint16( step );
+        vint16 cdist = (asInt(tNear) & 0) | vint16( step );
+        cdist = vint16::compact(vmask,cdist);
+        
+        const unsigned int hits = popcnt(vmask);
+        vint16 sorted(-1);
+        vint16 perm0( zero );
+
+        for (size_t i=0;i<hits;i++)
+        {
+          vint16 d = permute(cdist,perm0); // tt[i]; // broadcast
+          vbool16 mask_gt   = uint_gt(sorted,d);
+          vbool16 mask_rest = (unsigned int)mask_gt & ((unsigned int)mask_gt-1);
+          unsigned int mask_le = !mask_gt;
+          vint16 sorted_rest = align_shift_right<15>(sorted,sorted);
+          cdist = align_shift_right<1>(cdist,cdist);
+          vint16 new_sorted = select(mask_le,sorted,d);
+          sorted = select(mask_rest,sorted_rest,new_sorted);        
+        }
+        vint16 ids = sorted;
+        stackPtr += hits;
+
+        for (size_t i=0;i<hits;i++)
+        {
+          const unsigned int d  = toScalar(ids);
+          const unsigned int id = d & 0x7;
+          NodeRef c = node->child(id); 
+          c.prefetch();
+          const unsigned int m = tMask[id];
+          ids = align_shift_right<1>(ids,ids);
+          stackPtr[-1-i].dist = d;
+          stackPtr[-1-i].ptr  = c;
+          stackPtr[-1-i].mask = m;
+
         }
 
+#else
+        //unsigned int *dist   = (unsigned int*)&tNear;
+        unsigned int *active = (unsigned int*)&tMask;
+
+        __aligned(64) unsigned int dist[16]; 
+        //__aligned(64) unsigned int active[16]; 
+        vint16::store(dist, (asInt(tNear) & 0xfffffff8) | vint16( step ));
+        //vint16::store(active,      tMask);
+
         /*! two children are hit, push far child, and continue with closer child */
-        NodeRef c0 = cur; // node->child(r); 
-        const unsigned int d0 = ((unsigned int*)&tNear)[r];
-        const int m0 = tMask[r];
+        NodeRef c0 = cur; 
+        const unsigned int d0 = dist[r];
+        const int m0 = active[r];
         r = __bscf(mask);
         NodeRef c1 = node->child(r); 
         c1.prefetch(types); 
-        const unsigned int d1 = ((unsigned int*)&tNear)[r];
-        const int m1 = tMask[r];
+        const unsigned int d1 = dist[r];
+        const int m1 = active[r];
 
         assert(c0 != BVH::emptyNode);
         assert(c1 != BVH::emptyNode);
@@ -154,8 +199,8 @@ namespace embree
         assert(stackPtr < stackEnd);
         r = __bscf(mask);
         NodeRef c = node->child(r); c.prefetch(types); 
-        unsigned int d = ((unsigned int*)&tNear)[r]; 
-        unsigned int m = tMask[r];
+        unsigned int d = dist[r]; 
+        unsigned int m = active[r];
         stackPtr->ptr = c; stackPtr->mask = m; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -172,8 +217,8 @@ namespace embree
         r = __bscf(mask);
         c = node->child(r); 
         c.prefetch(types); 
-        m = tMask[r];
-        d = *(unsigned int*)&tNear[r]; 
+        m = active[r];
+        d = dist[r]; 
         stackPtr->ptr = c; stackPtr->mask = m; stackPtr->dist = d; stackPtr++;
         assert(c != BVH::emptyNode);
         if (likely(mask == 0)) {
@@ -193,8 +238,8 @@ namespace embree
           r = __bscf(mask);
           c = node->child(r); 
           c.prefetch(types); 
-          d = *(unsigned int*)&tNear[r]; 
-          m = tMask[r];
+          d = dist[r]; 
+          m = active[r];
           stackPtr->ptr  = c; 
           stackPtr->mask = m;
           stackPtr->dist = d; 
@@ -207,7 +252,7 @@ namespace embree
         unsigned int mm = stackPtr[-1].mask;
         stackPtr--;          
         m_trav_active = mm;
-        return;
+#endif
       }
 
 

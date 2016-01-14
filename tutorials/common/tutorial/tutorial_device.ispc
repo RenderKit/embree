@@ -287,6 +287,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform Vec3f& vx, con
     
       /* trace shadow ray */
       rtcOccluded(g_scene,shadow);
+      //rtcIntersect(g_scene,shadow);
     
       /* add light contribution */
       if (shadow.geomID == RTC_INVALID_GEOMETRY_ID)

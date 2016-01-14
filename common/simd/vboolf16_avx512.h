@@ -27,7 +27,7 @@ namespace embree
     typedef vfloat16 Float;
 
     enum { size = 16 }; // number of SIMD elements
-    __mmask v;          // data
+    __mmask16 v;          // data
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -133,12 +133,6 @@ namespace embree
   __forceinline bool get(const vboolf16& a, size_t index) { assert(index < 16); return (toInt(a) >> index) & 1; }
   __forceinline void set(vboolf16& a, size_t index)       { assert(index < 16); a |= 1 << index; }
   __forceinline void clear(vboolf16& a, size_t index)     { assert(index < 16); a = andn(a, 1 << index); }
-
-  /*
-  __forceinline bool get(const vboolf16& a, size_t index) { assert(index < 16); return toInt(a) & vboolf16::shift1[index]; }
-  __forceinline void set(vboolf16& a, size_t index)       { assert(index < 16); a |= vboolf16::shift1[index]; }
-  __forceinline void clear(vboolf16& a, size_t index)     { assert(index < 16); a = andn(a, vboolf16::shift1[index]); }
-  */
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

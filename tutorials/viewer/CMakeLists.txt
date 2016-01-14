@@ -17,7 +17,7 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer)
 ADD_EMBREE_MODELS_TEST(viewer viewer viewer)
-ADD_EMBREE_SUBDIV_MODELS_TEST(viewer viewer viewer viewer)
+#ADD_EMBREE_SUBDIV_MODELS_TEST(viewer viewer viewer viewer)
 
 ADD_EMBREE_MODELS_TEST(viewer_static_scene viewer viewer viewer -rtcore flags=static)
 ADD_EMBREE_MODELS_TEST(viewer_dynamic_scene viewer viewer  viewer -rtcore flags=dynamic)

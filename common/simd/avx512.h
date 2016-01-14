@@ -32,6 +32,12 @@
 #include "vint16_avx512.h"
 #include "vfloat16_avx512.h"
 
+#if defined(__AVX512F__)
+#include "vuint16_avx512.h"
+#include "vboold8_avx512.h"
+#include "vlong8_avx512.h"
+#endif
+
 namespace embree
 {
   ////////////////////////////////////////////////////////////////////////////////
