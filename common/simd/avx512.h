@@ -26,7 +26,7 @@
 #define _MM_SHUF_PERM(e3, e2, e1, e0) \
   ((_MM_PERM_ENUM)((e3)*64 + (e2)*16 + (e1)*4 + (e0)))
 
-#define _MM_SHUF_PERM_NONE _MM_SHUF_PERM(3,2,1,0)
+#define _MM_SHUF_PERM_NONE   _MM_SHUF_PERM(3,2,1,0)
 
 #include "vboolf16_avx512.h"
 #include "vint16_avx512.h"
@@ -116,11 +116,6 @@ namespace embree
       t = lshuf<lane,lane,lane,lane>(0xf000,t,v3);
       return t;
     }
-
-  /* __forceinline vfloat16 convert(const vfloat4 &v) */
-  /* { */
-  /*   return broadcast4to16f(&v); */
-  /* } */
 
   __forceinline vint16 mul_uint64_t( const vint16& a, const vint16& b) {
     const vint16 low  = _mm512_mullo_epi32(a, b);
