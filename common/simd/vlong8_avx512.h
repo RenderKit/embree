@@ -27,7 +27,7 @@ namespace embree
     enum  { size = 8 }; // number of SIMD elements
     union {              // data
       __m512i v; 
-      unsigned int i[8]; 
+      long i[8]; 
     };
     
     ////////////////////////////////////////////////////////////////////////////////
@@ -42,16 +42,16 @@ namespace embree
     __forceinline operator __m512i () const { return v; }
     __forceinline operator __m256i () const { return _mm512_castsi512_si256(v); }
 
-    __forceinline vlong(const unsigned int i) {
+    __forceinline vlong(const long i) {
       v = _mm512_set_1to8_epi64(i);
     }
     
-    __forceinline vlong(const unsigned int a, const unsigned int b, const unsigned int c, const unsigned int d) {
+    __forceinline vlong(const long a, const long b, const long c, const long d) {
       v = _mm512_set_4to8_epi64(d,c,b,a);      
     }
 
-    __forceinline vlong(const unsigned int a0 , const unsigned int a1 , const unsigned int a2 , const unsigned int a3, 
-                        const unsigned int a4 , const unsigned int a5 , const unsigned int a6 , const unsigned int a7)
+    __forceinline vlong(const long a0 , const long a1 , const long a2 , const long a3, 
+                        const long a4 , const long a5 , const long a6 , const long a7)
     {
       v = _mm512_set_8to8_epi64(a7,a6,a5,a4,a3,a2,a1,a0);
     }
@@ -87,7 +87,7 @@ namespace embree
       return _mm512_load_si512(addr);
     }
 
-    static __forceinline vlong8 load(const unsigned int* addr) {
+    static __forceinline vlong8 load(const long* addr) {
       return _mm512_load_si512(addr);
     }
 
@@ -99,7 +99,7 @@ namespace embree
       _mm512_storeu_si512(ptr,v);
     }
 
-    static __forceinline void storeu(const vboold8& mask, int* ptr, const vlong8& f ) {
+    static __forceinline void storeu(const vboold8& mask, long* ptr, const vlong8& f ) {
       _mm512_mask_storeu_epi64(ptr,mask,f);
     }
 
@@ -138,11 +138,9 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
     
-    __forceinline       unsigned int& operator[](const size_t index)       { assert(index < 8); return i[index]; }
-    __forceinline const unsigned int& operator[](const size_t index) const { assert(index < 8); return i[index]; }
+    __forceinline       long& operator[](const size_t index)       { assert(index < 8); return i[index]; }
+    __forceinline const long& operator[](const size_t index) const { assert(index < 8); return i[index]; }
 
-    __forceinline unsigned int uint    (const size_t index) const { assert(index < 8); return ((unsigned int*)i)[index]; }
-    __forceinline size_t&      uint64_t(const size_t index) const { assert(index < 8);  return ((size_t*)i)[index]; }
   };
   
   ////////////////////////////////////////////////////////////////////////////////
@@ -158,45 +156,45 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const vlong8 operator +( const vlong8& a, const vlong8& b )     { return _mm512_add_epi64(a, b); }
-  __forceinline const vlong8 operator +( const vlong8& a, const unsigned int b ) { return a + vlong8(b); }
-  __forceinline const vlong8 operator +( const unsigned int a, const vlong8& b ) { return vlong8(a) + b; }
+  __forceinline const vlong8 operator +( const vlong8& a, const long b ) { return a + vlong8(b); }
+  __forceinline const vlong8 operator +( const long a, const vlong8& b ) { return vlong8(a) + b; }
 
   __forceinline const vlong8 operator -( const vlong8& a, const vlong8& b     ) { return _mm512_sub_epi64(a, b); }
-  __forceinline const vlong8 operator -( const vlong8& a, const unsigned int b ) { return a - vlong8(b); }
-  __forceinline const vlong8 operator -( const unsigned int a, const vlong8& b ) { return vlong8(a) - b; }
+  __forceinline const vlong8 operator -( const vlong8& a, const long b ) { return a - vlong8(b); }
+  __forceinline const vlong8 operator -( const long a, const vlong8& b ) { return vlong8(a) - b; }
 
   __forceinline const vlong8 operator *( const vlong8& a, const vlong8& b )     { return _mm512_mullo_epi64(a, b); }
-  __forceinline const vlong8 operator *( const vlong8& a, const unsigned int b ) { return a * vlong8(b); }
-  __forceinline const vlong8 operator *( const unsigned int a, const vlong8& b ) { return vlong8(a) * b; }
+  __forceinline const vlong8 operator *( const vlong8& a, const long b ) { return a * vlong8(b); }
+  __forceinline const vlong8 operator *( const long a, const vlong8& b ) { return vlong8(a) * b; }
 
   __forceinline const vlong8 operator &( const vlong8& a, const vlong8& b )     { return _mm512_and_epi64(a, b); }
-  __forceinline const vlong8 operator &( const vlong8& a, const unsigned int b ) { return a & vlong8(b); }
-  __forceinline const vlong8 operator &( const unsigned int a, const vlong8& b ) { return vlong8(a) & b; }
+  __forceinline const vlong8 operator &( const vlong8& a, const long b ) { return a & vlong8(b); }
+  __forceinline const vlong8 operator &( const long a, const vlong8& b ) { return vlong8(a) & b; }
 
   __forceinline const vlong8 operator |( const vlong8& a, const vlong8& b )     { return _mm512_or_epi64(a, b); }
-  __forceinline const vlong8 operator |( const vlong8& a, const unsigned int b ) { return a | vlong8(b); }
-  __forceinline const vlong8 operator |( const unsigned int a, const vlong8& b ) { return vlong8(a) | b; }
+  __forceinline const vlong8 operator |( const vlong8& a, const long b ) { return a | vlong8(b); }
+  __forceinline const vlong8 operator |( const long a, const vlong8& b ) { return vlong8(a) | b; }
 
   __forceinline const vlong8 operator ^( const vlong8& a, const vlong8& b )     { return _mm512_xor_epi64(a, b); }
-  __forceinline const vlong8 operator ^( const vlong8& a, const unsigned int b ) { return a ^ vlong8(b); }
-  __forceinline const vlong8 operator ^( const unsigned int a, const vlong8& b ) { return vlong8(a) ^ b; }
+  __forceinline const vlong8 operator ^( const vlong8& a, const long b ) { return a ^ vlong8(b); }
+  __forceinline const vlong8 operator ^( const long a, const vlong8& b ) { return vlong8(a) ^ b; }
 
-  __forceinline const vlong8 operator <<( const vlong8& a, const unsigned int n ) { return _mm512_slli_epi64(a, n); }
-  __forceinline const vlong8 operator >>( const vlong8& a, const unsigned int n ) { return _mm512_srai_epi64(a, n); }
+  __forceinline const vlong8 operator <<( const vlong8& a, const long n ) { return _mm512_slli_epi64(a, n); }
+  __forceinline const vlong8 operator >>( const vlong8& a, const long n ) { return _mm512_srai_epi64(a, n); }
 
   __forceinline const vlong8 operator <<( const vlong8& a, const vlong8& n ) { return _mm512_sllv_epi64(a, n); }
   __forceinline const vlong8 operator >>( const vlong8& a, const vlong8& n ) { return _mm512_srav_epi64(a, n); }
 
-  __forceinline const vlong8 sra ( const vlong8& a, const unsigned int b ) { return _mm512_srai_epi64(a, b); }
-  __forceinline const vlong8 srl ( const vlong8& a, const unsigned int b ) { return _mm512_srli_epi64(a, b); }
+  __forceinline const vlong8 sra ( const vlong8& a, const long b ) { return _mm512_srai_epi64(a, b); }
+  __forceinline const vlong8 srl ( const vlong8& a, const long b ) { return _mm512_srli_epi64(a, b); }
   
   __forceinline const vlong8 min( const vlong8& a, const vlong8& b )     { return _mm512_min_epi64(a, b); }
-  __forceinline const vlong8 min( const vlong8& a, const unsigned int b ) { return min(a,vlong8(b)); }
-  __forceinline const vlong8 min( const unsigned int a, const vlong8& b ) { return min(vlong8(a),b); }
+  __forceinline const vlong8 min( const vlong8& a, const long b ) { return min(a,vlong8(b)); }
+  __forceinline const vlong8 min( const long a, const vlong8& b ) { return min(vlong8(a),b); }
 
   __forceinline const vlong8 max( const vlong8& a, const vlong8& b )     { return _mm512_max_epi64(a, b); }
-  __forceinline const vlong8 max( const vlong8& a, const unsigned int b ) { return max(a,vlong8(b)); }
-  __forceinline const vlong8 max( const unsigned int a, const vlong8& b ) { return max(vlong8(a),b); }
+  __forceinline const vlong8 max( const vlong8& a, const long b ) { return max(a,vlong8(b)); }
+  __forceinline const vlong8 max( const long a, const vlong8& b ) { return max(vlong8(a),b); }
   
   __forceinline const vlong8 mask_add(const vboold8& mask, vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_add_epi64(c,mask,a,b); }
   __forceinline const vlong8 mask_sub(const vboold8& mask, vlong8& c, const vlong8& a, const vlong8& b) { return _mm512_mask_sub_epi64(c,mask,a,b); }
@@ -209,22 +207,22 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vlong8& operator +=( vlong8& a, const vlong8& b ) { return a = a + b; }
-  __forceinline vlong8& operator +=( vlong8& a, const unsigned int     b ) { return a = a + b; }
+  __forceinline vlong8& operator +=( vlong8& a, const long     b ) { return a = a + b; }
   
   __forceinline vlong8& operator -=( vlong8& a, const vlong8& b ) { return a = a - b; }
-  __forceinline vlong8& operator -=( vlong8& a, const unsigned int     b ) { return a = a - b; }
+  __forceinline vlong8& operator -=( vlong8& a, const long     b ) { return a = a - b; }
 
   __forceinline vlong8& operator *=( vlong8& a, const vlong8& b ) { return a = a * b; }
-  __forceinline vlong8& operator *=( vlong8& a, const unsigned int     b ) { return a = a * b; }
+  __forceinline vlong8& operator *=( vlong8& a, const long     b ) { return a = a * b; }
   
   __forceinline vlong8& operator &=( vlong8& a, const vlong8& b ) { return a = a & b; }
-  __forceinline vlong8& operator &=( vlong8& a, const unsigned int     b ) { return a = a & b; }
+  __forceinline vlong8& operator &=( vlong8& a, const long     b ) { return a = a & b; }
   
   __forceinline vlong8& operator |=( vlong8& a, const vlong8& b ) { return a = a | b; }
-  __forceinline vlong8& operator |=( vlong8& a, const unsigned int     b ) { return a = a | b; }
+  __forceinline vlong8& operator |=( vlong8& a, const long     b ) { return a = a | b; }
   
-  __forceinline vlong8& operator <<=( vlong8& a, const unsigned int b ) { return a = a << b; }
-  __forceinline vlong8& operator >>=( vlong8& a, const unsigned int b ) { return a = a >> b; }
+  __forceinline vlong8& operator <<=( vlong8& a, const long b ) { return a = a << b; }
+  __forceinline vlong8& operator >>=( vlong8& a, const long b ) { return a = a >> b; }
 
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -232,28 +230,28 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline const vboold8 operator ==( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline const vboold8 operator ==( const vlong8& a, const unsigned int b ) { return a == vlong8(b); }
-  __forceinline const vboold8 operator ==( const unsigned int a, const vlong8& b ) { return vlong8(a) == b; }
+  __forceinline const vboold8 operator ==( const vlong8& a, const long b ) { return a == vlong8(b); }
+  __forceinline const vboold8 operator ==( const long a, const vlong8& b ) { return vlong8(a) == b; }
   
   __forceinline const vboold8 operator !=( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline const vboold8 operator !=( const vlong8& a, const unsigned int b ) { return a != vlong8(b); }
-  __forceinline const vboold8 operator !=( const unsigned int a, const vlong8& b ) { return vlong8(a) != b; }
+  __forceinline const vboold8 operator !=( const vlong8& a, const long b ) { return a != vlong8(b); }
+  __forceinline const vboold8 operator !=( const long a, const vlong8& b ) { return vlong8(a) != b; }
   
   __forceinline const vboold8 operator < ( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline const vboold8 operator < ( const vlong8& a, const unsigned int b ) { return a <  vlong8(b); }
-  __forceinline const vboold8 operator < ( const unsigned int a, const vlong8& b ) { return vlong8(a) <  b; }
+  __forceinline const vboold8 operator < ( const vlong8& a, const long b ) { return a <  vlong8(b); }
+  __forceinline const vboold8 operator < ( const long a, const vlong8& b ) { return vlong8(a) <  b; }
   
   __forceinline const vboold8 operator >=( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline const vboold8 operator >=( const vlong8& a, const unsigned int b ) { return a >= vlong8(b); }
-  __forceinline const vboold8 operator >=( const unsigned int a, const vlong8& b ) { return vlong8(a) >= b; }
+  __forceinline const vboold8 operator >=( const vlong8& a, const long b ) { return a >= vlong8(b); }
+  __forceinline const vboold8 operator >=( const long a, const vlong8& b ) { return vlong8(a) >= b; }
 
   __forceinline const vboold8 operator > ( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline const vboold8 operator > ( const vlong8& a, const unsigned int b ) { return a >  vlong8(b); }
-  __forceinline const vboold8 operator > ( const unsigned int a, const vlong8& b ) { return vlong8(a) >  b; }
+  __forceinline const vboold8 operator > ( const vlong8& a, const long b ) { return a >  vlong8(b); }
+  __forceinline const vboold8 operator > ( const long a, const vlong8& b ) { return vlong8(a) >  b; }
 
   __forceinline const vboold8 operator <=( const vlong8& a, const vlong8& b ) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
-  __forceinline const vboold8 operator <=( const vlong8& a, const unsigned int b ) { return a <= vlong8(b); }
-  __forceinline const vboold8 operator <=( const unsigned int a, const vlong8& b ) { return vlong8(a) <= b; }
+  __forceinline const vboold8 operator <=( const vlong8& a, const long b ) { return a <= vlong8(b); }
+  __forceinline const vboold8 operator <=( const long a, const vlong8& b ) { return vlong8(a) <= b; }
 
   __forceinline vboold8 eq(                     const vlong8& a, const vlong8& b) { return _mm512_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
   __forceinline vboold8 eq(const vboold8 mask, const vlong8& a, const vlong8& b) { return _mm512_mask_cmp_epi64_mask(mask,a,b,_MM_CMPINT_EQ); }
@@ -318,10 +316,10 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int reduce_add(vlong8 a) { return _mm512_reduce_add_epi64(a); }
-  __forceinline unsigned int reduce_min(vlong8 a) { return _mm512_reduce_min_epi64(a); }
-  __forceinline unsigned int reduce_max(vlong8 a) { return _mm512_reduce_max_epi64(a); }
-  __forceinline unsigned int reduce_and(vlong8 a) { return _mm512_reduce_and_epi64(a); }
+  __forceinline long reduce_add(vlong8 a) { return _mm512_reduce_add_epi64(a); }
+  __forceinline long reduce_min(vlong8 a) { return _mm512_reduce_min_epi64(a); }
+  __forceinline long reduce_max(vlong8 a) { return _mm512_reduce_max_epi64(a); }
+  __forceinline long reduce_and(vlong8 a) { return _mm512_reduce_and_epi64(a); }
   
   __forceinline vlong8 vreduce_min2(vlong8 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
   __forceinline vlong8 vreduce_min4(vlong8 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
@@ -372,7 +370,7 @@ namespace embree
   __forceinline std::ostream& operator<<(std::ostream& cout, const vlong8& v)
   {
     cout << "<" << v[0];
-    for (int i=1; i<8; i++) cout << ", " << v[i];
+    for (long i=1; i<8; i++) cout << ", " << v[i];
     cout << ">";
     return cout;
   }
