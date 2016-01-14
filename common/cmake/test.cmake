@@ -83,10 +83,14 @@ IF (BUILD_TESTING)
   
 ELSE()
 
-  MACRO (ADD_EMBREE_TEST name executable)
+  MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
   ENDMACRO()
   
   MACRO (ADD_EMBREE_MODELS_TEST name executable)
   ENDMACRO()
 
 ENDIF()
+
+MACRO (ADD_EMBREE_TEST name)
+  ADD_EMBREE_MODEL_TEST(${name} ${name} ${name} "default")
+ENDMACRO()

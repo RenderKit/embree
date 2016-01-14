@@ -16,4 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(triangle_geometry)
-ADD_EMBREE_MODEL_TEST(triangle_geometry triangle_geometry triangle_geometry default)
+ADD_EMBREE_TEST(triangle_geometry triangle_geometry triangle_geometry default)
