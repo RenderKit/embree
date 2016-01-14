@@ -59,7 +59,7 @@ IF (BUILD_TESTING)
                      --model default
                      --execute ${PROJECT_BINARY_DIR}/${executable})
   
-    SET_TESTS_PROPERTIES(${name} PROPERTIES ATTACHED_FILES "${name}.jpg")
+    SET_TESTS_PROPERTIES(${name} PROPERTIES ATTACHED_FILES_ON_FAIL "${name}.jpg")
   
   ENDMACRO()
   
@@ -75,7 +75,8 @@ IF (BUILD_TESTING)
                        --model ${model}
                        --execute ${PROJECT_BINARY_DIR}/${executable})
     ENDFOREACH()
-  #  SET_TESTS_PROPERTIES("${name}_${modelname}" PROPERTIES ATTACHED_FILES "${name}_${modelname}.jpg")
+    
+    SET_TESTS_PROPERTIES("${name}_${modelname}" PROPERTIES ATTACHED_FILES_ON_FAIL "${name}_${modelname}.jpg")
   ENDMACRO()
   
 ELSE()
