@@ -50,9 +50,8 @@ IF (BUILD_TESTING)
   #if platform == 'x64' and OS != 'macosx':
   #  models += models_large
 
-#IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
-
   MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
+  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
              COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
@@ -61,6 +60,17 @@ IF (BUILD_TESTING)
                      --reference ${reference}
                      --model ${model}
                      --execute ${PROJECT_BINARY_DIR}/${executable})
+                     
+    IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
+      ADD_TEST(NAME ${name}_ispc
+               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+               COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
+                       --name ${name}_ispc
+                       --modeldir ${BUILD_TESTING_MODEL_DIR}
+                       --reference ${reference}
+                       --model ${model}
+                       --execute ${PROJECT_BINARY_DIR}/${executable}_ispc)
+    ENDIF()
   ENDMACRO()
   
   MACRO (ADD_EMBREE_MODELS_TEST name executable)
