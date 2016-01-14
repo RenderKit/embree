@@ -16,4 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(pathtracer)
-ADD_EMBREE_MODELS_TEST(pathtracer)
+ADD_EMBREE_MODELS_TEST(pathtracer pathtracer pathtracer)

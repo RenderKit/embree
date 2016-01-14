@@ -50,7 +50,7 @@ IF (BUILD_TESTING)
   #if platform == 'x64' and OS != 'macosx':
   #  models += models_large
 
-  MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
+  MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
@@ -59,7 +59,7 @@ IF (BUILD_TESTING)
                      --modeldir ${BUILD_TESTING_MODEL_DIR}
                      --reference ${reference}
                      --model ${model}
-                     --execute ${PROJECT_BINARY_DIR}/${executable})
+                     --execute ${PROJECT_BINARY_DIR}/${executable} ${args})
                      
     IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
       ADD_TEST(NAME ${name}_ispc
@@ -69,21 +69,21 @@ IF (BUILD_TESTING)
                        --modeldir ${BUILD_TESTING_MODEL_DIR}
                        --reference ${reference}
                        --model ${model}
-                       --execute ${PROJECT_BINARY_DIR}/${executable}_ispc)
+                       --execute ${PROJECT_BINARY_DIR}/${executable}_ispc ${args})
     ENDIF()
   ENDMACRO()
   
-  MACRO (ADD_EMBREE_MODELS_TEST name)
+  MACRO (ADD_EMBREE_MODELS_TEST name reference executable)
     FOREACH (model ${models})
       STRING(REGEX REPLACE "/" "_" modelname "${model}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${name} ${name}_${modelname} ${model})
+      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
     ENDFOREACH()
   ENDMACRO()
   
 ELSE()
 
-  MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
+  MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   ENDMACRO()
   
   MACRO (ADD_EMBREE_MODELS_TEST name)
@@ -92,5 +92,5 @@ ELSE()
 ENDIF()
 
 MACRO (ADD_EMBREE_TEST name)
-  ADD_EMBREE_MODEL_TEST(${name} ${name} ${name} "default")
+  ADD_EMBREE_MODEL_TEST(${name} ${name} ${name} "" "default")
 ENDMACRO()
