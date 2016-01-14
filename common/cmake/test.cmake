@@ -80,7 +80,15 @@ IF (BUILD_TESTING)
       ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
     ENDFOREACH()
   ENDMACRO()
-  
+
+  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
+    FOREACH (model ${models_subdiv})
+      STRING(REGEX REPLACE "/" "_" modelname "${model}")
+      STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
+      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
+    ENDFOREACH()
+  ENDMACRO()
+
 ELSE()
 
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
