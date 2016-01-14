@@ -49,14 +49,17 @@ IF (BUILD_TESTING)
   #else:                   models += models_small_x64
   #if platform == 'x64' and OS != 'macosx':
   #  models += models_large
-    
-  MACRO (ADD_EMBREE_TEST name executable)
+
+#IF (ENABLE_ISPC_SUPPORT AND RTCORE_RAY_PACKETS)
+
+  MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
              COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
                      --name ${name}
                      --modeldir ${BUILD_TESTING_MODEL_DIR}
-                     --model default
+                     --reference ${reference}
+                     --model ${model}
                      --execute ${PROJECT_BINARY_DIR}/${executable})
   ENDMACRO()
   
@@ -64,13 +67,7 @@ IF (BUILD_TESTING)
     FOREACH (model ${models})
       STRING(REGEX REPLACE "/" "_" modelname "${model}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_TEST(NAME ${name}_${modelname}
-               WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-               COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name ${name}_${modelname}
-                       --modeldir ${BUILD_TESTING_MODEL_DIR}
-                       --model ${model}
-                       --execute ${PROJECT_BINARY_DIR}/${executable})
+      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${executable} ${name}_${modelname} ${model})
     ENDFOREACH()
   ENDMACRO()
   

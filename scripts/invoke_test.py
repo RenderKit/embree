@@ -24,8 +24,9 @@ import shutil
 import subprocess 
 import multiprocessing
 
-name = "unknown"
+name = ""
 model = ""
+reference = ""
 modeldir = ""
 
 def compareImages(image0,image1,dimage):
@@ -42,12 +43,16 @@ def printUsage():
 def parseArgs(argv):
   global name
   global model
+  global reference
   global modeldir
   if (argv[0] == '--name'):
     name = argv[1]
     return parseArgs(argv[2:len(argv)])
   elif (argv[0] == '--model'):
     model = argv[1]
+    return parseArgs(argv[2:len(argv)])
+  elif (argv[0] == '--reference'):
+    reference = argv[1]
     return parseArgs(argv[2:len(argv)])
   elif (argv[0] == '--modeldir'):
     modeldir = argv[1]
@@ -73,7 +78,7 @@ else:
 # parse arguments
 executable = parseArgs(sys.argv[1:len(sys.argv)])
 
-refImageFileTga = modeldir + dash + "reference" + dash + name + ".tga"
+refImageFileTga = modeldir + dash + "reference" + dash + reference + ".tga"
 refImageFileJpg = name + ".reference.jpg"
 outImageFileTga = name + ".tga"
 outImageFileJpg = name + ".jpg"
