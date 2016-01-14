@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(interpolation)
+ADD_EMBREE_TEST(interpolation)

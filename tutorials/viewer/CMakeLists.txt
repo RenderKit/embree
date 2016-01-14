@@ -16,4 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer)
-ADD_EMBREE_MODELS_TEST(viewer viewer)
+ADD_EMBREE_MODELS_TEST(viewer)

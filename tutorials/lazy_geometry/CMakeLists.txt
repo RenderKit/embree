@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(lazy_geometry)
+ADD_EMBREE_TEST(lazy_geometry)

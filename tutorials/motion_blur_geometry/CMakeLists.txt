@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(motion_blur_geometry)
+ADD_EMBREE_TEST(motion_blur_geometry)

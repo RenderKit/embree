@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(intersection_filter)
+ADD_EMBREE_TEST(intersection_filter)

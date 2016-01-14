@@ -14,7 +14,6 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-# INCLUDE(CMakeDependentOption)
-
 INCLUDE(tutorial)
 ADD_TUTORIAL(subdivision_geometry)
+ADD_EMBREE_TEST(subdivision_geometry)

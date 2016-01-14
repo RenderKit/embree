@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(dynamic_scene)
+ADD_EMBREE_TEST(dynamic_scene)

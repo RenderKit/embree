@@ -73,11 +73,11 @@ IF (BUILD_TESTING)
     ENDIF()
   ENDMACRO()
   
-  MACRO (ADD_EMBREE_MODELS_TEST name executable)
+  MACRO (ADD_EMBREE_MODELS_TEST name)
     FOREACH (model ${models})
       STRING(REGEX REPLACE "/" "_" modelname "${model}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${executable} ${name}_${modelname} ${model})
+      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${name} ${name}_${modelname} ${model})
     ENDFOREACH()
   ENDMACRO()
   
@@ -86,7 +86,7 @@ ELSE()
   MACRO (ADD_EMBREE_MODEL_TEST name executable reference model)
   ENDMACRO()
   
-  MACRO (ADD_EMBREE_MODELS_TEST name executable)
+  MACRO (ADD_EMBREE_MODELS_TEST name)
   ENDMACRO()
 
 ENDIF()

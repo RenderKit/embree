@@ -16,3 +16,4 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(hair_geometry)
+ADD_EMBREE_TEST(hair_geometry)

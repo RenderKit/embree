@@ -41,10 +41,12 @@ ENDIF()
   ADD_EXECUTABLE(verify verify.cpp)
   TARGET_LINK_LIBRARIES(verify sys embree)
   SET_PROPERTY(TARGET verify PROPERTY FOLDER tests)
+  ADD_TEST(NAME verify COMMAND verify)
 
   ADD_EXECUTABLE(benchmark benchmark.cpp)
   TARGET_LINK_LIBRARIES(benchmark sys embree)
   SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tests)
+  ADD_TEST(NAME benchmark COMMAND benchmark)
 
   ADD_EXECUTABLE(retrace retrace.cpp)
   TARGET_LINK_LIBRARIES(retrace sys simd embree)
@@ -65,8 +67,6 @@ ENDIF()
   INSTALL(TARGETS verify benchmark retrace DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
   SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/verify" "verify")
-  ADD_TEST(NAME verify COMMAND verify)
-
   SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/benchmark" "benchmark")
   SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} "${CMAKE_INSTALL_BINDIR}/retrace" "retrace")
   SET(CPACK_NSIS_MENU_LINKS ${CPACK_NSIS_MENU_LINKS} PARENT_SCOPE)
