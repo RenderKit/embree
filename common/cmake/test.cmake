@@ -58,25 +58,20 @@ IF (BUILD_TESTING)
                      --modeldir ${BUILD_TESTING_MODEL_DIR}
                      --model default
                      --execute ${PROJECT_BINARY_DIR}/${executable})
-  
-    SET_TESTS_PROPERTIES(${name} PROPERTIES ATTACHED_FILES_ON_FAIL "${name}.jpg")
-  
   ENDMACRO()
   
   MACRO (ADD_EMBREE_MODELS_TEST name executable)
     FOREACH (model ${models})
       STRING(REGEX REPLACE "/" "_" modelname "${model}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_TEST(NAME "${name}_${modelname}"
+      ADD_TEST(NAME ${name}_${modelname}
                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
                COMMAND ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name "${name}_${modelname}"
+                       --name ${name}_${modelname}
                        --modeldir ${BUILD_TESTING_MODEL_DIR}
                        --model ${model}
                        --execute ${PROJECT_BINARY_DIR}/${executable})
     ENDFOREACH()
-    
-    SET_TESTS_PROPERTIES("${name}_${modelname}" PROPERTIES ATTACHED_FILES_ON_FAIL "${name}_${modelname}.jpg")
   ENDMACRO()
   
 ELSE()

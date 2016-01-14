@@ -28,9 +28,9 @@ name = "unknown"
 model = ""
 modeldir = ""
 
-def compareImages(image0,image1):
+def compareImages(image0,image1,dimage):
   if not os.path.isfile(image0) or not os.path.isfile(image1): return False
-  try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" null:", stderr=subprocess.STDOUT, shell=True)
+  try: line = subprocess.check_output("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError, e: line = e.output
   error = float(line[line.index('(')+1:line.index(')')])
   return error < 0.001
@@ -73,8 +73,12 @@ else:
 # parse arguments
 executable = parseArgs(sys.argv[1:len(sys.argv)])
 
-refImageFile = modeldir + dash + "reference" + dash + name + ".tga"
-imageFile    = name + ".tga"
+refImageFileTga = modeldir + dash + "reference" + dash + name + ".tga"
+refImageFileJpg = name + ".reference.jpg"
+outImageFileTga = name + ".tga"
+outImageFileJpg = name + ".jpg"
+diffImageFileTga= name + ".diff.tga"
+diffImageFileJpg= name + ".diff.jpg"
 
 executable = executable + " -rtcore verbose=2"
 
@@ -82,14 +86,25 @@ if (model != "" and model != "default"):
   executable = executable + " -c " + modeldir + dash + model
 
 if (model != ""):
-  executable = executable + " -o " + imageFile
+  executable = executable + " -o " + outImageFileTga
 
 ret = os.system(executable)
 
 if ret == 0 and model != "":
-  if os.path.isfile(imageFile):
-    os.system("convert -quality 10 " + imageFile + " " + name + ".jpg")
-  if not compareImages(refImageFile,imageFile):
+  if not compareImages(outImageFileTga,refImageFileTga,diffImageFileTga):
+    
+    if os.path.isfile(outImageFileTga):
+      os.system("convert -quality 10 " + outImageFileTga    + " " + outImageFileJpg)
+      sys.stdout.write("<DartMeasurementFile name=\"Output\"    type=\"image/jpeg\">" + outImageFileJpg + "</DartMeasurementFile>\n");
+      
+    if os.path.isfile(refImageFileTga):
+      os.system("convert -quality 10 " + refImageFileTga + " " + refImageFileJpg)
+      sys.stdout.write("<DartMeasurementFile name=\"Reference\" type=\"image/jpeg\">" + refImageFileJpg + "</DartMeasurementFile>\n");
+      
+    if os.path.isfile(diffImageFileTga):
+      os.system("convert -quality 10 " + diffImageFileTga + " " + diffImageFileJpg)
+      sys.stdout.write("<DartMeasurementFile name=\"Difference\" type=\"image/jpeg\">" + diffImageFileJpg + "</DartMeasurementFile>\n");
+      
     sys.stdout.write(" [failed] [images differ]\n")
     sys.exit(2)
 
