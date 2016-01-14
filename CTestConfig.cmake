@@ -18,6 +18,6 @@ set(CTEST_PROJECT_NAME "Embree")
 set(CTEST_NIGHTLY_START_TIME "01:00:00 UTC")
 
 set(CTEST_DROP_METHOD "http")
-set(CTEST_DROP_SITE "woop")
-set(CTEST_DROP_LOCATION "/cdash/submit.php?project=Embree")
+set(CTEST_DROP_SITE "swr-ivb-lnx-01")
+set(CTEST_DROP_LOCATION "/CDash/submit.php?project=Embree")
 set(CTEST_DROP_SITE_CDASH TRUE)
