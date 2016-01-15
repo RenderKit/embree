@@ -21,6 +21,8 @@ ENDIF()
 INCLUDE(CTest)
 
 IF (BUILD_TESTING)
+
+  CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
   
   SET(BUILD_TESTING_MODEL_DIR "${PROJECT_SOURCE_DIR}/models" CACHE FILEPATH "Path to the folder containing the Embree models for regression testing.")
 
@@ -43,13 +45,11 @@ IF (BUILD_TESTING)
   FILE(READ "${BUILD_TESTING_MODEL_DIR}/embree-models-large.txt" models_large)
   STRING(REGEX REPLACE "\n" ";" models_large "${models_large}")
   
-  SET(models ${models_small_win32}) # FIXME: configure all models
+  SET(models ${models_small_x64})
+  IF (${memory} GREATER 10000) 
+    SET(models ${models} ${models_large})
+  ENDIF()
   
-  #if platform == 'Win32': models += models_small_win32
-  #else:                   models += models_small_x64
-  #if platform == 'x64' and OS != 'macosx':
-  #  models += models_large
-
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   
     ADD_TEST(NAME ${name}
