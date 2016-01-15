@@ -410,17 +410,17 @@ namespace embree
 
       
       vbool<K> m_active = ray_tnear <= ray_tfar;
-      while(m_active)
+      while(any(m_active))
       {
         DBG(m_active);
-        size_t first = __bsf(m_active);
+        size_t first = __bsf(movemask(m_active));
         vbool<K> m_samesign = \
           (nearXYZ.x[first] == nearXYZ.x) &
           (nearXYZ.y[first] == nearXYZ.y) &
           (nearXYZ.z[first] == nearXYZ.z);
         assert(m_samesign);
 
-        m_active &=~m_samesign;
+        m_active &=!m_samesign;
         DBG(m_samesign);
 
 #if 1
@@ -431,15 +431,12 @@ namespace embree
         stack[0].mask = 0;
         stack[0].dist = neg_inf;
         stack[1].ptr  = bvh->root;
-        stack[1].mask = m_samesign;
+        stack[1].mask = movemask(m_samesign);
         stack[1].dist = neg_inf;
 
-        const size_t nearX = nearXYZ.x[first];
-        const size_t nearY = nearXYZ.y[first];
-        const size_t nearZ = nearXYZ.z[first];
         const vint<K> one(1);
-        const vint<K> shift_one = one << vint<K>( step );
-#if 1
+        const vint<K> shift_one = one << (vint<K>( step ));
+#if defined(__AVX512F__)
         const vint<K> id( step );
         const vint<K> id2 = align_shift_right<8>(id,id);
  
@@ -447,11 +444,12 @@ namespace embree
         const vint<K> permY = select(vfloat<K>(rdir.y[first]) >= 0.0f,id,id2);
         const vint<K> permZ = select(vfloat<K>(rdir.z[first]) >= 0.0f,id,id2);
 #else
-
+        const size_t nearX = nearXYZ.x[first];
+        const size_t nearY = nearXYZ.y[first];
+        const size_t nearZ = nearXYZ.z[first];
         const size_t farX  = nearX ^ sizeof(vfloat<8>);
         const size_t farY  = nearY ^ sizeof(vfloat<8>);
         const size_t farZ  = nearZ ^ sizeof(vfloat<8>);
-
 #endif
 
 
@@ -498,7 +496,7 @@ namespace embree
               const vbool<K> vmask      = le(tNear,align_shift_right<8>(tFar,tFar));
               if (unlikely(none(vmask))) goto pop;
 
-              BVHNNodeTraverserKHit<types>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
+              BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur,m_trav_active,vmask,tNear,mask16,stackPtr,stackEnd);
             }          
           }
           else
@@ -566,7 +564,7 @@ namespace embree
 
               DBG("SORT");
 
-              BVHNNodeTraverserKHit<types>::traverseClosestHit(cur, m_trav_active, vmask,dist,mask16,stackPtr,stackEnd);              
+              BVHNNodeTraverserKHit<types,K>::traverseClosestHit(cur, m_trav_active, vmask,dist,mask16,stackPtr,stackEnd);              
               DBG(m_trav_active);
             }          
           }
@@ -656,7 +654,7 @@ namespace embree
       assert(!(types & BVH_MB) || all(valid,ray.time >= 0.0f & ray.time <= 1.0f));
 
       /* load ray */
-      vbool<K> terminated = !valid;
+      unsigned int terminated = movemask(!valid);
       const Vec3vfK rdir = rcp_safe(ray.dir);
       const Vec3vfK org(ray.org), org_rdir = org * rdir;
       const vfloat<K> ray_tnear = select(valid,ray.tnear,vfloat<K>(pos_inf));
@@ -671,10 +669,10 @@ namespace embree
       nearXYZ.z = select(rdir.z >= 0.0f,vint<K>(4*(int)sizeof(vfloat<N>)),vint<K>(5*(int)sizeof(vfloat<N>)));
 
       vbool<K> m_active = ray_tnear <= ray_tfar;
-      while(m_active)
+      while(any(m_active))
       {
         DBG(m_active);
-        size_t first = __bsf(m_active);
+        size_t first = __bsf(movemask(m_active));
         vbool<K> m_chunk_active = \
           (nearXYZ.x[first] == nearXYZ.x) &
           (nearXYZ.y[first] == nearXYZ.y) &
@@ -710,8 +708,8 @@ namespace embree
           if (unlikely(stackPtr == stack)) break;
           stackPtr--;
           NodeRef cur = NodeRef(stackPtr->ptr);
-          vbool<K> m_trav_active = vbool<K>(stackPtr->mask) & !terminated;
-          if (unlikely(none(m_trav_active))) continue;
+          unsigned int m_trav_active = stackPtr->mask & ~terminated;
+          if (unlikely(!m_trav_active)) continue;
 
           DBG("pop");
           DBG(cur);
@@ -732,7 +730,7 @@ namespace embree
             const vfloat<K> bminmaxZ = permute(vfloat<K>::load((float*)&node->lower_z),permZ);
 
             vfloat<K> dist(inf);
-            size_t bits = movemask(m_trav_active);
+            size_t bits = m_trav_active;
             vint<K> mask16( zero );
             do
             {                    
@@ -759,7 +757,7 @@ namespace embree
 
             DBG("SORT");
 
-            m_trav_active = BVHNNodeTraverserKHit<types>::traverseAnyHit(cur, vmask,dist,mask16,stackPtr,stackEnd);              
+            m_trav_active = BVHNNodeTraverserKHit<types,K>::traverseAnyHit(cur, vmask,dist,mask16,stackPtr,stackEnd);              
             DBG(m_trav_active);
           }          
 
@@ -773,7 +771,7 @@ namespace embree
           //STAT3(shadow.trav_hit_boxes[__popcnt(m_trav_active)],1,1,1);                          
 
           size_t lazy_node = 0;
-          size_t bits = movemask(m_trav_active & !terminated);
+          size_t bits = m_trav_active & ~terminated;
           DBG(bits);
           if (unlikely(__popcnt(bits) >= 4))
           {
@@ -783,7 +781,7 @@ namespace embree
           {
             for (size_t i=__bsf(bits); bits!=0; bits=__btc(bits,i), i=__bsf(bits)) 
               if (PrimitiveIntersectorK::occluded(pre,ray,i,prim,num,bvh->scene,lazy_node)) 
-                set(terminated, i);
+                terminated |= (unsigned int)1 << i;
           }
               
           m_chunk_active &= ~terminated;
@@ -808,7 +806,7 @@ namespace embree
       }
 
 
-      vint<K>::store(valid & terminated,&ray.geomID,0);
+      vint<K>::store(valid & vbool<K>((int)terminated),&ray.geomID,0);
       AVX_ZERO_UPPER();
 #endif
     }
@@ -827,6 +825,9 @@ namespace embree
     DEFINE_INTERSECTOR16(BVH8Triangle4Intersector16HybridMoellerNoFilter2, BVHNIntersectorKHybrid2<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 16 COMMA 16 COMMA false> > >);
 
 #endif
+
+    //DEFINE_INTERSECTOR8(BVH8Triangle4Intersector8HybridMoeller2, BVHNIntersectorKHybrid2<8 COMMA 8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<8 COMMA TriangleMIntersectorKMoellerTrumbore<4 COMMA 4 COMMA 8 COMMA true> > >);
+
   }
 }
 

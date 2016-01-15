@@ -91,7 +91,7 @@ namespace embree
 
 #if defined(__AVX512F__)
 
-    template<int types>
+    template<int types, int K>
       class BVHNNodeTraverserKHit
     {
       typedef BVH8 BVH;
@@ -104,18 +104,17 @@ namespace embree
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    unsigned int &m_trav_active,
                                                    size_t mask,
-                                                   const vfloat16& tNear,
-                                                   const vint16& tMask,
+                                                   const vfloat<K>& tNear,
+                                                   const vint<K>& tMask,
                                                    StackItemMaskT<NodeRef>*& stackPtr,
                                                    StackItemMaskT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        vint16 _tMask = tMask;
-        const vbool16 vmask = vbool16((unsigned int)mask);
-        vint16 cmask = vint16::compact(vmask,_tMask);
+        vint<K> _tMask = tMask;
+        const vbool<K> vmask = vbool<K>((unsigned int)mask);
+        vint<K> cmask = vint<K>::compact(vmask,_tMask);
         m_trav_active = toScalar(cmask);
         const BaseNode* node = cur.baseNode(types);
-        //unsigned int firstMask = toScalar(vint16::compact(vbool16((unsigned int)mask),ttMask));
 
         /*! one child is hit, continue with that child */
         size_t r = __bscf(mask);
@@ -125,51 +124,9 @@ namespace embree
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
 
-#if 0
-        //vint16 cdist = (asInt(tNear) & 0xfffffff8) | vint16( step );
-        vint16 cdist = (asInt(tNear) & 0) | vint16( step );
-        cdist = vint16::compact(vmask,cdist);
-        
-        const unsigned int hits = popcnt(vmask);
-        vint16 sorted(-1);
-        vint16 perm0( zero );
-
-        for (size_t i=0;i<hits;i++)
-        {
-          vint16 d = permute(cdist,perm0); // tt[i]; // broadcast
-          vbool16 mask_gt   = uint_gt(sorted,d);
-          vbool16 mask_rest = (unsigned int)mask_gt & ((unsigned int)mask_gt-1);
-          unsigned int mask_le = !mask_gt;
-          vint16 sorted_rest = align_shift_right<15>(sorted,sorted);
-          cdist = align_shift_right<1>(cdist,cdist);
-          vint16 new_sorted = select(mask_le,sorted,d);
-          sorted = select(mask_rest,sorted_rest,new_sorted);        
-        }
-        vint16 ids = sorted;
-        stackPtr += hits;
-
-        for (size_t i=0;i<hits;i++)
-        {
-          const unsigned int d  = toScalar(ids);
-          const unsigned int id = d & 0x7;
-          NodeRef c = node->child(id); 
-          c.prefetch();
-          const unsigned int m = tMask[id];
-          ids = align_shift_right<1>(ids,ids);
-          stackPtr[-1-i].dist = d;
-          stackPtr[-1-i].ptr  = c;
-          stackPtr[-1-i].mask = m;
-
-        }
-
-#else
-        //unsigned int *dist   = (unsigned int*)&tNear;
         unsigned int *active = (unsigned int*)&tMask;
 
-        __aligned(64) unsigned int dist[16]; 
-        //__aligned(64) unsigned int active[16]; 
-        vint16::store(dist, (asInt(tNear) & 0xfffffff8) | vint16( step ));
-        //vint16::store(active,      tMask);
+        vint<K> dist = (asInt(tNear) & 0xfffffff8) | vint<K>( step );
 
         /*! two children are hit, push far child, and continue with closer child */
         NodeRef c0 = cur; 
@@ -253,7 +210,6 @@ namespace embree
         unsigned int mm = stackPtr[-1].mask;
         stackPtr--;          
         m_trav_active = mm;
-#endif
       }
 
 
@@ -261,8 +217,8 @@ namespace embree
 
       static __forceinline int traverseAnyHit(NodeRef& cur,
                                               size_t mask,
-                                              const vfloat16& tNear,
-                                              const vint16& tMask,
+                                              const vfloat<K>& tNear,
+                                              const vint<K>& tMask,
                                               StackItemMaskT<NodeRef>*& stackPtr,
                                               StackItemMaskT<NodeRef>* stackEnd)
       {
@@ -343,11 +299,6 @@ namespace embree
 
           static const size_t stackSizeChunk  = N*BVH::maxDepth+1;
           static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth;
-
-          static const size_t switchThreshold = (K==4)  ? 3 :
-          (K==8)  ? ((N==4) ? 5 : 7) :
-          (K==16) ? 7 :
-          0;
 
         public:
           static void intersect(vint<K>* valid, BVH* bvh, RayK<K>& ray);
