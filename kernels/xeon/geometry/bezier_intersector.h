@@ -149,8 +149,8 @@ namespace embree
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
         
         /* subdivide 2 levels at once */ 
-        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]); // FIXME: can be calculated from p0 by shifting
+        const Vec4vf4 p0 = curve2D.eval0(vbool4(true),0,4);
+        const Vec4vf4 p1 = curve2D.eval1(vbool4(true),0,4);
         
         /* approximative intersection with cone */
         const Vec4vf4 v = p1-p0;

@@ -20,14 +20,5 @@
 
 namespace embree
 {
-#if defined(__SSE__)
-  extern vfloat4 sse_coeff0[4];
-  extern vfloat4 sse_coeff1[4];
-#endif
-
-#if defined(__AVX__)
-  extern vfloat8 coeff0[4];
-  extern vfloat8 coeff1[4];
-#endif
 }
 

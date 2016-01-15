@@ -105,11 +105,7 @@ namespace embree
     {
 #if 1
       const BezierCurve3fa curve2D(p0,p1,p2,p3,0.0f,1.0f,0);
-#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
-      const Vec4vf8 pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-#else
-      const Vec4vf4 pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-#endif
+      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
       const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
@@ -129,11 +125,7 @@ namespace embree
       Vec3fa b3 = xfmPoint(space,p3); b3.w = p3.w;
 #if 1
       const BezierCurve3fa curve2D(b0,b1,b2,b3,0.0f,1.0f,0);
-#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
-      const Vec4vf8 pi = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-#else
-      const Vec4vf4 pi = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-#endif
+      const Vec4vf4 pi = curve2D.eval0(vbool4(true),0,4);
       const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
       const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
       const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
