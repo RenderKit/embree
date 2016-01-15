@@ -18,6 +18,7 @@
 
 #include "bezier1v.h"
 #include "bezier_intersector.h"
+#include "intersector_epilog.h"
 
 namespace embree
 {
@@ -26,6 +27,7 @@ namespace embree
     /*! Intersector for a single ray with a bezier curve. */
     struct Bezier1vIntersector1
     {
+#if 0
       typedef Bezier1v Primitive;
       typedef Bezier1Intersector1::Precalculations Precalculations;
       
@@ -36,6 +38,24 @@ namespace embree
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, const Primitive& curve, Scene* scene, const unsigned* geomID_to_instID) {
         return Bezier1Intersector1::occluded(ray,pre,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene,geomID_to_instID);
       }
+
+#else
+
+      typedef Bezier1v Primitive;
+      typedef NewBezier1Intersector1 Precalculations;
+      
+      static __forceinline void intersect(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Intersect1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+      }
+      
+      static __forceinline bool occluded(const Precalculations& pre, Ray& ray, const Primitive& prim, Scene* scene, const unsigned* geomID_to_instID)
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        return pre.intersect(ray,prim.p0,prim.p1,prim.p2,prim.p3,Occluded1EpilogU<4,true>(ray,prim.geomID(),prim.primID(),scene,geomID_to_instID));
+      }
+#endif
     };
 
     /*! Intersector for a single ray from a ray packet with a bezier curve. */
