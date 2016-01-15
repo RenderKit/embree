@@ -63,8 +63,8 @@ namespace embree
     
     __forceinline vdouble( ZeroTy   ) : v(_mm512_setzero_pd()) {}
     __forceinline vdouble( OneTy    ) : v(_mm512_set_1to8_pd(1)) {}
-    __forceinline vdouble( StepTy   ) : v(_mm512_set_8to8_pd(7,6,5,4,3,2,1,0)) {}
-    __forceinline vdouble( ReverseStepTy )   : v(_mm512_setr_pd(7,6,5,4,3,2,1,0)) {}
+    __forceinline vdouble( StepTy   ) : v(_mm512_set_8to8_pd(7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0)) {}
+    __forceinline vdouble( ReverseStepTy )   : v(_mm512_setr_pd(7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0)) {}
 
     __forceinline static vdouble8 zero() { return _mm512_setzero_pd(); }
     __forceinline static vdouble8 one () { return _mm512_set_1to8_pd(1); }

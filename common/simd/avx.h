@@ -19,6 +19,8 @@
 #include "sse.h"
 
 #include "vboolf8_avx.h"
+#include "vboold4_avx.h"
+
 #if defined (__AVX2__)
 #include "vint8_avx2.h"
 #else
