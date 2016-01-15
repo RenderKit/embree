@@ -108,41 +108,34 @@ namespace embree
       }
     };
 
-    /*! Intersector for a single ray from a ray packet with a bezier curve. */
     template<int K>
     struct Bezier1IntersectorK
     {
-      typedef Vec3<vfloat<K>> Vec3vfK;
-      
-      struct Precalculations 
+      vfloat<K> depth_scale;
+      LinearSpace3fa ray_space[K];
+
+      __forceinline Bezier1IntersectorK(const vbool<K>& valid, const RayK<K>& ray) 
       {
-        __forceinline Precalculations (const vbool<K>& valid, const RayK<K>& ray)
-        {
-          int mask = movemask(valid);
-          depth_scale = rsqrt(dot(ray.dir,ray.dir));
-          while (mask) {
-            size_t k = __bscf(mask);
-            ray_space[k] = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed();
-          }
+        int mask = movemask(valid);
+        depth_scale = rsqrt(dot(ray.dir,ray.dir));
+        while (mask) {
+          size_t k = __bscf(mask);
+          ray_space[k] = frame(depth_scale[k]*Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k])).transposed();
         }
-        
-        __forceinline Precalculations (const RayK<K>& ray, size_t k)
-        {
-          Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-          depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
-          ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
-        }
-        
-        vfloat<K> depth_scale;
-        LinearSpace3fa ray_space[vfloat<K>::size];
-      };
-      
-      static __forceinline void intersect(const Precalculations& pre, RayK<K>& ray, size_t k,
-                                          const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                          Scene* scene)
+      }
+
+      __forceinline Bezier1IntersectorK (const RayK<K>& ray, size_t k)
       {
-        STAT3(normal.trav_prims,1,1,1);
-        
+        Vec3fa ray_dir = Vec3fa(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        depth_scale[k] = rsqrt(dot(ray_dir,ray_dir));
+        ray_space  [k] = frame(depth_scale[k]*ray_dir).transposed();
+      }
+      
+      template<typename Epilog>
+      __forceinline bool intersect(RayK<K>& ray, size_t k,
+                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Epilog& epilog) const
+      {
         /* load ray */
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
@@ -150,33 +143,11 @@ namespace embree
         const float ray_tfar  = ray.tfar [k];
         
         /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
+        Vec3fa w0 = xfmVector(ray_space[k],v0-ray_org); w0.w = v0.w;
+        Vec3fa w1 = xfmVector(ray_space[k],v1-ray_org); w1.w = v1.w;
+        Vec3fa w2 = xfmVector(ray_space[k],v2-ray_org); w2.w = v2.w;
+        Vec3fa w3 = xfmVector(ray_space[k],v3-ray_org); w3.w = v3.w;
         BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
-        
-#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
-        
-        /* subdivide 3 levels at once */ 
-        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]); // FIXME: can be calculated from p0 by shifting
-        
-        /* approximative intersection with cone */
-        const Vec4vf8 v = p1-p0;
-        const Vec4vf8 w = -p0;
-        const vfloat8 d0 = w.x*v.x + w.y*v.y;
-        const vfloat8 d1 = v.x*v.x + v.y*v.y;
-        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
-        const Vec4vf8 p = p0 + u*v;
-        const vfloat8 t = p.z*pre.depth_scale[k];
-        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
-        const vfloat8 r = p.w;
-        const vfloat8 r2 = r*r;
-        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
-        const float one_over_width = 1.0f/8.0f;
-        
-#else
         
         /* subdivide 2 levels at once */ 
         const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
@@ -189,156 +160,16 @@ namespace embree
         const vfloat4 d1 = v.x*v.x + v.y*v.y;
         const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
         const Vec4vf4 p = p0 + u*v;
-        const vfloat4 t = p.z*pre.depth_scale[k];
+        const vfloat4 t = p.z*depth_scale[k];
         const vfloat4 d2 = p.x*p.x + p.y*p.y; 
         const vfloat4 r = p.w;
         const vfloat4 r2 = r*r;
         vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
-        const float one_over_width = 1.0f/4.0f;
+        if (likely(none(valid))) return false;
         
-#endif
-        
-      retry:
-        if (unlikely(none(valid))) return;
-        STAT3(normal.trav_prim_hits,1,1,1);
-        size_t i = select_min(valid,t);
-        
-        /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-        BezierCurves* g = scene->getBezierCurves(geomID);
-        if (unlikely(g->mask & ray.mask[k]) == 0) return;
-#endif    
-        
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        const Geometry* geometry = scene->get(geomID);
-        if (!likely(geometry->hasIntersectionFilter<vfloat<K>>()))
-        {
-#endif
-          /* update hit information */
-          const float uu = (float(i)+u[i])*one_over_width; // FIXME: correct u range for subdivided segments
-          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-          Vec3fa P,T; curve3D.eval(uu,P,T);
-          if (T == Vec3fa(zero)) { valid[i] = 0; goto retry; } // ignore denormalized curves
-          STAT3(normal.trav_prim_hits,1,1,1);
-          ray.u[k] = uu;
-          ray.v[k] = 0.0f;
-          ray.tfar[k] = t[i];
-          ray.Ng.x[k] = T.x;
-          ray.Ng.y[k] = T.y;
-          ray.Ng.z[k] = T.z;
-          ray.geomID[k] = geomID;
-          ray.primID[k] = primID;
-#if defined(RTCORE_INTERSECTION_FILTER)
-          return;
-        }
-        
-        while (true) 
-        {
-          const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-          Vec3fa P,T; curve3D.eval(uu,P,T);
-          if (T != Vec3fa(zero))
-            if (runIntersectionFilter(geometry,ray,k,uu,0.0f,t[i],T,geomID,primID)) return;
-          valid[i] = 0;
-          if (none(valid)) return;
-          i = select_min(valid,t);
-          STAT3(normal.trav_prim_hits,1,1,1);
-        }
-#endif
-      }
-      
-      static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, const size_t k,
-                                         const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const int& geomID, const int& primID, 
-                                         Scene* scene) 
-      {
-        STAT3(shadow.trav_prims,1,1,1);
-        
-        /* load ray */
-        const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
-        const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        const float ray_tnear = ray.tnear[k];
-        const float ray_tfar  = ray.tfar [k];
-        
-        /* transform control points into ray space */
-        Vec3fa w0 = xfmVector(pre.ray_space[k],v0-ray_org); w0.w = v0.w;
-        Vec3fa w1 = xfmVector(pre.ray_space[k],v1-ray_org); w1.w = v1.w;
-        Vec3fa w2 = xfmVector(pre.ray_space[k],v2-ray_org); w2.w = v2.w;
-        Vec3fa w3 = xfmVector(pre.ray_space[k],v3-ray_org); w3.w = v3.w;
-        BezierCurve3fa curve2D(w0,w1,w2,w3,0.0f,1.0f,4);
-        
-#if 0 // disabling this codepath for now to make geometry consistent in SSE and AVX mode
-        
-        /* subdivide 3 levels at once */ 
-        const Vec4vf8 p0 = curve2D.eval8(coeff0[0],coeff0[1],coeff0[2],coeff0[3]);
-        const Vec4vf8 p1 = curve2D.eval8(coeff1[0],coeff1[1],coeff1[2],coeff1[3]);
-        
-        /* approximative intersection with cone */
-        const Vec4vf8 v = p1-p0;
-        const Vec4vf8 w = -p0;
-        const vfloat8 d0 = w.x*v.x + w.y*v.y;
-        const vfloat8 d1 = v.x*v.x + v.y*v.y;
-        const vfloat8 u = clamp(d0*rcp(d1),vfloat8(zero),vfloat8(one));
-        const Vec4vf8 p = p0 + u*v;
-        const vfloat8 t = p.z*pre.depth_scale[k];
-        const vfloat8 d2 = p.x*p.x + p.y*p.y; 
-        const vfloat8 r = p.w;
-        const vfloat8 r2 = r*r;
-        vbool8 valid = d2 <= r2 & vfloat8(ray_tnear) < t & t < vfloat8(ray_tfar);
-        const float one_over_width = 1.0f/8.0f;
-        
-#else
-        
-        /* subdivide 2 levels at once */ 
-        const Vec4vf4 p0 = curve2D.eval4(sse_coeff0[0],sse_coeff0[1],sse_coeff0[2],sse_coeff0[3]);
-        const Vec4vf4 p1 = curve2D.eval4(sse_coeff1[0],sse_coeff1[1],sse_coeff1[2],sse_coeff1[3]);
-        
-        /* approximative intersection with cone */
-        const Vec4vf4 v = p1-p0;
-        const Vec4vf4 w = -p0;
-        const vfloat4 d0 = w.x*v.x + w.y*v.y;
-        const vfloat4 d1 = v.x*v.x + v.y*v.y;
-        const vfloat4 u = clamp(d0*rcp(d1),vfloat4(zero),vfloat4(one));
-        const Vec4vf4 p = p0 + u*v;
-        const vfloat4 t = p.z*pre.depth_scale[k];
-        const vfloat4 d2 = p.x*p.x + p.y*p.y; 
-        const vfloat4 r = p.w;
-        const vfloat4 r2 = r*r;
-        vbool4 valid = d2 <= r2 & vfloat4(ray_tnear) < t & t < vfloat4(ray_tfar);
-        const float one_over_width = 1.0f/4.0f;
-        
-#endif
-        
-        if (none(valid)) return false;
-        STAT3(shadow.trav_prim_hits,1,1,1);
-        
-        /* ray masking test */
-#if defined(RTCORE_RAY_MASK)
-        BezierCurves* g = scene->getBezierCurves(geomID);
-        if (unlikely(g->mask & ray.mask[k]) == 0) return false;
-#endif  
-        
-        /* intersection filter test */
-#if defined(RTCORE_INTERSECTION_FILTER)
-        size_t i = select_min(valid,t);
-        const Geometry* geometry = scene->get(geomID);
-        if (likely(!geometry->hasOcclusionFilter<vfloat<K>>())) return true;
-        
-        while (true) 
-        {
-          /* calculate hit information */
-          const float uu = (float(i)+u[i])*one_over_width;
-          const BezierCurve3fa curve3D(v0,v1,v2,v3,0.0f,1.0f,0);
-          Vec3fa P,T; curve3D.eval(uu,P,T);
-          if (T != Vec3fa(zero))
-            if (runOcclusionFilter(geometry,ray,k,uu,0.0f,t[i],T,geomID,primID)) break;
-          valid[i] = 0;
-          if (none(valid)) return false;
-          i = select_min(valid,t);
-          STAT3(shadow.trav_prim_hits,1,1,1);
-        }
-#endif
-        return true;
+        /* update hit information */
+        BezierHit<4> hit(valid,u,0.0f,t,v0,v1,v2,v3);
+        return epilog(valid,hit);
       }
     };
   }

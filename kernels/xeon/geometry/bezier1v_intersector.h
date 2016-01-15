@@ -48,10 +48,12 @@ namespace embree
       struct Bezier1vIntersectorK
     {
       typedef Bezier1v Primitive;
-      typedef typename Bezier1IntersectorK<K>::Precalculations Precalculations;
+      typedef Bezier1IntersectorK<K> Precalculations;
       
-      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) {
-        Bezier1IntersectorK<K>::intersect(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline void intersect(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) 
+      {
+        STAT3(normal.trav_prims,1,1,1);
+        pre.intersect(ray,k,curve.p0,curve.p1,curve.p2,curve.p3,Intersect1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
 
       static __forceinline void intersect(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
@@ -60,8 +62,10 @@ namespace embree
         while (mask) intersect(pre,ray,__bscf(mask),curve,scene);
       }
  
-      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) {
-        return Bezier1IntersectorK<K>::occluded(pre,ray,k,curve.p0,curve.p1,curve.p2,curve.p3,curve.geomID(),curve.primID(),scene);
+      static __forceinline bool occluded(Precalculations& pre, RayK<K>& ray, const size_t k, const Primitive& curve, Scene* scene) 
+      {
+        STAT3(shadow.trav_prims,1,1,1);
+        return pre.intersect(ray,k,curve.p0,curve.p1,curve.p2,curve.p3,Occluded1KEpilogU<4,K,true>(ray,k,curve.geomID(),curve.primID(),scene));
       }
 
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, Precalculations& pre, RayK<K>& ray, const Primitive& curve, Scene* scene)
