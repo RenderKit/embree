@@ -223,18 +223,13 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int D, int C, int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permute4x64_pd(v,_MM_SHUFFLE(D,C,B,A)); }
+  template<int D, int C, int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permutevar_pd(v,(int)_MM_SHUFFLE(D,C,B,A)); }
   template<int A>                      __forceinline vdouble4 shuffle   (const vdouble4& x) { return shuffle<A,A,A,A>(v); }
 
-  template<int i>
-    __forceinline vdouble4 align_shift_right(const vdouble4& a, const vdouble4& b)
-  {
-    return _mm256_alignr_pd(a,b,i); 
-  };
 
   __forceinline double toScalar(const vdouble4& a)
   {
-    return _mm256_cvtsd_f64(a);
+    return _mm_cvtsd_f64(_mm256_castpd256_pd128(a));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

@@ -28,7 +28,7 @@ namespace embree
     union {                   // data
       __m256d v;
       struct { __m128d vl,vh; };
-      __int64 i[4];
+      __int64_t i[4];
     };  
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ namespace embree
     __forceinline vboold4& operator=( const vboold4& a ) { v = a.v; return *this; }
 
     __forceinline vboold( const __m256d a ) : v(a) {}
-    __forceinline operator const __m256&( void ) const { return _mm256_castpd_ps(v); }
+    __forceinline operator const __m256( void ) const { return _mm256_castpd_ps(v); }
     __forceinline operator const __m256i( void ) const { return _mm256_castpd_si256(v); }
     __forceinline operator const __m256d( void ) const { return v; }
 
@@ -72,7 +72,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline bool  operator []( const size_t index ) const { assert(index < 4); return (_mm256_movemask_pd(v) >> index) & 1; }
-    __forceinline __int64& operator []( const size_t index )       { assert(index < 4); return i[index]; }
+    __forceinline __int64_t& operator []( const size_t index )       { assert(index < 4); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
