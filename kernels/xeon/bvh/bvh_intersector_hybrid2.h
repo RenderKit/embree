@@ -89,6 +89,7 @@ namespace embree
       T ptr; 
     };
 
+#if defined(__AVX512F__)
 
     template<int types>
       class BVHNNodeTraverserKHit
@@ -323,6 +324,7 @@ namespace embree
       }
 
     };
+#endif
 
       /*! BVH hybrid packet intersector. Switches between packet and single ray traversal (optional). */
       template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single = true>
