@@ -292,8 +292,8 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vlong8 shuffle (const vlong8& x,_MM_SWIZZLE_ENUM perm32 ) { return _mm512_permutex_epi64(x,(int)perm32); }
-  __forceinline vlong8 shuffle4(const vlong8& x,_MM_PERM_ENUM    perm128) { return _mm512_shuffle_i64x2(x,x,perm128); }
+  __forceinline vlong8 shuffle (const vlong8& x,int perm32 ) { return _mm512_permutex_epi64(x,perm32); }
+  __forceinline vlong8 shuffle4(const vlong8& x,int perm128) { return _mm512_shuffle_i64x2(x,x,perm128); }
   
   template<int D, int C, int B, int A> __forceinline vlong8 shuffle   (const vlong8& v) { return _mm512_permutex_epi64(v,(int)_MM_SHUF_PERM(D,C,B,A)); }
   template<int A>                      __forceinline vlong8 shuffle   (const vlong8& x) { return shuffle<A,A,A,A>(v); }
@@ -321,30 +321,25 @@ namespace embree
   __forceinline long reduce_max(vlong8 a) { return _mm512_reduce_max_epi64(a); }
   __forceinline long reduce_and(vlong8 a) { return _mm512_reduce_and_epi64(a); }
   
-  __forceinline vlong8 vreduce_min2(vlong8 x) {                      return min(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vlong8 vreduce_min4(vlong8 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vlong8 vreduce_min8(vlong8 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vlong8 vreduce_min (vlong8 x) { x = vreduce_min8(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_min2(vlong8 x) {                      return min(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vlong8 vreduce_min4(vlong8 x) { x = vreduce_min2(x); return min(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_min (vlong8 x) { x = vreduce_min4(x); return min(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vlong8 vreduce_max2(vlong8 x) {                      return max(x,shuffle(x,_MM_SWIZ_REG_BADC)); }
-  __forceinline vlong8 vreduce_max4(vlong8 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SWIZ_REG_CDAB)); }
-  __forceinline vlong8 vreduce_max8(vlong8 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(2,3,0,1))); }
-  __forceinline vlong8 vreduce_max (vlong8 x) { x = vreduce_max8(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_max2(vlong8 x) {                      return max(x,shuffle(x,_MM_SHUF_PERM(1,0,3,2))); }
+  __forceinline vlong8 vreduce_max4(vlong8 x) { x = vreduce_max2(x); return max(x,shuffle(x,_MM_SHUF_PERM(2,3,0,1))); }
+  __forceinline vlong8 vreduce_max (vlong8 x) { x = vreduce_max4(x); return max(x,shuffle4(x,_MM_SHUF_PERM(1,0,3,2))); }
 
-  __forceinline vlong8 vreduce_and2(vlong8 x) {                      return x & shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vlong8 vreduce_and4(vlong8 x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vlong8 vreduce_and8(vlong8 x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_and (vlong8 x) { x = vreduce_and8(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_and2(vlong8 x) {                      return x & shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_and4(vlong8 x) { x = vreduce_and2(x); return x & shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_and (vlong8 x) { x = vreduce_and4(x); return x & shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vlong8 vreduce_or2(vlong8 x) {                     return x | shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vlong8 vreduce_or4(vlong8 x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vlong8 vreduce_or8(vlong8 x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_or (vlong8 x) { x = vreduce_or8(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_or2(vlong8 x) {                     return x | shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_or4(vlong8 x) { x = vreduce_or2(x); return x | shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_or (vlong8 x) { x = vreduce_or4(x); return x | shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
-  __forceinline vlong8 vreduce_add2(vlong8 x) {                      return x + shuffle(x,_MM_SWIZ_REG_BADC); }
-  __forceinline vlong8 vreduce_add4(vlong8 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SWIZ_REG_CDAB); }
-  __forceinline vlong8 vreduce_add8(vlong8 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(2,3,0,1)); }
-  __forceinline vlong8 vreduce_add (vlong8 x) { x = vreduce_add8(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_add2(vlong8 x) {                      return x + shuffle(x,_MM_SHUF_PERM(1,0,3,2)); }
+  __forceinline vlong8 vreduce_add4(vlong8 x) { x = vreduce_add2(x); return x + shuffle(x,_MM_SHUF_PERM(2,3,0,1)); }
+  __forceinline vlong8 vreduce_add (vlong8 x) { x = vreduce_add4(x); return x + shuffle4(x,_MM_SHUF_PERM(1,0,3,2)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

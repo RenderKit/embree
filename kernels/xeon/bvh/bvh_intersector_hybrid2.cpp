@@ -45,7 +45,7 @@ namespace embree
   namespace isa
   {
 
-#if 1
+#if 0
     /* two rays traversal + refill */
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
     void BVHNIntersectorKHybrid2<N,K,types,robust,PrimitiveIntersectorK,single>::intersect(vint<K>* __restrict__ valid_i, BVH* __restrict__ bvh, RayK<K>& __restrict__ ray)
