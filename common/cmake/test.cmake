@@ -93,7 +93,10 @@ ELSE()
 
   MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   ENDMACRO()
-  
+
+  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
+  ENDMACRO()
+
   MACRO (ADD_EMBREE_MODELS_TEST name)
   ENDMACRO()
 
