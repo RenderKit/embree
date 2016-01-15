@@ -79,7 +79,6 @@ namespace embree
 
   void init_globals()
   {
-
 #if defined(__MIC__)
 
     {

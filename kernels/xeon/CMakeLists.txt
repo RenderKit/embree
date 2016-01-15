@@ -72,6 +72,7 @@ SET(EMBREE_LIBRARY_FILES
   ../common/subdiv/tessellation_cache.cpp
   ../common/subdiv/subdivpatch1base.cpp
   ../common/subdiv/catmullclark_coefficients.cpp
+  ../common/subdiv/bezier_curve.cpp
 
   geometry/primitive.cpp
   geometry/instance_intersector1.cpp

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../default.h"
 #include "../globals.h"
 
 namespace embree
@@ -101,6 +102,20 @@ namespace embree
     }
   };
 
+  struct BezierCoefficients
+  {
+    enum { N = 16 };
+  public:
+    BezierCoefficients(int shift);
+  public:
+    float c0[N+1][N];
+    float c1[N+1][N];
+    float c2[N+1][N];
+    float c3[N+1][N];
+  };
+  extern BezierCoefficients bezier_coeff0;
+  extern BezierCoefficients bezier_coeff1;
+
   struct BezierCurve3fa : public BezierCurveT<Vec3fa>
   {
     //using BezierCurveT<Vec3fa>::BezierCurveT; // FIXME: not supported by VS2010
@@ -128,6 +143,38 @@ namespace embree
       const Vec4vf8 p02 = Vec4vf8(v2);
       const Vec4vf8 p03 = Vec4vf8(v3);
       return c0*p00 + c1*p01 + c2*p02 + c3*p03; // FIXME: use fmadd
+    }
+#endif
+
+#if defined(__SSE__)
+    template<int M>
+      __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size)
+    {
+      const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
+      const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
+      const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
+      const Vec4vf4 p3 = Vec4<vfloat<M>>(v3);
+      const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff0.c0[size][ofs]);
+      const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff0.c1[size][ofs]);
+      const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff0.c2[size][ofs]);
+      const vfloat<M> c3 = vfloat<M>::loadu(&bezier_coeff0.c3[size][ofs]);
+      return c0*p0 + c1*p1 + c2*p2 + c3*p3; // FIXME: use fmadd
+    }
+#endif
+
+#if defined(__SSE__)
+    template<int M>
+      __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size)
+    {
+      const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
+      const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
+      const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
+      const Vec4vf4 p3 = Vec4<vfloat<M>>(v3);
+      const vfloat<M> c0 = vfloat<M>::loadu(&bezier_coeff1.c0[size][ofs]);
+      const vfloat<M> c1 = vfloat<M>::loadu(&bezier_coeff1.c1[size][ofs]);
+      const vfloat<M> c2 = vfloat<M>::loadu(&bezier_coeff1.c2[size][ofs]);
+      const vfloat<M> c3 = vfloat<M>::loadu(&bezier_coeff1.c3[size][ofs]);
+      return c0*p0 + c1*p1 + c2*p2 + c3*p3; // FIXME: use fmadd
     }
 #endif
   };
