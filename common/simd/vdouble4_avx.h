@@ -169,41 +169,41 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline const vboold4 operator ==( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline const vboold4 operator ==( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_EQ_UQ); }
   __forceinline const vboold4 operator ==( const vdouble4& a, const double b ) { return a == vdouble4(b); }
   __forceinline const vboold4 operator ==( const double a, const vdouble4& b ) { return vdouble4(a) == b; }
   
-  __forceinline const vboold4 operator !=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline const vboold4 operator !=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_NEQ_UQ); }
   __forceinline const vboold4 operator !=( const vdouble4& a, const double b ) { return a != vdouble4(b); }
   __forceinline const vboold4 operator !=( const double a, const vdouble4& b ) { return vdouble4(a) != b; }
   
-  __forceinline const vboold4 operator < ( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline const vboold4 operator < ( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_LT_OQ); }
   __forceinline const vboold4 operator < ( const vdouble4& a, const double b ) { return a <  vdouble4(b); }
   __forceinline const vboold4 operator < ( const double a, const vdouble4& b ) { return vdouble4(a) <  b; }
   
-  __forceinline const vboold4 operator >=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline const vboold4 operator >=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_GE_OQ); }
   __forceinline const vboold4 operator >=( const vdouble4& a, const double b ) { return a >= vdouble4(b); }
   __forceinline const vboold4 operator >=( const double a, const vdouble4& b ) { return vdouble4(a) >= b; }
 
-  __forceinline const vboold4 operator > ( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline const vboold4 operator > ( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_GT_OQ); }
   __forceinline const vboold4 operator > ( const vdouble4& a, const double b ) { return a >  vdouble4(b); }
   __forceinline const vboold4 operator > ( const double a, const vdouble4& b ) { return vdouble4(a) >  b; }
 
-  __forceinline const vboold4 operator <=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline const vboold4 operator <=( const vdouble4& a, const vdouble4& b ) { return _mm256_cmp_pd(a,b,_CMP_LE_OQ); }
   __forceinline const vboold4 operator <=( const vdouble4& a, const double b ) { return a <= vdouble4(b); }
   __forceinline const vboold4 operator <=( const double a, const vdouble4& b ) { return vdouble4(a) <= b; }
 
-  __forceinline vboold4 eq(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboold4 eq(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_EQ_UQ); }
   
-  __forceinline vboold4 ne(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboold4 ne(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_NEQ_UQ); }
 
-  __forceinline vboold4 lt(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboold4 lt(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_LT_OQ); }
  
-  __forceinline vboold4 ge(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboold4 ge(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_GE_OQ); }
   
-  __forceinline vboold4 gt(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboold4 gt(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_GT_OQ); }
   
-  __forceinline vboold4 le(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboold4 le(                     const vdouble4& a, const vdouble4& b) { return _mm256_cmp_pd(a,b,_CMP_LE_OQ); }
     
  
   __forceinline const vdouble4 select( const vboold4& m, const vdouble4& t, const vdouble4& f ) {
@@ -223,9 +223,10 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int D, int C, int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permutevar_pd(v,(int)_MM_SHUFFLE(D,C,B,A)); }
-  template<int A>                      __forceinline vdouble4 shuffle   (const vdouble4& x) { return shuffle<A,A,A,A>(v); }
+  template<int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permute_pd(v,(int)_MM_SHUFFLE2(B,A)); }
+  template<int A>                      __forceinline vdouble4 shuffle   (const vdouble4& x) { return shuffle<A,A,A,A>(x); }
 
+  template<int B, int A> __forceinline vdouble4 shuffle2   (const vdouble4& v) { return _mm256_permute2f128_pd(v,v,(int)_MM_SHUFFLE(B,A,B,A)); }
 
   __forceinline double toScalar(const vdouble4& a)
   {
@@ -236,24 +237,26 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline double reduce_add(vdouble4 a) { return _mm256_reduce_add_pd(a); }
-  __forceinline double reduce_min(vdouble4 a) { return _mm256_reduce_min_pd(a); }
-  __forceinline double reduce_max(vdouble4 a) { return _mm256_reduce_max_pd(a); }
   
-  __forceinline vdouble4 vreduce_min2(vdouble4 x) {                      return min(x,shuffle<2,3,0,1>(x)); }
-  __forceinline vdouble4 vreduce_min (vdouble4 x) { x = vreduce_min2(x); return min(x,shuffle<1,0,3,2>(x)); }
+  __forceinline vdouble4 vreduce_min2(vdouble4 x) {                      return min(x,shuffle<0,1>(x)); }
+  __forceinline vdouble4 vreduce_min (vdouble4 x) { x = vreduce_min2(x); return min(x,shuffle2<0,1>(x)); }
 
-  __forceinline vdouble4 vreduce_max2(vdouble4 x) {                      return max(x,shuffle<1,0,3,2>(x)); }
-  __forceinline vdouble4 vreduce_max (vdouble4 x) { x = vreduce_max2(x); return max(x,shuffle<2,3,0,1>(x)); }
+  __forceinline vdouble4 vreduce_max2(vdouble4 x) {                      return max(x,shuffle<0,1>(x)); }
+  __forceinline vdouble4 vreduce_max (vdouble4 x) { x = vreduce_max2(x); return max(x,shuffle<0,1>(x)); }
 
-  __forceinline vdouble4 vreduce_and2(vdouble4 x) {                      return x & shuffle<1,0,3,2>(x); }
-  __forceinline vdouble4 vreduce_and (vdouble4 x) { x = vreduce_and2(x); return x & shuffle<2,3,0,1>(x); }
+  __forceinline vdouble4 vreduce_and2(vdouble4 x) {                      return x & shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_and (vdouble4 x) { x = vreduce_and2(x); return x & shuffle<0,1>(x); }
 
-  __forceinline vdouble4 vreduce_or2(vdouble4 x) {                     return x | shuffle<1,0,3,2>(x); }
-  __forceinline vdouble4 vreduce_or (vdouble4 x) { x = vreduce_or2(x); return x | shuffle<2,3,0,1>(x); }
+  __forceinline vdouble4 vreduce_or2(vdouble4 x) {                     return x | shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_or (vdouble4 x) { x = vreduce_or2(x); return x | shuffle<0,1>(x); }
 
-  __forceinline vdouble4 vreduce_add2(vdouble4 x) {                      return x + shuffle<1,0,3,2>(x); }
-  __forceinline vdouble4 vreduce_add (vdouble4 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
+  __forceinline vdouble4 vreduce_add2(vdouble4 x) {                      return x + shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_add (vdouble4 x) { x = vreduce_add2(x); return x + shuffle<0,1>(x); }
+
+
+  __forceinline double reduce_add(vdouble4 a) { return toScalar(vreduce_add(a)); }
+  __forceinline double reduce_min(vdouble4 a) { return toScalar(vreduce_min(a)); }
+  __forceinline double reduce_max(vdouble4 a) { return toScalar(vreduce_max(a)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
