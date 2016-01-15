@@ -145,8 +145,8 @@ namespace embree
 #if defined(__AVX512F__)
       _mm512_storeu_si512(ptr,v);
 #else
-      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
-      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(f), _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorelo_ps((int*)ptr+0  ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
+      _mm512_extpackstorehi_ps((int*)ptr+16 ,_mm512_castsi512_ps(v), _MM_DOWNCONV_PS_NONE , 0);
 #endif
     }
 
