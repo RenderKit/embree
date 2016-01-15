@@ -150,6 +150,8 @@ namespace embree
     template<int M>
       __forceinline Vec4<vfloat<M>> eval0(const vbool<M>& valid, const int ofs, const int size)
     {
+      assert(size < BezierCoefficients::N);
+      assert(ofs < size);
       const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
       const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
       const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
@@ -166,6 +168,8 @@ namespace embree
     template<int M>
       __forceinline Vec4<vfloat<M>> eval1(const vbool<M>& valid, const int ofs, const int size)
     {
+      assert(size < BezierCoefficients::N);
+      assert(ofs < size);
       const Vec4vf4 p0 = Vec4<vfloat<M>>(v0);
       const Vec4vf4 p1 = Vec4<vfloat<M>>(v1);
       const Vec4vf4 p2 = Vec4<vfloat<M>>(v2);
