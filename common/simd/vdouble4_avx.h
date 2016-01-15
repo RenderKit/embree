@@ -18,6 +18,12 @@
 
 namespace embree
 { 
+#define _MM_SHUF_PERM2(e3, e2, e1, e0) \
+  ((int)(((e3)<<3) | ((e2)<<2) | ((e1)<<1) | (e0)))
+
+#define _MM_SHUF_PERM3(e1, e0) \
+  ((int)(((e1)<<4) | (e0)))
+
   /* 4-wide AVX 64bit double type */
   template<>
     struct vdouble<4>
@@ -223,10 +229,10 @@ namespace embree
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permute_pd(v,(int)_MM_SHUFFLE2(B,A)); }
-  template<int A>                      __forceinline vdouble4 shuffle   (const vdouble4& x) { return shuffle<A,A,A,A>(x); }
+  template<int B, int A> __forceinline vdouble4 shuffle   (const vdouble4& v) { return _mm256_permute_pd(v,(int)_MM_SHUF_PERM2(B,A,B,A)); }
+  template<int A>        __forceinline vdouble4 shuffle   (const vdouble4& x) { return shuffle<A,A>(x); }
 
-  template<int B, int A> __forceinline vdouble4 shuffle2   (const vdouble4& v) { return _mm256_permute2f128_pd(v,v,(int)_MM_SHUFFLE(B,A,B,A)); }
+  template<int B, int A> __forceinline vdouble4 shuffle2   (const vdouble4& v) { return _mm256_permute2f128_pd(v,v,(int)_MM_SHUF_PERM3(B,A)); }
 
   __forceinline double toScalar(const vdouble4& a)
   {
@@ -242,16 +248,16 @@ namespace embree
   __forceinline vdouble4 vreduce_min (vdouble4 x) { x = vreduce_min2(x); return min(x,shuffle2<0,1>(x)); }
 
   __forceinline vdouble4 vreduce_max2(vdouble4 x) {                      return max(x,shuffle<0,1>(x)); }
-  __forceinline vdouble4 vreduce_max (vdouble4 x) { x = vreduce_max2(x); return max(x,shuffle<0,1>(x)); }
+  __forceinline vdouble4 vreduce_max (vdouble4 x) { x = vreduce_max2(x); return max(x,shuffle2<0,1>(x)); }
 
   __forceinline vdouble4 vreduce_and2(vdouble4 x) {                      return x & shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_and (vdouble4 x) { x = vreduce_and2(x); return x & shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_and (vdouble4 x) { x = vreduce_and2(x); return x & shuffle2<0,1>(x); }
 
   __forceinline vdouble4 vreduce_or2(vdouble4 x) {                     return x | shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_or (vdouble4 x) { x = vreduce_or2(x); return x | shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_or (vdouble4 x) { x = vreduce_or2(x); return x | shuffle2<0,1>(x); }
 
   __forceinline vdouble4 vreduce_add2(vdouble4 x) {                      return x + shuffle<0,1>(x); }
-  __forceinline vdouble4 vreduce_add (vdouble4 x) { x = vreduce_add2(x); return x + shuffle<0,1>(x); }
+  __forceinline vdouble4 vreduce_add (vdouble4 x) { x = vreduce_add2(x); return x + shuffle2<0,1>(x); }
 
 
   __forceinline double reduce_add(vdouble4 a) { return toScalar(vreduce_add(a)); }
